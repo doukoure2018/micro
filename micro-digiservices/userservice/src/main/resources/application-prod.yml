@@ -1,0 +1,165 @@
+spring:
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    cache: true  # Enable cache in production
+  application:
+    name: userservice
+  cloud:
+    discovery:
+      client:
+        composite-indicator:
+          enabled: true
+
+  datasource:
+    url: jdbc:postgresql://postgresdb:5432/localdb
+    username: user2711
+    password: admin2711
+    hikari:
+      connection-test-query: SELECT 1
+      maximum-pool-size: 20  # Enhanced for user service which typically has high load
+      minimum-idle: 5
+      idle-timeout: 30000
+      connection-timeout: 30000
+      max-lifetime: 1800000  # 30 minutes
+
+  main:
+    allow-bean-definition-overriding: true
+
+  jpa:
+    database: POSTGRESQL
+    open-in-view: false
+    generate-ddl: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: false  # Disable SQL logging in production
+    hibernate:
+      ddl-auto: validate  # Use validate in production to prevent schema changes
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        default_schema: localdb
+        # Performance optimization for user service
+        jdbc.batch_size: 50
+        order_inserts: true
+        order_updates: true
+        connection.provider_disables_autocommit: true
+        # Second-level cache for user data
+        cache:
+          use_second_level_cache: true
+          use_query_cache: true
+          region.factory_class: org.hibernate.cache.jcache.JCacheRegionFactory
+        javax.cache.provider: org.ehcache.jsr107.EhcacheCachingProvider
+
+  kafka:
+    bootstrap-servers:
+      - kafka:9092
+    template:
+      default-topic: NOTIFICATION_TOPIC
+    producer:
+      group-id: topicgroupid
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        max.request.size: 1300000000
+        # Production Kafka settings
+        acks: all
+        retries: 3
+        delivery.timeout.ms: 120000
+        linger.ms: 5
+        batch.size: 16384
+        buffer.memory: 33554432
+    properties:
+      spring:
+        json:
+          type:
+            mapping: Notification:io.digiservices.userservice.domain.Notification
+      message.max.bytes: 1300000000
+      max.request.size: 1300000000
+
+eureka:
+  instance:
+    prefer-ip-address: true
+    hostname: userservice
+    ip-address: 51.91.254.218
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
+  client:
+    service-url:
+      defaultZone: http://admin:admin2711@discoveryserver:5002/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+
+ui:
+  app:
+    url: ${UI_URL}  # Set to production UI URL
+
+key:
+  private: keys/private.key
+  public: keys/public.key
+
+server:
+  port: ${SERVER_PORT}
+  tomcat:
+    max-threads: 300  # Higher for user service due to expected higher traffic
+    min-spare-threads: 30
+    max-connections: 15000
+    accept-count: 200
+    connection-timeout: 20000
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+    min-response-size: 2048
+
+jwks:
+  uri: http://authorizationserver:8080/oauth2/jwks
+
+# Logging configuration for production
+logging:
+  level:
+    root: INFO
+    io.digiservices: INFO
+    org.springframework: WARN
+    org.hibernate: WARN
+  file:
+    name: /var/log/userservice/application.log
+  pattern:
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 30
+      total-size-cap: 3GB
+
+# Actuator settings
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when_authorized
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# User service specific settings
+user:
+  security:
+    password-history-count: 5
+    password-expiry-days: 90
+    account-lock-threshold: 5
+    token-expiry-minutes: 1440  # 24 hours
+  cache:
+    time-to-live-seconds: 300  # 5 minutes
+    maximum-size: 1000

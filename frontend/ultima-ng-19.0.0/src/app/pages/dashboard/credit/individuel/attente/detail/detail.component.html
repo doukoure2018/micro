@@ -1,0 +1,110 @@
+<div class="mt-4">
+    <p-toast></p-toast>
+    @if(state().loading) {
+    <p-progressSpinner></p-progressSpinner>
+    }
+
+    @if(state().error) {
+    <p-message severity="error" [text]="state().error"></p-message>
+    }
+
+    @if(state().message) {
+    <p-message severity="success" [text]="state().message"></p-message>
+    }
+
+    @if(state().demandeIndividuel) {
+    <h6>Information Credit Individuel</h6>
+    <div class="bg-surface-0 dark:bg-surface-900 grid grid-cols-12 gap-4 grid-nogutter rounded shadow mb-12">
+        <div class="col-span-12 flex p-2 bg-surface-100 dark:bg-surface-700 rounded-t">
+            <div class="p-2 flex-auto text-center md:text-left">
+                <span class="text-surface-700 dark:text-surface-100 block"><strong>Numero Membre:</strong></span>
+                <span class="text-surface-900 dark:text-surface-0 font-medium block mt-2">
+                    {{state().demandeIndividuel?.numeroMembre}}
+                </span>
+            </div>
+            <p-divider align="center" layout="vertical"
+                styleClass="h-full mx-0 lg:mx-4 border-surface-200 dark:border-surface-700"></p-divider>
+            <div class="p-2 flex-auto text-center md:text-left">
+                <span class="text-surface-700 dark:text-surface-100 block">Nom Complet</span>
+                <span class="text-surface-900 dark:text-surface-0 font-medium block mt-2">
+                    {{state().demandeIndividuel?.nom}} {{state().demandeIndividuel?.prenom}}
+                </span>
+                <span class="text-surface-900 dark:text-surface-0 font-medium block mt-2">
+                    {{state().demandeIndividuel?.telephone}}
+                </span>
+            </div>
+            <p-divider align="center" layout="vertical"
+                styleClass="h-full mx-0 lg:mx-4 border-surface-200 dark:border-surface-700"></p-divider>
+            <div class="p-2 flex-auto text-center md:text-left">
+                <span class="text-surface-700 dark:text-surface-100 block">Point de Service</span>
+                <span class="text-surface-900 dark:text-surface-0 font-medium block mt-2">
+                    {{state().pointVente?.libele}} : {{state().pointVente?.code}}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Form -->
+    <div class="card mt-6">
+        <h6 class="mb-4">Update Demande Individuel</h6>
+        <form [formGroup]="updateForm" (ngSubmit)="onSubmit()">
+            <div class="grid grid-cols-1 gap-4">
+                <!-- Point de Vente Selection -->
+                <div class="field">
+                    <label for="code" class="font-medium mb-2">Point de Vente</label>
+                    <p-dropdown id="code" formControlName="code" [options]="state().pointVentes || []"
+                        optionLabel="libele" [placeholder]="'Selectionner un point de  service'" [showClear]="true"
+                        styleClass="w-full" (onChange)="onPointVenteChange($event)">
+                    </p-dropdown>
+                    @if(updateForm.get('pointVente')?.hasError('required') && updateForm.get('pointVente')?.touched) {
+                    <small class="p-error">Point de service est Obligatoire</small>
+                    }
+                </div>
+
+                <!-- Usuario Selection -->
+                <div class="field">
+                    <label for="usuario" class="font-medium mb-2">Code Usager</label>
+                    <p-dropdown id="usuario" formControlName="usuario" [options]="state().usuarios || []"
+                        optionLabel="nom_USUARIO" [placeholder]="'Select a Usuario'" [showClear]="true"
+                        styleClass="w-full" [disabled]="!updateForm.get('pointVente')?.value">
+                        <ng-template let-usuario pTemplate="item">
+                            <div class="flex align-items-center">
+                                <span>{{usuario.nom_USUARIO}} ({{usuario.usariosPKId?.codUsuarios}})</span>
+                            </div>
+                        </ng-template>
+                        <ng-template let-usuario pTemplate="selectedItem">
+                            <div class="flex align-items-center">
+                                <span>{{usuario.nom_USUARIO}} ({{usuario.usariosPKId?.codUsuarios}})</span>
+                            </div>
+                        </ng-template>
+                    </p-dropdown>
+                    @if(updateForm.get('usuario')?.hasError('required') && updateForm.get('usuario')?.touched) {
+                    <small class="p-error">Code Usager est Obligatoire</small>
+                    }
+                </div>
+
+                <!-- Statut Selection -->
+                <div class="field">
+                    <label for="statut" class="font-medium mb-2">Statut</label>
+                    <p-dropdown id="statut" formControlName="statut" [options]="state().statusOptions"
+                        optionLabel="label" optionValue="value" [placeholder]="'Selectionner un statut'"
+                        styleClass="w-full">
+                    </p-dropdown>
+                    @if(updateForm.get('statut')?.hasError('required') && updateForm.get('statut')?.touched) {
+                    <small class="p-error">Statut est Obligatoire</small>
+                    }
+                </div>
+
+                <!-- Submit Button -->
+                <div class="field mt-4">
+                    <p-button type="submit" [label]="updateForm.get('statut')?.value === 'VALIDATION' ? 
+                            'Valider la mise en place de Credit' : 
+                            'Valider la demande pour la selection'" [loading]="state().loading"
+                        [disabled]="updateForm.invalid || state().loading" styleClass="w-full">
+                    </p-button>
+                </div>
+            </div>
+        </form>
+    </div>
+    }
+</div>

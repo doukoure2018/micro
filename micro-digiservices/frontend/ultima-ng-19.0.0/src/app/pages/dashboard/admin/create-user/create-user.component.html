@@ -1,0 +1,129 @@
+<div class="card">
+    <span class="text-surface-900 dark:text-surface-0 text-xl font-bold mb-6 block">
+        Formulaire de Creation de Compte
+    </span>
+    <div class="grid grid-cols-12 gap-4">
+        <div class="col-span-12 lg:col-span-2">
+            <div class="text-surface-900 dark:text-surface-0 font-medium text-xl mb-4">Profil Utilisateur</div>
+            @if(state().submitting) {
+            <div class="flex justify-center mb-4">
+                <p-progressSpinner [style]="{ width: '50px', height: '50px' }"></p-progressSpinner>
+            </div>
+            }
+        </div>
+
+        <div class="col-span-12 lg:col-span-10">
+            <form #userForm="ngForm" (ngSubmit)="createAccout(userForm)">
+                <div class="grid grid-cols-12 gap-4">
+                    <div class="mb-6 col-span-12">
+                        <label for="username" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                            Nom d'utilisateur
+                        </label>
+                        <input pInputText ngModel name="username" id="username" type="text" required
+                            [disabled]="state().submitting" class="w-full" />
+                        @if(userForm.controls['username'] && userForm.controls['username'].invalid &&
+                        userForm.controls['username'].touched) {
+                        <p-message severity="error" text="Username is required"></p-message>
+                        }
+                    </div>
+                    <div class="mb-6 col-span-12 md:col-span-6">
+                        <label for="firstName" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                            Nom
+                        </label>
+                        <input pInputText ngModel name="firstName" id="firstName" type="text" required
+                            [disabled]="state().submitting" class="w-full" />
+                        @if(userForm.controls && userForm.controls['firstName'] &&
+                        userForm.controls['firstName'].invalid && userForm.controls['firstName'].touched) {
+                        <p-message severity="error" text="First name is required"></p-message>
+                        }
+                    </div>
+                    <div class="mb-6 col-span-12 md:col-span-6">
+                        <label for="lastName" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                            Prenom
+                        </label>
+                        <input pInputText ngModel name="lastName" id="lastName" type="text" required
+                            [disabled]="state().submitting" class="w-full" />
+                        @if(userForm.controls && userForm.controls['lastName'] && userForm.controls['lastName'].invalid
+                        && userForm.controls['lastName'].touched) {
+                        <p-message severity="error" text="Last name is required"></p-message>
+                        }
+                    </div>
+                    <div class="mb-6 col-span-12 md:col-span-6">
+                        <label for="email" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                            Email
+                        </label>
+                        <input pInputText ngModel name="email" id="email" type="email" required email
+                            [disabled]="state().submitting" class="w-full" />
+                        @if(userForm.controls && userForm.controls['email'] && userForm.controls['email'].invalid &&
+                        userForm.controls['email'].touched) {
+                        <p-message severity="error" text="Valid email is required"></p-message>
+                        }
+                    </div>
+                    <div class="mb-6 col-span-12 md:col-span-6">
+                        <label for="phone" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                            Contact
+                        </label>
+                        <input pInputText ngModel name="phone" id="phone" type="text" [disabled]="state().submitting"
+                            class="w-full" />
+                    </div>
+                    <div class="mb-6 col-span-12 md:col-span-6">
+                        <label for="password" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                            Mot de passe
+                        </label>
+                        <p-password ngModel name="password" id="password" [toggleMask]="true" required
+                            [disabled]="state().submitting" styleClass="w-full"></p-password>
+                        @if(userForm.controls && userForm.controls['password'] && userForm.controls['password'].invalid
+                        && userForm.controls['password'].touched) {
+                        <p-message severity="error" text="Password is required"></p-message>
+                        }
+                    </div>
+                    <div class="mb-6 col-span-12 md:col-span-6">
+                        <label for="role" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                            Roles
+                        </label>
+                        <p-dropdown ngModel name="role" [options]="state().roles || []" optionLabel="name"
+                            [filter]="true" filterBy="name" [showClear]="true" required
+                            placeholder="Selectionner un role" [disabled]="state().submitting || state().loading"
+                            styleClass="w-full" dataKey="role_id" appendTo="body">
+                            <ng-template pTemplate="selectedItem" let-role>
+                                <div class="flex items-center">
+                                    <span>{{ role?.name }}</span>
+                                </div>
+                            </ng-template>
+                            <ng-template pTemplate="item" let-role>
+                                <div class="flex items-center">
+                                    <span>{{ role.name }}</span>
+                                    <span class="ml-2 text-xs text-gray-500">(ID: {{ role.role_id }})</span>
+                                </div>
+                            </ng-template>
+                        </p-dropdown>
+                        @if(userForm.controls && userForm.controls['role'] && userForm.controls['role'].invalid &&
+                        userForm.controls['role'].touched) {
+                        <p-message severity="error" text="Role is required"></p-message>
+                        }
+                    </div>
+                    <div class="mb-6 col-span-12">
+                        <label for="bio" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                            Bio
+                        </label>
+                        <textarea pTextarea ngModel name="bio" id="bio" rows="5" [autoResize]="true"
+                            [disabled]="state().submitting" class="w-full"></textarea>
+                    </div>
+
+                    <div class="col-span-12">
+
+                        <div class="flex gap-3">
+                            <button pButton pRipple type="submit" label="Enregister" icon="pi pi-save"
+                                [loading]="state().submitting"
+                                [disabled]="userForm && userForm.invalid || state().submitting"
+                                class="w-auto mt-3"></button>
+                            <button pButton pRipple type="button" label="Annuler" icon="pi pi-times"
+                                (click)="userForm.resetForm()" [disabled]="state().submitting"
+                                class="p-button-secondary w-auto mt-3"></button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

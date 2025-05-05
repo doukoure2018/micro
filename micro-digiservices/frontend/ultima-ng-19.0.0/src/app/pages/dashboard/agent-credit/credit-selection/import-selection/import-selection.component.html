@@ -1,0 +1,93 @@
+<div class="container">
+    <p-toast></p-toast>
+    <p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
+
+    <div class="flex justify-between items-center mb-8">
+        <span class="text-surface-900 dark:text-surface-0 text-xl font-semibold">----</span>
+        @if (state().documents!.length > 0) {
+        <button (click)="approvedDemande(state().demandeIndividuel!, state().userId!)" pButton pRipple
+            class="font-semibold" outlined icon="pi pi-check" label="APPROVER LA SELECTION"></button>
+        }@else {}
+
+    </div>
+
+    <p-card header="Televerser la fiche de selection">
+        <br>
+        <div class="p-fluid">
+            <!-- File upload component -->
+            <p-fileUpload mode="basic" chooseLabel="Select Files" (onSelect)="onFileSelect($event)"
+                accept="image/*,.pdf,.doc,.docx" [showUploadButton]="false" [showCancelButton]="false"
+                [multiple]="true">
+            </p-fileUpload>
+
+            <!-- Preview of selected files -->
+            <div *ngIf="state().previews.length > 0" class="preview-list mt-3">
+                <p-table [value]="state().previews" styleClass="p-datatable-sm">
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th>Preview</th>
+                            <th>File Name</th>
+                            <th>Type</th>
+                            <th>Dimensions</th>
+                            <th>Size</th>
+                            <th>Actions</th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-preview let-i="rowIndex">
+                        <tr>
+                            <td style="width: 100px">
+                                <div *ngIf="preview.file.type.includes('image')" class="image-preview">
+                                    <img [src]="preview.url" alt="Preview" class="w-full h-auto max-h-24" />
+                                </div>
+                                <div *ngIf="!preview.file.type.includes('image')" class="file-icon">
+                                    <i class="pi pi-file text-2xl"></i>
+                                </div>
+                            </td>
+                            <td>{{ preview.file.name }}</td>
+                            <td>{{ preview.file.type || 'Unknown' }}</td>
+                            <td>
+                                <span *ngIf="preview.width && preview.height">
+                                    {{ preview.width }} x {{ preview.height }} px
+                                </span>
+                                <span *ngIf="!preview.width || !preview.height">-</span>
+                            </td>
+                            <td>{{ (preview.file.size / 1024).toFixed(2) }} KB</td>
+                            <td>
+                                <button pButton type="button" icon="pi pi-trash" class="p-button-danger p-button-sm"
+                                    (click)="removeFile(i)"></button>
+                            </td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+
+                <div class="mt-3">
+                    <button pButton type="button" label="Upload All Documents" (click)="uploadDocuments()"
+                        [disabled]="state().loading || state().previews.length === 0">
+                        <i *ngIf="state().loading" class="pi pi-spinner pi-spin"></i>
+                        <span *ngIf="!state().loading">Enregistrer les documents</span>
+                    </button>
+                </div>
+            </div>
+
+            <p-message *ngIf="state().error" severity="error" [text]="state().error!"></p-message>
+        </div>
+    </p-card>
+
+    <!-- Display existing documents -->
+    <div *ngIf="state().documents && state().documents!.length > 0" class="mt-4">
+        <p-card header="Liste">
+            <div class="grid">
+                <div *ngFor="let doc of state().documents" class="col-12 md:col-6 lg:col-4 xl:col-3 p-2">
+                    <div class="card">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="font-semibold text-xl">{{ doc.createdAt || 'Document' }}</div>
+                            <button pButton type="button" icon="pi pi-trash" class="p-button-danger p-button-sm"
+                                (click)="deleteDocument(doc)" [disabled]="state().loading"></button>
+                        </div>
+                        <p-image [src]="doc.doc" [alt]="doc?.doc || 'Image'" width="250" preview></p-image>
+                    </div>
+                </div>
+            </div>
+        </p-card>
+    </div>
+</div>

@@ -1,0 +1,37 @@
+spring:
+  application:
+    name: EBANKING
+  datasource:
+    url: jdbc:sqlserver://localhost:1433;databaseName=BDCRG;trustServerCertificate=true;encrypt=true
+    username: sa
+    password: doukoure93
+    driverClassName: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    initialize: true
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.SQLServerDialect
+    hibernate:
+      ddl-auto: none
+  cloud:
+    config:
+      enabled: false
+  profiles:
+    active: default
+application:
+  title: DIGICRG-MICROSERVICE
+  version: v02
+
+server:
+  port: 8081
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: http://admin:admin2711@localhost:5002/eureka/
+
+
+jwks:
+  uri: http://localhost:8080/oauth2/jwks

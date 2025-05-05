@@ -1,0 +1,69 @@
+<!-- credit.component.html -->
+<div class="card">
+    <!-- Search Form -->
+    <form class="p-fluid">
+        <div class="grid">
+            <div class="col-8 md:col-8 sm:col-12">
+                <span class="p-input-icon-left w-full">
+                    <i class="pi pi-search"></i>
+                    <input type="text" pInputText [(ngModel)]="searchQuery" name="search"
+                        placeholder="Rechercher le client à partir de son numéro membre" class="w-full" />
+                </span>
+            </div>
+            <div class="col-4 md:col-4 sm:col-12">
+                <p-button label="Trouver" icon="pi pi-search" styleClass="w-full" [loading]="state().searching"
+                    (onClick)="searchMembre()"></p-button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Messages -->
+    @if(state().message){
+    <div class="p-message p-message-info mt-3">
+        <span class="p-message-text">{{state().message}}</span>
+    </div>
+    }
+
+    @if (state().error) {
+    <div class="p-message p-message-error mt-3">
+        <span class="p-message-text">{{state().error}}</span>
+    </div>
+    }
+
+    <!-- Client Info when found -->
+    @if(state().clientes){
+    <div class="mt-4">
+        <h6>Information du client</h6>
+        <div class="bg-surface-0 dark:bg-surface-900 grid grid-cols-12 gap-4 grid-nogutter rounded shadow mb-12">
+            <div class="col-span-12 flex p-2 bg-surface-100 dark:bg-surface-700 rounded-t">
+                <div class="p-2 flex-auto text-center md:text-left">
+                    <span class="text-surface-700 dark:text-surface-100 block"><strong>Code:</strong></span>
+                    <span
+                        class="text-surface-900 dark:text-surface-0 font-medium block mt-2">{{state().clientes?.clientesPKId?.codCliente}}</span>
+                </div>
+                <p-divider align="center" layout="vertical"
+                    styleClass="h-full mx-0 lg:mx-4 border-surface-200 dark:border-surface-700"></p-divider>
+                <div class="p-2 flex-auto text-center md:text-left">
+                    <span class="text-surface-700 dark:text-surface-100 block">Nom Complet</span>
+                    <span
+                        class="text-surface-900 dark:text-surface-0 font-medium block mt-2">{{state().clientes?.nom_CLIENTE}}</span>
+                    <span
+                        class="text-surface-900 dark:text-surface-0 font-medium block mt-2">{{state().clientes?.tel_PRINCIPAL}}</span>
+                </div>
+                <p-divider align="center" layout="vertical"
+                    styleClass="h-full mx-0 lg:mx-4 border-surface-200 dark:border-surface-700"></p-divider>
+                <div class="p-2 flex-auto text-center md:text-left">
+                    <span class="text-surface-700 dark:text-surface-100 block">Agence</span>
+                    <span
+                        class="text-surface-900 dark:text-surface-0 font-medium block mt-2">{{state().clientes?.codAgencia}}</span>
+                </div>
+
+            </div>
+
+        </div>
+        <p-button (click)="doDamandeCredit(state().clientes?.clientesPKId?.codCliente!)"
+            label="Faire une Nouvelle demande " severity="success" outlined />
+
+    </div>
+    }
+</div>

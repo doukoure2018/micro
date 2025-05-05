@@ -1,0 +1,96 @@
+spring:
+  application:
+    name: notificationservice
+
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    cache: false
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: douklifsa93@gmail.com
+    password: uppv zody hnsl bbzu
+    properties:
+      mail:
+        smtp:
+          writetimeout: 5000
+          connectiontimeout: 5000
+          timeout: 5000
+          auth: true
+          starttls:
+            enable: true
+            required: true
+    verify:
+      host: http://localhost:4200
+    default-encoding: UTF-8
+
+  cloud:
+    discovery:
+      client:
+        composite-indicator:
+          enabled: true
+
+  datasource:
+    url: jdbc:postgresql://postgresdb:5432/localdb
+    username: user2711
+    password: admin2711
+    hikari:
+      connection-test-query: SELECT 1
+  main:
+    allow-bean-definition-overriding: true
+
+  jpa:
+    database: POSTGRESQL
+    open-in-view: false
+    generate-ddl: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        default_schema: localdb
+
+  kafka:
+    bootstrap-servers:
+      - kafka:9092
+    template:
+      default-topic: NOTIFICATION_TOPIC
+    consumer:
+      group-id: topicgroupid
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        fetch.message.max.bytes: 1300000000
+        max.partition.fetch.bytes: 1300000000
+    properties:
+      spring:
+        json:
+          type:
+            mapping: Notification:io.digiservices.notificationservice.domain.Notification
+      fetch.message.max.bytes: 1300000000
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: http://admin:admin2711@discoveryserver:5002/eureka/
+
+ui:
+  app:
+    url: http://localhost:4200
+
+key:
+  private: private.key
+  public: public.key
+
+server:
+  port: 8086
+
+jwks:
+  uri: http://authorizationserver:8080/oauth2/jwks
