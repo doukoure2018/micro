@@ -1,0 +1,53 @@
+spring:
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    cache: false
+  application:
+    name: authorizationserver
+  cloud:
+    discovery:
+      client:
+        composite-indicator:
+          enabled: true
+
+  datasource:
+    url: jdbc:postgresql://postgresdb:5432/localdb
+    username: user2711
+    password: admin2711
+    hikari:
+      connection-test-query: SELECT 1
+  main:
+    allow-bean-definition-overriding: true
+
+  jpa:
+    database: POSTGRESQL
+    open-in-view: false
+    generate-ddl: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        default_schema: localdb
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: http://admin:admin2711@discoveryserver:5002/eureka/
+
+ui:
+  app:
+    url: http://localhost:4200
+
+key:
+  private: "private.key"
+  public: "public.key"
+
+server:
+  port: 8080

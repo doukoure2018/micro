@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: gateway
+  cloud:
+    discovery:
+      enabled: true
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: user-service
+          uri: lb://USERSERVICE
+          predicates:
+            - Path=/user/**
+        - id: ebanking
+          uri: lb://EBANKING
+          predicates:
+            - Path=/ebanking/**
+        - id: notification-service
+          uri: lb://NOTIFICATIONSERVICE
+          predicates:
+            - Path=/notification/**
+        - id: ecredit-service
+          uri: lb://ECREDITSERVICE
+          predicates:
+            - Path=/ecredit/**
+
+eureka:
+  instance:
+    prefer-ip-address: true
+    hostname: gateway
+    instance-id: ${spring.application.name}:${server.port}
+  client:
+    service-url:
+      defaultZone: http://admin:admin2711@discoveryserver:5002/eureka/
+    fetch-registry: true
+    register-with-eureka: true
+    eureka-server-connect-timeout-seconds: 30
+    eureka-server-read-timeout-seconds: 30
+
+logging:
+  level:
+    com.netflix.discovery: DEBUG
+    org.springframework.cloud.netflix: DEBUG
+
+server:
+  port: 8000
+
+jwks:
+  uri: http://authorizationserver:8080/oauth2/jwks

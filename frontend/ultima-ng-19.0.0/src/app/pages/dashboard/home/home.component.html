@@ -1,0 +1,7 @@
+@if (state().user?.role ==='SUPER_ADMIN') {
+<app-admin></app-admin>
+}@else if(state().user?.role ==='AGENT_CREDIT') {
+<app-agent-credit [user]="state().user"></app-agent-credit>
+}@else if(state().user?.role ==='DA') {
+<app-resp-agent [user]="state().user"></app-resp-agent>
+}@else {}

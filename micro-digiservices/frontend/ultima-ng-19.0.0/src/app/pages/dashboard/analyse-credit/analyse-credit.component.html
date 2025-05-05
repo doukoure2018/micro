@@ -1,0 +1,89 @@
+<!-- analyse-credit.component.html -->
+<div class="card">
+
+    <div class="flex flex-wrap gap-2 items-center justify-between">
+        <p-icon-field class="w-full sm:w-80 order-1 sm:order-none">
+
+        </p-icon-field>
+        <button (click)="newAnalyseCredit()" pButton outlined class="w-full sm:w-auto flex-order-0 sm:flex-order-1"
+            icon="pi pi-file" label="Nouvelle Analyse de Credit"></button>
+    </div>
+
+
+    <!-- Search Form -->
+    <form class="p-fluid">
+        <div class="grid">
+            <div class="col-8 md:col-8 sm:col-12">
+                <span class="p-input-icon-left w-full">
+                    <i class="pi pi-search"></i>
+                    <input type="text" pInputText [(ngModel)]="searchQuery" name="search"
+                        placeholder="Rechercher le client à partir de son numéro membre" class="w-full" />
+                </span>
+            </div>
+            <div class="col-4 md:col-4 sm:col-12">
+                <p-button label="Trouver" icon="pi pi-search" styleClass="w-full" [loading]="state().searching"
+                    (onClick)="searchCredits()"></p-button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Messages -->
+    @if(state().message){
+    <div class="p-message p-message-info mt-3">
+        <span class="p-message-text">{{state().message}}</span>
+    </div>
+    }
+
+    @if (state().error) {
+    <div class="p-message p-message-error mt-3">
+        <span class="p-message-text">{{state().error}}</span>
+    </div>
+    }
+
+    <!-- Credits List -->
+    @if(state().credits!.length > 0){
+    <div class="mt-4">
+        <h6>Résultats de la recherche</h6>
+        <div class="card">
+            <p-table [value]="state().credits!" [tableStyle]="{'min-width': '50rem'}" styleClass="p-datatable-sm"
+                [paginator]="true" [rows]="5">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Numéro Crédit</th>
+                        <th>Agence</th>
+                        <th>Client</th>
+                        <th>Montant</th>
+                        <th>Observations</th>
+                        <th>Actions</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-credit>
+                    <tr>
+                        <td>{{credit.creditoPKId.numCredito}}</td>
+                        <td>{{credit.creditoPKId.codAgencia}}</td>
+                        <td>{{credit.codCliente}}</td>
+                        <td>{{credit.monCredito | currency:'GNF ':'symbol':'1.0-0'}}</td>
+                        <td>{{credit.observaciones}}</td>
+                        <td>
+                            <button (click)="viewDetailCredit(credit.creditoPKId.numCredito)" pButton pRipple
+                                icon="pi pi-eye" class="p-button-rounded p-button-info mr-2" title="Voir détails">
+                            </button>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="6" class="text-center">Aucun crédit trouvé.</td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </div>
+    }
+
+    <!-- @if(state().credits!.length === 0 && !state().loading && !state().searching){
+    <div class="p-message p-message-info mt-3">
+        <span class="p-message-text">Aucun crédit trouvé pour ce client.</span>
+    </div>
+    } -->
+</div>

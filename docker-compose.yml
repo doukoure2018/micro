@@ -1,0 +1,183 @@
+services:
+  # Database Services
+  postgresdb:
+    container_name: postgrecontainer
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DATABASE}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      SERVICE_TAGS: dev1
+      SERVICE_NAME: postgresservice
+    expose:
+      - 5432
+    ports:
+      - 5432:5432
+    volumes:
+      - postgresvolume:/var/lib/postgresql/data
+      - ./micro-digiservices/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    networks:
+      - spring
+    healthcheck:
+      test:
+        ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DATABASE}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  pgadmin:
+    container_name: pgadmincontainer
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+      PGADMIN_DEFAULT_ADDRESS: 6000
+      PGADMIN_LISTEN_PORT: 6000
+    depends_on:
+      - postgresdb
+    expose:
+      - 6000
+    ports:
+      - 7000:6000
+    volumes:
+      - pgadminvolume:/var/lib/pgadmin
+    networks:
+      - spring
+
+  # Messaging Services
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
+    ports:
+      - 2181:2181
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - spring
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka
+    ports:
+      - 9092:9092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: ${KAFKA_ADVERTISED_LISTENERS}
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    depends_on:
+      - zookeeper
+    networks:
+      - spring
+
+  discoveryserver:
+    image: doukoure93/discoveryserver:latest
+    container_name: discoveryserver
+    ports:
+      - "5002:5002"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+    networks:
+      - spring
+    depends_on:
+      postgresdb:
+        condition: service_healthy
+
+  gateway:
+    image: doukoure93/gateway:latest
+    container_name: gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+    networks:
+      - spring
+    depends_on:
+      - discoveryserver
+
+  # Business Services
+  authorizationserver:
+    image: doukoure93/authorizationserver:latest
+    container_name: authorizationserver
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+    volumes:
+      - ./keys:/app/keys
+    networks:
+      - spring
+    depends_on:
+      - postgresdb
+      - discoveryserver
+
+  userservice:
+    image: doukoure93/userservice:latest
+    container_name: userservice
+    ports:
+      - "8085:8085"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+    networks:
+      - spring
+    depends_on:
+      - postgresdb
+      - kafka
+      - discoveryserver
+
+  ecreditservice:
+    image: doukoure93/ecreditservice:latest
+    container_name: ecreditservice
+    ports:
+      - "8087:8087"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+    networks:
+      - spring
+    depends_on:
+      - postgresdb
+      - discoveryserver
+
+  notificationservice:
+    image: doukoure93/notificationservice:latest
+    container_name: notificationservice
+    ports:
+      - "8086:8086"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+    networks:
+      - spring
+    depends_on:
+      - kafka
+      - discoveryserver
+
+  # Frontend Application
+  digicrg-app:
+    container_name: digicrg-app
+    image: doukoure93/digicrg-app
+    ports:
+      - "4200:4200"
+    depends_on:
+      - ecreditservice
+      - authorizationserver
+      - notificationservice
+      - userservice
+      - gateway
+    networks:
+      - spring
+    restart: unless-stopped
+    environment:
+      - API_BASE_URL=${API_BASE_URL:-http://127.0.0.1:8080}
+
+volumes:
+  postgresvolume:
+  pgadminvolume:
+
+networks:
+  spring:
+    driver: bridge
