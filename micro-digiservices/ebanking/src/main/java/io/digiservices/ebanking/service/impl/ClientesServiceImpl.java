@@ -2,13 +2,16 @@ package io.digiservices.ebanking.service.impl;
 
 
 import io.digiservices.ebanking.entity.Clientes;
+import io.digiservices.ebanking.exception.ApiException;
 import io.digiservices.ebanking.exception.ResourceNotFoundException;
 import io.digiservices.ebanking.paylaod.ClientesDto;
 import io.digiservices.ebanking.paylaod.ClientesPKId;
 import io.digiservices.ebanking.paylaod.ClientesResponse;
 import io.digiservices.ebanking.repository.ClientesRepository;
 import io.digiservices.ebanking.service.ClientesService;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,6 +23,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class ClientesServiceImpl implements ClientesService {
 
     private ClientesRepository clientesRepository;
@@ -116,11 +120,23 @@ public class ClientesServiceImpl implements ClientesService {
     }
     @Override
     public ClientesDto searchsClientes(String query) {
-        Clientes clientes=clientesRepository.findByClientesPKIdCodCliente(query).orElseThrow(
-                ()->new ResourceNotFoundException("IdClientesDto",query,query)
-        );
-        return mapper.map(clientes,ClientesDto.class);
+        try {
+            Clientes clientes=clientesRepository.findByClientesPKIdCodCliente(query).orElseThrow(
+                    ()->new ResourceNotFoundException("IdClientesDto",query,query)
+            );
+            return mapper.map(clientes,ClientesDto.class);
+
+        }catch (EmptyResultDataAccessException exception){
+            log.error(exception.getMessage());
+            throw  new ApiException("Client pas trouve");
+        }catch (Exception exception){
+            log.error(exception.getMessage());
+            throw  new ApiException("An error occurred please try again");
+        }
+
     }
+
+
 
     @Override
     public ClientesDto searchsClientesByCodAgencia(String codAgencia, String query) {

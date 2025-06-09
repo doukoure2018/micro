@@ -28,6 +28,9 @@
                         field="activite"></p-sortIcon></th>
                 <th pSortableColumn="statutDemande" class="white-space-nowrap" style="width:15%">Statut <p-sortIcon
                         field="statutDemande"></p-sortIcon></th>
+                <th pSortableColumn="statutDemande" class="white-space-nowrap" style="width:15%">Statut Validation
+                    <p-sortIcon field="statutDemande"></p-sortIcon>
+                </th>
                 <th pSortableColumn="createdAt" class="white-space-nowrap" style="width:10%">Date <p-sortIcon
                         field="createdAt"></p-sortIcon></th>
                 <th class="white-space-nowrap" style="width:10%">Action </th>
@@ -46,12 +49,21 @@
                         [severity]="getStatusSeverity(demande.statutDemande, demande.validationState)">
                     </p-tag>
                 </td>
+                <td>
+                    <p-tag [value]="getStateValidation(demande.statutDemande, demande.validationState)"
+                        severity="secondary">
+                    </p-tag>
+                </td>
                 <td>{{ demande.createdAt | date: 'dd/MM/yyyy' }}</td>
                 <td>
+                    @if(demande.statutDemande === 'EN_ATTENTE' && demande.validationState === 'VALIDATION'){
+                    <p-message severity="success" text="Demande de Crédit déjà validée"></p-message>
+                    }@else {
                     <div class="flex gap-2 justify-center">
                         <button pButton icon="pi pi-eye" class="p-button-rounded p-button-text p-button-sm"
                             (click)="viewDetailDemandeAttente(demande.demandeindividuel_id)"></button>
                     </div>
+                    }
                 </td>
             </tr>
         </ng-template>

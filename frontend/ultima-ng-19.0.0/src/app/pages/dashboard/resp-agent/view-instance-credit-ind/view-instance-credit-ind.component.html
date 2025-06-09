@@ -1,0 +1,750 @@
+<div class="surface-0 min-h-screen">
+    <p-toast></p-toast>
+
+    <!-- Header amélioré avec statistiques -->
+    <div style="background: linear-gradient(135deg, #1976D2 0%, #2196F3 100%); color: white;" class="p-6 shadow-lg">
+
+        <div class="flex flex-column md:flex-row align-items-start md:align-items-center justify-content-between gap-4">
+            <div class="flex align-items-center gap-3">
+                <p-button icon="pi pi-arrow-left" (click)="router.navigate(['/d'])" severity="success" text
+                    styleClass="text-white border-white hover:bg-white hover:text-emerald-600">
+                </p-button>
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-bold m-0 mb-2">
+                        <i class="pi pi-file-edit mr-2"></i>Analyse de Crédit
+                    </h1>
+                    <p class="text-emerald-100 m-0 text-lg">
+                        {{ state().instanceCreditInd?.referenceCredit }}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Statistiques rapides -->
+            <div class="flex gap-3 flex-wrap">
+                <div class="bg-dark bg-opacity-20 p-3 border-round text-center">
+                    <div class="text-2xl font-bold">{{ formatMontantGNF(state().creditDto?.montantCredit!) }}
+                    </div>
+                    <div class="text-sm opacity-90">Montant demandé</div>
+                </div>
+
+                <div class="bg-dark bg-opacity-20 p-3 border-round text-center">
+                    <div class="text-2xl font-bold">{{ getNotesCompletionStatus().completed }}/{{
+                        getNotesCompletionStatus().total }}</div>
+                    <div class="text-sm opacity-90">Notes complétées</div>
+                </div>
+
+                <div class="bg-dark bg-opacity-20 p-3 border-round text-center">
+                    <p-chip [label]="state().instanceCreditInd?.stateCredit || 'N/A'"
+                        [styleClass]="'font-bold ' + getCreditStatusClass(state().instanceCreditInd?.stateCredit)">
+                    </p-chip>
+                    <div class="text-sm opacity-90 mt-1">Statut</div>
+                </div>
+
+                <p-button icon="pi pi-refresh" (click)="refreshData()" [loading]="state().loading" severity="secondary"
+                    text styleClass="text-white border-white hover:bg-white hover:text-blue-600"
+                    pTooltip="Actualiser les données">
+                </p-button>
+            </div>
+        </div>
+
+        <!-- Barre de progression des notes -->
+        <div class="mt-4">
+            <div class="flex align-items-center gap-2 mb-2">
+                <span class="text-sm font-medium">Progression des notes:</span>
+                <span class="text-sm">{{ getNotesCompletionStatus().percentage }}%</span>
+            </div>
+            <div class="w-full bg-white bg-opacity-20 border-round h-2rem overflow-hidden">
+                <div class="bg-emerald-400 h-full transition-all duration-500 ease-in-out flex align-items-center justify-content-end pr-2"
+                    [style.width.%]="getNotesCompletionStatus().percentage">
+                    <i class="pi pi-check text-white text-xs" *ngIf="getNotesCompletionStatus().percentage === 100"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading et erreurs -->
+    <div *ngIf="state().loading" class="flex justify-content-center align-items-center py-8">
+        <div class="text-center">
+            <p-progressSpinner strokeWidth="4" [style]="{width: '60px', height: '60px'}"></p-progressSpinner>
+            <p class="text-600 mt-3">Chargement des détails du crédit...</p>
+        </div>
+    </div>
+
+    <div *ngIf="state().error && !state().loading" class="p-4">
+        <p-message severity="error" [text]="state().error" styleClass="w-full"></p-message>
+    </div>
+
+    <!-- Contenu principal avec onglets améliorés -->
+    <div class="p-4" *ngIf="!state().loading && !state().error">
+        <p-tabView styleClass="custom-tabview">
+            <!-- TAB PROFIL AMÉLIORÉ -->
+            <p-tabPanel>
+                <ng-template pTemplate="header">
+                    <i class="pi pi-user mr-2"></i>
+                    <span>Profil Client</span>
+                    <p-chip *ngIf="state().noteProfile" icon="pi pi-check"
+                        styleClass="ml-2 bg-green-100 text-green-800 text-xs">
+                    </p-chip>
+                </ng-template>
+
+                <div class="grid">
+                    <!-- Informations client enrichies -->
+                    <div class="col-12 lg:col-4">
+                        <p-card styleClass="h-full shadow-2">
+                            <ng-template pTemplate="header">
+                                <div class="bg-gradient-to-r from-blue-500 to-cyan-500 text-white p-4">
+                                    <h3 class="m-0 font-bold">
+                                        <i class="pi pi-user-plus mr-2"></i>Information du Client
+                                    </h3>
+                                </div>
+                            </ng-template>
+
+                            <div class="p-fluid">
+                                <div class="field mb-4">
+                                    <label class="font-bold text-900 mb-2 block">
+                                        <i class="pi pi-id-card mr-2 text-blue-500"></i>Numéro Membre
+                                    </label>
+                                    <div class="p-3 bg-blue-50 border-round">
+                                        {{ state().membre?.clientesPKId?.codCliente }}
+                                    </div>
+                                </div>
+
+                                <div class="field mb-4">
+                                    <label class="font-bold text-900 mb-2 block">
+                                        <i class="pi pi-users mr-2 text-green-500"></i>Nom & Prénom
+                                    </label>
+                                    <div class="p-3 bg-green-50 border-round">
+                                        {{ state().membre?.nom_CLIENTE || 'N/A' }}
+                                    </div>
+                                </div>
+
+                                <div class="field mb-4">
+                                    <label class="font-bold text-900 mb-2 block">
+                                        <i class="pi pi-phone mr-2 text-orange-500"></i>Téléphone
+                                    </label>
+                                    <div class="p-3 bg-orange-50 border-round">
+                                        {{ state().membre?.tel_PRINCIPAL || 'N/A' }}
+                                    </div>
+                                </div>
+
+                                <div class="field mb-4">
+                                    <label class="font-bold text-900 mb-2 block">
+                                        <i class="pi pi-briefcase mr-2 text-purple-500"></i>Type de Crédit
+                                    </label>
+                                    <div class="p-3 bg-purple-50 border-round">
+                                        {{
+                                        typeCreditService.getCreditTypeDescription(+state().creditDto?.typeCredit!) }}
+                                    </div>
+                                </div>
+                            </div>
+                        </p-card>
+                    </div>
+
+                    <!-- Détails du crédit enrichis -->
+                    <div class="col-12 lg:col-4">
+                        <p-card styleClass="h-full shadow-2">
+                            <ng-template pTemplate="header">
+                                <div class="bg-gradient-to-r from-green-500 to-teal-500 text-white p-4">
+                                    <h3 class="m-0 font-bold">
+                                        <i class="pi pi-money-bill mr-2"></i>Détails du Crédit
+                                    </h3>
+                                </div>
+                            </ng-template>
+
+                            <div class="p-fluid">
+                                <div class="field mb-4">
+                                    <label class="font-bold text-900 mb-2 block">
+                                        <i class="pi pi-car mr-2 text-blue-500"></i>Moyen de Transport
+                                    </label>
+                                    <div class="p-3 bg-blue-50 border-round">
+                                        {{ state().instanceCreditInd?.moyenPerson || 'N/A' }}
+                                    </div>
+                                </div>
+
+                                <div class="field mb-4">
+                                    <label class="font-bold text-900 mb-2 block">
+                                        <i class="pi pi-wallet mr-2 text-green-500"></i>Capital Demandé
+                                    </label>
+                                    <div class="p-3 bg-green-50 border-round font-bold text-green-700 text-xl">
+                                        {{ formatMontantGNF(state().instanceCreditInd?.capital || 0) }}
+                                    </div>
+                                </div>
+
+                                <div class="grid">
+                                    <div class="col-6">
+                                        <div class="field mb-4">
+                                            <label class="font-bold text-900 mb-2 block text-sm">
+                                                <i class="pi pi-plus-circle mr-1 text-cyan-500"></i>Créance
+                                            </label>
+                                            <div class="p-2 bg-cyan-50 border-round text-sm">
+                                                {{ formatMontantGNF(state().instanceCreditInd?.creance || 0) }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="field mb-4">
+                                            <label class="font-bold text-900 mb-2 block text-sm">
+                                                <i class="pi pi-minus-circle mr-1 text-red-500"></i>Dette
+                                            </label>
+                                            <div class="p-2 bg-red-50 border-round text-sm">
+                                                {{ formatMontantGNF(state().instanceCreditInd?.dette || 0) }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="field mb-4">
+                                    <label class="font-bold text-900 mb-2 block">
+                                        <i class="pi pi-flag mr-2 text-orange-500"></i>Statut Activité
+                                    </label>
+                                    <p-tag [value]="state().instanceCreditInd?.statutActivite || 'N/A'"
+                                        [severity]="getStatusSeverity(state().instanceCreditInd?.statutActivite)"
+                                        styleClass="w-full justify-content-center">
+                                    </p-tag>
+                                </div>
+
+                                <div class="field mb-4">
+                                    <label class="font-bold text-900 mb-2 block">
+                                        <i class="pi pi-calendar mr-2 text-purple-500"></i>Expérience
+                                    </label>
+                                    <div class="p-3 bg-purple-50 border-round">
+                                        {{ state().instanceCreditInd?.experience || 'N/A' }}
+                                    </div>
+                                </div>
+
+                                <div class="field mb-4">
+                                    <label class="font-bold text-900 mb-2 block">
+                                        <i class="pi pi-map-marker mr-2 text-red-500"></i>Lieu d'Activité
+                                    </label>
+                                    <div class="p-3 bg-red-50 border-round">
+                                        {{ state().instanceCreditInd?.lieuxAct || 'N/A' }}
+                                    </div>
+                                </div>
+                            </div>
+                        </p-card>
+                    </div>
+
+                    <!-- État du crédit et notes -->
+                    <div class="col-12 lg:col-4">
+                        <p-card styleClass="h-full shadow-2">
+                            <ng-template pTemplate="header">
+                                <div class="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-4">
+                                    <h3 class="m-0 font-bold">
+                                        <i class="pi pi-chart-line mr-2"></i>État & Évaluation
+                                    </h3>
+                                </div>
+                            </ng-template>
+
+                            <div class="p-fluid">
+                                <div class="field mb-4">
+                                    <label class="font-bold text-900 mb-2 block">
+                                        <i class="pi pi-info-circle mr-2 text-blue-500"></i>État du Crédit
+                                    </label>
+                                    <p-chip [label]="state().instanceCreditInd?.stateCredit || 'N/A'"
+                                        [styleClass]="'w-full justify-content-center font-bold ' + getCreditStatusClass(state().instanceCreditInd?.stateCredit)">
+                                    </p-chip>
+                                </div>
+
+                                <div class="grid">
+                                    <div class="col-12">
+                                        <div class="field mb-3">
+                                            <label class="font-bold text-900 mb-2 block text-sm">
+                                                <i class="pi pi-star mr-1 text-yellow-500"></i>Note Profil
+                                            </label>
+                                            <div class="flex align-items-center gap-2">
+                                                <div class="p-2 bg-yellow-50 border-round flex-1 text-center">
+                                                    {{ state().instanceCreditInd?.noteProfile || 'N/A' }}
+                                                </div>
+                                                <i class="pi pi-check-circle text-green-500"
+                                                    *ngIf="state().noteProfile"></i>
+                                                <i class="pi pi-clock text-orange-500" *ngIf="!state().noteProfile"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <div class="field mb-3">
+                                            <label class="font-bold text-900 mb-2 block text-sm">
+                                                <i class="pi pi-chart-bar mr-1 text-blue-500"></i>Note Analyse
+                                            </label>
+                                            <div class="flex align-items-center gap-2">
+                                                <div class="p-2 bg-blue-50 border-round flex-1 text-center">
+                                                    {{ state().instanceCreditInd?.noteAnalyse || 'N/A' }}
+                                                </div>
+                                                <i class="pi pi-check-circle text-green-500"
+                                                    *ngIf="state().noteAnalyse"></i>
+                                                <i class="pi pi-clock text-orange-500" *ngIf="!state().noteAnalyse"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <div class="field mb-3">
+                                            <label class="font-bold text-900 mb-2 block text-sm">
+                                                <i class="pi pi-shield mr-1 text-green-500"></i>Note Garantie
+                                            </label>
+                                            <div class="flex align-items-center gap-2">
+                                                <div class="p-2 bg-green-50 border-round flex-1 text-center">
+                                                    {{ state().instanceCreditInd?.noteGarantie || 'N/A' }}
+                                                </div>
+                                                <i class="pi pi-check-circle text-green-500"
+                                                    *ngIf="state().noteGarantie"></i>
+                                                <i class="pi pi-clock text-orange-500"
+                                                    *ngIf="!state().noteGarantie"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Indicateur de progression -->
+                                <div class="field mt-4">
+                                    <label class="font-bold text-900 mb-2 block">
+                                        <i class="pi pi-percentage mr-2 text-purple-500"></i>Progression Générale
+                                    </label>
+                                    <div class="bg-gray-200 border-round h-1rem overflow-hidden">
+                                        <div class="bg-gradient-to-r from-blue-500 to-purple-500 h-full transition-all duration-500 ease-in-out"
+                                            [style.width.%]="getNotesCompletionStatus().percentage">
+                                        </div>
+                                    </div>
+                                    <small class="text-600 mt-1">{{ getNotesCompletionStatus().percentage }}%
+                                        complété</small>
+                                </div>
+                            </div>
+                        </p-card>
+                    </div>
+
+                    <!-- Composant Note Profile -->
+                    <div class="col-12 mt-4">
+                        <app-note-profile [noteProfile]="state().noteProfile"
+                            [referenceCredit]="state().instanceCreditInd?.referenceCredit" [userId]="userId!"
+                            [submitting]="state().submittingProfile" (submitNote)="handleProfileNote($event)">
+                        </app-note-profile>
+                    </div>
+                </div>
+            </p-tabPanel>
+
+            <!-- TAB ANALYSE AMÉLIORÉ -->
+            <p-tabPanel>
+                <ng-template pTemplate="header">
+                    <i class="pi pi-chart-line mr-2"></i>
+                    <span>Analyse Financière</span>
+                    <p-chip *ngIf="state().noteAnalyse" icon="pi pi-check"
+                        styleClass="ml-2 bg-green-100 text-green-800 text-xs">
+                    </p-chip>
+                </ng-template>
+
+                <div class="grid">
+                    <!-- Résumé financier en haut -->
+                    <div class="col-12 mb-4">
+                        <p-card styleClass="shadow-2">
+                            <ng-template pTemplate="header">
+                                <div class="bg-gradient-to-r from-emerald-500 to-teal-500 text-white p-4">
+                                    <h3 class="m-0 font-bold">
+                                        <i class="pi pi-calculator mr-2"></i>Récapitulatif Financier
+                                    </h3>
+                                </div>
+                            </ng-template>
+
+                            <div class="grid">
+                                <div class="col-12 md:col-4">
+                                    <div class="bg-blue-50 p-4 border-round text-center border-left-3 border-blue-500">
+                                        <i class="pi pi-shopping-cart text-3xl text-blue-500 mb-2"></i>
+                                        <h4 class="text-blue-700 m-0 mb-1">Total Produits</h4>
+                                        <div class="text-2xl font-bold text-blue-800">
+                                            {{ formatMontantGNF(calculateProductTotal()) }}
+                                        </div>
+                                        <small class="text-blue-600">{{ (state().products || []).length }}
+                                            produit(s)</small>
+                                    </div>
+                                </div>
+                                <div class="col-12 md:col-4">
+                                    <div
+                                        class="bg-orange-50 p-4 border-round text-center border-left-3 border-orange-500">
+                                        <i class="pi pi-minus-circle text-3xl text-orange-500 mb-2"></i>
+                                        <h4 class="text-orange-700 m-0 mb-1">Total Charges</h4>
+                                        <div class="text-2xl font-bold text-orange-800">
+                                            {{ formatMontantGNF(calculateChargeTotal()) }}
+                                        </div>
+                                        <small class="text-orange-600">{{ (state().charges || []).length }}
+                                            charge(s)</small>
+                                    </div>
+                                </div>
+                                <div class="col-12 md:col-4">
+                                    <div
+                                        class="bg-green-50 p-4 border-round text-center border-left-3 border-green-500">
+                                        <i class="pi pi-chart-line text-3xl text-green-500 mb-2"></i>
+                                        <h4 class="text-green-700 m-0 mb-1">Résultat Net</h4>
+                                        <div class="text-2xl font-bold text-green-800">
+                                            {{ formatMontantGNF(calculateNetTotal()) }}
+                                        </div>
+                                        <small class="text-green-600">Produits - Charges</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </p-card>
+                    </div>
+
+                    <!-- Tableau des produits amélioré -->
+                    <div class="col-12">
+                        <p-card styleClass="shadow-2">
+                            <ng-template pTemplate="header">
+                                <div class="bg-gradient-to-r from-blue-500 to-cyan-500 text-white p-4">
+                                    <h3 class="m-0 font-bold">
+                                        <i class="pi pi-shopping-bag mr-2"></i>Détail des Produits
+                                    </h3>
+                                </div>
+                            </ng-template>
+
+                            <p-table [value]="state().products || []" [paginator]="true" [rows]="5"
+                                responsiveLayout="scroll" styleClass="p-datatable-striped"
+                                [showCurrentPageReport]="true"
+                                currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} produits">
+
+                                <ng-template pTemplate="header">
+                                    <tr>
+                                        <th><i class="pi pi-tag mr-1"></i>Libellé</th>
+                                        <th class="text-right"><i class="pi pi-money-bill mr-1"></i>Prix Unitaire</th>
+                                        <th class="text-center"><i class="pi pi-sort-amount-up mr-1"></i>Quantité</th>
+                                        <th class="text-right"><i class="pi pi-calculator mr-1"></i>Total</th>
+                                        <th><i class="pi pi-comment mr-1"></i>Observation</th>
+                                    </tr>
+                                </ng-template>
+
+                                <ng-template pTemplate="body" let-product let-i="rowIndex">
+                                    <tr class="hover:bg-blue-50">
+                                        <td>
+                                            <div class="flex align-items-center gap-2">
+                                                <span
+                                                    class="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 border-round">{{
+                                                    i + 1 }}</span>
+                                                <span class="font-medium">{{ product.libele }}</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-right font-medium">{{ formatMontantGNF(product.prixUnit || 0) }}
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="bg-gray-100 px-2 py-1 border-round font-bold">{{ product.qte
+                                                }}</span>
+                                        </td>
+                                        <td class="text-right font-bold text-green-600">
+                                            {{ formatMontantGNF((product.prixUnit || 0) * (product.qte || 0)) }}
+                                        </td>
+                                        <td>
+                                            <span class="text-600">{{ product.observation || 'Aucune observation'
+                                                }}</span>
+                                        </td>
+                                    </tr>
+                                </ng-template>
+
+                                <ng-template pTemplate="footer">
+                                    <tr class="bg-blue-50">
+                                        <td colspan="3" class="text-right font-bold text-lg">
+                                            <i class="pi pi-calculator mr-2"></i>Total Général:
+                                        </td>
+                                        <td class="font-bold text-lg text-green-600 text-right">
+                                            {{ formatMontantGNF(calculateProductTotal()) }}
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                </ng-template>
+
+                                <ng-template pTemplate="emptymessage">
+                                    <tr>
+                                        <td colspan="5" class="text-center p-6">
+                                            <div class="flex flex-column align-items-center gap-3">
+                                                <i class="pi pi-shopping-bag text-4xl text-400"></i>
+                                                <span class="text-600 font-medium">Aucun produit disponible</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </ng-template>
+                            </p-table>
+                        </p-card>
+                    </div>
+
+                    <!-- Tableau des charges amélioré -->
+                    <div class="col-12 mt-4">
+                        <p-card styleClass="shadow-2">
+                            <ng-template pTemplate="header">
+                                <div class="bg-gradient-to-r from-orange-500 to-red-500 text-white p-4">
+                                    <h3 class="m-0 font-bold">
+                                        <i class="pi pi-minus-circle mr-2"></i>Détail des Charges
+                                    </h3>
+                                </div>
+                            </ng-template>
+
+                            <p-table [value]="state().charges || []" [paginator]="true" [rows]="5"
+                                responsiveLayout="scroll" styleClass="p-datatable-striped"
+                                [showCurrentPageReport]="true"
+                                currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} charges">
+
+                                <ng-template pTemplate="header">
+                                    <tr>
+                                        <th><i class="pi pi-tag mr-1"></i>Libellé</th>
+                                        <th class="text-right"><i class="pi pi-money-bill mr-1"></i>Prix Unitaire</th>
+                                        <th class="text-center"><i class="pi pi-sort-amount-up mr-1"></i>Quantité</th>
+                                        <th class="text-right"><i class="pi pi-calculator mr-1"></i>Total</th>
+                                        <th class="text-center"><i class="pi pi-calendar mr-1"></i>Date</th>
+                                    </tr>
+                                </ng-template>
+
+                                <ng-template pTemplate="body" let-charge let-i="rowIndex">
+                                    <tr class="hover:bg-orange-50">
+                                        <td>
+                                            <div class="flex align-items-center gap-2">
+                                                <span
+                                                    class="bg-orange-100 text-orange-800 text-xs font-medium px-2 py-1 border-round">{{
+                                                    i + 1 }}</span>
+                                                <span class="font-medium">{{ charge.libele }}</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-right font-medium">{{ formatMontantGNF(charge.prixUnit || 0) }}
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="bg-gray-100 px-2 py-1 border-round font-bold">{{ charge.qte
+                                                }}</span>
+                                        </td>
+                                        <td class="text-right font-bold text-red-600">
+                                            {{ formatMontantGNF((charge.prixUnit || 0) * (charge.qte || 0)) }}
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="text-600">{{ charge.createAt | date:'dd/MM/yyyy' }}</span>
+                                        </td>
+                                    </tr>
+                                </ng-template>
+
+                                <ng-template pTemplate="footer">
+                                    <tr class="bg-orange-50">
+                                        <td colspan="3" class="text-right font-bold text-lg">
+                                            <i class="pi pi-calculator mr-2"></i>Total Général:
+                                        </td>
+                                        <td class="font-bold text-lg text-red-600 text-right">
+                                            {{ formatMontantGNF(calculateChargeTotal()) }}
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                </ng-template>
+
+                                <ng-template pTemplate="emptymessage">
+                                    <tr>
+                                        <td colspan="5" class="text-center p-6">
+                                            <div class="flex flex-column align-items-center gap-3">
+                                                <i class="pi pi-minus-circle text-4xl text-400"></i>
+                                                <span class="text-600 font-medium">Aucune charge disponible</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </ng-template>
+                            </p-table>
+                        </p-card>
+                    </div>
+
+                    <!-- Composant Note Analyse -->
+                    <div class="col-12 mt-4">
+                        <app-note-analyse [noteAnalyse]="state().noteAnalyse"
+                            [referenceCredit]="state().instanceCreditInd?.referenceCredit" [userId]="userId!"
+                            [submitting]="state().submittingAnalyse" (submitNote)="handleAnalyseNote($event)">
+                        </app-note-analyse>
+                    </div>
+                </div>
+            </p-tabPanel>
+
+            <!-- TAB GARANTIE AMÉLIORÉ -->
+            <p-tabPanel>
+                <ng-template pTemplate="header">
+                    <i class="pi pi-shield mr-2"></i>
+                    <span>Garanties</span>
+                    <p-chip *ngIf="state().noteGarantie" icon="pi pi-check"
+                        styleClass="ml-2 bg-green-100 text-green-800 text-xs">
+                    </p-chip>
+                </ng-template>
+
+                <div class="grid">
+                    <!-- Garantie matérielle -->
+                    <div class="col-12 md:col-6">
+                        <p-card styleClass="h-full shadow-2">
+                            <ng-template pTemplate="header">
+                                <div class="bg-gradient-to-r from-green-500 to-emerald-500 text-white p-4">
+                                    <h3 class="m-0 font-bold">
+                                        <i class="pi pi-home mr-2"></i>Garantie Matérielle
+                                    </h3>
+                                </div>
+                            </ng-template>
+
+                            <div class="p-fluid">
+                                <div class="field mb-4">
+                                    <label class="font-bold text-900 mb-2 block">
+                                        <i class="pi pi-tag mr-2 text-blue-500"></i>Libellé
+                                    </label>
+                                    <div class="p-3 bg-blue-50 border-round">
+                                        {{ state().instanceCreditInd?.garantieLibele || 'N/A' }}
+                                    </div>
+                                </div>
+
+                                <div class="field mb-4">
+                                    <label class="font-bold text-900 mb-2 block">
+                                        <i class="pi pi-money-bill mr-2 text-green-500"></i>Montant de la Garantie
+                                    </label>
+                                    <div class="p-3 bg-green-50 border-round font-bold text-green-700 text-xl">
+                                        {{ formatMontantGNF(state().instanceCreditInd?.garantieMontant || 0) }}
+                                    </div>
+                                </div>
+
+                                <div class="field mb-4">
+                                    <label class="font-bold text-900 mb-2 block">
+                                        <i class="pi pi-calendar mr-2 text-purple-500"></i>Date de Création
+                                    </label>
+                                    <div class="p-3 bg-purple-50 border-round">
+                                        <ng-container
+                                            *ngIf="state().instanceCreditInd?.garantieCreatedAt; else noGarantieDate">
+                                            {{ state().instanceCreditInd?.garantieCreatedAt | date:'dd/MM/yyyy HH:mm' }}
+                                        </ng-container>
+                                        <ng-template #noGarantieDate>N/A</ng-template>
+                                    </div>
+                                </div>
+                            </div>
+                        </p-card>
+                    </div>
+
+                    <!-- Localisation -->
+                    <div class="col-12 md:col-6">
+                        <p-card styleClass="h-full shadow-2">
+                            <ng-template pTemplate="header">
+                                <div class="bg-gradient-to-r from-blue-500 to-indigo-500 text-white p-4">
+                                    <h3 class="m-0 font-bold">
+                                        <i class="pi pi-map-marker mr-2"></i>Localisation
+                                    </h3>
+                                </div>
+                            </ng-template>
+
+                            <div class="p-fluid">
+                                <div class="field mb-4">
+                                    <label class="font-bold text-900 mb-2 block">
+                                        <i class="pi pi-building mr-2 text-orange-500"></i>IT ASS
+                                    </label>
+                                    <div class="p-3 bg-orange-50 border-round">
+                                        {{ state().instanceCreditInd?.itAss || 'Non renseigné' }}
+                                    </div>
+                                </div>
+
+                                <div class="field mb-4">
+                                    <label class="font-bold text-900 mb-2 block">
+                                        <i class="pi pi-desktop mr-2 text-cyan-500"></i>IT PC
+                                    </label>
+                                    <div class="p-3 bg-cyan-50 border-round">
+                                        {{ state().instanceCreditInd?.itPc || 'Non renseigné' }}
+                                    </div>
+                                </div>
+
+                                <div class="field mb-4">
+                                    <label class="font-bold text-900 mb-2 block">
+                                        <i class="pi pi-clock mr-2 text-indigo-500"></i>Fréquence de Remboursement
+                                    </label>
+                                    <div class="p-3 bg-indigo-50 border-round flex align-items-center gap-2">
+                                        <span class="font-bold">{{ state().instanceCreditInd?.frequence || 0 }}</span>
+                                        <span class="text-600">jours</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </p-card>
+                    </div>
+
+                    <!-- Tableau des cautions amélioré -->
+                    <div class="col-12 mt-4">
+                        <p-card styleClass="shadow-2">
+                            <ng-template pTemplate="header">
+                                <div class="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-4">
+                                    <h3 class="m-0 font-bold">
+                                        <i class="pi pi-users mr-2"></i>Personnes Caution
+                                    </h3>
+                                </div>
+                            </ng-template>
+
+                            <p-table [value]="state().garantieCaution || []" [paginator]="true" [rows]="5"
+                                responsiveLayout="scroll" styleClass="p-datatable-striped"
+                                [showCurrentPageReport]="true"
+                                currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} cautions">
+
+                                <ng-template pTemplate="header">
+                                    <tr>
+                                        <th><i class="pi pi-user mr-1"></i>Nom & Prénom</th>
+                                        <th><i class="pi pi-phone mr-1"></i>Téléphone</th>
+                                        <th class="text-center"><i class="pi pi-calendar mr-1"></i>Âge</th>
+                                        <th><i class="pi pi-briefcase mr-1"></i>Activité</th>
+                                        <th><i class="pi pi-id-card mr-1"></i>Profession</th>
+                                    </tr>
+                                </ng-template>
+
+                                <ng-template pTemplate="body" let-caution let-i="rowIndex">
+                                    <tr class="hover:bg-purple-50">
+                                        <td>
+                                            <div class="flex align-items-center gap-2">
+                                                <span
+                                                    class="bg-purple-100 text-purple-800 text-xs font-medium px-2 py-1 border-round">{{
+                                                    i + 1 }}</span>
+                                                <div>
+                                                    <div class="font-bold">{{ caution.nom }} {{ caution.prenom }}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <a [href]="'tel:' + caution.telephone"
+                                                class="text-blue-600 hover:text-blue-800">
+                                                <i class="pi pi-phone mr-1"></i>{{ caution.telephone }}
+                                            </a>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="bg-gray-100 px-2 py-1 border-round font-bold">{{ caution.age }}
+                                                ans</span>
+                                        </td>
+                                        <td>
+                                            <span class="text-600">{{ caution.activite }}</span>
+                                        </td>
+                                        <td>
+                                            <p-tag [value]="caution.profession" severity="info"
+                                                styleClass="text-xs"></p-tag>
+                                        </td>
+                                    </tr>
+                                </ng-template>
+
+                                <ng-template pTemplate="emptymessage">
+                                    <tr>
+                                        <td colspan="5" class="text-center p-6">
+                                            <div class="flex flex-column align-items-center gap-3">
+                                                <i class="pi pi-users text-4xl text-400"></i>
+                                                <span class="text-600 font-medium">Aucune personne de caution
+                                                    disponible</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </ng-template>
+                            </p-table>
+                        </p-card>
+                    </div>
+
+                    <!-- Composant Note Garantie -->
+                    <div class="col-12 mt-4">
+                        <app-note-garantie [noteGarantie]="state().noteGarantie"
+                            [referenceCredit]="state().instanceCreditInd?.referenceCredit" [userId]="userId!"
+                            [submitting]="state().submittingGarantie" (submitNote)="handleGarantieNote($event)">
+                        </app-note-garantie>
+                    </div>
+                </div>
+            </p-tabPanel>
+
+            <!-- TAB APPRÉCIATION -->
+            <p-tabPanel *ngIf="showAppreciationTab()">
+                <ng-template pTemplate="header">
+                    <i class="pi pi-star mr-2"></i>
+                    <span>Appréciation Finale</span>
+                    <p-chip icon="pi pi-check" styleClass="ml-2 bg-green-100 text-green-800 text-xs">
+                    </p-chip>
+                </ng-template>
+
+                <app-appreciation [referenceCredit]="state().instanceCreditInd?.referenceCredit" [userId]="userId!"
+                    [montantDemande]="state().instanceCreditInd?.capital">
+                </app-appreciation>
+            </p-tabPanel>
+        </p-tabView>
+    </div>
+</div>

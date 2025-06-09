@@ -97,7 +97,7 @@ export class CreditComponent {
                 error: (err) => {
                     this.state.update((state) => ({
                         ...state,
-                        error: 'Erreur de connexion. Veuillez réessayer plus tard.'
+                        error: 'Membre Non trouvé'
                     }));
                     console.error('Search error:', err);
                 }

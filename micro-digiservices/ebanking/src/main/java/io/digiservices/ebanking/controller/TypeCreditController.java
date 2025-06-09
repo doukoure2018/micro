@@ -33,7 +33,7 @@ public class TypeCreditController {
         return ok(getResponse(request, Map.of("typeCreditos",typeCreditService.getAllTypeCredito()), "Liste de Credit", OK));
     }
 
-    @GetMapping("/{COD_EMPRESA}/{TIP_CREDITO}/typeCredito")
+    @GetMapping("/typeCredito/{COD_EMPRESA}/{TIP_CREDITO}")
     public ResponseEntity<TypeCreditDto> getTypeCredito(
             @PathVariable(name = "COD_EMPRESA") String COD_EMPRESA,
             @PathVariable(name = "TIP_CREDITO") Long TIP_CREDITO

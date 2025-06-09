@@ -23,7 +23,7 @@ public class SousActiviteServiceImpl implements SousActiviteService {
 
     @Override
     public List<SousActiviteDto> getAllSousActivite() {
-        List<SousActivite> sousActivites=sousActiviteRepository.findAll();
+        List<SousActivite> sousActivites=sousActiviteRepository.findAllFromSubactEconomica();
 
         return sousActivites.stream().map((sousActivite)->modelMapper.map(sousActivite, SousActiviteDto.class))
                 .collect(Collectors.toList());

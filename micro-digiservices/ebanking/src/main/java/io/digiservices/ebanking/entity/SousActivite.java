@@ -1,9 +1,6 @@
 package io.digiservices.ebanking.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -14,13 +11,18 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "CL_SUBACT_ECONOMICA",schema = "CL")
+@Table(name = "CL_SUBACT_ECONOMICA", schema = "CL")
+@IdClass(SousActiviteId.class) // ✅ Ajoutez cette ligne !
 public class SousActivite {
 
-    @Id
+    @Id // ✅ Les deux champs deviennent @Id
+    @Column(name = "COD_ACTIVIDAD", nullable = false)
+    private String codActividad;
+
+    @Id // ✅ Les deux champs deviennent @Id
     @Column(name = "COD_SUBACTIV")
     private String id;
-    @Column(name = "COD_ACTIVIDAD",nullable = false)
-    private String codActividad;
-    private String DES_SUBACTIV;
+
+    @Column(name = "DES_SUBACTIV")
+    private String des_SUBACTIV;
 }

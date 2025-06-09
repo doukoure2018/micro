@@ -15,7 +15,7 @@ import java.io.Serializable;
 public class ReqCreditoPKId implements Serializable {
 
     @Column(name = "NUM_CREDITO")
-    private Long numCredito;
+    private Integer numCredito;
     private String COD_EMPRESA;
     @Column(name = "COD_AGENCIA")
     private String codAgencia;

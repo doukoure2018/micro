@@ -12,4 +12,6 @@ public interface SelectionService {
     List<Selection> getAllImages(Long demandeindividuel_id);
 
     void deleteDocument(Long selection_id);
+
+
 }

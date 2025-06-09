@@ -68,13 +68,59 @@ public class UserServiceImpl  implements UserService {
 
     }
 
+    // Original method for backward compatibility
     @Override
-    public void createAccount(String firstName, String lastName, String email, String username, String password,String roleName)
-    {
-        var token = userRepository.createAccount(firstName,lastName,email,username,encoder.encode(password),roleName);
-        System.out.println(token);
-        publisher.publishEvent(new Event(USER_CREATED, Map.of("token", token,"name",capitalizeFully(firstName),"email",email)));
+    public void createAccountUser(String firstName, String lastName, String email, String username, String password, String roleName) {
+        log.info("Service: Creating standard user account for role: {}", roleName);
 
+        var token = userRepository.createAccountUser(firstName, lastName, email, username,
+                encoder.encode(password), roleName);
+
+        System.out.println(token);
+        publisher.publishEvent(new Event(USER_CREATED, Map.of(
+                "token", token,
+                "name", capitalizeFully(firstName),
+                "email", email,
+                "roleName", roleName
+        )));
+    }
+
+    @Override
+    public void createAccountAgentCreditAndDa(String firstName, String lastName, String email, String username,
+                                              String password, String roleName, String phone, String bio,
+                                              Long delegationId, Long agenceId, Long pointventeId) {
+
+        log.info("Service: Creating location-based account for role: {}", roleName);
+
+        var token = userRepository.createAccountAgentCreditAndDa(
+                firstName, lastName, email, username,
+                encoder.encode(password), roleName, phone, bio,
+                delegationId, agenceId, pointventeId
+        );
+
+        System.out.println(token);
+        publisher.publishEvent(new Event(USER_CREATED, Map.of(
+                "token", token,
+                "name", capitalizeFully(firstName),
+                "email", email,
+                "roleName", roleName,
+                "delegationId", delegationId != null ? delegationId.toString() : "N/A",
+                "agenceId", agenceId != null ? agenceId.toString() : "N/A",
+                "pointventeId", pointventeId != null ? pointventeId.toString() : "N/A"
+        )));
+    }
+
+    // Validation helper method
+    private void validateLocationRequirements(String roleName, Long delegationId, Long agenceId, Long pointventeId) {
+        if ("AGENT_CREDIT".equalsIgnoreCase(roleName)) {
+            if (delegationId == null || agenceId == null || pointventeId == null) {
+                throw new IllegalArgumentException("AGENT_CREDIT role requires delegation, agence, and point vente selection");
+            }
+        } else if ("DA".equalsIgnoreCase(roleName)) {
+            if (delegationId == null || agenceId == null) {
+                throw new IllegalArgumentException("DA role requires delegation and agence selection");
+            }
+        }
     }
 
     @Override
@@ -213,6 +259,11 @@ public class UserServiceImpl  implements UserService {
     @Override
     public List<Device> getDevices(String userUuid) {
         return userRepository.getDevices(userUuid);
+    }
+
+    @Override
+    public User getUserId(Long userId) {
+        return userRepository.getUserById(userId);
     }
 
 

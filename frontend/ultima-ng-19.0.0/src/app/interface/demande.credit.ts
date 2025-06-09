@@ -1,12 +1,14 @@
 export interface DemandeCredit {
     demandeCreditId: number;
     entrepriseId: number;
-    dateDemande: string;
-    montantDemande: number;
-    dureeMois: number;
+    date_demande: string;
+    montant_demande: number;
+    duree_mois: number;
     tauxInteret: number;
-    objetFinancement: string;
+    objet_financement: string;
     statut: string;
     dateEnregistrement: string;
     dateModification: string;
+    mensualite_estimee?: number;
+    ratio_credit_ca?: number;
 }

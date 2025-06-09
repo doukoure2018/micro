@@ -1,6 +1,7 @@
 package io.digiservices.userservice.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.Getter;
@@ -26,4 +27,16 @@ public class UserAccount {
     private String phone;
     private String address;
     private String roleName;
+
+    private Long delegationId;
+    private Long agenceId;
+    private Long pointventeId;
+
+    // Handle both camelCase variations from frontend
+    @JsonProperty("pointVenteId")
+    public void setPointVenteId(Long pointVenteId) {
+        this.pointventeId = pointVenteId;
+    }
+
+
 }

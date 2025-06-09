@@ -34,7 +34,7 @@ export const TokenInterceptor: HttpInterceptorFn = (request: HttpRequest<unknown
 
 // Helper functions
 function shouldSkipAuthorization(request: HttpRequest<unknown>): boolean {
-    const skipUrls = ['verify', 'login', 'refresh', 'resetpassword', 'oauth2/token', 'search', 'typeCredit', 'allDelegation', 'agences', 'pointventes', 'addDemandeInd'];
+    const skipUrls = ['verify', 'login', 'refresh', 'resetpassword', 'oauth2/token', 'search', 'typeCredit', 'allDelegation', 'agences', 'pointventes', 'addDemandeInd', 'newDemandeInd'];
     return skipUrls.some((url) => request.url.includes(url));
 }
 

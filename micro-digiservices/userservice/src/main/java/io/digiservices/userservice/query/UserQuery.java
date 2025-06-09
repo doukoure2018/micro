@@ -50,7 +50,10 @@ public class UserQuery {
             u.user_uuid,
             u.bio,
             u.phone,
-            u.address
+            u.address,
+            u.pointvente_id,
+            u.agence_id,
+            u.delegation_id
             FROM users u JOIN user_roles ur ON ur.user_id = u.user_id JOIN roles r ON r.role_id = ur.role_id WHERE u.user_id =:userId;
             """;
     public static final String SELECT_USER_BY_EMAIL_QUERY=
@@ -89,6 +92,16 @@ public class UserQuery {
     public static final String CREATE_ACCOUNT_STORED_PROCEDURE=
             """
                CALL create_account(:userUuid, :firstName, :lastName, :email, :username, :password, :credentialUuid, :token, :memberId,:roleName)
+            """;
+
+    public static final String CREATE_ACCOUNT_AGENT_CREDIT_STORED_PROCEDURE =
+            """
+            CALL create_user_agent_credit(:userUuid, :firstName, :lastName, :email, :username, :password, :credentialUuid, :token, :memberId, :delegationId, :agenceId, :pointventeId, :phone, :bio)
+            """;
+
+    public static final String CREATE_ACCOUNT_DA_STORED_PROCEDURE =
+            """
+            CALL create_user_da(:userUuid, :firstName, :lastName, :email, :username, :password, :credentialUuid, :token, :memberId, :delegationId, :agenceId, :phone, :bio)
             """;
 
     public static final String SELECT_ACCOUNT_TOKEN_QUERY=

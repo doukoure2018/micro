@@ -17,8 +17,43 @@ export default [
         loadComponent: () => import('./admin/admin.component').then((c) => c.AdminComponent)
     },
     {
-        path: 'agent-credit/:pointventeId/:userId',
-        data: { breadcrumb: 'Liste des demandes de Credit Pour la selection ' },
+        path: 'agent-credit/:numeroMembre/:userId',
+        data: { breadcrumb: 'Verfication du Statut de Client' },
+        loadComponent: () => import('./agent-credit/mise-en-place-credit/mise-en-place-credit.component').then((c) => c.MiseEnPlaceCreditComponent)
+    },
+    {
+        path: 'agent-credit/detail-credit-ind/:referenceCredit/:numeroMembre/:userId',
+        data: { breadcrumb: 'Information detaillée du credit' },
+        loadComponent: () => import('./agent-credit/view-detail-credit/view-detail-credit.component').then((c) => c.ViewDetailCreditComponent)
+    },
+    {
+        path: 'agent-credit/detail-credit-ind/form-credit/:referenceCredit/:numeroMembre/:userId',
+        data: { breadcrumb: 'Mise en place de credit dans saf2000' },
+        loadComponent: () => import('./agent-credit/view-detail-credit/form-place-credit/form-credit.component').then((c) => c.FormCreditComponent)
+    },
+    {
+        path: 'fiche-signaletique/:numeroMembre',
+        data: { breadcrumb: 'Fiche Signaletique Client' },
+        loadComponent: () => import('./agent-credit/fiche-signaletique/fiche-signaletique.component').then((c) => c.FicheSignaletiqueComponent)
+    },
+    {
+        path: 'start-credit/:numeroMembre/:userId',
+        data: { breadcrumb: 'Mise en Place de Credit' },
+        loadComponent: () => import('./agent-credit/start-credit/start-credit.component').then((c) => c.StartCreditComponent)
+    },
+    {
+        path: 'process-credit/:numeroMembre/:userId',
+        data: { breadcrumb: 'Nouvelle Mise en place de petit Credit' },
+        loadComponent: () => import('./agent-credit/process-credit/process-credit.component').then((c) => c.ProcessCreditComponent)
+    },
+    {
+        path: 'process-big-credit/:numeroMembre/:userId',
+        data: { breadcrumb: 'Nouvelle Mise en place de Gros Credit' },
+        loadComponent: () => import('./agent-credit/process-big-credit/process-big-credit.component').then((c) => c.ProcessBigCreditComponent)
+    },
+    {
+        path: 'agent-credit/list-selection-ind/:pointventeId/:userId',
+        data: { breadcrumb: 'Liste des demandes de Credit Pour la selection' },
         loadComponent: () => import('./agent-credit/credit-selection/credit-selection.component').then((c) => c.CreditSelectionComponent)
     },
     {
@@ -27,14 +62,30 @@ export default [
         loadComponent: () => import('./agent-credit/credit-selection/import-selection/import-selection.component').then((c) => c.ImportSelectionComponent)
     },
     {
+        path: 'resp-agent/:referenceCredit/:numeroMembre/:userId',
+        data: { breadcrumb: 'Mise en Place de Credit' },
+        loadComponent: () => import('./resp-agent/view-instance-credit-ind/view-instance-credit-ind.component').then((c) => c.ViewInstanceCreditIndComponent)
+    },
+
+    {
         path: 'createUser',
         data: { breadcrumb: 'Creation de Compte ' },
         loadComponent: () => import('./admin/create-user/create-user.component').then((c) => c.CreateUserComponent)
     },
     {
-        path: 'credit',
+        path: 'credit/:userId',
         data: { breadcrumb: 'Analyse Credit' },
         loadComponent: () => import('./analyse-credit/analyse-credit.component').then((c) => c.AnalyseCreditComponent)
+    },
+    {
+        path: 'credit/:userId/new-step',
+        data: { breadcrumb: 'Nouvelle analyse de Credit' },
+        loadComponent: () => import('./analyse-credit/step-credit/step-credit.component').then((c) => c.StepCreditComponent)
+    },
+    {
+        path: 'credit/:userId/resume-credit/:demandeId',
+        data: { breadcrumb: 'Nouvelle analyse de Credit' },
+        loadComponent: () => import('./analyse-credit/resume-credit/resume-credit.component').then((c) => c.ResumeCreditComponent)
     },
 
     {
@@ -52,10 +103,11 @@ export default [
         data: { breadcrumb: 'Detail Credit Individuel' },
         loadComponent: () => import('./credit/individuel/attente/detail/detail.component').then((c) => c.DetailComponent)
     },
+
     {
-        path: 'credit/new',
-        data: { breadcrumb: 'Nouvelle de Credit' },
-        loadComponent: () => import('./analyse-credit/step-credit/step-credit.component').then((c) => c.StepCreditComponent)
+        path: 'config',
+        data: { breadcrumb: 'Configuration des Points de vente' },
+        loadComponent: () => import('./admin/config-reseau/config-reseau.component').then((c) => c.ConfigReseauComponent)
     },
     {
         path: 'analytics',

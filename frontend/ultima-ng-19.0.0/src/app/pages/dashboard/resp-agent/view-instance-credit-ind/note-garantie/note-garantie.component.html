@@ -1,0 +1,40 @@
+<div class="col-12 mt-4">
+    <p-card header="Notation de la Garantie">
+        <form *ngIf="!noteGarantie?.noteGarantieId" [formGroup]="noteForm" (ngSubmit)="submit()">
+            <div class="grid">
+                <div class="col-12 md:col-6">
+                    <div class="field">
+                        <label class="font-bold">Note (0-5)</label>
+                        <p-rating formControlName="note" [stars]="5"></p-rating>
+                        <small class="p-error" *ngIf="noteForm.get('note')?.invalid && noteForm.get('note')?.touched">
+                            Note requise entre 0 et 5
+                        </small>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="field">
+                        <label class="font-bold">Motif</label>
+                        <textarea pTextarea formControlName="motif" rows="3" class="w-full"></textarea>
+                        <small class="p-error" *ngIf="noteForm.get('motif')?.invalid && noteForm.get('motif')?.touched">
+                            Motif requis
+                        </small>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <button pButton type="submit" label="Soumettre la notation" icon="pi pi-check"
+                        [loading]="submitting" [disabled]="noteForm.invalid"></button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Display existing note if available -->
+        <div *ngIf="noteGarantie?.noteGarantieId" class="p-3 border-round bg-green-50">
+            <div class="flex justify-content-between">
+                <h3>Note actuelle: {{ noteGarantie?.note }}/5</h3>
+                <button pButton icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="editNote()"></button>
+            </div>
+            <p><strong>Motif:</strong> {{ noteGarantie?.motif }}</p>
+            <p><small>Date: {{ noteGarantie?.createdAt | date:'dd/MM/yyyy HH:mm' }}</small></p>
+        </div>
+    </p-card>
+</div>

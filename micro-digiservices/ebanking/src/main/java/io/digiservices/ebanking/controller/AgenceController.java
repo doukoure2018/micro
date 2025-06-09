@@ -4,6 +4,7 @@ package io.digiservices.ebanking.controller;
 import io.digiservices.ebanking.domain.Response;
 import io.digiservices.ebanking.dto.HttpResponse;
 import io.digiservices.ebanking.paylaod.AgenceDto;
+import io.digiservices.ebanking.paylaod.PointVenteDto;
 import io.digiservices.ebanking.service.AgenceService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -48,8 +49,9 @@ public class AgenceController {
     }
 
     @GetMapping("/agence/{agence_id}")
-    public ResponseEntity<Response> agence(@PathVariable(name = "agence_id") Long agence_id, HttpServletRequest request)
+    public ResponseEntity<AgenceDto> agence(@PathVariable(name = "agence_id") Long agence_id)
     {
-        return ok(getResponse(request, Map.of("agence",agenceService.getAgenceById(agence_id)), "Liste des Agences", OK));
+        return ResponseEntity.ok(agenceService.getAgenceById(agence_id));
     }
+
 }

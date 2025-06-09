@@ -31,10 +31,10 @@ public class PlanPagosController {
         this.planPagosService = planPagosService;
     }
 
-    @GetMapping("/{numCredito}/planPagos")
-    public ResponseEntity<Response> getAllPlanPagosByCreditos(@PathVariable(name = "numCredito") Long numCredito, HttpServletRequest request)
+    @GetMapping("/planPagos/{numCredito}")
+    public ResponseEntity<List<PlanPagosDto>> getAllPlanPagosByCreditos(@PathVariable(name = "numCredito") Long numCredito)
     {
-        return ok(getResponse(request, Map.of("planpagos",planPagosService.getAllPlanPagosByCreditos(numCredito)), "All Plans pagos for  Credit "+numCredito, OK));
+        return ResponseEntity.ok(planPagosService.getAllPlanPagosByCreditos(numCredito));
     }
 
     @GetMapping("/{codAgencia}/{start}/{end}/TT1")

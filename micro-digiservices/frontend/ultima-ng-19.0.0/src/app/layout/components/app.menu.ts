@@ -37,8 +37,9 @@ export class AppMenu {
                     {
                         label: 'Tableau de Bord',
                         icon: 'pi pi-fw pi-chart-pie',
-                        routerLink: ['/dashboards/']
+                        routerLink: ['/dashboards']
                     },
+
                     ...(this.user?.role === 'AGENT_CREDIT'
                         ? [
                               {
@@ -55,21 +56,16 @@ export class AppMenu {
                                     routerLink: ['/dashboards/manager']
                                 }
                             ]
-                          : this.user?.role === 'ADMIN'
+                          : this.user?.role === 'SUPER_ADMIN'
                             ? [
                                   {
-                                      label: 'Administration',
+                                      label: 'Configuration Reseau',
                                       icon: 'pi pi-fw pi-cog',
                                       routerLink: ['/dashboards/admin']
                                   }
                               ]
                             : [])
 
-                    // {
-                    //     label: 'Sales Dashboard',
-                    //     icon: 'pi pi-fw pi-home',
-                    //     routerLink: ['/dashboards/sales']
-                    // },
                     // {
                     //     label: 'SaaS Dashboard',
                     //     icon: 'pi pi-fw pi-bolt',

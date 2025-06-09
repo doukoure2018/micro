@@ -33,9 +33,12 @@ export class DemandeIndComponent {
     state = signal<{
         typeCreditos?: TypeCreditDto[];
         clientData?: any;
-        delegations?: Delegation[];
-        agences?: Agence[];
-        pointsVente?: PointVente[];
+        allDelegations?: Delegation[];
+        allAgences?: Agence[];
+        allPointsVente?: PointVente[];
+        // Filtered data based on selections
+        filteredAgences?: Agence[];
+        filteredPointsVente?: PointVente[];
         loading: boolean;
         submitting: boolean;
         message: string | undefined;
@@ -45,9 +48,11 @@ export class DemandeIndComponent {
         submitting: false,
         message: undefined,
         error: undefined,
-        delegations: [],
-        agences: [],
-        pointsVente: []
+        allDelegations: [],
+        allAgences: [],
+        allPointsVente: [],
+        filteredAgences: [],
+        filteredPointsVente: []
     });
 
     private router = inject(Router);
@@ -59,8 +64,7 @@ export class DemandeIndComponent {
     ngOnInit(): void {
         console.log('this demande credit');
 
-        this.loadTypeCreditos();
-        this.loadDelegations();
+        this.loadInitialData();
         this.activatedRoute.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
             const codeClient = params['codeClient'];
             if (codeClient) {
@@ -71,14 +75,12 @@ export class DemandeIndComponent {
     }
 
     private loadClientData(codeClient: string): void {
-        // Call your service to get client data if needed
         this.creditService
             .searchClientes$(codeClient)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (response) => {
                     if (response.data && response.data.clientes) {
-                        // Update form with client data
                         this.state.update((state) => ({
                             ...state,
                             clientData: response.data.clientes
@@ -97,201 +99,149 @@ export class DemandeIndComponent {
             });
     }
 
-    private loadTypeCreditos(): void {
-        this.state.update((state) => ({ ...state, loading: true, message: undefined, error: undefined }));
+    private loadInitialData(): void {
+        this.state.update((state) => ({ ...state, loading: true }));
+
         this.creditService
-            .getTypeCreditos$()
+            .startNewDemandeInd$()
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (response) => {
-                    this.state.update((state) => ({
-                        ...state,
-                        loading: false,
-                        typeCreditos: response.data.typeCreditos,
-                        message: undefined,
-                        error: undefined
-                    }));
+                    console.log('Initial data loaded:', response);
+                    if (response.data) {
+                        this.state.update((state) => ({
+                            ...state,
+                            loading: false,
+                            allDelegations: response.data.delegations || [],
+                            allAgences: response.data.agences || [],
+                            allPointsVente: response.data.pointVentes || [],
+                            typeCreditos: response.data.typeCreditos || this.getDefaultCreditTypes()
+                        }));
+                    }
                 },
                 error: (error) => {
-                    console.error('Error loading type creditos:', error);
-                    this.state.update((state) => ({
-                        ...state,
-                        loading: false,
-                        typeCreditos: undefined,
-                        message: undefined,
-                        error
-                    }));
+                    console.error('Error loading initial data:', error);
                     this.messageService.add({
                         severity: 'error',
                         summary: 'Erreur',
-                        detail: 'Échec du chargement des types de crédit',
+                        detail: 'Impossible de charger les données initiales',
                         life: 3000
                     });
+                    this.state.update((state) => ({
+                        ...state,
+                        loading: false,
+                        typeCreditos: this.getDefaultCreditTypes()
+                    }));
                 }
             });
     }
 
-    private loadDelegations(): void {
-        this.state.update((state) => ({ ...state, loading: true }));
-        this.creditService
-            .getAllDelegation$()
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: (response) => {
-                    console.log('Delegations loaded:', response);
-                    if (response.data && response.data.delegations) {
-                        this.state.update((state) => ({
-                            ...state,
-                            loading: false,
-                            delegations: response.data.delegations
-                        }));
-                    } else if (response.data) {
-                        // Handle case where the data structure might be different
-                        // Check if delegations might be directly in data or in a different property
-                        const possibleDelegations = Object.values(response.data).find((item) => Array.isArray(item) && item.length > 0 && item[0].hasOwnProperty('libele'));
+    private getDefaultCreditTypes(): TypeCreditDto[] {
+        // Fallback credit types in case the API doesn't return them
+        const creditTypes = [
+            { tip_CREDITO: 1, des_TIP_CREDITO: 'CREDIT RURAL SOLIDAIRE' },
+            { tip_CREDITO: 2, des_TIP_CREDITO: 'CREDIT AGRICOLE SOLIDAIRE ORDINAIRE' },
+            { tip_CREDITO: 3, des_TIP_CREDITO: 'CREDIT COMMERCIALE SOLIDAIRE' },
+            { tip_CREDITO: 4, des_TIP_CREDITO: 'ASSOCIATION DE CAUTION MUTUELLE' },
+            { tip_CREDITO: 5, des_TIP_CREDITO: 'CREDIT STOCKAGE ET EMBOUCHE' },
+            { tip_CREDITO: 6, des_TIP_CREDITO: 'CREDIT MOYEN TERME' },
+            { tip_CREDITO: 7, des_TIP_CREDITO: 'CREDIT FONCTIONNAIRES EPARGNANTS' },
+            { tip_CREDITO: 8, des_TIP_CREDITO: 'CREDIT DEPANNAGE FONCTIONNAIRES ET RETRAITES' },
+            { tip_CREDITO: 9, des_TIP_CREDITO: 'CREDIT MOURABAHA' },
+            { tip_CREDITO: 10, des_TIP_CREDITO: 'CREDIT AGRICOLE SOLIDAIRE RENTE' },
+            { tip_CREDITO: 11, des_TIP_CREDITO: 'CREDIT COMMERCIAL PECHE' },
+            { tip_CREDITO: 12, des_TIP_CREDITO: 'CREDIT OIM' },
+            { tip_CREDITO: 13, des_TIP_CREDITO: 'CREDIT ELUS' },
+            { tip_CREDITO: 14, des_TIP_CREDITO: 'CREDIT ANAMIF' },
+            { tip_CREDITO: 15, des_TIP_CREDITO: 'CREDITS CT PERSONNEL CDS' },
+            { tip_CREDITO: 16, des_TIP_CREDITO: 'CREDITS CT PERSONNEL PRETS SOCIAUX' },
+            { tip_CREDITO: 17, des_TIP_CREDITO: 'CREDITS CT PERSONNEL PRETS VEHICULE' },
+            { tip_CREDITO: 18, des_TIP_CREDITO: 'CREDITS MT PERSONNEL CDS' },
+            { tip_CREDITO: 19, des_TIP_CREDITO: 'CREDITS MT PERSONNEL PRETS SOCIAUX' },
+            { tip_CREDITO: 20, des_TIP_CREDITO: 'CREDITS MT PERSONNEL PRETS VEHICULE' },
+            { tip_CREDITO: 21, des_TIP_CREDITO: 'CREDITS LT PERSONNE CDS' },
+            { tip_CREDITO: 22, des_TIP_CREDITO: 'CREDITS LT PERSONNEL PRETS SOCIAUX' },
+            { tip_CREDITO: 23, des_TIP_CREDITO: 'CREDITS LT PERSONNEL PRETS VEHICULE' },
+            { tip_CREDITO: 24, des_TIP_CREDITO: 'CREDIT WARRANTAGE' },
+            { tip_CREDITO: 25, des_TIP_CREDITO: 'CREDIT TONTINE' },
+            { tip_CREDITO: 26, des_TIP_CREDITO: 'CREDIT MOTEUR HORS BORD' },
+            { tip_CREDITO: 27, des_TIP_CREDITO: 'CREDIT PROJET VILLAGE DURABLE GUINEE' },
+            { tip_CREDITO: 28, des_TIP_CREDITO: 'CREDIT AVANCE SALAIRE FONCTIONAIRES VIRES' },
+            { tip_CREDITO: 29, des_TIP_CREDITO: 'CREDIT PRÊTS SCOLAIRES' },
+            { tip_CREDITO: 30, des_TIP_CREDITO: 'CREDIT PRETS EQUIPEMENTS' },
+            { tip_CREDITO: 31, des_TIP_CREDITO: 'CREDIT PRÊTS INVESTISSEMENTS FONCTIONNAIRE' },
+            { tip_CREDITO: 32, des_TIP_CREDITO: 'CREDIT BOEUF PDABAD' },
+            { tip_CREDITO: 33, des_TIP_CREDITO: 'MICROCREDIT KIOSQUE' },
+            { tip_CREDITO: 34, des_TIP_CREDITO: 'CREDIT EXPLOITATION AGRICOLE' },
+            { tip_CREDITO: 35, des_TIP_CREDITO: 'CREDIT INTRANTS ET TRANSFORMATION PRODUITS AGRICOLES' },
+            { tip_CREDITO: 36, des_TIP_CREDITO: 'CREDIT EQUIPEMENT AGRICOLE' },
+            { tip_CREDITO: 37, des_TIP_CREDITO: 'CREDIT AGRICOLE PRODUCTION ANANAS' },
+            { tip_CREDITO: 38, des_TIP_CREDITO: 'CREDIT EXTENSION AGRICOLE' },
+            { tip_CREDITO: 39, des_TIP_CREDITO: 'CREDIT MOTO BAJAJ' },
+            { tip_CREDITO: 40, des_TIP_CREDITO: 'CREDIT PERFORM WORLD' },
+            { tip_CREDITO: 41, des_TIP_CREDITO: 'CREDIT EQUIPEMENT PERFORM WORLD' },
+            { tip_CREDITO: 42, des_TIP_CREDITO: 'CREDIT PRODUCTION AGRICOLE' },
+            { tip_CREDITO: 43, des_TIP_CREDITO: 'CREDIT TRANSFORMATION COMMERCIALISATION PRODUITS' },
+            { tip_CREDITO: 44, des_TIP_CREDITO: 'CREDIT EQUIPEMENT AGRICOLE ET DE TRANSFORMATION PRODUITS' },
+            { tip_CREDITO: 45, des_TIP_CREDITO: 'PASSEPORT BRIQUETERIE' },
+            { tip_CREDITO: 46, des_TIP_CREDITO: 'PASSEPORT PDV CIMENT' },
+            { tip_CREDITO: 47, des_TIP_CREDITO: 'PASSEPORT SALARIE' },
+            { tip_CREDITO: 100, des_TIP_CREDITO: 'CREDITS REGULARISE OPS' }
+        ];
 
-                        if (possibleDelegations) {
-                            this.state.update((state) => ({
-                                ...state,
-                                loading: false,
-                                delegations: possibleDelegations as Delegation[]
-                            }));
-                        } else {
-                            console.error('Delegations data structure is unexpected:', response.data);
-                            this.state.update((state) => ({ ...state, loading: false }));
-                        }
-                    }
-                },
-                error: (error) => {
-                    console.error('Error loading delegations:', error);
-                    this.messageService.add({
-                        severity: 'error',
-                        summary: 'Erreur',
-                        detail: 'Impossible de charger les délégations',
-                        life: 3000
-                    });
-                    this.state.update((state) => ({ ...state, loading: false }));
-                }
-            });
+        return creditTypes as unknown as TypeCreditDto[];
     }
 
     onDelegationChange(event: any): void {
         console.log('Delegation changed:', event);
-        // Reset agence and point de vente when delegation changes
-        this.state.update((state) => ({
-            ...state,
-            agences: [],
-            pointsVente: []
-        }));
 
         const delegation = event.value;
         if (!delegation || !delegation.id) {
-            console.warn('No valid delegation selected');
+            // Reset when no delegation is selected
+            this.state.update((state) => ({
+                ...state,
+                filteredAgences: [],
+                filteredPointsVente: []
+            }));
             return;
         }
 
         const delegationId = delegation.id;
-        console.log('Loading agences for delegation ID:', delegationId);
+        console.log('Filtering agences for delegation ID:', delegationId);
 
-        this.state.update((state) => ({ ...state, loading: true }));
-        this.creditService
-            .getAllAgencesByDelegationId$(delegationId)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: (response) => {
-                    console.log('Agences loaded:', response);
-                    if (response.data && response.data.agences) {
-                        this.state.update((state) => ({
-                            ...state,
-                            loading: false,
-                            agences: response.data.agences
-                        }));
-                    } else if (response.data) {
-                        // Handle case where the data structure might be different
-                        const possibleAgences = Object.values(response.data).find((item) => Array.isArray(item) && item.length > 0 && item[0].hasOwnProperty('libele'));
+        // Filter agences based on selected delegation
+        const filteredAgences = this.state().allAgences?.filter((agence) => agence.delegation_id === delegationId) || [];
 
-                        if (possibleAgences) {
-                            this.state.update((state) => ({
-                                ...state,
-                                loading: false,
-                                agences: possibleAgences as Agence[]
-                            }));
-                        } else {
-                            console.error('Agences data structure is unexpected:', response.data);
-                            this.state.update((state) => ({ ...state, loading: false }));
-                        }
-                    }
-                },
-                error: (error) => {
-                    console.error('Error loading agences:', error);
-                    this.messageService.add({
-                        severity: 'error',
-                        summary: 'Erreur',
-                        detail: 'Impossible de charger les agences',
-                        life: 3000
-                    });
-                    this.state.update((state) => ({ ...state, loading: false }));
-                }
-            });
+        this.state.update((state) => ({
+            ...state,
+            filteredAgences,
+            filteredPointsVente: [] // Reset points de vente when delegation changes
+        }));
     }
 
     onAgenceChange(event: any): void {
         console.log('Agence changed:', event);
-        // Reset point de vente when agence changes
-        this.state.update((state) => ({
-            ...state,
-            pointsVente: []
-        }));
 
         const agence = event.value;
         if (!agence || !agence.id) {
-            console.warn('No valid agence selected');
+            // Reset when no agence is selected
+            this.state.update((state) => ({
+                ...state,
+                filteredPointsVente: []
+            }));
             return;
         }
 
         const agenceId = agence.id;
-        console.log('Loading points de vente for agence ID:', agenceId);
+        console.log('Filtering points de vente for agence ID:', agenceId);
 
-        this.state.update((state) => ({ ...state, loading: true }));
-        this.creditService
-            .getAllPointVenteByAgenceId$(agenceId)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: (response) => {
-                    console.log('Points de vente loaded:', response);
-                    if (response.data && response.data.pointVentes) {
-                        this.state.update((state) => ({
-                            ...state,
-                            loading: false,
-                            pointsVente: response.data.pointVentes
-                        }));
-                    } else if (response.data) {
-                        // Handle case where the data structure might be different
-                        const possiblePointsVente = Object.values(response.data).find((item) => Array.isArray(item) && item.length > 0 && item[0].hasOwnProperty('libele'));
+        // Filter points de vente based on selected agence
+        const filteredPointsVente = this.state().allPointsVente?.filter((pointVente) => pointVente.agence_id === agenceId) || [];
 
-                        if (possiblePointsVente) {
-                            this.state.update((state) => ({
-                                ...state,
-                                loading: false,
-                                pointsVente: possiblePointsVente as PointVente[]
-                            }));
-                        } else {
-                            console.error('Points de vente data structure is unexpected:', response.data);
-                            this.state.update((state) => ({ ...state, loading: false }));
-                        }
-                    }
-                },
-                error: (error) => {
-                    console.error('Error loading points de vente:', error);
-                    this.messageService.add({
-                        severity: 'error',
-                        summary: 'Erreur',
-                        detail: 'Impossible de charger les points de vente',
-                        life: 3000
-                    });
-                    this.state.update((state) => ({ ...state, loading: false }));
-                }
-            });
+        this.state.update((state) => ({
+            ...state,
+            filteredPointsVente
+        }));
     }
 
     createDemande(form: NgForm): void {
@@ -353,8 +303,12 @@ export class DemandeIndComponent {
                     });
                     this.state.update((state) => ({ ...state, submitting: false }));
                     form.resetForm();
-                    // Navigate to dashboard or stay on the page based on your requirement
-                    //this.router.navigate(['/auth/credit']);
+                    // Reset filtered data
+                    this.state.update((state) => ({
+                        ...state,
+                        filteredAgences: [],
+                        filteredPointsVente: []
+                    }));
                 },
                 error: (error) => {
                     console.error('Error creating demande:', error);

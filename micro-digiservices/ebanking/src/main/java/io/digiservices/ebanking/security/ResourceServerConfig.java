@@ -35,7 +35,8 @@ public class ResourceServerConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests( authorize -> authorize
-                        .requestMatchers("/user/register/**", "/user/verify/account/**", "/user/resetpassword/**", "/user/image/**", "/authorization/**","/ebanking/search/**","/ebanking/typeCredit/**","/ebanking/allDelegation/**","/ebanking/agences/**","/ebanking/pointventes/**").permitAll()
+                        .requestMatchers("/user/register/**", "/user/verify/account/**", "/user/resetpassword/**", "/user/image/**", "/authorization/**","/ebanking/search/**","/ebanking/typeCredit/**","/ebanking/agences/**","/ebanking/pointventes/**","/ebanking/pointvente/**","/ebanking/agence/**","/ebanking/clientes/**","/ebanking/typePlazo/**","/ebanking/nombreCreditos/**","/ebanking/cumulCredito/**","ebanking/inversion/**","/ebanking/activida/**","/ebanking/getInfoActivida/**","/ebanking/sousActivite/**",
+                                "/ebanking/sousSousActivite/**","/ebanking/requisitos/**","/ebanking/origineFond/**","/ebanking/typeCredito/**","/ebanking/create/**","/ebanking/getUsuarios/**","/ebanking/creditos/**","/ebanking/planPagos/**","/ebanking/search/**","/ebanking/offLine/**").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .accessDeniedHandler(new GatewayAccessDeniedHandler())

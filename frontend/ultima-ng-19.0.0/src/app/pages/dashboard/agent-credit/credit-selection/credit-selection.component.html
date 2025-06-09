@@ -1,7 +1,8 @@
 <div class="card">
     <div class="flex flex-col text-center md:text-left">
         <span class="text-surface-900 dark:text-surface-0 text-2xl mb-2">Liste des demandes de credits pour la
-            selection</span>
+            selection
+        </span>
         <span class="text-surface-600 dark:text-surface-200 text-lg">
             <p-message>Vous pouvez maintenant cliquer sur le bouton
                 TELEVERSERVER LA FICHE DE SELECTION pour remonter le document</p-message>
@@ -18,8 +19,6 @@
     @if (state().error) {
     <p-message severity="error" [text]="state().error" styleClass="w-full mb-4"></p-message>
     }
-
-    <!-- Global Search -->
 
 
     <!-- Grouped Data by Date -->
@@ -51,7 +50,7 @@
                         </th>
                         <th pSortableColumn="createdAt" class="white-space-nowrap" style="width:10%">Heure <p-sortIcon
                                 field="createdAt"></p-sortIcon></th>
-                        <th style="width:5%">Actions</th>
+
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-demande>

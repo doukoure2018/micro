@@ -1,15 +1,17 @@
 export interface BilanEntreprise {
     bilanEntrepriseId?: number;
     entrepriseId: number;
-    dateBilan: Date;
+    date_bilan: Date;
     liquidites: number;
-    creancesClients: number;
-    valeurStocks: number;
-    valeurEquipements: number;
-    dettesFournisseurs: number;
+    creances_clients: number;
+    valeur_stocks: number;
+    valeur_equipements: number;
+    dettes_fournisseurs: number;
     emprunts: number;
-    capitalPropre: number;
+    capital_propre: number;
     estPrevisionnel: boolean;
     dateEnregistrement?: Date;
     dateModification?: Date;
+    total_actif?: number;
+    total_passif?: number;
 }

@@ -13,19 +13,146 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
-                    @if(user?.role ==='AGENT_CREDIT'){
+                    @if(user?.role ==='AGENT_CREDIT' && state().nombreDemandeInd! > 0){
                     <p-message severity="info">
                         Nouvelle demande Pour la Selection, Vour pour plus de details.
-                        <a [routerLink]="['/dashboards/agent-credit/', user?.agenceId,user?.userId]"
+                        <a [routerLink]="['/dashboards/agent-credit/list-selection-ind/', user?.agenceId,user?.userId]"
                             class="px-2 py-1 ml-2 font-bold bg-blue-100 text-blue-700 rounded-md border border-blue-300 hover:bg-blue-200">
                             Voir la liste →
                         </a>
                     </p-message>
                     }@else {
                     }
-
                 </div>
             </div>
         </div>
     </div>
+    @if(state().demandeAttentes?.length! > 0){
+    <div class="card">
+        <p-table #dt [value]="state().filteredDemandeAttentes!" [paginator]="true" paginatorDropdownAppendTo="body"
+            [rows]="10" [showCurrentPageReport]="true" responsiveLayout="scroll"
+            currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
+            [rowsPerPageOptions]="[10, 25, 50]"
+            [globalFilterFields]="['nom', 'prenom', 'numeroMembre', 'activite', 'telephone']">
+            <ng-template pTemplate="caption">
+                <div class="flex flex-wrap gap-2 items-center justify-between">
+                    <p-icon-field class="w-full sm:w-80 order-1 sm:order-none">
+                        <p-inputicon class="pi pi-search" />
+                        <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Global Search"
+                            class="w-full" />
+                    </p-icon-field>
+                </div>
+            </ng-template>
+            <ng-template pTemplate="header">
+                <tr>
+                    <th pSortableColumn="createdAt" class="white-space-nowrap" style="width:10%">Date
+                        <p-sortIcon field="createdAt"></p-sortIcon>
+                    </th>
+                    <th pSortableColumn="nom" class="white-space-nowrap" style="width:15%">Nom
+                        <p-sortIcon field="nom"></p-sortIcon>
+                    </th>
+
+                    <th pSortableColumn="numeroMembre" class="white-space-nowrap" style="width:15%">N°
+                        Membre <p-sortIcon field="numeroMembre"></p-sortIcon></th>
+                    <th pSortableColumn="montant" class="white-space-nowrap" style="width:10%">Montant
+                        <p-sortIcon field="montant"></p-sortIcon>
+                    </th>
+                    <th pSortableColumn="activite" class="white-space-nowrap" style="width:15%">Activité
+                        <p-sortIcon field="activite"></p-sortIcon>
+                    </th>
+
+                    <th pSortableColumn="statutDemande" class="white-space-nowrap" style="width:15%">
+                        Statut Validation
+                        <p-sortIcon field="statutDemande"></p-sortIcon>
+                    </th>
+
+                    <th class="white-space-nowrap" style="width:10%">Action </th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-demande>
+                <tr>
+                    <td>{{ demande.createdAt | date: 'dd/MM/yyyy' }}</td>
+                    <td>{{ demande.prenom }} {{ demande.nom }}</td>
+                    <td>{{ demande.numeroMembre }}</td>
+                    <td>{{ demande.montant | currency:'GNF ' }}</td>
+                    <td>{{ demande.activite }}</td>
+                    <td>
+                        <p-tag [value]="getStateValidation(demande.statutDemande, demande.validationState)"
+                            severity="secondary">
+                        </p-tag>
+                    </td>
+                    <td>
+                        <button pButton pRipple label="Mise en Place"
+                            (click)="miseEnPlaceCredit(demande.numeroMembre,user?.userId!)" class="ml-auto" text>
+                        </button>
+                    </td>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+                <tr>
+                    <td colspan="8" class="text-center p-4">Aucune demande avec statut de validation 'VALIDATION'
+                        trouvée.</td>
+                </tr>
+            </ng-template>
+        </p-table>
+    </div>
+    }
+
+    @if(state().creditDtos?.length! > 0){
+    <div class="card mt-5">
+        <h3 class="text-xl font-medium mb-3">Liste des Crédits Notés par le Directeur D'agence</h3>
+        <p-table #dtCredits [value]="state().creditDtos!" [paginator]="true" paginatorDropdownAppendTo="body"
+            [rows]="10" [showCurrentPageReport]="true" responsiveLayout="scroll"
+            currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
+            [rowsPerPageOptions]="[10, 25, 50]">
+            <ng-template pTemplate="caption">
+                <div class="flex flex-wrap gap-2 items-center justify-between">
+                    <p-icon-field class="w-full sm:w-80 order-1 sm:order-none">
+                        <p-inputicon class="pi pi-search" />
+                        <input pInputText type="text" (input)="onGlobalFilter(dtCredits, $event)"
+                            placeholder="Recherche globale" class="w-full" />
+                    </p-icon-field>
+                </div>
+            </ng-template>
+            <ng-template pTemplate="header">
+                <tr>
+                    <th pSortableColumn="dateCreation" class="white-space-nowrap" style="width:15%">Date
+                        <p-sortIcon field="dateCreation"></p-sortIcon>
+                    </th>
+                    <th pSortableColumn="codeMembre" class="white-space-nowrap" style="width:15%">N° Membre
+                        <p-sortIcon field="codeMembre">
+
+                        </p-sortIcon>
+
+                    <th pSortableColumn="status" class="white-space-nowrap" style="width:15%">Statut Crédit
+                        <p-sortIcon field="status"></p-sortIcon>
+                    </th>
+                    <th class="white-space-nowrap" style="width:15%">Action</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-credit>
+                <tr>
+                    <td>{{ credit.createAt | date: 'dd/MM/yyyy' }}</td>
+                    <td>{{ credit.codeMembre }}</td>
+
+                    <td>
+                        <p-tag [value]="credit.status" [severity]="getStatusSeverity(credit.status, '')">
+                        </p-tag>
+                    </td>
+                    <td>
+                        <button pButton pRipple label="Détails"
+                            (click)="viewCreditDetails(credit.referenceCredit,credit.codeMembre,credit.userId)"
+                            class="ml-auto" text>
+                        </button>
+                    </td>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+                <tr>
+                    <td colspan="6" class="text-center p-4">Aucun crédit trouvé.</td>
+                </tr>
+            </ng-template>
+        </p-table>
+    </div>
+    }
 </div>

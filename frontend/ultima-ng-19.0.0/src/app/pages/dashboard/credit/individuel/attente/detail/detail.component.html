@@ -1,110 +1,506 @@
-<div class="mt-4">
+<div class="min-h-screen bg-surface-50 dark:bg-surface-950">
     <p-toast></p-toast>
-    @if(state().loading) {
-    <p-progressSpinner></p-progressSpinner>
-    }
 
-    @if(state().error) {
-    <p-message severity="error" [text]="state().error"></p-message>
-    }
+    <!-- Loading Spinner -->
+    <div *ngIf="state().loading" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-surface-900 p-8 rounded-xl shadow-lg">
+            <p-progressSpinner></p-progressSpinner>
+            <p class="text-center mt-4 text-surface-700 dark:text-surface-300">Chargement en cours...</p>
+        </div>
+    </div>
 
-    @if(state().message) {
-    <p-message severity="success" [text]="state().message"></p-message>
-    }
-
-    @if(state().demandeIndividuel) {
-    <h6>Information Credit Individuel</h6>
-    <div class="bg-surface-0 dark:bg-surface-900 grid grid-cols-12 gap-4 grid-nogutter rounded shadow mb-12">
-        <div class="col-span-12 flex p-2 bg-surface-100 dark:bg-surface-700 rounded-t">
-            <div class="p-2 flex-auto text-center md:text-left">
-                <span class="text-surface-700 dark:text-surface-100 block"><strong>Numero Membre:</strong></span>
-                <span class="text-surface-900 dark:text-surface-0 font-medium block mt-2">
-                    {{state().demandeIndividuel?.numeroMembre}}
-                </span>
-            </div>
-            <p-divider align="center" layout="vertical"
-                styleClass="h-full mx-0 lg:mx-4 border-surface-200 dark:border-surface-700"></p-divider>
-            <div class="p-2 flex-auto text-center md:text-left">
-                <span class="text-surface-700 dark:text-surface-100 block">Nom Complet</span>
-                <span class="text-surface-900 dark:text-surface-0 font-medium block mt-2">
-                    {{state().demandeIndividuel?.nom}} {{state().demandeIndividuel?.prenom}}
-                </span>
-                <span class="text-surface-900 dark:text-surface-0 font-medium block mt-2">
-                    {{state().demandeIndividuel?.telephone}}
-                </span>
-            </div>
-            <p-divider align="center" layout="vertical"
-                styleClass="h-full mx-0 lg:mx-4 border-surface-200 dark:border-surface-700"></p-divider>
-            <div class="p-2 flex-auto text-center md:text-left">
-                <span class="text-surface-700 dark:text-surface-100 block">Point de Service</span>
-                <span class="text-surface-900 dark:text-surface-0 font-medium block mt-2">
-                    {{state().pointVente?.libele}} : {{state().pointVente?.code}}
-                </span>
+    <!-- Error Message -->
+    <div *ngIf="state().error" class="container mx-auto px-6 py-4">
+        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+            <div class="flex items-center gap-3">
+                <i class="pi pi-exclamation-triangle text-red-500"></i>
+                <span class="text-red-700 dark:text-red-300">{{ state().error }}</span>
             </div>
         </div>
     </div>
 
-    <!-- Update Form -->
-    <div class="card mt-6">
-        <h6 class="mb-4">Update Demande Individuel</h6>
-        <form [formGroup]="updateForm" (ngSubmit)="onSubmit()">
-            <div class="grid grid-cols-1 gap-4">
-                <!-- Point de Vente Selection -->
-                <div class="field">
-                    <label for="code" class="font-medium mb-2">Point de Vente</label>
-                    <p-dropdown id="code" formControlName="code" [options]="state().pointVentes || []"
-                        optionLabel="libele" [placeholder]="'Selectionner un point de  service'" [showClear]="true"
-                        styleClass="w-full" (onChange)="onPointVenteChange($event)">
-                    </p-dropdown>
-                    @if(updateForm.get('pointVente')?.hasError('required') && updateForm.get('pointVente')?.touched) {
-                    <small class="p-error">Point de service est Obligatoire</small>
-                    }
-                </div>
-
-                <!-- Usuario Selection -->
-                <div class="field">
-                    <label for="usuario" class="font-medium mb-2">Code Usager</label>
-                    <p-dropdown id="usuario" formControlName="usuario" [options]="state().usuarios || []"
-                        optionLabel="nom_USUARIO" [placeholder]="'Select a Usuario'" [showClear]="true"
-                        styleClass="w-full" [disabled]="!updateForm.get('pointVente')?.value">
-                        <ng-template let-usuario pTemplate="item">
-                            <div class="flex align-items-center">
-                                <span>{{usuario.nom_USUARIO}} ({{usuario.usariosPKId?.codUsuarios}})</span>
-                            </div>
-                        </ng-template>
-                        <ng-template let-usuario pTemplate="selectedItem">
-                            <div class="flex align-items-center">
-                                <span>{{usuario.nom_USUARIO}} ({{usuario.usariosPKId?.codUsuarios}})</span>
-                            </div>
-                        </ng-template>
-                    </p-dropdown>
-                    @if(updateForm.get('usuario')?.hasError('required') && updateForm.get('usuario')?.touched) {
-                    <small class="p-error">Code Usager est Obligatoire</small>
-                    }
-                </div>
-
-                <!-- Statut Selection -->
-                <div class="field">
-                    <label for="statut" class="font-medium mb-2">Statut</label>
-                    <p-dropdown id="statut" formControlName="statut" [options]="state().statusOptions"
-                        optionLabel="label" optionValue="value" [placeholder]="'Selectionner un statut'"
-                        styleClass="w-full">
-                    </p-dropdown>
-                    @if(updateForm.get('statut')?.hasError('required') && updateForm.get('statut')?.touched) {
-                    <small class="p-error">Statut est Obligatoire</small>
-                    }
-                </div>
-
-                <!-- Submit Button -->
-                <div class="field mt-4">
-                    <p-button type="submit" [label]="updateForm.get('statut')?.value === 'VALIDATION' ? 
-                            'Valider la mise en place de Credit' : 
-                            'Valider la demande pour la selection'" [loading]="state().loading"
-                        [disabled]="updateForm.invalid || state().loading" styleClass="w-full">
-                    </p-button>
+    <!-- Status Messages -->
+    <div class="container mx-auto px-6 py-4">
+        <div *ngIf="state().demandeIndividuel?.validationState === 'APPROVED'" class="mb-4">
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                <div class="flex items-center gap-3">
+                    <i class="pi pi-check-circle text-green-500"></i>
+                    <span class="text-green-700 dark:text-green-300">Demande approuvée pour la sélection par l'agent de
+                        Crédit</span>
                 </div>
             </div>
-        </form>
+        </div>
+
+        <div *ngIf="state().demandeIndividuel?.validationState === 'VALIDATION'" class="mb-4">
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <div class="flex items-center gap-3">
+                    <i class="pi pi-info-circle text-blue-500"></i>
+                    <span class="text-blue-700 dark:text-blue-300">Demande acceptée par Directeur d'Agent pour mise en
+                        place de Crédit</span>
+                </div>
+            </div>
+        </div>
+
+        <div *ngIf="state().demandeIndividuel?.validationState === 'SELECTION'" class="mb-4">
+            <div
+                class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+                <div class="flex items-center gap-3">
+                    <i class="pi pi-clock text-orange-500"></i>
+                    <span class="text-orange-700 dark:text-orange-300">
+                        Cette demande est en attente pour la sélection par l'agent de Crédit de {{
+                        state().pointVente?.libele || '' }}
+                    </span>
+                </div>
+            </div>
+        </div>
     </div>
-    }
+
+    <!-- Main Content -->
+    <div *ngIf="state().demandeIndividuel" class="container mx-auto px-6 py-8">
+        <!-- Header Section -->
+        <div
+            class="bg-surface-0 dark:bg-surface-900 rounded-2xl shadow-lg border border-surface-200 dark:border-surface-700 mb-8 overflow-hidden">
+            <div class="bg-gradient-to-r from-primary-500 to-primary-600 px-8 py-6">
+                <h1 class="text-white text-3xl font-bold mb-2">Information Crédit Individuel</h1>
+                <p class="text-white/80">Détails de la demande et gestion du statut</p>
+            </div>
+
+            <!-- Member Information Cards -->
+            <div class="p-8">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Member Number Card -->
+                    <div
+                        class="bg-surface-50 dark:bg-surface-800 rounded-xl p-6 border border-surface-200 dark:border-surface-700">
+                        <div class="flex items-center gap-4">
+                            <div
+                                class="w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-xl flex items-center justify-center">
+                                <i class="pi pi-id-card text-primary-600 dark:text-primary-400 text-xl"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-surface-600 dark:text-surface-400 text-sm font-medium mb-1">Numéro Membre
+                                </p>
+                                <p class="text-surface-900 dark:text-surface-0 text-lg font-bold">
+                                    {{ state().demandeIndividuel?.numeroMembre }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Member Details Card -->
+                    <div
+                        class="bg-surface-50 dark:bg-surface-800 rounded-xl p-6 border border-surface-200 dark:border-surface-700">
+                        <div class="flex items-center gap-4">
+                            <div
+                                class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
+                                <i class="pi pi-user text-blue-600 dark:text-blue-400 text-xl"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-surface-600 dark:text-surface-400 text-sm font-medium mb-1">Nom Complet
+                                </p>
+                                <p class="text-surface-900 dark:text-surface-0 text-lg font-bold">
+                                    {{ state().demandeIndividuel?.nom }} {{ state().demandeIndividuel?.prenom }}
+                                </p>
+                                <p class="text-surface-600 dark:text-surface-400 text-sm">
+                                    {{ state().demandeIndividuel?.telephone }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Point of Service Card -->
+                    <div
+                        class="bg-surface-50 dark:bg-surface-800 rounded-xl p-6 border border-surface-200 dark:border-surface-700">
+                        <div class="flex items-center gap-4">
+                            <div
+                                class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
+                                <i class="pi pi-building text-green-600 dark:text-green-400 text-xl"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-surface-600 dark:text-surface-400 text-sm font-medium mb-1">Point de
+                                    Service</p>
+                                <p class="text-surface-900 dark:text-surface-0 text-lg font-bold">
+                                    {{ state().pointVente?.libele }}
+                                </p>
+                                <p class="text-surface-600 dark:text-surface-400 text-sm">
+                                    Code: {{ state().pointVente?.code }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Update Form Section -->
+        <div *ngIf="state().demandeIndividuel?.validationState !== 'SELECTION'" class="mb-8">
+            <div
+                class="bg-surface-0 dark:bg-surface-900 rounded-2xl shadow-lg border border-surface-200 dark:border-surface-700 overflow-hidden">
+                <div class="bg-gradient-to-r from-orange-500 to-orange-600 px-8 py-6">
+                    <h2 class="text-white text-2xl font-bold mb-2">Mise à jour du Statut</h2>
+                    <p class="text-white/80">Gérer le statut et l'assignation de la demande</p>
+                </div>
+
+                <div class="p-8">
+                    <form [formGroup]="updateForm" (ngSubmit)="onSubmit()">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Point de Vente Selection -->
+                            <div class="space-y-2">
+                                <label for="code" class="block text-surface-900 dark:text-surface-0 font-medium">
+                                    <i class="pi pi-building mr-2 text-primary-500"></i>
+                                    Point de Vente
+                                </label>
+                                <p-dropdown id="code" formControlName="code" [options]="state().pointVentes || []"
+                                    optionLabel="libele" placeholder="Sélectionner un point de service"
+                                    [showClear]="true" styleClass="w-full" (onChange)="onPointVenteChange($event)">
+                                </p-dropdown>
+                                <small
+                                    *ngIf="updateForm.get('code')?.hasError('required') && updateForm.get('code')?.touched"
+                                    class="text-red-500">
+                                    Point de service est obligatoire
+                                </small>
+                            </div>
+
+                            <!-- Usuario Selection -->
+                            <div class="space-y-2">
+                                <label for="usuario" class="block text-surface-900 dark:text-surface-0 font-medium">
+                                    <i class="pi pi-user mr-2 text-blue-500"></i>
+                                    Code Usager
+                                </label>
+                                <p-dropdown id="usuario" formControlName="usuario" [options]="state().usuarios || []"
+                                    optionLabel="nom_USUARIO" placeholder="Sélectionner un utilisateur"
+                                    [showClear]="true" styleClass="w-full" [disabled]="!updateForm.get('code')?.value">
+                                    <ng-template let-usuario pTemplate="item">
+                                        <div class="flex align-items-center gap-2">
+                                            <i class="pi pi-user text-primary-500"></i>
+                                            <span>{{ usuario.nom_USUARIO }} ({{ usuario.usariosPKId?.codUsuarios
+                                                }})</span>
+                                        </div>
+                                    </ng-template>
+                                    <ng-template let-usuario pTemplate="selectedItem">
+                                        <div class="flex align-items-center gap-2">
+                                            <i class="pi pi-user text-primary-500"></i>
+                                            <span>{{ usuario.nom_USUARIO }} ({{ usuario.usariosPKId?.codUsuarios
+                                                }})</span>
+                                        </div>
+                                    </ng-template>
+                                </p-dropdown>
+                                <small
+                                    *ngIf="updateForm.get('usuario')?.hasError('required') && updateForm.get('usuario')?.touched"
+                                    class="text-red-500">
+                                    Code Usager est obligatoire
+                                </small>
+                            </div>
+
+                            <!-- Statut Selection -->
+                            <div class="space-y-2">
+                                <label for="statut" class="block text-surface-900 dark:text-surface-0 font-medium">
+                                    <i class="pi pi-flag mr-2 text-green-500"></i>
+                                    Statut
+                                </label>
+                                <p-dropdown id="statut" formControlName="statut" [options]="state().statusOptions"
+                                    optionLabel="label" optionValue="value" placeholder="Sélectionner un statut"
+                                    styleClass="w-full">
+                                </p-dropdown>
+                                <small
+                                    *ngIf="updateForm.get('statut')?.hasError('required') && updateForm.get('statut')?.touched"
+                                    class="text-red-500">
+                                    Statut est obligatoire
+                                </small>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <div class="flex items-end">
+                                <button pButton type="submit" [disabled]="updateForm.invalid || state().loading"
+                                    class="w-full bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 border-0 px-6 py-3 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300">
+                                    <i *ngIf="!state().loading" class="pi pi-check mr-3"></i>
+                                    <i *ngIf="state().loading" class="pi pi-spinner pi-spin mr-3"></i>
+                                    <span>
+                                        {{ updateForm.get('statut')?.value === 'VALIDATION' ?
+                                        'Valider pour la mise en place de Crédit' :
+                                        'Valider la demande pour la sélection' }}
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Selection Message for SELECTION state -->
+        <div *ngIf="state().demandeIndividuel?.validationState === 'SELECTION'" class="mb-8">
+            <div
+                class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl p-6">
+                <div class="flex items-center gap-3">
+                    <i class="pi pi-clock text-orange-500 text-2xl"></i>
+                    <div>
+                        <h3 class="text-orange-700 dark:text-orange-300 font-semibold text-lg">Demande en attente</h3>
+                        <p class="text-orange-600 dark:text-orange-400">
+                            Cette demande est en attente pour la sélection par l'agent de Crédit de {{
+                            state().pointVente?.libele || '' }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Documents Section -->
+        <div
+            *ngIf="(state().demandeIndividuel?.validationState === 'APPROVED' || state().demandeIndividuel?.validationState === 'VALIDATION') && state().documents && state().documents!.length > 0">
+            <div
+                class="bg-surface-0 dark:bg-surface-900 rounded-2xl shadow-lg border border-surface-200 dark:border-surface-700 overflow-hidden">
+                <div class="bg-gradient-to-r from-purple-500 to-purple-600 px-8 py-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-white text-2xl font-bold mb-2">Documents de Sélection</h2>
+                            <p class="text-white/80">{{ state().documents!.length }} document(s) disponible(s)</p>
+                        </div>
+                        <div class="bg-white/20 rounded-full px-4 py-2">
+                            <span class="text-white font-semibold">
+                                <i class="pi pi-file mr-2"></i>
+                                {{ state().documents!.length }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-8">
+                    <div class="documents-grid grid gap-6">
+                        <div *ngFor="let doc of state().documents; let i = index" class="document-card fade-in">
+                            <div
+                                class="bg-surface-50 dark:bg-surface-800 rounded-xl border border-surface-200 dark:border-surface-700 overflow-hidden hover:shadow-xl transition-all duration-300">
+
+                                <!-- Document Preview Area -->
+                                <div class="relative h-48 bg-surface-100 dark:bg-surface-700 cursor-pointer group"
+                                    (click)="viewDocument(doc)">
+
+                                    <!-- Status Badge -->
+                                    <div class="absolute top-3 left-3 z-10">
+                                        <span
+                                            class="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-medium shadow-lg">
+                                            <i class="pi pi-check mr-1"></i>
+                                            VALIDÉ
+                                        </span>
+                                    </div>
+
+                                    <!-- File Type Badge -->
+                                    <div class="absolute top-3 right-3 z-10">
+                                        <span class="px-2 py-1 rounded text-xs font-medium"
+                                            [class]="isPDFDocument(doc) ? 'bg-red-500 text-white' : 'bg-blue-500 text-white'">
+                                            {{ getDocumentExtension(doc) }}
+                                        </span>
+                                    </div>
+
+                                    <!-- Image Document Display -->
+                                    <div *ngIf="isImageDocument(doc)" class="w-full h-full relative">
+                                        <img [src]="doc.doc" [alt]="'Document ' + (i + 1)"
+                                            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                    </div>
+
+                                    <!-- PDF Document Display -->
+                                    <div *ngIf="isPDFDocument(doc)"
+                                        class="w-full h-full file-type-pdf rounded-lg flex flex-col items-center justify-center text-red-600 dark:text-red-400 group-hover:scale-105 transition-transform duration-300">
+                                        <i class="pi pi-file-pdf text-5xl mb-3"></i>
+                                        <span class="text-sm font-medium">Document PDF</span>
+                                        <span class="text-xs opacity-75">Cliquez pour prévisualiser</span>
+                                    </div>
+
+                                    <!-- Other Document Types -->
+                                    <div *ngIf="!isImageDocument(doc) && !isPDFDocument(doc)"
+                                        class="w-full h-full bg-surface-200 dark:bg-surface-600 rounded-lg flex flex-col items-center justify-center text-surface-500 dark:text-surface-400 group-hover:scale-105 transition-transform duration-300">
+                                        <i class="pi pi-file text-5xl mb-3"></i>
+                                        <span class="text-sm font-medium">{{ getDocumentExtension(doc) }}</span>
+                                        <span class="text-xs opacity-75">Document</span>
+                                    </div>
+
+                                    <!-- Hover Overlay -->
+                                    <div
+                                        class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center rounded-lg">
+                                        <button
+                                            class="opacity-0 group-hover:opacity-100 bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg font-medium transition-all duration-300 backdrop-blur-sm">
+                                            <i class="pi pi-eye mr-2"></i>
+                                            {{ isPDFDocument(doc) ? 'Voir PDF' : 'Aperçu' }}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Document Info -->
+                                <div class="p-6">
+                                    <div class="flex justify-between items-start mb-4">
+                                        <div>
+                                            <h3 class="text-surface-900 dark:text-surface-0 font-semibold text-lg mb-1">
+                                                Document {{ i + 1 }}
+                                            </h3>
+                                            <p class="text-surface-600 dark:text-surface-400 text-sm">
+                                                Type: {{ getDocumentExtension(doc) }}
+                                            </p>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="flex items-center">
+                                                <i class="pi pi-star-fill text-yellow-500 mr-1"></i>
+                                                <span
+                                                    class="font-medium text-surface-700 dark:text-surface-300">5.0</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Description -->
+                                    <p class="text-surface-700 dark:text-surface-300 text-sm leading-relaxed mb-4">
+                                        {{ getDocumentExtension(doc) }} téléversé le
+                                        {{ doc.createdAt ? (doc.createdAt | date:'dd/MM/yyyy à HH:mm') : 'date inconnue'
+                                        }}.
+                                        Fichier de haute qualité validé et sécurisé.
+                                    </p>
+
+                                    <!-- Actions -->
+                                    <div
+                                        class="flex justify-between items-center pt-4 border-t border-surface-200 dark:border-surface-700">
+                                        <div class="flex items-center text-primary-600 dark:text-primary-400">
+                                            <i [class]="isPDFDocument(doc) ? 'pi pi-file-pdf' : 'pi pi-image'"
+                                                class="mr-2"></i>
+                                            <span class="font-medium">{{ isPDFDocument(doc) ? 'PDF' : 'Image' }}</span>
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <button pButton type="button"
+                                                [icon]="isPDFDocument(doc) ? 'pi pi-file-pdf' : 'pi pi-eye'"
+                                                class="p-button-outlined p-button-sm p-button-primary"
+                                                (click)="viewDocument(doc); $event.stopPropagation()"
+                                                [pTooltip]="isPDFDocument(doc) ? 'Voir le PDF' : 'Voir le document'">
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Empty State for Documents -->
+        <div *ngIf="state().demandeIndividuel?.validationState === 'APPROVED' && (!state().documents || state().documents!.length === 0)"
+            class="text-center py-16">
+            <div
+                class="w-24 h-24 bg-surface-100 dark:bg-surface-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="pi pi-file text-surface-400 dark:text-surface-500 text-3xl"></i>
+            </div>
+            <h3 class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-3">
+                Aucun document disponible
+            </h3>
+            <p class="text-surface-600 dark:text-surface-400 text-lg max-w-md mx-auto">
+                Les documents de sélection apparaîtront ici une fois téléversés
+            </p>
+        </div>
+    </div>
+
+    <!-- Preview Dialog for Images -->
+    <p-dialog header="Aperçu du document" [(visible)]="showPreviewDialog" (onHide)="closePreviewDialog()" [modal]="true"
+        [closable]="true" [draggable]="false" [resizable]="true"
+        [style]="{width: '90vw', maxWidth: '1000px', minHeight: '400px'}" styleClass="preview-dialog"
+        [maximizable]="true" [blockScroll]="true">
+
+        <div *ngIf="selectedDocumentForPreview; else noDocument" class="text-center">
+            <!-- Main Image -->
+            <div class="relative inline-block mb-6">
+                <img [src]="selectedDocumentForPreview!.doc" [alt]="'Document preview'"
+                    class="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
+                    style="max-width: 100%; height: auto;" />
+            </div>
+
+            <!-- Document Information -->
+            <div class="mt-6 p-6 bg-surface-50 dark:bg-surface-800 rounded-lg">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-surface-700 dark:text-surface-300">
+                    <div class="flex items-center gap-3">
+                        <i class="pi pi-calendar text-primary-500"></i>
+                        <div>
+                            <p class="font-medium">Date d'ajout</p>
+                            <p class="text-sm">
+                                {{ selectedDocumentForPreview!.createdAt ?
+                                (selectedDocumentForPreview.createdAt | date:'dd/MM/yyyy à HH:mm') :
+                                'Date inconnue' }}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <i class="pi pi-check-circle text-green-500"></i>
+                        <div>
+                            <p class="font-medium">Statut</p>
+                            <p class="text-sm">Validé</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-center gap-3 mt-6">
+                    <button pButton type="button" label="Fermer" icon="pi pi-times" class="p-button-outlined"
+                        (click)="closePreviewDialog()">
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- No Document Template -->
+        <ng-template #noDocument>
+            <div class="text-center py-8">
+                <i class="pi pi-image text-surface-400 text-4xl mb-4"></i>
+                <h3 class="text-surface-900 dark:text-surface-0 text-lg font-medium mb-2">
+                    Aucun document à prévisualiser
+                </h3>
+                <p class="text-surface-600 dark:text-surface-400">
+                    Sélectionnez un document pour l'afficher ici
+                </p>
+                <button pButton type="button" label="Fermer" class="p-button-text mt-4" (click)="closePreviewDialog()">
+                </button>
+            </div>
+        </ng-template>
+    </p-dialog>
+
+    <!-- PDF Preview Dialog -->
+    <p-dialog header="Aperçu PDF" [(visible)]="showPDFPreview" (onHide)="closePDFPreview()" [modal]="true"
+        [closable]="true" [closeOnEscape]="true" [maximizable]="true"
+        [style]="{width: '90vw', maxWidth: '1200px', height: '80vh'}" styleClass="pdf-preview-dialog"
+        [blockScroll]="true">
+
+        <ng-template pTemplate="header">
+            <div class="flex justify-between items-center w-full">
+                <span class="text-lg font-semibold">Aperçu PDF</span>
+                <button pButton type="button" icon="pi pi-times" class="p-button-rounded p-button-text p-button-sm"
+                    (click)="closePDFPreview()" pTooltip="Fermer">
+                </button>
+            </div>
+        </ng-template>
+
+        <div *ngIf="selectedPDFDocument" class="h-full">
+            <div class="pdf-container" style="height: calc(80vh - 120px);">
+                <div class="text-center p-8">
+                    <div class="mb-6">
+                        <i class="pi pi-file-pdf text-red-500 text-6xl"></i>
+                    </div>
+
+                    <h3 class="text-xl font-semibold mb-4">Document PDF</h3>
+
+                    <p class="text-surface-600 dark:text-surface-400 mb-6">
+                        Cliquez sur l'une des options ci-dessous pour consulter le PDF :
+                    </p>
+
+                    <div class="flex flex-col gap-3 max-w-sm mx-auto">
+                        <button pButton type="button" label="Ouvrir dans un nouvel onglet" icon="pi pi-external-link"
+                            class="p-button-primary w-full" (click)="openPDFInNewTab()">
+                        </button>
+
+                        <button pButton type="button" label="Télécharger le PDF" icon="pi pi-download"
+                            class="p-button-outlined w-full" (click)="downloadPDF()">
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer with actions -->
+            <div class="flex justify-end gap-2 mt-4 pt-4 border-t border-surface-200 dark:border-surface-700">
+                <button pButton type="button" label="Fermer" icon="pi pi-times" class="p-button-text"
+                    (click)="closePDFPreview()">
+                </button>
+            </div>
+        </div>
+    </p-dialog>
 </div>

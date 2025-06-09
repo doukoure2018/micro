@@ -11,7 +11,11 @@ public interface UserRepository {
     User getUserById(Long userId);
     User updateUser(String userUuid, String firstName, String lastName, String email, String phone, String bio, String address);
     String createUser(String firstName, String lastName, String email, String username, String password);
-    String createAccount(String firstName, String lastName, String email, String username, String password,String roleName);
+    String createAccountUser(String firstName, String lastName, String email, String username, String password, String roleName);
+
+    String createAccountAgentCreditAndDa(String firstName, String lastName, String email, String username,
+                                         String password, String roleName, String phone, String bio,
+                                         Long delegationId, Long agenceId, Long pointventeId);
     AccountToken getAccountToken(String token);
     User verifyPasswordToken(String token);
     User enableMfa(String userUuid);

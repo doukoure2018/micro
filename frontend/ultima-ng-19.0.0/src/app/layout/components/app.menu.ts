@@ -44,26 +44,34 @@ export class AppMenu {
                               {
                                   label: 'Analyse de Credit',
                                   icon: 'pi pi-fw pi-hourglass',
-                                  routerLink: ['/dashboards/credit']
+                                  routerLink: ['/dashboards/credit', this.user?.userId]
                               }
                           ]
-                        : this.user?.role === 'MANAGER'
+                        : this.user?.role === 'DA'
                           ? [
                                 {
-                                    label: 'Rapports Manager',
-                                    icon: 'pi pi-fw pi-chart-bar',
-                                    routerLink: ['/dashboards/manager']
+                                    label: 'Analyse de Credit',
+                                    icon: 'pi pi-fw pi-hourglass',
+                                    routerLink: ['/dashboards/credit', this.user?.userId]
                                 }
                             ]
-                          : this.user?.role === 'ADMIN'
+                          : this.user?.role === 'MANAGER'
                             ? [
                                   {
-                                      label: 'Administration',
-                                      icon: 'pi pi-fw pi-cog',
-                                      routerLink: ['/dashboards/admin']
+                                      label: 'Rapports Manager',
+                                      icon: 'pi pi-fw pi-chart-bar',
+                                      routerLink: ['/dashboards/manager']
                                   }
                               ]
-                            : [])
+                            : this.user?.role === 'SUPER_ADMIN'
+                              ? [
+                                    {
+                                        label: 'Configuration Reseau',
+                                        icon: 'pi pi-fw pi-cog',
+                                        routerLink: ['/dashboards/config']
+                                    }
+                                ]
+                              : [])
 
                     // {
                     //     label: 'Sales Dashboard',

@@ -92,7 +92,7 @@ key:
   public: keys/public.key
 
 server:
-  port: 8085
+  port: 8087
   tomcat:
     max-threads: 200
     min-spare-threads: 20

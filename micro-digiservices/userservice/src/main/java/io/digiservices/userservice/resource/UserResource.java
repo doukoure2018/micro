@@ -1,10 +1,18 @@
 package io.digiservices.userservice.resource;
+import io.digiservices.clients.EbankingClient;
 import io.digiservices.userservice.domain.Response;
 import io.digiservices.userservice.dto.*;
+import io.digiservices.userservice.exception.ApiException;
+import io.digiservices.userservice.model.User;
+import io.digiservices.userservice.service.AgenceService;
+import io.digiservices.userservice.service.DelegationService;
+import io.digiservices.userservice.service.PointVenteService;
 import io.digiservices.userservice.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -12,12 +20,15 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Map;
 
 import static io.digiservices.userservice.constant.Constants.PHOTO_DIRECTORY;
 import static io.digiservices.userservice.utils.RequestUtils.getResponse;
+import static java.time.LocalTime.now;
 import static java.util.Collections.emptyMap;
 import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.ResponseEntity.*;
@@ -26,8 +37,17 @@ import static org.springframework.http.ResponseEntity.*;
 @RestController
 @AllArgsConstructor
 @RequestMapping("/user")
+@Slf4j
 public class UserResource {
     private final UserService userService;
+
+    private final DelegationService delegationService;
+
+    private final AgenceService agenceService;
+    private final PointVenteService pointVenteService;
+
+    private final EbankingClient ebankingClient;
+
 
     // When user is not logged in
     @PostMapping("/register")
@@ -39,10 +59,52 @@ public class UserResource {
     // Create User when logging
     @PostMapping("/createAccount")
     public ResponseEntity<Response> createAccount(@NotNull Authentication authentication, @RequestBody UserAccount user, HttpServletRequest request) {
-        userService.createAccount(user.getFirstName(), user.getLastName(), user.getEmail(), user.getUsername(), user.getPassword(), user.getRoleName());
-        return created(getUri()).body(getResponse(request, emptyMap(), "Account created. Check your email to enable your account", CREATED));
+
+        log.info("Creating account for role: {}", user.getRoleName());
+        log.info("User data: {}", user);
+
+        try {
+            // Create account based on role type
+            createAccountByRole(user);
+
+            return created(getUri()).body(getResponse(request, emptyMap(),
+                    "Compte crée. Vous pouvez maintenant verifier votre compte email pour activer", CREATED));
+
+        } catch (IllegalArgumentException | ApiException e) {
+            log.error("Validation/API error: {}", e.getMessage());
+            return badRequest().body(getResponse(request, emptyMap(), e.getMessage(), BAD_REQUEST));
+
+        } catch (Exception e) {
+            log.error("Error creating account: ", e);
+            return status(INTERNAL_SERVER_ERROR).body(getResponse(request, emptyMap(),
+                    "An error occurred while creating the account", INTERNAL_SERVER_ERROR));
+        }
     }
 
+    private void createAccountByRole(UserAccount user) {
+        if (isLocationBasedRole(user.getRoleName())) {
+            log.info("Creating location-based account using createAccountAgentCreditAndDa");
+            log.info("Location data - delegationId: {}, agenceId: {}, pointventeId: {}",
+                    user.getDelegationId(), user.getAgenceId(), user.getPointventeId());
+
+            userService.createAccountAgentCreditAndDa(
+                    user.getFirstName(), user.getLastName(), user.getEmail(),
+                    user.getUsername(), user.getPassword(), user.getRoleName(),
+                    user.getPhone(), user.getBio(), user.getDelegationId(),
+                    user.getAgenceId(), user.getPointventeId()
+            );
+        } else {
+            log.info("Creating standard account using createAccountUser");
+            userService.createAccountUser(
+                    user.getFirstName(), user.getLastName(), user.getEmail(),
+                    user.getUsername(), user.getPassword(), user.getRoleName()
+            );
+        }
+    }
+
+    private boolean isLocationBasedRole(String roleName) {
+        return "AGENT_CREDIT".equalsIgnoreCase(roleName) || "DA".equalsIgnoreCase(roleName);
+    }
     // When user is not logged in
     @GetMapping("/verify/account")
     public ResponseEntity<Response> verifyAccount(@RequestParam("token") String token, HttpServletRequest request) {
@@ -183,7 +245,12 @@ public class UserResource {
 
     @GetMapping("/roles")
     public ResponseEntity<Response> getRoles(@NotNull Authentication authentication, HttpServletRequest request) {
-        return ok(getResponse(request, Map.of("roles",userService.getRoles()), "List of Roles Retreived Successfully", OK));
+        return ok(getResponse(request, Map.of(
+                                   "roles",userService.getRoles(),
+                                   "delegations", delegationService.getAllDelegation(),
+                                    "agences", agenceService.getListAgence(),
+                                    "pointVentes", pointVenteService.getAllPointVente()),
+                              "List of Roles Retreived Successfully", OK));
     }
 
     // When user is logged in
@@ -200,5 +267,148 @@ public class UserResource {
 
     private URI getUri() {
         return URI.create("/user/profile/userId");
+    }
+
+
+    /**
+     *   Get User information via Communication Open Feign
+     */
+    @GetMapping("/getUser/{userId}")
+    public ResponseEntity<User> getUserById(@PathVariable(name = "userId") Long userId) {
+        var user= userService.getUserId(userId);
+        return ResponseEntity.ok(user);
+    }
+
+    @GetMapping("/getUserSaf/{codUser}")
+    public ResponseEntity<Response> getActiveUser(
+            @NotNull Authentication authentication,
+            @PathVariable(value = "codUser") String codUser,
+            HttpServletRequest request
+    ){
+        String codPs = codUser.substring(codUser.length() - 3);
+        return ok(getResponse(request, Map.of("usuario",ebankingClient.getUsuarios("00000",codPs,codUser)), "User Updated Successfully", OK));
+    }
+
+    /**
+     *  Ajout Delegation
+     */
+
+    @PostMapping("/addDelegation")
+    public ResponseEntity<Response> addDelegation(@NotNull Authentication authentication, @RequestBody DelegationDto delegationDto, HttpServletRequest request)
+    {
+        delegationService.saveDelegation(delegationDto);
+        return ok(getResponse(request,emptyMap(), "Success", CREATED));
+    }
+
+    @GetMapping("/getAllDelegations")
+    public ResponseEntity<Response> getAllDelegation(@NotNull Authentication authentication,HttpServletRequest request)
+    {
+        return ok(getResponse(request, Map.of("delegations",delegationService.getAllDelegation()), "Success", OK));
+
+    }
+
+    @GetMapping("/offLine/getAllDelegations")
+    public ResponseEntity<List<DelegationDto>> getAllDelegationOffLine()
+    {
+        return ResponseEntity.ok(delegationService.getAllDelegation());
+    }
+
+    @GetMapping("/delegation/{id_delegation}")
+    public ResponseEntity<Response> getDelegation(@NotNull Authentication authentication,HttpServletRequest request,
+                                                       @PathVariable(name = "id_delegation") Long id_delegation)
+    {
+        return ok(getResponse(request, Map.of("delegation",delegationService.getDelegationById(id_delegation)), "Success", OK));
+
+    }
+
+    /**
+     *  Ajout Agence
+     */
+
+    @PostMapping("/addAgence")
+    public ResponseEntity<Response> addAgence(@NotNull Authentication authentication,@RequestBody AgenceDto agenceDto,HttpServletRequest request)
+    {
+        agenceService.addAgence(agenceDto);
+        return ok(getResponse(request, emptyMap(), "Success", CREATED));
+
+    }
+
+    @GetMapping("/getAllAgences/{delegationId}")
+    public ResponseEntity<Response> agences(@NotNull Authentication authentication,@PathVariable(name = "delegationId") Long delegationId, HttpServletRequest request)
+    {
+        return ok(getResponse(request, Map.of("agences",agenceService.getListAgenceByDelegationId(delegationId)), "Liste des Agences", OK));
+
+    }
+
+    @GetMapping("/agence/{agence_id}")
+    public ResponseEntity<Response> agence(@NotNull Authentication authentication,@PathVariable(name = "agence_id") Long agence_id,HttpServletRequest request)
+    {
+        return ok(getResponse(request, Map.of("agence",agenceService.getAgence(agence_id)), "Liste des Agences", OK));
+    }
+
+    @GetMapping("/offLine/getAllAgences")
+    public ResponseEntity<List<AgenceDto>> allAgenceOfLine()
+    {
+        return ResponseEntity.ok(agenceService.getListAgence());
+    }
+
+    /**
+     *  Ajout Information Point de Service
+     */
+
+    @PostMapping("/addPointVente")
+    public ResponseEntity<Response> addPointVente(@NotNull Authentication authentication,
+                                                      @RequestBody PointVenteDto pointVenteDto,
+                                                      HttpServletRequest request)
+    {
+        pointVenteService.addPointVente(pointVenteDto);
+        return ok(getResponse(request,emptyMap(), "Success", CREATED));
+
+    }
+
+    @GetMapping("/getAllPointVentes/{agence_id}")
+    public ResponseEntity<Response> pointventes(@NotNull Authentication authentication,
+                                                @PathVariable(name = "agence_id") Long agence_id,
+                                                HttpServletRequest request)
+    {
+        return ok(getResponse(request, Map.of("pointVentes",pointVenteService.getAllPointVenteByAgenceId(agence_id)), "Liste des Points de vente", OK));
+    }
+
+    @GetMapping("/pointvente/{idPs}")
+    public ResponseEntity<Response> pointvente(@NotNull Authentication authentication,
+                                                    @PathVariable(name = "idPs") Long idPs,
+                                                    HttpServletRequest request)
+    {
+        return ok(getResponse(request, Map.of("pointVente",pointVenteService.getPointVenteById(idPs)), "Information Point de Vente", OK));
+    }
+
+    @GetMapping("/offLine/getAllPointVente")
+    public ResponseEntity<List<PointVenteDto>> pointVenteOffline()
+    {
+        return ResponseEntity.ok(pointVenteService.getAllPointVente());
+    }
+
+    @GetMapping("/offLine/getAllPointVentes/{agence_id}")
+    public ResponseEntity<List<PointVenteDto>> getAllPointVentes(@PathVariable(name = "agence_id") Long agence_id)
+    {
+        return ResponseEntity.ok(pointVenteService.getAllPointVenteByAgenceId(agence_id));
+    }
+
+    /**
+     * Communication OpenFeign
+     * @param idPs
+     * @return
+     */
+
+    @GetMapping("/client/pointvente/{idPs}")
+    public ResponseEntity<PointVenteDto> getPointVenteClient(@PathVariable(name = "idPs") Long idPs)
+    {
+        return ResponseEntity.ok(pointVenteService.getPointVenteById(idPs));
+    }
+
+    @GetMapping("/client/agence/{agence_id}")
+    public ResponseEntity<AgenceDto> getAgenceById(@PathVariable(name = "agence_id") Long agence_id)
+    {
+        return ResponseEntity.ok(agenceService.getAgence(agence_id));
     }
 }

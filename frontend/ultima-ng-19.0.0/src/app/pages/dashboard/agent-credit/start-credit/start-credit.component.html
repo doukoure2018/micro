@@ -1,0 +1,106 @@
+<p-toast></p-toast>
+<p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
+
+<div class="bg-surface-0 dark:bg-surface-950 px-6 py-20 md:px-12 lg:px-20">
+    <div class="bg-surface-0 dark:bg-surface-950">
+        <div class="font-medium text-3xl text-surface-900 dark:text-surface-0 mb-4">
+            {{ state().message }}
+        </div>
+
+        <!-- Card container pour un meilleur rendu -->
+        <div class="bg-white dark:bg-surface-800 shadow-lg rounded-lg overflow-hidden">
+            <!-- En-têtes des colonnes -->
+            <div class="bg-surface-50 dark:bg-surface-700 px-6 py-4">
+                <div
+                    class="flex items-center font-semibold text-surface-700 dark:text-surface-200 text-sm uppercase tracking-wide">
+                    <div class="w-6/12 md:w-2/12">Nom & Prénom</div>
+                    <div class="w-6/12 md:w-2/12">Téléphone</div>
+                    <div class="w-6/12 md:w-2/12">N° Membre</div>
+                    <div class="w-6/12 md:w-2/12">Montant</div>
+                    <div class="w-6/12 md:w-2/12">Type de Crédit</div>
+                </div>
+            </div>
+
+            <!-- Données du membre -->
+            <div class="px-6 py-4">
+                <div class="flex items-center text-surface-600 dark:text-surface-300">
+                    <!-- Nom & Prénom -->
+                    <div class="w-6/12 md:w-2/12 font-medium">
+                        <div class="flex items-center">
+                            <i class="pi pi-user mr-2 text-surface-400"></i>
+                            {{ state().demandeIndividuel?.nom }} {{ state().demandeIndividuel?.prenom }}
+                        </div>
+                    </div>
+
+                    <!-- Téléphone -->
+                    <div class="w-6/12 md:w-2/12 font-medium">
+                        <div class="flex items-center">
+                            <i class="pi pi-phone mr-2 text-surface-400"></i>
+                            {{ state().demandeIndividuel?.telephone }}
+                        </div>
+                    </div>
+
+                    <!-- Numéro membre -->
+                    <div class="w-6/12 md:w-2/12 font-medium">
+                        <div class="flex items-center">
+                            <i class="pi pi-id-card mr-2 text-surface-400"></i>
+                            {{ state().demandeIndividuel?.numeroMembre }}
+                        </div>
+                    </div>
+
+                    <!-- Montant formaté en GNF -->
+                    <div class="w-6/12 md:w-2/12 font-medium">
+                        <div class="flex items-center">
+                            <i class="pi pi-dollar mr-2 text-green-500"></i>
+                            <span class="font-bold text-lg text-green-600 dark:text-green-400">
+                                {{ formatMontantGNF(state().demandeIndividuel?.montant) }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Type de crédit avec style dynamique -->
+                    <div class="w-6/12 md:w-2/12 font-medium">
+                        <div class="flex items-center">
+                            <i class="pi pi-bookmark mr-2 text-surface-400"></i>
+                            <p-chip [label]="getCreditTypeDescription(state().demandeIndividuel?.tipCredito)"
+                                [styleClass]="'text-xs font-semibold px-3 py-1 rounded-full ' + getCreditTypeChipStyle(state().demandeIndividuel?.tipCredito)">
+                            </p-chip>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Indicateur de validité du type de crédit -->
+            <div class="px-6 pb-4" *ngIf="!isCreditTypeValid(state().demandeIndividuel?.tipCredito)">
+                <div
+                    class="bg-orange-50 dark:bg-orange-900 border border-orange-200 dark:border-orange-700 rounded-lg p-3">
+                    <div class="flex items-center">
+                        <i class="pi pi-exclamation-triangle text-orange-500 mr-2"></i>
+                        <span class="text-orange-700 dark:text-orange-200 text-sm">
+                            Attention : Type de crédit non reconnu ({{ state().demandeIndividuel?.tipCredito }})
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <br>
+
+    <!-- Bouton d'action avec état de chargement amélioré -->
+    <div class="text-surface-700 dark:text-surface-100 text-center">
+        <p-button (click)="startNewCredit(state().demandeIndividuel?.numeroMembre!, state().user?.userId!)"
+            label="Commencer la mise en place de Crédit" class="font-bold px-8 py-4 whitespace-nowrap" icon="pi pi-play"
+            raised rounded [disabled]="state().loading || !state().demandeIndividuel?.numeroMembre">
+            <i *ngIf="state().loading" class="pi pi-spin pi-spinner mr-2"></i>
+        </p-button>
+
+        <!-- Message d'information -->
+        <div class="mt-4 text-surface-500 dark:text-surface-400 text-sm">
+            <p *ngIf="state().demandeIndividuel?.montant">
+                <i class="pi pi-info-circle mr-1"></i>
+                Montant {{ (state().demandeIndividuel?.montant || 0) <= 25000000 ? 'éligible pour traitement standard'
+                    : 'nécessitant un traitement spécialisé' }} </p>
+        </div>
+    </div>
+</div>

@@ -60,6 +60,7 @@ public class ClientesController {
         ClientesDto clientesDto=clientesService.getClientes(new ClientesPKId(codCliente,codEmpresa));
         return ResponseEntity.ok(clientesDto);
     }
+
     @GetMapping("/newClientes/{codCliente}")
     public ResponseEntity<ClientesDto> getNewClientes(
             @PathVariable(name = "codCliente") String codCliente
@@ -95,9 +96,9 @@ public class ClientesController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<Response> searchClientes(@RequestParam("query") String query, HttpServletRequest request)
+    public ResponseEntity<ClientesDto> searchClientes(@RequestParam("query") String query, HttpServletRequest request)
     {
-        return ok(getResponse(request, Map.of("clientes",clientesService.searchsClientes(query)), "Membre Trouvé", OK));
+        return ResponseEntity.ok(clientesService.searchsClientes(query));
     }
 
     @GetMapping("/{codAgencia}/searchByCodAgencia")
@@ -148,4 +149,7 @@ public class ClientesController {
     {
         return clientesService.getNombreAnomalieParAgence(codAgencia);
     }
+
+
+
 }

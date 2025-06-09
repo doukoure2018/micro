@@ -6,6 +6,7 @@ import io.digiservices.ebanking.paylaod.DelegationDto;
 import io.digiservices.ebanking.service.DelegationService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -41,10 +42,16 @@ public class DelegationController {
                                 .build());
     }
 
+//    @GetMapping("/allDelegation")
+//    public ResponseEntity<Response> getAllDelegation(HttpServletRequest request)
+//    {
+//        return ok(getResponse(request, Map.of("delegations",delegationService.getAllDelegation()), "Liste des delegations", OK));
+//    }
+
     @GetMapping("/allDelegation")
-    public ResponseEntity<Response> getAllDelegation(HttpServletRequest request)
+    public ResponseEntity<List<DelegationDto>> getAllDelegation()
     {
-        return ok(getResponse(request, Map.of("delegations",delegationService.getAllDelegation()), "Liste des delegations", OK));
+        return ResponseEntity.ok(delegationService.getAllDelegation());
     }
 
     @GetMapping("/{id_delegation}/delegation")

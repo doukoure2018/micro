@@ -9,6 +9,7 @@ import { ButtonModule } from 'primeng/button';
 import { IconField } from 'primeng/iconfield';
 import { InputIcon } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
+import { MessageModule } from 'primeng/message';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
@@ -16,7 +17,7 @@ import { EMPTY, Observer, switchMap } from 'rxjs';
 
 @Component({
     selector: 'app-attente',
-    imports: [CommonModule, TableModule, InputTextModule, ProgressBarModule, ButtonModule, IconField, InputIcon, TagModule],
+    imports: [CommonModule, TableModule, InputTextModule, ProgressBarModule, ButtonModule, IconField, InputIcon, TagModule, MessageModule],
     templateUrl: './attente.component.html'
 })
 export class AttenteComponent {
@@ -74,6 +75,17 @@ export class AttenteComponent {
             return 'SELECTION';
         }
         return statutDemande;
+    }
+
+    getStateValidation(statutDemande: string, validationState: string): string {
+        if (statutDemande === 'EN_ATTENTE' && validationState === 'NOUVEAU') {
+            return 'EN ATTENTE POUR LA SELECTION';
+        } else if (statutDemande === 'EN_ATTENTE' && validationState === 'SELECTION') {
+            return 'EN ATTENTE POUR LA VALIDATION';
+        } else if (statutDemande === 'EN_ATTENTE' && validationState === 'APPROVED') {
+            return "DEMANDE APPROVEE PAR L'AGENT";
+        }
+        return validationState;
     }
 
     getStatusSeverity(statutDemande: string, validationState: string): 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast' | undefined {

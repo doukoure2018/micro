@@ -13,7 +13,11 @@ public interface UserService {
     User getUserByUuid(String userUuid);
     User updateUser(String userUuid, String firstName, String lastName, String email, String phone, String bio, String address);
     void createUser(String firstName, String lastName, String email, String username, String password);
-    void createAccount(String firstName, String lastName, String email, String username, String password,String roleName);
+    void createAccountUser(String firstName, String lastName, String email, String username, String password, String roleName);
+
+    void createAccountAgentCreditAndDa(String firstName, String lastName, String email, String username,
+                                       String password, String roleName, String phone, String bio,
+                                       Long delegationId, Long agenceId, Long pointventeId);
     void verifyAccount(String token);
     User verifyPasswordToken(String token);
     User enableMfa(String userUuid);
@@ -33,4 +37,6 @@ public interface UserService {
     User getAssignee(String ticketUuid);
     Credential getCredential(String userUuid);
     List<Device> getDevices(String userUuid);
+
+    User getUserId(Long userId);
 }

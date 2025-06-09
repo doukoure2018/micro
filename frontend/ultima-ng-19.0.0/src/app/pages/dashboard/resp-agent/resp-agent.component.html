@@ -1,1 +1,211 @@
-<p>resp-agent works!</p>
+<div class="card h-full">
+    <!-- Header Section avec statistiques -->
+    <div class="p-4 h-full flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex gap-4 flex-col justify-between w-full md:flex-row md:items-center">
+                <div class="flex gap-4 items-center">
+                    <div class="text-4xl">👋</div>
+                    <div class="flex flex-col gap-1 text-surface-600 dark:text-surface-200">
+                        <span class="text-2xl font-semibold">Bonjour,
+                            <span class="text-color">{{ user?.firstName }} {{ user?.lastName }}!</span>
+                        </span>
+                        <span>Agence de
+                            <span class="font-bold text-primary">{{ state().agence }}</span>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Statistiques rapides -->
+                <div class="flex gap-3 flex-wrap">
+                    <p-chip label="Demandes en attente: {{ state().filteredDemandeAttentes?.length || 0 }}"
+                        styleClass="bg-orange-100 text-orange-800">
+                    </p-chip>
+                    <p-chip *ngIf="state().filteredDemandeAttentes?.length! > 0"
+                        [label]="'Total: ' + formatMontantGNF(getTotalMontant())"
+                        styleClass="bg-blue-100 text-blue-800">
+                    </p-chip>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div *ngIf="state().loading" class="flex justify-content-center align-items-center my-5">
+            <p-progressSpinner strokeWidth="4" [style]="{width: '50px', height: '50px'}"></p-progressSpinner>
+            <span class="ml-3 text-600">Chargement des demandes...</span>
+        </div>
+
+        <!-- Message d'erreur -->
+        <div *ngIf="state().error && !state().loading" class="p-message p-message-error p-3 mb-4">
+            <i class="pi pi-times-circle mr-2"></i>
+            {{ state().error }}
+        </div>
+
+        <!-- Section principale avec les demandes -->
+        <div *ngIf="!state().loading">
+            <!-- Cas où il y a des demandes -->
+            <div *ngIf="state().filteredDemandeAttentes?.length! > 0" class="card">
+                <div class="flex flex-wrap gap-3 align-items-center justify-content-between mb-4">
+                    <h3 class="text-xl font-semibold m-0 text-900">
+                        <i class="pi pi-list mr-2 text-primary"></i>
+                        Gestion des Crédits
+                    </h3>
+
+                    <div class="flex gap-2">
+                        <p-button icon="pi pi-refresh" (click)="refreshData()" [loading]="state().loading"
+                            severity="secondary" size="small" pTooltip="Actualiser les données">
+                        </p-button>
+
+                        <p-button type="button" label="Afficher les demandes pour notation" icon="pi pi-eye"
+                            (click)="toggleDataTable(demandesPopover, $event)"
+                            [badge]="state().filteredDemandeAttentes?.length!.toString()" badgeClass="p-badge-danger"
+                            severity="info">
+                        </p-button>
+                    </div>
+                </div>
+
+                <!-- Popover avec tableau amélioré -->
+                <p-popover #demandesPopover id="demandes_popover" [style]="{ width: '85vw', maxWidth: '1400px' }">
+                    <div class="p-4">
+                        <div class="flex justify-content-between align-items-center mb-4">
+                            <h4 class="text-lg font-semibold m-0">
+                                <i class="pi pi-calendar-plus mr-2 text-primary"></i>
+                                Demandes en attente de notation
+                            </h4>
+                            <p-chip [label]="'Total: ' + formatMontantGNF(getTotalMontant())"
+                                styleClass="bg-green-100 text-green-800 font-semibold">
+                            </p-chip>
+                        </div>
+
+                        <p-table #dt [value]="state().filteredDemandeAttentes!" [paginator]="true"
+                            paginatorDropdownAppendTo="body" [rows]="10" [showCurrentPageReport]="true"
+                            responsiveLayout="scroll"
+                            currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} demandes"
+                            [rowsPerPageOptions]="[10, 25, 50]"
+                            [globalFilterFields]="['nom', 'prenom', 'codeMembre', 'activite', 'telephone']"
+                            styleClass="p-datatable-striped">
+
+                            <ng-template pTemplate="caption">
+                                <div class="flex flex-wrap gap-3 items-center justify-between">
+                                    <p-icon-field class="w-full sm:w-80">
+                                        <p-inputicon class="pi pi-search" />
+                                        <input pInputText type="text" (input)="onGlobalFilter(dt, $event)"
+                                            placeholder="Rechercher par nom, numéro membre..." class="w-full" />
+                                    </p-icon-field>
+                                    <div class="text-sm text-600">
+                                        <i class="pi pi-info-circle mr-1"></i>
+                                        {{ state().filteredDemandeAttentes?.length }} demande(s) trouvée(s)
+                                    </div>
+                                </div>
+                            </ng-template>
+
+                            <ng-template pTemplate="header">
+                                <tr>
+                                    <th pSortableColumn="createAt" class="white-space-nowrap" style="width:15%">
+                                        <i class="pi pi-calendar mr-1"></i>Date de création
+                                        <p-sortIcon field="createAt"></p-sortIcon>
+                                    </th>
+                                    <th pSortableColumn="codeMembre" class="white-space-nowrap" style="width:25%">
+                                        <i class="pi pi-user mr-1"></i>Membre
+                                        <p-sortIcon field="codeMembre"></p-sortIcon>
+                                    </th>
+                                    <th pSortableColumn="referenceCredit" class="white-space-nowrap" style="width:20%">
+                                        <i class="pi pi-bookmark mr-1"></i>Référence
+                                        <p-sortIcon field="referenceCredit"></p-sortIcon>
+                                    </th>
+                                    <th pSortableColumn="montantCredit" class="white-space-nowrap text-right"
+                                        style="width:20%">
+                                        <i class="pi pi-money-bill mr-1"></i>Montant
+                                        <p-sortIcon field="montantCredit"></p-sortIcon>
+                                    </th>
+                                    <th class="white-space-nowrap text-center" style="width:20%">
+                                        <i class="pi pi-cog mr-1"></i>Actions
+                                    </th>
+                                </tr>
+                            </ng-template>
+
+                            <ng-template pTemplate="body" let-demande let-rowIndex="rowIndex">
+                                <tr class="hover:bg-surface-50">
+                                    <td>
+                                        <div class="flex flex-column gap-1">
+                                            <span class="font-medium">{{ demande.createAt | date: 'dd/MM/yyyy' }}</span>
+                                            <small class="text-500">{{ demande.createAt | date: 'HH:mm' }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="flex flex-column gap-1">
+                                            <span class="font-semibold text-900">{{ demande.codeMembre }}</span>
+                                            <small class="text-600">{{ demande.nom || 'Nom non disponible' }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <p-chip [label]="demande.referenceCredit"
+                                            styleClass="bg-blue-50 text-blue-700 text-xs">
+                                        </p-chip>
+                                    </td>
+                                    <td class="text-right">
+                                        <div class="flex flex-column gap-1 align-items-end">
+                                            <span class="font-bold text-lg text-green-600">
+                                                {{ formatMontantGNF(demande.montantCredit) }}
+                                            </span>
+                                            <small class="text-500">Montant demandé</small>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <p-button pRipple icon="pi pi-arrow-right" label="Traiter"
+                                            (click)="viewInstanceCredit(demande.referenceCredit, demande.codeMembre, user?.userId!)"
+                                            size="small" severity="success"
+                                            pTooltip="Procéder à la mise en place du crédit">
+                                        </p-button>
+                                    </td>
+                                </tr>
+                            </ng-template>
+
+                            <ng-template pTemplate="emptymessage">
+                                <tr>
+                                    <td colspan="5" class="text-center p-6">
+                                        <div class="flex flex-column align-items-center gap-3">
+                                            <i class="pi pi-inbox text-4xl text-400"></i>
+                                            <span class="text-600 font-medium">Aucune demande en attente trouvée</span>
+                                            <small class="text-500">Les nouvelles demandes apparaîtront ici</small>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </ng-template>
+
+                            <ng-template pTemplate="summary">
+                                <div
+                                    class="flex align-items-center justify-content-between p-2 bg-surface-50 border-round">
+                                    <span class="text-sm font-medium">
+                                        <i class="pi pi-calculator mr-1"></i>
+                                        Total des demandes: {{ state().filteredDemandeAttentes?.length || 0 }}
+                                    </span>
+                                    <span class="text-sm font-semibold text-green-600">
+                                        <i class="pi pi-money-bill mr-1"></i>
+                                        Montant total: {{ formatMontantGNF(getTotalMontant()) }}
+                                    </span>
+                                </div>
+                            </ng-template>
+                        </p-table>
+                    </div>
+                </p-popover>
+            </div>
+
+            <!-- Cas où il n'y a pas de demandes -->
+            <div *ngIf="state().filteredDemandeAttentes?.length === 0 && !state().loading" class="card text-center p-6">
+                <div class="flex flex-column align-items-center gap-4">
+                    <i class="pi pi-check-circle text-6xl text-green-500"></i>
+                    <h3 class="text-xl font-semibold text-900 m-0">Aucune demande en attente</h3>
+                    <p class="text-600 m-0 max-w-30rem">
+                        Toutes les demandes de crédit ont été traitées.
+                        Les nouvelles demandes apparaîtront automatiquement ici.
+                    </p>
+                    <p-button icon="pi pi-refresh" label="Actualiser" (click)="refreshData()"
+                        [loading]="state().loading" severity="secondary">
+                    </p-button>
+                </div>
+            </div>
+        </div>
+
+        <p-toast />
+    </div>
+</div>

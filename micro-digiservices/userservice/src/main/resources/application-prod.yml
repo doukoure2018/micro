@@ -92,14 +92,14 @@ eureka:
 
 ui:
   app:
-    url: ${UI_URL}  # Set to production UI URL
+    url: http://51.91.254.218:4200
 
 key:
   private: keys/private.key
   public: keys/public.key
 
 server:
-  port: ${SERVER_PORT}
+  port: 8085
   tomcat:
     max-threads: 300  # Higher for user service due to expected higher traffic
     min-spare-threads: 30
