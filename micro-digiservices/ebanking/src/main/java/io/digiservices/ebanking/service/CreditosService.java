@@ -1,6 +1,9 @@
 package io.digiservices.ebanking.service;
 
 
+import io.digiservices.ebanking.domain.CreditosClienteResponseDTO;
+import io.digiservices.ebanking.dto.CreditRequest;
+import io.digiservices.ebanking.dto.CreditResponse;
 import io.digiservices.ebanking.paylaod.CreditoPKId;
 import io.digiservices.ebanking.paylaod.CreditosDto;
 
@@ -27,4 +30,25 @@ public interface CreditosService {
     List<CreditosDto> getOngoingCreditosByCodCliente(String codCliente,String indEstado);
 
     CreditosDto updateInstado(Long numCredito,String codAgencia,String indEstado);
+
+    CreditResponse createCredit(CreditRequest request);
+
+    /**
+     *  Liste des Credits et Paiements par CodLiente
+     */
+
+    /**
+     * Obtiene todos los créditos y planes de pago de un cliente
+     * @param codCliente Código del cliente
+     * @return Información completa de créditos y planes de pago
+     */
+    CreditosClienteResponseDTO obtenerCreditosYPlanPagosPorCliente(String codCliente);
+
+    /**
+     * Verifica si un cliente existe y tiene créditos
+     * @param codCliente Código del cliente
+     * @return true si el cliente tiene créditos, false en caso contrario
+     */
+    boolean existeClienteConCreditos(String codCliente);
+
 }

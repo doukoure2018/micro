@@ -19,6 +19,7 @@
 		<module>ebanking</module>
 		<module>notificationservice</module>
         <module>ecreditservice</module>
+        <module>clients</module>
     </modules>
 
 	<properties>

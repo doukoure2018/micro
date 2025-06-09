@@ -1,0 +1,283 @@
+<div class="config-container">
+    <div class="grid">
+        <div class="col-12">
+            <h1 class="text-3xl font-bold text-900 mb-4">
+                <i class="pi pi-sitemap mr-2"></i>
+                Configuration du Réseau
+            </h1>
+        </div>
+    </div>
+
+    <!-- DELEGATIONS SECTION -->
+    <div class="grid">
+        <div class="col-12">
+            <p-card header="Délégations" styleClass="mb-4">
+                <ng-template pTemplate="header">
+                    <div class="flex align-items-center">
+                        <i class="pi pi-building mr-2 text-primary"></i>
+                        <span class="text-xl font-semibold">Délégations</span>
+                    </div>
+                </ng-template>
+
+                <!-- Add Delegation Form -->
+                <form (ngSubmit)="addDelegation()" #delegationFormRef="ngForm" class="mb-4">
+                    <div class="grid">
+                        <div class="col-12 md:col-8">
+                            <div class="field">
+                                <label for="delegationLibele" class="block text-900 font-medium mb-2">
+                                    Nom de la délégation *
+                                </label>
+                                <input pInputText id="delegationLibele" [(ngModel)]="delegationForm.libele"
+                                    name="delegationLibele" placeholder="Entrez le nom de la délégation" required
+                                    class="w-full" />
+                            </div>
+                        </div>
+                        <div class="col-12 md:col-4">
+                            <div class="field">
+                                <label class="block text-900 font-medium mb-2">&nbsp;</label>
+                                <div class="flex gap-2">
+                                    <p-button label="Réinitialiser" icon="pi pi-refresh" severity="secondary"
+                                        size="small" (onClick)="resetForms()"></p-button>
+                                    <p-button [label]="state().submitting ? 'Ajout...' : 'Ajouter'"
+                                        [icon]="state().submitting ? 'pi pi-spin pi-spinner' : 'pi pi-plus'"
+                                        type="submit" [disabled]="state().submitting || !delegationFormRef.valid"
+                                        [loading]="state().submitting"></p-button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Delegations List -->
+                <div class="border-top-1 surface-border pt-4">
+                    <h3 class="text-lg font-semibold text-900 mb-3">Liste des Délégations</h3>
+
+                    <div *ngIf="state().loading" class="flex justify-content-center p-4">
+                        <p-progressSpinner styleClass="w-3rem h-3rem"></p-progressSpinner>
+                    </div>
+
+                    <p-table *ngIf="!state().loading && state().delegations && state().delegations!.length > 0"
+                        [value]="state().delegations!" [rows]="5" [paginator]="state().delegations!.length > 5"
+                        responsiveLayout="scroll" styleClass="p-datatable-sm">
+                        <ng-template pTemplate="header">
+                            <tr>
+                                <th>ID</th>
+                                <th>Nom</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-delegation>
+                            <tr [class.bg-primary-50]="state().selectedDelegationId === delegation.id">
+                                <td>{{ delegation.id }}</td>
+                                <td>{{ delegation.libele }}</td>
+                                <td class="text-center">
+                                    <p-button
+                                        [label]="state().selectedDelegationId === delegation.id ? 'Sélectionné' : 'Sélectionner'"
+                                        [icon]="state().selectedDelegationId === delegation.id ? 'pi pi-check' : 'pi pi-chevron-right'"
+                                        [severity]="state().selectedDelegationId === delegation.id ? 'success' : 'info'"
+                                        size="small" (onClick)="onDelegationSelect(delegation.id!)"></p-button>
+                                </td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+
+                    <p-message *ngIf="!state().loading && (!state().delegations || state().delegations!.length === 0)"
+                        severity="info" text="Aucune délégation trouvée" styleClass="w-full"></p-message>
+                </div>
+            </p-card>
+        </div>
+    </div>
+
+    <!-- AGENCES SECTION -->
+    <div class="grid">
+        <div class="col-12">
+            <p-card header="Agences" styleClass="mb-4"
+                [class]="!state().selectedDelegationId ? 'opacity-60 pointer-events-none' : ''">
+                <ng-template pTemplate="header">
+                    <div class="flex align-items-center">
+                        <i class="pi pi-warehouse mr-2 text-blue-500"></i>
+                        <span class="text-xl font-semibold">Agences</span>
+                    </div>
+                </ng-template>
+
+                <p-message *ngIf="!state().selectedDelegationId" severity="info"
+                    text="Veuillez d'abord sélectionner une délégation pour gérer les agences."
+                    styleClass="w-full mb-4"></p-message>
+
+                <p-message *ngIf="state().selectedDelegationId" severity="success"
+                    [text]="'Délégation sélectionnée - ID: ' + state().selectedDelegationId"
+                    styleClass="w-full mb-4"></p-message>
+
+                <!-- Add Agence Form -->
+                <form (ngSubmit)="addAgence()" #agenceFormRef="ngForm" *ngIf="state().selectedDelegationId"
+                    class="mb-4">
+                    <div class="grid">
+                        <div class="col-12 md:col-8">
+                            <div class="field">
+                                <label for="agenceLibele" class="block text-900 font-medium mb-2">
+                                    Nom de l'agence *
+                                </label>
+                                <input pInputText id="agenceLibele" [(ngModel)]="agenceForm.libele" name="agenceLibele"
+                                    placeholder="Entrez le nom de l'agence" required class="w-full" />
+                            </div>
+                        </div>
+                        <div class="col-12 md:col-4">
+                            <div class="field">
+                                <label class="block text-900 font-medium mb-2">&nbsp;</label>
+                                <p-button [label]="state().submitting ? 'Ajout...' : 'Ajouter Agence'"
+                                    [icon]="state().submitting ? 'pi pi-spin pi-spinner' : 'pi pi-plus'" type="submit"
+                                    severity="info" [disabled]="state().submitting || !agenceFormRef.valid"
+                                    [loading]="state().submitting" class="w-full"></p-button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Agences List -->
+                <div class="border-top-1 surface-border pt-4" *ngIf="state().selectedDelegationId">
+                    <h3 class="text-lg font-semibold text-900 mb-3">Liste des Agences</h3>
+
+                    <div *ngIf="state().loading" class="flex justify-content-center p-4">
+                        <p-progressSpinner styleClass="w-3rem h-3rem"></p-progressSpinner>
+                    </div>
+
+                    <p-table *ngIf="!state().loading && state().agences && state().agences!.length > 0"
+                        [value]="state().agences!" [rows]="5" [paginator]="state().agences!.length > 5"
+                        responsiveLayout="scroll" styleClass="p-datatable-sm">
+                        <ng-template pTemplate="header">
+                            <tr>
+                                <th>ID</th>
+                                <th>Nom</th>
+                                <th>Délégation ID</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-agence>
+                            <tr [class.bg-blue-50]="state().selectedAgenceId === agence.id">
+                                <td>{{ agence.id }}</td>
+                                <td>{{ agence.libele }}</td>
+                                <td>{{ agence.delegation_id }}</td>
+                                <td class="text-center">
+                                    <p-button
+                                        [label]="state().selectedAgenceId === agence.id ? 'Sélectionné' : 'Sélectionner'"
+                                        [icon]="state().selectedAgenceId === agence.id ? 'pi pi-check' : 'pi pi-chevron-right'"
+                                        [severity]="state().selectedAgenceId === agence.id ? 'success' : 'info'"
+                                        size="small" (onClick)="onAgenceSelect(agence.id!)"></p-button>
+                                </td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+
+                    <p-message *ngIf="!state().loading && (!state().agences || state().agences!.length === 0)"
+                        severity="info" text="Aucune agence trouvée pour cette délégation"
+                        styleClass="w-full"></p-message>
+                </div>
+            </p-card>
+        </div>
+    </div>
+
+    <!-- POINT VENTES SECTION -->
+    <div class="grid">
+        <div class="col-12">
+            <p-card header="Points de Vente" styleClass="mb-4"
+                [class]="!state().selectedAgenceId ? 'opacity-60 pointer-events-none' : ''">
+                <ng-template pTemplate="header">
+                    <div class="flex align-items-center">
+                        <i class="pi pi-shop mr-2 text-orange-500"></i>
+                        <span class="text-xl font-semibold">Points de Vente</span>
+                    </div>
+                </ng-template>
+
+                <p-message *ngIf="!state().selectedAgenceId" severity="info"
+                    text="Veuillez d'abord sélectionner une agence pour gérer les points de vente."
+                    styleClass="w-full mb-4"></p-message>
+
+                <p-message *ngIf="state().selectedAgenceId" severity="success"
+                    [text]="'Agence sélectionnée - ID: ' + state().selectedAgenceId + ' | Délégation ID: ' + state().selectedDelegationId"
+                    styleClass="w-full mb-4"></p-message>
+
+                <!-- Add Point Vente Form -->
+                <form (ngSubmit)="addPointVente()" #pointVenteFormRef="ngForm" *ngIf="state().selectedAgenceId"
+                    class="mb-4">
+                    <div class="grid">
+                        <div class="col-12 md:col-4">
+                            <div class="field">
+                                <label for="pointVenteLibele" class="block text-900 font-medium mb-2">
+                                    Nom du point de vente *
+                                </label>
+                                <input pInputText id="pointVenteLibele" [(ngModel)]="pointVenteForm.libele"
+                                    name="pointVenteLibele" placeholder="Nom du point de vente" required
+                                    class="w-full" />
+                            </div>
+                        </div>
+                        <div class="col-12 md:col-4">
+                            <div class="field">
+                                <label for="pointVenteCode" class="block text-900 font-medium mb-2">
+                                    Code du point de vente *
+                                </label>
+                                <input pInputText id="pointVenteCode" [(ngModel)]="pointVenteForm.code"
+                                    name="pointVenteCode" placeholder="Code du point de vente" required
+                                    class="w-full" />
+                            </div>
+                        </div>
+                        <div class="col-12 md:col-4">
+                            <div class="field">
+                                <label class="block text-900 font-medium mb-2">&nbsp;</label>
+                                <p-button [label]="state().submitting ? 'Ajout...' : 'Ajouter Point de Vente'"
+                                    [icon]="state().submitting ? 'pi pi-spin pi-spinner' : 'pi pi-plus'" type="submit"
+                                    severity="warn" [disabled]="state().submitting || !pointVenteFormRef.valid"
+                                    [loading]="state().submitting" class="w-full"></p-button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Point Ventes List -->
+                <div class="border-top-1 surface-border pt-4" *ngIf="state().selectedAgenceId">
+                    <h3 class="text-lg font-semibold text-900 mb-3">Liste des Points de Vente</h3>
+
+                    <div *ngIf="state().loading" class="flex justify-content-center p-4">
+                        <p-progressSpinner styleClass="w-3rem h-3rem"></p-progressSpinner>
+                    </div>
+
+                    <p-table *ngIf="!state().loading && state().pointeVentes && state().pointeVentes!.length > 0"
+                        [value]="state().pointeVentes!" [rows]="5" [paginator]="state().pointeVentes!.length > 5"
+                        responsiveLayout="scroll" styleClass="p-datatable-sm">
+                        <ng-template pTemplate="header">
+                            <tr>
+                                <th>ID</th>
+                                <th>Nom</th>
+                                <th>Code</th>
+                                <th>Agence ID</th>
+                                <th>Délégation ID</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-pointVente>
+                            <tr>
+                                <td>{{ pointVente.id }}</td>
+                                <td>{{ pointVente.libele }}</td>
+                                <td>
+                                    <p-tag [value]="pointVente.code" severity="info"></p-tag>
+                                </td>
+                                <td>{{ pointVente.agence_id }}</td>
+                                <td>{{ pointVente.delegation_id }}</td>
+                                <td class="text-center">
+                                    <p-button icon="pi pi-eye" severity="help" size="small" [text]="true"
+                                        pTooltip="Voir détails"></p-button>
+                                </td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+
+                    <p-message *ngIf="!state().loading && (!state().pointeVentes || state().pointeVentes!.length === 0)"
+                        severity="info" text="Aucun point de vente trouvé pour cette agence"
+                        styleClass="w-full"></p-message>
+                </div>
+            </p-card>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Messages -->
+<p-toast></p-toast>

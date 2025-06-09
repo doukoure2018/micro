@@ -1,89 +1,615 @@
-<!-- analyse-credit.component.html -->
-<div class="card">
+<div class="credit-history-component">
+    <div class="grid">
+        <div class="col-12">
+            <div class="flex flex-wrap gap-2 items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-900 m-0">
+                        <i class="pi pi-chart-line mr-2 text-blue-600"></i>
+                        Analyse de Crédit
+                    </h2>
+                    <p class="text-600 m-0 mt-1">Gestion et historique des crédits clients</p>
+                </div>
 
-    <div class="flex flex-wrap gap-2 items-center justify-between">
-        <p-icon-field class="w-full sm:w-80 order-1 sm:order-none">
-
-        </p-icon-field>
-        <button (click)="newAnalyseCredit()" pButton outlined class="w-full sm:w-auto flex-order-0 sm:flex-order-1"
-            icon="pi pi-file" label="Nouvelle Analyse de Credit"></button>
-    </div>
-
-
-    <!-- Search Form -->
-    <form class="p-fluid">
-        <div class="grid">
-            <div class="col-8 md:col-8 sm:col-12">
-                <span class="p-input-icon-left w-full">
-                    <i class="pi pi-search"></i>
-                    <input type="text" pInputText [(ngModel)]="searchQuery" name="search"
-                        placeholder="Rechercher le client à partir de son numéro membre" class="w-full" />
-                </span>
-            </div>
-            <div class="col-4 md:col-4 sm:col-12">
-                <p-button label="Trouver" icon="pi pi-search" styleClass="w-full" [loading]="state().searching"
-                    (onClick)="searchCredits()"></p-button>
+                @if (!state().user || state().user?.role !== 'DA' || !state().demandeAnalyseCredits ||
+                state().demandeAnalyseCredits!.length === 0) {
+                <button (click)="newAnalyseCredit(state().user?.userId!)" pButton outlined
+                    class="w-full sm:w-auto flex-order-0 sm:flex-order-1" icon="pi pi-file"
+                    label="Nouvelle Analyse de Crédit">
+                </button>
+                }
             </div>
         </div>
-    </form>
 
-    <!-- Messages -->
-    @if(state().message){
-    <div class="p-message p-message-info mt-3">
-        <span class="p-message-text">{{state().message}}</span>
-    </div>
-    }
-
-    @if (state().error) {
-    <div class="p-message p-message-error mt-3">
-        <span class="p-message-text">{{state().error}}</span>
-    </div>
-    }
-
-    <!-- Credits List -->
-    @if(state().credits!.length > 0){
-    <div class="mt-4">
-        <h6>Résultats de la recherche</h6>
-        <div class="card">
-            <p-table [value]="state().credits!" [tableStyle]="{'min-width': '50rem'}" styleClass="p-datatable-sm"
-                [paginator]="true" [rows]="5">
-                <ng-template pTemplate="header">
-                    <tr>
-                        <th>Numéro Crédit</th>
-                        <th>Agence</th>
-                        <th>Client</th>
-                        <th>Montant</th>
-                        <th>Observations</th>
-                        <th>Actions</th>
-                    </tr>
-                </ng-template>
-                <ng-template pTemplate="body" let-credit>
-                    <tr>
-                        <td>{{credit.creditoPKId.numCredito}}</td>
-                        <td>{{credit.creditoPKId.codAgencia}}</td>
-                        <td>{{credit.codCliente}}</td>
-                        <td>{{credit.monCredito | currency:'GNF ':'symbol':'1.0-0'}}</td>
-                        <td>{{credit.observaciones}}</td>
-                        <td>
-                            <button (click)="viewDetailCredit(credit.creditoPKId.numCredito)" pButton pRipple
-                                icon="pi pi-eye" class="p-button-rounded p-button-info mr-2" title="Voir détails">
-                            </button>
-                        </td>
-                    </tr>
-                </ng-template>
-                <ng-template pTemplate="emptymessage">
-                    <tr>
-                        <td colspan="6" class="text-center">Aucun crédit trouvé.</td>
-                    </tr>
-                </ng-template>
-            </p-table>
+        <!-- DA Table Section - Full Width -->
+        @if (state().user?.role === 'DA' && state().demandeAnalyseCredits && state().demandeAnalyseCredits!.length > 0)
+        {
+        <div class="col-12">
+            <div class="card bg-orange-50 border-left-3 border-orange-500 mb-4">
+                <div class="flex align-items-center mb-3">
+                    <i class="pi pi-clock text-orange-600 text-xl mr-2"></i>
+                    <h4 class="m-0 text-orange-800">Demandes d'Analyse de Crédit en Attente</h4>
+                </div>
+                <p-table [value]="state().demandeAnalyseCredits!" [tableStyle]="{'min-width': '50rem'}"
+                    styleClass="p-datatable-sm custom-table" [paginator]="true" [rows]="5">
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th>Date Demande</th>
+                            <th>Montant Demandé</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-demande>
+                        <tr>
+                            <td>{{demande.dateDemande | date:'dd/MM/yyyy'}}</td>
+                            <td>{{demande.montantDemande | currency:'GNF ':'symbol':'1.0-0'}}</td>
+                            <td>
+                                <p-tag value="En Attente" severity="warn"
+                                    *ngIf="demande.statut === 'EN_ATTENTE'"></p-tag>
+                                <p-tag value="Approuvé" severity="success"
+                                    *ngIf="demande.statut === 'APPROUVE'"></p-tag>
+                                <p-tag value="Rejeté" severity="danger" *ngIf="demande.statut === 'REJETE'"></p-tag>
+                            </td>
+                            <td>
+                                <button (click)="viewDetailDemandeCredit(demande.demandeCreditId,state().user?.userId!)"
+                                    pButton pRipple icon="pi pi-eye" class="p-button-rounded p-button-info p-button-sm"
+                                    pTooltip="Voir détails" tooltipPosition="top">
+                                </button>
+                            </td>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="emptymessage">
+                        <tr>
+                            <td colspan="4" class="text-center p-4">
+                                <i class="pi pi-info-circle text-blue-500 text-2xl mb-2"></i>
+                                <div>Aucune demande d'analyse en attente.</div>
+                            </td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+            </div>
         </div>
-    </div>
-    }
+        }
 
-    <!-- @if(state().credits!.length === 0 && !state().loading && !state().searching){
-    <div class="p-message p-message-info mt-3">
-        <span class="p-message-text">Aucun crédit trouvé pour ce client.</span>
+        <!-- Separator -->
+        <div class="col-12">
+            <p-divider></p-divider>
+        </div>
+
+        <!-- Search Section -->
+        <div class="col-12">
+            <div class="search-section">
+                <div class="flex align-items-center mb-4">
+                    <i class="pi pi-search text-white text-xl mr-2"></i>
+                    <h4 class="m-0 search-title">Recherche d'Historique de Crédit</h4>
+                </div>
+
+                <form class="p-fluid">
+                    <div class="grid">
+                        <div class="col-12 md:col-8">
+                            <p-iconField iconPosition="left">
+                                <p-inputIcon styleClass="pi pi-search"></p-inputIcon>
+                                <input type="text" pInputText [(ngModel)]="searchQuery" name="search"
+                                    placeholder="Saisir le numéro de membre (ex: 95100009222)" class="w-full"
+                                    (keyup.enter)="searchCredits()" />
+                            </p-iconField>
+                        </div>
+                        <div class="col-12 md:col-2">
+                            <p-button label="Rechercher" icon="pi pi-search" styleClass="w-full"
+                                [loading]="state().searching" (onClick)="searchCredits()">
+                            </p-button>
+                        </div>
+                        <div class="col-12 md:col-2">
+                            <p-button label="Effacer" icon="pi pi-times" styleClass="w-full" severity="secondary"
+                                outlined (onClick)="clearSearch()">
+                            </p-button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        @if (state().searching) {
+        <div class="col-12">
+            <div class="loading-container text-center">
+                <p-progressSpinner strokeWidth="3"></p-progressSpinner>
+                <p class="mt-3 text-600">Recherche en cours...</p>
+            </div>
+        </div>
+        }
+
+        <!-- Messages Section -->
+        @if(state().message && !state().searching){
+        <div class="col-12">
+            <p-message severity="info" [text]="state().message"></p-message>
+        </div>
+        }
+
+        @if (state().error && !state().searching) {
+        <div class="col-12">
+            <p-message severity="error" [text]="state().error"></p-message>
+        </div>
+        }
+
+        <!-- Credit History Results -->
+        @if(state().histoCredits && !state().searching) {
+
+        <!-- Client Summary Card -->
+        <div class="col-12">
+            <div class="card bg-green-50 border-left-3 border-green-500 mb-4 fade-in-up">
+                <div class="flex align-items-center justify-content-between">
+                    <div>
+                        <div class="flex align-items-center mb-2">
+                            <i class="pi pi-user text-green-600 text-xl mr-2"></i>
+                            <h4 class="m-0 text-green-800">Client: {{ state().histoCredits!.codCliente }}</h4>
+                        </div>
+                        <p class="text-600 m-0">{{ state().histoCredits!.mensaje }}</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-900 font-bold text-3xl gradient-text">
+                            {{ state().histoCredits!.creditos!.length! || 0 }}
+                        </div>
+                        <div class="text-600 text-sm">Crédit(s) trouvé(s)</div>
+                    </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="grid mt-4">
+                    <div class="col-6 md:col-3">
+                        <div class="text-center">
+                            <div class="text-green-600 font-bold text-xl">{{ formatCurrency(getTotalCreditsAmount()) }}
+                            </div>
+                            <div class="text-500 text-sm">Total crédits</div>
+                        </div>
+                    </div>
+                    <div class="col-6 md:col-3">
+                        <div class="text-center">
+                            <div class="text-blue-600 font-bold text-xl">{{ formatCurrency(getTotalPaidAmount()) }}
+                            </div>
+                            <div class="text-500 text-sm">Total payé</div>
+                        </div>
+                    </div>
+                    <div class="col-6 md:col-3">
+                        <div class="text-center">
+                            <div class="text-orange-600 font-bold text-xl">{{ formatCurrency(getTotalRemainingAmount())
+                                }}</div>
+                            <div class="text-500 text-sm">Solde restant</div>
+                        </div>
+                    </div>
+                    <div class="col-6 md:col-3">
+                        <div class="text-center">
+                            <div class="text-purple-600 font-bold text-xl">{{ getActiveCreditsCount() }}</div>
+                            <div class="text-500 text-sm">Crédits actifs</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        @if(state().histoCredits!.resumenes && state().histoCredits!.resumenes.length > 0) {
+        <div class="col-12">
+            <h4 class="text-900 mb-3">
+                <i class="pi pi-chart-pie mr-2 text-blue-600"></i>
+                Résumés des Crédits
+            </h4>
+            <div class="grid">
+                @for (resume of state().histoCredits!.resumenes; track resume.numCredito) {
+                <div class="col-12 md:col-6 lg:col-4">
+                    <div class="credit-card fade-in-up">
+                        <div class="credit-header">
+                            <div class="flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="text-white text-sm opacity-90">Crédit N°</div>
+                                    <div class="credit-number">{{ resume.numCredito }}</div>
+                                </div>
+                                <div class="bg-white bg-opacity-20 border-round p-2">
+                                    <i class="pi pi-chart-pie text-white text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="credit-body">
+                            <div class="grid gap-3">
+                                <div class="col-6">
+                                    <div class="text-600 text-sm">Total à payer</div>
+                                    <div class="text-900 font-semibold">{{ formatCurrency(resume.totalAPagar) }}</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-600 text-sm">Total payé</div>
+                                    <div class="text-green-600 font-semibold">{{ formatCurrency(resume.totalPagado) }}
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-600 text-sm">Échéances</div>
+                                    <div class="text-blue-600 font-semibold">{{ resume.echeancesPagadas }}/{{
+                                        resume.totalEcheances }}</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-600 text-sm">Restant</div>
+                                    <div class="text-orange-600 font-semibold">{{ formatCurrency(resume.totalRestant) }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Progress Bar -->
+                            <div class="mt-4">
+                                <div class="flex align-items-center justify-content-between mb-2">
+                                    <span class="text-600 text-sm font-medium">Progression</span>
+                                    <span class="text-900 text-sm font-semibold">
+                                        {{ ((resume.echeancesPagadas / resume.totalEcheances) * 100).toFixed(1) }}%
+                                    </span>
+                                </div>
+                                <div class="custom-progress">
+                                    <p-progressBar [value]="(resume.echeancesPagadas / resume.totalEcheances) * 100"
+                                        [style]="{'height': '8px'}">
+                                    </p-progressBar>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                }
+            </div>
+        </div>
+        }
+
+        <!-- Credits List -->
+        @if(state().histoCredits!.creditos && state().histoCredits!.creditos.length > 0) {
+        <div class="col-12">
+            <div class="card shadow-medium">
+                <div class="flex align-items-center justify-content-between mb-4">
+                    <h4 class="m-0 text-900">
+                        <i class="pi pi-list mr-2 text-blue-600"></i>
+                        Historique Détaillé des Crédits
+                    </h4>
+                    <div class="flex gap-2">
+                        <p-tag [value]="state().histoCredits!.creditos.length + ' crédit(s)'" severity="info"></p-tag>
+                        <p-button icon="pi pi-download" size="small" outlined pTooltip="Exporter"
+                            (onClick)="exportCreditHistory()"></p-button>
+                        <p-button icon="pi pi-print" size="small" outlined pTooltip="Imprimer"
+                            (onClick)="printCreditHistory()"></p-button>
+                    </div>
+                </div>
+
+                <div class="custom-table">
+                    <p-table [value]="state().histoCredits!.creditos" [tableStyle]="{'min-width': '70rem'}"
+                        styleClass="p-datatable-sm" [paginator]="true" [rows]="5" [responsive]="true"
+                        [scrollable]="true" scrollHeight="600px">
+                        <ng-template pTemplate="header">
+                            <tr>
+                                <th style="width: 100px">N° Crédit</th>
+                                <th style="width: 120px">Type</th>
+                                <th style="width: 80px">Agence</th>
+                                <th style="width: 130px">Montant</th>
+                                <th style="width: 130px">Solde</th>
+                                <th style="width: 80px">Taux</th>
+                                <th style="width: 100px">Durée</th>
+                                <th style="width: 110px">Ouverture</th>
+                                <th style="width: 110px">Échéance</th>
+                                <th style="width: 100px">Statut</th>
+                                <!-- <th style="width: 120px">Actions</th> -->
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-credit>
+                            <tr>
+                                <td>
+                                    <div class="font-bold text-blue-600">{{ credit.numCredito }}</div>
+                                </td>
+                                <td>
+                                    <p-tag [value]="getCreditTypeLabel(credit.tipCredito)" severity="secondary"
+                                        class="text-xs"></p-tag>
+                                </td>
+                                <td>
+                                    <span class="font-medium">{{ credit.codAgencia }}</span>
+                                </td>
+                                <td>
+                                    <div class="text-900 font-semibold">{{ formatCurrency(credit.monCredito) }}</div>
+                                </td>
+                                <td>
+                                    <div
+                                        [ngClass]="credit.monSaldo === 0 ? 'text-green-600 font-semibold' : 'text-orange-600 font-semibold'">
+                                        {{ formatCurrency(credit.monSaldo) }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="font-medium">{{ credit.tasaInteres }}%</span>
+                                </td>
+                                <td>
+                                    <span class="text-sm">{{ credit.plazoCredito }} jours</span>
+                                </td>
+                                <td>
+                                    <span class="text-sm">{{ formatDate(credit.fecApertura) }}</span>
+                                </td>
+                                <td>
+                                    <span class="text-sm">{{ formatDate(credit.fecVencimiento) }}</span>
+                                </td>
+                                <td>
+                                    <p-tag [value]="getStatusLabel(credit.indEstado)"
+                                        [severity]="getStatusSeverity(credit.indEstado)"></p-tag>
+                                </td>
+                                <!-- <td>
+                                    <div class="flex gap-1">
+                                        <button (click)="viewDetailCredit(credit.numCredito)" pButton pRipple
+                                            icon="pi pi-eye" class="p-button-rounded p-button-info p-button-sm"
+                                            pTooltip="Voir détails" tooltipPosition="top">
+                                        </button>
+                                        <button (click)="viewPlanPago(credit.numCredito)" pButton pRipple
+                                            icon="pi pi-calendar" class="p-button-rounded p-button-success p-button-sm"
+                                            pTooltip="Plan de paiement" tooltipPosition="top">
+                                        </button>
+                                    </div>
+                                </td> -->
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="emptymessage">
+                            <tr>
+                                <td colspan="11" class="text-center p-4">
+                                    <i class="pi pi-info-circle text-blue-500 text-2xl mb-2"></i>
+                                    <div>Aucun crédit trouvé pour ce client.</div>
+                                </td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+                </div>
+            </div>
+        </div>
+        }
+
+        <!-- Payment Plan Details - Organized by Credit -->
+        @if(state().histoCredits!.planPagos && state().histoCredits!.planPagos.length > 0) {
+        <div class="col-12">
+            <div class="card shadow-medium">
+                <div class="flex align-items-center justify-content-between mb-4">
+                    <h4 class="m-0 text-900">
+                        <i class="pi pi-calendar text-blue-600 mr-2"></i>
+                        Plans de Paiement par Crédit
+                    </h4>
+                    <p-tag [value]="state().histoCredits!.planPagos.length + ' échéances au total'"
+                        severity="info"></p-tag>
+                </div>
+
+                <p-accordion [multiple]="true">
+                    @for (credit of state().histoCredits!.creditos; track credit.numCredito) {
+                    @if (getPlanPagosByCredit(credit.numCredito); as planPagos) {
+                    @if (planPagos.length > 0) {
+                    <p-accordionTab>
+                        <ng-template pTemplate="header">
+                            <div class="flex align-items-center justify-content-between w-full">
+                                <div class="flex align-items-center">
+                                    <i class="pi pi-credit-card text-blue-600 mr-3"></i>
+                                    <div>
+                                        <div class="font-bold text-lg">Crédit N° {{ credit.numCredito }}</div>
+                                        <div class="text-sm text-600">
+                                            {{ getCreditTypeLabel(credit.tipCredito) }} -
+                                            {{ formatCurrency(credit.monCredito) }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex align-items-center gap-2">
+                                    <p-tag [value]="planPagos.length + ' échéances'" severity="info"
+                                        class="mr-2"></p-tag>
+                                    <p-tag [value]="getStatusLabel(credit.indEstado)"
+                                        [severity]="getStatusSeverity(credit.indEstado)"></p-tag>
+                                </div>
+                            </div>
+                        </ng-template>
+
+                        <!-- Credit Summary -->
+                        <div class="mb-4 p-3 bg-gray-50 border-round">
+                            <div class="grid">
+                                <div class="col-6 md:col-3">
+                                    <div class="text-center">
+                                        <div class="text-green-600 font-bold">{{ formatCurrency(credit.monCredito) }}
+                                        </div>
+                                        <div class="text-500 text-sm">Montant initial</div>
+                                    </div>
+                                </div>
+                                <div class="col-6 md:col-3">
+                                    <div class="text-center">
+                                        <div class="text-blue-600 font-bold">{{
+                                            formatCurrency(credit.monPagadoPrincipal) }}</div>
+                                        <div class="text-500 text-sm">Capital remboursé</div>
+                                    </div>
+                                </div>
+                                <div class="col-6 md:col-3">
+                                    <div class="text-center">
+                                        <div class="text-purple-600 font-bold">{{
+                                            formatCurrency(credit.monPagadoIntereses) }}</div>
+                                        <div class="text-500 text-sm">Intérêts payés</div>
+                                    </div>
+                                </div>
+                                <div class="col-6 md:col-3">
+                                    <div class="text-center">
+                                        <div class="text-orange-600 font-bold">{{ formatCurrency(credit.monSaldo) }}
+                                        </div>
+                                        <div class="text-500 text-sm">Solde restant</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Progress Bar for this credit -->
+                            <div class="mt-3">
+                                <div class="flex align-items-center justify-content-between mb-2">
+                                    <span class="text-600 text-sm font-medium">Progression du remboursement</span>
+                                    <span class="text-900 text-sm font-semibold">
+                                        {{ calculateProgress(credit).toFixed(1) }}%
+                                    </span>
+                                </div>
+                                <p-progressBar [value]="calculateProgress(credit)" [style]="{'height': '8px'}">
+                                </p-progressBar>
+                            </div>
+                        </div>
+
+                        <!-- Payment Plan Table for this credit -->
+                        <div class="custom-table">
+                            <p-table [value]="planPagos" [tableStyle]="{'min-width': '70rem'}"
+                                styleClass="p-datatable-sm" [paginator]="true" [rows]="12" [scrollable]="true"
+                                scrollHeight="400px">
+                                <ng-template pTemplate="header">
+                                    <tr>
+                                        <th style="width: 80px">N° Échéance</th>
+                                        <th style="width: 110px">Date Échéance</th>
+                                        <th style="width: 110px">Date Paiement</th>
+                                        <th style="width: 120px">Montant Échéance</th>
+                                        <th style="width: 120px">Capital</th>
+                                        <th style="width: 120px">Intérêts</th>
+                                        <th style="width: 120px">Solde Restant</th>
+                                        <th style="width: 80px">Jours Int.</th>
+                                        <th style="width: 100px">Statut</th>
+                                    </tr>
+                                </ng-template>
+                                <ng-template pTemplate="body" let-plan let-rowIndex="rowIndex">
+                                    <tr
+                                        [ngClass]="{'bg-green-50': plan.indEstado === 'C', 'bg-orange-50': plan.indEstado === 'A'}">
+                                        <td>
+                                            <span class="font-semibold"
+                                                [ngClass]="plan.numCuota === 0 ? 'text-blue-600' : 'text-900'">
+                                                {{ plan.numCuota === 0 ? 'Ouverture' : plan.numCuota }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="text-sm">{{ formatDate(plan.fecCuota) }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="text-sm"
+                                                [ngClass]="plan.fecCancelacion ? 'text-green-600 font-semibold' : 'text-500'">
+                                                {{ plan.fecCancelacion ? formatDate(plan.fecCancelacion) : '-' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="font-semibold">{{ formatCurrency(plan.monCuota) }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="text-blue-600 font-medium">{{ formatCurrency(plan.monPrincipal)
+                                                }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="text-purple-600 font-medium">{{ formatCurrency(plan.monInt)
+                                                }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="font-medium"
+                                                [ngClass]="plan.salCredito === 0 ? 'text-green-600' : 'text-orange-600'">
+                                                {{ formatCurrency(plan.salCredito) }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="text-sm text-600">{{ plan.diaInt }}</span>
+                                        </td>
+                                        <td>
+                                            <p-tag [value]="getStatusLabel(plan.indEstado)"
+                                                [severity]="getStatusSeverity(plan.indEstado)" class="text-xs"></p-tag>
+                                        </td>
+                                    </tr>
+                                </ng-template>
+                                <ng-template pTemplate="emptymessage">
+                                    <tr>
+                                        <td colspan="9" class="text-center p-4">
+                                            <i class="pi pi-info-circle text-blue-500 text-xl mb-2"></i>
+                                            <div>Aucun plan de paiement trouvé pour ce crédit.</div>
+                                        </td>
+                                    </tr>
+                                </ng-template>
+                            </p-table>
+                        </div>
+
+                        <!-- Summary for this credit -->
+                        <div class="mt-3 p-3 bg-blue-50 border-round">
+                            <div class="grid">
+                                <div class="col-6 md:col-3">
+                                    <div class="text-sm text-600">Échéances programmées</div>
+                                    <div class="font-bold text-blue-600">{{ planPagos.length }}</div>
+                                </div>
+                                <div class="col-6 md:col-3">
+                                    <div class="text-sm text-600">Échéances payées</div>
+                                    <div class="font-bold text-green-600">{{ getPaidInstallments(planPagos) }}</div>
+                                </div>
+                                <div class="col-6 md:col-3">
+                                    <div class="text-sm text-600">Échéances restantes</div>
+                                    <div class="font-bold text-orange-600">{{ getRemainingInstallments(planPagos) }}
+                                    </div>
+                                </div>
+                                <div class="col-6 md:col-3">
+                                    <div class="text-sm text-600">Taux d'intérêt</div>
+                                    <div class="font-bold text-purple-600">{{ credit.tasaInteres }}%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </p-accordionTab>
+                    }
+                    }
+                    }
+                </p-accordion>
+            </div>
+        </div>
+        }
+
+        <!-- Risk Assessment Card -->
+        @if(state().histoCredits && state().histoCredits?.creditos && state().histoCredits?.creditos?.length! > 0) {
+        <div class="col-12">
+            <div class="card border-left-3 border-purple-500">
+                <div class="flex align-items-center mb-3">
+                    <i class="pi pi-shield text-purple-600 text-xl mr-2"></i>
+                    <h4 class="m-0 text-purple-800">Évaluation de Risque</h4>
+                </div>
+
+                @if (getRiskAssessment(); as risk) {
+                <div class="grid">
+                    <div class="col-12 md:col-4">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold mb-2" [ngClass]="{
+                                    'text-green-600': risk.level === 'FAIBLE',
+                                    'text-blue-600': risk.level === 'MODERE',
+                                    'text-orange-600': risk.level === 'ELEVE',
+                                    'text-red-600': risk.level === 'TRES_ELEVE'
+                                }">
+                                {{ risk.level }}
+                            </div>
+                            <div class="text-600">Niveau de risque</div>
+                        </div>
+                    </div>
+                    <div class="col-12 md:col-4">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold mb-2 text-900">{{ risk.score }}%</div>
+                            <div class="text-600">Score de confiance</div>
+                        </div>
+                    </div>
+                    <div class="col-12 md:col-4">
+                        <div>
+                            <div class="text-600 text-sm font-semibold mb-2">Facteurs d'évaluation :</div>
+                            @for (factor of risk.factors; track factor) {
+                            <div class="text-700 text-sm mb-1">• {{ factor }}</div>
+                            }
+                        </div>
+                    </div>
+                </div>
+                }
+            </div>
+        </div>
+        }
+        }
+
+        <!-- Empty State when no search has been performed -->
+        @if(!state().histoCredits && !state().searching && !state().message && !state().error) {
+        <div class="col-12">
+            <div class="empty-state">
+                <i class="pi pi-search empty-icon"></i>
+                <h3 class="empty-title">Recherche d'Historique de Crédit</h3>
+                <p class="empty-description">
+                    Saisissez un numéro de membre pour consulter l'historique de ses crédits
+                </p>
+                <div class="glass-effect border-round p-3 text-left max-w-md mx-auto">
+                    <h6 class="text-blue-800 mb-2">💡 Conseils de recherche :</h6>
+                    <ul class="text-blue-700 text-sm list-none p-0 m-0">
+                        <li class="mb-1">• Utilisez le numéro complet du membre</li>
+                        <li class="mb-1">• Exemple : 95100009222</li>
+                        <li>• Vérifiez la saisie en cas d'erreur</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        }
     </div>
-    } -->
 </div>

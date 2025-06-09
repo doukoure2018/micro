@@ -13,7 +13,6 @@ import { InputTextModule } from 'primeng/inputtext';
 import { StepsModule } from 'primeng/steps';
 import { ToastModule } from 'primeng/toast';
 import { CalendarModule } from 'primeng/calendar';
-import { DemandeCredititCompleteDTO } from '@/interface/demandeCredititComplete';
 import { IResponse } from '@/interface/response';
 import { TextareaModule } from 'primeng/textarea';
 import { InputGroupModule } from 'primeng/inputgroup';
@@ -23,6 +22,7 @@ import { ListboxModule } from 'primeng/listbox';
 import { AccordionModule } from 'primeng/accordion';
 import { TableModule } from 'primeng/table';
 import { PanelModule } from 'primeng/panel';
+import { DemandeCreditCompleteDTO } from '@/interface/demandeCreditComplete';
 
 // D'après les définitions de types de PrimeNG (v14+)
 type PrimeSeverity = 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast';
@@ -162,12 +162,14 @@ export class StepCreditComponent {
         // Formulaire pour les résultats actuels
         this.resultatActuelForm = this.fb.group({
             chiffreAffaires: [0, [Validators.required, Validators.min(0)]],
+            autresRevenus: [0, Validators.min(0)], // NOUVEAU CHAMP
             coutMarchandises: [0, [Validators.required, Validators.min(0)]]
         });
 
         // Formulaire pour les résultats prévisionnels
         this.resultatPrevisionnelForm = this.fb.group({
             chiffreAffaires: [0, [Validators.required, Validators.min(0)]],
+            autresRevenus: [0, Validators.min(0)], // NOUVEAU CHAMP
             coutMarchandises: [0, [Validators.required, Validators.min(0)]]
         });
 
@@ -360,6 +362,7 @@ export class StepCreditComponent {
     saveResultatActuelToResume() {
         this.resumeData.resultatActuel = {
             chiffre_affaires: this.resultatActuelForm.get('chiffreAffaires')?.value || 0,
+            autres_revenus: this.resultatActuelForm.get('autresRevenus')?.value || 0, // NOUVEAU
             cout_marchandises: this.resultatActuelForm.get('coutMarchandises')?.value || 0
         };
     }
@@ -367,10 +370,10 @@ export class StepCreditComponent {
     saveResultatPrevisionnelToResume() {
         this.resumeData.resultatPrevisionnel = {
             chiffre_affaires: this.resultatPrevisionnelForm.get('chiffreAffaires')?.value || 0,
+            autres_revenus: this.resultatPrevisionnelForm.get('autresRevenus')?.value || 0, // NOUVEAU
             cout_marchandises: this.resultatPrevisionnelForm.get('coutMarchandises')?.value || 0
         };
     }
-
     saveChargesActuellesToResume() {
         this.resumeData.chargesActuelles = {
             cout_transport_production: this.chargesActuellesForm.get('coutTransportProduction')?.value || 0,
@@ -415,31 +418,31 @@ export class StepCreditComponent {
         this.saveDemandeCreditToResume();
     }
 
+    // ✅ Mise à jour de la méthode finaliserDemande() :
     finaliserDemande() {
         this.loading.set(true);
 
-        // Création de l'objet DTO pour la demande complète
-        const demandeComplete: DemandeCredititCompleteDTO = {
-            // Données du promoteur
+        const demandeComplete: DemandeCreditCompleteDTO = {
+            // Promoteur
             nomPromoteur: this.infoBaseForm.get('nomPromoteur')?.value || '',
             prenomPromoteur: this.infoBaseForm.get('prenomPromoteur')?.value || '',
-            dateNaissancePromoteur: this.formatDate(this.infoBaseForm.get('dateNaissance')?.value),
+            dateNaissancePromoteur: this.formatDate(this.infoBaseForm.get('dateNaissance')?.value), // ← Format ISO
             numeroIdentitePromoteur: this.infoBaseForm.get('numeroIdentite')?.value || '',
             adressePromoteur: this.infoBaseForm.get('adressePromoteur')?.value || '',
             telephonePromoteur: this.infoBaseForm.get('telephonePromoteur')?.value || '',
             emailPromoteur: this.infoBaseForm.get('emailPromoteur')?.value || '',
 
-            // Données de l'entreprise
+            // Entreprise
             nomEntreprise: this.infoBaseForm.get('nomEntreprise')?.value || '',
             formeJuridique: this.getFormeJuridiqueValue(),
             secteurActivite: this.getSecteurActiviteValue(),
-            dateCreationEntreprise: this.formatDate(this.infoBaseForm.get('dateCreation')?.value),
+            dateCreationEntreprise: this.formatDate(this.infoBaseForm.get('dateCreation')?.value), // ← Format ISO
             numeroRegistre: this.infoBaseForm.get('numeroRegistre')?.value || '',
             adresseEntreprise: this.infoBaseForm.get('adresseEntreprise')?.value || '',
             telephoneEntreprise: this.infoBaseForm.get('telephoneEntreprise')?.value || '',
             emailEntreprise: this.infoBaseForm.get('emailEntreprise')?.value || '',
 
-            // Bilan de l'entreprise
+            // Bilan entreprise
             liquidites: this.bilanEntrepriseForm.get('liquidites')?.value || 0,
             creancesClients: this.bilanEntrepriseForm.get('creancesClients')?.value || 0,
             valeurStocks: this.bilanEntrepriseForm.get('valeurStocks')?.value || 0,
@@ -452,12 +455,15 @@ export class StepCreditComponent {
             epargnes: this.bilanPersonnelForm.get('epargnes')?.value || 0,
             valeurBiensDurables: this.bilanPersonnelForm.get('valeurBiensDurables')?.value || 0,
 
-            // Dates pour le compte d'exploitation actuel (année précédente)
+            // Dates pour exploitation actuelle et prévisionnelle - Format ISO
             dateDebutPeriodeActuel: this.formatDate(new Date(new Date().getFullYear() - 1, 0, 1)),
             dateFinPeriodeActuel: this.formatDate(new Date(new Date().getFullYear() - 1, 11, 31)),
+            dateDebutPeriodePrevisionnel: this.formatDate(new Date(new Date().getFullYear(), 0, 1)),
+            dateFinPeriodePrevisionnel: this.formatDate(new Date(new Date().getFullYear(), 11, 31)),
 
-            // Résultats actuels + charges actuelles
+            // Exploitation actuelle
             chiffreAffairesActuel: this.resultatActuelForm.get('chiffreAffaires')?.value || 0,
+            autresRevenusActuel: this.resultatActuelForm.get('autresRevenus')?.value || 0, // NOUVEAU
             coutMarchandisesActuel: this.resultatActuelForm.get('coutMarchandises')?.value || 0,
             coutTransportProductionActuel: this.chargesActuellesForm.get('coutTransportProduction')?.value || 0,
             fraisTransportPersonnelActuel: this.chargesActuellesForm.get('fraisTransportPersonnel')?.value || 0,
@@ -467,12 +473,9 @@ export class StepCreditComponent {
             impotsActuel: this.chargesActuellesForm.get('impots')?.value || 0,
             loyersActuel: this.chargesActuellesForm.get('loyers')?.value || 0,
 
-            // Dates pour le compte d'exploitation prévisionnel (année en cours)
-            dateDebutPeriodePrevisionnel: this.formatDate(new Date(new Date().getFullYear(), 0, 1)),
-            dateFinPeriodePrevisionnel: this.formatDate(new Date(new Date().getFullYear(), 11, 31)),
-
-            // Résultats prévisionnels + charges prévisionnelles
+            // Exploitation prévisionnelle
             chiffreAffairesPrevisionnel: this.resultatPrevisionnelForm.get('chiffreAffaires')?.value || 0,
+            autresRevenusPrevisionnel: this.resultatPrevisionnelForm.get('autresRevenus')?.value || 0, // NOUVEAU
             coutMarchandisesPrevisionnel: this.resultatPrevisionnelForm.get('coutMarchandises')?.value || 0,
             coutTransportProductionPrevisionnel: this.chargesPrevisionellesForm.get('coutTransportProduction')?.value || 0,
             fraisTransportPersonnelPrevisionnel: this.chargesPrevisionellesForm.get('fraisTransportPersonnel')?.value || 0,
@@ -482,30 +485,27 @@ export class StepCreditComponent {
             impotsPrevisionnel: this.chargesPrevisionellesForm.get('impots')?.value || 0,
             loyersPrevisionnel: this.chargesPrevisionellesForm.get('loyers')?.value || 0,
 
-            // Demande de crédit
+            // Demande crédit
             montantDemande: this.demandeCreditForm.get('montantDemande')?.value || 0,
             dureeMois: this.demandeCreditForm.get('dureeMois')?.value || 0,
             objetFinancement: this.demandeCreditForm.get('objetFinancement')?.value || ''
         };
 
-        // Appel à l'API pour soumettre la demande complète
+        // Appel API
         this.analyseCreditService
             .submitCompleteDemande$(demandeComplete)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (response: IResponse) => {
                     this.loading.set(false);
-
                     if (response) {
                         this.messageService.add({
                             severity: 'success',
                             summary: 'Succès',
                             detail: 'Votre demande de crédit a été soumise avec succès!'
                         });
-
-                        // Redirection vers une page de confirmation ou la liste des demandes
                         setTimeout(() => {
-                            this.router.navigate([``]);
+                            this.router.navigate(['']);
                         }, 2000);
                     } else {
                         this.messageService.add({
@@ -525,6 +525,47 @@ export class StepCreditComponent {
                     console.error('Erreur lors de la soumission de la demande complète:', error);
                 }
             });
+    }
+
+    // Calculer les revenus totaux actuels
+    calculerRevenusTotauxActuel(): number {
+        const chiffreAffaires = this.resultatActuelForm.get('chiffreAffaires')?.value || 0;
+        const autresRevenus = this.resultatActuelForm.get('autresRevenus')?.value || 0;
+        return chiffreAffaires + autresRevenus;
+    }
+
+    // Calculer les revenus totaux prévisionnels
+    calculerRevenusTotauxPrevisionnel(): number {
+        const chiffreAffaires = this.resultatPrevisionnelForm.get('chiffreAffaires')?.value || 0;
+        const autresRevenus = this.resultatPrevisionnelForm.get('autresRevenus')?.value || 0;
+        return chiffreAffaires + autresRevenus;
+    }
+
+    // Calculer le ratio de dépendance actuel
+    calculerRatioDependanceActuel(): number {
+        const revenus = this.calculerRevenusTotauxActuel();
+        const autresRevenus = this.resultatActuelForm.get('autresRevenus')?.value || 0;
+        return revenus > 0 ? autresRevenus / revenus : 0;
+    }
+    // Calculer le ratio de dépendance prévisionnel
+    calculerRatioDependancePrevisionnel(): number {
+        const revenus = this.calculerRevenusTotauxPrevisionnel();
+        const autresRevenus = this.resultatPrevisionnelForm.get('autresRevenus')?.value || 0;
+        return revenus > 0 ? autresRevenus / revenus : 0;
+    }
+
+    // Modifier la méthode existante calculerMargeButeActuelle pour utiliser revenus totaux :
+    calculerMargeButeActuelle(): number {
+        const revenus = this.calculerRevenusTotauxActuel();
+        const coutMarchandises = this.resultatActuelForm.get('coutMarchandises')?.value || 0;
+        return revenus > 0 ? (revenus - coutMarchandises) / revenus : 0;
+    }
+
+    // Modifier la méthode existante calculerMargeButePrevisionnelle pour utiliser revenus totaux :
+    calculerMargeButePrevisionnelle(): number {
+        const revenus = this.calculerRevenusTotauxPrevisionnel();
+        const coutMarchandises = this.resultatPrevisionnelForm.get('coutMarchandises')?.value || 0;
+        return revenus > 0 ? (revenus - coutMarchandises) / revenus : 0;
     }
 
     // Méthodes de calcul financier
@@ -554,20 +595,6 @@ export class StepCreditComponent {
         const totalDettes = dettesFournisseurs + emprunts;
 
         return totalDettes > 0 ? liquidites / totalDettes : 0;
-    }
-
-    calculerMargeButeActuelle(): number {
-        const chiffreAffaires = this.resultatActuelForm.get('chiffreAffaires')?.value || 0;
-        const coutMarchandises = this.resultatActuelForm.get('coutMarchandises')?.value || 0;
-
-        return chiffreAffaires > 0 ? (chiffreAffaires - coutMarchandises) / chiffreAffaires : 0;
-    }
-
-    calculerMargeButePrevisionnelle(): number {
-        const chiffreAffaires = this.resultatPrevisionnelForm.get('chiffreAffaires')?.value || 0;
-        const coutMarchandises = this.resultatPrevisionnelForm.get('coutMarchandises')?.value || 0;
-
-        return chiffreAffaires > 0 ? (chiffreAffaires - coutMarchandises) / chiffreAffaires : 0;
     }
 
     // Méthodes utilitaires pour extraire les valeurs correctes
@@ -600,42 +627,46 @@ export class StepCreditComponent {
         return montant / duree;
     }
 
-    // Méthode pour formater les dates pour l'affichage
+    // ✅ Gardez cette méthode pour l'affichage
     formatDateForDisplay(date: Date | string | null): string {
         if (!date) return '';
 
+        let dateObj: Date;
+
         if (typeof date === 'string') {
-            // Essayer de convertir la chaîne en Date
-            const parsedDate = new Date(date);
-            if (!isNaN(parsedDate.getTime())) {
-                return parsedDate.toLocaleDateString('fr-FR');
+            dateObj = new Date(date);
+            if (isNaN(dateObj.getTime())) {
+                return date;
             }
-            return date;
+        } else if (date instanceof Date) {
+            dateObj = date;
+        } else {
+            return '';
         }
 
-        if (date instanceof Date) {
-            return date.toLocaleDateString('fr-FR');
-        }
-
-        return '';
+        // Format français pour l'affichage
+        return dateObj.toLocaleDateString('fr-FR');
     }
 
+    // ✅ Remplacez votre méthode formatDate() par celle-ci :
     formatDate(date: Date | string | null): string {
         if (!date) return '';
 
+        let dateObj: Date;
+
         if (typeof date === 'string') {
-            const parsedDate = new Date(date);
-            if (!isNaN(parsedDate.getTime())) {
-                return parsedDate.toLocaleDateString('fr-FR');
+            dateObj = new Date(date);
+            if (isNaN(dateObj.getTime())) {
+                return '';
             }
-            return date;
+        } else if (date instanceof Date) {
+            dateObj = date;
+        } else {
+            return '';
         }
 
-        if (date instanceof Date) {
-            return date.toLocaleDateString('fr-FR');
-        }
-
-        return '';
+        // Format ISO yyyy-MM-dd pour le backend
+        return dateObj.toISOString().split('T')[0];
     }
 
     // Méthode pour calculer le total des charges actuelles

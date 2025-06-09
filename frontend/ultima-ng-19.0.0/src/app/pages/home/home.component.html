@@ -16,167 +16,118 @@
             <div id="parallaxBody" class="lg:top-0 block absolute left-0 right-0 h-full z-20">
                 <div class="card">
                     <br><br><br>
-                    <div
-                        class="relative overflow-hidden h-80 bg-primary text-primary-contrast flex flex-col items-center justify-center rounded mb-8">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"
-                            class="absolute w-full top-0 left-0">
-                            <path fill="var(--p-primary-600)" fillOpacity="1"
-                                d="M0,64L48,90.7C96,117,192,171,288,208C384,245,480,267,576,256C672,245,768,203,864,165.3C960,128,1056,96,1152,74.7C1248,53,1344,43,1392,37.3L1440,32L1440,0L1392,0C1344,0,1248,0,1152,0C1056,0,960,0,864,0C768,0,672,0,576,0C480,0,384,0,288,0C192,0,96,0,48,0L0,0Z">
-                            </path>
-                        </svg>
-                        <div class="font-bold mb-8 text-4xl z-10">DIGI - CREDIT RURAL DE GUINEE</div>
-                        <p-icon-field class="w-9/12 md:w-6/12">
-                            <p-inputicon class="pi pi-search" />
-                            <input pInputText id="name" type="text" placeholder="Search"
-                                [style]="{ borderRadius: '2rem' }" class="w-full" />
-                        </p-icon-field>
-                    </div>
 
-                    <!-- Reduced bottom margin from mb-8 to mb-4 -->
-                    <div class="grid grid-cols-12 gap-4 mb-4">
-                        <div class="col-span-12 md:col-span-4 mb-8">
-                            <div class="flex flex-col items-center">
-                                <span
-                                    class="inline-flex items-center justify-center rounded-full w-20 h-20 bg-primary-100 mb-8">
-                                    <i class="pi pi-power-off !text-4xl text-primary-700"></i>
-                                </span>
-                                <div class="text-2xl mb-4 font-medium">ECREDIT </div>
-                                <ul class="list-none m-0 p-0 text-center">
-                                    <li class="leading-normal mb-1">
-                                        <a
-                                            class="text-surface-500 dark:text-surface-400 hover:text-primary cursor-pointer">
-                                            Gestion Electronique </a>
-                                    </li>
-                                    <li class="leading-normal mb-1">
-                                        <a
-                                            class="text-surface-500 dark:text-surface-400 hover:text-primary cursor-pointer">
-                                            des Credit En Ligne </a>
-                                    </li>
-                                    <li class="leading-normal mb-4">
-                                        <a
-                                            class="text-surface-500 dark:text-surface-400 hover:text-primary cursor-pointer">
-                                            Et Analyse de Credit</a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="col-span-12 md:col-span-4 mb-8">
-                            <div class="flex flex-col items-center">
-                                <span
-                                    class="inline-flex items-center justify-center rounded-full w-20 h-20 bg-primary-100 mb-8">
-                                    <i class="pi pi-arrows-h !text-4xl text-primary-700"></i>
-                                </span>
-                                <div class="text-2xl mb-4 font-medium">GESTION RECLAMATIONS</div>
-                                <ul class="list-none m-0 p-0 text-center">
-                                    <li class="leading-normal mb-1">
-                                        <a
-                                            class="text-surface-500 dark:text-surface-400 hover:text-primary cursor-pointer">
-                                            Gestion Pour la Remontée </a>
-                                    </li>
-                                    <li class="leading-normal mb-1">
-                                        <a
-                                            class="text-surface-500 dark:text-surface-400 hover:text-primary cursor-pointer">
-                                            Des Reclamations </a>
-                                    </li>
-                                    <li class="leading-normal mb-4">
-                                        <a
-                                            class="text-surface-500 dark:text-surface-400 hover:text-primary cursor-pointer">
-                                            Et des Plaintes</a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="col-span-12 md:col-span-4 mb-8">
-                            <div class="flex flex-col items-center">
-                                <span
-                                    class="inline-flex items-center justify-center rounded-full w-20 h-20 bg-primary-100 mb-8">
-                                    <i class="pi pi-user !text-4xl text-primary-700"></i>
-                                </span>
-                                <div class="text-2xl mb-4 font-medium">ESOCIETARIAT</div>
-                                <ul class="list-none m-0 p-0 text-center">
-                                    <li class="leading-normal mb-1">
-                                        <a
-                                            class="text-surface-500 dark:text-surface-400 hover:text-primary cursor-pointer">
-                                            Gestion Pour L'assainissement
-                                        </a>
-                                    </li>
-                                    <li class="leading-normal mb-1">
-                                        <a
-                                            class="text-surface-500 dark:text-surface-400 hover:text-primary cursor-pointer">
-                                            du Societariat
-                                        </a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="col-span-12 md:col-span-4 mb-8">
-                            <div class="flex flex-col items-center">
-                                <span
-                                    class="inline-flex items-center justify-center rounded-full w-20 h-20 bg-primary-100 mb-8">
-                                    <i class="pi pi-money-bill !text-4xl text-primary-700"></i>
-                                </span>
-                                <div class="text-2xl mb-4 font-medium">ARRETE DE CAISSE</div>
-                                <ul class="list-none m-0 p-0 text-center">
-                                    <li class="leading-normal mb-1">
-                                        <a
-                                            class="text-surface-500 dark:text-surface-400 hover:text-primary cursor-pointer">
-                                            Gestion Pour la Remontée</a>
-                                    </li>
-                                    <li class="leading-normal mb-1">
-                                        <a
-                                            class="text-surface-500 dark:text-surface-400 hover:text-primary cursor-pointer">
-                                            Arreté de Caisse</a>
-                                    </li>
+                    <!-- Modern Cards Layout - Grille 12 colonnes -->
+                    <div class="grid grid-cols-12 gap-6 mb-8 max-w-7xl mx-auto px-4">
 
-                                </ul>
+                        <!-- LIGNE 1 -->
+                        <!-- GESTION ECREDIT Card -->
+                        <div
+                            class="col-span-12 md:col-span-4 bg-green-500 rounded-2xl p-8 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer">
+                            <div class="flex items-center mb-6">
+                                <i class="pi pi-credit-card text-3xl mr-4"></i>
+                                <h3 class="text-xl font-bold">GESTION ECREDIT</h3>
                             </div>
-                        </div>
-                        <div class="col-span-12 md:col-span-4 mb-8">
-                            <div class="flex flex-col items-center">
-                                <span
-                                    class="inline-flex items-center justify-center rounded-full w-20 h-20 bg-primary-100 mb-8">
-                                    <i class="pi pi-database !text-4xl text-primary-700"></i>
-                                </span>
-                                <div class="text-2xl mb-4 font-medium"> GESTION DU PERSONNEL</div>
-                                <ul class="list-none m-0 p-0 text-center">
-                                    <li class="leading-normal mb-1">
-                                        <a
-                                            class="text-surface-500 dark:text-surface-400 hover:text-primary cursor-pointer">
-                                            Gestion Avance Salaire,
-                                        </a>
-                                    </li>
-                                    <li class="leading-normal mb-1">
-                                        <a
-                                            class="text-surface-500 dark:text-surface-400 hover:text-primary cursor-pointer">
-                                            Des tâcherons
-                                        </a>
-                                    </li>
+                            <p class="text-green-100 mb-6 text-sm leading-relaxed">
+                                Faire une demande de Credit
+                            </p>
 
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="col-span-12 md:col-span-4 mb-8">
-                            <div class="flex flex-col items-center">
-                                <span
-                                    class="inline-flex items-center justify-center rounded-full w-20 h-20 bg-primary-100 mb-8">
-                                    <i class="pi pi-lock !text-4xl text-primary-700"></i>
-                                </span>
-                                <div class="text-2xl mb-4 font-medium">DIGI-MAP</div>
-                                <ul class="list-none m-0 p-0 text-center">
-                                    <li class="leading-normal mb-1">
-                                        <a
-                                            class="text-surface-500 dark:text-surface-400 hover:text-primary cursor-pointer">
-                                            Geolocalisation de </a>
-                                    </li>
-                                    <li class="leading-normal mb-1">
-                                        <a
-                                            class="text-surface-500 dark:text-surface-400 hover:text-primary cursor-pointer">
-                                            Nos Points de Services</a>
-                                    </li>
+                            <!-- PrimeNG Menu Dropdowns -->
+                            <div class="flex gap-4">
+                                <!-- Premier Menu -->
+                                <p-button label="Demandes" icon="pi pi-chevron-down" iconPos="right"
+                                    (click)="demandesMenu.toggle($event)"
+                                    [style]="{'background': 'white', 'color': '#10b981', 'border': 'none', 'border-radius': '1.5rem'}"
+                                    class="p-button-sm">
+                                </p-button>
+                                <p-menu #demandesMenu [model]="demandesItems" [popup]="true"></p-menu>
 
-                                </ul>
+
                             </div>
                         </div>
+
+                        <!-- GESTION RECLAMATIONS Card -->
+                        <div
+                            class="col-span-12 md:col-span-4 bg-orange-500 rounded-2xl p-8 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer">
+                            <div class="flex items-center mb-6">
+                                <i class="pi pi-headphones text-3xl mr-4"></i>
+                                <h3 class="text-xl font-bold">GESTION RECLAMATIONS</h3>
+                            </div>
+                            <p class="text-orange-100 mb-6 text-sm leading-relaxed">
+                                Gestion des réclamations et plaintes
+                            </p>
+                            <button
+                                class="bg-white text-orange-500 px-6 py-2 rounded-full font-medium hover:bg-gray-100 transition-colors">
+                                Acceder
+                            </button>
+                        </div>
+
+                        <!-- ESOCIETARIAT Card -->
+                        <div
+                            class="col-span-12 md:col-span-4 bg-cyan-600 rounded-2xl p-8 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer">
+                            <div class="flex items-center mb-6">
+                                <i class="pi pi-users text-3xl mr-4"></i>
+                                <h3 class="text-xl font-bold">ESOCIETARIAT</h3>
+                            </div>
+                            <p class="text-cyan-100 mb-6 text-sm leading-relaxed">
+                                Gestion pour l'assainissement du sociétariat
+                            </p>
+                            <button
+                                class="bg-gray-800 text-white px-6 py-2 rounded-full font-medium hover:bg-gray-700 transition-colors">
+                                Acceder
+                            </button>
+                        </div>
+
+                        <!-- ARRETE DE CAISSE Card -->
+                        <div class="col-span-12 md:col-span-4 rounded-2xl p-8 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer"
+                            style="background-color: #7c3aed;">
+                            <div class="flex items-center mb-6">
+                                <i class="pi pi-video text-3xl mr-4"></i>
+                                <h3 class="text-xl font-bold">ARRETE DE CAISSE</h3>
+                            </div>
+                            <p class="mb-6 text-sm leading-relaxed" style="color: #ddd6fe;">
+                                Gestion pour la remontée arrêté de caisse
+                            </p>
+                            <button
+                                class="bg-white px-6 py-2 rounded-full font-medium hover:bg-gray-100 transition-colors"
+                                style="color: #7c3aed;">
+                                Acceder
+                            </button>
+                        </div>
+
+                        <!-- GESTION DU PERSONNEL Card -->
+                        <div class="col-span-12 md:col-span-4 rounded-2xl p-8 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer"
+                            style="background-color: #059669;">
+                            <div class="flex items-center mb-6">
+                                <i class="pi pi-user-plus text-3xl mr-4"></i>
+                                <h3 class="text-xl font-bold">GESTION DU PERSONNEL</h3>
+                            </div>
+                            <p class="mb-6 text-sm leading-relaxed" style="color: #d1fae5;">
+                                Gestion avance salaire et des tâcherons
+                            </p>
+                            <button
+                                class="bg-white px-6 py-2 rounded-full font-medium hover:bg-gray-100 transition-colors"
+                                style="color: #059669;">
+                                Acceder
+                            </button>
+                        </div>
+
+                        <!-- DIGI-MAP Card -->
+                        <div
+                            class="col-span-12 md:col-span-4 bg-gray-900 rounded-2xl p-8 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer">
+                            <div class="flex items-center mb-6">
+                                <i class="pi pi-bars text-3xl mr-4"></i>
+                                <h3 class="text-xl font-bold">DIGI-MAP</h3>
+                            </div>
+                            <p class="text-gray-300 mb-6 text-sm leading-relaxed">
+                                Géolocalisation de nos points de services
+                            </p>
+                            <button
+                                class="bg-cyan-500 text-white px-6 py-2 rounded-full font-medium hover:bg-cyan-400 transition-colors">
+                                Acceder
+                            </button>
+                        </div>
+
                     </div>
                 </div>
             </div>

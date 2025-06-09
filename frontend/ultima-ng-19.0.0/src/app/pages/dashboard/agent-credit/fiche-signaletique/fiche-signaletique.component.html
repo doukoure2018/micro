@@ -1,0 +1,350 @@
+<div class="card">
+    <div class="card-header">
+        <h2>@if (state().individuel?.individuelId) {Edit Individuel} @else {New Individuel}</h2>
+    </div>
+
+    <div class="card-body">
+        @if (state().loading) {
+        <div class="flex justify-content-center">
+            <p-progressSpinner></p-progressSpinner>
+        </div>
+        } @else {
+        <form [formGroup]="updateForm" (ngSubmit)="onSubmit()">
+            <div class="grid">
+                <!-- Personal Information Section -->
+                <div class="col-12">
+                    <div class="card">
+                        <h3>Personal Information</h3>
+                        <div class="grid">
+                            <!-- First row with 6 items -->
+                            <div class="col-12 md:col-2 mb-3">
+                                <label for="catMembre">Member Category*</label>
+                                <p-dropdown id="catMembre" formControlName="catMembre" [options]="[
+                                                {label: 'Regular', value: 'REGULAR'},
+                                                {label: 'Premium', value: 'PREMIUM'},
+                                                {label: 'VIP', value: 'VIP'}
+                                            ]" optionLabel="label" optionValue="value" placeholder="Select Category"
+                                    [required]="true">
+                                </p-dropdown>
+                                @if (updateForm.get('catMembre')?.invalid && updateForm.get('catMembre')?.touched) {
+                                <small class="text-red-500">Required</small>
+                                }
+                            </div>
+
+                            <div class="col-12 md:col-2 mb-3">
+                                <label for="numeroMembre">Member Number*</label>
+                                <input id="numeroMembre" type="text" pInputText formControlName="numeroMembre"
+                                    [required]="true">
+                                @if (updateForm.get('numeroMembre')?.invalid && updateForm.get('numeroMembre')?.touched)
+                                {
+                                <small class="text-red-500">Required</small>
+                                }
+                            </div>
+
+                            <div class="col-12 md:col-2 mb-3">
+                                <label for="sexe">Gender*</label>
+                                <p-dropdown id="sexe" formControlName="sexe" [options]="[
+                                                {label: 'Male', value: 'M'},
+                                                {label: 'Female', value: 'F'}
+                                            ]" optionLabel="label" optionValue="value" placeholder="Select Gender"
+                                    [required]="true">
+                                </p-dropdown>
+                                @if (updateForm.get('sexe')?.invalid && updateForm.get('sexe')?.touched) {
+                                <small class="text-red-500">Required</small>
+                                }
+                            </div>
+
+                            <div class="col-12 md:col-2 mb-3">
+                                <label for="nom">Last Name*</label>
+                                <input id="nom" type="text" pInputText formControlName="nom" [required]="true">
+                                @if (updateForm.get('nom')?.invalid && updateForm.get('nom')?.touched) {
+                                <small class="text-red-500">Required</small>
+                                }
+                            </div>
+
+                            <div class="col-12 md:col-2 mb-3">
+                                <label for="prenom">First Name*</label>
+                                <input id="prenom" type="text" pInputText formControlName="prenom" [required]="true">
+                                @if (updateForm.get('prenom')?.invalid && updateForm.get('prenom')?.touched) {
+                                <small class="text-red-500">Required</small>
+                                }
+                            </div>
+
+                            <div class="col-12 md:col-2 mb-3">
+                                <label for="dateNaissance">Date of Birth*</label>
+                                <p-calendar id="dateNaissance" formControlName="dateNaissance" dateFormat="dd/mm/yy"
+                                    [showIcon]="true" [required]="true">
+                                </p-calendar>
+                                @if (updateForm.get('dateNaissance')?.invalid &&
+                                updateForm.get('dateNaissance')?.touched) {
+                                <small class="text-red-500">Required</small>
+                                }
+                            </div>
+
+                            <!-- Second row with remaining personal info -->
+                            <div class="col-12 md:col-4 mb-3">
+                                <label for="lieuxNaissance">Place of Birth*</label>
+                                <input id="lieuxNaissance" type="text" pInputText formControlName="lieuxNaissance"
+                                    [required]="true">
+                                @if (updateForm.get('lieuxNaissance')?.invalid &&
+                                updateForm.get('lieuxNaissance')?.touched) {
+                                <small class="text-red-500">Required</small>
+                                }
+                            </div>
+
+                            <div class="col-12 md:col-4 mb-3">
+                                <label for="nationalite">Nationality*</label>
+                                <input id="nationalite" type="text" pInputText formControlName="nationalite"
+                                    [required]="true">
+                                @if (updateForm.get('nationalite')?.invalid && updateForm.get('nationalite')?.touched) {
+                                <small class="text-red-500">Required</small>
+                                }
+                            </div>
+
+                            <!-- Including ID Information here instead of separate section -->
+                            <div class="col-12 md:col-2 mb-3">
+                                <label for="typePiece">ID Type*</label>
+                                <p-dropdown id="typePiece" formControlName="typePiece" [options]="[
+                                                {label: 'National ID', value: 'NATIONAL_ID'},
+                                                {label: 'Passport', value: 'PASSPORT'},
+                                                {label: 'Driver License', value: 'DRIVER_LICENSE'},
+                                                {label: 'Birth Certificate', value: 'BIRTH_CERTIFICATE'}
+                                            ]" optionLabel="label" optionValue="value" placeholder="Select ID Type"
+                                    [required]="true">
+                                </p-dropdown>
+                                @if (updateForm.get('typePiece')?.invalid && updateForm.get('typePiece')?.touched) {
+                                <small class="text-red-500">Required</small>
+                                }
+                            </div>
+
+                            <div class="col-12 md:col-2 mb-3">
+                                <label for="numeroPiece">ID Number*</label>
+                                <input id="numeroPiece" type="text" pInputText formControlName="numeroPiece"
+                                    [required]="true">
+                                @if (updateForm.get('numeroPiece')?.invalid && updateForm.get('numeroPiece')?.touched) {
+                                <small class="text-red-500">Required</small>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Information Section -->
+                <div class="col-12">
+                    <div class="card mt-3">
+                        <h3>Contact Information</h3>
+                        <div class="grid">
+                            <!-- All contact info in one row -->
+                            <div class="col-12 md:col-2 mb-3">
+                                <label for="telephone">Phone Number*</label>
+                                <input id="telephone" type="tel" pInputText formControlName="telephone"
+                                    [required]="true">
+                                @if (updateForm.get('telephone')?.invalid && updateForm.get('telephone')?.touched) {
+                                <small class="text-red-500">Required</small>
+                                }
+                            </div>
+
+                            <div class="col-12 md:col-2 mb-3">
+                                <label for="telephone2">Alternative Phone</label>
+                                <input id="telephone2" type="tel" pInputText formControlName="telephone2">
+                                @if (updateForm.get('telephone2')?.invalid && updateForm.get('telephone2')?.touched) {
+                                <small class="text-red-500">Invalid</small>
+                                }
+                            </div>
+
+                            <div class="col-12 md:col-2 mb-3">
+                                <label for="ville">City</label>
+                                <input id="ville" type="text" pInputText formControlName="ville">
+                            </div>
+
+                            <div class="col-12 md:col-2 mb-3">
+                                <label for="quartier">Neighborhood</label>
+                                <input id="quartier" type="text" pInputText formControlName="quartier">
+                            </div>
+
+                            <div class="col-12 md:col-2 mb-3">
+                                <label for="district">District</label>
+                                <input id="district" type="text" pInputText formControlName="district">
+                            </div>
+
+                            <div class="col-12 md:col-2 mb-3">
+                                <label for="secteur">Sector</label>
+                                <input id="secteur" type="text" pInputText formControlName="secteur">
+                            </div>
+
+                            <!-- Second row with address and canton code -->
+                            <div class="col-12 md:col-10 mb-3">
+                                <label for="adresse">Address</label>
+                                <textarea id="adresse" pInputTextarea formControlName="adresse" rows="2"></textarea>
+                            </div>
+
+                            <div class="col-12 md:col-2 mb-3">
+                                <label for="codCanton">Canton Code</label>
+                                <input id="codCanton" type="text" pInputText formControlName="codCanton">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Professional and Family Information combined -->
+                <div class="col-12">
+                    <div class="card mt-3">
+                        <h3>Professional & Family Information</h3>
+                        <div class="grid">
+                            <!-- First row: profession and activity info -->
+                            <div class="col-12 md:col-2 mb-3">
+                                <label for="profession">Profession*</label>
+                                <input id="profession" type="text" pInputText formControlName="profession"
+                                    [required]="true">
+                                @if (updateForm.get('profession')?.invalid && updateForm.get('profession')?.touched) {
+                                <small class="text-red-500">Required</small>
+                                }
+                            </div>
+
+                            <div class="col-12 md:col-2 mb-3">
+                                <label for="activite">Activity</label>
+                                <input id="activite" type="text" pInputText formControlName="activite">
+                            </div>
+
+                            <div class="col-12 md:col-2 mb-3">
+                                <label for="typeEntreprise">Business Type</label>
+                                <p-dropdown id="typeEntreprise" formControlName="typeEntreprise" [options]="[
+                                                {label: 'Individual', value: 'I'},
+                                                {label: 'Company', value: 'C'}
+                                            ]" optionLabel="label" optionValue="value" placeholder="Select Type">
+                                </p-dropdown>
+                            </div>
+
+                            <div class="col-12 md:col-2 mb-3">
+                                <label for="prestataire">Service Provider</label>
+                                <input id="prestataire" type="text" pInputText formControlName="prestataire">
+                            </div>
+
+                            <div class="col-12 md:col-2 mb-3">
+                                <label for="nomPere">Father's Name</label>
+                                <input id="nomPere" type="text" pInputText formControlName="nomPere">
+                            </div>
+
+                            <div class="col-12 md:col-2 mb-3">
+                                <label for="nomMere">Mother's Name</label>
+                                <input id="nomMere" type="text" pInputText formControlName="nomMere">
+                            </div>
+
+                            <!-- Second row: family info -->
+                            <div class="col-12 md:col-2 mb-3">
+                                <label for="conjoint">Spouse's Name</label>
+                                <input id="conjoint" type="text" pInputText formControlName="conjoint">
+                            </div>
+
+                            <div class="col-12 md:col-2 mb-3">
+                                <label for="lienParente">Relationship</label>
+                                <input id="lienParente" type="text" pInputText formControlName="lienParente">
+                            </div>
+
+                            <div class="col-12 md:col-2 mb-3">
+                                <label for="nomParent">Parent's Name</label>
+                                <input id="nomParent" type="text" pInputText formControlName="nomParent">
+                            </div>
+
+                            <div class="col-12 md:col-2 mb-3">
+                                <label for="nbreEnfant">Number of Children</label>
+                                <p-inputNumber id="nbreEnfant" formControlName="nbreEnfant" [min]="0"
+                                    [showButtons]="true"></p-inputNumber>
+                            </div>
+
+                            <div class="col-12 md:col-2 mb-3">
+                                <label for="nbreParent">Number of Parents</label>
+                                <p-inputNumber id="nbreParent" formControlName="nbreParent" [min]="0"
+                                    [showButtons]="true"></p-inputNumber>
+                            </div>
+
+                            <div class="col-12 md:col-2 mb-3">
+                                <label for="nbreAutre">Number of Others</label>
+                                <p-inputNumber id="nbreAutre" formControlName="nbreAutre" [min]="0"
+                                    [showButtons]="true"></p-inputNumber>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Housing Information Section -->
+                <div class="col-12">
+                    <div class="card mt-3">
+                        <h3>Housing Information</h3>
+                        <div class="grid">
+                            <!-- All housing info in one row -->
+                            <div class="col-12 md:col-4 mb-3">
+                                <label for="typeHabitation">Housing Type</label>
+                                <p-dropdown id="typeHabitation" formControlName="typeHabitation" [options]="[
+                                                {label: 'Owner', value: 'P'},
+                                                {label: 'Tenant', value: 'L'}
+                                            ]" optionLabel="label" optionValue="value"
+                                    placeholder="Select Housing Type">
+                                </p-dropdown>
+                            </div>
+
+                            <div class="col-12 md:col-4 mb-3">
+                                <label for="nbreAnnee">Number of Years</label>
+                                <p-inputNumber id="nbreAnnee" formControlName="nbreAnnee" [min]="0"
+                                    [showButtons]="true"></p-inputNumber>
+                            </div>
+
+                            <div class="col-12 md:col-4 mb-3">
+                                <label for="nbreAnneeH">Years in Housing</label>
+                                <p-inputNumber id="nbreAnneeH" formControlName="nbreAnneeH" [min]="0"
+                                    [showButtons]="true"></p-inputNumber>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Membership Details Section -->
+                <div class="col-12">
+                    <div class="card mt-3">
+                        <h3>Membership Details</h3>
+                        <div class="grid">
+                            <!-- All membership details in one row -->
+                            <div class="col-12 md:col-4 mb-3">
+                                <label for="statutIndividuel">Member Status</label>
+                                <p-dropdown id="statutIndividuel" formControlName="statutIndividuel" [options]="[
+                                                {label: 'Active', value: 'ACTIVE'},
+                                                {label: 'Inactive', value: 'INACTIVE'},
+                                                {label: 'Suspended', value: 'SUSPENDED'}
+                                            ]" optionLabel="label" optionValue="value" placeholder="Select Status">
+                                </p-dropdown>
+                            </div>
+
+                            <div class="col-12 md:col-4 mb-3">
+                                <label for="cotisation">Contribution Amount</label>
+                                <p-inputNumber id="cotisation" formControlName="cotisation" mode="currency"
+                                    currency="GNF" locale="fr-GN"></p-inputNumber>
+                            </div>
+
+                            <div class="col-12 md:col-4 mb-3">
+                                <label for="droitEntree">Entrance Fee</label>
+                                <p-inputNumber id="droitEntree" formControlName="droitEntree" mode="currency"
+                                    currency="GNF" locale="fr-GN"></p-inputNumber>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="col-12 flex justify-content-end mt-4 gap-2">
+                    <p-button type="button" label="Cancel" severity="secondary" (click)="cancelEdit()"></p-button>
+                    <p-button type="button" label="Reset" severity="warn" (click)="resetForm()"></p-button>
+                    <p-button type="submit" label="Save" [loading]="state().loading"></p-button>
+                </div>
+            </div>
+        </form>
+        }
+
+        <!-- Error Messages -->
+        @if (state().error) {
+        <p-message severity="error" text="{{state().error}}" styleClass="w-full mt-3"></p-message>
+        }
+    </div>
+</div>
+
+<!-- Toast for notifications -->
+<p-toast></p-toast>

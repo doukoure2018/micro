@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/ebanking/ecredit")
+@RequestMapping("/ebanking")
 public class SousActiviteController {
 
     private SousActiviteService sousActiviteService;
@@ -26,7 +26,7 @@ public class SousActiviteController {
         return ResponseEntity.ok(sousActiviteService.getAllSousActivite());
     }
 
-    @GetMapping("/{codActividad}/sousActivite")
+    @GetMapping("/sousActivite/{codActividad}")
     public ResponseEntity<List<SousActiviteDto>> getAllSousActiviteByActivite(@PathVariable(name = "codActividad")
                                                                               String codActividad)
     {

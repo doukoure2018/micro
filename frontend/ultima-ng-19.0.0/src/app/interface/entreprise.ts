@@ -2,10 +2,10 @@ export interface Entreprise {
     entrepriseId?: number;
     promoteurId: number;
     nom: string;
-    formeJuridique: string;
-    secteurActivite: string;
-    dateCreation: Date;
-    numeroRegistre: string;
+    forme_juridique: string;
+    secteur_activite: string;
+    date_creation: Date;
+    numero_registre: string;
     adresse: string;
     telephone: string;
     email: string;

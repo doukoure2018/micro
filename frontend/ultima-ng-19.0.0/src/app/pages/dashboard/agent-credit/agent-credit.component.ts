@@ -1,4 +1,5 @@
 import { DemandeIndividuel } from '@/interface/demande-individuel.interface';
+import { NewCredit } from '@/interface/newCredit';
 import { PointVente } from '@/interface/point.vente';
 import { IResponse } from '@/interface/response';
 import { IUser } from '@/interface/user';
@@ -9,12 +10,16 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
 import { MessageModule } from 'primeng/message';
 import { RippleModule } from 'primeng/ripple';
+import { TableModule } from 'primeng/table';
+import { TagModule } from 'primeng/tag';
 
 @Component({
     selector: 'app-agent-credit',
-    imports: [CommonModule, ButtonModule, RippleModule, MessageModule, RouterLink],
+    imports: [CommonModule, ButtonModule, RippleModule, MessageModule, RouterLink, TableModule, IconFieldModule, InputIconModule, TagModule],
     templateUrl: './agent-credit.component.html',
     providers: [MessageService]
 })
@@ -24,13 +29,17 @@ export class AgentCreditComponent {
     state = signal<{
         pointVente?: PointVente;
         demandeAttentes?: DemandeIndividuel[];
+        filteredDemandeAttentes?: DemandeIndividuel[];
+        creditDtos?: NewCredit[];
+        nombreDemandeInd?: number;
         loading: boolean;
         message: string | undefined;
         error: string | any;
     }>({
         loading: false,
         message: undefined,
-        error: undefined
+        error: undefined,
+        filteredDemandeAttentes: []
     });
 
     private userService = inject(UserService);
@@ -42,7 +51,6 @@ export class AgentCreditComponent {
     ngOnChanges(changes: SimpleChanges): void {
         console.log(this.user);
         if (this.user && this.user.pointventeId) {
-            this.loadUniquePointVente();
             this.laodDemandeAttenteByPointVente();
         } else {
             // Handle the case where pointventeId is null or undefined
@@ -63,43 +71,35 @@ export class AgentCreditComponent {
         }
     }
 
-    private loadUniquePointVente(): void {
-        if (!this.user?.pointventeId) {
-            return;
+    getStatusLabel(statutDemande: string, validationState: string): string {
+        if (statutDemande === 'EN_ATTENTE' && validationState === 'NOUVEAU') {
+            return 'NOUVELLE DEMANDE';
+        } else if (statutDemande === 'EN_ATTENTE' && validationState === 'SELECTION') {
+            return 'SELECTION';
         }
+        return statutDemande;
+    }
 
-        this.state.set({ ...this.state(), loading: true });
+    getStateValidation(statutDemande: string, validationState: string): string {
+        if (statutDemande === 'EN_ATTENTE' && validationState === 'NOUVEAU') {
+            return 'EN ATTENTE POUR LA SELECTION';
+        } else if (statutDemande === 'EN_ATTENTE' && validationState === 'SELECTION') {
+            return 'EN ATTENTE POUR LA VALIDATION';
+        } else if (statutDemande === 'EN_ATTENTE' && validationState === 'APPROVED') {
+            return "DEMANDE APPROVEE PAR L'AGENT";
+        }
+        return validationState;
+    }
 
-        this.userService
-            .getInfoPointService$(this.user.pointventeId)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: (response: IResponse) => {
-                    console.log('*** Point de vente Information *****');
-                    console.log(response.data.pointVente);
-                    this.state.set({
-                        ...this.state(),
-                        pointVente: response.data.pointVente,
-                        loading: false
-                    });
-                },
-                error: (error) => {
-                    console.error('Error loading Unique Point de vente:', error);
-                    this.state.set({
-                        ...this.state(),
-                        error: 'Erreur lors du chargement des informations du point de vente',
-                        loading: false
-                    });
+    onGlobalFilter(table: any, event: Event) {
+        table.filterGlobal((event.target as HTMLInputElement).value, 'contains');
+    }
 
-                    this.messageService.add({
-                        severity: 'error',
-                        summary: 'Erreur',
-                        detail: 'Impossible de charger les informations du point de vente',
-                        life: 5000
-                    });
-                },
-                complete: () => {}
-            });
+    getStatusSeverity(statutDemande: string, validationState: string): 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast' | undefined {
+        if (statutDemande === 'APPROVED') return 'success';
+        if (statutDemande === 'EN_ATTENTE') return 'info';
+        if (statutDemande === 'REJECTED') return 'danger';
+        return undefined;
     }
 
     private laodDemandeAttenteByPointVente(): void {
@@ -114,11 +114,19 @@ export class AgentCreditComponent {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (response: IResponse) => {
-                    console.log('*** Liste des demandes en attente *****');
-                    console.log(response.data.demandeAttentes);
+                    // Store all demandes
+                    const allDemandes = response.data.demandeAttentes;
+
+                    // Filter for demandes with validationState === 'VALIDATION'
+                    const filteredDemandes = allDemandes.filter((demande) => demande.validationState === 'VALIDATION');
+
                     this.state.set({
                         ...this.state(),
-                        demandeAttentes: response.data.demandeAttentes,
+                        demandeAttentes: allDemandes,
+                        filteredDemandeAttentes: filteredDemandes,
+                        pointVente: response.data.pointVente,
+                        creditDtos: response.data.creditDtos,
+                        nombreDemandeInd: response.data.nombreDemandeInd,
                         loading: false
                     });
                 },
@@ -139,5 +147,14 @@ export class AgentCreditComponent {
                 },
                 complete: () => {}
             });
+    }
+
+    miseEnPlaceCredit(numeroMembre: string, userId: number) {
+        this.router.navigate(['/dashboards/agent-credit/', numeroMembre, userId]);
+    }
+
+    viewCreditDetails(referenceCredit: string, numeroMembre: string, userId: number) {
+        // agent-credit/detail-credit-ind/:referenceCredit/:numeroMembre/:userId
+        this.router.navigate(['/dashboards/agent-credit/detail-credit-ind/', referenceCredit, numeroMembre, userId]);
     }
 }

@@ -23,6 +23,7 @@
         "@auth0/angular-jwt": "^5.2.0",
         "@primeng/themes": "^19.0.6",
         "chart.js": "4.4.2",
+        "ng2-pdf-viewer": "^10.4.0",
         "primeclt": "^0.1.5",
         "primeicons": "^7.0.0",
         "primeng": "^19.0.8",

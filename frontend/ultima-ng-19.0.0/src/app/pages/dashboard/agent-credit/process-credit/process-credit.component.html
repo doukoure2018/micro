@@ -1,0 +1,423 @@
+<p-toast></p-toast>
+<p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
+
+<div class="surface-0 p-4">
+    <div *ngIf="state().loading" class="flex justify-content-center align-items-center my-5">
+        <p-progressSpinner strokeWidth="4" [style]="{width: '50px', height: '50px'}"></p-progressSpinner>
+    </div>
+
+    <div *ngIf="!state().loading">
+        <div class="text-3xl font-medium text-900 mb-4">
+            {{ state().message || 'Traitement du crédit' }}
+        </div>
+
+        <div *ngIf="state().error" class="p-message p-message-error p-3 mb-4">
+            {{ state().error }}
+        </div>
+
+        <p-tabView [(activeIndex)]="state().activeIndex">
+            <!-- Tab 1: Informations générales -->
+            <p-tabPanel header="Informations générales">
+                <form [formGroup]="creditForm" class="grid">
+                    <!-- Champs déplacés depuis Informations additionnelles -->
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="cumulCredit" class="block text-900 font-medium mb-2">Cumul Crédit</label>
+                        <p-inputNumber id="cumulCredit" formControlName="cumulCredit" [minFractionDigits]="2"
+                            [maxFractionDigits]="2" class="w-full" readonly></p-inputNumber>
+                    </div>
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="nbreCredit" class="block text-900 font-medium mb-2">Nombre de Crédit</label>
+                        <p-inputNumber id="nbreCredit" formControlName="nbreCredit" [showButtons]="false" [min]="0"
+                            class="w-full" readonly></p-inputNumber>
+                    </div>
+
+                    <!-- Champs existants -->
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="numeroMembre" class="block text-900 font-medium mb-2">Numéro Membre*</label>
+                        <input id="numeroMembre" type="text" pInputText formControlName="numeroMembre" class="w-full"
+                            readonly>
+                    </div>
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="referenceCredit" class="block text-900 font-medium mb-2">Référence du
+                            Crédit*</label>
+                        <input id="referenceCredit" type="text" pInputText formControlName="referenceCredit"
+                            class="w-full" readonly>
+                    </div>
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="moyenPerson" class="block text-900 font-medium mb-2">Moyen de Deplacement
+                            Personnel*</label>
+                        <input id="moyenPerson" type="text" pInputText formControlName="moyenPerson" class="w-full">
+                        <small *ngIf="creditForm.get('moyenPerson')?.invalid && creditForm.get('moyenPerson')?.touched"
+                            class="p-error">Ce champ est requis</small>
+                    </div>
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="bien" class="block text-900 font-medium mb-2">Bien*</label>
+                        <input id="bien" type="text" pInputText formControlName="bien" class="w-full">
+                        <small *ngIf="creditForm.get('bien')?.invalid && creditForm.get('bien')?.touched"
+                            class="p-error">Ce champ est requis</small>
+                    </div>
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="capital" class="block text-900 font-medium mb-2">Capital*</label>
+                        <p-inputNumber id="capital" formControlName="capital" [minFractionDigits]="2"
+                            [maxFractionDigits]="2" class="w-full"></p-inputNumber>
+                        <small *ngIf="creditForm.get('capital')?.invalid && creditForm.get('capital')?.touched"
+                            class="p-error">Ce champ est requis et doit être supérieur à 0</small>
+                    </div>
+                    <!-- Champs optionnels (sans * et sans validation obligatoire) -->
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="creance" class="block text-900 font-medium mb-2">Créance</label>
+                        <p-inputNumber id="creance" formControlName="creance" [minFractionDigits]="2"
+                            [maxFractionDigits]="2" class="w-full"></p-inputNumber>
+                        <small *ngIf="creditForm.get('creance')?.invalid && creditForm.get('creance')?.touched"
+                            class="p-error">La valeur doit être supérieure ou égale à 0</small>
+                    </div>
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="dette" class="block text-900 font-medium mb-2">Dette</label>
+                        <p-inputNumber id="dette" formControlName="dette" [minFractionDigits]="2"
+                            [maxFractionDigits]="2" class="w-full"></p-inputNumber>
+                        <small *ngIf="creditForm.get('dette')?.invalid && creditForm.get('dette')?.touched"
+                            class="p-error">La valeur doit être supérieure ou égale à 0</small>
+                    </div>
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="statutActivite" class="block text-900 font-medium mb-2">Statut d'Activité*</label>
+                        <input id="statutActivite" type="text" pInputText formControlName="statutActivite"
+                            class="w-full">
+                        <small
+                            *ngIf="creditForm.get('statutActivite')?.invalid && creditForm.get('statutActivite')?.touched"
+                            class="p-error">Ce champ est requis</small>
+                    </div>
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="experience" class="block text-900 font-medium mb-2">Expérience*</label>
+                        <input id="experience" type="text" pInputText formControlName="experience" class="w-full">
+                        <small *ngIf="creditForm.get('experience')?.invalid && creditForm.get('experience')?.touched"
+                            class="p-error">Ce champ est requis</small>
+                    </div>
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="lieuxAct" class="block text-900 font-medium mb-2">Lieu d'Activité*</label>
+                        <input id="lieuxAct" type="text" pInputText formControlName="lieuxAct" class="w-full">
+                        <small *ngIf="creditForm.get('lieuxAct')?.invalid && creditForm.get('lieuxAct')?.touched"
+                            class="p-error">Ce champ est requis</small>
+                    </div>
+                    <div class="col-12 mb-4 text-right">
+                        <p-button label="Suivant" icon="pi pi-arrow-right" iconPos="right"
+                            (click)="nextStep()"></p-button>
+                    </div>
+                </form>
+            </p-tabPanel>
+
+            <!-- Tab 2: Informations additionnelles -->
+            <p-tabPanel header="Informations additionnelles">
+                <form [formGroup]="creditForm" class="grid">
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="personEmp" class="block text-900 font-medium mb-2">Personne Employée</label>
+                        <input id="personEmp" type="text" pInputText formControlName="personEmp" class="w-full">
+                    </div>
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="lien" class="block text-900 font-medium mb-2">Lien</label>
+                        <input id="lien" type="text" pInputText formControlName="lien" class="w-full">
+                    </div>
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="nombre" class="block text-900 font-medium mb-2">Nombre</label>
+                        <input id="nombre" type="text" pInputText formControlName="nombre" class="w-full">
+                    </div>
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="frequence" class="block text-900 font-medium mb-2">Fréquence*</label>
+                        <p-inputNumber id="frequence" formControlName="frequence" [showButtons]="true" [min]="0"
+                            class="w-full"></p-inputNumber>
+                        <small *ngIf="creditForm.get('frequence')?.invalid && creditForm.get('frequence')?.touched"
+                            class="p-error">Ce champ est requis et doit être supérieur à 0</small>
+                    </div>
+                    <div class="col-12 flex gap-3 justify-content-center mt-4">
+                        <p-button label="Précédent" icon="pi pi-arrow-left" (click)="prevStep()"></p-button>
+                        <p-button label="Suivant" icon="pi pi-arrow-right" iconPos="right"
+                            (click)="nextStep()"></p-button>
+                    </div>
+                </form>
+            </p-tabPanel>
+
+            <!-- Tab 3: Produits -->
+            <p-tabPanel header="Produits">
+                <form [formGroup]="creditForm">
+                    <div formArrayName="produits">
+                        <p-card *ngFor="let produit of produits.controls; let i = index" class="mb-4">
+                            <div [formGroupName]="i" class="grid">
+                                <div class="col-12 md:col-6 mb-3">
+                                    <label [for]="'produit-libele-' + i"
+                                        class="block text-900 font-medium mb-2">Libellé*</label>
+                                    <input [id]="'produit-libele-' + i" type="text" pInputText formControlName="libele"
+                                        class="w-full">
+                                </div>
+                                <div class="col-12 md:col-6 mb-3">
+                                    <label [for]="'produit-prix-' + i" class="block text-900 font-medium mb-2">Prix
+                                        unitaire*</label>
+                                    <p-inputNumber [id]="'produit-prix-' + i" formControlName="prixUnit"
+                                        [minFractionDigits]="2" [maxFractionDigits]="2" class="w-full"></p-inputNumber>
+                                </div>
+                                <div class="col-12 md:col-6 mb-3">
+                                    <label [for]="'produit-qte-' + i"
+                                        class="block text-900 font-medium mb-2">Quantité*</label>
+                                    <p-inputNumber [id]="'produit-qte-' + i" formControlName="qte" [showButtons]="true"
+                                        [min]="1" class="w-full"></p-inputNumber>
+                                </div>
+                                <div class="col-12 md:col-6 mb-3">
+                                    <label [for]="'produit-obs-' + i"
+                                        class="block text-900 font-medium mb-2">Observation</label>
+                                    <input [id]="'produit-obs-' + i" type="text" pInputText
+                                        formControlName="observation" class="w-full">
+                                </div>
+                                <div class="col-12 text-right">
+                                    <p-button icon="pi pi-trash" (click)="removeProduit(i)" *ngIf="produits.length > 1"
+                                        severity="danger"></p-button>
+                                </div>
+                            </div>
+                        </p-card>
+
+                        <div class="mb-4 text-right">
+                            <p-button label="Ajouter un produit" icon="pi pi-plus" (click)="addProduit()"></p-button>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 justify-content-center mt-4">
+                        <p-button label="Précédent" icon="pi pi-arrow-left" (click)="prevStep()"></p-button>
+                        <p-button label="Suivant" icon="pi pi-arrow-right" iconPos="right"
+                            (click)="nextStep()"></p-button>
+                    </div>
+                </form>
+            </p-tabPanel>
+
+            <!-- Tab 4: Charges -->
+            <p-tabPanel header="Charges">
+                <form [formGroup]="creditForm">
+                    <div formArrayName="charges">
+                        <p-card *ngFor="let charge of charges.controls; let i = index" class="mb-4">
+                            <div [formGroupName]="i" class="grid">
+                                <div class="col-12 md:col-4 mb-3">
+                                    <label [for]="'charge-libele-' + i"
+                                        class="block text-900 font-medium mb-2">Libellé*</label>
+                                    <input [id]="'charge-libele-' + i" type="text" pInputText formControlName="libele"
+                                        class="w-full">
+                                </div>
+                                <div class="col-12 md:col-4 mb-3">
+                                    <label [for]="'charge-prix-' + i" class="block text-900 font-medium mb-2">Prix
+                                        unitaire*</label>
+                                    <p-inputNumber [id]="'charge-prix-' + i" formControlName="prixUnit"
+                                        [minFractionDigits]="2" [maxFractionDigits]="2" class="w-full"></p-inputNumber>
+                                </div>
+                                <div class="col-12 md:col-4 mb-3">
+                                    <label [for]="'charge-qte-' + i"
+                                        class="block text-900 font-medium mb-2">Quantité*</label>
+                                    <p-inputNumber [id]="'charge-qte-' + i" formControlName="qte" [showButtons]="true"
+                                        [min]="1" class="w-full"></p-inputNumber>
+                                </div>
+                                <div class="col-12 text-right">
+                                    <p-button icon="pi pi-trash" (click)="removeCharge(i)" *ngIf="charges.length > 1"
+                                        severity="danger"></p-button>
+                                </div>
+                            </div>
+                        </p-card>
+
+                        <div class="mb-4 text-right">
+                            <p-button label="Ajouter une charge" icon="pi pi-plus" (click)="addCharge()"></p-button>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 justify-content-center mt-4">
+                        <p-button label="Précédent" icon="pi pi-arrow-left" (click)="prevStep()"></p-button>
+                        <p-button label="Suivant" icon="pi pi-arrow-right" iconPos="right"
+                            (click)="nextStep()"></p-button>
+                    </div>
+                </form>
+            </p-tabPanel>
+
+            <!-- Tab 5: Garantie -->
+            <p-tabPanel header="Garantie">
+                <form [formGroup]="creditForm">
+                    <!-- Garantie -->
+                    <div class="col-12">
+                        <h4 class="text-lg font-medium mb-3">Informations sur la Garantie</h4>
+                    </div>
+                    <div class="grid">
+                        <div class="col-12 md:col-6 mb-4">
+                            <label for="garantieLibele" class="block text-900 font-medium mb-2">Libellé de
+                                Garantie*</label>
+                            <input id="garantieLibele" type="text" pInputText formControlName="garantieLibele"
+                                class="w-full">
+                            <small
+                                *ngIf="creditForm.get('garantieLibele')?.invalid && creditForm.get('garantieLibele')?.touched"
+                                class="p-error">Ce champ est requis</small>
+                        </div>
+                        <div class="col-12 md:col-6 mb-4">
+                            <label for="garantieMontant" class="block text-900 font-medium mb-2">Montant de
+                                Garantie*</label>
+                            <p-inputNumber id="garantieMontant" formControlName="garantieMontant"
+                                [minFractionDigits]="2" [maxFractionDigits]="2" class="w-full"></p-inputNumber>
+                            <small
+                                *ngIf="creditForm.get('garantieMontant')?.invalid && creditForm.get('garantieMontant')?.touched"
+                                class="p-error">Ce champ est requis et doit être supérieur à 0</small>
+                        </div>
+                    </div>
+
+                    <!-- Localisation -->
+                    <div class="col-12">
+                        <h4 class="text-lg font-medium mb-3 mt-3">Localisation</h4>
+                    </div>
+                    <div class="grid">
+                        <div class="col-12 md:col-6 mb-4">
+                            <label for="itAss" class="block text-900 font-medium mb-2">IT Ass</label>
+                            <input id="itAss" type="text" pInputText formControlName="itAss" class="w-full">
+                        </div>
+                        <div class="col-12 md:col-6 mb-4">
+                            <label for="itPc" class="block text-900 font-medium mb-2">IT PC</label>
+                            <input id="itPc" type="text" pInputText formControlName="itPc" class="w-full">
+                        </div>
+                    </div>
+
+                    <!-- Cautions -->
+                    <div class="col-12">
+                        <h4 class="text-lg font-medium mb-3 mt-4">Personnes Caution</h4>
+                    </div>
+
+                    <div formArrayName="cautions">
+                        <p-card *ngFor="let caution of cautions.controls; let i = index" class="mb-4">
+                            <div [formGroupName]="i" class="grid">
+                                <div class="col-12 md:col-6 mb-3">
+                                    <label [for]="'caution-nom-' + i"
+                                        class="block text-900 font-medium mb-2">Nom*</label>
+                                    <input [id]="'caution-nom-' + i" type="text" pInputText formControlName="nom"
+                                        class="w-full">
+                                </div>
+                                <div class="col-12 md:col-6 mb-3">
+                                    <label [for]="'caution-prenom-' + i"
+                                        class="block text-900 font-medium mb-2">Prénom*</label>
+                                    <input [id]="'caution-prenom-' + i" type="text" pInputText formControlName="prenom"
+                                        class="w-full">
+                                </div>
+                                <div class="col-12 md:col-6 mb-3">
+                                    <label [for]="'caution-telephone-' + i"
+                                        class="block text-900 font-medium mb-2">Téléphone*</label>
+                                    <input [id]="'caution-telephone-' + i" type="text" pInputText
+                                        formControlName="telephone" class="w-full">
+                                </div>
+                                <div class="col-12 md:col-6 mb-3">
+                                    <label [for]="'caution-activite-' + i"
+                                        class="block text-900 font-medium mb-2">Activité*</label>
+                                    <input [id]="'caution-activite-' + i" type="text" pInputText
+                                        formControlName="activite" class="w-full">
+                                </div>
+                                <div class="col-12 md:col-6 mb-3">
+                                    <label [for]="'caution-age-' + i"
+                                        class="block text-900 font-medium mb-2">Âge*</label>
+                                    <p-inputNumber [id]="'caution-age-' + i" formControlName="age" [showButtons]="true"
+                                        [min]="18" class="w-full"></p-inputNumber>
+                                </div>
+                                <div class="col-12 md:col-6 mb-3">
+                                    <label [for]="'caution-profession-' + i"
+                                        class="block text-900 font-medium mb-2">Profession*</label>
+                                    <input [id]="'caution-profession-' + i" type="text" pInputText
+                                        formControlName="profession" class="w-full">
+                                </div>
+                                <div class="col-12 text-right">
+                                    <p-button icon="pi pi-trash" (click)="removeCaution(i)" *ngIf="cautions.length > 1"
+                                        severity="danger"></p-button>
+                                </div>
+                            </div>
+                        </p-card>
+
+                        <div class="mb-4 text-right">
+                            <p-button label="Ajouter une caution" icon="pi pi-plus" (click)="addCaution()"></p-button>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 justify-content-center mt-4">
+                        <p-button label="Précédent" icon="pi pi-arrow-left" (click)="prevStep()"></p-button>
+                        <p-button label="Suivant" icon="pi pi-arrow-right" iconPos="right"
+                            (click)="nextStep()"></p-button>
+                    </div>
+                </form>
+            </p-tabPanel>
+
+            <!-- Tab 6: Résumé et validation -->
+            <p-tabPanel header="Résumé et validation">
+                <p-card>
+                    <h3 class="text-xl font-medium mb-4">Résumé du crédit</h3>
+
+                    <div class="grid mb-4">
+                        <div class="col-12 md:col-6">
+                            <h4 class="text-lg font-medium mb-3">Informations générales</h4>
+                            <div class="flex flex-column gap-2">
+                                <div class="flex justify-content-between">
+                                    <span class="text-600">Numéro Membre:</span>
+                                    <span class="text-900 font-medium">{{ creditForm.get('numeroMembre')?.value
+                                        }}</span>
+                                </div>
+                                <div class="flex justify-content-between">
+                                    <span class="text-600">Référence Crédit:</span>
+                                    <span class="text-900 font-medium">{{ creditForm.get('referenceCredit')?.value
+                                        }}</span>
+                                </div>
+                                <div class="flex justify-content-between">
+                                    <span class="text-600">Cumul Crédit:</span>
+                                    <span class="text-900 font-medium">{{ creditForm.get('cumulCredit')?.value |
+                                        currency:'GNF':'symbol':'1.0-2' }}</span>
+                                </div>
+                                <div class="flex justify-content-between">
+                                    <span class="text-600">Nombre de Crédit:</span>
+                                    <span class="text-900 font-medium">{{ creditForm.get('nbreCredit')?.value }}</span>
+                                </div>
+                                <div class="flex justify-content-between">
+                                    <span class="text-600">Capital:</span>
+                                    <span class="text-900 font-medium">{{ creditForm.get('capital')?.value |
+                                        currency:'GNF':'symbol':'1.0-2' }}</span>
+                                </div>
+                                <div class="flex justify-content-between">
+                                    <span class="text-600">Fréquence:</span>
+                                    <span class="text-900 font-medium">{{ creditForm.get('frequence')?.value }}</span>
+                                </div>
+                                <div class="flex justify-content-between">
+                                    <span class="text-600">Garantie:</span>
+                                    <span class="text-900 font-medium">{{ creditForm.get('garantieLibele')?.value }} ({{
+                                        creditForm.get('garantieMontant')?.value | currency:'GNF':'symbol':'1.0-2'
+                                        }})</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6">
+                            <h4 class="text-lg font-medium mb-3">Détails des produits, charges et cautions</h4>
+                            <div class="flex flex-column gap-2">
+                                <div class="flex justify-content-between">
+                                    <span class="text-600">Nombre de produits:</span>
+                                    <span class="text-900 font-medium">{{ produits.length }}</span>
+                                </div>
+                                <div class="flex justify-content-between">
+                                    <span class="text-600">Nombre de charges:</span>
+                                    <span class="text-900 font-medium">{{ charges.length }}</span>
+                                </div>
+                                <div class="flex justify-content-between">
+                                    <span class="text-600">Nombre de cautions:</span>
+                                    <span class="text-900 font-medium">{{ cautions.length }}</span>
+                                </div>
+                                <div class="flex justify-content-between">
+                                    <span class="text-600">Montant total produits:</span>
+                                    <span class="text-900 font-medium">{{ calculateTotalProduits() |
+                                        currency:'GNF':'symbol':'1.0-2' }}</span>
+                                </div>
+                                <div class="flex justify-content-between">
+                                    <span class="text-600">Montant total charges:</span>
+                                    <span class="text-900 font-medium">{{ calculateTotalCharges() |
+                                        currency:'GNF':'symbol':'1.0-2' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 justify-content-center mt-4">
+                        <p-button label="Précédent" icon="pi pi-arrow-left" (click)="prevStep()"></p-button>
+                        <p-button label="Valider" icon="pi pi-check" [loading]="state().submitLoading"
+                            [disabled]="!isFormValid()" (click)="processCreditInd()" severity="success"></p-button>
+                    </div>
+                </p-card>
+            </p-tabPanel>
+        </p-tabView>
+    </div>
+</div>

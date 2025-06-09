@@ -1,7 +1,7 @@
 <div class="card">
     <p-toast></p-toast>
     <span class="text-surface-900 dark:text-surface-0 text-xl font-bold mb-6 block">
-        Formulaire de demande de credit Individuel <strong>{{ state().clientData.nom_CLIENTE}}</strong>
+        Formulaire de demande de credit Individuel <strong>{{ state().clientData?.nom_CLIENTE}}</strong>
     </span>
 
     <div class="col-span-12 lg:col-span-2">
@@ -65,7 +65,7 @@
                     <label for="delegation" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
                         Délégation
                     </label>
-                    <p-dropdown ngModel name="delegation" [options]="state().delegations || []" optionLabel="libele"
+                    <p-dropdown ngModel name="delegation" [options]="state().allDelegations || []" optionLabel="libele"
                         dataKey="id" [filter]="true" filterBy="libele" [showClear]="true"
                         placeholder="Sélectionner une délégation" required
                         [disabled]="state().submitting || state().loading" styleClass="w-full" appendTo="body"
@@ -80,10 +80,10 @@
                     <label for="agence" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
                         Agence
                     </label>
-                    <p-dropdown ngModel name="agence" [options]="state().agences || []" optionLabel="libele"
+                    <p-dropdown ngModel name="agence" [options]="state().filteredAgences || []" optionLabel="libele"
                         dataKey="id" [filter]="true" filterBy="libele" [showClear]="true"
                         placeholder="Sélectionner une agence" required
-                        [disabled]="state().submitting || !state().agences || state().agences!.length === 0"
+                        [disabled]="state().submitting || !state().filteredAgences || state().filteredAgences!.length === 0"
                         styleClass="w-full" appendTo="body" (onChange)="onAgenceChange($event)">
                     </p-dropdown>
                     @if(demandeForm.controls['agence'] && demandeForm.controls['agence'].invalid &&
@@ -95,10 +95,10 @@
                     <label for="pos" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
                         Point de Vente
                     </label>
-                    <p-dropdown ngModel name="pos" [options]="state().pointsVente || []" optionLabel="libele"
+                    <p-dropdown ngModel name="pos" [options]="state().filteredPointsVente || []" optionLabel="libele"
                         dataKey="id" [filter]="true" filterBy="libele" [showClear]="true"
                         placeholder="Sélectionner un point de vente" required
-                        [disabled]="state().submitting || !state().pointsVente || state().pointsVente!.length === 0"
+                        [disabled]="state().submitting || !state().filteredPointsVente || state().filteredPointsVente!.length === 0"
                         styleClass="w-full" appendTo="body">
                     </p-dropdown>
                     @if(demandeForm.controls['pos'] && demandeForm.controls['pos'].invalid &&
@@ -111,14 +111,13 @@
                     <label for="numeroMembre" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
                         Numéro de Membre
                     </label>
-                    <input pInputText [ngModel]="state().clientData.clientesPKId.codCliente" name="numeroMembre"
+                    <input pInputText [ngModel]="state().clientData?.clientesPKId?.codCliente" name="numeroMembre"
                         id="numeroMembre" type="text" required [disabled]="state().submitting" class="w-full" />
                     @if(demandeForm.controls['numeroMembre'] && demandeForm.controls['numeroMembre'].invalid &&
                     demandeForm.controls['numeroMembre'].touched) {
                     <p-message severity="error" text="Le numéro de membre est obligatoire"></p-message>
                     }
                 </div>
-
 
                 <div class="mb-6 col-span-12 md:col-span-6">
                     <label for="quartier" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
@@ -219,7 +218,9 @@
                         <ng-template pTemplate="item" let-credit>
                             <div class="flex items-center">
                                 <span>{{ credit.des_TIP_CREDITO }}</span>
+                                @if(credit.tasa_INTERES) {
                                 <span class="ml-2 text-xs text-gray-500">(Taux: {{ credit.tasa_INTERES }}%)</span>
+                                }
                             </div>
                         </ng-template>
                     </p-dropdown>

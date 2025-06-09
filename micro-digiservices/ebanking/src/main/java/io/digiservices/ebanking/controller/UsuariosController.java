@@ -47,7 +47,7 @@ public class UsuariosController {
         return sg_usuariosService.isActive_usuarios(new UsariosPKId(codEmpresa,codAgencia,codUsuarios));
     }
 
-    @GetMapping("/{codEmpresa}/{codAgencia}/{codUsuarios}/getUsuarios")
+    @GetMapping("/getUsuarios/{codEmpresa}/{codAgencia}/{codUsuarios}")
     public ResponseEntity<SG_USUARIOSDto> getUsuarios(
             @PathVariable(name = "codEmpresa") String codEmpresa,
             @PathVariable(name = "codAgencia") String codAgencia,
@@ -65,6 +65,15 @@ public class UsuariosController {
             HttpServletRequest request
     ){
         return ok(getResponse(request, Map.of("usuarios",sg_usuariosService.getListUsuariosByCodAgencia(codAgencia,codPuesto,indActivo)), "Liste des Points de vente", OK));
+    }
+
+    @GetMapping("/offLine/getListUsuariosByCodAgencia/{codAgencia}/{codPuesto}/{indActivo}")
+    public ResponseEntity<List<SG_USUARIOSDto>> getListUsuariosByCodAgenciaOffLine(
+            @PathVariable(value="codAgencia") String codAgencia,
+            @PathVariable(value = "codPuesto") String codPuesto,
+            @PathVariable(value = "indActivo") String indActivo
+    ){
+        return ResponseEntity.ok(sg_usuariosService.getListUsuariosByCodAgencia(codAgencia,codPuesto,indActivo));
     }
 
     @GetMapping("/{codEmpresa}/{codAgencia}/{codUsuarios}/getActiveUser")

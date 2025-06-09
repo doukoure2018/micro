@@ -1,4 +1,4 @@
-<!-- detail-credit.component.html with PrimeNG Table -->
+<!-- detail-credit.component.html with PrimeNG Table - FIXED VERSION -->
 <div class="credit-details-container">
     @if (loading()) {
     <p-progressSpinner></p-progressSpinner>
@@ -8,41 +8,45 @@
     <p-message severity="error" text="{{ error() }}"></p-message>
     }
 
-    @if (!loading() && !error() && planpagos()!.length) {
+    <!-- FIXED: Use safe navigation and helper method -->
+    @if (!loading() && !error() && getPlanPagosLength() > 0) {
     <div class="card">
         <h2>Credit Payment Plan Details</h2>
 
+        <!-- FIXED: Use helper method for safe access to first element -->
+        @if (getFirstPlanPago(); as firstPlanPago) {
         <!-- Horizontal Summary Card for Key Credit Information -->
         <div class="p-card p-3 mb-4">
             <div class="flex align-items-center justify-content-between flex-wrap">
                 <div class="flex align-items-center mr-3 mb-2">
                     <span class="font-bold mr-2">Credit #:</span>
-                    <span>{{ planpagos()[0].planPagosPKId.numCredito }}</span>
+                    <span>{{ firstPlanPago.planPagosPKId.numCredito }}</span>
                 </div>
                 &nbsp;
                 <div class="flex align-items-center mr-3 mb-2">
                     <span class="font-bold mr-2">Code Agence:</span>
-                    <span>{{ planpagos()[0].planPagosPKId.codAgencia }}</span>
+                    <span>{{ firstPlanPago.planPagosPKId.codAgencia }}</span>
                 </div>
                 &nbsp;
                 <div class="flex align-items-center mr-3 mb-2">
                     <span class="font-bold mr-2">Date:</span>
-                    <span>{{ planpagos()[0].fecCuota | date:'yyyy-MM-dd' }}</span>
+                    <span>{{ firstPlanPago.fecCuota | date:'yyyy-MM-dd' }}</span>
                 </div>
                 &nbsp;
                 <div class="flex align-items-center mr-3 mb-2">
                     <span class="font-bold mr-2">Montant Credit:</span>
-                    <span>{{ planpagos()[0].sal_CREDITO | currency:'GNF':'symbol':'1.0-0' }}</span>
+                    <span>{{ firstPlanPago.sal_CREDITO | currency:'GNF':'symbol':'1.0-0' }}</span>
                 </div>
                 &nbsp;
                 <div class="flex align-items-center mb-2">
                     <span class="font-bold mr-2">Status:</span>
-                    <p-tag [severity]="planpagos()[0].indEstado === 'A' ? 'success' : 'warn'">
-                        {{ planpagos()[0].indEstado === 'A' ? 'Active' : planpagos()[0].indEstado }}
+                    <p-tag [severity]="firstPlanPago.indEstado === 'A' ? 'success' : 'warn'">
+                        {{ firstPlanPago.indEstado === 'A' ? 'Active' : firstPlanPago.indEstado }}
                     </p-tag>
                 </div>
             </div>
         </div>
+        }
 
         <!-- Payment Plan Table -->
         <p-table [value]="planpagos()" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
@@ -105,7 +109,8 @@
 
             <ng-template pTemplate="summary">
                 <div class="flex justify-content-end">
-                    <span>Total Payments: {{ planpagos().length }}</span>
+                    <!-- FIXED: Use helper method for safe length access -->
+                    <span>Total Payments: {{ getPlanPagosLength() }}</span>
                 </div>
             </ng-template>
 
@@ -119,4 +124,12 @@
     } @else if (!loading() && !error()) {
     <p-message severity="info" text="No payment plan information available for this credit."></p-message>
     }
+</div>
+<div class="grid">
+    <div class="col-12">
+        <div class="flex justify-center gap-3 p-4 bg-gray-50 border-round">
+            <p-button label="Voir son historisque de crédit" icon="pi pi-list" outlined (onClick)="retourListe()">
+            </p-button>
+        </div>
+    </div>
 </div>

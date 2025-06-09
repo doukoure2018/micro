@@ -1,0 +1,99 @@
+<!-- appreciation.component.html -->
+<div class="col-12 mt-4">
+    <!-- Add Toast component -->
+    <p-toast></p-toast>
+
+    <!-- Add Confirm Dialog component -->
+    <p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
+
+    <p-card header="Appréciation Finale">
+        <div *ngIf="!resultNote">
+            <form [formGroup]="appreciationForm" (ngSubmit)="confirmSubmission()">
+                <div class="grid">
+                    <div class="col-12 md:col-6">
+                        <div class="field">
+                            <label class="font-bold">Montant Demandé</label>
+                            <p-inputNumber formControlName="montantDemande" mode="currency" currency="GNF"
+                                locale="fr-FR" [disabled]="true" class="w-full">
+                            </p-inputNumber>
+                        </div>
+                    </div>
+                    <div class="col-12 md:col-6">
+                        <div class="field">
+                            <label class="font-bold">Montant Suggéré</label>
+                            <p-inputNumber formControlName="montantSuggere" mode="currency" currency="GNF"
+                                locale="fr-FR" class="w-full">
+                            </p-inputNumber>
+                            <small class="p-error"
+                                *ngIf="appreciationForm.get('montantSuggere')?.invalid && appreciationForm.get('montantSuggere')?.touched">
+                                Montant suggéré requis
+                            </small>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="field">
+                            <label class="font-bold">Motif</label>
+                            <textarea pTextarea formControlName="motif" rows="3" class="w-full"></textarea>
+                            <small class="p-error"
+                                *ngIf="appreciationForm.get('motif')?.invalid && appreciationForm.get('motif')?.touched">
+                                Motif requis
+                            </small>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <button pButton type="submit" label="Calculer et Finaliser" icon="pi pi-calculator"
+                            [loading]="calculating" [disabled]="appreciationForm.invalid">
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Display calculation result if available -->
+        <div *ngIf="resultNote" class="p-3 border-round"
+            [ngClass]="{'bg-green-50': resultNote.newStatus === 'ACCEPTED', 'bg-red-50': resultNote.newStatus === 'REJECTED'}">
+            <div class="flex justify-content-between align-items-center mb-3">
+                <h3>Décision finale:
+                    <span
+                        [ngClass]="{'text-green-700': resultNote.newStatus === 'ACCEPTED', 'text-red-700': resultNote.newStatus === 'REJECTED'}">
+                        {{ resultNote.newStatus === 'ACCEPTED' ? 'ACCEPTÉ' : 'REJETÉ' }}
+                    </span>
+                </h3>
+                <div>
+                    <button pButton icon="pi pi-refresh" label="Réinitialiser" class="p-button-text mr-2"
+                        (click)="resetForm()"></button>
+                    <button pButton icon="pi pi-home" label="Tableau de bord" class="p-button-text"
+                        (click)="confirmNavigation()"></button>
+                </div>
+            </div>
+
+            <div class="grid">
+                <div class="col-12 md:col-4">
+                    <div class="field">
+                        <label class="font-bold">Note Totale</label>
+                        <div class="text-xl">{{ resultNote.totalNote }}/{{maxScore}}</div>
+                    </div>
+                </div>
+                <div class="col-12 md:col-4">
+                    <div class="field">
+                        <label class="font-bold">Montant Demandé</label>
+                        <div class="text-xl">{{ montantDemande | currency:'GNF':'symbol' }}</div>
+                    </div>
+                </div>
+                <div class="col-12 md:col-4">
+                    <div class="field">
+                        <label class="font-bold">Montant Suggéré</label>
+                        <div class="text-xl">{{ appreciationForm.get('montantSuggere')?.value | currency:'GNF':'symbol'
+                            }}</div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="field">
+                        <label class="font-bold">Motif</label>
+                        <div>{{ appreciationForm.get('motif')?.value }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </p-card>
+</div>

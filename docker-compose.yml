@@ -75,104 +75,105 @@ services:
     networks:
       - spring
 
-  discoveryserver:
-    image: doukoure93/discoveryserver:latest
-    container_name: discoveryserver
-    ports:
-      - "5002:5002"
-    environment:
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
-    networks:
-      - spring
-    depends_on:
-      postgresdb:
-        condition: service_healthy
-
-  gateway:
-    image: doukoure93/gateway:latest
-    container_name: gateway
-    ports:
-      - "8000:8000"
-    environment:
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
-    networks:
-      - spring
-    depends_on:
-      - discoveryserver
-
-  # Business Services
-  authorizationserver:
-    image: doukoure93/authorizationserver:latest
-    container_name: authorizationserver
-    ports:
-      - "8080:8080"
-    environment:
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
-    volumes:
-      - ./keys:/app/keys
-    networks:
-      - spring
-    depends_on:
-      - postgresdb
-      - discoveryserver
-
-  userservice:
-    image: doukoure93/userservice:latest
-    container_name: userservice
-    ports:
-      - "8085:8085"
-    environment:
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
-    networks:
-      - spring
-    depends_on:
-      - postgresdb
-      - kafka
-      - discoveryserver
-
-  ecreditservice:
-    image: doukoure93/ecreditservice:latest
-    container_name: ecreditservice
-    ports:
-      - "8087:8087"
-    environment:
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
-    networks:
-      - spring
-    depends_on:
-      - postgresdb
-      - discoveryserver
-
-  notificationservice:
-    image: doukoure93/notificationservice:latest
-    container_name: notificationservice
-    ports:
-      - "8086:8086"
-    environment:
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
-    networks:
-      - spring
-    depends_on:
-      - kafka
-      - discoveryserver
-
-  # Frontend Application
-  digicrg-app:
-    container_name: digicrg-app
-    image: doukoure93/digicrg-app
-    ports:
-      - "4200:4200"
-    depends_on:
-      - ecreditservice
-      - authorizationserver
-      - notificationservice
-      - userservice
-      - gateway
-    networks:
-      - spring
-    restart: unless-stopped
-    environment:
-      - API_BASE_URL=${API_BASE_URL:-http://127.0.0.1:8080}
+#  discoveryserver:
+#    image: doukoure93/discoveryserver:latest
+#    container_name: discoveryserver
+#    ports:
+#      - "5002:5002"
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+#    networks:
+#      - spring
+#    depends_on:
+#      postgresdb:
+#        condition: service_healthy
+#
+#  gateway:
+#    image: doukoure93/gateway:latest
+#    container_name: gateway
+#    ports:
+#      - "8000:8000"
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+#    networks:
+#      - spring
+#    depends_on:
+#      - discoveryserver
+#
+#  # Business Services
+#  authorizationserver:
+#    image: doukoure93/authorizationserver:latest
+#    container_name: authorizationserver
+#    ports:
+#      - "8080:8080"
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+#    volumes:
+#      - ./keys:/app/keys
+#    networks:
+#      - spring
+#    depends_on:
+#      - postgresdb
+#      - discoveryserver
+#
+#  userservice:
+#    image: doukoure93/userservice:latest
+#    container_name: userservice
+#    ports:
+#      - "8085:8085"
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+#    networks:
+#      - spring
+#    depends_on:
+#      - postgresdb
+#      - kafka
+#      - discoveryserver
+#
+#  ecreditservice:
+#    image: doukoure93/ecreditservice:latest
+#    container_name: ecreditservice
+#    ports:
+#      - "8087:8087"
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+#    networks:
+#      - spring
+#    depends_on:
+#      - postgresdb
+#      - discoveryserver
+#
+#  notificationservice:
+#    image: doukoure93/notificationservice:latest
+#    container_name: notificationservice
+#    ports:
+#      - "8086:8086"
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+#    networks:
+#      - spring
+#    depends_on:
+#      - kafka
+#      - discoveryserver
+#
+#  # Frontend Application
+#  digicrg-app:
+#    container_name: digicrg-app
+#    image: doukoure93/digicrg-app
+#    ports:
+#      - "4200:4200"
+#    depends_on:
+#      - ecreditservice
+#      - authorizationserver
+#      - notificationservice
+#      - userservice
+#      - gateway
+#    networks:
+#      - spring
+#    restart: unless-stopped
+#    environment:
+#      - API_BASE_URL=${API_BASE_URL:-http://127.0.0.1:8000}
+#      - API_BASE_URL=${AUTH_SERVER_URL:-http://127.0.0.1:8080}
 
 volumes:
   postgresvolume:

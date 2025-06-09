@@ -193,7 +193,7 @@
                                     <small class="block text-color-secondary">Argent en caisse et en banque</small>
                                 </label>
                                 <p-inputNumber id="liquidites" formControlName="liquidites" mode="currency"
-                                    currency="GNF" locale="en-US" class="w-full"></p-inputNumber>
+                                    currency="GNF" locale="fr-FR" class="w-full"></p-inputNumber>
                             </div>
                         </div>
 
@@ -226,11 +226,11 @@
                         </div>
 
                         <!-- Total Actif -->
-                        <div class="col-12 mt-3">
+                        <!-- <div class="col-12 mt-3">
                             <div class="p-3 bg-green-50 border-round font-bold border-1 border-green-200">
                                 Total Actif: {{calculerTotalActif() | currency:'GNF':'symbol':'1.0-0':'fr-FR'}}
                             </div>
-                        </div>
+                        </div> -->
 
                         <!-- Section Passifs -->
                         <div class="col-12 mt-5">
@@ -263,14 +263,14 @@
                         </div>
 
                         <!-- Total Passif -->
-                        <div class="col-12 mt-3">
+                        <!-- <div class="col-12 mt-3">
                             <div class="p-3 bg-green-50 border-round font-bold border-1 border-green-200">
                                 Total Passif: {{calculerTotalPassif() | currency:'GNF':'symbol':'1.0-0':'fr-FR'}}
                             </div>
-                        </div>
+                        </div> -->
 
                         <!-- Ratio -->
-                        <div class="col-12 mt-5">
+                        <!-- <div class="col-12 mt-5">
                             <div class="p-3 bg-blue-50 border-round border-1 border-blue-200">
                                 <div class="flex align-items-center justify-content-between">
                                     <span class="font-bold">Ratio de liquidité:</span>
@@ -279,7 +279,7 @@
                                     </span>
                                 </div>
                             </div>
-                        </div>
+                        </div> -->
                     </div>
                 </form>
             </p-card>
@@ -312,13 +312,13 @@
                             </div>
                         </div>
 
-                        <div class="col-12 mt-3">
+                        <!-- <div class="col-12 mt-3">
                             <div class="p-3 bg-green-50 border-round font-bold border-1 border-green-200">
                                 Total patrimoine personnel: {{ (bilanPersonnelForm.value.epargnes || 0) +
                                 (bilanPersonnelForm.value.valeurBiensDurables || 0) |
                                 currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
                             </div>
-                        </div>
+                        </div> -->
                     </div>
                 </form>
             </p-card>
@@ -345,6 +345,58 @@
                                 </small>
                             </div>
                         </div>
+                        <!-- NOUVEAU CHAMP AUTRES REVENUS ACTUEL -->
+                        <div class="col-12 md:col-6">
+                            <div class="field">
+                                <label for="autresRevenusActuel" class="block font-medium mb-2">
+                                    Autres revenus
+                                    <small class="block text-color-secondary">Subventions, commissions, revenus
+                                        annexes...</small>
+                                </label>
+                                <p-inputNumber id="autresRevenusActuel" formControlName="autresRevenus" mode="currency"
+                                    currency="GNF" locale="fr-FR" class="w-full"></p-inputNumber>
+                            </div>
+                        </div>
+
+                        <!-- AJOUTER APRÈS LES CHAMPS EXISTANTS - Total revenus et ratio -->
+                        <!-- <div class="col-12 mt-2">
+                            <div class="p-3 bg-blue-50 border-round border-1 border-blue-200">
+                                <div class="flex align-items-center justify-content-between">
+                                    <span class="font-bold">Revenus totaux actuels:</span>
+                                    <span class="text-lg font-bold text-blue-600">
+                                        {{ calculerRevenusTotauxActuel() | currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div> -->
+
+                        <!-- <div class="col-12">
+                            <div class="p-3 bg-yellow-50 border-round border-1 border-yellow-200">
+                                <div class="flex align-items-center justify-content-between">
+                                    <span class="font-bold">Ratio de dépendance:</span>
+                                    <span class="text-lg font-bold text-yellow-600">
+                                        {{ calculerRatioDependanceActuel() | percent:'1.2-2' }}
+                                    </span>
+                                </div>
+                                <small class="text-color-secondary">
+                                    Part des autres revenus dans les revenus totaux
+                                </small>
+                            </div>
+                        </div> -->
+
+                        <!-- MODIFIER le calcul du résultat brut pour utiliser les revenus totaux -->
+                        <!-- <div class="col-12 mt-2">
+                            <div class="p-3 bg-green-50 border-round border-1 border-green-200">
+                                <div class="flex align-items-center justify-content-between">
+                                    <span class="font-bold">Résultat brut:</span>
+                                    <span class="text-lg font-bold text-green-600">
+                                        {{ calculerRevenusTotauxActuel() - (resultatActuelForm.value.coutMarchandises ||
+                                        0) |
+                                        currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div> -->
 
                         <div class="col-12 md:col-6">
                             <div class="field">
@@ -360,7 +412,7 @@
                             </div>
                         </div>
 
-                        <div class="col-12 mt-2">
+                        <!-- <div class="col-12 mt-2">
                             <div class="p-3 bg-green-50 border-round border-1 border-green-200">
                                 <div class="flex align-items-center justify-content-between">
                                     <span class="font-bold">Résultat brut:</span>
@@ -371,9 +423,9 @@
                                     </span>
                                 </div>
                             </div>
-                        </div>
+                        </div> -->
 
-                        <div class="col-12">
+                        <!-- <div class="col-12">
                             <div class="p-3 bg-blue-50 border-round border-1 border-blue-200">
                                 <div class="flex align-items-center justify-content-between">
                                     <span class="font-bold">Marge brute:</span>
@@ -382,7 +434,7 @@
                                     </span>
                                 </div>
                             </div>
-                        </div>
+                        </div> -->
                     </div>
                 </form>
             </p-card>
@@ -411,6 +463,45 @@
                                 </small>
                             </div>
                         </div>
+                        <!-- NOUVEAU CHAMP AUTRES REVENUS PRÉVISIONNEL -->
+                        <div class="col-12 md:col-6">
+                            <div class="field">
+                                <label for="autresRevenusPrev" class="block font-medium mb-2">
+                                    Autres revenus prévisionnels
+                                    <small class="block text-color-secondary">Subventions, commissions, revenus
+                                        annexes...</small>
+                                </label>
+                                <p-inputNumber id="autresRevenusPrev" formControlName="autresRevenus" mode="currency"
+                                    currency="GNF" locale="fr-FR" class="w-full"></p-inputNumber>
+                            </div>
+                        </div>
+
+                        <!-- AJOUTER APRÈS LES CHAMPS EXISTANTS - Total revenus et ratio prévisionnels -->
+                        <!-- <div class="col-12 mt-2">
+                            <div class="p-3 bg-blue-50 border-round border-1 border-blue-200">
+                                <div class="flex align-items-center justify-content-between">
+                                    <span class="font-bold">Revenus totaux prévisionnels:</span>
+                                    <span class="text-lg font-bold text-blue-600">
+                                        {{ calculerRevenusTotauxPrevisionnel() | currency:'GNF':'symbol':'1.0-0':'fr-FR'
+                                        }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div> -->
+
+                        <!-- <div class="col-12">
+                            <div class="p-3 bg-yellow-50 border-round border-1 border-yellow-200">
+                                <div class="flex align-items-center justify-content-between">
+                                    <span class="font-bold">Ratio de dépendance prévisionnel:</span>
+                                    <span class="text-lg font-bold text-yellow-600">
+                                        {{ calculerRatioDependancePrevisionnel() | percent:'1.2-2' }}
+                                    </span>
+                                </div>
+                                <small class="text-color-secondary">
+                                    Part des autres revenus dans les revenus totaux prévisionnels
+                                </small>
+                            </div>
+                        </div> -->
 
                         <div class="col-12 md:col-6">
                             <div class="field">
@@ -426,20 +517,21 @@
                             </div>
                         </div>
 
-                        <div class="col-12 mt-2">
+                        <!-- MODIFIER le calcul du résultat brut prévisionnel pour utiliser les revenus totaux -->
+                        <!-- <div class="col-12 mt-2">
                             <div class="p-3 bg-green-50 border-round border-1 border-green-200">
                                 <div class="flex align-items-center justify-content-between">
                                     <span class="font-bold">Résultat brut prévisionnel:</span>
                                     <span class="text-lg font-bold text-green-600">
-                                        {{ (resultatPrevisionnelForm.value.chiffreAffaires || 0) -
+                                        {{ calculerRevenusTotauxPrevisionnel() -
                                         (resultatPrevisionnelForm.value.coutMarchandises || 0) |
                                         currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
                                     </span>
                                 </div>
                             </div>
-                        </div>
+                        </div> -->
 
-                        <div class="col-12">
+                        <!-- <div class="col-12">
                             <div class="p-3 bg-blue-50 border-round border-1 border-blue-200">
                                 <div class="flex align-items-center justify-content-between">
                                     <span class="font-bold">Marge brute prévisionnelle:</span>
@@ -448,7 +540,7 @@
                                     </span>
                                 </div>
                             </div>
-                        </div>
+                        </div> -->
                     </div>
                 </form>
             </p-card>
@@ -675,7 +767,6 @@
         </div>
 
         <!-- Étape 9: Résumé -->
-        <!-- Étape 9: Résumé -->
         <div *ngIf="activeIndex() === 8">
             <p-card header="Résumé de votre demande de crédit">
                 <div class="grid">
@@ -729,7 +820,6 @@
                                     <p-table [value]="[
                                         { label: 'Total actifs', value: calculerTotalActif() | currency:'GNF':'symbol':'1.0-0':'en-US' },
                                         { label: 'Total passifs', value: calculerTotalPassif() | currency:'GNF':'symbol':'1.0-0':'en-US' },
-                                        { label: 'Ratio de liquidité', value: calculerRatioLiquidite() | number:'1.2-2', severity: getLiquiditySeverity(calculerRatioLiquidite()) }
                                     ]" styleClass="p-datatable-sm" [tableStyle]="{'min-width': '30rem'}">
                                         <ng-template pTemplate="body" let-item>
                                             <tr>
@@ -774,10 +864,11 @@
                                 <div class="col-12 md:col-6">
                                     <h3 class="text-lg font-medium">Résultats actuels</h3>
                                     <p-table [value]="[
-                                        { label: 'Chiffre d\'affaires', value: resumeData.resultatActuel?.chiffre_affaires | currency:'GNF':'symbol':'1.0-0':'en-US' },
-                                        { label: 'Coût des marchandises', value: resumeData.resultatActuel?.cout_marchandises | currency:'GNF':'symbol':'1.0-0':'en-US' },
-                                        { label: 'Marge brute', value: calculerMargeButeActuelle() | percent:'1.2-2', severity: getMarginSeverity(calculerMargeButeActuelle()) }
-                                    ]" styleClass="p-datatable-sm" [tableStyle]="{'min-width': '30rem'}">
+                                            { label: 'Chiffre d\'affaires', value: resumeData.resultatActuel?.chiffre_affaires | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                            { label: 'Autres revenus', value: resumeData.resultatActuel?.autres_revenus | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                            { label: 'Revenus totaux', value: (resumeData.resultatActuel?.chiffre_affaires || 0) + (resumeData.resultatActuel?.autres_revenus || 0) | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                            { label: 'Coût des marchandises', value: resumeData.resultatActuel?.cout_marchandises | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                        ]" styleClass="p-datatable-sm" [tableStyle]="{'min-width': '30rem'}">
                                         <ng-template pTemplate="body" let-item>
                                             <tr>
                                                 <td class="font-medium">{{item.label}}</td>
@@ -798,10 +889,11 @@
                                 <div class="col-12 md:col-6">
                                     <h3 class="text-lg font-medium">Résultats prévisionnels</h3>
                                     <p-table [value]="[
-                                        { label: 'Chiffre d\'affaires', value: resumeData.resultatPrevisionnel?.chiffre_affaires | currency:'GNF':'symbol':'1.0-0':'en-US' },
-                                        { label: 'Coût des marchandises', value: resumeData.resultatPrevisionnel?.cout_marchandises | currency:'GNF':'symbol':'1.0-0':'en-US' },
-                                        { label: 'Marge brute', value: calculerMargeButePrevisionnelle() | percent:'1.2-2', severity: getMarginSeverity(calculerMargeButePrevisionnelle()) }
-                                    ]" styleClass="p-datatable-sm" [tableStyle]="{'min-width': '30rem'}">
+                                            { label: 'Chiffre d\'affaires', value: resumeData.resultatPrevisionnel?.chiffre_affaires | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                            { label: 'Autres revenus', value: resumeData.resultatPrevisionnel?.autres_revenus | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                            { label: 'Revenus totaux', value: (resumeData.resultatPrevisionnel?.chiffre_affaires || 0) + (resumeData.resultatPrevisionnel?.autres_revenus || 0) | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                            { label: 'Coût des marchandises', value: resumeData.resultatPrevisionnel?.cout_marchandises | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                        ]" styleClass="p-datatable-sm" [tableStyle]="{'min-width': '30rem'}">
                                         <ng-template pTemplate="body" let-item>
                                             <tr>
                                                 <td class="font-medium">{{item.label}}</td>
@@ -880,7 +972,6 @@
                                         { label: 'Montant demandé', value: resumeData.demandeCredit?.montant_demande | currency:'GNF':'symbol':'1.0-0':'en-US' },
                                         { label: 'Durée', value: (resumeData.demandeCredit?.duree_mois || 0) + ' mois' },
                                         { label: 'Mensualité estimée', value: calculerMensualite() | currency:'GNF':'symbol':'1.0-0':'en-US' },
-                                        { label: 'Ratio crédit/CA prévisionnel', value: calculerRatioCreditCA() | percent:'1.1-1', severity: getRatioCreditCASeverity() }
                                     ]" styleClass="p-datatable-sm" [tableStyle]="{'min-width': '30rem'}">
                                         <ng-template pTemplate="body" let-item>
                                             <tr>

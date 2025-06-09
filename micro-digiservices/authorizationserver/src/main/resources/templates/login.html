@@ -47,8 +47,9 @@
                 <div class="mt-4">
 
                     <div class="mt-3 flex items-center justify-between">
-                        <a href="http://localhost:4200/forgotpassword" class="block mt-4 text-base text-blue-600 hover:underline">Mot de passe Oublié?</a>
-                        <a href="http://localhost:4200" class="inline-flex justify-center items-center bg-blue-600 hover:bg-blue-700 p-2 rounded-md text-white block text-sm text-blue-600">
+                        <a th:href="@{${@environment.getProperty('ui.app.url')} + '/forgotpassword'}" class="block mt-4 text-base text-blue-600 hover:underline">Mot de passe Oublié?</a>
+
+                        <a th:href="@{${@environment.getProperty('ui.app.url')}}" class="inline-flex justify-center items-center bg-blue-600 hover:bg-blue-700 p-2 rounded-md text-white block text-sm text-blue-600">
                             Retour à la page d'acceuil
                             <svg xmlns="http://www.w3.org/2000/svg" stroke-linejoin="round" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke="currentColor" class="shrink-0 size-4">
                                 <path d="m15 4.5 7.5 7.5-7.5 7.5" />

@@ -1,9 +1,9 @@
 export interface BilanPersonnel {
     bilanPersonnelId?: number;
     promoteurId: number;
-    dateBilan: Date;
+    date_bilan: Date;
     epargnes: number;
-    valeurBiensDurables: number;
+    valeur_biens_durables: number;
     dateEnregistrement?: Date;
     dateModification?: Date;
 }

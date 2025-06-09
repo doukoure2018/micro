@@ -1,0 +1,417 @@
+<div class="card h-full">
+    <p-toast></p-toast>
+    <!-- Loading indicator -->
+    @if(state().loading) {
+    <div class="flex justify-center items-center h-64">
+        <i class="pi pi-spin pi-spinner text-4xl"></i>
+        <span class="ml-3">Chargement des détails du crédit...</span>
+    </div>
+    } @else if(state().error) {
+    <div class="bg-red-100 text-red-700 p-4 rounded-md mb-4">
+        {{ state().error }}
+    </div>
+    } @else {
+    <!-- Header Information -->
+    <div class="bg-blue-50 dark:bg-blue-900 p-4 rounded-md mb-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold">Détails du Crédit</h2>
+            <div class="text-sm bg-blue-100 dark:bg-blue-800 px-3 py-1 rounded-full">
+                Référence: {{ state().instanceCreditInd?.referenceCredit }}
+            </div>
+        </div>
+        <!-- Appreciation Section -->
+        <div class="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
+            <h3 class="text-xl font-bold mb-4 text-primary border-b pb-2">Appréciation</h3>
+
+            @if(!state().appreciation) {
+            <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-md text-center">Aucune appréciation disponible</div>
+            } @else {
+            <table class="w-full border-collapse">
+                <tbody class="divide-y dark:divide-gray-700">
+
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400 font-medium">Montant Demandé</td>
+                        <td class="py-3 px-4 font-medium">{{ getFormattedAmount(state().appreciation?.montantDemande) }}
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400 font-medium">Montant Suggéré par
+                            le DA
+                        </td>
+                        <td class="py-3 px-4 font-medium">{{ getFormattedAmount(state().appreciation?.montantSuggere) }}
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400 font-medium">Statut</td>
+                        <td class="py-3 px-4 font-medium">
+                            <span class="px-2 py-1 rounded-full text-xs" [ngClass]="{
+                        'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200': state().appreciation?.status === 'ACCEPTED',
+                        'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200': state().appreciation?.status === 'REJECTED',
+                        'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200': state().appreciation?.status === 'PENDING' || state().appreciation?.status === 'EN_ATTENTE',
+                        'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200': !state().appreciation?.status
+                      }">
+                                {{ state().appreciation?.status || 'N/A' }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400 font-medium">Date Création</td>
+                        <td class="py-3 px-4 font-medium">{{ getFormattedDate(state().appreciation?.createdAt) }}</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400 font-medium align-top">Motif</td>
+                        <td class="py-3 px-4">
+                            <div class="p-2 bg-gray-50 dark:bg-gray-700 rounded">
+                                {{ state().appreciation?.motif || 'Aucun motif fourni' }}
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            }
+        </div>
+    </div>
+
+    <!-- Profile Information Section -->
+    <div class="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
+        <h3 class="text-xl font-bold mb-4 text-primary border-b pb-2">Informations du Profil</h3>
+
+        <!-- Client Information -->
+        <div class="mb-5">
+            <h4 class="text-lg font-semibold mb-2">Informations Client</h4>
+            <table class="w-full border-collapse">
+                <tbody class="divide-y dark:divide-gray-700">
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400 font-medium w-1/3">Nom Complet
+                        </td>
+                        <td class="py-3 px-4 font-medium">{{ state().membre?.nom_CLIENTE }}</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400 font-medium">N° Membre</td>
+                        <td class="py-3 px-4 font-medium">{{ state().membre?.clientesPKId?.codCliente }}</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400 font-medium">Téléphone</td>
+                        <td class="py-3 px-4 font-medium">{{ state().membre?.tel_PRINCIPAL }}</td>
+                    </tr>
+                    <!-- Add more membre fields as needed -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Credit Information -->
+        <div>
+            <h4 class="text-lg font-semibold mb-2">Informations Credit</h4>
+            <table class="w-full border-collapse">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                        <th class="py-2 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Attribut
+                        </th>
+                        <th class="py-2 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Valeur
+                        </th>
+                        <th class="py-2 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Attribut
+                        </th>
+                        <th class="py-2 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Valeur
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y dark:divide-gray-700">
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">Moyen Personne</td>
+                        <td class="py-3 px-4">{{ state().instanceCreditInd?.moyenPerson || 'N/A' }}</td>
+                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">Bien</td>
+                        <td class="py-3 px-4">{{ state().instanceCreditInd?.bien || 'N/A' }}</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">Capital</td>
+                        <td class="py-3 px-4">{{ getFormattedAmount(state().instanceCreditInd?.capital) }}</td>
+                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">Créance</td>
+                        <td class="py-3 px-4">{{ getFormattedAmount(state().instanceCreditInd?.creance) }}</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">Dette</td>
+                        <td class="py-3 px-4">{{ getFormattedAmount(state().instanceCreditInd?.dette) }}</td>
+                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">Statut Activité</td>
+                        <td class="py-3 px-4">{{ state().instanceCreditInd?.statutActivite || 'N/A' }}</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">Expérience</td>
+                        <td class="py-3 px-4">{{ state().instanceCreditInd?.experience || 'N/A' }}</td>
+                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">Lieux Activité</td>
+                        <td class="py-3 px-4">{{ state().instanceCreditInd?.lieuxAct || 'N/A' }}</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">Nombre</td>
+                        <td class="py-3 px-4">{{ state().instanceCreditInd?.nombre || 'N/A' }}</td>
+                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">Cumul Crédit</td>
+                        <td class="py-3 px-4">{{ getFormattedAmount(state().instanceCreditInd?.cumulCredit) }}</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">Nombre Crédit</td>
+                        <td class="py-3 px-4">{{ state().instanceCreditInd?.nbreCredit || 'N/A' }}</td>
+                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">Fréquence</td>
+                        <td class="py-3 px-4">{{ state().instanceCreditInd?.frequence || 'N/A' }}</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">Date Fréquence</td>
+                        <td class="py-3 px-4">{{ getFormattedDate(state().instanceCreditInd?.frequenceCreatedAt) }}</td>
+                        <td class="py-3 px-4"></td>
+                        <td class="py-3 px-4"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Profile Note -->
+        @if(state().noteProfile) {
+        <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
+            <h4 class="text-lg font-semibold mb-2">Note du Profil</h4>
+            <table class="w-full border-collapse">
+                <tbody>
+                    <tr>
+                        <td class="py-2 px-4 text-sm text-gray-500 dark:text-gray-400 w-1/6">Score:</td>
+                        <td class="py-2 px-4 font-medium">
+                            <span class="text-blue-600 dark:text-blue-400 font-bold">{{ state().noteProfile?.note
+                                }}</span>
+                        </td>
+                        <td class="py-2 px-4 text-sm text-gray-500 dark:text-gray-400 w-1/6">Date:</td>
+                        <td class="py-2 px-4 font-medium">{{ getFormattedDate(state().noteProfile?.createdAt) }}</td>
+                    </tr>
+                    <tr>
+                        <td class="py-2 px-4 text-sm text-gray-500 dark:text-gray-400 align-top">Commentaires:</td>
+                        <td class="py-2 px-4" colspan="3">
+                            <div class="p-2 bg-white dark:bg-gray-800 rounded">
+                                {{ state().noteProfile?.motif || 'Aucun commentaire' }}
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        }
+    </div>
+
+    <!-- Analyse Information Section -->
+    <!-- Analyse Information Section -->
+    <div class="mb-12 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
+        <h3 class="text-xl font-bold mb-4 text-primary border-b pb-2">Analyse</h3>
+
+        <!-- Products -->
+        <div class="mb-5">
+            <h4 class="text-lg font-semibold mb-2">Produits</h4>
+            @if(!state().products?.length) {
+            <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-md text-center">Aucun produit trouvé</div>
+            } @else {
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse">
+                    <thead class="bg-gray-100 dark:bg-gray-700">
+                        <tr>
+                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                Produit</th>
+                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Prix
+                                Unitaire</th>
+                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                Quantité</th>
+                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                Montant</th>
+                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Date
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y dark:divide-gray-700">
+                        @for(product of state().products; track product.produitIndId) {
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td class="py-3 px-4">{{ product.libele }}</td>
+                            <td class="py-3 px-4">{{ getFormattedAmount(product.prixUnit) }}</td>
+                            <td class="py-3 px-4">{{ product.qte }}</td>
+                            <td class="py-3 px-4">{{ getFormattedAmount(product.prixUnit) }}</td>
+                            <td class="py-3 px-4">{{ getFormattedDate(product.createdAt) }}</td>
+                        </tr>
+                        }
+                    </tbody>
+                    <tfoot class="font-semibold bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <td class="py-3 px-4" colspan="3">Total</td>
+                            <td class="py-3 px-4">{{ getFormattedAmount(getTotalProductAmount()) }}</td>
+                            <td class="py-3 px-4"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            }
+        </div>
+
+        <!-- Charges -->
+        <div class="mb-5">
+            <h4 class="text-lg font-semibold mb-2">Charges</h4>
+            @if(!state().charges?.length) {
+            <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-md text-center">Aucune charge trouvée</div>
+            } @else {
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse">
+                    <thead class="bg-gray-100 dark:bg-gray-700">
+                        <tr>
+                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                Description</th>
+                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                Montant</th>
+                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Date
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y dark:divide-gray-700">
+                        @for(charge of state().charges; track charge.chargesIndiId) {
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td class="py-3 px-4">{{ charge.libele }}</td>
+                            <td class="py-3 px-4">{{ getFormattedAmount(charge.prixUnit) }}</td>
+                            <td class="py-3 px-4">{{ getFormattedDate(charge.createAt) }}</td>
+                        </tr>
+                        }
+                    </tbody>
+                    <tfoot class="font-semibold bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <td class="py-3 px-4">Total</td>
+                            <td class="py-3 px-4">{{ getFormattedAmount(getTotalCharges()) }}</td>
+                            <td class="py-3 px-4"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            }
+        </div>
+
+        <!-- Note d'Analyse -->
+        @if(state().noteAnalyse) {
+        <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
+            <h4 class="text-lg font-semibold mb-2">Note d'Analyse</h4>
+            <table class="w-full border-collapse">
+                <tbody>
+                    <tr>
+                        <td class="py-2 px-4 text-sm text-gray-500 dark:text-gray-400 w-1/6">Score:</td>
+                        <td class="py-2 px-4 font-medium">
+                            <span class="text-blue-600 dark:text-blue-400 font-bold">{{ state().noteAnalyse?.note ||
+                                'N/A' }}</span>
+                        </td>
+                        <td class="py-2 px-4 text-sm text-gray-500 dark:text-gray-400 w-1/6">Date:</td>
+                        <td class="py-2 px-4 font-medium">{{ getFormattedDate(state().noteAnalyse?.createdAt) }}</td>
+                    </tr>
+                    <tr>
+                        <td class="py-2 px-4 text-sm text-gray-500 dark:text-gray-400 align-top">Commentaires:</td>
+                        <td class="py-2 px-4" colspan="3">
+                            <div class="p-2 bg-white dark:bg-gray-800 rounded">
+                                {{ state().noteAnalyse?.motif || 'Aucun commentaire' }}
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        }
+    </div>
+
+    <!-- Garantie Information Section -->
+    <div class="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
+        <h3 class="text-xl font-bold mb-4 text-primary border-b pb-2">Garanties</h3>
+
+        <!-- Garantie Matérielle -->
+        <div class="mb-5">
+            <h4 class="text-lg font-semibold mb-2">Garantie Matérielle</h4>
+            <table class="w-full border-collapse">
+                <tbody class="divide-y dark:divide-gray-700">
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400 font-medium w-1/4">Libellé</td>
+                        <td class="py-3 px-4 font-medium">{{ state().instanceCreditInd?.garantieLibele || 'N/A' }}</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400 font-medium">Montant</td>
+                        <td class="py-3 px-4 font-medium">{{
+                            getFormattedAmount(state().instanceCreditInd?.garantieMontant) }}</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400 font-medium">Date Création</td>
+                        <td class="py-3 px-4 font-medium">{{
+                            getFormattedDate(state().instanceCreditInd?.garantieCreatedAt) }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Garantie Personnes Caution -->
+        <div class="mb-5">
+            <h4 class="text-lg font-semibold mb-2">Garantie Personnes Caution</h4>
+            @if(!state().garantieCaution?.length) {
+            <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-md text-center">Aucune garantie personne caution trouvée
+            </div>
+            } @else {
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse">
+                    <thead class="bg-gray-100 dark:bg-gray-700">
+                        <tr>
+                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Nom
+                            </th>
+                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                Prénom</th>
+                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                Téléphone</th>
+                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Âge
+                            </th>
+                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                Activité</th>
+                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Date
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y dark:divide-gray-700">
+                        @for(garantie of state().garantieCaution; track garantie.garantiepersonnecautionId) {
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td class="py-3 px-4">{{ garantie.nom }}</td>
+                            <td class="py-3 px-4">{{ garantie.prenom }}</td>
+                            <td class="py-3 px-4">{{ garantie.telephone }}</td>
+                            <td class="py-3 px-4">{{ garantie.age }}</td>
+                            <td class="py-3 px-4">{{ garantie.activite }}</td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            }
+        </div>
+
+        <!-- Garantie Note -->
+        @if(state().noteGarantie) {
+        <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
+            <h4 class="text-lg font-semibold mb-2">Note de Garantie</h4>
+            <table class="w-full border-collapse">
+                <tbody>
+                    <tr>
+                        <td class="py-2 px-4 text-sm text-gray-500 dark:text-gray-400 w-1/6">Score:</td>
+                        <td class="py-2 px-4 font-medium">
+                            <span class="text-blue-600 dark:text-blue-400 font-bold">{{ state().noteGarantie?.note ||
+                                'N/A' }}</span>
+                        </td>
+                        <td class="py-2 px-4 text-sm text-gray-500 dark:text-gray-400 w-1/6">Date:</td>
+                        <td class="py-2 px-4 font-medium">{{ getFormattedDate(state().noteGarantie?.createdAt) }}</td>
+                    </tr>
+                    <tr>
+                        <td class="py-2 px-4 text-sm text-gray-500 dark:text-gray-400 align-top">Commentaires:</td>
+                        <td class="py-2 px-4" colspan="3">
+                            <div class="p-2 bg-white dark:bg-gray-800 rounded">
+                                {{ state().noteGarantie?.motif || 'Aucun commentaire' }}
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        }
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex justify-end gap-3">
+        <button pButton label="Retour" icon="pi pi-arrow-left" class="p-button-outlined"
+            (click)="router.navigate(['/dashboards/home'])"></button>
+        <button pButton label="Mise en place de Crédit dans saf" icon="pi pi-database" class="p-button-primary"
+            (click)="startInsertingCredit(state().instanceCreditInd?.referenceCredit!, state().membre?.clientesPKId?.codCliente!,state().user?.userId!)"></button>
+    </div>
+    }
+</div>

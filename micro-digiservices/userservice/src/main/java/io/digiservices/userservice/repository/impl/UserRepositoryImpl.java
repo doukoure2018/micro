@@ -20,6 +20,7 @@ import java.util.UUID;
 
 import static io.digiservices.userservice.query.UserQuery.*;
 import static io.digiservices.userservice.utils.UserUtils.*;
+import static java.sql.Types.BIGINT;
 import static java.sql.Types.VARCHAR;
 
 @Service
@@ -97,17 +98,82 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
-    public String createAccount(String firstName, String lastName, String email, String username, String password, String roleName) {
+    public String createAccountUser(String firstName, String lastName, String email, String username, String password, String roleName) {
         try {
             var token = randomUUUID.get();
-            jdbcClient.sql(CREATE_ACCOUNT_STORED_PROCEDURE).paramSource(getParamSourceAccount(firstName, lastName, email, username, password, token, roleName)).update();
+
+            log.info("Creating standard user account for role: {}", roleName);
+
+            jdbcClient.sql(CREATE_ACCOUNT_STORED_PROCEDURE)
+                    .paramSource(getParamSourceAccount(firstName, lastName, email, username, password, token, roleName))
+                    .update();
+
+            log.info("Standard user account created successfully with token: {}", token);
             return token;
-        }catch (DuplicateKeyException exception){
-            log.error(exception.getMessage());
-            throw  new ApiException("Email is already in Use. Please try again");
-        }catch (Exception e){
-            log.error(e.getMessage());
-            throw  new ApiException("An error occurred please try again");
+
+        } catch (DuplicateKeyException exception) {
+            log.error("Duplicate key error: {}", exception.getMessage());
+            throw new ApiException("Email is already in use. Please try again");
+
+        } catch (Exception e) {
+            log.error("Error creating standard user account: {}", e.getMessage());
+            throw new ApiException("An error occurred please try again");
+        }
+    }
+
+    @Override
+    public String createAccountAgentCreditAndDa(String firstName, String lastName, String email, String username,
+                                                String password, String roleName, String phone, String bio,
+                                                Long delegationId, Long agenceId, Long pointventeId) {
+        try {
+            var token = randomUUUID.get();
+
+            log.info("Creating location-based account for role: {}", roleName);
+            log.info("Location parameters: delegationId={}, agenceId={}, pointventeId={}",
+                    delegationId, agenceId, pointventeId);
+
+            if(roleName.equalsIgnoreCase("AGENT_CREDIT")){
+                // Validate required parameters for AGENT_CREDIT
+                if(delegationId == null || agenceId == null || pointventeId == null) {
+                    throw new ApiException("AGENT_CREDIT role requires delegation, agence, and point vente selection");
+                }
+
+                log.info("Creating AGENT_CREDIT account");
+                jdbcClient.sql(CREATE_ACCOUNT_AGENT_CREDIT_STORED_PROCEDURE)
+                        .paramSource(getParamSourceAccountAgentCredit(firstName, lastName, email, username,
+                                password, token, phone, bio, delegationId, agenceId, pointventeId))
+                        .update();
+
+            } else if (roleName.equalsIgnoreCase("DA")){
+                // Validate required parameters for DA
+                if(delegationId == null || agenceId == null) {
+                    throw new ApiException("DA role requires delegation and agence selection");
+                }
+
+                log.info("Creating DA account");
+                jdbcClient.sql(CREATE_ACCOUNT_DA_STORED_PROCEDURE)
+                        .paramSource(getParamSourceAccountDA(firstName, lastName, email, username,
+                                password, token, phone, bio, delegationId, agenceId))
+                        .update();
+
+            } else {
+                throw new ApiException("Invalid role for location-based account creation: " + roleName);
+            }
+
+            log.info("Location-based account created successfully with token: {}", token);
+            return token;
+
+        } catch (ApiException apiException) {
+            // Re-throw ApiException as-is to preserve the specific message
+            throw apiException;
+
+        } catch (DuplicateKeyException exception) {
+            log.error("Duplicate key error: {}", exception.getMessage());
+            throw new ApiException("Email is already in use. Please try again");
+
+        } catch (Exception e) {
+            log.error("Error creating location-based account: {}", e.getMessage());
+            throw new ApiException("An error occurred please try again");
         }
     }
 
@@ -434,19 +500,65 @@ public class UserRepositoryImpl implements UserRepository {
                 .addValue("qrCodeImageUri",qrCodeImageUri.apply(qrCodeSecret), VARCHAR);
     }
 
-    private SqlParameterSource getParamSourceAccount(String firstName, String lastName, String email, String username, String password, String token,String roleName)
-    {
+    // For AGENT_CREDIT role
+    // Parameter source for AGENT_CREDIT
+    private SqlParameterSource getParamSourceAccountAgentCredit(String firstName, String lastName,
+                                                                String email, String username, String password,
+                                                                String token, String phone, String bio,
+                                                                Long delegationId, Long agenceId, Long pointventeId) {
         return new MapSqlParameterSource()
-                .addValue("userUuid",randomUUUID.get(), VARCHAR)
-                .addValue("firstName",firstName, VARCHAR)
-                .addValue("lastName",lastName, VARCHAR)
-                .addValue("email",email.trim().toLowerCase(), VARCHAR)
-                .addValue("username",username.trim().toLowerCase(), VARCHAR)
+                .addValue("userUuid", randomUUUID.get(), VARCHAR)
+                .addValue("firstName", firstName, VARCHAR)
+                .addValue("lastName", lastName, VARCHAR)
+                .addValue("email", email.trim().toLowerCase(), VARCHAR)
+                .addValue("username", username.trim().toLowerCase(), VARCHAR)
                 .addValue("memberId", memberId.get(), VARCHAR)
                 .addValue("credentialUuid", randomUUUID.get(), VARCHAR)
-                .addValue("password",password, VARCHAR)
-                .addValue("token",token, VARCHAR)
-                .addValue("roleName",roleName, VARCHAR);
+                .addValue("password", password, VARCHAR)
+                .addValue("token", token, VARCHAR)
+                .addValue("delegationId", delegationId, BIGINT)
+                .addValue("agenceId", agenceId, BIGINT)
+                .addValue("pointventeId", pointventeId, BIGINT)
+                .addValue("phone", phone, VARCHAR)
+                .addValue("bio", bio, VARCHAR);
+    }
+
+    // Parameter source for DA
+    private SqlParameterSource getParamSourceAccountDA(String firstName, String lastName,
+                                                       String email, String username, String password,
+                                                       String token, String phone, String bio,
+                                                       Long delegationId, Long agenceId) {
+        return new MapSqlParameterSource()
+                .addValue("userUuid", randomUUUID.get(), VARCHAR)
+                .addValue("firstName", firstName, VARCHAR)
+                .addValue("lastName", lastName, VARCHAR)
+                .addValue("email", email.trim().toLowerCase(), VARCHAR)
+                .addValue("username", username.trim().toLowerCase(), VARCHAR)
+                .addValue("memberId", memberId.get(), VARCHAR)
+                .addValue("credentialUuid", randomUUUID.get(), VARCHAR)
+                .addValue("password", password, VARCHAR)
+                .addValue("token", token, VARCHAR)
+                .addValue("delegationId", delegationId, BIGINT)
+                .addValue("agenceId", agenceId, BIGINT)
+                .addValue("phone", phone, VARCHAR)
+                .addValue("bio", bio, VARCHAR);
+    }
+
+
+    // Keep the original method for other roles
+    private SqlParameterSource getParamSourceAccount(String firstName, String lastName, String email,
+                                                     String username, String password, String token, String roleName) {
+        return new MapSqlParameterSource()
+                .addValue("userUuid", randomUUUID.get(), VARCHAR)
+                .addValue("firstName", firstName, VARCHAR)
+                .addValue("lastName", lastName, VARCHAR)
+                .addValue("email", email.trim().toLowerCase(), VARCHAR)
+                .addValue("username", username.trim().toLowerCase(), VARCHAR)
+                .addValue("memberId", memberId.get(), VARCHAR)
+                .addValue("credentialUuid", randomUUUID.get(), VARCHAR)
+                .addValue("password", password, VARCHAR)
+                .addValue("token", token, VARCHAR)
+                .addValue("roleName", roleName, VARCHAR);
     }
 
     private SqlParameterSource getParamSource(String firstName, String lastName, String email, String username, String password, String token)

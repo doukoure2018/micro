@@ -5,8 +5,11 @@ import io.digiservices.ebanking.dto.HttpResponse;
 import io.digiservices.ebanking.paylaod.PointVenteDto;
 import io.digiservices.ebanking.service.PointVenteService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.apache.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -47,8 +50,8 @@ public class PointVenteController {
     }
 
     @GetMapping("/pointvente/{idPs}")
-    public ResponseEntity<Response> pointvente(@PathVariable(name = "idPs") Long idPs, HttpServletRequest request)
+    public ResponseEntity<PointVenteDto> pointvente(@PathVariable(name = "idPs") Long idPs)
     {
-        return ok(getResponse(request, Map.of("pointVente",pointVenteService.getPsById(idPs)), "Information Point de Vente", OK));
+        return ResponseEntity.ok(pointVenteService.getPsById(idPs));
     }
 }

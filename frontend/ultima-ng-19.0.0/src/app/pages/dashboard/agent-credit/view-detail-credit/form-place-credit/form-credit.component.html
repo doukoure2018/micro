@@ -1,0 +1,409 @@
+<div class="card">
+    <p-toast></p-toast>
+    <span class="text-surface-900 dark:text-surface-0 text-xl font-bold mb-6 block">
+        Formulaire de mise en place de crédit - <strong>{{ state().membre?.nom_CLIENTE }}</strong>
+    </span>
+
+    <div class="col-span-12 lg:col-span-2">
+        @if(state().submitting || state().loading) {
+        <div class="flex justify-center mb-4">
+            <p-progressSpinner [style]="{ width: '50px', height: '50px' }"></p-progressSpinner>
+        </div>
+        }
+    </div>
+
+    <div class="col-span-12 lg:col-span-10">
+        <form #creditForm="ngForm" (ngSubmit)="onSubmit(creditForm)">
+            <div class="grid grid-cols-12 gap-4">
+
+                <!-- Section: Informations du crédit -->
+                <div class="col-span-12">
+                    <h3 class="text-surface-900 dark:text-surface-0 text-lg font-semibold mb-4 border-b pb-2">
+                        Mise en place du Crédit
+                    </h3>
+                </div>
+
+                <!-- N° d'ordre de crédit -->
+                <div class="mb-4 col-span-12 md:col-span-6">
+                    <label for="numeroCredit" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                        N° d'ordre de crédit
+                    </label>
+                    <input pInputText [ngModel]="state().countCredit" name="numeroCredit" id="numeroCredit" type="text"
+                        [disabled]="true" class="w-full" />
+                </div>
+
+                <!-- Cumul des crédits -->
+                <div class="mb-4 col-span-12 md:col-span-6">
+                    <label for="cumul" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                        Cumul des Crédits Précédents
+                    </label>
+                    <p-inputNumber [ngModel]="state().cumulCredit" name="cumul" id="cumul" mode="currency"
+                        currency="GNF" [disabled]="true" styleClass="w-full"></p-inputNumber>
+                </div>
+
+                <!-- Code Membre -->
+                <div class="mb-4 col-span-12 md:col-span-4">
+                    <label for="codCliente" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                        Code Membre
+                    </label>
+                    <input pInputText [ngModel]="state().membre?.clientesPKId?.codCliente" name="codCliente"
+                        id="codCliente" type="text" [disabled]="true" class="w-full" />
+                </div>
+
+                <!-- Nom Client -->
+                <div class="mb-4 col-span-12 md:col-span-4">
+                    <label for="nomClient" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                        Nom Client
+                    </label>
+                    <input pInputText [ngModel]="state().membre?.nom_CLIENTE" name="nomClient" id="nomClient"
+                        type="text" [disabled]="true" class="w-full" />
+                </div>
+
+                <!-- Adresse -->
+                <div class="mb-4 col-span-12 md:col-span-4">
+                    <label for="adresse" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                        Adresse
+                    </label>
+                    <textarea pTextarea ngModel name="adresse" id="adresse" rows="2" [disabled]="state().submitting"
+                        class="w-full"></textarea>
+                </div>
+
+                <!-- Type de crédit -->
+                <div class="mb-4 col-span-12 md:col-span-6">
+                    <label for="tipCredito" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                        Type de Crédit
+                    </label>
+                    <input pInputText [ngModel]="state().typeCredito?.des_TIP_CREDITO" name="tipCredito" id="tipCredito"
+                        type="text" [disabled]="true" class="w-full" />
+                </div>
+
+                <!-- Montant demandé -->
+                <div class="mb-4 col-span-12 md:col-span-6">
+                    <label for="monCredito" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                        Montant Demandé
+                    </label>
+                    <p-inputNumber [ngModel]="state().creditDto?.montantCredit" name="monCredito" id="monCredito"
+                        mode="currency" currency="GNF" [disabled]="true" styleClass="w-full"></p-inputNumber>
+                </div>
+
+                <!-- Quantité de paiements -->
+                <div class="mb-4 col-span-12 md:col-span-4">
+                    <label for="cantCuotas" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                        Quantité Paiements
+                    </label>
+                    <p-inputNumber ngModel name="cantCuotas" id="cantCuotas" [showButtons]="true" [min]="1" required
+                        [disabled]="state().submitting" styleClass="w-full"></p-inputNumber>
+                    @if(creditForm.controls['cantCuotas'] && creditForm.controls['cantCuotas'].invalid &&
+                    creditForm.controls['cantCuotas'].touched) {
+                    <p-message severity="error" text="La quantité de paiements est obligatoire"></p-message>
+                    }
+                </div>
+
+                <!-- Terme -->
+                <div class="mb-4 col-span-12 md:col-span-8">
+                    <label for="codPlazo" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                        Terme
+                    </label>
+                    <p-dropdown ngModel name="codPlazo" id="codPlazo" [options]="state().terms || []"
+                        optionLabel="des_PLAZO" optionValue="id" [filter]="true" filterBy="des_PLAZO"
+                        placeholder="Sélectionner un terme" required [disabled]="state().submitting" styleClass="w-full"
+                        appendTo="body">
+                    </p-dropdown>
+                    @if(creditForm.controls['codPlazo'] && creditForm.controls['codPlazo'].invalid &&
+                    creditForm.controls['codPlazo'].touched) {
+                    <p-message severity="error" text="Le terme est obligatoire"></p-message>
+                    }
+                </div>
+
+                <!-- Section: Origine des fonds -->
+                <div class="col-span-12 mt-6">
+                    <h3 class="text-surface-900 dark:text-surface-0 text-lg font-semibold mb-4 border-b pb-2">
+                        Origine des Fonds
+                    </h3>
+                </div>
+
+                <!-- Gestionnaire de compte -->
+                <div class="mb-4 col-span-12 md:col-span-6">
+                    <label for="codUsuario" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                        Gestionnaire de Compte
+                    </label>
+                    <input pInputText [ngModel]="state().user?.username" name="codUsuario" id="codUsuario" type="text"
+                        [disabled]="true" class="w-full" />
+                </div>
+
+                <!-- Agence -->
+                <div class="mb-4 col-span-12 md:col-span-6">
+                    <label for="codAgencia" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                        Agence
+                    </label>
+                    <input pInputText [ngModel]="state().membre?.codAgencia" name="codAgencia" id="codAgencia"
+                        type="text" [disabled]="true" class="w-full" />
+                </div>
+
+                <!-- Origine de fonds -->
+                <div class="mb-4 col-span-12 md:col-span-6">
+                    <label for="codOrigen" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                        Origine de Fonds
+                    </label>
+                    <p-dropdown ngModel name="codOrigen" id="codOrigen" [options]="state().originFonds || []"
+                        optionLabel="des_ORIGEN" optionValue="id" [filter]="true" filterBy="des_ORIGEN"
+                        placeholder="Sélectionner une origine" required [disabled]="state().submitting"
+                        styleClass="w-full" appendTo="body">
+                    </p-dropdown>
+                    @if(creditForm.controls['codOrigen'] && creditForm.controls['codOrigen'].invalid &&
+                    creditForm.controls['codOrigen'].touched) {
+                    <p-message severity="error" text="L'origine de fonds est obligatoire"></p-message>
+                    }
+                </div>
+
+                <!-- Plan d'investissement -->
+                <div class="mb-4 col-span-12 md:col-span-6">
+                    <label for="codPlanInversion" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                        Plan d'investissement
+                    </label>
+                    <p-dropdown ngModel name="codPlanInversion" id="codPlanInversion"
+                        [options]="state().inversions || []" optionLabel="nom_PLAN" optionValue="id" [filter]="true"
+                        filterBy="nom_PLAN" placeholder="Sélectionner un plan" required [disabled]="state().submitting"
+                        styleClass="w-full" appendTo="body">
+                    </p-dropdown>
+                    @if(creditForm.controls['codPlanInversion'] && creditForm.controls['codPlanInversion'].invalid &&
+                    creditForm.controls['codPlanInversion'].touched) {
+                    <p-message severity="error" text="Le plan d'investissement est obligatoire"></p-message>
+                    }
+                </div>
+
+                <!-- Section: Activité -->
+                <div class="col-span-12 mt-6">
+                    <h3 class="text-surface-900 dark:text-surface-0 text-lg font-semibold mb-4 border-b pb-2">
+                        Activité
+                    </h3>
+                </div>
+
+                <!-- Activité -->
+                <div class="mb-4 col-span-12 md:col-span-6">
+                    <label for="codActividad" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                        Activité
+                    </label>
+                    <p-dropdown ngModel name="codActividad" id="codActividad" [options]="state().actividas || []"
+                        optionLabel="des_ACTIVIDAD" optionValue="id" [filter]="true" filterBy="des_ACTIVIDAD"
+                        placeholder="Sélectionner une activité" required [disabled]="state().submitting"
+                        styleClass="w-full" appendTo="body" (onChange)="onActividadChange($event)">
+                    </p-dropdown>
+                    @if(creditForm.controls['codActividad'] && creditForm.controls['codActividad'].invalid &&
+                    creditForm.controls['codActividad'].touched) {
+                    <p-message severity="error" text="L'activité est obligatoire"></p-message>
+                    }
+                </div>
+
+                <!-- Sous Activité -->
+                <div class="mb-4 col-span-12 md:col-span-6">
+                    <label for="codSubactiv" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                        Sous Activité
+                    </label>
+                    <p-dropdown ngModel name="codSubactiv" id="codSubactiv"
+                        [options]="state().filteredSousActividas || []" optionLabel="des_SUBACTIV" optionValue="id"
+                        [filter]="true" filterBy="des_SUBACTIV" placeholder="Sélectionner une sous-activité" required
+                        [disabled]="state().submitting || !state().filteredSousActividas || state().filteredSousActividas!.length === 0"
+                        styleClass="w-full" appendTo="body" (onChange)="onSousActiviteChange($event)">
+                    </p-dropdown>
+                    @if(creditForm.controls['codSubactiv'] && creditForm.controls['codSubactiv'].invalid &&
+                    creditForm.controls['codSubactiv'].touched) {
+                    <p-message severity="error" text="La sous-activité est obligatoire"></p-message>
+                    }
+                </div>
+
+                <!-- Sous Sous Activité -->
+                <div class="mb-4 col-span-12 md:col-span-6">
+                    <label for="codSubsubactividad" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                        Sous Sous Activité
+                    </label>
+                    <p-dropdown ngModel name="codSubsubactividad" id="codSubsubactividad"
+                        [options]="state().filteredSousSousActividas || []" optionLabel="des_SUBSUBACTIV"
+                        optionValue="id" [filter]="true" filterBy="des_SUBSUBACTIV"
+                        placeholder="Sélectionner une sous-sous-activité" required
+                        [disabled]="state().submitting || !state().filteredSousSousActividas || state().filteredSousSousActividas!.length === 0"
+                        styleClass="w-full" appendTo="body">
+                    </p-dropdown>
+                    @if(creditForm.controls['codSubsubactividad'] && creditForm.controls['codSubsubactividad'].invalid
+                    &&
+                    creditForm.controls['codSubsubactividad'].touched) {
+                    <p-message severity="error" text="La sous-sous-activité est obligatoire"></p-message>
+                    }
+                </div>
+
+                <!-- Observation -->
+                <div class="mb-4 col-span-12 md:col-span-6">
+                    <label for="observaciones" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                        Observation
+                    </label>
+                    <textarea pTextarea ngModel name="observaciones" id="observaciones" rows="3" [autoResize]="true"
+                        required [disabled]="state().submitting" class="w-full"
+                        placeholder="Saisir vos observations"></textarea>
+                    @if(creditForm.controls['observaciones'] && creditForm.controls['observaciones'].invalid &&
+                    creditForm.controls['observaciones'].touched) {
+                    <p-message severity="error" text="L'observation est obligatoire"></p-message>
+                    }
+                </div>
+
+                <!-- Section: Conditions d'obtention -->
+                <div class="col-span-12 mt-6">
+                    <h3 class="text-surface-900 dark:text-surface-0 text-lg font-semibold mb-4 border-b pb-2">
+                        Conditions d'obtention de crédit
+                    </h3>
+                </div>
+
+                <!-- Liste des conditions -->
+                <div class="mb-4 col-span-12">
+                    <label for="requisitos" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                        Liste des conditions d'obtention
+                    </label>
+                    <p-multiSelect ngModel name="requisitos" id="requisitos" [options]="state().requisitos || []"
+                        optionLabel="des_REQUISITO" optionValue="id" [filter]="true" [showClear]="true"
+                        placeholder="Choisir une ou plusieurs conditions" required [disabled]="state().submitting"
+                        styleClass="w-full" appendTo="body">
+                    </p-multiSelect>
+                    @if(creditForm.controls['requisitos'] && creditForm.controls['requisitos'].invalid &&
+                    creditForm.controls['requisitos'].touched) {
+                    <p-message severity="error" text="Au moins une condition doit être sélectionnée"></p-message>
+                    }
+                </div>
+
+                <!-- Type de versement -->
+                <div class="mb-6 col-span-12 md:col-span-6">
+                    <label for="tipCuota" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                        Type de Versement
+                    </label>
+                    <p-dropdown [ngModel]="'1'" name="tipCuota" id="tipCuota" [options]="[
+                        {label: 'Principal Nivélé', value: '1'},
+                        {label: 'Nivélé', value: '2'},
+                        {label: 'Multiperiode', value: '3'},
+                        {label: 'À l\'échéance', value: '4'},
+                        {label: 'Un Seul Paiement', value: '5'},
+                        {label: 'Plan Libre', value: '6'},
+                        {label: 'Versement Global', value: '7'}
+                    ]" optionLabel="label" optionValue="value" [filter]="true" filterBy="label"
+                        placeholder="Sélectionner un type" required [disabled]="state().submitting" styleClass="w-full"
+                        appendTo="body">
+                    </p-dropdown>
+                    @if(creditForm.controls['tipCuota'] && creditForm.controls['tipCuota'].invalid &&
+                    creditForm.controls['tipCuota'].touched) {
+                    <p-message severity="error" text="Le type de versement est obligatoire"></p-message>
+                    }
+                </div>
+
+                <!-- Type d'intérêt -->
+                <div class="mb-6 col-span-12 md:col-span-6">
+                    <label for="tipInteres" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                        Type d'Intérêt
+                    </label>
+                    <p-dropdown [ngModel]="'A'" name="tipInteres" id="tipInteres" [options]="[
+                        {label: 'Anticipé', value: 'A'},
+                        {label: 'À l\'échéance', value: 'V'}
+                    ]" optionLabel="label" optionValue="value" placeholder="Sélectionner un type"
+                        [disabled]="state().submitting" styleClass="w-full" appendTo="body">
+                    </p-dropdown>
+                </div>
+
+                <!-- Modalité de recouvrement -->
+                <div class="mb-6 col-span-12 md:col-span-6">
+                    <label for="tipModalidadCobro" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                        Modalité de Recouvrement
+                    </label>
+                    <p-dropdown [ngModel]="'V'" name="tipModalidadCobro" id="tipModalidadCobro" [options]="[
+                        {label: 'À l\'échéance', value: 'V'},
+                        {label: 'Horaire', value: 'H'}
+                    ]" optionLabel="label" optionValue="value" placeholder="Sélectionner une modalité"
+                        [disabled]="state().submitting" styleClass="w-full" appendTo="body">
+                    </p-dropdown>
+                </div>
+
+                <!-- Type de taux -->
+                <div class="mb-6 col-span-12 md:col-span-6">
+                    <label for="tipTasa" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                        Type de Taux
+                    </label>
+                    <p-dropdown [ngModel]="'F'" name="tipTasa" id="tipTasa" [options]="[
+                        {label: 'Fixe', value: 'F'},
+                        {label: 'Variable', value: 'V'}
+                    ]" optionLabel="label" optionValue="value" placeholder="Sélectionner un type"
+                        [disabled]="state().submitting" styleClass="w-full" appendTo="body">
+                    </p-dropdown>
+                </div>
+
+                <!-- Taux d'intérêt -->
+                <div class="mb-6 col-span-12 md:col-span-6">
+                    <label for="codTasaInt" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                        Taux d'Intérêt
+                    </label>
+                    <p-dropdown [ngModel]="'TCCRG'" name="codTasaInt" id="codTasaInt" [options]="[
+                        {label: 'Crédit Personnel (10%)', value: 'TCCRG'},
+                        {label: 'Crédit Court Terme (36%)', value: 'CTCT'},
+                        {label: 'Crédit Moyen Terme (30%)', value: 'CTMT'},
+                        {label: 'Crédit Long Terme (24%)', value: 'CTLT'},
+                        {label: 'Crédit Équipement (18%)', value: 'TCEQ'},
+                        {label: 'Taux Zéro (0%)', value: 'ZERO'}
+                    ]" optionLabel="label" optionValue="value" placeholder="Sélectionner un taux"
+                        [disabled]="state().submitting" styleClass="w-full" appendTo="body">
+                    </p-dropdown>
+                </div>
+
+                <!-- Taux de mora -->
+                <div class="mb-6 col-span-12 md:col-span-6">
+                    <label for="codTasaMora" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                        Taux de Pénalité
+                    </label>
+                    <p-dropdown [ngModel]="'PEN'" name="codTasaMora" id="codTasaMora" [options]="[
+                        {label: 'Pénalités Standard (1%)', value: 'PEN'},
+                        {label: 'Taux Zéro (0%)', value: 'ZERO'}
+                    ]" optionLabel="label" optionValue="value" placeholder="Sélectionner un taux"
+                        [disabled]="state().submitting" styleClass="w-full" appendTo="body">
+                    </p-dropdown>
+                </div>
+
+                <!-- Champs cachés pour les valeurs par défaut -->
+                <input type="hidden" ngModel name="tipCalendario" [value]="1">
+                <input type="hidden" ngModel name="tasaInteres" [value]="0">
+                <input type="hidden" ngModel name="tasaMora" [value]="0">
+                <input type="hidden" ngModel name="plazoCredito" [value]="0">
+                <input type="hidden" ngModel name="codTasaInt" [value]="">
+                <input type="hidden" ngModel name="codTasaMora" [value]="">
+                <input type="hidden" ngModel name="indLinea" [value]="">
+                <input type="hidden" ngModel name="codEjecutivo" [value]="">
+
+                <!-- Boutons d'action -->
+                <div class="col-span-12">
+                    <div class="flex gap-3">
+                        <button pButton pRipple type="submit" label="Valider la mise en place" icon="pi pi-check"
+                            [loading]="state().submitting"
+                            [disabled]="creditForm && creditForm.invalid || state().submitting"
+                            class="w-auto mt-3"></button>
+                        <button pButton pRipple type="button" label="Annuler" icon="pi pi-times"
+                            (click)="creditForm.resetForm()" [disabled]="state().submitting"
+                            class="p-button-secondary w-auto mt-3"></button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<p-dialog [(visible)]="showSuccessModal" [modal]="true" [closable]="false" [draggable]="false" [resizable]="false"
+    [style]="{width: '450px'}" header="Crédit créé avec succès">
+
+    <div class="text-center">
+        <i class="pi pi-check-circle" style="font-size: 3rem; color: var(--green-500);"></i>
+        <h4 class="mt-3">Crédit créé avec succès!</h4>
+        <p class="mt-2">
+            <strong>Numéro de crédit:</strong> {{ creditNumber }}
+        </p>
+        <p class="text-muted">
+            Le crédit a été mis en place et son statut a été mis à jour.
+        </p>
+    </div>
+
+    <ng-template pTemplate="footer">
+        <button pButton type="button" label="OK" icon="pi pi-check" class="p-button-primary" (click)="onModalClose()">
+        </button>
+    </ng-template>
+</p-dialog>

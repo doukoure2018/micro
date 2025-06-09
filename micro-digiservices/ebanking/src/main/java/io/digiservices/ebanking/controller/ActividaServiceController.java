@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/ebanking/ecredit")
+@RequestMapping("/ebanking")
 public class ActividaServiceController {
 
     private ActividaService actividaService;
@@ -26,7 +26,7 @@ public class ActividaServiceController {
         return ResponseEntity.ok(actividaService.getAllActivida());
     }
 
-    @GetMapping("{Id}/getInfoActivida")
+    @GetMapping("/getInfoActivida/{Id}")
     public ResponseEntity<ActividaDto> getInfoActivida(
             @PathVariable(name = "Id") String Id
     )

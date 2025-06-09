@@ -3,7 +3,9 @@ import { StyleClassModule } from 'primeng/styleclass';
 import { RouterLink, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { RippleModule } from 'primeng/ripple';
-import { environment } from 'src/environments/environment.prod';
+import { environment } from 'src/environments/environment';
+import { ActivityWidget } from '../../dashboard/sales/components/activitywidget';
+
 @Component({
     selector: 'topbar',
     standalone: true,
@@ -11,7 +13,9 @@ import { environment } from 'src/environments/environment.prod';
     template: `
         <div style="height: 68px; backdrop-filter: blur(17px)" class="flex justify-between items-center z-30 px-8 bg-black/40 top-0 w-full fixed">
             <div>
-                <img [attr.draggable]="false" src="/layout/images/logo/logo.png" alt="logo" />
+                <a [routerLink]="['/']" class="cursor-pointer">
+                    <img [attr.draggable]="false" src="/layout/images/logo/digi-credit.png" alt="logo" style="width: 250px; height: auto;" />
+                </a>
             </div>
 
             <a class="cursor-pointer block lg:hidden text-white" pStyleClass="@next" enterFromClass="hidden" leaveToClass="hidden" [hideOnOutsideClick]="true">
@@ -50,11 +54,11 @@ import { environment } from 'src/environments/environment.prod';
     `
 })
 export class Topbar {
-    private apiBaseUrl = environment.apiBaseUrl;
+    private authServer = environment.authServer;
     private redirectUri = environment.redirectUri;
 
     // Fixed code challenge for this example
-    private codeChallenge = 'vesLhZA4cwKsKZAR7zvEJ9q3uI6dRM8nwna-IpuKkkk';
+    private codeChallenge = 'HK02sitqCRpUlfLEX2xl4JGqaVQhNDsfTWH-oQzJHGw';
 
     handleScroll(id: string) {
         const element = document.getElementById(id);
@@ -66,6 +70,6 @@ export class Topbar {
     }
 
     getLoginUrl(): string {
-        return `${this.apiBaseUrl}/oauth2/authorize?response_type=code&client_id=client&scope=openid&redirect_uri=${this.redirectUri}&code_challenge_method=S256&code_challenge=${this.codeChallenge}`;
+        return `${this.authServer}/oauth2/authorize?response_type=code&client_id=client&scope=openid&redirect_uri=${this.redirectUri}&code_challenge_method=S256&code_challenge=${this.codeChallenge}`;
     }
 }
