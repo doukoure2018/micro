@@ -10,12 +10,19 @@ spring:
       client:
         composite-indicator:
           enabled: true
+
   datasource:
     url: jdbc:postgresql://postgresdb:5432/localdb
     username: user2711
     password: admin2711
     hikari:
       connection-test-query: SELECT 1
+      maximum-pool-size: 15  # Adjusted for Docker but still robust for user service
+      minimum-idle: 3
+      idle-timeout: 30000
+      connection-timeout: 30000
+      max-lifetime: 1800000
+
   main:
     allow-bean-definition-overriding: true
 
@@ -32,6 +39,15 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
         default_schema: localdb
+        # Performance optimization for user service
+        jdbc.batch_size: 30
+        order_inserts: true
+        order_updates: true
+        # Enable caching for development
+        cache:
+          use_second_level_cache: true
+          use_query_cache: true
+          region.factory_class: org.hibernate.cache.jcache.JCacheRegionFactory
 
   kafka:
     bootstrap-servers:
@@ -44,6 +60,13 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
         max.request.size: 1300000000
+        # Reliability settings for Docker
+        acks: all
+        retries: 3
+        delivery.timeout.ms: 120000
+        linger.ms: 5
+        batch.size: 16384
+        buffer.memory: 33554432
     properties:
       spring:
         json:
@@ -55,20 +78,73 @@ spring:
 eureka:
   instance:
     prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
   client:
     service-url:
       defaultZone: http://admin:admin2711@discoveryserver:5002/eureka/
+    register-with-eureka: true
+    fetch-registry: true
 
 ui:
   app:
+    # Use localhost for browser redirects, or digicrg-app:4200 for server-to-server
     url: http://localhost:4200
 
 key:
-  private: private.key
-  public: public.key
+  private: "/app/keys/private.key"
+  public: "/app/keys/public.key"
 
 server:
   port: 8085
+  tomcat:
+    max-threads: 150  # Robust but adjusted for Docker
+    min-spare-threads: 15
+    max-connections: 8000
+    accept-count: 100
+    connection-timeout: 20000
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+    min-response-size: 2048
 
 jwks:
   uri: http://authorizationserver:8080/oauth2/jwks
+
+# Logging configuration for Docker
+logging:
+  level:
+    root: INFO
+    io.digiservices: DEBUG
+    org.springframework: INFO
+    org.hibernate: INFO
+    com.netflix.discovery: INFO
+
+# Actuator for health checks
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+
+# User service specific settings (adjusted for Docker)
+user:
+  security:
+    password-history-count: 5
+    password-expiry-days: 90
+    account-lock-threshold: 5
+    token-expiry-minutes: 1440  # 24 hours
+  cache:
+    time-to-live-seconds: 300  # 5 minutes
+    maximum-size: 1000

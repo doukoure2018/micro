@@ -89,7 +89,7 @@
 
     <!-- Bouton d'action avec état de chargement amélioré -->
     <div class="text-surface-700 dark:text-surface-100 text-center">
-        <p-button (click)="startNewCredit(state().demandeIndividuel?.numeroMembre!, state().user?.userId!)"
+        <p-button (click)="startNewCredit(state().demandeIndividuel?.numeroMembre!)"
             label="Commencer la mise en place de Crédit" class="font-bold px-8 py-4 whitespace-nowrap" icon="pi pi-play"
             raised rounded [disabled]="state().loading || !state().demandeIndividuel?.numeroMembre">
             <i *ngIf="state().loading" class="pi pi-spin pi-spinner mr-2"></i>

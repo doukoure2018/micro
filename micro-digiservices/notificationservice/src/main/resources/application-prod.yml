@@ -22,8 +22,6 @@ spring:
           starttls:
             enable: true
             required: true
-    verify:
-      host: http://51.91.254.218:4200
     default-encoding: UTF-8
 
   cloud:
@@ -91,6 +89,9 @@ ui:
   app:
     url: http://51.91.254.218:4200
 
+verify:
+  email:
+    host: ${UI_APP_URL:http://localhost:4200}
 key:
   private: private.key
   public: public.key

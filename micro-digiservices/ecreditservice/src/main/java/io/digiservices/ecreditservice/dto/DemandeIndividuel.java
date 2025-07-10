@@ -6,6 +6,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Getter
 @Setter
@@ -23,7 +24,7 @@ public class DemandeIndividuel {
     private Integer pos;
     private String quartier;
     private String fonction;
-    private LocalDateTime createdAt;
+    private OffsetDateTime createdAt;
     private BigDecimal montant;
     private String activite;
     private String statutDemande;

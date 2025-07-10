@@ -1,10 +1,9 @@
 import { Component } from '@angular/core';
 import { StyleClassModule } from 'primeng/styleclass';
-import { RouterLink, RouterModule } from '@angular/router';
+import { RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { RippleModule } from 'primeng/ripple';
 import { environment } from 'src/environments/environment';
-import { ActivityWidget } from '../../dashboard/sales/components/activitywidget';
 
 @Component({
     selector: 'topbar',
@@ -17,7 +16,6 @@ import { ActivityWidget } from '../../dashboard/sales/components/activitywidget'
                     <img [attr.draggable]="false" src="/layout/images/logo/digi-credit.png" alt="logo" style="width: 250px; height: auto;" />
                 </a>
             </div>
-
             <a class="cursor-pointer block lg:hidden text-white" pStyleClass="@next" enterFromClass="hidden" leaveToClass="hidden" [hideOnOutsideClick]="true">
                 <i class="pi pi-bars !text-4xl"></i>
             </a>

@@ -5,10 +5,11 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AdminComponent } from '../admin/admin.component';
 import { AgentCreditComponent } from '../agent-credit/agent-credit.component';
 import { RespAgentComponent } from '../resp-agent/resp-agent.component';
+import { ManagerComponent } from '../manager/manager.component';
 
 @Component({
     selector: 'app-home',
-    imports: [AdminComponent, AgentCreditComponent, RespAgentComponent],
+    imports: [AdminComponent, AgentCreditComponent, RespAgentComponent, ManagerComponent],
     templateUrl: './home.component.html'
 })
 export class HomeComponent {

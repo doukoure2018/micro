@@ -28,7 +28,6 @@ public interface UserClient {
     @GetMapping(path = "/user/client/agence/{agence_id}")
     AgenceDto getAgenceById(@PathVariable(name = "agence_id") Long agence_id);
 
-
     @GetMapping(path = "/user/offLine/getAllDelegations")
      List<DelegationDto> getAllDelegationOffLine();
 
@@ -42,6 +41,15 @@ public interface UserClient {
 
     @GetMapping(path = "/user/offLine/getAllPointVentes/{agence_id}")
      List<PointVenteDto> getAllPointVentes(@PathVariable(name = "agence_id") Long agence_id);
+
+    @GetMapping(path = "/user/offLine/getAllDelegation/{delegationId}")
+    DelegationDto getAllDelegationOffLineById(
+            @PathVariable(name = "delegationId") Long delegationId);
+
+
+    @GetMapping(path = "/user/offLine/getUserByUuid/{userUuid}")
+     User getUserByUuid(@PathVariable("userUuid") String userUuid);
+
 
 
 

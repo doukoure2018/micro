@@ -19,4 +19,8 @@ public class BilanPersonnel {
     private BigDecimal valeurBiensDurables;
     private LocalDateTime dateEnregistrement;
     private LocalDateTime dateModification;
+
+    // alter
+    private String libeleGarantie;
+    private BigDecimal montantGarantie;
 }

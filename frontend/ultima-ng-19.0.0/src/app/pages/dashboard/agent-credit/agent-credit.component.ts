@@ -110,7 +110,7 @@ export class AgentCreditComponent {
         this.state.set({ ...this.state(), loading: true });
 
         this.userService
-            .getAllDemandeAttente$(this.user.pointventeId)
+            .getAllDemandeAttente$()
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (response: IResponse) => {
@@ -149,12 +149,11 @@ export class AgentCreditComponent {
             });
     }
 
-    miseEnPlaceCredit(numeroMembre: string, userId: number) {
-        this.router.navigate(['/dashboards/agent-credit/', numeroMembre, userId]);
+    miseEnPlaceCredit(numeroMembre: string) {
+        this.router.navigate(['/dashboards/agent-credit/verification/', numeroMembre]);
     }
 
-    viewCreditDetails(referenceCredit: string, numeroMembre: string, userId: number) {
-        // agent-credit/detail-credit-ind/:referenceCredit/:numeroMembre/:userId
-        this.router.navigate(['/dashboards/agent-credit/detail-credit-ind/', referenceCredit, numeroMembre, userId]);
+    viewCreditDetails(referenceCredit: string, numeroMembre: string) {
+        this.router.navigate(['/dashboards/agent-credit/detail-credit-ind/', referenceCredit, numeroMembre]);
     }
 }

@@ -3,6 +3,8 @@ import { BilanPersonnel } from './bilan.personnel';
 import { CompteExploitation } from './compte.exploitation';
 import { DemandeCredit } from './demande.credit';
 import { Entreprise } from './entreprise';
+import { MotifAnalyse } from './motif.analyse';
+import { Personnecaution } from './personnecaution';
 import { Promoteur } from './promoteur';
 
 export interface ResumeCredit {
@@ -16,4 +18,6 @@ export interface ResumeCredit {
     exploitation_actuelle?: CompteExploitation;
     exploitation_previsionnelle?: CompteExploitation;
     demande_credit?: DemandeCredit;
+    personnes_caution: Personnecaution[];
+    motifs_analyses?: MotifAnalyse[];
 }

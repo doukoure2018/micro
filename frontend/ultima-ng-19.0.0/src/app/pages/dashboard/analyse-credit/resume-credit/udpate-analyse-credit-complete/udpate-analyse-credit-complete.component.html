@@ -1,0 +1,1098 @@
+<!-- udpate-analyse-credit-complete.component.html -->
+
+<!-- Loading Spinner pour le chargement initial -->
+<div *ngIf="state().loadingInitialData" class="flex justify-center align-items-center min-h-screen">
+    <div class="text-center">
+        <p-progressSpinner strokeWidth="3" [style]="{ width: '50px', height: '50px' }"></p-progressSpinner>
+        <p class="mt-3 text-lg">Chargement des données...</p>
+    </div>
+</div>
+
+<!-- Contenu principal -->
+<div *ngIf="!state().loadingInitialData" class="card">
+    <h1 class="text-surface-900 dark:text-surface-0 text-xl font-bold mb-6">
+        <i class="pi pi-pencil mr-2"></i>
+        Mise à jour de l'Analyse de Demande de Crédit
+    </h1>
+
+    <!-- Badge d'information -->
+    <div class="mb-4 p-3 bg-blue-50 border-round border-1 border-blue-200">
+        <div class="flex align-items-center">
+            <i class="pi pi-info-circle text-blue-600 mr-2"></i>
+            <span class="text-blue-800 font-medium">
+                Demande N° {{ demandeId }} - Modification en cours
+            </span>
+        </div>
+    </div>
+
+    <!-- PrimeNG Toast pour les notifications -->
+    <p-toast></p-toast>
+
+    <!-- Stepper -->
+    <p-steps [model]="items()" [activeIndex]="activeIndex()" [readonly]="false" styleClass="mb-5"></p-steps>
+
+    <div class="p-fluid">
+        <!-- Étape 1: Informations de base (promoteur et entreprise) -->
+        <div *ngIf="activeIndex() === 0">
+            <p-card header="Informations du promoteur et de l'entreprise" class="shadow-3">
+                <form [formGroup]="infoBaseForm" class="p-fluid">
+
+                    <div class="grid gap-3">
+                        <!-- Section Promoteur -->
+                        <div class="col-12">
+                            <h2 class="text-xl font-bold border-bottom-1 surface-border pb-2 mb-3">
+                                <i class="pi pi-user mr-2"></i>
+                                Informations du promoteur
+                            </h2>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="nomPromoteur" class="font-medium block mb-2">Nom *</label>
+                                <input id="nomPromoteur" type="text" pInputText formControlName="nomPromoteur"
+                                    class="w-full" />
+                                <small
+                                    *ngIf="infoBaseForm.get('nomPromoteur')?.invalid && infoBaseForm.get('nomPromoteur')?.touched"
+                                    class="p-error block mt-1">
+                                    Le nom est requis
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="prenomPromoteur" class="font-medium block mb-2">Prénom *</label>
+                                <input id="prenomPromoteur" type="text" pInputText formControlName="prenomPromoteur"
+                                    class="w-full" />
+                                <small
+                                    *ngIf="infoBaseForm.get('prenomPromoteur')?.invalid && infoBaseForm.get('prenomPromoteur')?.touched"
+                                    class="p-error block mt-1">
+                                    Le prénom est requis
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="dateNaissance" class="font-medium block mb-2">Date de naissance</label>
+                                <p-calendar id="dateNaissance" formControlName="dateNaissance" [showIcon]="true"
+                                    dateFormat="dd/mm/yy" class="w-full"></p-calendar>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="numeroIdentite" class="font-medium block mb-2">Numéro d'identité</label>
+                                <input id="numeroIdentite" type="text" pInputText formControlName="numeroIdentite"
+                                    class="w-full" />
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="telephonePromoteur" class="font-medium block mb-2">Téléphone</label>
+                                <input id="telephonePromoteur" type="text" pInputText
+                                    formControlName="telephonePromoteur" class="w-full" />
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="emailPromoteur" class="font-medium block mb-2">Email</label>
+                                <input id="emailPromoteur" type="email" pInputText formControlName="emailPromoteur"
+                                    class="w-full" />
+                                <small
+                                    *ngIf="infoBaseForm.get('emailPromoteur')?.invalid && infoBaseForm.get('emailPromoteur')?.touched"
+                                    class="p-error block mt-1">
+                                    L'email n'est pas valide
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="field">
+                                <label for="adressePromoteur" class="font-medium block mb-2">Adresse</label>
+                                <input id="adressePromoteur" pTextarea formControlName="adressePromoteur" rows="2"
+                                    class="w-full" [autoResize]="true" fluid />
+                            </div>
+                        </div>
+
+                        <!-- Section Entreprise -->
+                        <div class="col-12 mt-5">
+                            <h2 class="text-xl font-bold border-bottom-1 surface-border pb-2 mb-3">
+                                <i class="pi pi-building mr-2"></i>
+                                Informations de l'entreprise
+                            </h2>
+                        </div>
+
+                        <div class="col-12 md:col-8">
+                            <div class="field">
+                                <label for="nomEntreprise" class="font-medium block mb-2">Nom de l'entreprise *</label>
+                                <input id="nomEntreprise" type="text" pInputText formControlName="nomEntreprise"
+                                    class="w-full" />
+                                <small
+                                    *ngIf="infoBaseForm.get('nomEntreprise')?.invalid && infoBaseForm.get('nomEntreprise')?.touched"
+                                    class="p-error block mt-1">
+                                    Le nom est requis
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="dateCreation" class="font-medium block mb-2">Date de création</label>
+                                <p-calendar id="dateCreation" formControlName="dateCreation" [showIcon]="true"
+                                    dateFormat="dd/mm/yy" class="w-full"></p-calendar>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="formeJuridique" class="font-medium block mb-2">Forme juridique</label>
+                                <p-dropdown id="formeJuridique" formControlName="formeJuridique"
+                                    [options]="formeJuridiques" optionLabel="label" class="w-full"></p-dropdown>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="secteurActivite" class="font-medium block mb-2">Secteur d'activité</label>
+                                <p-dropdown id="secteurActivite" formControlName="secteurActivite"
+                                    [options]="secteursActivite" optionLabel="label" class="w-full"></p-dropdown>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="numeroRegistre" class="font-medium block mb-2">Numéro de registre</label>
+                                <input id="numeroRegistre" type="text" pInputText formControlName="numeroRegistre"
+                                    class="w-full" />
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6">
+                            <div class="field">
+                                <label for="telephoneEntreprise" class="font-medium block mb-2">Téléphone</label>
+                                <input id="telephoneEntreprise" type="text" pInputText
+                                    formControlName="telephoneEntreprise" class="w-full" />
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6">
+                            <div class="field">
+                                <label for="emailEntreprise" class="font-medium block mb-2">Email</label>
+                                <input id="emailEntreprise" type="email" pInputText formControlName="emailEntreprise"
+                                    class="w-full" />
+                                <small
+                                    *ngIf="infoBaseForm.get('emailEntreprise')?.invalid && infoBaseForm.get('emailEntreprise')?.touched"
+                                    class="p-error block mt-1">
+                                    L'email n'est pas valide
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="field">
+                                <label for="adresseEntreprise" class="font-medium block mb-2">Adresse</label>
+                                <input id="adresseEntreprise" pTextarea formControlName="adresseEntreprise" rows="2"
+                                    class="w-full" [autoResize]="true" fluid />
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </p-card>
+        </div>
+
+        <!-- Étape 2: Bilan entreprise -->
+        <div *ngIf="activeIndex() === 1">
+            <p-card header="Bilan de l'entreprise">
+                <form [formGroup]="bilanEntrepriseForm" class="p-fluid">
+                    <div class="grid gap-3">
+                        <!-- Section Actifs -->
+                        <div class="col-12">
+                            <h2 class="text-xl font-bold border-bottom-1 surface-border pb-2 mb-4">
+                                <i class="pi pi-chart-line mr-2"></i>
+                                Actifs
+                            </h2>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-3">
+                            <div class="field">
+                                <label for="liquidites" class="block font-medium mb-2">
+                                    Liquidités
+                                    <small class="block text-color-secondary">Argent en caisse et en banque</small>
+                                </label>
+                                <p-inputNumber id="liquidites" formControlName="liquidites" mode="currency"
+                                    currency="GNF" locale="fr-FR" class="w-full"></p-inputNumber>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-3">
+                            <div class="field">
+                                <label for="creancesClients" class="block font-medium mb-2">
+                                    Créances clients
+                                    <small class="block text-color-secondary">Montant dû par vos clients</small>
+                                </label>
+                                <p-inputNumber id="creancesClients" formControlName="creancesClients" mode="currency"
+                                    currency="GNF" locale="fr-FR" class="w-full"></p-inputNumber>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-3">
+                            <div class="field">
+                                <label for="valeurStocks" class="block font-medium mb-2">Valeur des stocks</label>
+                                <p-inputNumber id="valeurStocks" formControlName="valeurStocks" mode="currency"
+                                    currency="GNF" locale="fr-FR" class="w-full"></p-inputNumber>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-3">
+                            <div class="field">
+                                <label for="valeurEquipements" class="block font-medium mb-2">Valeur des
+                                    équipements</label>
+                                <p-inputNumber id="valeurEquipements" formControlName="valeurEquipements"
+                                    mode="currency" currency="GNF" locale="fr-FR" class="w-full"></p-inputNumber>
+                            </div>
+                        </div>
+
+                        <!-- Section Passifs -->
+                        <div class="col-12 mt-5">
+                            <h2 class="text-xl font-bold border-bottom-1 surface-border pb-2 mb-4">
+                                <i class="pi pi-chart-bar mr-2"></i>
+                                Passifs
+                            </h2>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="dettesFournisseurs" class="block font-medium mb-2">Dettes
+                                    fournisseurs</label>
+                                <p-inputNumber id="dettesFournisseurs" formControlName="dettesFournisseurs"
+                                    mode="currency" currency="GNF" locale="fr-FR" class="w-full"></p-inputNumber>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="emprunts" class="block font-medium mb-2">Emprunts actuels</label>
+                                <p-inputNumber id="emprunts" formControlName="emprunts" mode="currency" currency="GNF"
+                                    locale="fr-FR" class="w-full"></p-inputNumber>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="capitalPropre" class="block font-medium mb-2">Capital propre</label>
+                                <p-inputNumber id="capitalPropre" formControlName="capitalPropre" mode="currency"
+                                    currency="GNF" locale="fr-FR" class="w-full"></p-inputNumber>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </p-card>
+        </div>
+
+        <!-- Étape 3: Bilan personnel du promoteur -->
+        <div *ngIf="activeIndex() === 2">
+            <p-card header="Bilan personnel du promoteur">
+                <form [formGroup]="bilanPersonnelForm" class="p-fluid">
+                    <div class="grid gap-3">
+                        <div class="col-12">
+                            <h3 class="text-lg font-bold border-bottom-1 surface-border pb-2 mb-3">
+                                <i class="pi pi-wallet mr-2"></i>
+                                Patrimoine Personnel
+                            </h3>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="epargnes" class="block font-medium mb-2">Épargnes personnelles</label>
+                                <p-inputNumber id="epargnes" formControlName="epargnes" mode="currency" currency="GNF"
+                                    locale="fr-FR" class="w-full"></p-inputNumber>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="valeurBiensDurables" class="block font-medium mb-2">Valeur des biens
+                                    durables</label>
+                                <p-inputNumber id="valeurBiensDurables" formControlName="valeurBiensDurables"
+                                    mode="currency" currency="GNF" locale="fr-FR" class="w-full"></p-inputNumber>
+                            </div>
+                        </div>
+
+                        <!-- Garanties -->
+                        <div class="col-12 mt-5">
+                            <h3 class="text-lg font-bold border-bottom-1 surface-border pb-2 mb-3">
+                                <i class="pi pi-shield mr-2"></i>
+                                Garanties Proposées
+                            </h3>
+                        </div>
+
+                        <div class="col-12 md:col-6">
+                            <div class="field">
+                                <label for="libeleGarantie" class="block font-medium mb-2">Libellé de la
+                                    garantie</label>
+                                <input id="libeleGarantie" type="text" pInputText formControlName="libeleGarantie"
+                                    class="w-full" placeholder="Ex: Hypothèque sur terrain, Nantissement véhicule..." />
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6">
+                            <div class="field">
+                                <label for="montantGarantie" class="block font-medium mb-2">Montant de la
+                                    garantie</label>
+                                <p-inputNumber id="montantGarantie" formControlName="montantGarantie" mode="currency"
+                                    currency="GNF" locale="fr-FR" class="w-full"></p-inputNumber>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </p-card>
+        </div>
+
+        <!-- Étape 4: Résultats actuels -->
+        <div *ngIf="activeIndex() === 3">
+            <p-card header="Résultats actuels (année précédente)">
+                <form [formGroup]="resultatActuelForm" class="p-fluid">
+                    <div class="grid gap-3">
+                        <div class="col-12">
+                            <h3 class="text-lg font-bold mb-3 border-bottom-1 surface-border pb-2">
+                                <i class="pi pi-calendar mr-2"></i>
+                                Résultat Actuel
+                            </h3>
+                        </div>
+
+                        <div class="col-12 md:col-6">
+                            <div class="field">
+                                <label for="chiffreAffaires" class="block font-medium mb-2">Chiffre d'affaires *</label>
+                                <p-inputNumber id="chiffreAffaires" formControlName="chiffreAffaires" mode="currency"
+                                    currency="GNF" locale="fr-FR" class="w-full"></p-inputNumber>
+                                <small
+                                    *ngIf="resultatActuelForm.get('chiffreAffaires')?.invalid && resultatActuelForm.get('chiffreAffaires')?.touched"
+                                    class="p-error block mt-1">
+                                    <i class="pi pi-exclamation-circle mr-1"></i>Ce champ est obligatoire
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6">
+                            <div class="field">
+                                <label for="autresRevenusActuel" class="block font-medium mb-2">
+                                    Autres revenus
+                                    <small class="block text-color-secondary">Subventions, commissions, revenus
+                                        annexes...</small>
+                                </label>
+                                <p-inputNumber id="autresRevenusActuel" formControlName="autresRevenus" mode="currency"
+                                    currency="GNF" locale="fr-FR" class="w-full"></p-inputNumber>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6">
+                            <div class="field">
+                                <label for="coutMarchandises" class="block font-medium mb-2">Coût des marchandises
+                                    *</label>
+                                <p-inputNumber id="coutMarchandises" formControlName="coutMarchandises" mode="currency"
+                                    currency="GNF" locale="fr-FR" class="w-full"></p-inputNumber>
+                                <small
+                                    *ngIf="resultatActuelForm.get('coutMarchandises')?.invalid && resultatActuelForm.get('coutMarchandises')?.touched"
+                                    class="p-error block mt-1">
+                                    <i class="pi pi-exclamation-circle mr-1"></i>Ce champ est obligatoire
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </p-card>
+        </div>
+
+        <!-- Étape 5: Résultats prévisionnels -->
+        <div *ngIf="activeIndex() === 4">
+            <p-card header="Résultats prévisionnels (après financement)">
+                <form [formGroup]="resultatPrevisionnelForm" class="p-fluid">
+                    <div class="grid gap-3">
+                        <div class="col-12">
+                            <h3 class="text-lg font-bold mb-3 border-bottom-1 surface-border pb-2">
+                                <i class="pi pi-trending-up mr-2"></i>
+                                Prévisions Financières
+                            </h3>
+                        </div>
+
+                        <div class="col-12 md:col-6">
+                            <div class="field">
+                                <label for="chiffreAffairesPrev" class="block font-medium mb-2">Chiffre d'affaires
+                                    prévisionnel *</label>
+                                <p-inputNumber id="chiffreAffairesPrev" formControlName="chiffreAffaires"
+                                    mode="currency" currency="GNF" locale="fr-FR" class="w-full"></p-inputNumber>
+                                <small
+                                    *ngIf="resultatPrevisionnelForm.get('chiffreAffaires')?.invalid && resultatPrevisionnelForm.get('chiffreAffaires')?.touched"
+                                    class="p-error block mt-1">
+                                    <i class="pi pi-exclamation-circle mr-1"></i>Ce champ est obligatoire
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6">
+                            <div class="field">
+                                <label for="autresRevenusPrev" class="block font-medium mb-2">
+                                    Autres revenus prévisionnels
+                                    <small class="block text-color-secondary">Subventions, commissions, revenus
+                                        annexes...</small>
+                                </label>
+                                <p-inputNumber id="autresRevenusPrev" formControlName="autresRevenus" mode="currency"
+                                    currency="GNF" locale="fr-FR" class="w-full"></p-inputNumber>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6">
+                            <div class="field">
+                                <label for="coutMarchandisesPrev" class="block font-medium mb-2">Coût marchandises
+                                    prévisionnel *</label>
+                                <p-inputNumber id="coutMarchandisesPrev" formControlName="coutMarchandises"
+                                    mode="currency" currency="GNF" locale="fr-FR" class="w-full"></p-inputNumber>
+                                <small
+                                    *ngIf="resultatPrevisionnelForm.get('coutMarchandises')?.invalid && resultatPrevisionnelForm.get('coutMarchandises')?.touched"
+                                    class="p-error block mt-1">
+                                    <i class="pi pi-exclamation-circle mr-1"></i>Ce champ est obligatoire
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </p-card>
+        </div>
+
+        <!-- Étape 6: Charges actuelles -->
+        <div *ngIf="activeIndex() === 5">
+            <p-card header="Charges d'exploitation actuelles (année précédente)">
+                <form [formGroup]="chargesActuellesForm" class="p-fluid">
+                    <div class="grid gap-3">
+                        <div class="col-12">
+                            <h3 class="text-lg font-bold mb-3 border-bottom-1 surface-border pb-2">
+                                <i class="pi pi-minus-circle mr-2"></i>
+                                Charges Actuelles
+                            </h3>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="coutTransportProduction" class="block font-medium mb-2">Transport
+                                    production</label>
+                                <p-inputNumber id="coutTransportProduction" formControlName="coutTransportProduction"
+                                    mode="currency" currency="GNF" locale="fr-FR" class="w-full"></p-inputNumber>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="fraisTransportPersonnel" class="block font-medium mb-2">Transport
+                                    personnel</label>
+                                <p-inputNumber id="fraisTransportPersonnel" formControlName="fraisTransportPersonnel"
+                                    mode="currency" currency="GNF" locale="fr-FR" class="w-full"></p-inputNumber>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="fraisManutention" class="block font-medium mb-2">Frais manutention</label>
+                                <p-inputNumber id="fraisManutention" formControlName="fraisManutention" mode="currency"
+                                    currency="GNF" locale="fr-FR" class="w-full"></p-inputNumber>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="montantAideExterne" class="block font-medium mb-2">Aide externe</label>
+                                <p-inputNumber id="montantAideExterne" formControlName="montantAideExterne"
+                                    mode="currency" currency="GNF" locale="fr-FR" class="w-full"></p-inputNumber>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="fraisHebergementRestauration"
+                                    class="block font-medium mb-2">Hébergement/Restauration</label>
+                                <p-inputNumber id="fraisHebergementRestauration"
+                                    formControlName="fraisHebergementRestauration" mode="currency" currency="GNF"
+                                    locale="fr-FR" class="w-full"></p-inputNumber>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="impots" class="block font-medium mb-2">Impôts et taxes</label>
+                                <p-inputNumber id="impots" formControlName="impots" mode="currency" currency="GNF"
+                                    locale="fr-FR" class="w-full"></p-inputNumber>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="loyers" class="block font-medium mb-2">Loyers</label>
+                                <p-inputNumber id="loyers" formControlName="loyers" mode="currency" currency="GNF"
+                                    locale="fr-FR" class="w-full"></p-inputNumber>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </p-card>
+        </div>
+
+        <!-- Étape 7: Charges prévisionnelles -->
+        <div *ngIf="activeIndex() === 6">
+            <p-card header="Charges d'exploitation prévisionnelles (après financement)">
+                <form [formGroup]="chargesPrevisionellesForm" class="p-fluid">
+                    <div class="grid gap-3">
+                        <div class="col-12">
+                            <h3 class="text-lg font-bold mb-3 border-bottom-1 surface-border pb-2">
+                                <i class="pi pi-chart-line mr-2"></i>
+                                Charges Prévisionnelles
+                            </h3>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="coutTransportProductionPrev" class="block font-medium mb-2">Transport
+                                    production</label>
+                                <p-inputNumber id="coutTransportProductionPrev"
+                                    formControlName="coutTransportProduction" mode="currency" currency="GNF"
+                                    locale="fr-FR" class="w-full"></p-inputNumber>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="fraisTransportPersonnelPrev" class="block font-medium mb-2">Transport
+                                    personnel</label>
+                                <p-inputNumber id="fraisTransportPersonnelPrev"
+                                    formControlName="fraisTransportPersonnel" mode="currency" currency="GNF"
+                                    locale="fr-FR" class="w-full"></p-inputNumber>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="fraisManutentionPrev" class="block font-medium mb-2">Manutention</label>
+                                <p-inputNumber id="fraisManutentionPrev" formControlName="fraisManutention"
+                                    mode="currency" currency="GNF" locale="fr-FR" class="w-full"></p-inputNumber>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="montantAideExternePrev" class="block font-medium mb-2">Aide externe</label>
+                                <p-inputNumber id="montantAideExternePrev" formControlName="montantAideExterne"
+                                    mode="currency" currency="GNF" locale="fr-FR" class="w-full"></p-inputNumber>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="fraisHebergementRestaurationPrev"
+                                    class="block font-medium mb-2">Hébergement/Restauration</label>
+                                <p-inputNumber id="fraisHebergementRestaurationPrev"
+                                    formControlName="fraisHebergementRestauration" mode="currency" currency="GNF"
+                                    locale="fr-FR" class="w-full"></p-inputNumber>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="impotsPrev" class="block font-medium mb-2">Impôts et taxes</label>
+                                <p-inputNumber id="impotsPrev" formControlName="impots" mode="currency" currency="GNF"
+                                    locale="fr-FR" class="w-full"></p-inputNumber>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="loyersPrev" class="block font-medium mb-2">Loyers</label>
+                                <p-inputNumber id="loyersPrev" formControlName="loyers" mode="currency" currency="GNF"
+                                    locale="fr-FR" class="w-full"></p-inputNumber>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </p-card>
+        </div>
+
+        <!-- Étape 8: Demande de crédit -->
+        <div *ngIf="activeIndex() === 7">
+            <p-card header="Informations sur la demande de crédit">
+                <form [formGroup]="demandeCreditForm" class="p-fluid">
+                    <div class="grid gap-3">
+                        <div class="col-12">
+                            <h3 class="text-lg font-bold mb-3 border-bottom-1 surface-border pb-2">
+                                <i class="pi pi-money-bill mr-2"></i>
+                                Demande de Crédit
+                            </h3>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="montantDemande" class="block font-medium mb-2">Montant demandé *</label>
+                                <p-inputNumber id="montantDemande" formControlName="montantDemande" mode="currency"
+                                    currency="GNF" locale="fr-FR" class="w-full"></p-inputNumber>
+                                <small
+                                    *ngIf="demandeCreditForm.get('montantDemande')?.invalid && demandeCreditForm.get('montantDemande')?.touched"
+                                    class="p-error block mt-1">
+                                    <i class="pi pi-exclamation-circle mr-1"></i>Montant requis (min 1 GNF)
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-6 lg:col-4">
+                            <div class="field">
+                                <label for="dureeMois" class="block font-medium mb-2">Durée (mois) *</label>
+                                <p-inputNumber id="dureeMois" formControlName="dureeMois" [showButtons]="true" [min]="1"
+                                    [max]="120" class="w-full" suffix=" mois"></p-inputNumber>
+                                <small
+                                    *ngIf="demandeCreditForm.get('dureeMois')?.invalid && demandeCreditForm.get('dureeMois')?.touched"
+                                    class="p-error block mt-1">
+                                    <i class="pi pi-exclamation-circle mr-1"></i>Durée entre 1 et 120 mois
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="col-12 lg:col-4">
+                            <div class="p-3 bg-blue-50 border-round border-1 border-blue-200">
+                                <div class="flex align-items-center justify-content-between">
+                                    <span class="font-medium">Mensualité estimée:</span>
+                                    <span class="text-lg font-bold text-blue-600">
+                                        {{ calculerMensualite() | currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Localisation -->
+                        <div class="col-12 mt-4">
+                            <h3 class="text-lg font-bold mb-3 border-bottom-1 surface-border pb-2">
+                                <i class="pi pi-map-marker mr-2"></i>
+                                Localisation du crédit
+                            </h3>
+                        </div>
+
+                        <div class="col-12 md:col-4">
+                            <div class="field">
+                                <label for="delegation" class="block font-medium mb-2">Délégation</label>
+                                <p-dropdown id="delegation" formControlName="delegation"
+                                    [options]="state().allDelegations" optionLabel="libele"
+                                    placeholder="Sélectionner..." class="w-full"
+                                    (onChange)="onDelegationChange($event)"></p-dropdown>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-4">
+                            <div class="field">
+                                <label for="agence" class="block font-medium mb-2">Agence</label>
+                                <p-dropdown id="agence" formControlName="agence" [options]="state().filteredAgences"
+                                    optionLabel="libele" placeholder="Sélectionner d'abord une délégation..."
+                                    class="w-full" [disabled]="state().filteredAgences.length === 0"
+                                    (onChange)="onAgenceChange($event)"></p-dropdown>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-4">
+                            <div class="field">
+                                <label for="pointVente" class="block font-medium mb-2">Point de vente</label>
+                                <p-dropdown id="pointVente" formControlName="pointVente"
+                                    [options]="state().filteredPointsVente" optionLabel="libele"
+                                    placeholder="Sélectionner d'abord une agence..." class="w-full"
+                                    [disabled]="state().filteredPointsVente.length === 0"></p-dropdown>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="field">
+                                <label for="objetFinancement" class="block font-medium mb-2">Objet du financement
+                                    *</label>
+                                <input id="objetFinancement" pTextarea formControlName="objetFinancement" rows="4"
+                                    class="w-full" [autoResize]="true" />
+
+                                <small
+                                    *ngIf="demandeCreditForm.get('objetFinancement')?.invalid && demandeCreditForm.get('objetFinancement')?.touched"
+                                    class="p-error block mt-1">
+                                    <i class="pi pi-exclamation-circle mr-1"></i>Veuillez décrire l'objet du financement
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </p-card>
+        </div>
+
+        <!-- Étape 9: Personnes caution -->
+        <div *ngIf="activeIndex() === 8">
+            <p-card header="Personnes caution">
+                <div class="grid gap-3">
+                    <div class="col-12">
+                        <h3 class="text-lg font-bold mb-3 border-bottom-1 surface-border pb-2">
+                            <i class="pi pi-users mr-2"></i>
+                            Ajouter une personne caution
+                        </h3>
+                        <p class="text-color-secondary mb-4">Les personnes caution sont optionnelles mais peuvent
+                            renforcer votre dossier.</p>
+                    </div>
+
+                    <!-- Formulaire pour ajouter nouvelle personne caution -->
+                    <div class="col-12">
+                        <form [formGroup]="personnecautionForm" class="p-fluid">
+                            <div class="grid gap-3">
+                                <div class="col-12 md:col-6">
+                                    <div class="field">
+                                        <label for="cautionNom" class="block font-medium mb-2">Nom</label>
+                                        <input id="cautionNom" type="text" pInputText formControlName="nom"
+                                            class="w-full" />
+                                    </div>
+                                </div>
+
+                                <div class="col-12 md:col-6">
+                                    <div class="field">
+                                        <label for="cautionPrenom" class="block font-medium mb-2">Prénom</label>
+                                        <input id="cautionPrenom" type="text" pInputText formControlName="prenom"
+                                            class="w-full" />
+                                    </div>
+                                </div>
+
+                                <div class="col-12 md:col-6">
+                                    <div class="field">
+                                        <label for="cautionTelephone" class="block font-medium mb-2">Téléphone</label>
+                                        <input id="cautionTelephone" type="text" pInputText formControlName="telephone"
+                                            class="w-full" />
+                                    </div>
+                                </div>
+
+                                <div class="col-12 md:col-6">
+                                    <div class="field">
+                                        <label for="cautionAge" class="block font-medium mb-2">Âge</label>
+                                        <p-inputNumber id="cautionAge" formControlName="age" [showButtons]="true"
+                                            [min]="18" [max]="100" class="w-full" suffix=" ans"></p-inputNumber>
+                                    </div>
+                                </div>
+
+                                <div class="col-12 md:col-6">
+                                    <div class="field">
+                                        <label for="cautionActivite" class="block font-medium mb-2">Activité</label>
+                                        <input id="cautionActivite" type="text" pInputText formControlName="activite"
+                                            class="w-full" />
+                                    </div>
+                                </div>
+
+                                <div class="col-12 md:col-6">
+                                    <div class="field">
+                                        <label for="cautionProfession" class="block font-medium mb-2">Profession</label>
+                                        <input id="cautionProfession" type="text" pInputText
+                                            formControlName="profession" class="w-full" />
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <button pButton pRipple type="button" label="Ajouter cette personne caution"
+                                        icon="pi pi-plus" class="p-button-success"
+                                        (click)="addPersonnecaution()"></button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Liste des personnes caution ajoutées -->
+                    <div class="col-12" *ngIf="personnecautions.length > 0">
+                        <h3 class="text-lg font-bold mb-3 border-bottom-1 surface-border pb-2">
+                            <i class="pi pi-list mr-2"></i>
+                            Personnes caution ajoutées ({{personnecautions.length}})
+                        </h3>
+
+                        <div class="grid gap-3">
+                            <div class="col-12" *ngFor="let caution of personnecautions; let i = index">
+                                <p-card styleClass="mb-3">
+                                    <ng-template pTemplate="header">
+                                        <div class="flex align-items-center justify-content-between p-3">
+                                            <span class="font-bold">{{caution.prenom}} {{caution.nom}}</span>
+                                            <button pButton pRipple type="button" icon="pi pi-trash"
+                                                class="p-button-rounded p-button-danger p-button-text"
+                                                (click)="removePersonnecaution(i)" pTooltip="Supprimer"></button>
+                                        </div>
+                                    </ng-template>
+
+                                    <div class="grid">
+                                        <div class="col-12 md:col-6 lg:col-4" *ngIf="caution.telephone">
+                                            <strong>Téléphone:</strong> {{caution.telephone}}
+                                        </div>
+                                        <div class="col-12 md:col-6 lg:col-4" *ngIf="caution.age">
+                                            <strong>Âge:</strong> {{caution.age}} ans
+                                        </div>
+                                        <div class="col-12 md:col-6 lg:col-4" *ngIf="caution.activite">
+                                            <strong>Activité:</strong> {{caution.activite}}
+                                        </div>
+                                        <div class="col-12 md:col-6 lg:col-4" *ngIf="caution.profession">
+                                            <strong>Profession:</strong> {{caution.profession}}
+                                        </div>
+                                    </div>
+                                </p-card>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12" *ngIf="personnecautions.length === 0">
+                        <div class="p-3 bg-yellow-50 border-round border-1 border-yellow-200 text-center">
+                            <i class="pi pi-info-circle mr-2"></i>
+                            <span>Aucune personne caution ajoutée. Vous pouvez continuer sans ajouter de caution.</span>
+                        </div>
+                    </div>
+                </div>
+            </p-card>
+        </div>
+
+        <!-- Étape 10: Résumé -->
+        <div *ngIf="activeIndex() === 9">
+            <p-card header="Résumé de votre demande de crédit - Mise à jour">
+                <div class="grid">
+                    <!-- Informations du promoteur et de l'entreprise -->
+                    <div class="col-12 md:col-6 mb-4">
+                        <p-panel header="Informations du promoteur" [toggleable]="true">
+                            <p-table [value]="[
+                                { label: 'Nom', value: resumeData.promoteur?.nom || '-' },
+                                { label: 'Prénom', value: resumeData.promoteur?.prenom || '-' },
+                                { label: 'Email', value: resumeData.promoteur?.email || '-' },
+                                { label: 'Téléphone', value: resumeData.promoteur?.telephone || '-' },
+                                { label: 'Numéro d\'identité', value: resumeData.promoteur?.numero_identite || '-' },
+                                { label: 'Date de naissance', value: formatDateForDisplay(resumeData.promoteur?.date_naissance) || '-' }
+                            ]" styleClass="p-datatable-sm" [tableStyle]="{'min-width': '50rem'}">
+                                <ng-template pTemplate="body" let-item>
+                                    <tr>
+                                        <td class="font-medium">{{item.label}}</td>
+                                        <td>{{item.value}}</td>
+                                    </tr>
+                                </ng-template>
+                            </p-table>
+                        </p-panel>
+                    </div>
+
+                    <div class="col-12 md:col-6 mb-4">
+                        <p-panel header="Informations de l'entreprise" [toggleable]="true">
+                            <p-table [value]="[
+                                { label: 'Nom', value: resumeData.entreprise?.nom || '-' },
+                                { label: 'Forme juridique', value: resumeData.entreprise?.forme_juridique || '-' },
+                                { label: 'Secteur d\'activité', value: resumeData.entreprise?.secteur_activite || '-' },
+                                { label: 'Numéro de registre', value: resumeData.entreprise?.numero_registre || '-' },
+                                { label: 'Email', value: resumeData.entreprise?.email || '-' },
+                                { label: 'Téléphone', value: resumeData.entreprise?.telephone || '-' }
+                            ]" styleClass="p-datatable-sm" [tableStyle]="{'min-width': '50rem'}">
+                                <ng-template pTemplate="body" let-item>
+                                    <tr>
+                                        <td class="font-medium">{{item.label}}</td>
+                                        <td>{{item.value}}</td>
+                                    </tr>
+                                </ng-template>
+                            </p-table>
+                        </p-panel>
+                    </div>
+
+                    <!-- Bilan financier -->
+                    <div class="col-12 mb-4">
+                        <p-panel header="Bilan financier" [toggleable]="true">
+                            <div class="grid">
+                                <div class="col-12 md:col-6">
+                                    <h3 class="text-lg font-medium">Bilan entreprise</h3>
+                                    <p-table [value]="[
+                                        { label: 'Total actifs', value: calculerTotalActif() | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                        { label: 'Total passifs', value: calculerTotalPassif() | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                    ]" styleClass="p-datatable-sm" [tableStyle]="{'min-width': '30rem'}">
+                                        <ng-template pTemplate="body" let-item>
+                                            <tr>
+                                                <td class="font-medium">{{item.label}}</td>
+                                                <td>{{item.value}}</td>
+                                            </tr>
+                                        </ng-template>
+                                    </p-table>
+                                </div>
+
+                                <div class="col-12 md:col-6">
+                                    <h3 class="text-lg font-medium">Bilan personnel & Garanties</h3>
+                                    <p-table [value]="[
+                                        { label: 'Épargnes', value: resumeData.bilanPersonnel?.epargnes | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                        { label: 'Biens durables', value: resumeData.bilanPersonnel?.valeur_biens_durables | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                        { label: 'Total patrimoine', value: (resumeData.bilanPersonnel?.epargnes || 0) + (resumeData.bilanPersonnel?.valeur_biens_durables || 0) | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                        { label: 'Garantie proposée', value: resumeData.bilanPersonnel?.libele_garantie || '-' },
+                                        { label: 'Montant garantie', value: resumeData.bilanPersonnel?.montant_garantie | currency:'GNF':'symbol':'1.0-0':'en-US' }
+                                    ]" styleClass="p-datatable-sm" [tableStyle]="{'min-width': '30rem'}">
+                                        <ng-template pTemplate="body" let-item>
+                                            <tr>
+                                                <td class="font-medium">{{item.label}}</td>
+                                                <td>{{item.value}}</td>
+                                            </tr>
+                                        </ng-template>
+                                    </p-table>
+                                </div>
+                            </div>
+                        </p-panel>
+                    </div>
+
+                    <!-- Performance économique -->
+                    <div class="col-12 mb-4">
+                        <p-panel header="Performance économique" [toggleable]="true">
+                            <div class="grid">
+                                <div class="col-12 md:col-6">
+                                    <h3 class="text-lg font-medium">Résultats actuels</h3>
+                                    <p-table [value]="[
+                                            { label: 'Chiffre d\'affaires', value: resumeData.resultatActuel?.chiffre_affaires | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                            { label: 'Autres revenus', value: resumeData.resultatActuel?.autres_revenus | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                            { label: 'Revenus totaux', value: (resumeData.resultatActuel?.chiffre_affaires || 0) + (resumeData.resultatActuel?.autres_revenus || 0) | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                            { label: 'Coût des marchandises', value: resumeData.resultatActuel?.cout_marchandises | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                        ]" styleClass="p-datatable-sm" [tableStyle]="{'min-width': '30rem'}">
+                                        <ng-template pTemplate="body" let-item>
+                                            <tr>
+                                                <td class="font-medium">{{item.label}}</td>
+                                                <td>{{item.value}}</td>
+                                            </tr>
+                                        </ng-template>
+                                    </p-table>
+                                </div>
+
+                                <div class="col-12 md:col-6">
+                                    <h3 class="text-lg font-medium">Résultats prévisionnels</h3>
+                                    <p-table [value]="[
+                                            { label: 'Chiffre d\'affaires', value: resumeData.resultatPrevisionnel?.chiffre_affaires | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                            { label: 'Autres revenus', value: resumeData.resultatPrevisionnel?.autres_revenus | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                            { label: 'Revenus totaux', value: (resumeData.resultatPrevisionnel?.chiffre_affaires || 0) + (resumeData.resultatPrevisionnel?.autres_revenus || 0) | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                            { label: 'Coût des marchandises', value: resumeData.resultatPrevisionnel?.cout_marchandises | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                        ]" styleClass="p-datatable-sm" [tableStyle]="{'min-width': '30rem'}">
+                                        <ng-template pTemplate="body" let-item>
+                                            <tr>
+                                                <td class="font-medium">{{item.label}}</td>
+                                                <td>{{item.value}}</td>
+                                            </tr>
+                                        </ng-template>
+                                    </p-table>
+                                </div>
+                            </div>
+                        </p-panel>
+                    </div>
+
+                    <!-- Charges d'exploitation -->
+                    <div class="col-12 mb-4">
+                        <p-panel header="Charges d'exploitation" [toggleable]="true">
+                            <div class="grid">
+                                <div class="col-12 md:col-6">
+                                    <h3 class="text-lg font-medium">Charges actuelles</h3>
+                                    <p-table [value]="[
+                                        { label: 'Transport production', value: resumeData.chargesActuelles?.cout_transport_production | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                        { label: 'Transport personnel', value: resumeData.chargesActuelles?.frais_transport_personnel | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                        { label: 'Manutention', value: resumeData.chargesActuelles?.frais_manutention | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                        { label: 'Aide externe', value: resumeData.chargesActuelles?.montant_aide_externe | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                        { label: 'Hébergement/Restauration', value: resumeData.chargesActuelles?.frais_hebergement_restauration | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                        { label: 'Impôts', value: resumeData.chargesActuelles?.impots | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                        { label: 'Loyers', value: resumeData.chargesActuelles?.loyers | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                        { label: 'Total charges', value: calculerTotalChargesActuelles() | currency:'GNF':'symbol':'1.0-0':'en-US', isTotal: true }
+                                    ]" styleClass="p-datatable-sm" [tableStyle]="{'min-width': '30rem'}">
+                                        <ng-template pTemplate="body" let-item>
+                                            <tr [ngClass]="{'bg-gray-100 dark:bg-gray-800 font-bold': item.isTotal}">
+                                                <td class="font-medium">{{item.label}}</td>
+                                                <td>{{item.value}}</td>
+                                            </tr>
+                                        </ng-template>
+                                    </p-table>
+                                </div>
+
+                                <div class="col-12 md:col-6">
+                                    <h3 class="text-lg font-medium">Charges prévisionnelles</h3>
+                                    <p-table [value]="[
+                                        { label: 'Transport production', value: resumeData.chargesPrevisionnelles?.cout_transport_production | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                        { label: 'Transport personnel', value: resumeData.chargesPrevisionnelles?.frais_transport_personnel | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                        { label: 'Manutention', value: resumeData.chargesPrevisionnelles?.frais_manutention | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                        { label: 'Aide externe', value: resumeData.chargesPrevisionnelles?.montant_aide_externe | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                        { label: 'Hébergement/Restauration', value: resumeData.chargesPrevisionnelles?.frais_hebergement_restauration | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                        { label: 'Impôts', value: resumeData.chargesPrevisionnelles?.impots | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                        { label: 'Loyers', value: resumeData.chargesPrevisionnelles?.loyers | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                        { label: 'Total charges', value: calculerTotalChargesPrevisionnelles() | currency:'GNF':'symbol':'1.0-0':'en-US', isTotal: true }
+                                    ]" styleClass="p-datatable-sm" [tableStyle]="{'min-width': '30rem'}">
+                                        <ng-template pTemplate="body" let-item>
+                                            <tr [ngClass]="{'bg-gray-100 dark:bg-gray-800 font-bold': item.isTotal}">
+                                                <td class="font-medium">{{item.label}}</td>
+                                                <td>{{item.value}}</td>
+                                            </tr>
+                                        </ng-template>
+                                    </p-table>
+                                </div>
+                            </div>
+                        </p-panel>
+                    </div>
+
+                    <!-- Demande de crédit -->
+                    <div class="col-12 mb-4">
+                        <p-panel header="Demande de crédit" [toggleable]="true">
+                            <div class="grid">
+                                <div class="col-12 md:col-6">
+                                    <p-table [value]="[
+                                        { label: 'Montant demandé', value: resumeData.demandeCredit?.montant_demande | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                        { label: 'Durée', value: (resumeData.demandeCredit?.duree_mois || 0) + ' mois' },
+                                        { label: 'Mensualité estimée', value: calculerMensualite() | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                        { label: 'Délégation', value: resumeData.demandeCredit?.delegation || '-' },
+                                        { label: 'Agence', value: resumeData.demandeCredit?.agence || '-' },
+                                        { label: 'Point de vente', value: resumeData.demandeCredit?.point_vente || '-' }
+                                    ]" styleClass="p-datatable-sm" [tableStyle]="{'min-width': '30rem'}">
+                                        <ng-template pTemplate="body" let-item>
+                                            <tr>
+                                                <td class="font-medium">{{item.label}}</td>
+                                                <td>{{item.value}}</td>
+                                            </tr>
+                                        </ng-template>
+                                    </p-table>
+                                </div>
+                                <div class="col-12 md:col-6">
+                                    <h4 class="text-lg font-medium mb-2">Objet du financement:</h4>
+                                    <p-card styleClass="h-full">
+                                        <p class="text-justify">{{resumeData.demandeCredit?.objet_financement || '-'}}
+                                        </p>
+                                    </p-card>
+                                </div>
+                            </div>
+                        </p-panel>
+                    </div>
+
+                    <!-- Personnes caution -->
+                    <div class="col-12 mb-4" *ngIf="personnecautions.length > 0">
+                        <p-panel header="Personnes caution ({{personnecautions.length}})" [toggleable]="true">
+                            <div class="grid gap-3">
+                                <div class="col-12 md:col-6" *ngFor="let caution of personnecautions; let i = index">
+                                    <p-card [header]="caution.prenom + ' ' + caution.nom">
+                                        <p-table [value]="[
+                                            { label: 'Téléphone', value: caution.telephone || '-' },
+                                            { label: 'Âge', value: caution.age ? caution.age + ' ans' : '-' },
+                                            { label: 'Activité', value: caution.activite || '-' },
+                                            { label: 'Profession', value: caution.profession || '-' }
+                                        ]" styleClass="p-datatable-sm" [tableStyle]="{'min-width': '25rem'}">
+                                            <ng-template pTemplate="body" let-item>
+                                                <tr>
+                                                    <td class="font-medium">{{item.label}}</td>
+                                                    <td>{{item.value}}</td>
+                                                </tr>
+                                            </ng-template>
+                                        </p-table>
+                                    </p-card>
+                                </div>
+                            </div>
+                        </p-panel>
+                    </div>
+
+                    <!-- Bouton pour mettre à jour la demande -->
+                    <div class="col-12 mt-4 flex justify-content-center">
+                        <button pButton pRipple type="button" label="Mettre à jour la demande" icon="pi pi-save"
+                            class="p-button-success p-button-lg" (click)="mettreAJourDemande()" [loading]="loading()">
+                        </button>
+                    </div>
+                </div>
+            </p-card>
+        </div>
+
+        <!-- Boutons de navigation -->
+        <div class="flex justify-between mt-4">
+            <button pButton pRipple type="button" label="Précédent" class="p-button-outlined"
+                [disabled]="activeIndex() === 0" (click)="prevStep()"></button>
+
+            <button pButton pRipple type="button" label="Suivant" class="p-button-outlined"
+                [disabled]="activeIndex() === 9" (click)="nextStep()"></button>
+        </div>
+    </div>
+</div>

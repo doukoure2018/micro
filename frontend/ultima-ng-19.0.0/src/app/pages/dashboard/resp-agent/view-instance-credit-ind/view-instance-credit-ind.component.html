@@ -225,7 +225,7 @@
                     </div>
 
                     <!-- État du crédit et notes -->
-                    <div class="col-12 lg:col-4">
+                    <!-- <div class="col-12 lg:col-4">
                         <p-card styleClass="h-full shadow-2">
                             <ng-template pTemplate="header">
                                 <div class="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-4">
@@ -296,7 +296,7 @@
                                     </div>
                                 </div>
 
-                                <!-- Indicateur de progression -->
+                              
                                 <div class="field mt-4">
                                     <label class="font-bold text-900 mb-2 block">
                                         <i class="pi pi-percentage mr-2 text-purple-500"></i>Progression Générale
@@ -311,7 +311,7 @@
                                 </div>
                             </div>
                         </p-card>
-                    </div>
+                    </div> -->
 
                     <!-- Composant Note Profile -->
                     <div class="col-12 mt-4">
@@ -420,14 +420,15 @@
                                                 <span class="font-medium">{{ product.libele }}</span>
                                             </div>
                                         </td>
-                                        <td class="text-right font-medium">{{ formatMontantGNF(product.prixUnit || 0) }}
+                                        <td class="text-right font-medium">{{ formatMontantGNF(product.prix_unit || 0)
+                                            }}
                                         </td>
                                         <td class="text-center">
                                             <span class="bg-gray-100 px-2 py-1 border-round font-bold">{{ product.qte
                                                 }}</span>
                                         </td>
                                         <td class="text-right font-bold text-green-600">
-                                            {{ formatMontantGNF((product.prixUnit || 0) * (product.qte || 0)) }}
+                                            {{ formatMontantGNF((product.prix_unit || 0) * (product.qte || 0)) }}
                                         </td>
                                         <td>
                                             <span class="text-600">{{ product.observation || 'Aucune observation'
@@ -498,17 +499,17 @@
                                                 <span class="font-medium">{{ charge.libele }}</span>
                                             </div>
                                         </td>
-                                        <td class="text-right font-medium">{{ formatMontantGNF(charge.prixUnit || 0) }}
+                                        <td class="text-right font-medium">{{ formatMontantGNF(charge.prix_unit || 0) }}
                                         </td>
                                         <td class="text-center">
                                             <span class="bg-gray-100 px-2 py-1 border-round font-bold">{{ charge.qte
                                                 }}</span>
                                         </td>
                                         <td class="text-right font-bold text-red-600">
-                                            {{ formatMontantGNF((charge.prixUnit || 0) * (charge.qte || 0)) }}
+                                            {{ formatMontantGNF((charge.prix_unit || 0) * (charge.qte || 0)) }}
                                         </td>
                                         <td class="text-center">
-                                            <span class="text-600">{{ charge.createAt | date:'dd/MM/yyyy' }}</span>
+                                            <span class="text-600">{{ charge.create_at | date:'dd/MM/yyyy' }}</span>
                                         </td>
                                     </tr>
                                 </ng-template>

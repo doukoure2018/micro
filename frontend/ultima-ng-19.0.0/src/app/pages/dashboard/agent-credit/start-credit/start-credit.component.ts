@@ -50,10 +50,9 @@ export class StartCreditComponent {
             .pipe(
                 switchMap((params: ParamMap) => {
                     const numeroMembre = params.get('numeroMembre');
-                    const userId = params.get('userId');
-                    if (numeroMembre && userId) {
+                    if (numeroMembre) {
                         this.state.update((state) => ({ ...state, loading: true, message: undefined, error: undefined }));
-                        return this.userService.getLastDemandeInd$(numeroMembre, +userId);
+                        return this.userService.getLastDemandeInd$(numeroMembre);
                     } else {
                         this.state.update((state) => ({ ...state, loading: false, message: undefined, error: 'Invalide NumeroMembre' }));
                         return EMPTY;
@@ -129,7 +128,7 @@ export class StartCreditComponent {
         return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'; // Crédit régularisé
     }
 
-    public startNewCredit(numeroMembre: string, userId: number): void {
+    public startNewCredit(numeroMembre: string): void {
         this.confirmationService.confirm({
             message: 'Êtes-vous sûr de vouloir continuer pour la mise en place du nouveau crédit?',
             header: 'Confirmation',
@@ -137,7 +136,7 @@ export class StartCreditComponent {
             accept: () => {
                 this.state.update((state) => ({ ...state, loading: true }));
                 this.userService
-                    .startCredit$(numeroMembre, userId)
+                    .startCredit$(numeroMembre)
                     .pipe(takeUntilDestroyed(this.destroyRef))
                     .subscribe({
                         next: (response: IResponse) => {
@@ -154,19 +153,19 @@ export class StartCreditComponent {
 
                                 if (montant <= 25000000) {
                                     // Mise en place pour le petit credit
-                                    this.router.navigate(['/dashboards/process-credit', numeroMembre, userId]);
+                                    this.router.navigate(['/dashboards/agent-credit/process-credit', numeroMembre]);
                                 } else {
                                     // Mise en place pour le gros credit
-                                    this.router.navigate(['/dashboards/process-big-credit', numeroMembre, userId]);
+                                    this.router.navigate(['/dashboards/agent-credit/process-big-credit', numeroMembre]);
                                 }
                             } else {
                                 // If demandeIndividuel is not available in the response, use the one from state
                                 const montant = this.state().demandeIndividuel?.montant || 0;
 
                                 if (montant <= 25000000) {
-                                    this.router.navigate(['/dashboards/process-credit', numeroMembre, userId]);
+                                    this.router.navigate(['/dashboards/agent-credit/process-credit', numeroMembre]);
                                 } else {
-                                    this.router.navigate(['/dashboards/process-big-credit', numeroMembre, userId]);
+                                    this.router.navigate(['/dashboards/agent-credit/process-big-credit', numeroMembre]);
                                 }
                             }
                         },

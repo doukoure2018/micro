@@ -4,12 +4,15 @@ import io.digiservices.ecreditservice.dto.*;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 public interface DemandeIndService {
 
     void addDemandeInd(DemandeIndividuel demandeIndividuel);
 
-    List<DemandeIndividuel> getListDemandeAttente(Long pointventeId);
+    List<DemandeIndividuel> getListDemandeAttente(Long pointventeId,Long agenceId);
+
+    List<DemandeIndividuel> getListDemandeAttenteNotification(Long pointventeId,Long agenceId);
 
     void updateStatutDemandeInd(Long demandeindividuel_id, String statut, String codUsuarios);
 
@@ -23,7 +26,7 @@ public interface DemandeIndService {
 
     void addNewCredit(String numeroMembre, Long userId);
 
-    CreditDto getListCreditAttente(Long agenceId);
+    List<CreditDto> getListCreditAttente(Long agenceId);
 
     InstanceCreditInd getInstanceCredit(String referenceCredit);
 
@@ -60,4 +63,6 @@ public interface DemandeIndService {
     CreditDto getNewCreditByReference(String referenceCredit);
 
     CreditDto getCreditByReference(String referenceCredit);
+
+    List<DemandeCredit> listDemandeAnalyseCreditByUserId();
 }

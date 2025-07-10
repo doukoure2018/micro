@@ -17,10 +17,12 @@ import { ToastModule } from 'primeng/toast';
 import { switchMap, EMPTY, finalize } from 'rxjs';
 import { TabViewModule } from 'primeng/tabview';
 import { ProcessCreditInd } from '@/interface/process.credit.ind';
+import { AvatarModule } from 'primeng/avatar';
+import { TagModule } from 'primeng/tag';
 
 @Component({
     selector: 'app-process-credit',
-    imports: [CommonModule, FormsModule, ReactiveFormsModule, ButtonModule, InputTextModule, InputNumberModule, CardModule, TabViewModule, ToastModule, ConfirmDialogModule, ProgressSpinnerModule],
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, ButtonModule, InputTextModule, InputNumberModule, CardModule, TabViewModule, ToastModule, ConfirmDialogModule, ProgressSpinnerModule, AvatarModule, TagModule],
     templateUrl: './process-credit.component.html',
     providers: [MessageService, ConfirmationService]
 })
@@ -28,7 +30,6 @@ export class ProcessCreditComponent {
     state = signal<{
         creditDto?: NewCredit;
         referenceCredit?: string;
-        userId?: number;
         loading: boolean;
         message: string | undefined;
         error: string | any;
@@ -96,9 +97,8 @@ export class ProcessCreditComponent {
             .pipe(
                 switchMap((params: ParamMap) => {
                     const numeroMembre = params.get('numeroMembre');
-                    const userId = params.get('userId');
-                    if (numeroMembre && userId) {
-                        this.state.update((state) => ({ ...state, userId: Number(userId), loading: true, message: undefined, error: undefined }));
+                    if (numeroMembre) {
+                        this.state.update((state) => ({ ...state, loading: true, message: undefined, error: undefined }));
                         return this.userService.getInstanceCredit$(numeroMembre);
                     } else {
                         this.state.update((state) => ({ ...state, loading: false, message: undefined, error: 'Invalide NumeroMembre' }));
@@ -310,7 +310,7 @@ export class ProcessCreditComponent {
                 this.state.update((state) => ({ ...state, submitLoading: true }));
 
                 this.userService
-                    .processCreditInd$(referenceCredit, creditProcessParams, this.state().userId!, this.state().creditDto?.individuelId!)
+                    .processCreditInd$(referenceCredit, creditProcessParams, this.state().creditDto?.individuelId!)
                     .pipe(
                         takeUntilDestroyed(this.destroyRef),
                         finalize(() => this.state.update((state) => ({ ...state, submitLoading: false })))

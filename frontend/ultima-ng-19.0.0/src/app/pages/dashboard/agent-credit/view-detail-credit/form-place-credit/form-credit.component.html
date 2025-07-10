@@ -127,8 +127,8 @@
                     <label for="codUsuario" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
                         Gestionnaire de Compte
                     </label>
-                    <input pInputText [ngModel]="state().user?.username" name="codUsuario" id="codUsuario" type="text"
-                        [disabled]="true" class="w-full" />
+                    <input pInputText [ngModel]="state().user?.username?.toUpperCase()" name="codUsuario"
+                        id="codUsuario" type="text" [disabled]="true" class="w-full" />
                 </div>
 
                 <!-- Agence -->

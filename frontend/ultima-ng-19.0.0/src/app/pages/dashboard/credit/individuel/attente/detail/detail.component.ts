@@ -329,15 +329,7 @@ export class DetailComponent {
 
                             // Navigate after 3 seconds (matching the message life duration)
                             setTimeout(() => {
-                                // Use the agence_id from the current state instead of the response
-                                const agenceId = this.state().demandeIndividuel?.agence;
-                                // If agenceId is available, navigate to the attente page
-                                if (agenceId) {
-                                    this.router.navigate(['/dashboards/credit/individuel/attente/', agenceId]);
-                                } else {
-                                    // Fallback navigation if agenceId is not available
-                                    this.router.navigate(['/dashboards/credit/individuel/attente']);
-                                }
+                                this.router.navigate(['/dashboards/credit/individuel/attente']);
                             }, 2000);
                         },
                         error: (error) => {

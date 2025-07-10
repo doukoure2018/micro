@@ -1,10 +1,14 @@
 package io.digiservices.ecreditservice.resource;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digiservices.clients.EbankingClient;
 import io.digiservices.clients.UserClient;
+import io.digiservices.clients.domain.AgenceDto;
+import io.digiservices.clients.domain.DelegationDto;
+import io.digiservices.clients.domain.PointVenteDto;
+import io.digiservices.clients.domain.User;
 import io.digiservices.ecreditservice.domain.Response;
-import io.digiservices.ecreditservice.dto.DemandeCredit;
-import io.digiservices.ecreditservice.dto.DemandeCreditCompleteDTO;
+import io.digiservices.ecreditservice.dto.*;
 import io.digiservices.ecreditservice.service.DemandeCreditService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -107,8 +111,28 @@ public class DemandeCreditResource {
                                                   @PathVariable(name = "demandeCreditId") Integer demandeCreditId,
                                                   HttpServletRequest request) {
         Map<String, Object> resume = demandeCreditService.obtenirResumeComplet(demandeCreditId);
-        return ok(getResponse(request, Map.of("resumeCredit", resume), "Resume Retrieved Successfully", OK));
+        return ok(getResponse(request, Map.of("resumeCredit", resume,"user", userClient.getUserByUuid(authentication.getName())), "Resume Retrieved Successfully", OK));
     }
+
+    @GetMapping("/info/{delegationId}/{agenceId}/{pointVenteId}")
+    public ResponseEntity<Response> getInfoResumeCredit(@NotNull Authentication authentication,
+                                                        @PathVariable(name = "delegationId") Long delegationId,
+                                                        @PathVariable(name = "agenceId") Long agenceId,
+                                                        @PathVariable(name = "pointVenteId") Long pointVenteId,
+                                                        HttpServletRequest request) {
+        User user = userClient.getUserByUuid(authentication.getName());
+        DelegationDto delegationDto = userClient.getAllDelegationOffLineById(delegationId);
+        AgenceDto agenceDto = userClient.getAgenceById(agenceId);
+        PointVenteDto pointVenteDto = userClient.getPointVenteClient(pointVenteId);
+        InfoAdministrative infoAdministrative = new InfoAdministrative();
+        infoAdministrative.setUser(user);
+        infoAdministrative.setAgenceDto(agenceDto);
+        infoAdministrative.setDelegationDto(delegationDto);
+        infoAdministrative.setPointVenteDto(pointVenteDto);
+        return ok(getResponse(request, Map.of("infoAdministrative",infoAdministrative), "Information sur localisation", OK));
+    }
+
+
 
 
     @GetMapping("/seachCreditos/{codCliente}")
@@ -130,6 +154,87 @@ public class DemandeCreditResource {
                                                  @PathVariable(name = "codCliente") String codCliente,
                                                  HttpServletRequest request) {
         return ok(getResponse(request, Map.of("histoCredits", ebankingClient.obtenerCreditosYPlanPagosPorCliente(codCliente)), "Historoque Credits Client", OK));
+    }
+
+
+    @PostMapping("/addMotif/{demandeCreditId}")
+    public ResponseEntity<Response> addMotif(@NotNull Authentication authentication,
+                                             @PathVariable(name = "demandeCreditId") Long demandeCreditId,
+                                             @RequestBody @Valid MotifAnalyse motifAnalyse,
+                                             HttpServletRequest request) {
+
+        // Set the required fields from path variable and authentication
+        motifAnalyse.setDemandeCreditId(demandeCreditId);
+        motifAnalyse.setUserId(userClient.getUserByUuid(authentication.getName()).getUserId());
+
+        // Save the motif analyse
+        MotifAnalyse savedMotifAnalyse = demandeCreditService.addMotifAnalyse(motifAnalyse);
+
+        return ResponseEntity.status(CREATED)
+                .body(getResponse(request, Map.of("motifAnalyse", savedMotifAnalyse),
+                        "Motif added Successfully", CREATED));
+    }
+
+
+    @PutMapping("/analyseComplet/update")
+    public ResponseEntity<Response> mettreAJourDemande(
+            @NotNull Authentication authentication,
+            @Valid @RequestBody DemandeUpdateRequest request,
+            HttpServletRequest httpRequest) {
+
+        log.info("Tentative de mise à jour de la demande de crédit ID: {} par l'utilisateur: {}",
+                request.getDemandeCreditId(), authentication.getName());
+
+        // Sérialiser les cautions en JSON
+        String cautionsJson = "";
+        try {
+            if (request.getCautions() != null && !request.getCautions().isEmpty()) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                cautionsJson = objectMapper.writeValueAsString(request.getCautions());
+            }
+        } catch (Exception e) {
+            log.error("Erreur lors de la sérialisation des cautions: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(getResponse(httpRequest,
+                            Map.of("success", false,
+                                    "demandeCreditId", request.getDemandeCreditId()),
+                            "Erreur lors du traitement des cautions",
+                            HttpStatus.BAD_REQUEST));
+        }
+
+        // Appeler la méthode avec les deux paramètres
+        Boolean success = demandeCreditService.mettreAJourDemande(request, cautionsJson);
+
+        if (success) {
+            return ok(getResponse(httpRequest,
+                    Map.of("success", true,
+                            "demandeCreditId", request.getDemandeCreditId(),
+                            "user", userClient.getUserByUuid(authentication.getName())),
+                    "Demande de crédit mise à jour avec succès",
+                    OK));
+        } else {
+            return ResponseEntity.badRequest()
+                    .body(getResponse(httpRequest,
+                            Map.of("success", false,
+                                    "demandeCreditId", request.getDemandeCreditId()),
+                            "Échec de la mise à jour de la demande de crédit",
+                            HttpStatus.BAD_REQUEST));
+        }
+    }
+
+    @GetMapping("/analyseComplete/{demandeCreditId}")
+    public ResponseEntity<Response> obtenirAnalyseComplete(
+            @NotNull Authentication authentication,
+            @PathVariable(name = "demandeCreditId") Integer demandeCreditId,
+            HttpServletRequest request) {
+
+        Map<String, Object> analyseComplete = demandeCreditService.obtenirAnalyseComplete(demandeCreditId);
+
+        return ok(getResponse(request,
+                Map.of("analyseComplete", analyseComplete,
+                        "user", userClient.getUserByUuid(authentication.getName())),
+                "Resume Retrieved Successfully",
+                OK));
     }
 
     private URI getUri() {

@@ -68,7 +68,7 @@ export class ViewInstanceCreditIndComponent {
         products?: ProductInd[];
         garantieCaution?: Garantiepersonnecaution[];
         noteProfile?: NoteProfile;
-        noteAnalyse?: NoteProfile;
+        noteAnalyse?: NoteAnalyse;
         noteGarantie?: NoteGarantie;
         loading: boolean;
         submittingProfile: boolean;
@@ -353,14 +353,14 @@ export class ViewInstanceCreditIndComponent {
     calculateProductTotal(): number {
         if (!this.state().products?.length) return 0;
         return this.state().products!.reduce((total, product) => {
-            return total + (product.prixUnit || 0) * (product.qte || 0);
+            return total + (product.prix_unit! || 0) * (product.qte || 0);
         }, 0);
     }
 
     calculateChargeTotal(): number {
         if (!this.state().charges?.length) return 0;
         return this.state().charges!.reduce((total, charge) => {
-            return total + (charge.prixUnit || 0) * (charge.qte || 0);
+            return total + (charge.prix_unit || 0) * (charge.qte || 0);
         }, 0);
     }
 

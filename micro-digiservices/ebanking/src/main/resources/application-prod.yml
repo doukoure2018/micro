@@ -1,0 +1,58 @@
+spring:
+  application:
+    name: EBANKING
+  datasource:
+    url: jdbc:sqlserver://10.9.0.7;databaseName=BDCRG_31_05_2025;trustServerCertificate=true;encrypt=true
+    username: sa
+    password: 1234567
+    driverClassName: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    initialize: true
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.SQLServerDialect
+    hibernate:
+      ddl-auto: none
+  cloud:
+    config:
+      enabled: false
+
+
+application:
+  title: DIGICRG-MICROSERVICE
+  version: v02
+
+server:
+  port: 8081
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: http://admin:admin2711@discoveryserver:5002/eureka/
+
+jwks:
+  uri: http://authorizationserver:8080/oauth2/jwks
+
+
+# Add this logging configuration
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: DEBUG
+        type:
+          descriptor:
+            sql:
+              BasicBinder: TRACE
+      springframework:
+        jdbc:
+          core: DEBUG
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 30000
+        readTimeout: 120000

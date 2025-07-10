@@ -2,7 +2,7 @@ spring:
   application:
     name: EBANKING
   datasource:
-    url: jdbc:sqlserver://postgresdb:1433;databaseName=BDCRG;trustServerCertificate=true;encrypt=true
+    url: jdbc:sqlserver://localhost:1433;databaseName=BDCRG;trustServerCertificate=true;encrypt=true
     username: sa
     password: doukoure93
     driverClassName: com.microsoft.sqlserver.jdbc.SQLServerDriver
@@ -17,7 +17,6 @@ spring:
     config:
       enabled: false
 
-
 application:
   title: DIGICRG-MICROSERVICE
   version: v02
@@ -30,7 +29,27 @@ eureka:
     prefer-ip-address: true
   client:
     service-url:
+      # Use discovery server service name
       defaultZone: http://admin:admin2711@discoveryserver:5002/eureka/
 
 jwks:
+  # Use authorization server service name
   uri: http://authorizationserver:8080/oauth2/jwks
+
+# Reduced logging for Docker environment
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: INFO
+      springframework:
+        jdbc:
+          core: INFO
+    com.netflix.discovery: INFO
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 30000
+        readTimeout: 120000

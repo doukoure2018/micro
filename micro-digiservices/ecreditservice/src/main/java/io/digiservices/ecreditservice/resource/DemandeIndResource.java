@@ -8,7 +8,9 @@ import io.digiservices.clients.domain.CreditosDto;
 import io.digiservices.clients.domain.User;
 import io.digiservices.ecreditservice.domain.Response;
 import io.digiservices.ecreditservice.dto.*;
+import io.digiservices.ecreditservice.exception.ApiException;
 import io.digiservices.ecreditservice.service.BilanEntrepriseService;
+import io.digiservices.ecreditservice.service.DemandeCreditService;
 import io.digiservices.ecreditservice.service.DemandeIndService;
 import io.digiservices.ecreditservice.service.SelectionService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -40,6 +43,7 @@ public class DemandeIndResource {
     private final SelectionService selectionService;
     private final UserClient userClient;
     private final EbankingClient ebankingClient;
+    private final DemandeCreditService demandeCreditService;
 
     @PostMapping("/addDemandeInd")
     public ResponseEntity<Response> addDemandeInd(@RequestBody DemandeIndividuel demandeIndividuel, HttpServletRequest request) {
@@ -47,18 +51,48 @@ public class DemandeIndResource {
         return created(getUri()).body(getResponse(request, emptyMap(), "DemandeInd Created Successfully", CREATED));
     }
 
-    @GetMapping("/attente/{pointventeId}")
+
+    @GetMapping("/attente")
     public ResponseEntity<Response> listDemandAttente(@NotNull Authentication authentication,
-                                                      @PathVariable(name = "pointventeId") Long pointventeId,
                                                       HttpServletRequest request) {
 
-        return created(getUri()).body(getResponse(request,Map.of(
-                "demandeAttentes",demandeIndService.getListDemandeAttente(pointventeId),
-                "nombreDemandeInd",demandeIndService.countNombreCreditAttente(pointventeId),
-                "creditDtos",demandeIndService.getListCreditByPos(pointventeId),
-                "pointVente",userClient.getPointVenteClient(pointventeId)),
+        User user = userClient.getUserByUuid(authentication.getName());
+
+        if (user == null) {
+            throw new ApiException("User not found");
+        }
+
+        Map<String, Object> responseData = new HashMap<>();
+
+        // Role-based logic
+        if ("DA".equals(user.getRole())) {
+            // DA gets all demands from their agency
+            responseData.put("demandeAttentes",
+                    demandeIndService.getListDemandeAttente(null, user.getAgenceId()));
+            responseData.put("creditDtos", Collections.emptyList());
+            responseData.put("pointVente", null);
+        } else {
+            // Regular user gets demands from their point de vente
+            responseData.put("demandeAttentes",
+                    demandeIndService.getListDemandeAttente(user.getPointventeId(), user.getAgenceId()));
+            responseData.put("nombreDemandeInd",
+                    demandeIndService.countNombreCreditAttente(user.getPointventeId()));
+            responseData.put("creditDtos",
+                    demandeIndService.getListCreditByPos(user.getPointventeId()));
+            responseData.put("pointVente",
+                    user.getPointventeId() != null ?
+                            userClient.getPointVenteClient(user.getPointventeId()) : null);
+        }
+
+        // Common for both roles
+        responseData.put("agence",
+                user.getAgenceId() != null ?
+                        userClient.getAgenceById(user.getAgenceId()) : null);
+
+        return created(getUri()).body(getResponse(request, responseData,
                 "Liste des demandes en attente", OK));
     }
+
 
     @GetMapping("/detail/{demandeIndividuel_id}")
     public ResponseEntity<Response> getDetailDemandeInd(@NotNull Authentication authentication,
@@ -80,11 +114,10 @@ public class DemandeIndResource {
                 ), message, OK));
     }
 
-    @GetMapping("/selection/{pointventeId}")
+    @GetMapping("/selection")
     public ResponseEntity<Response> listeDemandeCreditSelection(@NotNull Authentication authentication,
-                                                      @PathVariable(name = "pointventeId") Long pointventeId,
                                                       HttpServletRequest request) {
-        return created(getUri()).body(getResponse(request,Map.of("demandeAttentes",demandeIndService.getListDemandeCreditByDate(pointventeId)), "Liste des demandes en attente", OK));
+        return created(getUri()).body(getResponse(request,Map.of("demandeAttentes",demandeIndService.getListDemandeCreditByDate(userClient.getUserByUuid(authentication.getName()).getPointventeId())), "Liste des demandes en attente", OK));
     }
 
     @PatchMapping("/update/{statut}/{codUsuarios}/{demandeindividuel_id}")
@@ -104,33 +137,32 @@ public class DemandeIndResource {
         return created(getUri()).body(getResponse(request,Map.of("existMembre",demandeIndService.existMembre(numeroMembre)), "Numero Membre existe", OK));
     }
 
-    @GetMapping("/lastDemandeInd/{numeroMembre}/{userId}")
+    @GetMapping("/lastDemandeInd/{numeroMembre}")
     public ResponseEntity<Response> lastDemandeByNumeroMembre(@NotNull Authentication authentication,
                                                               @PathVariable(name = "numeroMembre") String numeroMembre,
-                                                              @PathVariable(name = "userId") Long userId,
                                                       HttpServletRequest request)
     {
-        return created(getUri()).body(getResponse(request,Map.of("demandeIndividuel",demandeIndService.getLastDemandeInd(numeroMembre),"user",userClient.getUserById(userId)), "Information detaillée de la demande de Crédit", OK));
+        return created(getUri()).body(getResponse(request,Map.of("demandeIndividuel",demandeIndService.getLastDemandeInd(numeroMembre),"user",userClient.getUserByUuid(authentication.getName())), "Information detaillée de la demande de Crédit", OK));
     }
 
 
-    @PostMapping("/startCredit/{numeroMembre}/{userId}")
+    @PostMapping("/startCredit/{numeroMembre}")
     public ResponseEntity<Response> startCredit(@NotNull Authentication authentication,
-                                                  @PathVariable(name = "userId") Long userId,
-                                                  @PathVariable(name = "numeroMembre") String numeroMembre,
-                                                  HttpServletRequest request) {
-        demandeIndService.addNewCredit(numeroMembre,userId);
+                                                  @PathVariable(name = "numeroMembre") String numeroMembre,HttpServletRequest request)
+    {
+        demandeIndService.addNewCredit(numeroMembre,userClient.getUserByUuid(authentication.getName()).getUserId());
         return created(getUri()).body(getResponse(request, emptyMap(), "Nouvelle mise en place de credit", CREATED));
     }
 
 
-    @GetMapping("/listCredit/{agenceId}")
+    @GetMapping("/listCredit")
     public ResponseEntity<Response> ListCreditAttente(@NotNull Authentication authentication,
-                                                      @PathVariable(name = "agenceId") Long agenceId,
                                                       HttpServletRequest request) {
+
         return created(getUri()).body(getResponse(request,Map.of(
-                         "creditDtos",demandeIndService.getListCreditAttente(agenceId),
-                        "agence",userClient.getAgenceById(agenceId)), "Liste des Credits Pour la Mise en Place", OK));
+                         "demandeAnalyseCredits",demandeIndService.listDemandeAnalyseCreditByUserId(),
+                         "creditDtos",demandeIndService.getListCreditAttente(userClient.getUserByUuid(authentication.getName()).getAgenceId()),
+                        "agence",userClient.getAgenceById(userClient.getUserByUuid(authentication.getName()).getAgenceId())), "Liste des Credits Pour la Mise en Place", OK));
     }
 
     @GetMapping("/viewCredit/{referenceCredit}/{numeroMembre}/{userId}")
@@ -198,6 +230,14 @@ public class DemandeIndResource {
                 demandeIndService.getLasteGarantie(referenceCredit)), "Note Garantie Successful", CREATED));
     }
 
+    /**
+     *  Cette action est execute par le DA
+     * @param authentication
+     * @param threshold
+     * @param appreciation
+     * @param request
+     * @return
+     */
     @PostMapping("/calculate/{threshold}")
     public ResponseEntity<Response> calculate_notes_and_update_credit(@NotNull Authentication authentication,
                                                                       @PathVariable(name = "threshold")BigDecimal threshold,
@@ -208,14 +248,14 @@ public class DemandeIndResource {
     }
 
 
-    @GetMapping("/viewDetailCredit/{referenceCredit}/{numeroMembre}/{userId}")
+    @GetMapping("/viewDetailCredit/{referenceCredit}/{numeroMembre}")
     public ResponseEntity<Response> viewInformationCreditAfterNotation(@NotNull Authentication authentication,
                                                                        @PathVariable(name = "referenceCredit") String referenceCredit,
                                                                        @PathVariable(name = "numeroMembre") String numeroMembre,
-                                                                       @PathVariable(name = "userId") Long userId,
+
                                                                        HttpServletRequest request)
     {
-        User user =userClient.getUserById(userId);
+        User user =userClient.getUserById(userClient.getUserByUuid(authentication.getName()).getUserId());
         return created(getUri()).body(getResponse(request, Map.ofEntries(
                         Map.entry("instanceCreditInd", demandeIndService.getInstanceCredit(referenceCredit)),
                         Map.entry("membre", ebankingClient.getClientes(numeroMembre)),

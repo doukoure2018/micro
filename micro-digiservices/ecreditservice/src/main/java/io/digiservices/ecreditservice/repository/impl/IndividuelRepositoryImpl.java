@@ -1,9 +1,6 @@
 package io.digiservices.ecreditservice.repository.impl;
 
-import io.digiservices.ecreditservice.dto.CreditDto;
-import io.digiservices.ecreditservice.dto.CreditProcessParams;
-import io.digiservices.ecreditservice.dto.DemandeIndividuel;
-import io.digiservices.ecreditservice.dto.IndividuelDto;
+import io.digiservices.ecreditservice.dto.*;
 import io.digiservices.ecreditservice.exception.ApiException;
 import io.digiservices.ecreditservice.repository.IndividuelRepository;
 import lombok.RequiredArgsConstructor;
@@ -238,5 +235,129 @@ public class IndividuelRepositoryImpl implements IndividuelRepository {
                 .addValue("adresse", individuelDto.getAdresse())
                 .addValue("expirationDate", individuelDto.getExpirationDate())
                 .addValue("userId", individuelDto.getUserId());
+    }
+
+
+    /**
+     * Récupère toutes les données d'un crédit par sa référence
+     */
+    @Override
+    public CreditDataResponse getCreditData(String referenceCredit) {
+        log.info("Retrieving credit data for reference: {}", referenceCredit);
+
+        if (referenceCredit == null || referenceCredit.isBlank()) {
+            log.error("Credit reference is required");
+            throw new ApiException("Credit reference cannot be null or empty");
+        }
+
+        try {
+            return jdbcClient.sql(GET_CREDIT_DATA_QUERY)
+                    .param("referenceCredit", referenceCredit)
+                    .query(CreditDataResponse.class)
+                    .optional()
+                    .orElseThrow(() -> new ApiException("No credit data found for reference: " + referenceCredit));
+
+        } catch (EmptyResultDataAccessException e) {
+            log.error("Credit data not found for reference: {}", referenceCredit);
+            throw new ApiException("Credit data not found for reference: " + referenceCredit);
+        } catch (Exception e) {
+            log.error("Error retrieving credit data for reference {}: {}", referenceCredit, e.getMessage(), e);
+            throw new ApiException("Error retrieving credit data: " + e.getMessage());
+        }
+    }
+
+
+
+    /**
+     * Met à jour les données d'un crédit existant
+     */
+    @Override
+    public boolean updateCredit(CreditProcessParams creditParams) {
+        log.info("Updating credit data for reference: {}", creditParams.getReferenceCredit());
+
+        // Validation des paramètres d'entrée
+        if (creditParams.getReferenceCredit() == null || creditParams.getReferenceCredit().isBlank()) {
+            log.error("Credit reference is required for update");
+            return false;
+        }
+
+        // Utilisation d'une transaction pour assurer l'atomicité
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        try {
+            return transactionTemplate.execute(status -> {
+                try {
+                    // Vérifier d'abord que le crédit existe
+                    CreditDataResponse existingCredit = getCreditData(creditParams.getReferenceCredit());
+                    if (existingCredit == null) {
+                        throw new ApiException("Credit not found for reference: " + creditParams.getReferenceCredit());
+                    }
+
+                    // Mettre à jour le crédit avec tous les paramètres
+                    Boolean result = jdbcClient.sql(UPDATE_CREDIT_DATA_QUERY)
+                            // Basic credit parameters
+                            .param("referenceCredit", creditParams.getReferenceCredit())
+                            .param("moyenPerson", creditParams.getMoyenPerson())
+                            .param("bien", creditParams.getBien())
+                            .param("capital", creditParams.getCapital())
+                            .param("creance", creditParams.getCreance())
+                            .param("dette", creditParams.getDette())
+                            .param("statutActivite", creditParams.getStatutActivite())
+                            .param("experience", creditParams.getExperience())
+                            .param("lieuxAct", creditParams.getLieuxAct())
+                            .param("personEmp", creditParams.getPersonEmp())
+                            .param("lien", creditParams.getLien())
+                            .param("nombre", creditParams.getNombre())
+                            .param("cumulCredit", creditParams.getCumulCredit())
+                            .param("nbreCredit", creditParams.getNbreCredit())
+                            .param("frequence", creditParams.getFrequence())
+
+                            // Guarantee parameters
+                            .param("garantieLibele", creditParams.getGarantieLibele())
+                            .param("garantieMontant", creditParams.getGarantieMontant())
+                            .param("itAss", creditParams.getItAss())
+                            .param("itPc", creditParams.getItPc())
+
+                            // Product parameters
+                            .param("produitsLibele", creditParams.getProduitsLibele())
+                            .param("produitsPrixUnit", creditParams.getProduitsPrixUnit())
+                            .param("produitsQte", creditParams.getProduitsQte())
+                            .param("produitsObservation", creditParams.getProduitsObservation())
+
+                            // Charges parameters
+                            .param("chargesLibele", creditParams.getChargesLibele())
+                            .param("chargesPrixUnit", creditParams.getChargesPrixUnit())
+                            .param("chargesQte", creditParams.getChargesQte())
+
+                            // Guarantor parameters
+                            .param("cautionsNom", creditParams.getCautionsNom())
+                            .param("cautionsPrenom", creditParams.getCautionsPrenom())
+                            .param("cautionsTelephone", creditParams.getCautionsTelephone())
+                            .param("cautionsActivite", creditParams.getCautionsActivite())
+                            .param("cautionsAge", creditParams.getCautionsAge())
+                            .param("cautionsProfession", creditParams.getCautionsProfession())
+                            .query(Boolean.class)
+                            .single();
+
+                    if (Boolean.TRUE.equals(result)) {
+                        log.info("Successfully updated credit for reference: {}", creditParams.getReferenceCredit());
+                        return true;
+                    } else {
+                        log.warn("Credit update returned false for reference: {}", creditParams.getReferenceCredit());
+                        return false;
+                    }
+                } catch (Exception e) {
+                    // Rollback transaction on exception
+                    status.setRollbackOnly();
+                    throw e;
+                }
+            });
+        } catch (ApiException e) {
+            // Log and rethrow application exceptions
+            log.error("API exception during credit update: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error updating credit: {}", e.getMessage(), e);
+            return false;
+        }
     }
 }

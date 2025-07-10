@@ -41,13 +41,29 @@ eureka:
     service-url:
       defaultZone: http://admin:admin2711@discoveryserver:5002/eureka/
 
+
+# Application URLs configuration
 ui:
   app:
-    url: http://localhost:4200
+    url: ${UI_APP_URL:http://localhost:4200}
+
+backend:
+  app:
+    url: ${BACKEND_APP_URL:http://localhost:8080}
+
+# OAuth2 configuration
+oauth2:
+  authorization:
+    base-url: ${BACKEND_APP_URL:http://localhost:8080}
+    client-id: client
+    scope: openid
+    response-type: code
+    code-challenge-method: S256
+    redirect-uri: ${UI_APP_URL:http://localhost:4200}
 
 key:
-  private: "private.key"
-  public: "public.key"
+  private: "/app/keys/private.key"
+  public: "/app/keys/public.key"
 
 server:
   port: 8080

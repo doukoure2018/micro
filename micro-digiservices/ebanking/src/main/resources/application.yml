@@ -5,9 +5,9 @@ spring:
 #    url: jdbc:sqlserver://localhost:1433;databaseName=BDCRG;trustServerCertificate=true;encrypt=true
 #    username: sa
 #    password: doukoure93
-    url: jdbc:sqlserver://10.110.15.2;databaseName=BDCRG_TEST;trustServerCertificate=true;encrypt=true
-    username: SA
-    password: 1234567
+    url: jdbc:sqlserver://localhost;databaseName=BDCRG;trustServerCertificate=true;encrypt=true
+    username: sa
+    password: doukoure93
     driverClassName: com.microsoft.sqlserver.jdbc.SQLServerDriver
     initialize: true
   jpa:

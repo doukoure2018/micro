@@ -14,6 +14,7 @@ import { MessageModule } from 'primeng/message';
 import { ToastModule } from 'primeng/toast';
 import { EMPTY, Observer, switchMap } from 'rxjs';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { environment } from 'src/environments/environment'; // Add this import
 
 @Component({
     selector: 'app-verifyaccount',
@@ -27,10 +28,17 @@ export class VerifyaccountComponent {
         message: undefined,
         error: undefined
     });
+
+    // Add these properties (same as TopBar)
+    private authServer = environment.authServer;
+    private redirectUri = environment.redirectUri;
+    private codeChallenge = 'HK02sitqCRpUlfLEX2xl4JGqaVQhNDsfTWH-oQzJHGw';
+
     private destroyRef = inject(DestroyRef);
     private userService = inject(UserService);
     private messageService = inject(MessageService);
     private activatedRouter = inject(ActivatedRoute);
+
     ngOnInit(): void {
         console.log('Verification in action');
         this.activatedRouter.queryParamMap
@@ -51,6 +59,11 @@ export class VerifyaccountComponent {
     }
 
     closeMessage = () => this.state.set({ loading: false, message: undefined, error: undefined });
+
+    // Add this method (same as TopBar)
+    getLoginUrl(): string {
+        return `${this.authServer}/oauth2/authorize?response_type=code&client_id=client&scope=openid&redirect_uri=${this.redirectUri}&code_challenge_method=S256&code_challenge=${this.codeChallenge}`;
+    }
 
     /**
      *  this will execute when the method verifyAccountToken$(token) has been executed

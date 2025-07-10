@@ -1,0 +1,685 @@
+<p-toast></p-toast>
+<p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
+
+<div class="surface-0 p-4">
+    <div *ngIf="state().loading" class="flex justify-content-center align-items-center my-5">
+        <p-progressSpinner strokeWidth="4" [style]="{width: '50px', height: '50px'}"></p-progressSpinner>
+        <span class="ml-3 text-600">Chargement des données du crédit...</span>
+    </div>
+
+    <div *ngIf="!state().loading">
+        <div class="text-3xl font-medium text-900 mb-4">
+            <i class="pi pi-pencil mr-2 text-primary"></i>
+            {{ state().message || 'Mise à jour du crédit' }}
+            <span *ngIf="state().referenceCredit" class="text-lg text-500 block mt-1">
+                Référence: {{ state().referenceCredit }}
+            </span>
+        </div>
+
+        <div *ngIf="state().error" class="p-message p-message-error p-3 mb-4">
+            {{ state().error }}
+        </div>
+
+        <p-tabView [(activeIndex)]="state().activeIndex">
+            <!-- Tab 1: Informations générales -->
+            <p-tabPanel header="Informations générales">
+                <form [formGroup]="creditForm" class="grid">
+                    <!-- Champs déplacés depuis Informations additionnelles -->
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="cumulCredit" class="block text-900 font-medium mb-2">Cumul Crédit</label>
+                        <p-inputNumber id="cumulCredit" formControlName="cumulCredit" [minFractionDigits]="2"
+                            [maxFractionDigits]="2" class="w-full" readonly></p-inputNumber>
+                    </div>
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="nbreCredit" class="block text-900 font-medium mb-2">Nombre de Crédit</label>
+                        <p-inputNumber id="nbreCredit" formControlName="nbreCredit" [showButtons]="false" [min]="0"
+                            class="w-full" readonly></p-inputNumber>
+                    </div>
+
+                    <!-- Champs existants -->
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="numeroMembre" class="block text-900 font-medium mb-2">Numéro Membre*</label>
+                        <input id="numeroMembre" type="text" pInputText formControlName="numeroMembre" class="w-full"
+                            readonly>
+                    </div>
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="referenceCredit" class="block text-900 font-medium mb-2">Référence du
+                            Crédit*</label>
+                        <input id="referenceCredit" type="text" pInputText formControlName="referenceCredit"
+                            class="w-full" readonly>
+                    </div>
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="moyenPerson" class="block text-900 font-medium mb-2">Moyen de Deplacement
+                            Personnel*</label>
+                        <input id="moyenPerson" type="text" pInputText formControlName="moyenPerson" class="w-full">
+                        <small *ngIf="creditForm.get('moyenPerson')?.invalid && creditForm.get('moyenPerson')?.touched"
+                            class="p-error">Ce champ est requis</small>
+                    </div>
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="bien" class="block text-900 font-medium mb-2">Bien*</label>
+                        <input id="bien" type="text" pInputText formControlName="bien" class="w-full">
+                        <small *ngIf="creditForm.get('bien')?.invalid && creditForm.get('bien')?.touched"
+                            class="p-error">Ce champ est requis</small>
+                    </div>
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="capital" class="block text-900 font-medium mb-2">Capital*</label>
+                        <p-inputNumber id="capital" formControlName="capital" [minFractionDigits]="2"
+                            [maxFractionDigits]="2" class="w-full"></p-inputNumber>
+                        <small *ngIf="creditForm.get('capital')?.invalid && creditForm.get('capital')?.touched"
+                            class="p-error">Ce champ est requis et doit être supérieur à 0</small>
+                    </div>
+                    <!-- Champs optionnels (sans * et sans validation obligatoire) -->
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="creance" class="block text-900 font-medium mb-2">Créance</label>
+                        <p-inputNumber id="creance" formControlName="creance" [minFractionDigits]="2"
+                            [maxFractionDigits]="2" class="w-full"></p-inputNumber>
+                        <small *ngIf="creditForm.get('creance')?.invalid && creditForm.get('creance')?.touched"
+                            class="p-error">La valeur doit être supérieure ou égale à 0</small>
+                    </div>
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="dette" class="block text-900 font-medium mb-2">Dette</label>
+                        <p-inputNumber id="dette" formControlName="dette" [minFractionDigits]="2"
+                            [maxFractionDigits]="2" class="w-full"></p-inputNumber>
+                        <small *ngIf="creditForm.get('dette')?.invalid && creditForm.get('dette')?.touched"
+                            class="p-error">La valeur doit être supérieure ou égale à 0</small>
+                    </div>
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="statutActivite" class="block text-900 font-medium mb-2">Statut d'Activité*</label>
+                        <input id="statutActivite" type="text" pInputText formControlName="statutActivite"
+                            class="w-full">
+                        <small
+                            *ngIf="creditForm.get('statutActivite')?.invalid && creditForm.get('statutActivite')?.touched"
+                            class="p-error">Ce champ est requis</small>
+                    </div>
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="experience" class="block text-900 font-medium mb-2">Expérience*</label>
+                        <input id="experience" type="text" pInputText formControlName="experience" class="w-full">
+                        <small *ngIf="creditForm.get('experience')?.invalid && creditForm.get('experience')?.touched"
+                            class="p-error">Ce champ est requis</small>
+                    </div>
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="lieuxAct" class="block text-900 font-medium mb-2">Lieu d'Activité*</label>
+                        <input id="lieuxAct" type="text" pInputText formControlName="lieuxAct" class="w-full">
+                        <small *ngIf="creditForm.get('lieuxAct')?.invalid && creditForm.get('lieuxAct')?.touched"
+                            class="p-error">Ce champ est requis</small>
+                    </div>
+                    <div class="col-12 mb-4 text-right">
+                        <p-button label="Suivant" icon="pi pi-arrow-right" iconPos="right"
+                            (click)="nextStep()"></p-button>
+                    </div>
+                </form>
+            </p-tabPanel>
+
+            <!-- Tab 2: Informations additionnelles -->
+            <p-tabPanel header="Informations additionnelles">
+                <form [formGroup]="creditForm" class="grid">
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="personEmp" class="block text-900 font-medium mb-2">Personne Employée</label>
+                        <input id="personEmp" type="text" pInputText formControlName="personEmp" class="w-full">
+                    </div>
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="lien" class="block text-900 font-medium mb-2">Lien</label>
+                        <input id="lien" type="text" pInputText formControlName="lien" class="w-full">
+                    </div>
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="nombre" class="block text-900 font-medium mb-2">Nombre</label>
+                        <input id="nombre" type="text" pInputText formControlName="nombre" class="w-full">
+                    </div>
+                    <div class="col-12 md:col-6 mb-4">
+                        <label for="frequence" class="block text-900 font-medium mb-2">Fréquence*</label>
+                        <p-inputNumber id="frequence" formControlName="frequence" [showButtons]="true" [min]="0"
+                            class="w-full"></p-inputNumber>
+                        <small *ngIf="creditForm.get('frequence')?.invalid && creditForm.get('frequence')?.touched"
+                            class="p-error">Ce champ est requis et doit être supérieur à 0</small>
+                    </div>
+                    <div class="col-12 flex gap-3 justify-content-center mt-4">
+                        <p-button label="Précédent" icon="pi pi-arrow-left" (click)="prevStep()"></p-button>
+                        <p-button label="Suivant" icon="pi pi-arrow-right" iconPos="right"
+                            (click)="nextStep()"></p-button>
+                    </div>
+                </form>
+            </p-tabPanel>
+
+            <!-- Tab 3: Produits -->
+            <p-tabPanel header="Produits">
+                <form [formGroup]="creditForm">
+                    <div formArrayName="produits">
+                        <p-card *ngFor="let produit of produits.controls; let i = index" class="mb-4">
+                            <div [formGroupName]="i" class="grid">
+                                <div class="col-12 md:col-6 mb-3">
+                                    <label [for]="'produit-libele-' + i"
+                                        class="block text-900 font-medium mb-2">Libellé*</label>
+                                    <input [id]="'produit-libele-' + i" type="text" pInputText formControlName="libele"
+                                        class="w-full">
+                                </div>
+                                <div class="col-12 md:col-6 mb-3">
+                                    <label [for]="'produit-prix-' + i" class="block text-900 font-medium mb-2">Prix
+                                        unitaire*</label>
+                                    <p-inputNumber [id]="'produit-prix-' + i" formControlName="prixUnit"
+                                        [minFractionDigits]="2" [maxFractionDigits]="2" class="w-full"></p-inputNumber>
+                                </div>
+                                <div class="col-12 md:col-6 mb-3">
+                                    <label [for]="'produit-qte-' + i"
+                                        class="block text-900 font-medium mb-2">Quantité*</label>
+                                    <p-inputNumber [id]="'produit-qte-' + i" formControlName="qte" [showButtons]="true"
+                                        [min]="1" class="w-full"></p-inputNumber>
+                                </div>
+                                <div class="col-12 md:col-6 mb-3">
+                                    <label [for]="'produit-obs-' + i"
+                                        class="block text-900 font-medium mb-2">Observation</label>
+                                    <input [id]="'produit-obs-' + i" type="text" pInputText
+                                        formControlName="observation" class="w-full">
+                                </div>
+                                <div class="col-12 text-right">
+                                    <p-button icon="pi pi-trash" (click)="removeProduit(i)" *ngIf="produits.length > 1"
+                                        severity="danger"></p-button>
+                                </div>
+                            </div>
+                        </p-card>
+
+                        <div class="mb-4 text-right">
+                            <p-button label="Ajouter un produit" icon="pi pi-plus" (click)="addProduit()"></p-button>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 justify-content-center mt-4">
+                        <p-button label="Précédent" icon="pi pi-arrow-left" (click)="prevStep()"></p-button>
+                        <p-button label="Suivant" icon="pi pi-arrow-right" iconPos="right"
+                            (click)="nextStep()"></p-button>
+                    </div>
+                </form>
+            </p-tabPanel>
+
+            <!-- Tab 4: Charges -->
+            <p-tabPanel header="Charges">
+                <form [formGroup]="creditForm">
+                    <div formArrayName="charges">
+                        <p-card *ngFor="let charge of charges.controls; let i = index" class="mb-4">
+                            <div [formGroupName]="i" class="grid">
+                                <div class="col-12 md:col-4 mb-3">
+                                    <label [for]="'charge-libele-' + i"
+                                        class="block text-900 font-medium mb-2">Libellé*</label>
+                                    <input [id]="'charge-libele-' + i" type="text" pInputText formControlName="libele"
+                                        class="w-full">
+                                </div>
+                                <div class="col-12 md:col-4 mb-3">
+                                    <label [for]="'charge-prix-' + i" class="block text-900 font-medium mb-2">Prix
+                                        unitaire*</label>
+                                    <p-inputNumber [id]="'charge-prix-' + i" formControlName="prixUnit"
+                                        [minFractionDigits]="2" [maxFractionDigits]="2" class="w-full"></p-inputNumber>
+                                </div>
+                                <div class="col-12 md:col-4 mb-3">
+                                    <label [for]="'charge-qte-' + i"
+                                        class="block text-900 font-medium mb-2">Quantité*</label>
+                                    <p-inputNumber [id]="'charge-qte-' + i" formControlName="qte" [showButtons]="true"
+                                        [min]="1" class="w-full"></p-inputNumber>
+                                </div>
+                                <div class="col-12 text-right">
+                                    <p-button icon="pi pi-trash" (click)="removeCharge(i)" *ngIf="charges.length > 1"
+                                        severity="danger"></p-button>
+                                </div>
+                            </div>
+                        </p-card>
+
+                        <div class="mb-4 text-right">
+                            <p-button label="Ajouter une charge" icon="pi pi-plus" (click)="addCharge()"></p-button>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 justify-content-center mt-4">
+                        <p-button label="Précédent" icon="pi pi-arrow-left" (click)="prevStep()"></p-button>
+                        <p-button label="Suivant" icon="pi pi-arrow-right" iconPos="right"
+                            (click)="nextStep()"></p-button>
+                    </div>
+                </form>
+            </p-tabPanel>
+
+            <!-- Tab 5: Garantie -->
+            <p-tabPanel header="Garantie">
+                <form [formGroup]="creditForm">
+                    <!-- Garantie -->
+                    <div class="col-12">
+                        <h4 class="text-lg font-medium mb-3">Informations sur la Garantie</h4>
+                    </div>
+                    <div class="grid">
+                        <div class="col-12 md:col-6 mb-4">
+                            <label for="garantieLibele" class="block text-900 font-medium mb-2">Libellé de
+                                Garantie*</label>
+                            <input id="garantieLibele" type="text" pInputText formControlName="garantieLibele"
+                                class="w-full">
+                            <small
+                                *ngIf="creditForm.get('garantieLibele')?.invalid && creditForm.get('garantieLibele')?.touched"
+                                class="p-error">Ce champ est requis</small>
+                        </div>
+                        <div class="col-12 md:col-6 mb-4">
+                            <label for="garantieMontant" class="block text-900 font-medium mb-2">Montant de
+                                Garantie*</label>
+                            <p-inputNumber id="garantieMontant" formControlName="garantieMontant"
+                                [minFractionDigits]="2" [maxFractionDigits]="2" class="w-full"></p-inputNumber>
+                            <small
+                                *ngIf="creditForm.get('garantieMontant')?.invalid && creditForm.get('garantieMontant')?.touched"
+                                class="p-error">Ce champ est requis et doit être supérieur à 0</small>
+                        </div>
+                    </div>
+
+                    <!-- Localisation -->
+                    <div class="col-12">
+                        <h4 class="text-lg font-medium mb-3 mt-3">Localisation</h4>
+                    </div>
+                    <div class="grid">
+                        <div class="col-12 md:col-6 mb-4">
+                            <label for="itAss" class="block text-900 font-medium mb-2">IT Ass</label>
+                            <input id="itAss" type="text" pInputText formControlName="itAss" class="w-full">
+                        </div>
+                        <div class="col-12 md:col-6 mb-4">
+                            <label for="itPc" class="block text-900 font-medium mb-2">IT PC</label>
+                            <input id="itPc" type="text" pInputText formControlName="itPc" class="w-full">
+                        </div>
+                    </div>
+
+                    <!-- Cautions -->
+                    <div class="col-12">
+                        <h4 class="text-lg font-medium mb-3 mt-4">Personnes Caution</h4>
+                    </div>
+
+                    <div formArrayName="cautions">
+                        <p-card *ngFor="let caution of cautions.controls; let i = index" class="mb-4">
+                            <div [formGroupName]="i" class="grid">
+                                <div class="col-12 md:col-6 mb-3">
+                                    <label [for]="'caution-nom-' + i"
+                                        class="block text-900 font-medium mb-2">Nom*</label>
+                                    <input [id]="'caution-nom-' + i" type="text" pInputText formControlName="nom"
+                                        class="w-full">
+                                </div>
+                                <div class="col-12 md:col-6 mb-3">
+                                    <label [for]="'caution-prenom-' + i"
+                                        class="block text-900 font-medium mb-2">Prénom*</label>
+                                    <input [id]="'caution-prenom-' + i" type="text" pInputText formControlName="prenom"
+                                        class="w-full">
+                                </div>
+                                <div class="col-12 md:col-6 mb-3">
+                                    <label [for]="'caution-telephone-' + i"
+                                        class="block text-900 font-medium mb-2">Téléphone*</label>
+                                    <input [id]="'caution-telephone-' + i" type="text" pInputText
+                                        formControlName="telephone" class="w-full">
+                                </div>
+                                <div class="col-12 md:col-6 mb-3">
+                                    <label [for]="'caution-activite-' + i"
+                                        class="block text-900 font-medium mb-2">Activité*</label>
+                                    <input [id]="'caution-activite-' + i" type="text" pInputText
+                                        formControlName="activite" class="w-full">
+                                </div>
+                                <div class="col-12 md:col-6 mb-3">
+                                    <label [for]="'caution-age-' + i"
+                                        class="block text-900 font-medium mb-2">Âge*</label>
+                                    <p-inputNumber [id]="'caution-age-' + i" formControlName="age" [showButtons]="true"
+                                        [min]="18" class="w-full"></p-inputNumber>
+                                </div>
+                                <div class="col-12 md:col-6 mb-3">
+                                    <label [for]="'caution-profession-' + i"
+                                        class="block text-900 font-medium mb-2">Profession*</label>
+                                    <input [id]="'caution-profession-' + i" type="text" pInputText
+                                        formControlName="profession" class="w-full">
+                                </div>
+                                <div class="col-12 text-right">
+                                    <p-button icon="pi pi-trash" (click)="removeCaution(i)" *ngIf="cautions.length > 1"
+                                        severity="danger"></p-button>
+                                </div>
+                            </div>
+                        </p-card>
+
+                        <div class="mb-4 text-right">
+                            <p-button label="Ajouter une caution" icon="pi pi-plus" (click)="addCaution()"></p-button>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 justify-content-center mt-4">
+                        <p-button label="Précédent" icon="pi pi-arrow-left" (click)="prevStep()"></p-button>
+                        <p-button label="Suivant" icon="pi pi-arrow-right" iconPos="right"
+                            (click)="nextStep()"></p-button>
+                    </div>
+                </form>
+            </p-tabPanel>
+
+            <!-- Tab 6: Résumé et validation - Version Mise à jour -->
+            <p-tabPanel header="Résumé et validation">
+                <div class="surface-0">
+                    <!-- En-tête avec indicateur de progression -->
+                    <div class="border-bottom-1 surface-border p-4 mb-4">
+                        <div class="flex align-items-center justify-content-between">
+                            <div>
+                                <h2 class="text-2xl font-bold text-900 m-0 mb-2">📝 Résumé des Modifications</h2>
+                                <p class="text-600 m-0">Vérifiez toutes les informations avant mise à jour</p>
+                            </div>
+                            <div class="flex align-items-center gap-2">
+                                <i class="pi pi-check-circle text-orange-500 text-2xl"></i>
+                                <span class="text-orange-600 font-medium">Prêt pour mise à jour</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 1: Informations Principales -->
+                    <p-card class="mb-4">
+                        <ng-template pTemplate="header">
+                            <div class="flex align-items-center gap-2 p-3 bg-blue-50 border-round-top">
+                                <i class="pi pi-user text-blue-600"></i>
+                                <h3 class="text-lg font-semibold text-blue-900 m-0">Informations Principales</h3>
+                            </div>
+                        </ng-template>
+
+                        <div class="grid">
+                            <div class="col-12 md:col-6">
+                                <div class="bg-gray-50 border-round p-3 mb-3">
+                                    <div class="flex align-items-center justify-content-between mb-2">
+                                        <span class="text-500 text-sm font-medium">NUMÉRO MEMBRE</span>
+                                        <p-tag [value]="creditForm.get('numeroMembre')?.value" severity="info"></p-tag>
+                                    </div>
+                                    <span class="text-900 font-bold text-lg">{{ creditForm.get('numeroMembre')?.value
+                                        }}</span>
+                                </div>
+                            </div>
+
+                            <div class="col-12 md:col-6">
+                                <div class="bg-gray-50 border-round p-3 mb-3">
+                                    <div class="flex align-items-center justify-content-between mb-2">
+                                        <span class="text-500 text-sm font-medium">RÉFÉRENCE CRÉDIT</span>
+                                        <i class="pi pi-copy text-400 cursor-pointer"
+                                            pTooltip="Copier la référence"></i>
+                                    </div>
+                                    <span class="text-900 font-bold text-lg">{{ creditForm.get('referenceCredit')?.value
+                                        }}</span>
+                                </div>
+                            </div>
+
+                            <div class="col-12 md:col-4">
+                                <div class="text-center p-3 border-1 surface-border border-round">
+                                    <div class="text-blue-600 font-bold text-2xl mb-2">
+                                        {{ creditForm.get('cumulCredit')?.value | currency:'GNF':'symbol':'1.0-0' }}
+                                    </div>
+                                    <div class="text-500 text-sm">Cumul Crédit</div>
+                                </div>
+                            </div>
+
+                            <div class="col-12 md:col-4">
+                                <div class="text-center p-3 border-1 surface-border border-round">
+                                    <div class="text-green-600 font-bold text-2xl mb-2">
+                                        {{ creditForm.get('capital')?.value | currency:'GNF':'symbol':'1.0-0' }}
+                                    </div>
+                                    <div class="text-500 text-sm">Capital Demandé</div>
+                                </div>
+                            </div>
+
+                            <div class="col-12 md:col-4">
+                                <div class="text-center p-3 border-1 surface-border border-round">
+                                    <div class="text-orange-600 font-bold text-2xl mb-2">
+                                        {{ creditForm.get('nbreCredit')?.value }}
+                                    </div>
+                                    <div class="text-500 text-sm">Nombre de Crédits</div>
+                                </div>
+                            </div>
+                        </div>
+                    </p-card>
+
+                    <!-- Section 2: Détails Activité -->
+                    <p-card class="mb-4">
+                        <ng-template pTemplate="header">
+                            <div class="flex align-items-center gap-2 p-3 bg-green-50 border-round-top">
+                                <i class="pi pi-briefcase text-green-600"></i>
+                                <h3 class="text-lg font-semibold text-green-900 m-0">Activité & Expérience</h3>
+                            </div>
+                        </ng-template>
+
+                        <div class="grid">
+                            <div class="col-12 md:col-6">
+                                <div class="p-3">
+                                    <div class="text-500 text-sm mb-1">Statut d'Activité</div>
+                                    <div class="text-900 font-semibold">{{ creditForm.get('statutActivite')?.value }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 md:col-6">
+                                <div class="p-3">
+                                    <div class="text-500 text-sm mb-1">Expérience</div>
+                                    <div class="text-900 font-semibold">{{ creditForm.get('experience')?.value }}</div>
+                                </div>
+                            </div>
+                            <div class="col-12 md:col-6">
+                                <div class="p-3">
+                                    <div class="text-500 text-sm mb-1">Lieu d'Activité</div>
+                                    <div class="text-900 font-semibold">{{ creditForm.get('lieuxAct')?.value }}</div>
+                                </div>
+                            </div>
+                            <div class="col-12 md:col-6">
+                                <div class="p-3">
+                                    <div class="text-500 text-sm mb-1">Fréquence</div>
+                                    <p-tag [value]="creditForm.get('frequence')?.value + ' fois'"
+                                        severity="warn"></p-tag>
+                                </div>
+                            </div>
+                        </div>
+                    </p-card>
+
+                    <!-- Section 3: Produits -->
+                    <p-card class="mb-4">
+                        <ng-template pTemplate="header">
+                            <div
+                                class="flex align-items-center justify-content-between p-3 bg-purple-50 border-round-top">
+                                <div class="flex align-items-center gap-2">
+                                    <i class="pi pi-shopping-cart text-purple-600"></i>
+                                    <h3 class="text-lg font-semibold text-purple-900 m-0">Produits ({{ produits.length
+                                        }})</h3>
+                                </div>
+                                <p-tag [value]="(calculateTotalProduits() | currency:'GNF':'symbol':'1.0-0') ?? ''"
+                                    severity="success"></p-tag>
+                            </div>
+                        </ng-template>
+
+                        <div class="grid" *ngIf="produits.length > 0">
+                            <div class="col-12 md:col-6 lg:col-4"
+                                *ngFor="let produit of produits.controls; let i = index">
+                                <div class="border-1 surface-border border-round p-3 h-full">
+                                    <div class="flex align-items-start justify-content-between mb-2">
+                                        <h4 class="text-900 font-semibold m-0 text-sm">{{ produit.get('libele')?.value
+                                            }}</h4>
+                                        <span class="text-xs text-500">#{{ i + 1 }}</span>
+                                    </div>
+                                    <div class="text-600 text-xs mb-2">
+                                        {{ produit.get('observation')?.value || 'Aucune observation' }}
+                                    </div>
+                                    <div class="flex align-items-center justify-content-between">
+                                        <div class="text-900 font-bold">
+                                            {{ (produit.get('prixUnit')?.value * produit.get('qte')?.value) |
+                                            currency:'GNF':'symbol':'1.0-0' }}
+                                        </div>
+                                        <div class="text-500 text-xs">
+                                            {{ produit.get('qte')?.value }} × {{ produit.get('prixUnit')?.value |
+                                            currency:'GNF':'symbol':'1.0-0' }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div *ngIf="produits.length === 0" class="text-center p-4">
+                            <i class="pi pi-info-circle text-400 text-4xl mb-3"></i>
+                            <p class="text-500">Aucun produit ajouté</p>
+                        </div>
+                    </p-card>
+
+                    <!-- Section 4: Charges -->
+                    <p-card class="mb-4">
+                        <ng-template pTemplate="header">
+                            <div class="flex align-items-center justify-content-between p-3 bg-red-50 border-round-top">
+                                <div class="flex align-items-center gap-2">
+                                    <i class="pi pi-minus-circle text-red-600"></i>
+                                    <h3 class="text-lg font-semibold text-red-900 m-0">Charges ({{ charges.length }})
+                                    </h3>
+                                </div>
+                                <p-tag [value]="(calculateTotalCharges() | currency:'GNF':'symbol':'1.0-0') ?? ''"
+                                    severity="danger"></p-tag>
+                            </div>
+                        </ng-template>
+
+                        <div class="grid" *ngIf="charges.length > 0">
+                            <div class="col-12 md:col-6 lg:col-4"
+                                *ngFor="let charge of charges.controls; let i = index">
+                                <div class="border-1 surface-border border-round p-3 h-full">
+                                    <div class="flex align-items-start justify-content-between mb-2">
+                                        <h4 class="text-900 font-semibold m-0 text-sm">{{ charge.get('libele')?.value }}
+                                        </h4>
+                                        <span class="text-xs text-500">#{{ i + 1 }}</span>
+                                    </div>
+                                    <div class="flex align-items-center justify-content-between">
+                                        <div class="text-900 font-bold">
+                                            {{ (charge.get('prixUnit')?.value * charge.get('qte')?.value) |
+                                            currency:'GNF':'symbol':'1.0-0' }}
+                                        </div>
+                                        <div class="text-500 text-xs">
+                                            {{ charge.get('qte')?.value }} × {{ charge.get('prixUnit')?.value |
+                                            currency:'GNF':'symbol':'1.0-0' }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div *ngIf="charges.length === 0" class="text-center p-4">
+                            <i class="pi pi-info-circle text-400 text-4xl mb-3"></i>
+                            <p class="text-500">Aucune charge ajoutée</p>
+                        </div>
+                    </p-card>
+
+                    <!-- Section 5: Garantie -->
+                    <p-card class="mb-4">
+                        <ng-template pTemplate="header">
+                            <div class="flex align-items-center gap-2 p-3 bg-teal-50 border-round-top">
+                                <i class="pi pi-shield text-teal-600"></i>
+                                <h3 class="text-lg font-semibold text-teal-900 m-0">Garantie</h3>
+                            </div>
+                        </ng-template>
+
+                        <div class="grid">
+                            <div class="col-12 md:col-8">
+                                <div class="p-3">
+                                    <div class="text-500 text-sm mb-2">Type de Garantie</div>
+                                    <div class="text-900 font-bold text-lg mb-3">{{
+                                        creditForm.get('garantieLibele')?.value }}</div>
+                                    <div class="text-500 text-sm mb-1">Montant</div>
+                                    <div class="text-teal-600 font-bold text-xl">
+                                        {{ creditForm.get('garantieMontant')?.value | currency:'GNF':'symbol':'1.0-0' }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 md:col-4"
+                                *ngIf="creditForm.get('itAss')?.value || creditForm.get('itPc')?.value">
+                                <div class="p-3">
+                                    <div class="text-500 text-sm mb-2">Localisation</div>
+                                    <div class="text-900 text-sm mb-1" *ngIf="creditForm.get('itAss')?.value">
+                                        <strong>IT Ass:</strong> {{ creditForm.get('itAss')?.value }}
+                                    </div>
+                                    <div class="text-900 text-sm" *ngIf="creditForm.get('itPc')?.value">
+                                        <strong>IT PC:</strong> {{ creditForm.get('itPc')?.value }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </p-card>
+
+                    <!-- Section 6: Cautions -->
+                    <p-card class="mb-4">
+                        <ng-template pTemplate="header">
+                            <div class="flex align-items-center gap-2 p-3 bg-indigo-50 border-round-top">
+                                <i class="pi pi-users text-indigo-600"></i>
+                                <h3 class="text-lg font-semibold text-indigo-900 m-0">Personnes Caution ({{
+                                    cautions.length }})</h3>
+                            </div>
+                        </ng-template>
+
+                        <div class="grid" *ngIf="cautions.length > 0">
+                            <div class="col-12 md:col-6 lg:col-4"
+                                *ngFor="let caution of cautions.controls; let i = index">
+                                <div class="border-1 surface-border border-round p-3 h-full">
+                                    <div class="flex align-items-center gap-3 mb-3">
+                                        <p-avatar
+                                            [label]="(caution.get('prenom')?.value || '?').charAt(0) + (caution.get('nom')?.value || '?').charAt(0)"
+                                            shape="circle" size="large" styleClass="bg-indigo-100 text-indigo-900">
+                                        </p-avatar>
+                                        <div>
+                                            <div class="text-900 font-semibold">
+                                                {{ caution.get('prenom')?.value }} {{ caution.get('nom')?.value }}
+                                            </div>
+                                            <div class="text-500 text-xs">{{ caution.get('age')?.value }} ans</div>
+                                        </div>
+                                    </div>
+                                    <div class="text-600 text-sm mb-1">{{ caution.get('profession')?.value }}</div>
+                                    <div class="text-600 text-sm mb-1">{{ caution.get('activite')?.value }}</div>
+                                    <div class="text-primary font-medium text-sm">{{ caution.get('telephone')?.value }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div *ngIf="cautions.length === 0" class="text-center p-4">
+                            <i class="pi pi-info-circle text-400 text-4xl mb-3"></i>
+                            <p class="text-500">Aucune caution ajoutée</p>
+                        </div>
+                    </p-card>
+
+                    <!-- Section 7: Totaux et Calculs -->
+                    <p-card class="mb-4">
+                        <ng-template pTemplate="header">
+                            <div class="flex align-items-center gap-2 p-3 bg-yellow-50 border-round-top">
+                                <i class="pi pi-calculator text-yellow-600"></i>
+                                <h3 class="text-lg font-semibold text-yellow-900 m-0">Synthèse Financière</h3>
+                            </div>
+                        </ng-template>
+
+                        <div class="grid">
+                            <div class="col-12 md:col-3">
+                                <div class="text-center p-3 bg-green-50 border-round">
+                                    <div class="text-green-600 font-bold text-xl mb-1">
+                                        {{ calculateTotalProduits() | currency:'GNF':'symbol':'1.0-0' }}
+                                    </div>
+                                    <div class="text-green-700 text-sm">Total Produits</div>
+                                </div>
+                            </div>
+                            <div class="col-12 md:col-3">
+                                <div class="text-center p-3 bg-red-50 border-round">
+                                    <div class="text-red-600 font-bold text-xl mb-1">
+                                        {{ calculateTotalCharges() | currency:'GNF':'symbol':'1.0-0' }}
+                                    </div>
+                                    <div class="text-red-700 text-sm">Total Charges</div>
+                                </div>
+                            </div>
+                            <div class="col-12 md:col-3">
+                                <div class="text-center p-3 bg-blue-50 border-round">
+                                    <div class="text-blue-600 font-bold text-xl mb-1">
+                                        {{ (calculateTotalProduits() - calculateTotalCharges()) |
+                                        currency:'GNF':'symbol':'1.0-0' }}
+                                    </div>
+                                    <div class="text-blue-700 text-sm">Résultat Net</div>
+                                </div>
+                            </div>
+                            <div class="col-12 md:col-3">
+                                <div class="text-center p-3 bg-teal-50 border-round">
+                                    <div class="text-teal-600 font-bold text-xl mb-1">
+                                        {{ creditForm.get('garantieMontant')?.value | currency:'GNF':'symbol':'1.0-0' }}
+                                    </div>
+                                    <div class="text-teal-700 text-sm">Garantie</div>
+                                </div>
+                            </div>
+                        </div>
+                    </p-card>
+
+                    <!-- Boutons d'Action -->
+                    <div class="flex gap-3 justify-content-center pt-4 border-top-1 surface-border">
+                        <p-button label="Précédent" icon="pi pi-arrow-left" (click)="prevStep()" severity="secondary"
+                            size="large">
+                        </p-button>
+                        <p-button label="Mettre à Jour le Crédit" icon="pi pi-save" [loading]="state().submitLoading"
+                            [disabled]="!isFormValid()" (click)="updateCreditData()" severity="warn" size="large"
+                            styleClass="px-5">
+                        </p-button>
+                    </div>
+                </div>
+            </p-tabPanel>
+        </p-tabView>
+    </div>
+</div>

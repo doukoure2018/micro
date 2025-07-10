@@ -313,6 +313,14 @@ public class UserResource {
         return ResponseEntity.ok(delegationService.getAllDelegation());
     }
 
+    @GetMapping("/offLine/getAllDelegation/{delegationId}")
+    public ResponseEntity<DelegationDto> getAllDelegationOffLineById(
+                 @PathVariable(name = "delegationId") Long delegationId
+    )
+    {
+        return ResponseEntity.ok(delegationService.getDelegationById(delegationId));
+    }
+
     @GetMapping("/delegation/{id_delegation}")
     public ResponseEntity<Response> getDelegation(@NotNull Authentication authentication,HttpServletRequest request,
                                                        @PathVariable(name = "id_delegation") Long id_delegation)
@@ -410,5 +418,16 @@ public class UserResource {
     public ResponseEntity<AgenceDto> getAgenceById(@PathVariable(name = "agence_id") Long agence_id)
     {
         return ResponseEntity.ok(agenceService.getAgence(agence_id));
+    }
+
+    /**
+     *  To get UserUuid through OpenFeign Communication
+     * @param userUuid
+     * @return
+     */
+    @GetMapping("/offLine/getUserByUuid/{userUuid}")
+    public ResponseEntity<User> getUserByUuid(@PathVariable("userUuid") String userUuid) {
+        var user= userService.getUserByUuid(userUuid);
+        return ResponseEntity.ok(user);
     }
 }

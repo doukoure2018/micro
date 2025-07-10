@@ -36,7 +36,7 @@
                             {{ state().documents!.length }} document(s) prêt(s)
                         </span>
                     </div>
-                    <button (click)="approvedDemande(state().demandeIndividuel!, state().userId!)" pButton pRipple
+                    <button (click)="approvedDemande(state().demandeIndividuel!)" pButton pRipple
                         class="font-semibold bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 border-0 px-8 py-3 text-white shadow-lg hover:shadow-xl transition-all duration-300"
                         icon="pi pi-check" label="APPROUVER LA SÉLECTION">
                     </button>

@@ -77,10 +77,6 @@ public interface CreditosRepository extends JpaRepository<Creditos, CreditoPKId>
     ///Creditos updateIndEstadoByNumCreditos(Long numCredit,String indEstado);
 
 
-    @Query(value = "EXEC [PR].[SP_OBTENER_CREDITOS_PLANPAGOS_CLIENTE] :codCliente",
-            nativeQuery = true)
-    List<Map<String, Object>> obtenerCreditosYPlanPagosPorCliente(@Param("codCliente") String codCliente);
-
     @Query(value = "SELECT C.COD_EMPRESA, C.COD_AGENCIA, C.NUM_CREDITO, C.TIP_CREDITO, " +
             "C.COD_CLIENTE, C.MON_CREDITO, C.MON_SALDO, C.MON_DESEMBOLSADO, " +
             "C.MON_PAGADO_PRINCIPAL, C.MON_PAGADO_INTERESES, C.TASA_INTERES, " +
@@ -91,16 +87,30 @@ public interface CreditosRepository extends JpaRepository<Creditos, CreditoPKId>
             nativeQuery = true)
     List<Map<String, Object>> obtenerCreditosPorCliente(@Param("codCliente") String codCliente);
 
+    // 2. Obtener plan de pagos
     @Query(value = "SELECT PP.COD_EMPRESA, PP.COD_AGENCIA, PP.NUM_CREDITO, PP.NUM_CUOTA, " +
             "PP.FEC_CUOTA, PP.FEC_REAL_CUOTA, PP.TIP_CUOTA, PP.MON_CUOTA, " +
             "PP.MON_PRINCIPAL, PP.MON_INT, PP.MON_COMISION, PP.SAL_PRINCIPAL, " +
             "PP.SAL_INT, PP.SAL_CREDITO, PP.FEC_CANCELACION, PP.IND_ESTADO, " +
             "PP.TAS_INT, PP.DIA_INT, PP.DIA_PENDIENTES_INT, PP.PER_CUOTA " +
             "FROM [PR].[PR_PLAN_PAGOS] PP " +
-            "INNER JOIN [PR].[PR_CREDITOS] C ON PP.COD_EMPRESA = C.COD_EMPRESA " +
-            "AND PP.COD_AGENCIA = C.COD_AGENCIA AND PP.NUM_CREDITO = C.NUM_CREDITO " +
-            "WHERE C.COD_CLIENTE = :codCliente ORDER BY PP.NUM_CREDITO, PP.NUM_CUOTA",
+            "INNER JOIN [PR].[PR_CREDITOS] C ON " +
+            "PP.COD_EMPRESA = C.COD_EMPRESA AND " +
+            "PP.COD_AGENCIA = C.COD_AGENCIA AND " +
+            "PP.NUM_CREDITO = C.NUM_CREDITO " +
+            "WHERE C.COD_CLIENTE = :codCliente " +
+            "ORDER BY PP.NUM_CREDITO, PP.NUM_CUOTA",
             nativeQuery = true)
     List<Map<String, Object>> obtenerPlanPagosPorCliente(@Param("codCliente") String codCliente);
+
+    // 3. Obtener los 3 últimos créditos para análisis de riesgo
+    @Query(value = "SELECT TOP 3 COD_EMPRESA, COD_AGENCIA, NUM_CREDITO " +
+            "FROM [PR].[PR_CREDITOS] " +
+            "WHERE COD_CLIENTE = :codCliente " +
+            "ORDER BY FEC_APERTURA DESC",
+            nativeQuery = true)
+    List<Map<String, Object>> obtenerUltimosTresCreditos(@Param("codCliente") String codCliente);
+
+
 
 }

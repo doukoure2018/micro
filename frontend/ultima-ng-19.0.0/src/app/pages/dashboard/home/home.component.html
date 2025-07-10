@@ -4,4 +4,6 @@
 <app-agent-credit [user]="state().user"></app-agent-credit>
 }@else if(state().user?.role ==='DA') {
 <app-resp-agent [user]="state().user"></app-resp-agent>
+}@else if(state().user?.role ==='MANAGER') {
+<app-manager [user]="state().user"></app-manager>
 }@else {}

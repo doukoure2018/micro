@@ -7,6 +7,8 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -59,7 +61,7 @@ public class DemandeCreditCompleteDTO {
     private LocalDate dateFinPeriodeActuel;
 
     private BigDecimal chiffreAffairesActuel;
-    private BigDecimal autresRevenusActuel; // NOUVEAU CHAMP
+    private BigDecimal autresRevenusActuel;
     private BigDecimal coutMarchandisesActuel;
     private BigDecimal coutTransportProductionActuel;
     private BigDecimal fraisTransportPersonnelActuel;
@@ -77,7 +79,7 @@ public class DemandeCreditCompleteDTO {
     private LocalDate dateFinPeriodePrevisionnel;
 
     private BigDecimal chiffreAffairesPrevisionnel;
-    private BigDecimal autresRevenusPrevisionnel; // NOUVEAU CHAMP
+    private BigDecimal autresRevenusPrevisionnel;
     private BigDecimal coutMarchandisesPrevisionnel;
     private BigDecimal coutTransportProductionPrevisionnel;
     private BigDecimal fraisTransportPersonnelPrevisionnel;
@@ -91,4 +93,25 @@ public class DemandeCreditCompleteDTO {
     private BigDecimal montantDemande;
     private Integer dureeMois;
     private String objetFinancement;
+
+    // Garantie
+    private String libeleGarantie;
+    private BigDecimal montantGarantie;
+
+    // CHANGED: Replace individual caution fields with array
+    private List<Personnecaution> personnecautions = new ArrayList<>();
+
+    // Location and user
+    private Long delegationId;
+    private Long agenceId;
+    private Long pointVenteId;
+    private Long userId;
+
+    // Helper method to add a personnecaution
+    public void addPersonnecaution(Personnecaution caution) {
+        if (this.personnecautions == null) {
+            this.personnecautions = new ArrayList<>();
+        }
+        this.personnecautions.add(caution);
+    }
 }

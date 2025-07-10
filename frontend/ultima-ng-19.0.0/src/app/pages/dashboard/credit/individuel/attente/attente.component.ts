@@ -21,7 +21,12 @@ import { EMPTY, Observer, switchMap } from 'rxjs';
     templateUrl: './attente.component.html'
 })
 export class AttenteComponent {
-    state = signal<{ demandeAttentes?: DemandeIndividuel[]; loading: boolean; message: string | undefined; error: string | any }>({
+    state = signal<{
+        demandeAttentes?: DemandeIndividuel[];
+        loading: boolean;
+        message: string | undefined;
+        error: string | any;
+    }>({
         loading: false,
         message: undefined,
         error: undefined
@@ -30,39 +35,37 @@ export class AttenteComponent {
     private userService = inject(UserService);
     private router = inject(Router);
     private destroyRef = inject(DestroyRef);
-    private activatedRouter = inject(ActivatedRoute);
 
     ngOnInit(): void {
         this.loadAllDemandeAttente();
     }
 
     private loadAllDemandeAttente(): void {
-        this.activatedRouter.paramMap
-            .pipe(
-                switchMap((params: ParamMap) => {
-                    const pointventeId = params.get('pointventeId');
-                    if (pointventeId) {
-                        this.state.set({ loading: true, message: undefined, error: undefined });
-                        return this.userService.getAllDemandeAttente$(+pointventeId);
-                    } else {
-                        this.state.set({ loading: false, message: undefined, error: 'Invalide Code AgenceId or not exist' });
-                        return EMPTY;
-                    }
-                }),
-                takeUntilDestroyed(this.destroyRef)
-            )
-            .subscribe(this.getPointventeId);
-    }
+        this.state.update((state) => ({ ...state, loading: true, error: undefined }));
 
-    private getPointventeId: Observer<any> = {
-        next: (response: IResponse) => {
-            this.state.set({ demandeAttentes: response.data.demandeAttentes, loading: false, message: response.message, error: undefined });
-        },
-        error: (error: string) => {
-            this.state.set({ loading: false, message: undefined, error: error });
-        },
-        complete: () => {}
-    };
+        this.userService
+            .getAllDemandeAttente$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    this.state.update((state) => ({
+                        ...state,
+                        demandeAttentes: response.data.demandeAttentes,
+                        loading: false,
+                        message: response.message,
+                        error: undefined
+                    }));
+                },
+                error: (error: string) => {
+                    this.state.update((state) => ({
+                        ...state,
+                        loading: false,
+                        message: undefined,
+                        error: error
+                    }));
+                }
+            });
+    }
 
     onGlobalFilter(table: any, event: Event) {
         table.filterGlobal((event.target as HTMLInputElement).value, 'contains');
@@ -89,15 +92,18 @@ export class AttenteComponent {
     }
 
     getStatusSeverity(statutDemande: string, validationState: string): 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast' | undefined {
-        // Ensure the return value matches the allowed types
         if (statutDemande === 'APPROVED') return 'success';
         if (statutDemande === 'EN_ATTENTE') return 'info';
         if (statutDemande === 'REJECTED') return 'danger';
-        // Add other mappings as needed
         return undefined;
     }
 
     viewDetailDemandeAttente(demandeindividuel_id: number) {
         this.router.navigate(['/dashboards/credit/individuel/attente/detail/', demandeindividuel_id]);
+    }
+
+    // Optional: Add refresh method for manual refresh
+    refreshData(): void {
+        this.loadAllDemandeAttente();
     }
 }

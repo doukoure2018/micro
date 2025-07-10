@@ -4,7 +4,7 @@
             selection
         </span>
         <span class="text-surface-600 dark:text-surface-200 text-lg">
-            <p-message>Vous pouvez maintenant cliquer sur le bouton
+            <p-message>Vous pouvez maintenant cliquer sur l'icon du bouton
                 TELEVERSERVER LA FICHE DE SELECTION pour remonter le document</p-message>
         </span>
     </div>
@@ -21,76 +21,81 @@
     }
 
 
-    <!-- Grouped Data by Date -->
-    <p-accordion [activeIndex]="0">
+    @if (state().dateKeys && state().dateKeys.length > 0) {
+    <p-accordion>
         @for (dateKey of state().dateKeys; track dateKey) {
-        <p-accordionTab [header]="formatDateHeader(dateKey)">
+        <p-accordion-panel>
+            <p-accordion-header>
+                <div class="flex justify-between items-center w-full">
+                    <div class="flex items-center gap-2">
+                        <i class="pi pi-calendar"></i>
+                        <span class="font-semibold">{{ formatDateHeader(dateKey) }}</span>
+                    </div>
+                    <p-tag [value]="state().groupedDemandes.get(dateKey)?.length + ' demande(s)'" severity="info">
+                    </p-tag>
+                </div>
+            </p-accordion-header>
+            <p-accordion-content>
+                <div class="p-4">
+                    <p-table [value]="state().groupedDemandes.get(dateKey) || []" dataKey="demandeindividuel_id"
+                        [paginator]="(state().groupedDemandes.get(dateKey)?.length || 0) > 10" [rows]="10"
+                        [rowsPerPageOptions]="[10, 25, 50]"
+                        [globalFilterFields]="['nom', 'prenom', 'numeroMembre', 'activite']" responsiveLayout="scroll">
 
-            <p-table #dt [value]="state().groupedDemandes.get(dateKey)!" [paginator]="true" [rows]="10"
-                [showCurrentPageReport]="true" responsiveLayout="scroll"
-                currentPageReportTemplate="Affichage {first} à {last} sur {totalRecords} entrées"
-                [rowsPerPageOptions]="[10, 25, 50]"
-                [globalFilterFields]="['nom', 'prenom', 'numeroMembre', 'activite', 'telephone']">
-                <ng-template pTemplate="header">
-                    <tr>
+                        <ng-template pTemplate="header">
+                            <tr>
+                                <th>Client</th>
+                                <th>Numéro Membre</th>
+                                <th>Montant</th>
+                                <th>Activité</th>
+                                <th>Statut</th>
+                                <th>Heure</th>
+                                <th>Actions</th>
+                            </tr>
+                        </ng-template>
 
-                        <th pSortableColumn="nom" class="white-space-nowrap" style="width:15%">Nom <p-sortIcon
-                                field="nom"></p-sortIcon></th>
-                        <th pSortableColumn="numeroMembre" class="white-space-nowrap" style="width:15%">N° Membre
-                            <p-sortIcon field="numeroMembre"></p-sortIcon>
-                        </th>
-                        <th pSortableColumn="montant" class="white-space-nowrap" style="width:10%">Montant <p-sortIcon
-                                field="montant"></p-sortIcon></th>
-                        <th pSortableColumn="activite" class="white-space-nowrap" style="width:15%">Activité <p-sortIcon
-                                field="activite"></p-sortIcon>
-                        </th>
+                        <ng-template pTemplate="body" let-demande>
+                            <tr>
+                                <td>{{ demande.prenom }} {{ demande.nom }}</td>
+                                <td>{{ demande.numeroMembre }}</td>
+                                <td>{{ demande.montant | currency:'GNF ' }}</td>
+                                <td>{{ demande.activite }}</td>
+                                <td>
+                                    <p-tag [value]="getStatusLabel(demande.statutDemande, demande.validationState)"
+                                        [severity]="getStatusSeverity(demande.statutDemande, demande.validationState)">
+                                    </p-tag>
+                                </td>
+                                <td>{{ demande.createdAt | date: 'HH:mm' }}</td>
+                                <td>
+                                    @if(demande.statutDemande === 'EN_ATTENTE' && demande.validationState ===
+                                    'APPROVED') {
+                                    <span class="text-muted">En cours de validation</span>
+                                    } @else {
+                                    <p-button
+                                        [routerLink]="['/dashboards/agent-credit/selection', demande.demandeindividuel_id]"
+                                        icon="pi pi-file" severity="help" rounded pTooltip="Gérer la sélection">
+                                    </p-button>
+                                    }
+                                </td>
+                            </tr>
+                        </ng-template>
 
-                        <th pSortableColumn="statutDemande" class="white-space-nowrap" style="width:15%">Statut
-                            <p-sortIcon field="statutDemande"></p-sortIcon>
-                        </th>
-                        <th pSortableColumn="createdAt" class="white-space-nowrap" style="width:10%">Heure <p-sortIcon
-                                field="createdAt"></p-sortIcon></th>
-
-                    </tr>
-                </ng-template>
-                <ng-template pTemplate="body" let-demande>
-                    <tr>
-                        <td>{{ demande.prenom }} {{ demande.nom }}</td>
-                        <td>{{ demande.numeroMembre }}</td>
-                        <td>{{ demande.montant | currency:'GNF ' }}</td>
-                        <td>{{ demande.activite }}</td>
-                        <td>
-                            <p-tag [value]="getStatusLabel(demande.statutDemande, demande.validationState)"
-                                [severity]="getStatusSeverity(demande.statutDemande, demande.validationState)">
-                            </p-tag>
-                        </td>
-                        <td>{{ demande.createdAt | date: 'HH:mm' }}</td>
-                        @if(demande.statutDemande === 'EN_ATTENTE' && demande.validationState === 'APPROVED'){
-
-                        }@else {
-                        <td>
-                            <p-button
-                                [routerLink]="['/dashboards/agent-credit/selection/', demande.demandeindividuel_id, state().userId]"
-                                icon="pi pi-file" severity="help" rounded />
-                        </td>
-                        }
-
-                    </tr>
-                </ng-template>
-                <ng-template pTemplate="emptymessage">
-                    <tr>
-                        <td colspan="8" class="text-center p-4">Aucune demande trouvée pour cette date.</td>
-                    </tr>
-                </ng-template>
-            </p-table>
-        </p-accordionTab>
+                        <ng-template pTemplate="emptymessage">
+                            <tr>
+                                <td colspan="7" class="text-center">
+                                    Aucune demande trouvée pour cette date
+                                </td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+                </div>
+            </p-accordion-content>
+        </p-accordion-panel>
         }
     </p-accordion>
-
-    <!-- No Data Message -->
-    @if (state().dateKeys.length === 0 && !state().loading) {
-    <div class="text-center p-4">
-        <p>Aucune demande en attente trouvée.</p>
-    </div>
+    } @else {
+    <p-message severity="info" text="Aucune demande en sélection trouvée"></p-message>
     }
+
+
 </div>

@@ -4,7 +4,7 @@ import { UserService } from '@/service/user.service';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, ParamMap, Router, RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AccordionModule } from 'primeng/accordion';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
@@ -18,7 +18,6 @@ import { ProgressSpinner } from 'primeng/progressspinner';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
-import { EMPTY, Observer, switchMap } from 'rxjs';
 
 @Component({
     selector: 'app-credit-selection',
@@ -28,7 +27,6 @@ import { EMPTY, Observer, switchMap } from 'rxjs';
 })
 export class CreditSelectionComponent {
     state = signal<{
-        userId?: number;
         demandeAttentes?: DemandeIndividuel[];
         groupedDemandes: Map<string, DemandeIndividuel[]>;
         loading: boolean;
@@ -48,7 +46,6 @@ export class CreditSelectionComponent {
     private userService = inject(UserService);
     private router = inject(Router);
     private destroyRef = inject(DestroyRef);
-    private activatedRouter = inject(ActivatedRoute);
     private messageService = inject(MessageService);
 
     ngOnInit(): void {
@@ -56,44 +53,36 @@ export class CreditSelectionComponent {
     }
 
     private loadDemandeSelection(): void {
-        this.activatedRouter.paramMap
-            .pipe(
-                switchMap((params: ParamMap) => {
-                    const pointventeId = params.get('pointventeId');
-                    const userId = params.get('userId');
-                    if (pointventeId) {
-                        this.state.update((state) => ({ ...state, userId: userId ? +userId : undefined, loading: true, message: undefined, error: undefined }));
-                        return this.userService.getAllDemandeCreditByDate$(+pointventeId);
-                    } else {
-                        this.state.update((state) => ({ ...state, loading: false, message: undefined, error: 'Invalide Code AgenceId or not exist' }));
-                        return EMPTY;
-                    }
-                }),
-                takeUntilDestroyed(this.destroyRef)
-            )
-            .subscribe(this.getDemandeSelection);
+        this.state.update((state) => ({ ...state, loading: true, error: undefined }));
+
+        this.userService
+            .getAllDemandeCreditByDate$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    const demandes = response.data.demandeAttentes || [];
+                    const groupedMap = this.groupDemandesByDate(demandes);
+
+                    this.state.update((state) => ({
+                        ...state,
+                        demandeAttentes: demandes,
+                        groupedDemandes: groupedMap,
+                        dateKeys: Array.from(groupedMap.keys()).sort((a, b) => new Date(b).getTime() - new Date(a).getTime()),
+                        loading: false,
+                        message: response.message,
+                        error: undefined
+                    }));
+                },
+                error: (error: string) => {
+                    this.state.update((state) => ({
+                        ...state,
+                        loading: false,
+                        message: undefined,
+                        error
+                    }));
+                }
+            });
     }
-
-    private getDemandeSelection: Observer<IResponse> = {
-        next: (response: IResponse) => {
-            const demandes = response.data.demandeAttentes || [];
-            const groupedMap = this.groupDemandesByDate(demandes);
-
-            this.state.update((state) => ({
-                ...state,
-                demandeAttentes: demandes,
-                groupedDemandes: groupedMap,
-                dateKeys: Array.from(groupedMap.keys()).sort((a, b) => new Date(b).getTime() - new Date(a).getTime()),
-                loading: false,
-                message: response.message,
-                error: undefined
-            }));
-        },
-        error: (error: string) => {
-            this.state.update((state) => ({ ...state, loading: false, message: undefined, error }));
-        },
-        complete: () => {}
-    };
 
     private groupDemandesByDate(demandes: DemandeIndividuel[]): Map<string, DemandeIndividuel[]> {
         const groupedMap = new Map<string, DemandeIndividuel[]>();
@@ -133,5 +122,10 @@ export class CreditSelectionComponent {
     formatDateHeader(dateString: string): string {
         const date = new Date(dateString);
         return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+
+    // Optional: Add refresh method for manual refresh
+    refreshData(): void {
+        this.loadDemandeSelection();
     }
 }

@@ -16,13 +16,14 @@ public class DiscoveryServiceApplication {
 		SpringApplication.run(DiscoveryServiceApplication.class, args);
 	}
 
+
 //    @Bean
-//	public CommandLineRunner startup(BCryptPasswordEncoder encoder)
-//	{
-//		 return args -> {
-//			  var password = encoder.encode("admin2711");
-//			 System.out.println(password);
-//		 };
-//	}
+//    public CommandLineRunner startup(BCryptPasswordEncoder encoder) {
+//        return args -> {
+//            var password = encoder.encode("admin2711");
+//            System.out.println(password);
+//        };
+//    }
+
 
 }

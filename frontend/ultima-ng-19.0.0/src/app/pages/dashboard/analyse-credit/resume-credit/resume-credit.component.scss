@@ -1,0 +1,746 @@
+.recommendation-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.risk-analysis .p-progressbar {
+    border-radius: 10px;
+}
+
+.progress-excellent .p-progressbar-value {
+    background: linear-gradient(90deg, #27ae60, #2ecc71);
+}
+
+.progress-bon .p-progressbar-value {
+    background: linear-gradient(90deg, #3498db, #5dade2);
+}
+
+.progress-acceptable .p-progressbar-value {
+    background: linear-gradient(90deg, #f39c12, #e67e22);
+}
+
+.progress-risque .p-progressbar-value {
+    background: linear-gradient(90deg, #e74c3c, #ec7063);
+}
+
+.conseil-item {
+    transition: all 0.3s ease;
+}
+
+.conseil-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.decision-recommendation {
+    border-left: 4px solid #8e44ad;
+}
+
+.bg-accorder-50 {
+    background-color: rgba(39, 174, 96, 0.1);
+    border-left-color: #27ae60;
+}
+
+.bg-accorder-avec-conditions-50 {
+    background-color: rgba(52, 152, 219, 0.1);
+    border-left-color: #3498db;
+}
+
+.bg-etude-approfondie-50 {
+    background-color: rgba(243, 156, 18, 0.1);
+    border-left-color: #f39c12;
+}
+
+.bg-refuser-50 {
+    background-color: rgba(231, 76, 60, 0.1);
+    border-left-color: #e74c3c;
+}
+
+.indicator-card-simple {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 1.5rem;
+    height: 100%;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.indicator-card-simple:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.indicator-header h5 {
+    font-size: 1rem;
+    line-height: 1.2;
+}
+
+.indicator-header small {
+    font-size: 0.75rem;
+    font-style: italic;
+}
+
+.indicator-value {
+    color: #2c3e50;
+}
+
+.indicator-details {
+    border-top: 1px solid #e9ecef;
+    padding-top: 1rem;
+    margin-top: 1rem;
+}
+
+/* Styles pour les séparateurs */
+.separator-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 1rem 0;
+}
+
+.indicator-separator {
+    width: 80%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent 0%, #3498db 20%, #2ecc71 40%, #f39c12 60%, #e74c3c 80%, transparent 100%);
+    border-radius: 2px;
+    position: relative;
+    opacity: 0.7;
+}
+
+.indicator-separator::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border: 2px solid #3498db;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Alternative: Séparateur avec texte */
+.separator-with-text {
+    position: relative;
+    text-align: center;
+    margin: 1.5rem 0;
+}
+
+.separator-with-text::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #dee2e6, transparent);
+}
+
+.separator-with-text span {
+    background: white;
+    padding: 0 1rem;
+    color: #6c757d;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+/* Séparateurs responsives */
+@media (max-width: 992px) {
+    .separator-container {
+        margin: 0.5rem 0;
+    }
+
+    .indicator-separator {
+        width: 60%;
+        height: 1px;
+    }
+
+    .indicator-separator::before {
+        width: 8px;
+        height: 8px;
+    }
+}
+
+@media (max-width: 768px) {
+    .indicator-card-simple {
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .indicator-value {
+        font-size: 2rem !important;
+    }
+
+    .indicator-header h5 {
+        font-size: 0.9rem;
+    }
+
+    .indicator-header small {
+        font-size: 0.7rem;
+    }
+
+    /* Masquer les séparateurs sur mobile */
+    .separator-container {
+        display: none;
+    }
+}
+
+/* Variante: Séparateur en pointillés */
+.dotted-separator {
+    width: 100%;
+    height: 1px;
+    background: repeating-linear-gradient(90deg, #3498db 0px, #3498db 4px, transparent 4px, transparent 8px);
+}
+
+/* Variante: Séparateur avec ombre */
+.shadow-separator {
+    width: 80%;
+    height: 1px;
+    background: #e9ecef;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border-radius: 1px;
+}
+.seuils-card-large {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.seuils-content {
+    padding: 2rem;
+}
+
+.seuils-section,
+.evaluation-section {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.seuils-list {
+    flex: 1;
+    border-left: 4px solid #27ae60;
+}
+
+.seuils-list ul li {
+    transition: all 0.3s ease;
+}
+
+.seuils-list ul li:hover {
+    transform: translateX(5px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.evaluation-box {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 350px;
+}
+
+.evaluation-main {
+    text-align: center;
+}
+
+.progress-section {
+    margin: 1.5rem 0;
+}
+
+.progress-excellent .p-progressbar-value {
+    background: linear-gradient(90deg, #27ae60, #2ecc71);
+}
+
+.progress-bon .p-progressbar-value {
+    background: linear-gradient(90deg, #3498db, #5dade2);
+}
+
+.progress-acceptable .p-progressbar-value {
+    background: linear-gradient(90deg, #f39c12, #e67e22);
+}
+
+.progress-risque .p-progressbar-value {
+    background: linear-gradient(90deg, #e74c3c, #ec7063);
+}
+
+.status-indicator {
+    margin-top: 1rem;
+}
+
+.recapitulatif-centre {
+    border: 2px dashed #dee2e6;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.metric-item {
+    text-align: center;
+    padding: 0.5rem;
+}
+
+.metric-separator {
+    font-size: 1.5rem;
+    color: #dee2e6;
+    font-weight: bold;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .seuils-content {
+        padding: 1.5rem;
+    }
+
+    .evaluation-box {
+        min-height: 300px;
+        margin-top: 2rem;
+    }
+
+    .text-5xl {
+        font-size: 3rem !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .seuils-content {
+        padding: 1rem;
+    }
+
+    .text-2xl {
+        font-size: 1.5rem !important;
+    }
+
+    .text-5xl {
+        font-size: 2.5rem !important;
+    }
+
+    .evaluation-box {
+        min-height: 250px;
+        padding: 1rem !important;
+    }
+
+    .metric-item {
+        margin: 0.5rem 0;
+    }
+
+    .metric-separator {
+        display: none;
+    }
+
+    .flex-wrap .metric-item {
+        flex: 1;
+        min-width: 80px;
+    }
+}
+
+/* Animation pour les éléments */
+.seuils-list ul li,
+.evaluation-box,
+.metric-item {
+    animation: fadeInUp 0.6s ease forwards;
+}
+
+.seuils-list ul li:nth-child(1) {
+    animation-delay: 0.1s;
+}
+.seuils-list ul li:nth-child(2) {
+    animation-delay: 0.2s;
+}
+.seuils-list ul li:nth-child(3) {
+    animation-delay: 0.3s;
+}
+.seuils-list ul li:nth-child(4) {
+    animation-delay: 0.4s;
+}
+.seuils-list ul li:nth-child(5) {
+    animation-delay: 0.5s;
+}
+.seuils-list ul li:nth-child(6) {
+    animation-delay: 0.6s;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Styles supplémentaires pour les informations administratives */
+
+/* Styles pour le chargement des infos admin */
+.loading-admin {
+    border-left: 4px solid var(--blue-500);
+    transition: all 0.3s ease;
+
+    &:hover {
+        background: var(--blue-100) !important;
+    }
+}
+
+/* Styles pour les cartes de traçabilité */
+.stat-card {
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+    cursor: pointer;
+
+    &:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+        border-color: var(--primary-color);
+    }
+
+    i {
+        transition: all 0.3s ease;
+    }
+
+    &:hover i {
+        transform: scale(1.1);
+    }
+
+    // Badge d'information
+    .info-badge {
+        z-index: 10;
+
+        .pi-info-circle {
+            transition: all 0.2s ease;
+
+            &:hover {
+                transform: scale(1.2);
+                color: var(--primary-color) !important;
+            }
+        }
+    }
+}
+
+/* Styles pour les détails complets */
+.details-card {
+    border-left: 3px solid transparent;
+    transition: all 0.3s ease;
+
+    &:hover {
+        border-left-color: var(--primary-color);
+        transform: translateX(4px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .detail-item {
+        padding: 0.25rem 0;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+
+        &:last-child {
+            border-bottom: none;
+        }
+
+        strong {
+            color: var(--text-color-secondary);
+            font-size: 0.875rem;
+        }
+    }
+}
+
+/* Styles pour l'accordéon de détails */
+::ng-deep .p-accordion {
+    .p-accordion-header {
+        background: var(--surface-100);
+        border: 1px solid var(--surface-border);
+        border-radius: 6px;
+        margin-bottom: 0.5rem;
+
+        &:hover {
+            background: var(--surface-200);
+        }
+
+        .p-accordion-header-link {
+            padding: 0.75rem 1rem;
+            font-weight: 600;
+            color: var(--text-color);
+
+            &:focus {
+                box-shadow: 0 0 0 2px var(--primary-color-alpha);
+            }
+        }
+    }
+
+    .p-accordion-content {
+        border: none;
+        background: transparent;
+        padding: 1rem 0;
+    }
+}
+
+/* Styles pour les badges de statut */
+.status-badge {
+    &.available {
+        background: linear-gradient(45deg, var(--green-100), var(--green-200));
+        border: 1px solid var(--green-300);
+        color: var(--green-800);
+    }
+
+    &.loading {
+        background: linear-gradient(45deg, var(--blue-100), var(--blue-200));
+        border: 1px solid var(--blue-300);
+        color: var(--blue-800);
+    }
+
+    &.unavailable {
+        background: linear-gradient(45deg, var(--orange-100), var(--orange-200));
+        border: 1px solid var(--orange-300);
+        color: var(--orange-800);
+    }
+}
+
+/* Animation pour les éléments qui se chargent */
+.loading-shimmer {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+/* Styles pour les tooltips personnalisés */
+::ng-deep .p-tooltip {
+    .p-tooltip-text {
+        background: var(--surface-900);
+        color: var(--surface-0);
+        padding: 0.5rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        max-width: 250px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .p-tooltip-arrow {
+        border-top-color: var(--surface-900);
+    }
+}
+
+/* Styles pour les indicateurs de données complètes */
+.data-complete-indicator {
+    position: relative;
+
+    &::after {
+        content: '✓';
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        background: var(--green-500);
+        color: white;
+        border-radius: 50%;
+        width: 16px;
+        height: 16px;
+        font-size: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+    }
+}
+
+/* Styles pour les sections avec état de chargement */
+.section-with-loading {
+    position: relative;
+
+    &.loading {
+        opacity: 0.7;
+        pointer-events: none;
+
+        &::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    }
+}
+
+/* Styles pour les alertes de données manquantes */
+.data-missing-alert {
+    background: linear-gradient(45deg, var(--yellow-50), var(--yellow-100));
+    border-left: 4px solid var(--yellow-500);
+    padding: 0.75rem;
+    border-radius: 6px;
+    margin: 0.5rem 0;
+
+    .alert-icon {
+        color: var(--yellow-600);
+        margin-right: 0.5rem;
+    }
+
+    .alert-text {
+        color: var(--yellow-800);
+        font-size: 0.875rem;
+    }
+}
+
+/* Styles pour les boutons de rechargement */
+.reload-button {
+    &:hover {
+        transform: rotate(180deg);
+        transition: transform 0.3s ease;
+    }
+}
+
+/* Styles pour la hiérarchie administrative */
+.hierarchy-display {
+    background: linear-gradient(135deg, var(--blue-50), var(--blue-100));
+    border: 1px solid var(--blue-200);
+    border-radius: 8px;
+    padding: 0.75rem;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, var(--blue-400), var(--blue-600));
+    }
+
+    .hierarchy-text {
+        margin-left: 0.5rem;
+        font-weight: 500;
+        color: var(--blue-800);
+    }
+}
+
+/* Styles pour les skeletons de chargement */
+::ng-deep .p-skeleton {
+    &.custom-skeleton {
+        background: linear-gradient(90deg, var(--surface-200) 25%, var(--surface-100) 50%, var(--surface-200) 75%);
+        background-size: 200% 100%;
+        animation: skeleton-loading 1.5s infinite;
+    }
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+/* Styles responsifs pour les informations administratives */
+@media (max-width: 768px) {
+    .stat-card {
+        margin-bottom: 1rem;
+
+        &:hover {
+            transform: none;
+        }
+    }
+
+    .details-card {
+        margin-bottom: 1rem;
+
+        .detail-item {
+            padding: 0.5rem 0;
+
+            strong {
+                display: block;
+                margin-bottom: 0.25rem;
+            }
+        }
+    }
+
+    .hierarchy-display {
+        margin-bottom: 1rem;
+
+        .hierarchy-text {
+            font-size: 0.875rem;
+            line-height: 1.4;
+        }
+    }
+}
+
+@media (max-width: 576px) {
+    .info-badge {
+        display: none;
+    }
+
+    ::ng-deep .p-accordion .p-accordion-header .p-accordion-header-link {
+        padding: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .details-card {
+        padding: 0.75rem !important;
+    }
+}
+
+/* Styles pour les animations d'entrée */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Styles pour les états de succès/erreur */
+.success-indicator {
+    color: var(--green-600);
+    animation: successPulse 0.5s ease-in;
+}
+
+.error-indicator {
+    color: var(--red-600);
+    animation: errorShake 0.5s ease-in;
+}
+
+@keyframes successPulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes errorShake {
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+    25% {
+        transform: translateX(-5px);
+    }
+    75% {
+        transform: translateX(5px);
+    }
+}

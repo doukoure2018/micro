@@ -6,4 +6,7 @@ export interface BilanPersonnel {
     valeur_biens_durables: number;
     dateEnregistrement?: Date;
     dateModification?: Date;
+
+    libeleGarantie?: string;
+    montantGarantie?: number;
 }

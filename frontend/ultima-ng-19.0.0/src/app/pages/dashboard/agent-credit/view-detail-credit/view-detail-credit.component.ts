@@ -16,14 +16,20 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
+import { ChipModule } from 'primeng/chip';
 import { DividerModule } from 'primeng/divider';
+import { MessageModule } from 'primeng/message';
 import { PanelModule } from 'primeng/panel';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { TableModule } from 'primeng/table';
+import { TabViewModule } from 'primeng/tabview';
 import { ToastModule } from 'primeng/toast';
 
 @Component({
     selector: 'app-view-detail-credit',
-    imports: [CommonModule, CardModule, DividerModule, ButtonModule, PanelModule, ToastModule],
+    imports: [CommonModule, CardModule, DividerModule, ButtonModule, PanelModule, ToastModule, ChipModule, MessageModule, ProgressSpinnerModule, TableModule, TabViewModule],
     templateUrl: './view-detail-credit.component.html',
+    styleUrl: './view-detail-credit.component.scss',
     providers: [MessageService]
 })
 export class ViewDetailCreditComponent {
@@ -57,10 +63,9 @@ export class ViewDetailCreditComponent {
         this.route.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
             const referenceCredit = params['referenceCredit'];
             const numeroMembre = params['numeroMembre'];
-            const userId = +params['userId']; // Convert to number
 
-            if (referenceCredit && numeroMembre && userId) {
-                this.loadCreditDetails(referenceCredit, numeroMembre, userId);
+            if (referenceCredit && numeroMembre) {
+                this.loadCreditDetails(referenceCredit, numeroMembre);
             } else {
                 this.messageService.add({
                     severity: 'error',
@@ -72,11 +77,11 @@ export class ViewDetailCreditComponent {
         });
     }
 
-    loadCreditDetails(referenceCredit: string, numeroMembre: string, userId: number): void {
+    loadCreditDetails(referenceCredit: string, numeroMembre: string): void {
         this.state.set({ ...this.state(), loading: true });
 
         this.userService
-            .detailCreditInd$(referenceCredit, numeroMembre, userId)
+            .detailCreditInd$(referenceCredit, numeroMembre)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (response: IResponse) => {
@@ -125,16 +130,45 @@ export class ViewDetailCreditComponent {
     }
 
     getTotalProductAmount(): number {
-        return this.state().products?.reduce((sum, p) => sum + (p.prixUnit || 0), 0) || 0;
+        return this.state().products?.reduce((sum, p) => sum + (p.prix_unit || 0), 0) || 0;
     }
 
     // Add this method to calculate the total charges
     getTotalCharges(): number {
-        return this.state().charges?.reduce((sum, c) => sum + (c.prixUnit || 0), 0) || 0;
+        return this.state().charges?.reduce((sum, c) => sum + (c.prix_unit || 0), 0) || 0;
     }
 
     startInsertingCredit(referenceCredit: string, numeroMembre: string, userId: number): void {
         console.log(referenceCredit, numeroMembre, userId);
         this.router.navigate(['/dashboards/agent-credit/detail-credit-ind/form-credit/', referenceCredit, numeroMembre, userId]);
+    }
+
+    updateCredit(referenceCredit: string): void {
+        this.router.navigate(['/dashboards/agent-credit/process-update-credit/', referenceCredit]);
+    }
+
+    /**
+     * Retourne la classe CSS pour les chips de statut
+     */
+    getStatusChipClass(status: string | undefined): string {
+        if (!status) return '';
+
+        const baseClass = 'status-chip ';
+        switch (status.toUpperCase()) {
+            case 'ACCEPTED':
+            case 'ACCEPTÉ':
+            case 'VALIDÉ':
+                return baseClass + 'status-accepted';
+            case 'REJECTED':
+            case 'REJETÉ':
+            case 'REFUSÉ':
+                return baseClass + 'status-rejected';
+            case 'PENDING':
+            case 'EN_ATTENTE':
+            case 'EN ATTENTE':
+                return baseClass + 'status-pending';
+            default:
+                return baseClass + 'status-default';
+        }
     }
 }

@@ -18,6 +18,7 @@ import { IResponse } from '@/interface/response';
 import { UserService } from '@/service/user.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { switchMap, EMPTY, Observer, delay } from 'rxjs';
+import { environment } from 'src/environments/environment'; // Add this import
 
 @Component({
     selector: 'app-verifypassword',
@@ -33,6 +34,13 @@ export class VerifypasswordComponent {
         message: undefined,
         error: undefined
     });
+
+    // Add these properties (same as TopBar and VerifyAccount)
+    private authServer = environment.authServer;
+    private redirectUri = environment.redirectUri;
+    // Note: Your component uses a different code challenge - consider making this consistent
+    private codeChallenge = 'vesLhZA4cwKsKZAR7zvEJ9q3uI6dRM8nwna-IpuKkkk';
+
     private destroyRef = inject(DestroyRef);
     private userService = inject(UserService);
     private messageService = inject(MessageService);
@@ -60,6 +68,11 @@ export class VerifypasswordComponent {
 
     closeMessage = () => this.state.update((state) => ({ ...state, message: undefined, error: undefined }));
 
+    // Add this method (same as TopBar and VerifyAccount)
+    getLoginUrl(): string {
+        return `${this.authServer}/oauth2/authorize?response_type=code&client_id=client&scope=openid&redirect_uri=${this.redirectUri}&code_challenge_method=S256&code_challenge=${this.codeChallenge}`;
+    }
+
     createNewPassword = (form: NgForm) => {
         console.log('form', form.value);
         this.userService
@@ -85,6 +98,7 @@ export class VerifypasswordComponent {
                 complete: () => {}
             });
     };
+
     /**
      *  this will execute when the method verifyAccountToken$(token) has been executed
      */
