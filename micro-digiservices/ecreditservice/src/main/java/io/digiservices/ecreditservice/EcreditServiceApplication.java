@@ -1,9 +1,13 @@
 package io.digiservices.ecreditservice;
 
+import io.digiservices.ecreditservice.utils.SignatureCalculator;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.openfeign.EnableFeignClients;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @SpringBootApplication
 @EnableDiscoveryClient

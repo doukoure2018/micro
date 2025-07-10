@@ -6,6 +6,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Getter
 @Setter
@@ -17,7 +18,7 @@ public class Appreciation {
     private BigDecimal montantSuggere;
     private BigDecimal montantDemande;
     private String referenceCredit;
-    private LocalDateTime createdAt;
+    private OffsetDateTime createdAt;
     private String status;
     private Long userId;
 }

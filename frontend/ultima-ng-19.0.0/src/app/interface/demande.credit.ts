@@ -11,4 +11,9 @@ export interface DemandeCredit {
     dateModification: string;
     mensualite_estimee?: number;
     ratio_credit_ca?: number;
+
+    delegation_id?: number;
+    agence_id?: number;
+    point_vente_id?: number;
+    user_id?: number;
 }

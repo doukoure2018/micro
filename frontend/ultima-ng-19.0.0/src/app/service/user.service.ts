@@ -12,6 +12,8 @@ import { Appreciation } from '@/interface/appreciation';
 import { CreditRequest } from '@/interface/creditRequest';
 import { Delegation } from '@/interface/delegation';
 import { Agence } from '@/interface/agence';
+import { MotifAnalyse } from '@/interface/motif.analyse';
+import { DemandeUpdateRequest } from '@/interface/DemandeUpdateRequest';
 
 @Injectable()
 export class UserService {
@@ -87,7 +89,7 @@ export class UserService {
 
     getAllPointVenteByAgenceId$ = (agenceId: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/listPointVenteByAgence/${agenceId}`).pipe(tap(console.log), catchError(this.handleError));
 
-    getAllDemandeAttente$ = (pointventeId: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/attente/${pointventeId}`).pipe(tap(console.log), catchError(this.handleError));
+    getAllDemandeAttente$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/attente`).pipe(tap(console.log), catchError(this.handleError));
 
     updateDemandeIndividuel$ = (statut: string, codUsuarios: string, demandeindividuel_id: number) =>
         <Observable<IResponse>>this.http.patch<IResponse>(`${this.server}/ecredit/update/${statut}/${codUsuarios}/${demandeindividuel_id}`, {}).pipe(tap(console.log), catchError(this.handleError));
@@ -101,11 +103,10 @@ export class UserService {
 
     getInfoPointService$ = (pointvente_id: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ebanking/pointvente/${pointvente_id}`).pipe(tap(console.log), catchError(this.handleError));
 
-    getAllDemandeCreditByDate$ = (pointventeId: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/selection/${pointventeId}`).pipe(tap(console.log), catchError(this.handleError));
+    getAllDemandeCreditByDate$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/selection`).pipe(tap(console.log), catchError(this.handleError));
 
     // add document pour la selection
-    addDocuments$ = (userId: number, demandeindividuel_id: number, formData: FormData) =>
-        <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/image/${userId}/${demandeindividuel_id}`, formData).pipe(tap(console.log), catchError(this.handleError));
+    addDocuments$ = (demandeindividuel_id: number, formData: FormData) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/image/${demandeindividuel_id}`, formData).pipe(tap(console.log), catchError(this.handleError));
 
     getAllDocuments$ = (demandeindividuel_id: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/images/${demandeindividuel_id}`).pipe(tap(console.log), catchError(this.handleError));
 
@@ -116,16 +117,16 @@ export class UserService {
 
     addFicherSignaletique$ = (individuel: any, numeroMembre: string) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/addIndividuel/${numeroMembre}`, individuel).pipe(tap(console.log), catchError(this.handleError));
 
-    getLastDemandeInd$ = (numeroMembre: string, userId: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/lastDemandeInd/${numeroMembre}/${userId}`).pipe(tap(console.log), catchError(this.handleError));
+    getLastDemandeInd$ = (numeroMembre: string) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/lastDemandeInd/${numeroMembre}`).pipe(tap(console.log), catchError(this.handleError));
 
-    startCredit$ = (numeroMembre: string, userId: number) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/startCredit/${numeroMembre}/${userId}`, {}).pipe(tap(console.log), catchError(this.handleError));
+    startCredit$ = (numeroMembre: string) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/startCredit/${numeroMembre}`, {}).pipe(tap(console.log), catchError(this.handleError));
 
     getInstanceCredit$ = (numeroMembre: string) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/credit/${numeroMembre}`).pipe(tap(console.log), catchError(this.handleError));
 
-    processCreditInd$ = (referenceCredit: string, creditProcessParams: ProcessCreditInd, userId: number, individuelId: number) =>
-        <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/process-credit/${referenceCredit}/${userId}/${individuelId}`, creditProcessParams).pipe(tap(console.log), catchError(this.handleError));
+    processCreditInd$ = (referenceCredit: string, creditProcessParams: ProcessCreditInd, individuelId: number) =>
+        <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/process-credit/${referenceCredit}}/${individuelId}`, creditProcessParams).pipe(tap(console.log), catchError(this.handleError));
 
-    getListCreditEnAttente$ = (agenceId: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/listCredit/${agenceId}`).pipe(tap(console.log), catchError(this.handleError));
+    getListCreditEnAttente$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/listCredit`).pipe(tap(console.log), catchError(this.handleError));
 
     viewInstanceCredit$ = (referenceCredit: string, numeroMembre: string, userId: number) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/viewCredit/${referenceCredit}/${numeroMembre}/${userId}`).pipe(tap(console.log), catchError(this.handleError));
@@ -140,8 +141,8 @@ export class UserService {
         return this.http.post<IResponse>(`${this.server}/ecredit/calculate/${threshold}`, appreciation).pipe(catchError(this.handleError));
     }
 
-    detailCreditInd$ = (referenceCredit: string, numeroMembre: string, userId: number) =>
-        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/viewDetailCredit/${referenceCredit}/${numeroMembre}/${userId}`).pipe(tap(console.log), catchError(this.handleError));
+    detailCreditInd$ = (referenceCredit: string, numeroMembre: string) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/viewDetailCredit/${referenceCredit}/${numeroMembre}`).pipe(tap(console.log), catchError(this.handleError));
 
     startMiseEnPlaceCredit$ = (referenceCredit: string, numeroMembre: string, userId: number) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/startInsertingCredit/${referenceCredit}/${numeroMembre}/${userId}`).pipe(tap(console.log), catchError(this.handleError));
@@ -193,6 +194,21 @@ export class UserService {
     obtenirResumeCredit$ = (demandeCreditId: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/resumeCredit/${demandeCreditId}`).pipe(tap(console.log), catchError(this.handleError));
 
     startNewDemandeInd$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/newDemandeInd`).pipe(tap(console.log), catchError(this.handleError));
+
+    getInfoAdministrative$ = (delegationId: number, agenceId: number, pointVenteId: number) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/info/${delegationId}/${agenceId}/${pointVenteId}`).pipe(tap(console.log), catchError(this.handleError));
+
+    // Get Information Credit Detailed
+    getCreditDataDetailed$ = (referenceCredit: string) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/get-credit-detailed/${referenceCredit}`).pipe(tap(console.log), catchError(this.handleError));
+
+    updateCreditDataPartial$ = (referenceCredit: string, individuelId: number, creditProcessParams: ProcessCreditInd) =>
+        <Observable<IResponse>>this.http.patch<IResponse>(`${this.server}/ecredit/update-credit-partial/${referenceCredit}/${individuelId}`, creditProcessParams).pipe(tap(console.log), catchError(this.handleError));
+
+    addMotifAnalyse$ = (motifAnalyse: MotifAnalyse, demandeCreditId: number) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/addMotif/${demandeCreditId}`, motifAnalyse).pipe(tap(console.log), catchError(this.handleError));
+
+    obtenirAnalyseCompleteCredit$ = (demandeCreditId: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/analyseComplete/${demandeCreditId}`).pipe(tap(console.log), catchError(this.handleError));
+
+    updateAnalyseComplet$ = (demandeUpdateRequest: DemandeUpdateRequest) => <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/analyseComplet/update`, demandeUpdateRequest).pipe(tap(console.log), catchError(this.handleError));
 
     handleError = (httpErrorResponse: HttpErrorResponse): Observable<never> => {
         console.log(httpErrorResponse);

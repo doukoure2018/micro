@@ -19,9 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static io.digiservices.ecreditservice.query.DemandeIndQuery.*;
 import static io.digiservices.ecreditservice.query.IndividuelQuery.SELECT_INDIVIDUEL_BY_NUMERO_MEMBRE;
@@ -50,10 +48,41 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
     }
 
     @Override
-    public List<DemandeIndividuel> getListDemandeAttente(Long pointventeId)
+    public List<DemandeIndividuel> getListDemandeAttente(Long pointventeId, Long agenceId) {
+        try {
+            log.info("Getting demande attente - PointVenteId: {}, AgenceId: {}", pointventeId, agenceId);
+
+            if (pointventeId == null && agenceId == null) {
+                log.warn("Both pointventeId and agenceId are null");
+                return new ArrayList<>();
+            }
+
+            Map<String, Object> params = new HashMap<>();
+            params.put("pointventeId", pointventeId);
+            params.put("agenceId", agenceId);
+
+            List<DemandeIndividuel> result = jdbcClient.sql(SELECT_ALL_DEMANDE_ATTENTE)
+                    .params(params)
+                    .query(DemandeIndividuel.class)
+                    .list();
+
+            log.info("Found {} demande attente records for pointVenteId: {}, agenceId: {}",
+                    result.size(), pointventeId, agenceId);
+            return result;
+
+        } catch (EmptyResultDataAccessException exception) {
+            log.info("No demande attente found for pointVenteId: {}, agenceId: {}", pointventeId, agenceId);
+            return new ArrayList<>();
+        } catch (Exception e) {
+            log.error("Error in getListDemandeAttente: {}", e.getMessage(), e);
+            throw new ApiException("An error occurred while retrieving demande attente: " + e.getMessage());
+        }
+    }
+    @Override
+    public List<DemandeIndividuel> getListDemandeAttenteNotification(Long pointventeId,Long agenceId)
     {
         try {
-            return jdbcClient.sql(SELECT_ALL_DEMANDE_ATTENTE).param("pointventeId",pointventeId).query(DemandeIndividuel.class).list();
+            return jdbcClient.sql(SELECT_ALL_DEMANDE_ATTENTE_NOTIFICATION_QUERY).params(Map.of("pointventeId",pointventeId,"agenceId",agenceId)).query(DemandeIndividuel.class).list();
         } catch (EmptyResultDataAccessException exception) {
             log.error(exception.getMessage());
             throw new ApiException("No demandeInd found by email");
@@ -222,27 +251,42 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
      */
     private void createNewCredit(String numeroMembre, Long userId, Long individuelId,
                                  DemandeIndividuel lastDemandeCredit) {
-        String referenceCredit = generateCreditReference(numeroMembre);
+        try {
+            String referenceCredit = generateCreditReference(numeroMembre);
 
-        Map<String, Object> creditParams = new HashMap<>();
-        creditParams.put("referenceCredit", referenceCredit);
-        creditParams.put("typeCredit", lastDemandeCredit.getTipCredito());
-        creditParams.put("status", CreditStatus.ENCOURS.name());
-        creditParams.put("createAt", LocalDateTime.now());
-        creditParams.put("codeMembre", numeroMembre);
-        creditParams.put("delegationId", lastDemandeCredit.getDelegation());
-        creditParams.put("agenceId", lastDemandeCredit.getAgence());
-        creditParams.put("pointventeId", lastDemandeCredit.getPos());
-        creditParams.put("individuelId", individuelId);
-        creditParams.put("userId", userId);
-        creditParams.put("montantCredit", lastDemandeCredit.getMontant());
+            Map<String, Object> creditParams = new HashMap<>();
+            creditParams.put("referenceCredit", referenceCredit);
+            creditParams.put("typeCredit", lastDemandeCredit.getTipCredito());
+            creditParams.put("status", CreditStatus.ENCOURS.name());
+            creditParams.put("createAt", LocalDateTime.now());
+            creditParams.put("codeMembre", numeroMembre);
+            creditParams.put("delegationId", lastDemandeCredit.getDelegation());
+            creditParams.put("agenceId", lastDemandeCredit.getAgence());
+            creditParams.put("pointventeId", lastDemandeCredit.getPos());
+            creditParams.put("individuelId", individuelId);
+            creditParams.put("userId", userId);
+            creditParams.put("montantCredit", lastDemandeCredit.getMontant());
 
-        jdbcClient.sql(INSERT_START_NEW_CREDIT)
-                .params(creditParams)
-                .update();
+            int rowsAffected = jdbcClient.sql(INSERT_START_NEW_CREDIT)
+                    .params(creditParams)
+                    .update();
 
-        log.info("Successfully created credit with reference: {} for member: {}",
-                referenceCredit, numeroMembre);
+            if (rowsAffected == 0) {
+                throw new ApiException("Failed to create credit record");
+            }
+
+            log.info("Successfully created credit with reference: {} for member: {}",
+                    referenceCredit, numeroMembre);
+
+        } catch (DataAccessException e) {
+            log.error("Database error while creating credit for member: {}, error: {}",
+                    numeroMembre, e.getMessage(), e);
+            throw new ApiException("Database error occurred while creating credit: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Unexpected error while creating credit for member: {}, error: {}",
+                    numeroMembre, e.getMessage(), e);
+            throw new ApiException("An unexpected error occurred while creating credit");
+        }
     }
 
     /**
@@ -264,12 +308,12 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
     }
 
     @Override
-    public CreditDto getListCreditAttente(Long agenceId) {
+    public List<CreditDto> getListCreditAttente(Long agenceId) {
         try {
-            return jdbcClient.sql(GET_LAST_CREDIT_QUERY).param("agenceId",agenceId).query(CreditDto.class).single();
-        } catch (EmptyResultDataAccessException exception) {
-            log.error(exception.getMessage());
-            throw new ApiException("No Credit Found");
+            return jdbcClient.sql(GET_LAST_CREDIT_QUERY)
+                    .param("agenceId", agenceId)
+                    .query(CreditDto.class)
+                    .list();
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new ApiException("An error occurred please try again");
@@ -538,6 +582,19 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
             return jdbcClient.sql(SELECT_CREDIT_BY_REFERENCE_CREDIT)
                     .param("referenceCredit", referenceCredit)
                     .query(CreditDto.class).single();
+        } catch (EmptyResultDataAccessException exception) {
+            throw new ApiException("No Credit found");
+        } catch (Exception e) {
+            log.error("Error getting note garantie: {}", e.getMessage(), e);
+            throw new ApiException("An error occurred please try again");
+        }
+    }
+
+    @Override
+    public List<DemandeCredit> listDemandeAnalyseCreditByUserId() {
+        try {
+            return jdbcClient.sql(SELECT_DEMANDE_CREDIT_BY_USER_ID_QUERY)
+                    .query(DemandeCredit.class).list();
         } catch (EmptyResultDataAccessException exception) {
             throw new ApiException("No Credit found");
         } catch (Exception e) {

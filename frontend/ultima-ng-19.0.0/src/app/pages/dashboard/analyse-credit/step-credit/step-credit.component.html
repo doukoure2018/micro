@@ -225,13 +225,6 @@
                             </div>
                         </div>
 
-                        <!-- Total Actif -->
-                        <!-- <div class="col-12 mt-3">
-                            <div class="p-3 bg-green-50 border-round font-bold border-1 border-green-200">
-                                Total Actif: {{calculerTotalActif() | currency:'GNF':'symbol':'1.0-0':'fr-FR'}}
-                            </div>
-                        </div> -->
-
                         <!-- Section Passifs -->
                         <div class="col-12 mt-5">
                             <h2 class="text-xl font-bold border-bottom-1 surface-border pb-2 mb-4">Passifs</h2>
@@ -261,31 +254,12 @@
                                     currency="GNF" locale="fr-FR" class="w-full"></p-inputNumber>
                             </div>
                         </div>
-
-                        <!-- Total Passif -->
-                        <!-- <div class="col-12 mt-3">
-                            <div class="p-3 bg-green-50 border-round font-bold border-1 border-green-200">
-                                Total Passif: {{calculerTotalPassif() | currency:'GNF':'symbol':'1.0-0':'fr-FR'}}
-                            </div>
-                        </div> -->
-
-                        <!-- Ratio -->
-                        <!-- <div class="col-12 mt-5">
-                            <div class="p-3 bg-blue-50 border-round border-1 border-blue-200">
-                                <div class="flex align-items-center justify-content-between">
-                                    <span class="font-bold">Ratio de liquidité:</span>
-                                    <span class="text-2xl font-bold text-blue-600">
-                                        {{calculerRatioLiquidite() | number:'1.2-2'}}
-                                    </span>
-                                </div>
-                            </div>
-                        </div> -->
                     </div>
                 </form>
             </p-card>
         </div>
 
-        <!-- Étape 3: Bilan personnel du promoteur -->
+        <!-- Étape 3: Bilan personnel du promoteur (UPDATED with new fields) -->
         <div *ngIf="activeIndex() === 2">
             <p-card header="Bilan personnel du promoteur">
                 <form [formGroup]="bilanPersonnelForm" class="p-fluid">
@@ -312,13 +286,29 @@
                             </div>
                         </div>
 
-                        <!-- <div class="col-12 mt-3">
-                            <div class="p-3 bg-green-50 border-round font-bold border-1 border-green-200">
-                                Total patrimoine personnel: {{ (bilanPersonnelForm.value.epargnes || 0) +
-                                (bilanPersonnelForm.value.valeurBiensDurables || 0) |
-                                currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
+                        <!-- NEW FIELDS: Garantie -->
+                        <div class="col-12 mt-5">
+                            <h3 class="text-lg font-bold border-bottom-1 surface-border pb-2 mb-3">Garanties Proposées
+                            </h3>
+                        </div>
+
+                        <div class="col-12 md:col-6">
+                            <div class="field">
+                                <label for="libeleGarantie" class="block font-medium mb-2">Libellé de la
+                                    garantie</label>
+                                <input id="libeleGarantie" type="text" pInputText formControlName="libeleGarantie"
+                                    class="w-full" placeholder="Ex: Hypothèque sur terrain, Nantissement véhicule..." />
                             </div>
-                        </div> -->
+                        </div>
+
+                        <div class="col-12 md:col-6">
+                            <div class="field">
+                                <label for="montantGarantie" class="block font-medium mb-2">Montant de la
+                                    garantie</label>
+                                <p-inputNumber id="montantGarantie" formControlName="montantGarantie" mode="currency"
+                                    currency="GNF" locale="fr-FR" class="w-full"></p-inputNumber>
+                            </div>
+                        </div>
                     </div>
                 </form>
             </p-card>
@@ -345,7 +335,7 @@
                                 </small>
                             </div>
                         </div>
-                        <!-- NOUVEAU CHAMP AUTRES REVENUS ACTUEL -->
+
                         <div class="col-12 md:col-6">
                             <div class="field">
                                 <label for="autresRevenusActuel" class="block font-medium mb-2">
@@ -357,46 +347,6 @@
                                     currency="GNF" locale="fr-FR" class="w-full"></p-inputNumber>
                             </div>
                         </div>
-
-                        <!-- AJOUTER APRÈS LES CHAMPS EXISTANTS - Total revenus et ratio -->
-                        <!-- <div class="col-12 mt-2">
-                            <div class="p-3 bg-blue-50 border-round border-1 border-blue-200">
-                                <div class="flex align-items-center justify-content-between">
-                                    <span class="font-bold">Revenus totaux actuels:</span>
-                                    <span class="text-lg font-bold text-blue-600">
-                                        {{ calculerRevenusTotauxActuel() | currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div> -->
-
-                        <!-- <div class="col-12">
-                            <div class="p-3 bg-yellow-50 border-round border-1 border-yellow-200">
-                                <div class="flex align-items-center justify-content-between">
-                                    <span class="font-bold">Ratio de dépendance:</span>
-                                    <span class="text-lg font-bold text-yellow-600">
-                                        {{ calculerRatioDependanceActuel() | percent:'1.2-2' }}
-                                    </span>
-                                </div>
-                                <small class="text-color-secondary">
-                                    Part des autres revenus dans les revenus totaux
-                                </small>
-                            </div>
-                        </div> -->
-
-                        <!-- MODIFIER le calcul du résultat brut pour utiliser les revenus totaux -->
-                        <!-- <div class="col-12 mt-2">
-                            <div class="p-3 bg-green-50 border-round border-1 border-green-200">
-                                <div class="flex align-items-center justify-content-between">
-                                    <span class="font-bold">Résultat brut:</span>
-                                    <span class="text-lg font-bold text-green-600">
-                                        {{ calculerRevenusTotauxActuel() - (resultatActuelForm.value.coutMarchandises ||
-                                        0) |
-                                        currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div> -->
 
                         <div class="col-12 md:col-6">
                             <div class="field">
@@ -411,30 +361,6 @@
                                 </small>
                             </div>
                         </div>
-
-                        <!-- <div class="col-12 mt-2">
-                            <div class="p-3 bg-green-50 border-round border-1 border-green-200">
-                                <div class="flex align-items-center justify-content-between">
-                                    <span class="font-bold">Résultat brut:</span>
-                                    <span class="text-lg font-bold text-green-600">
-                                        {{ (resultatActuelForm.value.chiffreAffaires || 0) -
-                                        (resultatActuelForm.value.coutMarchandises || 0) |
-                                        currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div> -->
-
-                        <!-- <div class="col-12">
-                            <div class="p-3 bg-blue-50 border-round border-1 border-blue-200">
-                                <div class="flex align-items-center justify-content-between">
-                                    <span class="font-bold">Marge brute:</span>
-                                    <span class="text-lg font-bold text-blue-600">
-                                        {{ calculerMargeButeActuelle() | percent:'1.2-2' }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div> -->
                     </div>
                 </form>
             </p-card>
@@ -463,7 +389,7 @@
                                 </small>
                             </div>
                         </div>
-                        <!-- NOUVEAU CHAMP AUTRES REVENUS PRÉVISIONNEL -->
+
                         <div class="col-12 md:col-6">
                             <div class="field">
                                 <label for="autresRevenusPrev" class="block font-medium mb-2">
@@ -475,33 +401,6 @@
                                     currency="GNF" locale="fr-FR" class="w-full"></p-inputNumber>
                             </div>
                         </div>
-
-                        <!-- AJOUTER APRÈS LES CHAMPS EXISTANTS - Total revenus et ratio prévisionnels -->
-                        <!-- <div class="col-12 mt-2">
-                            <div class="p-3 bg-blue-50 border-round border-1 border-blue-200">
-                                <div class="flex align-items-center justify-content-between">
-                                    <span class="font-bold">Revenus totaux prévisionnels:</span>
-                                    <span class="text-lg font-bold text-blue-600">
-                                        {{ calculerRevenusTotauxPrevisionnel() | currency:'GNF':'symbol':'1.0-0':'fr-FR'
-                                        }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div> -->
-
-                        <!-- <div class="col-12">
-                            <div class="p-3 bg-yellow-50 border-round border-1 border-yellow-200">
-                                <div class="flex align-items-center justify-content-between">
-                                    <span class="font-bold">Ratio de dépendance prévisionnel:</span>
-                                    <span class="text-lg font-bold text-yellow-600">
-                                        {{ calculerRatioDependancePrevisionnel() | percent:'1.2-2' }}
-                                    </span>
-                                </div>
-                                <small class="text-color-secondary">
-                                    Part des autres revenus dans les revenus totaux prévisionnels
-                                </small>
-                            </div>
-                        </div> -->
 
                         <div class="col-12 md:col-6">
                             <div class="field">
@@ -516,31 +415,6 @@
                                 </small>
                             </div>
                         </div>
-
-                        <!-- MODIFIER le calcul du résultat brut prévisionnel pour utiliser les revenus totaux -->
-                        <!-- <div class="col-12 mt-2">
-                            <div class="p-3 bg-green-50 border-round border-1 border-green-200">
-                                <div class="flex align-items-center justify-content-between">
-                                    <span class="font-bold">Résultat brut prévisionnel:</span>
-                                    <span class="text-lg font-bold text-green-600">
-                                        {{ calculerRevenusTotauxPrevisionnel() -
-                                        (resultatPrevisionnelForm.value.coutMarchandises || 0) |
-                                        currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div> -->
-
-                        <!-- <div class="col-12">
-                            <div class="p-3 bg-blue-50 border-round border-1 border-blue-200">
-                                <div class="flex align-items-center justify-content-between">
-                                    <span class="font-bold">Marge brute prévisionnelle:</span>
-                                    <span class="text-lg font-bold text-blue-600">
-                                        {{ calculerMargeButePrevisionnelle() | percent:'1.2-2' }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div> -->
                     </div>
                 </form>
             </p-card>
@@ -615,8 +489,6 @@
                                     locale="fr-FR" class="w-full"></p-inputNumber>
                             </div>
                         </div>
-
-
                     </div>
                 </form>
             </p-card>
@@ -693,14 +565,12 @@
                                     locale="fr-FR" class="w-full"></p-inputNumber>
                             </div>
                         </div>
-
-
                     </div>
                 </form>
             </p-card>
         </div>
 
-        <!-- Étape 8: Demande de crédit -->
+        <!-- Étape 8: Demande de crédit (UPDATED with delegation/agence/pointvente) -->
         <div *ngIf="activeIndex() === 7">
             <p-card header="Informations sur la demande de crédit">
                 <form [formGroup]="demandeCreditForm" class="p-fluid">
@@ -747,6 +617,43 @@
                             </div>
                         </div>
 
+                        <!-- NEW FIELDS: Delegation/Agence/Point de vente -->
+                        <div class="col-12 mt-4">
+                            <h3 class="text-lg font-bold mb-3 border-bottom-1 surface-border pb-2">Localisation du
+                                crédit
+                            </h3>
+                        </div>
+
+                        <div class="col-12 md:col-4">
+                            <div class="field">
+                                <label for="delegation" class="block font-medium mb-2">Délégation</label>
+                                <p-dropdown id="delegation" formControlName="delegation"
+                                    [options]="state().allDelegations" optionLabel="libele"
+                                    placeholder="Sélectionner..." class="w-full"
+                                    (onChange)="onDelegationChange($event)"></p-dropdown>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-4">
+                            <div class="field">
+                                <label for="agence" class="block font-medium mb-2">Agence</label>
+                                <p-dropdown id="agence" formControlName="agence" [options]="state().filteredAgences"
+                                    optionLabel="libele" placeholder="Sélectionner d'abord une délégation..."
+                                    class="w-full" [disabled]="state().filteredAgences.length === 0"
+                                    (onChange)="onAgenceChange($event)"></p-dropdown>
+                            </div>
+                        </div>
+
+                        <div class="col-12 md:col-4">
+                            <div class="field">
+                                <label for="pointVente" class="block font-medium mb-2">Point de vente</label>
+                                <p-dropdown id="pointVente" formControlName="pointVente"
+                                    [options]="state().filteredPointsVente" optionLabel="libele"
+                                    placeholder="Sélectionner d'abord une agence..." class="w-full"
+                                    [disabled]="state().filteredPointsVente.length === 0"></p-dropdown>
+                            </div>
+                        </div>
+
                         <div class="col-12">
                             <div class="field">
                                 <label for="objetFinancement" class="block font-medium mb-2">Objet du financement
@@ -766,8 +673,126 @@
             </p-card>
         </div>
 
-        <!-- Étape 9: Résumé -->
+        <!-- NEW Étape 9: Personnes caution -->
         <div *ngIf="activeIndex() === 8">
+            <p-card header="Personnes caution">
+                <div class="grid gap-3">
+                    <div class="col-12">
+                        <h3 class="text-lg font-bold mb-3 border-bottom-1 surface-border pb-2">Ajouter une personne
+                            caution</h3>
+                        <p class="text-color-secondary mb-4">Les personnes caution sont optionnelles mais peuvent
+                            renforcer votre dossier.</p>
+                    </div>
+
+                    <!-- Form to add new personnecaution -->
+                    <div class="col-12">
+                        <form [formGroup]="personnecautionForm" class="p-fluid">
+                            <div class="grid gap-3">
+                                <div class="col-12 md:col-6">
+                                    <div class="field">
+                                        <label for="cautionNom" class="block font-medium mb-2">Nom</label>
+                                        <input id="cautionNom" type="text" pInputText formControlName="nom"
+                                            class="w-full" />
+                                    </div>
+                                </div>
+
+                                <div class="col-12 md:col-6">
+                                    <div class="field">
+                                        <label for="cautionPrenom" class="block font-medium mb-2">Prénom</label>
+                                        <input id="cautionPrenom" type="text" pInputText formControlName="prenom"
+                                            class="w-full" />
+                                    </div>
+                                </div>
+
+                                <div class="col-12 md:col-6">
+                                    <div class="field">
+                                        <label for="cautionTelephone" class="block font-medium mb-2">Téléphone</label>
+                                        <input id="cautionTelephone" type="text" pInputText formControlName="telephone"
+                                            class="w-full" />
+                                    </div>
+                                </div>
+
+                                <div class="col-12 md:col-6">
+                                    <div class="field">
+                                        <label for="cautionAge" class="block font-medium mb-2">Âge</label>
+                                        <p-inputNumber id="cautionAge" formControlName="age" [showButtons]="true"
+                                            [min]="18" [max]="100" class="w-full" suffix=" ans"></p-inputNumber>
+                                    </div>
+                                </div>
+
+                                <div class="col-12 md:col-6">
+                                    <div class="field">
+                                        <label for="cautionActivite" class="block font-medium mb-2">Activité</label>
+                                        <input id="cautionActivite" type="text" pInputText formControlName="activite"
+                                            class="w-full" />
+                                    </div>
+                                </div>
+
+                                <div class="col-12 md:col-6">
+                                    <div class="field">
+                                        <label for="cautionProfession" class="block font-medium mb-2">Profession</label>
+                                        <input id="cautionProfession" type="text" pInputText
+                                            formControlName="profession" class="w-full" />
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <button pButton pRipple type="button" label="Ajouter cette personne caution"
+                                        icon="pi pi-plus" class="p-button-success"
+                                        (click)="addPersonnecaution()"></button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- List of added personnecautions -->
+                    <div class="col-12" *ngIf="personnecautions.length > 0">
+                        <h3 class="text-lg font-bold mb-3 border-bottom-1 surface-border pb-2">Personnes caution
+                            ajoutées ({{personnecautions.length}})</h3>
+
+                        <div class="grid gap-3">
+                            <div class="col-12" *ngFor="let caution of personnecautions; let i = index">
+                                <p-card styleClass="mb-3">
+                                    <ng-template pTemplate="header">
+                                        <div class="flex align-items-center justify-content-between p-3">
+                                            <span class="font-bold">{{caution.prenom}} {{caution.nom}}</span>
+                                            <button pButton pRipple type="button" icon="pi pi-trash"
+                                                class="p-button-rounded p-button-danger p-button-text"
+                                                (click)="removePersonnecaution(i)" pTooltip="Supprimer"></button>
+                                        </div>
+                                    </ng-template>
+
+                                    <div class="grid">
+                                        <div class="col-12 md:col-6 lg:col-4" *ngIf="caution.telephone">
+                                            <strong>Téléphone:</strong> {{caution.telephone}}
+                                        </div>
+                                        <div class="col-12 md:col-6 lg:col-4" *ngIf="caution.age">
+                                            <strong>Âge:</strong> {{caution.age}} ans
+                                        </div>
+                                        <div class="col-12 md:col-6 lg:col-4" *ngIf="caution.activite">
+                                            <strong>Activité:</strong> {{caution.activite}}
+                                        </div>
+                                        <div class="col-12 md:col-6 lg:col-4" *ngIf="caution.profession">
+                                            <strong>Profession:</strong> {{caution.profession}}
+                                        </div>
+                                    </div>
+                                </p-card>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12" *ngIf="personnecautions.length === 0">
+                        <div class="p-3 bg-yellow-50 border-round border-1 border-yellow-200 text-center">
+                            <i class="pi pi-info-circle mr-2"></i>
+                            <span>Aucune personne caution ajoutée. Vous pouvez continuer sans ajouter de caution.</span>
+                        </div>
+                    </div>
+                </div>
+            </p-card>
+        </div>
+
+        <!-- Étape 10: Résumé (UPDATED index) -->
+        <div *ngIf="activeIndex() === 9">
             <p-card header="Résumé de votre demande de crédit">
                 <div class="grid">
                     <!-- Informations du promoteur et de l'entreprise -->
@@ -811,7 +836,7 @@
                         </p-panel>
                     </div>
 
-                    <!-- Bilan financier -->
+                    <!-- Bilan financier (UPDATED with guarantee info) -->
                     <div class="col-12 mb-4">
                         <p-panel header="Bilan financier" [toggleable]="true">
                             <div class="grid">
@@ -824,26 +849,20 @@
                                         <ng-template pTemplate="body" let-item>
                                             <tr>
                                                 <td class="font-medium">{{item.label}}</td>
-                                                <td>
-                                                    <span *ngIf="item.severity" [ngClass]="{
-                                                        'text-green-500': item.severity === 'success',
-                                                        'text-blue-500': item.severity === 'info',
-                                                        'text-yellow-500': item.severity === 'warn',
-                                                        'text-red-500': item.severity === 'danger'
-                                                    }">{{item.value}}</span>
-                                                    <span *ngIf="!item.severity">{{item.value}}</span>
-                                                </td>
+                                                <td>{{item.value}}</td>
                                             </tr>
                                         </ng-template>
                                     </p-table>
                                 </div>
 
                                 <div class="col-12 md:col-6">
-                                    <h3 class="text-lg font-medium">Bilan personnel</h3>
+                                    <h3 class="text-lg font-medium">Bilan personnel & Garanties</h3>
                                     <p-table [value]="[
                                         { label: 'Épargnes', value: resumeData.bilanPersonnel?.epargnes | currency:'GNF':'symbol':'1.0-0':'en-US' },
                                         { label: 'Biens durables', value: resumeData.bilanPersonnel?.valeur_biens_durables | currency:'GNF':'symbol':'1.0-0':'en-US' },
-                                        { label: 'Total patrimoine', value: (resumeData.bilanPersonnel?.epargnes || 0) + (resumeData.bilanPersonnel?.valeur_biens_durables || 0) | currency:'GNF':'symbol':'1.0-0':'en-US' }
+                                        { label: 'Total patrimoine', value: (resumeData.bilanPersonnel?.epargnes || 0) + (resumeData.bilanPersonnel?.valeur_biens_durables || 0) | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                        { label: 'Garantie proposée', value: resumeData.bilanPersonnel?.libele_garantie || '-' },
+                                        { label: 'Montant garantie', value: resumeData.bilanPersonnel?.montant_garantie | currency:'GNF':'symbol':'1.0-0':'en-US' }
                                     ]" styleClass="p-datatable-sm" [tableStyle]="{'min-width': '30rem'}">
                                         <ng-template pTemplate="body" let-item>
                                             <tr>
@@ -872,15 +891,7 @@
                                         <ng-template pTemplate="body" let-item>
                                             <tr>
                                                 <td class="font-medium">{{item.label}}</td>
-                                                <td>
-                                                    <span *ngIf="item.severity" [ngClass]="{
-                                                        'text-green-500': item.severity === 'success',
-                                                        'text-blue-500': item.severity === 'info',
-                                                        'text-yellow-500': item.severity === 'warn',
-                                                        'text-red-500': item.severity === 'danger'
-                                                    }">{{item.value}}</span>
-                                                    <span *ngIf="!item.severity">{{item.value}}</span>
-                                                </td>
+                                                <td>{{item.value}}</td>
                                             </tr>
                                         </ng-template>
                                     </p-table>
@@ -897,15 +908,7 @@
                                         <ng-template pTemplate="body" let-item>
                                             <tr>
                                                 <td class="font-medium">{{item.label}}</td>
-                                                <td>
-                                                    <span *ngIf="item.severity" [ngClass]="{
-                                                        'text-green-500': item.severity === 'success',
-                                                        'text-blue-500': item.severity === 'info',
-                                                        'text-yellow-500': item.severity === 'warn',
-                                                        'text-red-500': item.severity === 'danger'
-                                                    }">{{item.value}}</span>
-                                                    <span *ngIf="!item.severity">{{item.value}}</span>
-                                                </td>
+                                                <td>{{item.value}}</td>
                                             </tr>
                                         </ng-template>
                                     </p-table>
@@ -963,7 +966,7 @@
                         </p-panel>
                     </div>
 
-                    <!-- Demande de crédit -->
+                    <!-- Demande de crédit (UPDATED with location info) -->
                     <div class="col-12 mb-4">
                         <p-panel header="Demande de crédit" [toggleable]="true">
                             <div class="grid">
@@ -972,19 +975,14 @@
                                         { label: 'Montant demandé', value: resumeData.demandeCredit?.montant_demande | currency:'GNF':'symbol':'1.0-0':'en-US' },
                                         { label: 'Durée', value: (resumeData.demandeCredit?.duree_mois || 0) + ' mois' },
                                         { label: 'Mensualité estimée', value: calculerMensualite() | currency:'GNF':'symbol':'1.0-0':'en-US' },
+                                        { label: 'Délégation', value: resumeData.demandeCredit?.delegation || '-' },
+                                        { label: 'Agence', value: resumeData.demandeCredit?.agence || '-' },
+                                        { label: 'Point de vente', value: resumeData.demandeCredit?.point_vente || '-' }
                                     ]" styleClass="p-datatable-sm" [tableStyle]="{'min-width': '30rem'}">
                                         <ng-template pTemplate="body" let-item>
                                             <tr>
                                                 <td class="font-medium">{{item.label}}</td>
-                                                <td>
-                                                    <span *ngIf="item.severity" [ngClass]="{
-                                                        'text-green-500': item.severity === 'success',
-                                                        'text-blue-500': item.severity === 'info',
-                                                        'text-yellow-500': item.severity === 'warn',
-                                                        'text-red-500': item.severity === 'danger'
-                                                    }">{{item.value}}</span>
-                                                    <span *ngIf="!item.severity">{{item.value}}</span>
-                                                </td>
+                                                <td>{{item.value}}</td>
                                             </tr>
                                         </ng-template>
                                     </p-table>
@@ -994,6 +992,31 @@
                                     <p-card styleClass="h-full">
                                         <p class="text-justify">{{resumeData.demandeCredit?.objet_financement || '-'}}
                                         </p>
+                                    </p-card>
+                                </div>
+                            </div>
+                        </p-panel>
+                    </div>
+
+                    <!-- NEW: Personnes caution summary -->
+                    <div class="col-12 mb-4" *ngIf="personnecautions.length > 0">
+                        <p-panel header="Personnes caution ({{personnecautions.length}})" [toggleable]="true">
+                            <div class="grid gap-3">
+                                <div class="col-12 md:col-6" *ngFor="let caution of personnecautions; let i = index">
+                                    <p-card [header]="caution.prenom + ' ' + caution.nom">
+                                        <p-table [value]="[
+                                            { label: 'Téléphone', value: caution.telephone || '-' },
+                                            { label: 'Âge', value: caution.age ? caution.age + ' ans' : '-' },
+                                            { label: 'Activité', value: caution.activite || '-' },
+                                            { label: 'Profession', value: caution.profession || '-' }
+                                        ]" styleClass="p-datatable-sm" [tableStyle]="{'min-width': '25rem'}">
+                                            <ng-template pTemplate="body" let-item>
+                                                <tr>
+                                                    <td class="font-medium">{{item.label}}</td>
+                                                    <td>{{item.value}}</td>
+                                                </tr>
+                                            </ng-template>
+                                        </p-table>
                                     </p-card>
                                 </div>
                             </div>
@@ -1011,13 +1034,13 @@
             </p-card>
         </div>
 
-        <!-- Boutons de navigation -->
+        <!-- Boutons de navigation (UPDATED for new step count) -->
         <div class="flex justify-between mt-4">
             <button pButton pRipple type="button" label="Précédent" class="p-button-outlined"
                 [disabled]="activeIndex() === 0" (click)="prevStep()"></button>
 
             <button pButton pRipple type="button" label="Suivant" class="p-button-outlined"
-                [disabled]="activeIndex() === 8" (click)="nextStep()"></button>
+                [disabled]="activeIndex() === 9" (click)="nextStep()"></button>
         </div>
     </div>
 </div>

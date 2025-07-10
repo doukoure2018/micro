@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
 import java.util.List;
 
 @Data
@@ -16,5 +15,6 @@ public class CreditosClienteResponseDTO {
     private List<CreditoDTO> creditos;
     private List<PlanPagoDTO> planPagos;
     private List<ResumenPlanPagoDTO> resumenes;
+    private EvaluationRisqueDTO evaluationRisque; // Nouvelle propriété
     private String mensaje;
 }

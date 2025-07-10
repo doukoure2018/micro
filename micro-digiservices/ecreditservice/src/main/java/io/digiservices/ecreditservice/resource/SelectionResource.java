@@ -1,5 +1,6 @@
 package io.digiservices.ecreditservice.resource;
 
+import io.digiservices.clients.UserClient;
 import io.digiservices.ecreditservice.domain.Response;
 import io.digiservices.ecreditservice.dto.Selection;
 import io.digiservices.ecreditservice.service.DemandeIndService;
@@ -39,10 +40,10 @@ public class SelectionResource {
 
     private final SelectionService selectionService;
     private final DemandeIndService demandeIndService;
+    private final UserClient userClient;
 
-    @PostMapping(value = "/image/{userId}/{demandeindividuel_id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/image/{demandeindividuel_id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Response> addSelectionInd(@NotNull Authentication authentication,
-                                                    @PathVariable(name = "userId") Long userId,
                                                     @PathVariable(name = "demandeindividuel_id") Long demandeindividuel_id,
                                                     @RequestParam("image") MultipartFile image,
                                                     HttpServletRequest request) {
@@ -52,11 +53,11 @@ public class SelectionResource {
         log.info("   📤 Received file: {}", image.getOriginalFilename());
         log.info("   📊 File size: {} bytes", image.getSize());
         log.info("   📋 Content type: {}", image.getContentType());
-        log.info("   👤 User ID: {}", userId);
+        log.info("   👤 User ID: {}", userClient.getUserByUuid(authentication.getName()).getUserId());
         log.info("   📄 Demande ID: {}", demandeindividuel_id);
 
         try {
-            List<Selection> result = selectionService.addSelection(userId, demandeindividuel_id, image);
+            List<Selection> result = selectionService.addSelection(userClient.getUserByUuid(authentication.getName()).getUserId(), demandeindividuel_id, image);
 
             // Log the result
             log.info("✅ Controller: Service returned {} selections", result.size());

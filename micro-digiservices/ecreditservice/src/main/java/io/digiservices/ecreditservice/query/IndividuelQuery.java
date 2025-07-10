@@ -134,6 +134,49 @@ public class IndividuelQuery {
                             ) AS success
                         """;
 
+    public static final String GET_CREDIT_DATA_QUERY =
+            """
+                SELECT * FROM get_credit_data_by_reference(:referenceCredit)
+            """;
+
+    public static final String UPDATE_CREDIT_DATA_QUERY =
+            """
+                SELECT update_credit_data(
+                    :referenceCredit,
+                    :moyenPerson,
+                    :bien,
+                    :capital,
+                    :creance,
+                    :dette,
+                    :statutActivite,
+                    :experience,
+                    :lieuxAct,
+                    :personEmp,
+                    :lien,
+                    :nombre,
+                    :cumulCredit,
+                    :nbreCredit,
+                    :frequence,
+                    :garantieLibele,
+                    :garantieMontant,
+                    :itAss,
+                    :itPc,
+                    :produitsLibele,
+                    :produitsPrixUnit,
+                    :produitsQte,
+                    :produitsObservation,
+                    :chargesLibele,
+                    :chargesPrixUnit,
+                    :chargesQte,
+                    :cautionsNom,
+                    :cautionsPrenom,
+                    :cautionsTelephone,
+                    :cautionsActivite,
+                    :cautionsAge,
+                    :cautionsProfession
+                ) AS success
+            """;
+
 
     public static final String SELECT_CREDIT_DTO_QUERY = "SELECT * FROM credit WHERE code_membre = :numeroMembre AND status ='ENCOURS' ORDER BY create_at DESC LIMIT 1";
 

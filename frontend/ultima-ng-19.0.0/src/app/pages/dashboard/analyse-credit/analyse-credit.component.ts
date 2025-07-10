@@ -1,4 +1,3 @@
-import { Credit } from '@/interface/credit';
 import { DemandeCredit } from '@/interface/demande.credit';
 import { IResponse } from '@/interface/response';
 import { IUser } from '@/interface/user';
@@ -9,16 +8,12 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { FluidModule } from 'primeng/fluid';
-import { IconField, IconFieldModule } from 'primeng/iconfield';
+import { IconFieldModule } from 'primeng/iconfield';
 import { InputTextModule } from 'primeng/inputtext';
-import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
-import { TextareaModule } from 'primeng/textarea';
 import { switchMap } from 'rxjs/operators';
 import { EMPTY } from 'rxjs';
 import { MessageModule } from 'primeng/message';
-import { CreditosClienteResponseDTO } from '@/interface/creditos-cliente-response.model';
 import { CardModule } from 'primeng/card';
 import { TagModule } from 'primeng/tag';
 import { ProgressBarModule } from 'primeng/progressbar';
@@ -28,6 +23,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { DividerModule } from 'primeng/divider';
 import { InputIconModule } from 'primeng/inputicon';
 import { CreditoDTO } from '@/interface/credito.histo.model';
+import { CreditosClienteResponseDTO } from '@/interface/CreditosClienteResponseDTO';
 
 @Component({
     selector: 'app-analyse-credit',
@@ -118,7 +114,6 @@ export class AnalyseCreditComponent implements OnInit {
             });
     }
 
-    // UPDATED METHOD - Now calls the new API endpoint
     searchCredits(): void {
         if (!this.searchQuery || this.searchQuery.trim() === '') {
             this.state.update((state) => ({
@@ -137,7 +132,6 @@ export class AnalyseCreditComponent implements OnInit {
             histoCredits: null
         }));
 
-        // Call the new API endpoint for credit history
         this.userService
             .getAllCreditos$(this.searchQuery)
             .pipe(takeUntilDestroyed(this.destroyRef))
@@ -172,8 +166,12 @@ export class AnalyseCreditComponent implements OnInit {
                 return 'success'; // Cancelled/Completed
             case 'A':
                 return 'info'; // Active
+            case 'I':
+                return 'warn'; // Inactive
             case 'V':
-                return 'warn'; // Vencido (Expired)
+                return 'danger'; // Vencido (Expired)
+            case 'R':
+                return 'secondary'; // Rejected/Refused
             case 'P':
                 return 'secondary'; // Pending
             default:
@@ -187,8 +185,12 @@ export class AnalyseCreditComponent implements OnInit {
                 return 'Soldé';
             case 'A':
                 return 'Actif';
+            case 'I':
+                return 'Inactif';
             case 'V':
                 return 'Échu';
+            case 'R':
+                return 'Rejeté';
             case 'P':
                 return 'En attente';
             default:
@@ -285,17 +287,12 @@ export class AnalyseCreditComponent implements OnInit {
         this.router.navigate([`dashboards/credit/${userId}/new-step`]);
     }
 
-    /**
-     * Méthode mise à jour pour viewPlanPago avec scrolling automatique
-     */
     viewPlanPago(numCredito: number): void {
-        // Faire défiler jusqu'à la section des plans de paiement
         setTimeout(() => {
             const element = document.querySelector(`[data-credit-plan="${numCredito}"]`);
             if (element) {
                 element.scrollIntoView({ behavior: 'smooth', block: 'start' });
             } else {
-                // Si l'élément spécifique n'est pas trouvé, faire défiler vers la section générale
                 const planSection = document.querySelector('.payment-plans-section');
                 if (planSection) {
                     planSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -340,44 +337,55 @@ export class AnalyseCreditComponent implements OnInit {
         return credits.filter((credit) => credit.indEstado === 'C').length;
     }
 
-    // RISK ASSESSMENT
-    getRiskAssessment(): { level: string; score: number; factors: string[] } {
-        const histoCredits = this.state().histoCredits;
-        if (!histoCredits?.creditos) {
-            return { level: 'UNKNOWN', score: 0, factors: ['Aucun historique disponible'] };
+    // UPDATED RISK ASSESSMENT - Now uses data from API
+    getRiskAssessment(): { level: string; score: number; factors: string[] } | null {
+        const evaluationRisque = this.state().histoCredits?.evaluationRisque;
+
+        if (!evaluationRisque) {
+            return null;
         }
 
-        const credits = histoCredits.creditos;
-        const totalCredits = credits.length;
-        const completedCredits = credits.filter((c) => c.indEstado === 'C').length;
-        const activeCredits = credits.filter((c) => c.indEstado === 'A').length;
+        // Convert API risk level to display format
+        let displayLevel = evaluationRisque.niveauRisque;
 
-        const completionRate = totalCredits > 0 ? (completedCredits / totalCredits) * 100 : 0;
-
-        let level: string;
-        let score = completionRate;
+        // Build factors array based on the evaluation
         const factors: string[] = [];
+        factors.push(evaluationRisque.historiqueRemboursement);
 
-        if (completionRate >= 90) {
-            level = 'FAIBLE';
-            factors.push('Excellent historique de remboursement');
-        } else if (completionRate >= 70) {
-            level = 'MODERE';
-            factors.push('Bon historique de remboursement');
-        } else if (completionRate >= 50) {
-            level = 'ELEVE';
-            factors.push('Historique de remboursement moyen');
-        } else {
-            level = 'TRES_ELEVE';
-            factors.push('Historique de remboursement préoccupant');
+        if (evaluationRisque.echeancesAnalysees > 0) {
+            const respectRate = (evaluationRisque.echeancesRespectees / evaluationRisque.echeancesAnalysees) * 100;
+            if (respectRate < 50) {
+                factors.push(`Seulement ${respectRate.toFixed(0)}% des échéances respectées`);
+            }
         }
 
-        if (activeCredits > 3) {
-            factors.push('Nombre élevé de crédits actifs');
-            score -= 10;
+        if (evaluationRisque.creditsAnalyses > 0) {
+            factors.push(`Analyse basée sur ${evaluationRisque.creditsAnalyses} crédit(s)`);
         }
 
-        return { level, score: Math.max(0, Math.min(100, score)), factors };
+        return {
+            level: displayLevel,
+            score: evaluationRisque.scoreConfiance,
+            factors: factors
+        };
+    }
+
+    // Get risk level color class
+    getRiskLevelColorClass(level: string): string {
+        switch (level) {
+            case 'TRÈS FAIBLE':
+                return 'text-green-600';
+            case 'FAIBLE':
+                return 'text-blue-600';
+            case 'MODÉRÉ':
+                return 'text-orange-600';
+            case 'ÉLEVÉ':
+                return 'text-orange-600';
+            case 'TRÈS ÉLEVÉ':
+                return 'text-red-600';
+            default:
+                return 'text-gray-600';
+        }
     }
 
     // EXPORT FUNCTIONALITY
@@ -390,6 +398,7 @@ export class AnalyseCreditComponent implements OnInit {
             credits: histoCredits.creditos,
             planPagos: histoCredits.planPagos,
             resumenes: histoCredits.resumenes,
+            evaluationRisque: histoCredits.evaluationRisque,
             exportDate: new Date().toISOString()
         };
 
@@ -404,31 +413,28 @@ export class AnalyseCreditComponent implements OnInit {
         URL.revokeObjectURL(link.href);
     }
 
-    /**
-     * Récupère le plan de paiement pour un crédit spécifique
-     */
     getPlanPagosByCredit(numCredito: number): any[] {
+        const planPagos = this.state().histoCredits?.planPagos || [];
+        // Exclure les échéances d'ouverture (numCuota === 0)
+        return planPagos.filter((plan) => plan.numCredito === numCredito && plan.numCuota !== 0);
+    }
+
+    // 2. Nouvelle méthode pour obtenir TOUS les plans incluant l'ouverture (pour l'affichage dans la table)
+    getAllPlanPagosByCredit(numCredito: number): any[] {
         const planPagos = this.state().histoCredits?.planPagos || [];
         return planPagos.filter((plan) => plan.numCredito === numCredito);
     }
 
-    /**
-     * Compte le nombre d'échéances payées pour un plan de paiement donné
-     */
     getPaidInstallments(planPagos: any[]): number {
-        return planPagos.filter((plan) => plan.indEstado === 'C').length;
+        // Compter uniquement les échéances réelles payées (exclure numCuota === 0)
+        return planPagos.filter((plan) => plan.indEstado === 'C' && plan.numCuota !== 0).length;
     }
 
-    /**
-     * Compte le nombre d'échéances restantes pour un plan de paiement donné
-     */
     getRemainingInstallments(planPagos: any[]): number {
-        return planPagos.filter((plan) => plan.indEstado === 'A' || plan.indEstado === 'P').length;
+        // Compter uniquement les échéances réelles restantes (exclure numCuota === 0)
+        return planPagos.filter((plan) => (plan.indEstado === 'A' || plan.indEstado === 'P') && plan.numCuota !== 0).length;
     }
 
-    /**
-     * Méthode alternative pour récupérer les statistiques d'un crédit spécifique
-     */
     getCreditStatistics(numCredito: number): {
         totalEcheances: number;
         echeancesPagees: number;
@@ -437,39 +443,39 @@ export class AnalyseCreditComponent implements OnInit {
         montantPaye: number;
         soldeRestant: number;
     } {
-        const planPagos = this.getPlanPagosByCredit(numCredito);
+        const allPlanPagos = this.state().histoCredits?.planPagos || [];
+        // Filtrer pour exclure les échéances d'ouverture (numCuota === 0)
+        const planPagos = allPlanPagos.filter((plan) => plan.numCredito === numCredito && plan.numCuota !== 0);
         const credit = this.state().histoCredits?.creditos?.find((c) => c.numCredito === numCredito);
 
         return {
             totalEcheances: planPagos.length,
-            echeancesPagees: this.getPaidInstallments(planPagos),
-            echeancesRestantes: this.getRemainingInstallments(planPagos),
+            echeancesPagees: planPagos.filter((plan) => plan.indEstado === 'C').length,
+            echeancesRestantes: planPagos.filter((plan) => plan.indEstado === 'A' || plan.indEstado === 'P').length,
             montantTotal: credit?.monCredito || 0,
             montantPaye: credit?.monPagadoPrincipal || 0,
             soldeRestant: credit?.monSaldo || 0
         };
     }
 
-    /**
-     * Vérifie si un crédit a des échéances en retard
-     */
     hasOverdueInstallments(numCredito: number): boolean {
-        const planPagos = this.getPlanPagosByCredit(numCredito);
+        const allPlanPagos = this.state().histoCredits?.planPagos || [];
+        // Filtrer pour exclure les échéances d'ouverture
+        const planPagos = allPlanPagos.filter((plan) => plan.numCredito === numCredito && plan.numCuota !== 0);
         const today = new Date();
 
         return planPagos.some((plan) => {
-            if (plan.indEstado === 'C') return false; // Déjà payé
+            if (plan.indEstado === 'C') return false;
 
             const dueDate = new Date(plan.fecCuota);
             return dueDate < today;
         });
     }
 
-    /**
-     * Obtient la prochaine échéance pour un crédit
-     */
     getNextInstallment(numCredito: number): any | null {
-        const planPagos = this.getPlanPagosByCredit(numCredito);
+        const allPlanPagos = this.state().histoCredits?.planPagos || [];
+        // Filtrer pour exclure les échéances d'ouverture
+        const planPagos = allPlanPagos.filter((plan) => plan.numCredito === numCredito && plan.numCuota !== 0);
         const today = new Date();
 
         const futureInstallments = planPagos.filter((plan) => plan.indEstado === 'A' && new Date(plan.fecCuota) >= today).sort((a, b) => new Date(a.fecCuota).getTime() - new Date(b.fecCuota).getTime());
@@ -477,12 +483,16 @@ export class AnalyseCreditComponent implements OnInit {
         return futureInstallments.length > 0 ? futureInstallments[0] : null;
     }
 
-    /**
-     * Calcule le montant total des intérêts pour un crédit
-     */
     getTotalInterestForCredit(numCredito: number): number {
-        const planPagos = this.getPlanPagosByCredit(numCredito);
+        const allPlanPagos = this.state().histoCredits?.planPagos || [];
+        // Filtrer pour exclure les échéances d'ouverture
+        const planPagos = allPlanPagos.filter((plan) => plan.numCredito === numCredito && plan.numCuota !== 0);
         return planPagos.reduce((total, plan) => total + (plan.monInt || 0), 0);
+    }
+
+    getTotalEcheancesWithoutOpening(): number {
+        const planPagos = this.state().histoCredits?.planPagos || [];
+        return planPagos.filter((plan) => plan.numCuota !== 0).length;
     }
 
     printCreditHistory(): void {

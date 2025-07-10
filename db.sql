@@ -289,7 +289,7 @@ END;
     $$
 
 
-    CREATE OR REPLACE PROCEDURE create_account (IN p_user_uuid VARCHAR(40), IN p_first_name VARCHAR(25), IN p_last_name VARCHAR(25), IN p_email VARCHAR(40), IN p_username VARCHAR(25), IN p_password VARCHAR(255), IN p_credential_uuid VARCHAR(40), IN p_token VARCHAR(40), IN p_member_id VARCHAR(40), IN p_role_name VARCHAR(20))
+CREATE OR REPLACE PROCEDURE create_account (IN p_user_uuid VARCHAR(40), IN p_first_name VARCHAR(25), IN p_last_name VARCHAR(25), IN p_email VARCHAR(40), IN p_username VARCHAR(25), IN p_password VARCHAR(255), IN p_credential_uuid VARCHAR(40), IN p_token VARCHAR(40), IN p_member_id VARCHAR(40), IN p_role_name VARCHAR(20))
     LANGUAGE PLPGSQL
     AS $$
     DECLARE
@@ -800,7 +800,7 @@ ALTER TABLE users
 
 -- Optional: Add foreign key constraints if these tables exist
 -- Uncomment and modify as needed
-/*
+
 ALTER TABLE users
 ADD CONSTRAINT fk_users_delegation
 FOREIGN KEY (delegation_id) REFERENCES delegation(id);
@@ -812,7 +812,7 @@ FOREIGN KEY (agence_id) REFERENCES agence(id);
 ALTER TABLE users
 ADD CONSTRAINT fk_users_pointvente
 FOREIGN KEY (pointvente_id) REFERENCES pointvente(id);
-*/
+
 
 
 CREATE TABLE demandeIndividuel (
@@ -1137,8 +1137,58 @@ CALL create_user(
     'Salifou',                                   -- p_last_name
     'douklifsa93@gmail.com',                  -- p_email
     'admin',                               -- p_username
-    '$2a$12$0NBzHyQ1hjeWUhGF6MN.s.Wh590zSKegFpaPm0/iQGuquDw1KhO8K',                           -- p_password
+    '$2a$12$.Ij3d6B03dff0mRTiygaKe26oFXoKOeniewxdRgecM1PnNH1Dz2Jq',                           -- p_password
     '7c9e6679-7425-40de-944b-e07fc1f90ae7', -- p_credential_uuid
     '550e8400-e29b-41d4-a716-446655440000',                      -- p_token
     '778-8909-8655'                              -- p_member_id
+);
+
+---- Alter the missings column to table demande_credit
+
+-- Add missing columns to demande_credit table
+ALTER TABLE demande_credit
+    ADD COLUMN delegation_id BIGINT REFERENCES public.delegation(id);
+
+ALTER TABLE demande_credit
+    ADD COLUMN agence_id BIGINT REFERENCES public.agence(id);
+
+ALTER TABLE demande_credit
+    ADD COLUMN point_vente_id BIGINT REFERENCES public.pointvente(id);
+
+
+---- Add table personnecaution pour l'analyse Credit -----
+CREATE TABLE IF NOT EXISTS personnecaution (
+   personnecaution_id BIGSERIAL PRIMARY KEY,
+   entreprise_id INTEGER REFERENCES entreprise(entreprise_id),
+   nom VARCHAR(255),
+    prenom VARCHAR(255),
+    telephone VARCHAR(255),
+    activite VARCHAR(255),
+    age BIGINT,
+    profession VARCHAR(255)
+    );
+
+
+-- Add missing columns to bilan_personnel table
+ALTER TABLE bilan_personnel
+    ADD COLUMN libele_garantie VARCHAR(255);
+
+ALTER TABLE bilan_personnel
+    ADD COLUMN montant_garantie DECIMAL(15, 2) DEFAULT 0;
+
+-- Add user_id column to demande_credit tableas
+ALTER TABLE demande_credit
+    ADD COLUMN user_id BIGINT REFERENCES users(user_id);
+
+ALTER TABLE compte_exploitation
+    ADD COLUMN autres_revenus DECIMAL(15, 2) DEFAULT 0;
+
+
+
+CREATE TABLE motif_analyses (
+                                motif_analyse_id SERIAL PRIMARY KEY,
+                                user_id INTEGER NOT NULL REFERENCES users(user_id),
+                                demande_credit_id INTEGER NOT NULL REFERENCES demande_credit(demande_credit_id),
+                                motif_date DATE NOT NULL DEFAULT CURRENT_DATE,
+                                motif VARCHAR(500) NOT NULL  -- Consider if this should be required
 );

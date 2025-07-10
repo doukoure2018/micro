@@ -26,12 +26,31 @@ spring:
           uri: lb://ECREDITSERVICE
           predicates:
             - Path=/ecredit/**
+      # Global CORS configuration
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+      # Timeout settings
+      httpclient:
+        connect-timeout: 10000
+        response-timeout: 30s
 
 eureka:
   instance:
     prefer-ip-address: true
     hostname: gateway
     instance-id: ${spring.application.name}:${server.port}
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
   client:
     service-url:
       defaultZone: http://admin:admin2711@discoveryserver:5002/eureka/
@@ -42,11 +61,29 @@ eureka:
 
 logging:
   level:
-    com.netflix.discovery: DEBUG
-    org.springframework.cloud.netflix: DEBUG
+    com.netflix.discovery: INFO
+    org.springframework.cloud.netflix: INFO
+    org.springframework.cloud.gateway: DEBUG
 
 server:
   port: 8000
 
 jwks:
   uri: http://authorizationserver:8080/oauth2/jwks
+
+# Health checks for Docker
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true

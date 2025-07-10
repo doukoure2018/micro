@@ -21,6 +21,24 @@ spring:
   main:
     allow-bean-definition-overriding: true
 
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+      indent-output: true
+    deserialization:
+      fail-on-unknown-properties: false
+      adjust-dates-to-context-time-zone: false
+    mapper:
+      default-view-inclusion: true
+    date-format: yyyy-MM-dd'T'HH:mm:ss.SSSSSS
+    time-zone: UTC  # ou votre timezone
+
+    # Active automatiquement les modules détectés
+    modules:
+      enabled: true
+
+
+
   jpa:
     database: POSTGRESQL
     open-in-view: false
@@ -75,6 +93,37 @@ key:
 
 server:
   port: 8087
+
+integration:
+  partner:
+    user: CRG01
+    password: CRG@12
+    version: 0
+    hours: 2
+    base-url: http://197.149.247.18:7890
+
+
+logging:
+  level:
+    io:
+      digiservices:
+        ecreditservice:
+          utils:
+            IntegrationUtils: DEBUG
+    org:
+      springframework:
+        web:
+          client:
+            RestTemplate: DEBUG
+
+
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+    property-naming-strategy: SNAKE_CASE
 
 jwks:
   uri: http://localhost:8080/oauth2/jwks

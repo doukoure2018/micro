@@ -50,7 +50,26 @@ public class DemandeIndQuery {
             )
             """;
 
-    public static final String SELECT_ALL_DEMANDE_ATTENTE = "SELECT * FROM demandeindividuel WHERE pos = :pointventeId  AND statut_demande='EN_ATTENTE' OR validation_state ='APPROVED'";
+   // public static final String SELECT_ALL_DEMANDE_ATTENTE = "SELECT * FROM demandeindividuel WHERE pos = :pointventeId  AND statut_demande='EN_ATTENTE' OR validation_state ='APPROVED'";
+   public static final String SELECT_ALL_DEMANDE_ATTENTE =
+               """
+                  SELECT * FROM demandeindividuel
+                  WHERE (
+                      (CAST(:agenceId AS BIGINT) IS NOT NULL AND CAST(:pointventeId AS BIGINT) IS NULL AND agence = CAST(:agenceId AS BIGINT)) OR
+                      (CAST(:pointventeId AS BIGINT) IS NOT NULL AND pos = CAST(:pointventeId AS BIGINT))
+                  )
+                  AND (statut_demande = 'EN_ATTENTE' OR validation_state = 'APPROVED')
+               """;
+
+    public static final String SELECT_ALL_DEMANDE_ATTENTE_NOTIFICATION_QUERY =
+            """
+                SELECT * FROM demandeindividuel
+                      WHERE (
+                          (agence = :agenceId AND :agenceId IS NOT NULL) OR
+                          (pos = :pointventeId AND :pointventeId IS NOT NULL)
+                      )
+                      AND (statut_demande = 'EN_ATTENTE' OR validation_state = 'APPROVED')
+            """;
     public static final String SELECT_DEMANDE_INDIVIDUEL_QUERY = "SELECT * FROM demandeindividuel WHERE demandeIndividuel_id = :demandeIndividuelId";
 
     public static final String UPDATE_STATUT_DEMANDE =  "UPDATE demandeIndividuel SET validation_state = :statut, cod_usuarios = :codUsuarios WHERE demandeIndividuel_id = :demandeindividuel_id";
@@ -59,14 +78,14 @@ public class DemandeIndQuery {
     public static final String EXIST_NUMERO_MEMBRE ="SELECT *  FROM individuel WHERE numero_membre = :numeroMembre";
     public static final String GET_LAST_DEMANDE_INDIDIVIDUEL_BY_NUMBERO_MEMBRE_QUERY ="SELECT * FROM demandeIndividuel WHERE numero_membre = :numeroMembre ORDER BY createdAt DESC LIMIT 1";
 
-    public static final String INSERT_START_NEW_CREDIT =
-            """
-                INSERT INTO credit(
-                    reference_credit,type_credit,status,create_at,code_membre,
-                    delegation_id, agence_id,pointvente_id, individuel_id,user_id,montant_credit)
-                    VALUES (:referenceCredit,:typeCredit,:status,:createAt,:codeMembre, :delegationId,:agenceId,:pointventeId,:individuelId,:userId,:montantCredit
-                )
-            """;
+ public static final String INSERT_START_NEW_CREDIT =
+         """
+             INSERT INTO credit(
+                 reference_credit, type_credit, status, create_at, code_membre,
+                 delegation_id, agence_id, pointvente_id, individuel_id, user_id, "montantCredit")
+             VALUES (:referenceCredit, :typeCredit, :status, :createAt, :codeMembre,
+                     :delegationId, :agenceId, :pointventeId, :individuelId, :userId, :montantCredit)
+         """;
 
 
     public static final String INSERT_NEW_INDIVIDUEL_QUERY = "INSERT INTO individuel(numero_membre,user_id) VALUES (:numeroMembre,:userId)";
@@ -82,7 +101,7 @@ public class DemandeIndQuery {
 
     public static final String GET_LAST_CREDIT_QUERY =
                                 """
-                                     SELECT * FROM credit c INNER JOIN users u ON c.user_id = u.user_id  WHERE u.agence_id = :agenceId AND status='ENCOURS' ORDER BY create_at LIMIT 1
+                                     SELECT * FROM credit c INNER JOIN users u ON c.user_id = u.user_id  WHERE u.agence_id = :agenceId AND status='ENCOURS'
                                            
                                 """;
     public static final String GET_INSTANCE_CREDIT_QUERY =
@@ -152,6 +171,7 @@ public class DemandeIndQuery {
                 """
                     SELECT * FROM note_profile
                     WHERE reference_credit=:referenceCredit
+                    AND status_note='ENCOURS'
                     ORDER BY created_At DESC
                     LIMIT 1
                 """;
@@ -159,6 +179,7 @@ public class DemandeIndQuery {
             """
                 SELECT * FROM note_analyse
                 WHERE reference_credit=:referenceCredit
+                AND status_note='ENCOURS'
                 ORDER BY created_At DESC
                 LIMIT 1
             """;
@@ -166,6 +187,7 @@ public class DemandeIndQuery {
             """
                 SELECT * FROM note_garantie
                 WHERE reference_credit=:referenceCredit
+                 AND status_note='ENCOURS'
                 ORDER BY created_At DESC
                 LIMIT 1
             """;
@@ -187,7 +209,7 @@ public class DemandeIndQuery {
 
     public static final String COUNT_NUMBER_OF_DEMANDE_IND_APPROVED = "SELECT COUNT(*)  FROM demandeindividuel WHERE pos = :pointventeId AND statut_demande='EN_ATTENTE' AND validation_state IN ('SELECTION','APPROVED')";
 
-    public static final String SELECT_APPRECIATION_BY_REFERENCE_CREDIT = "SELECT * FROM appreciation WHERE reference_credit=:referenceCredit";
+    public static final String SELECT_APPRECIATION_BY_REFERENCE_CREDIT = "SELECT * FROM appreciation WHERE reference_credit=:referenceCredit ORDER BY created_at DESC LIMIT 1";
 
     public static final String UPDATE_STATE_CREDIT_STATUT_QUERY =
                     """
@@ -216,5 +238,6 @@ public class DemandeIndQuery {
                     "WHERE occurence_credit.occurence_credit_id = latest.occurence_credit_id";
     public static final String SELECT_CREDIT_INFO_BY_REFERENCE_CREDIT = "SELECT * FROM credit WHERE reference_credit=:referenceCredit AND status='ACCEPTED' ORDER BY create_at DESC LIMIT 1";
     public static final String SELECT_CREDIT_BY_REFERENCE_CREDIT = "SELECT * FROM credit WHERE reference_credit=:referenceCredit";
+    public static final String SELECT_DEMANDE_CREDIT_BY_USER_ID_QUERY = "SELECT * FROM demande_credit WHERE statut='VUE'";
 
 }

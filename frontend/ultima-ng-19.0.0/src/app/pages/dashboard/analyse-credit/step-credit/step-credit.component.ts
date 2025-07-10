@@ -3,7 +3,7 @@ import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MenuItem, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -23,9 +23,22 @@ import { AccordionModule } from 'primeng/accordion';
 import { TableModule } from 'primeng/table';
 import { PanelModule } from 'primeng/panel';
 import { DemandeCreditCompleteDTO } from '@/interface/demandeCreditComplete';
+import { Delegation } from '@/interface/delegation';
+import { Agence } from '@/interface/agence';
+import { PointVente } from '@/interface/point.vente';
+import { Personnecaution } from '@/interface/personnecaution';
 
 // D'après les définitions de types de PrimeNG (v14+)
 type PrimeSeverity = 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast';
+
+interface ComponentState {
+    loading: boolean;
+    allDelegations: Delegation[];
+    allAgences: Agence[];
+    allPointsVente: PointVente[];
+    filteredAgences: Agence[];
+    filteredPointsVente: PointVente[];
+}
 
 @Component({
     selector: 'app-step-credit',
@@ -61,6 +74,17 @@ export class StepCreditComponent {
     private messageService = inject(MessageService);
     private destroyRef = inject(DestroyRef);
     private analyseCreditService = inject(UserService);
+    private route = inject(ActivatedRoute); // ADD THIS
+
+    // State management
+    state = signal<ComponentState>({
+        loading: false,
+        allDelegations: [],
+        allAgences: [],
+        allPointsVente: [],
+        filteredAgences: [],
+        filteredPointsVente: []
+    });
 
     // Définition des variables
     activeIndex = signal<number>(0);
@@ -76,6 +100,7 @@ export class StepCreditComponent {
     chargesActuellesForm!: FormGroup;
     chargesPrevisionellesForm!: FormGroup;
     demandeCreditForm!: FormGroup;
+    personnecautionForm!: FormGroup; // New form for personnecaution
 
     // Données pour les formulaires
     formeJuridiques = [
@@ -94,13 +119,68 @@ export class StepCreditComponent {
         { label: 'Artisanat', value: 'Artisanat' }
     ];
 
+    // Liste des personnes caution
+    personnecautions: Personnecaution[] = [];
+
     // Résumé des informations saisies
     resumeData: any = {};
-    // Déclarer les propriétés avec leur type
-
+    // ADD: Store the userId from route
+    userId: number | null = null;
     ngOnInit() {
+        // FIRST: Extract userId from route parameters
+        this.route.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+            this.userId = params['userId'] ? parseInt(params['userId'], 10) : null;
+            console.log('User ID from route:', this.userId);
+
+            if (!this.userId) {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Erreur',
+                    detail: "ID utilisateur manquant dans l'URL",
+                    life: 3000
+                });
+                // Optionally redirect back
+                // this.router.navigate(['/']);
+            }
+        });
+        this.loadInitialData();
         this.initStepItems();
         this.initForms();
+    }
+
+    private loadInitialData(): void {
+        this.state.update((state) => ({ ...state, loading: true }));
+
+        this.analyseCreditService
+            .startNewDemandeInd$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    console.log('Initial data loaded:', response);
+                    if (response.data) {
+                        this.state.update((state) => ({
+                            ...state,
+                            loading: false,
+                            allDelegations: response.data.delegations || [],
+                            allAgences: response.data.agences || [],
+                            allPointsVente: response.data.pointVentes || []
+                        }));
+                    }
+                },
+                error: (error) => {
+                    console.error('Error loading initial data:', error);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Erreur',
+                        detail: 'Impossible de charger les données initiales',
+                        life: 3000
+                    });
+                    this.state.update((state) => ({
+                        ...state,
+                        loading: false
+                    }));
+                }
+            });
     }
 
     // Initialisation des étapes du stepper
@@ -114,7 +194,8 @@ export class StepCreditComponent {
             { label: 'Charges actuelles', command: () => this.onStepChange(5) },
             { label: 'Charges prévisionnelles', command: () => this.onStepChange(6) },
             { label: 'Demande de crédit', command: () => this.onStepChange(7) },
-            { label: 'Résumé', command: () => this.onStepChange(8) }
+            { label: 'Personnes caution', command: () => this.onStepChange(8) }, // New step
+            { label: 'Résumé', command: () => this.onStepChange(9) } // Updated index
         ]);
     }
 
@@ -153,23 +234,25 @@ export class StepCreditComponent {
             capitalPropre: [0, Validators.min(0)]
         });
 
-        // Formulaire pour le bilan personnel du promoteur
+        // Formulaire pour le bilan personnel du promoteur (UPDATED with new fields)
         this.bilanPersonnelForm = this.fb.group({
             epargnes: [0, Validators.min(0)],
-            valeurBiensDurables: [0, Validators.min(0)]
+            valeurBiensDurables: [0, Validators.min(0)],
+            libeleGarantie: [''], // New field
+            montantGarantie: [0, Validators.min(0)] // New field
         });
 
         // Formulaire pour les résultats actuels
         this.resultatActuelForm = this.fb.group({
             chiffreAffaires: [0, [Validators.required, Validators.min(0)]],
-            autresRevenus: [0, Validators.min(0)], // NOUVEAU CHAMP
+            autresRevenus: [0, Validators.min(0)],
             coutMarchandises: [0, [Validators.required, Validators.min(0)]]
         });
 
         // Formulaire pour les résultats prévisionnels
         this.resultatPrevisionnelForm = this.fb.group({
             chiffreAffaires: [0, [Validators.required, Validators.min(0)]],
-            autresRevenus: [0, Validators.min(0)], // NOUVEAU CHAMP
+            autresRevenus: [0, Validators.min(0)],
             coutMarchandises: [0, [Validators.required, Validators.min(0)]]
         });
 
@@ -195,11 +278,24 @@ export class StepCreditComponent {
             loyers: [0, Validators.min(0)]
         });
 
-        // Formulaire pour la demande de crédit
+        // Formulaire pour la demande de crédit (UPDATED with delegation/agence/pointvente)
         this.demandeCreditForm = this.fb.group({
             montantDemande: [0, [Validators.required, Validators.min(1)]],
             dureeMois: [12, [Validators.required, Validators.min(1)]],
-            objetFinancement: ['', Validators.required]
+            objetFinancement: ['', Validators.required],
+            delegation: [null], // New field
+            agence: [null], // New field
+            pointVente: [null] // New field
+        });
+
+        // NEW: Formulaire pour les personnes caution
+        this.personnecautionForm = this.fb.group({
+            nom: [''],
+            prenom: [''],
+            telephone: [''],
+            activite: [''],
+            age: [null, [Validators.min(18), Validators.max(100)]],
+            profession: ['']
         });
     }
 
@@ -208,7 +304,8 @@ export class StepCreditComponent {
             return;
         }
 
-        if (index === 8) {
+        if (index === 9) {
+            // Updated index for summary
             this.prepareSummary();
         }
 
@@ -224,7 +321,8 @@ export class StepCreditComponent {
         }
 
         if (currentIndex < this.items().length - 1) {
-            if (currentIndex === 7) {
+            if (currentIndex === 8) {
+                // Updated index
                 this.prepareSummary();
             }
             this.activeIndex.set(currentIndex + 1);
@@ -299,20 +397,120 @@ export class StepCreditComponent {
                 }
                 this.saveDemandeCreditToResume();
                 break;
+            case 8: // NEW: Personnes caution - optional validation
+                // No required validation for this step as it's optional
+                break;
         }
 
         return true;
     }
 
+    // Delegation/Agence/PointVente change handlers
+    onDelegationChange(event: any): void {
+        console.log('Delegation changed:', event);
+
+        const delegation = event.value;
+        if (!delegation || !delegation.id) {
+            this.state.update((state) => ({
+                ...state,
+                filteredAgences: [],
+                filteredPointsVente: []
+            }));
+            return;
+        }
+
+        const delegationId = delegation.id;
+        console.log('Filtering agences for delegation ID:', delegationId);
+
+        const filteredAgences = this.state().allAgences?.filter((agence) => agence.delegation_id === delegationId) || [];
+
+        this.state.update((state) => ({
+            ...state,
+            filteredAgences,
+            filteredPointsVente: []
+        }));
+
+        // Reset agence and point vente selections
+        this.demandeCreditForm.patchValue({
+            agence: null,
+            pointVente: null
+        });
+    }
+
+    onAgenceChange(event: any): void {
+        console.log('Agence changed:', event);
+
+        const agence = event.value;
+        if (!agence || !agence.id) {
+            this.state.update((state) => ({
+                ...state,
+                filteredPointsVente: []
+            }));
+            return;
+        }
+
+        const agenceId = agence.id;
+        console.log('Filtering points de vente for agence ID:', agenceId);
+
+        const filteredPointsVente = this.state().allPointsVente?.filter((pointVente) => pointVente.agence_id === agenceId) || [];
+
+        this.state.update((state) => ({
+            ...state,
+            filteredPointsVente
+        }));
+
+        // Reset point vente selection
+        this.demandeCreditForm.patchValue({
+            pointVente: null
+        });
+    }
+
+    // NEW: Personnecaution management methods
+    addPersonnecaution(): void {
+        if (this.personnecautionForm.invalid) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Attention',
+                detail: "Veuillez remplir correctement tous les champs avant d'ajouter la personne caution."
+            });
+            return;
+        }
+
+        const personnecaution: Personnecaution = {
+            nom: this.personnecautionForm.get('nom')?.value || '',
+            prenom: this.personnecautionForm.get('prenom')?.value || '',
+            telephone: this.personnecautionForm.get('telephone')?.value || '',
+            activite: this.personnecautionForm.get('activite')?.value || '',
+            age: this.personnecautionForm.get('age')?.value || undefined,
+            profession: this.personnecautionForm.get('profession')?.value || ''
+        };
+
+        this.personnecautions.push(personnecaution);
+        this.personnecautionForm.reset();
+
+        this.messageService.add({
+            severity: 'success',
+            summary: 'Succès',
+            detail: 'Personne caution ajoutée avec succès.'
+        });
+    }
+
+    removePersonnecaution(index: number): void {
+        this.personnecautions.splice(index, 1);
+        this.messageService.add({
+            severity: 'info',
+            summary: 'Information',
+            detail: 'Personne caution supprimée.'
+        });
+    }
+
     // Méthodes pour sauvegarder les données dans l'objet résumé
     saveInfoBaseToResume() {
-        // Extraire la valeur du label pour forme juridique
         const formeJuridiqueValue = this.infoBaseForm.get('formeJuridique')?.value;
         const formeJuridiqueLabel = formeJuridiqueValue
             ? (typeof formeJuridiqueValue === 'object' && formeJuridiqueValue.label ? formeJuridiqueValue.label : this.formeJuridiques.find((f) => f.value === formeJuridiqueValue)?.label) || formeJuridiqueValue || ''
             : '';
 
-        // Extraire la valeur du label pour secteur d'activité
         const secteurActiviteValue = this.infoBaseForm.get('secteurActivite')?.value;
         const secteurActiviteLabel = secteurActiviteValue
             ? (typeof secteurActiviteValue === 'object' && secteurActiviteValue.label ? secteurActiviteValue.label : this.secteursActivite.find((s) => s.value === secteurActiviteValue)?.label) || secteurActiviteValue || ''
@@ -355,14 +553,16 @@ export class StepCreditComponent {
     saveBilanPersonnelToResume() {
         this.resumeData.bilanPersonnel = {
             epargnes: this.bilanPersonnelForm.get('epargnes')?.value || 0,
-            valeur_biens_durables: this.bilanPersonnelForm.get('valeurBiensDurables')?.value || 0
+            valeur_biens_durables: this.bilanPersonnelForm.get('valeurBiensDurables')?.value || 0,
+            libele_garantie: this.bilanPersonnelForm.get('libeleGarantie')?.value || '', // NEW
+            montant_garantie: this.bilanPersonnelForm.get('montantGarantie')?.value || 0 // NEW
         };
     }
 
     saveResultatActuelToResume() {
         this.resumeData.resultatActuel = {
             chiffre_affaires: this.resultatActuelForm.get('chiffreAffaires')?.value || 0,
-            autres_revenus: this.resultatActuelForm.get('autresRevenus')?.value || 0, // NOUVEAU
+            autres_revenus: this.resultatActuelForm.get('autresRevenus')?.value || 0,
             cout_marchandises: this.resultatActuelForm.get('coutMarchandises')?.value || 0
         };
     }
@@ -370,10 +570,11 @@ export class StepCreditComponent {
     saveResultatPrevisionnelToResume() {
         this.resumeData.resultatPrevisionnel = {
             chiffre_affaires: this.resultatPrevisionnelForm.get('chiffreAffaires')?.value || 0,
-            autres_revenus: this.resultatPrevisionnelForm.get('autresRevenus')?.value || 0, // NOUVEAU
+            autres_revenus: this.resultatPrevisionnelForm.get('autresRevenus')?.value || 0,
             cout_marchandises: this.resultatPrevisionnelForm.get('coutMarchandises')?.value || 0
         };
     }
+
     saveChargesActuellesToResume() {
         this.resumeData.chargesActuelles = {
             cout_transport_production: this.chargesActuellesForm.get('coutTransportProduction')?.value || 0,
@@ -402,12 +603,14 @@ export class StepCreditComponent {
         this.resumeData.demandeCredit = {
             montant_demande: this.demandeCreditForm.get('montantDemande')?.value || 0,
             duree_mois: this.demandeCreditForm.get('dureeMois')?.value || 0,
-            objet_financement: this.demandeCreditForm.get('objetFinancement')?.value || ''
+            objet_financement: this.demandeCreditForm.get('objetFinancement')?.value || '',
+            delegation: this.demandeCreditForm.get('delegation')?.value?.libele || '', // NEW
+            agence: this.demandeCreditForm.get('agence')?.value?.libele || '', // NEW
+            point_vente: this.demandeCreditForm.get('pointVente')?.value?.libele || '' // NEW
         };
     }
 
     prepareSummary() {
-        // S'assurer que toutes les données sont bien dans le résumé
         this.saveInfoBaseToResume();
         this.saveBilanEntrepriseToResume();
         this.saveBilanPersonnelToResume();
@@ -418,25 +621,63 @@ export class StepCreditComponent {
         this.saveDemandeCreditToResume();
     }
 
-    // ✅ Mise à jour de la méthode finaliserDemande() :
+    // UPDATED: finaliserDemande method with multiple personnecautions
     finaliserDemande() {
+        // Check if userId is available
+        if (!this.userId) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Erreur',
+                detail: 'ID utilisateur non disponible',
+                life: 3000
+            });
+            return;
+        }
+
         this.loading.set(true);
+
+        // CRITICAL: Generate dates with proper values
+        const currentYear = new Date().getFullYear();
+
+        // Create date objects
+        const dateDebutActuel = new Date(currentYear - 1, 0, 1); // January 1st of last year
+        const dateFinActuel = new Date(currentYear - 1, 11, 31); // December 31st of last year
+        const dateDebutPrevisionnel = new Date(currentYear, 0, 1); // January 1st of this year
+        const dateFinPrevisionnel = new Date(currentYear, 11, 31); // December 31st of this year
+
+        // Format dates properly (YYYY-MM-DD)
+        const formatDateSafe = (date: Date): string => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        // Log for debugging
+        console.log('Dates being generated:', {
+            dateDebutActuel: formatDateSafe(dateDebutActuel),
+            dateFinActuel: formatDateSafe(dateFinActuel),
+            dateDebutPrevisionnel: formatDateSafe(dateDebutPrevisionnel),
+            dateFinPrevisionnel: formatDateSafe(dateFinPrevisionnel),
+            userId: this.userId,
+            montantDemande: this.demandeCreditForm.get('montantDemande')?.value
+        });
 
         const demandeComplete: DemandeCreditCompleteDTO = {
             // Promoteur
-            nomPromoteur: this.infoBaseForm.get('nomPromoteur')?.value || '',
-            prenomPromoteur: this.infoBaseForm.get('prenomPromoteur')?.value || '',
-            dateNaissancePromoteur: this.formatDate(this.infoBaseForm.get('dateNaissance')?.value), // ← Format ISO
+            nomPromoteur: this.infoBaseForm.get('nomPromoteur')?.value || 'Non spécifié',
+            prenomPromoteur: this.infoBaseForm.get('prenomPromoteur')?.value || 'Non spécifié',
+            dateNaissancePromoteur: this.formatDate(this.infoBaseForm.get('dateNaissance')?.value) || formatDateSafe(new Date(1980, 0, 1)),
             numeroIdentitePromoteur: this.infoBaseForm.get('numeroIdentite')?.value || '',
             adressePromoteur: this.infoBaseForm.get('adressePromoteur')?.value || '',
             telephonePromoteur: this.infoBaseForm.get('telephonePromoteur')?.value || '',
             emailPromoteur: this.infoBaseForm.get('emailPromoteur')?.value || '',
 
             // Entreprise
-            nomEntreprise: this.infoBaseForm.get('nomEntreprise')?.value || '',
-            formeJuridique: this.getFormeJuridiqueValue(),
-            secteurActivite: this.getSecteurActiviteValue(),
-            dateCreationEntreprise: this.formatDate(this.infoBaseForm.get('dateCreation')?.value), // ← Format ISO
+            nomEntreprise: this.infoBaseForm.get('nomEntreprise')?.value || 'Non spécifié',
+            formeJuridique: this.getFormeJuridiqueValue() || 'EI',
+            secteurActivite: this.getSecteurActiviteValue() || 'Commerce',
+            dateCreationEntreprise: this.formatDate(this.infoBaseForm.get('dateCreation')?.value) || formatDateSafe(new Date(currentYear - 2, 0, 1)),
             numeroRegistre: this.infoBaseForm.get('numeroRegistre')?.value || '',
             adresseEntreprise: this.infoBaseForm.get('adresseEntreprise')?.value || '',
             telephoneEntreprise: this.infoBaseForm.get('telephoneEntreprise')?.value || '',
@@ -454,16 +695,18 @@ export class StepCreditComponent {
             // Bilan personnel
             epargnes: this.bilanPersonnelForm.get('epargnes')?.value || 0,
             valeurBiensDurables: this.bilanPersonnelForm.get('valeurBiensDurables')?.value || 0,
+            libeleGarantie: this.bilanPersonnelForm.get('libeleGarantie')?.value || '',
+            montantGarantie: this.bilanPersonnelForm.get('montantGarantie')?.value || 0,
 
-            // Dates pour exploitation actuelle et prévisionnelle - Format ISO
-            dateDebutPeriodeActuel: this.formatDate(new Date(new Date().getFullYear() - 1, 0, 1)),
-            dateFinPeriodeActuel: this.formatDate(new Date(new Date().getFullYear() - 1, 11, 31)),
-            dateDebutPeriodePrevisionnel: this.formatDate(new Date(new Date().getFullYear(), 0, 1)),
-            dateFinPeriodePrevisionnel: this.formatDate(new Date(new Date().getFullYear(), 11, 31)),
+            // CRITICAL: Always provide valid dates
+            dateDebutPeriodeActuel: formatDateSafe(dateDebutActuel),
+            dateFinPeriodeActuel: formatDateSafe(dateFinActuel),
+            dateDebutPeriodePrevisionnel: formatDateSafe(dateDebutPrevisionnel),
+            dateFinPeriodePrevisionnel: formatDateSafe(dateFinPrevisionnel),
 
             // Exploitation actuelle
             chiffreAffairesActuel: this.resultatActuelForm.get('chiffreAffaires')?.value || 0,
-            autresRevenusActuel: this.resultatActuelForm.get('autresRevenus')?.value || 0, // NOUVEAU
+            autresRevenusActuel: this.resultatActuelForm.get('autresRevenus')?.value || 0,
             coutMarchandisesActuel: this.resultatActuelForm.get('coutMarchandises')?.value || 0,
             coutTransportProductionActuel: this.chargesActuellesForm.get('coutTransportProduction')?.value || 0,
             fraisTransportPersonnelActuel: this.chargesActuellesForm.get('fraisTransportPersonnel')?.value || 0,
@@ -475,7 +718,7 @@ export class StepCreditComponent {
 
             // Exploitation prévisionnelle
             chiffreAffairesPrevisionnel: this.resultatPrevisionnelForm.get('chiffreAffaires')?.value || 0,
-            autresRevenusPrevisionnel: this.resultatPrevisionnelForm.get('autresRevenus')?.value || 0, // NOUVEAU
+            autresRevenusPrevisionnel: this.resultatPrevisionnelForm.get('autresRevenus')?.value || 0,
             coutMarchandisesPrevisionnel: this.resultatPrevisionnelForm.get('coutMarchandises')?.value || 0,
             coutTransportProductionPrevisionnel: this.chargesPrevisionellesForm.get('coutTransportProduction')?.value || 0,
             fraisTransportPersonnelPrevisionnel: this.chargesPrevisionellesForm.get('fraisTransportPersonnel')?.value || 0,
@@ -486,12 +729,38 @@ export class StepCreditComponent {
             loyersPrevisionnel: this.chargesPrevisionellesForm.get('loyers')?.value || 0,
 
             // Demande crédit
-            montantDemande: this.demandeCreditForm.get('montantDemande')?.value || 0,
-            dureeMois: this.demandeCreditForm.get('dureeMois')?.value || 0,
-            objetFinancement: this.demandeCreditForm.get('objetFinancement')?.value || ''
+            montantDemande: this.demandeCreditForm.get('montantDemande')?.value || 1000000, // Default 1M if empty
+            dureeMois: this.demandeCreditForm.get('dureeMois')?.value || 12, // Default 12 months
+            objetFinancement: this.demandeCreditForm.get('objetFinancement')?.value || 'Financement activité',
+
+            // Personnecautions
+            personnecautions: this.personnecautions || [],
+
+            // Location IDs - Convert to number type to ensure proper handling
+            delegationId: this.demandeCreditForm.get('delegation')?.value?.id ? Number(this.demandeCreditForm.get('delegation')?.value?.id) : undefined,
+            agenceId: this.demandeCreditForm.get('agence')?.value?.id ? Number(this.demandeCreditForm.get('agence')?.value?.id) : undefined,
+            pointVenteId: this.demandeCreditForm.get('pointVente')?.value?.id ? Number(this.demandeCreditForm.get('pointVente')?.value?.id) : undefined,
+
+            // User ID from route
+            userId: Number(this.userId)
         };
 
-        // Appel API
+        // Final validation log
+        console.log('Final demande object:', demandeComplete);
+
+        // Validate critical fields one more time
+        if (!demandeComplete.dateDebutPeriodeActuel || !demandeComplete.dateFinPeriodeActuel || !demandeComplete.dateDebutPeriodePrevisionnel || !demandeComplete.dateFinPeriodePrevisionnel) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Erreur',
+                detail: 'Les dates de période sont requises',
+                life: 3000
+            });
+            this.loading.set(false);
+            return;
+        }
+
+        // Call the API
         this.analyseCreditService
             .submitCompleteDemande$(demandeComplete)
             .pipe(takeUntilDestroyed(this.destroyRef))
@@ -505,7 +774,7 @@ export class StepCreditComponent {
                             detail: 'Votre demande de crédit a été soumise avec succès!'
                         });
                         setTimeout(() => {
-                            this.router.navigate(['']);
+                            this.router.navigate(['/dashboards']);
                         }, 2000);
                     } else {
                         this.messageService.add({
@@ -527,48 +796,42 @@ export class StepCreditComponent {
             });
     }
 
-    // Calculer les revenus totaux actuels
+    // Existing calculation methods remain the same...
     calculerRevenusTotauxActuel(): number {
         const chiffreAffaires = this.resultatActuelForm.get('chiffreAffaires')?.value || 0;
         const autresRevenus = this.resultatActuelForm.get('autresRevenus')?.value || 0;
         return chiffreAffaires + autresRevenus;
     }
 
-    // Calculer les revenus totaux prévisionnels
     calculerRevenusTotauxPrevisionnel(): number {
         const chiffreAffaires = this.resultatPrevisionnelForm.get('chiffreAffaires')?.value || 0;
         const autresRevenus = this.resultatPrevisionnelForm.get('autresRevenus')?.value || 0;
         return chiffreAffaires + autresRevenus;
     }
 
-    // Calculer le ratio de dépendance actuel
     calculerRatioDependanceActuel(): number {
         const revenus = this.calculerRevenusTotauxActuel();
         const autresRevenus = this.resultatActuelForm.get('autresRevenus')?.value || 0;
         return revenus > 0 ? autresRevenus / revenus : 0;
     }
-    // Calculer le ratio de dépendance prévisionnel
+
     calculerRatioDependancePrevisionnel(): number {
         const revenus = this.calculerRevenusTotauxPrevisionnel();
         const autresRevenus = this.resultatPrevisionnelForm.get('autresRevenus')?.value || 0;
         return revenus > 0 ? autresRevenus / revenus : 0;
     }
 
-    // Modifier la méthode existante calculerMargeButeActuelle pour utiliser revenus totaux :
     calculerMargeButeActuelle(): number {
         const revenus = this.calculerRevenusTotauxActuel();
         const coutMarchandises = this.resultatActuelForm.get('coutMarchandises')?.value || 0;
         return revenus > 0 ? (revenus - coutMarchandises) / revenus : 0;
     }
 
-    // Modifier la méthode existante calculerMargeButePrevisionnelle pour utiliser revenus totaux :
     calculerMargeButePrevisionnelle(): number {
         const revenus = this.calculerRevenusTotauxPrevisionnel();
         const coutMarchandises = this.resultatPrevisionnelForm.get('coutMarchandises')?.value || 0;
         return revenus > 0 ? (revenus - coutMarchandises) / revenus : 0;
     }
-
-    // Méthodes de calcul financier
 
     calculerTotalActif(): number {
         const liquidites = this.bilanEntrepriseForm.get('liquidites')?.value || 0;
@@ -597,7 +860,6 @@ export class StepCreditComponent {
         return totalDettes > 0 ? liquidites / totalDettes : 0;
     }
 
-    // Méthodes utilitaires pour extraire les valeurs correctes
     getFormeJuridiqueValue(): string {
         const value = this.infoBaseForm.get('formeJuridique')?.value;
         if (!value) return '';
@@ -620,14 +882,12 @@ export class StepCreditComponent {
         return value;
     }
 
-    // Méthode pour calculer la mensualité
     calculerMensualite(): number {
         const montant = this.demandeCreditForm.get('montantDemande')?.value || 0;
         const duree = this.demandeCreditForm.get('dureeMois')?.value || 1;
         return montant / duree;
     }
 
-    // ✅ Gardez cette méthode pour l'affichage
     formatDateForDisplay(date: Date | string | null): string {
         if (!date) return '';
 
@@ -644,32 +904,100 @@ export class StepCreditComponent {
             return '';
         }
 
-        // Format français pour l'affichage
         return dateObj.toLocaleDateString('fr-FR');
     }
 
-    // ✅ Remplacez votre méthode formatDate() par celle-ci :
-    formatDate(date: Date | string | null): string {
-        if (!date) return '';
+    formatDate(date: Date | string | null | undefined): string {
+        // If no date provided, return today's date as fallback
+        if (!date) {
+            console.warn('formatDate called with null/undefined date, using today as fallback');
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
 
         let dateObj: Date;
 
         if (typeof date === 'string') {
+            // Handle empty string
+            if (date.trim() === '') {
+                console.warn('formatDate called with empty string, using today as fallback');
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+
             dateObj = new Date(date);
             if (isNaN(dateObj.getTime())) {
-                return '';
+                console.error('Invalid date string:', date, 'using today as fallback');
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
             }
         } else if (date instanceof Date) {
             dateObj = date;
+            if (isNaN(dateObj.getTime())) {
+                console.error('Invalid Date object:', date, 'using today as fallback');
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
         } else {
-            return '';
+            console.error('Unexpected date type:', typeof date, date, 'using today as fallback');
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
         }
 
-        // Format ISO yyyy-MM-dd pour le backend
-        return dateObj.toISOString().split('T')[0];
+        // Format as YYYY-MM-DD
+        const year = dateObj.getFullYear();
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(dateObj.getDate()).padStart(2, '0');
+
+        const formatted = `${year}-${month}-${day}`;
+        return formatted;
     }
 
-    // Méthode pour calculer le total des charges actuelles
+    private validateDates(): boolean {
+        const currentYear = new Date().getFullYear();
+
+        // Test date formatting
+        const testDates = {
+            dateDebutActuel: this.formatDate(new Date(currentYear - 1, 0, 1)),
+            dateFinActuel: this.formatDate(new Date(currentYear - 1, 11, 31)),
+            dateDebutPrevisionnel: this.formatDate(new Date(currentYear, 0, 1)),
+            dateFinPrevisionnel: this.formatDate(new Date(currentYear, 11, 31))
+        };
+
+        console.log('Date validation:', testDates);
+
+        // Check if any date is invalid (empty or invalid format)
+        for (const [key, value] of Object.entries(testDates)) {
+            if (!value || value === '' || !value.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                console.error(`Invalid date for ${key}: ${value}`);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Erreur',
+                    detail: `Date invalide: ${key}`,
+                    life: 3000
+                });
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     calculerTotalChargesActuelles(): number {
         const coutTransportProduction = this.chargesActuellesForm.get('coutTransportProduction')?.value || 0;
         const fraisTransportPersonnel = this.chargesActuellesForm.get('fraisTransportPersonnel')?.value || 0;
@@ -682,7 +1010,6 @@ export class StepCreditComponent {
         return coutTransportProduction + fraisTransportPersonnel + fraisManutention + montantAideExterne + fraisHebergementRestauration + impots + loyers;
     }
 
-    // Méthode pour calculer le total des charges prévisionnelles
     calculerTotalChargesPrevisionnelles(): number {
         const coutTransportProduction = this.chargesPrevisionellesForm.get('coutTransportProduction')?.value || 0;
         const fraisTransportPersonnel = this.chargesPrevisionellesForm.get('fraisTransportPersonnel')?.value || 0;
@@ -695,7 +1022,6 @@ export class StepCreditComponent {
         return coutTransportProduction + fraisTransportPersonnel + fraisManutention + montantAideExterne + fraisHebergementRestauration + impots + loyers;
     }
 
-    // Méthode pour calculer le ratio crédit/CA prévisionnel
     calculerRatioCreditCA(): number {
         const montantDemande = this.demandeCreditForm.get('montantDemande')?.value || 0;
         const chiffreAffairesPrevisionnel = this.resultatPrevisionnelForm.get('chiffreAffaires')?.value || 0;
@@ -703,7 +1029,6 @@ export class StepCreditComponent {
         return chiffreAffairesPrevisionnel > 0 ? montantDemande / chiffreAffairesPrevisionnel : 0;
     }
 
-    // Méthode pour obtenir la sévérité du ratio crédit/CA
     getRatioCreditCASeverity(): PrimeSeverity {
         const ratio = this.calculerRatioCreditCA();
 
@@ -713,7 +1038,6 @@ export class StepCreditComponent {
         return 'danger';
     }
 
-    // Méthode pour déterminer la sévérité (couleur) en fonction de la marge
     getMarginSeverity(margin: number): PrimeSeverity {
         if (margin >= 0.4) return 'success';
         if (margin >= 0.25) return 'info';
@@ -721,7 +1045,6 @@ export class StepCreditComponent {
         return 'danger';
     }
 
-    // Méthode pour déterminer la sévérité (couleur) en fonction du ratio de liquidité
     getLiquiditySeverity(ratio: number): PrimeSeverity {
         if (ratio > 2) return 'success';
         if (ratio > 1.2) return 'info';

@@ -56,6 +56,9 @@ export class HomeComponent {
     private activatedRoute = inject(ActivatedRoute);
     private messageService = inject(MessageService);
 
+    // Add a signal to track if user is authenticated and redirecting
+    isAuthenticatedAndRedirecting = signal<boolean>(false);
+
     ngOnInit(): void {
         // Keep loading true until we explicitly set it to false
         this.loading.set(true);
@@ -65,12 +68,23 @@ export class HomeComponent {
             console.log('User already authenticated, redirecting...');
             const redirectUrl = this.storage.getRedirectUrl() || '/dashboards';
 
-            // Only navigate after ensuring loading is true
-            setTimeout(() => {
-                this.router.navigate([redirectUrl]);
-            }, 0);
+            // Mark as authenticated and redirecting
+            this.isAuthenticatedAndRedirecting.set(true);
 
-            return;
+            // Keep loading true during navigation
+            this.router
+                .navigate([redirectUrl])
+                .then(() => {
+                    console.log('Navigation complete for authenticated user');
+                })
+                .catch((error) => {
+                    console.error('Navigation error:', error);
+                    // Only set loading to false if navigation fails
+                    this.loading.set(false);
+                    this.isAuthenticatedAndRedirecting.set(false);
+                });
+
+            return; // Exit early - don't process OAuth codes for already authenticated users
         }
 
         console.log('Checking for OAuth code in DashboardAnalytics');
@@ -119,25 +133,28 @@ export class HomeComponent {
                                 this.saveToken(response);
                                 console.log('Authentication successful, tokens saved');
 
-                                // Keep loading true while we navigate
-                                console.log('**************');
-                                console.log(this.router.url.split('?')[0]);
-                                console.log(this.router.url);
-                                console.log('**************');
+                                // Mark as authenticated and redirecting
+                                this.isAuthenticatedAndRedirecting.set(true);
+
                                 const currentUrlWithoutParams = this.router.url.split('?')[0];
 
-                                // Use setTimeout to ensure proper change detection
-                                setTimeout(() => {
-                                    this.router.navigateByUrl(currentUrlWithoutParams).then(() => {
-                                        // Only set loading to false after navigation completes
-                                        setTimeout(() => {
-                                            this.loading.set(false);
-                                        }, 100);
+                                // Navigate and keep loading true until navigation completes
+                                this.router
+                                    .navigateByUrl(currentUrlWithoutParams)
+                                    .then(() => {
+                                        console.log('Navigation complete after authentication');
+                                        // Navigation successful - component should be destroyed
+                                    })
+                                    .catch((error) => {
+                                        console.error('Navigation error after authentication:', error);
+                                        // Only set loading to false if navigation fails
+                                        this.loading.set(false);
+                                        this.isAuthenticatedAndRedirecting.set(false);
                                     });
-                                }, 0);
                             },
                             error: () => {
                                 // Error handling moved to catchError operator
+                                this.isAuthenticatedAndRedirecting.set(false);
                             }
                         });
                 } else {

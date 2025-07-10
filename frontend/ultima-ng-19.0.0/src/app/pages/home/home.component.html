@@ -1,4 +1,4 @@
-@if(loading()){
+@if(loading() || isAuthenticatedAndRedirecting()){
 <div class="text-center">
     <div class="relative">
         <p-progress-spinner ariaLabel="Verifying account" [style]="{'width': '5rem', 'height': '5rem'}" strokeWidth="4"

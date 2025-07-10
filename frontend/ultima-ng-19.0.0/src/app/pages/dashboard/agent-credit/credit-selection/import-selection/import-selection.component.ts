@@ -325,41 +325,48 @@ export class ImportSelectionComponent {
             .pipe(
                 switchMap((params: ParamMap) => {
                     const demandeId = params.get('demandeindividuel_id');
-                    const userId = params.get('userId');
-                    if (demandeId && userId) {
+                    console.log('Route parameter demandeindividuel_id:', demandeId);
+
+                    if (demandeId) {
                         this.state.update((s) => ({
                             ...s,
                             demandeindividuel_id: Number(demandeId),
-                            userId: Number(userId)
+                            loading: true,
+                            error: null
                         }));
                         return this.userService.getAllDocuments$(+demandeId);
                     } else {
+                        console.error('No demandeindividuel_id found in route parameters');
                         this.state.update((state) => ({
                             ...state,
                             loading: false,
-                            error: 'Invalid demandeId or userId'
+                            error: 'Invalid demandeId - parameter not found in route'
                         }));
                         return EMPTY;
                     }
                 }),
                 takeUntilDestroyed(this.destroyRef)
             )
-            .subscribe(this.getAllDocuments);
+            .subscribe({
+                next: (response: IResponse) => {
+                    console.log('Documents loaded successfully:', response);
+                    this.state.update((s) => ({
+                        ...s,
+                        documents: response.data.documents!,
+                        demandeIndividuel: response.data.demandeIndividuel,
+                        loading: false
+                    }));
+                },
+                error: (error: string) => {
+                    console.error('Error loading documents:', error);
+                    this.state.update((s) => ({
+                        ...s,
+                        loading: false,
+                        error: error
+                    }));
+                }
+            });
     }
-
-    private getAllDocuments: Observer<any> = {
-        next: (response: IResponse) => {
-            this.state.update((s) => ({
-                ...s,
-                documents: response.data.documents!,
-                demandeIndividuel: response.data.demandeIndividuel
-            }));
-        },
-        error: (error: string) => {
-            this.state.update((s) => ({ ...s, loading: false, error: error }));
-        },
-        complete: () => {}
-    };
 
     /**
      * Version améliorée de deleteDocument avec feedback visuel
@@ -410,7 +417,7 @@ export class ImportSelectionComponent {
             });
     }
 
-    approvedDemande(demandeIndividuel: DemandeIndividuel, userId: number): void {
+    approvedDemande(demandeIndividuel: DemandeIndividuel): void {
         if (!demandeIndividuel.demandeindividuel_id || !demandeIndividuel?.codUsuarios) {
             this.messageService.add({
                 severity: 'error',
@@ -569,9 +576,9 @@ export class ImportSelectionComponent {
      * Méthode d'upload corrigée et simplifiée
      */
     uploadDocuments(): void {
-        const { selectedFiles, userId, demandeindividuel_id } = this.state();
+        const { selectedFiles, demandeindividuel_id } = this.state();
 
-        if (selectedFiles.length === 0 || !userId || !demandeindividuel_id) {
+        if (selectedFiles.length === 0 || !demandeindividuel_id) {
             this.messageService.add({
                 severity: 'error',
                 summary: 'Erreur',
@@ -591,7 +598,7 @@ export class ImportSelectionComponent {
             const formData = new FormData();
             formData.append('image', file);
 
-            return this.userService.addDocuments$(userId, demandeindividuel_id, formData).pipe(
+            return this.userService.addDocuments$(demandeindividuel_id, formData).pipe(
                 takeUntilDestroyed(this.destroyRef),
                 catchError((error) => {
                     this.messageService.add({

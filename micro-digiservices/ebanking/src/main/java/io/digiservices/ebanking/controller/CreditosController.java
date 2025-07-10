@@ -177,7 +177,7 @@ public class CreditosController {
     public ResponseEntity<CreditosClienteResponseDTO> obtenerCreditosYPlanPagosPorCliente(
             @PathVariable(name = "codCliente") String codCliente) {
 
-        log.info("Solicitud recibida para obtener créditos del cliente: {}", codCliente);
+        log.info("Demande reçue pour obtenir les crédits du client: {}", codCliente);
 
         try {
             CreditosClienteResponseDTO response = creditosService.obtenerCreditosYPlanPagosPorCliente(codCliente);
@@ -187,7 +187,7 @@ public class CreditosController {
                 return ResponseEntity.notFound().build();
             }
 
-            log.info("Créditos obtenidos exitosamente para el cliente: {}. Total créditos: {}",
+            log.info("Crédits obtenus avec succès pour le client: {}. Total créditos: {}",
                     codCliente, response.getCreditos().size());
 
             return ResponseEntity.ok(response);

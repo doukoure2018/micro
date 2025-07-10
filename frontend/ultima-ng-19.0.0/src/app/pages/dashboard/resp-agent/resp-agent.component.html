@@ -10,13 +10,18 @@
                             <span class="text-color">{{ user?.firstName }} {{ user?.lastName }}!</span>
                         </span>
                         <span>Agence de
-                            <span class="font-bold text-primary">{{ state().agence }}</span>
+                            <span class="font-bold text-primary">{{ state().agence?.libele }}</span>
                         </span>
                     </div>
                 </div>
 
                 <!-- Statistiques rapides -->
                 <div class="flex gap-3 flex-wrap">
+                    <!-- NEW: Add analyse credits stats -->
+                    <p-chip *ngIf="hasAnalyseCredits()"
+                        [label]="'Analyses: ' + (state().demandeAnalyseCredits?.length || 0)"
+                        styleClass="bg-purple-100 text-purple-800">
+                    </p-chip>
                     <p-chip label="Demandes en attente: {{ state().filteredDemandeAttentes?.length || 0 }}"
                         styleClass="bg-orange-100 text-orange-800">
                     </p-chip>
@@ -42,7 +47,169 @@
 
         <!-- Section principale avec les demandes -->
         <div *ngIf="!state().loading">
-            <!-- Cas où il y a des demandes -->
+            <!-- NEW: Section for Analyse Credits (Priority Display) -->
+            <div *ngIf="hasAnalyseCredits()" class="card mb-4 border-l-4 border-purple-500">
+                <div class="p-4">
+                    <div class="flex flex-wrap gap-3 align-items-center justify-content-between mb-4">
+                        <h3 class="text-xl font-semibold m-0 text-900">
+                            <i class="pi pi-chart-line mr-2 text-purple-600"></i>
+                            Demandes d'Analyse de Crédit encours
+                            <p-chip [label]="'Nouveau: ' + (state().demandeAnalyseCredits?.length || 0)"
+                                severity="warning" class="ml-2">
+                            </p-chip>
+                        </h3>
+
+                        <div class="flex gap-2">
+                            <p-button icon="pi pi-refresh" (click)="refreshData()" [loading]="state().loading"
+                                severity="secondary" size="small" pTooltip="Actualiser les données">
+                            </p-button>
+
+                            <p-button type="button" label="Voir les analyses" icon="pi pi-eye"
+                                (click)="toggleAnalyseTable(analysePopover, $event)"
+                                [badge]="state().demandeAnalyseCredits?.length!.toString()" badgeClass="p-badge-warning"
+                                severity="warn">
+                            </p-button>
+                        </div>
+                    </div>
+
+
+                    <!-- Popover for analyse credits table -->
+                    <p-popover #analysePopover id="analyse_popover" [style]="{ width: '90vw', maxWidth: '1500px' }">
+                        <div class="p-4">
+                            <div class="flex justify-content-between align-items-center mb-4">
+                                <h4 class="text-lg font-semibold m-0">
+                                    <i class="pi pi-chart-line mr-2 text-purple-600"></i>
+                                    Demandes d'Analyse de Crédit encours
+                                </h4>
+
+                            </div>
+
+                            <p-table #analyseTable [value]="state().demandeAnalyseCredits!" [paginator]="true"
+                                paginatorDropdownAppendTo="body" [rows]="10" [showCurrentPageReport]="true"
+                                responsiveLayout="scroll"
+                                currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} analyses"
+                                [rowsPerPageOptions]="[10, 25, 50]"
+                                [globalFilterFields]="['objetFinancement', 'statut', 'montantDemande']"
+                                styleClass="p-datatable-striped">
+
+                                <ng-template pTemplate="caption">
+                                    <div class="flex flex-wrap gap-3 items-center justify-between">
+                                        <p-icon-field class="w-full sm:w-80">
+                                            <p-inputicon class="pi pi-search" />
+                                            <input pInputText type="text" (input)="onGlobalFilter(analyseTable, $event)"
+                                                placeholder="Rechercher par objet, statut..." class="w-full" />
+                                        </p-icon-field>
+                                        <div class="text-sm text-600">
+                                            <i class="pi pi-info-circle mr-1"></i>
+                                            {{ state().demandeAnalyseCredits?.length }} analyse(s) trouvée(s)
+                                        </div>
+                                    </div>
+                                </ng-template>
+
+                                <ng-template pTemplate="header">
+                                    <tr>
+                                        <th pSortableColumn="dateDemande" class="white-space-nowrap" style="width:15%">
+                                            <i class="pi pi-calendar mr-1"></i>Date Demande
+                                            <p-sortIcon field="dateDemande"></p-sortIcon>
+                                        </th>
+                                        <th pSortableColumn="objetFinancement" class="white-space-nowrap"
+                                            style="width:30%">
+                                            <i class="pi pi-tag mr-1"></i>Objet du Financement
+                                            <p-sortIcon field="objetFinancement"></p-sortIcon>
+                                        </th>
+                                        <th pSortableColumn="montantDemande" class="white-space-nowrap text-right"
+                                            style="width:20%">
+                                            <i class="pi pi-money-bill mr-1"></i>Montant Demandé
+                                            <p-sortIcon field="montantDemande"></p-sortIcon>
+                                        </th>
+                                        <th pSortableColumn="dureeMois" class="white-space-nowrap text-center"
+                                            style="width:10%">
+                                            <i class="pi pi-clock mr-1"></i>Durée
+                                            <p-sortIcon field="dureeMois"></p-sortIcon>
+                                        </th>
+                                        <th pSortableColumn="statut" class="white-space-nowrap text-center"
+                                            style="width:10%">
+                                            <i class="pi pi-flag mr-1"></i>Statut
+                                            <p-sortIcon field="statut"></p-sortIcon>
+                                        </th>
+                                        <th class="white-space-nowrap text-center" style="width:15%">
+                                            <i class="pi pi-cog mr-1"></i>Actions
+                                        </th>
+                                    </tr>
+                                </ng-template>
+
+                                <ng-template pTemplate="body" let-demande let-rowIndex="rowIndex">
+                                    <tr class="hover:bg-surface-50">
+                                        <td>
+                                            <div class="flex flex-column gap-1">
+                                                <span class="font-medium">{{ formatDate(demande.dateDemande) }}</span>
+                                                <small class="text-500">ID: {{ demande.demandeCreditId }}</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="flex flex-column gap-1">
+                                                <span class="font-semibold text-900">
+                                                    {{ demande.objetFinancement || 'Non spécifié' }}</span>
+                                                <small class="text-600">
+                                                    <i class="pi pi-building mr-1"></i>Entreprise ID: {{
+                                                    demande.entrepriseId }}
+                                                </small>
+                                            </div>
+                                        </td>
+                                        <td class="text-right">
+                                            <div class="flex flex-column gap-1 align-items-end">
+                                                <span class="font-bold text-lg text-purple-600">
+                                                    {{ formatMontantGNF(demande.montantDemande) }}
+                                                </span>
+                                                <small class="text-500" *ngIf="demande.tauxInteret">
+                                                    Taux: {{ demande.tauxInteret }}%
+                                                </small>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <p-chip [label]="demande.dureeMois + ' mois'"
+                                                styleClass="bg-blue-50 text-blue-700 text-xs">
+                                            </p-chip>
+                                        </td>
+                                        <td class="text-center">
+                                            <p-tag [value]="getAnalyseStatusLabel(demande.statut)"
+                                                [severity]="getAnalyseStatusSeverity(demande.statut)">
+                                            </p-tag>
+                                        </td>
+                                        <td class="text-center">
+                                            <p-button pRipple icon="pi pi-chart-line" label="Voir le Detail "
+                                                (click)="viewAnalyseCredit(demande.demandeCreditId, demande.userId)"
+                                                size="small" severity="warn" pTooltip="Procéder à l'analyse du crédit">
+                                            </p-button>
+                                        </td>
+                                    </tr>
+                                </ng-template>
+
+                                <ng-template pTemplate="emptymessage">
+                                    <tr>
+                                        <td colspan="6" class="text-center p-6">
+                                            <div class="flex flex-column align-items-center gap-3">
+                                                <i class="pi pi-chart-line text-4xl text-400"></i>
+                                                <span class="text-600 font-medium">Aucune demande d'analyse
+                                                    trouvée</span>
+                                                <small class="text-500">Les nouvelles demandes d'analyse apparaîtront
+                                                    ici</small>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </ng-template>
+
+
+                            </p-table>
+                        </div>
+                    </p-popover>
+                </div>
+            </div>
+
+            <!-- Divider if both sections exist -->
+            <p-divider *ngIf="hasAnalyseCredits() && state().filteredDemandeAttentes?.length! > 0"></p-divider>
+
+            <!-- EXISTING: Cas où il y a des demandes en attente -->
             <div *ngIf="state().filteredDemandeAttentes?.length! > 0" class="card">
                 <div class="flex flex-wrap gap-3 align-items-center justify-content-between mb-4">
                     <h3 class="text-xl font-semibold m-0 text-900">
@@ -191,7 +358,8 @@
             </div>
 
             <!-- Cas où il n'y a pas de demandes -->
-            <div *ngIf="state().filteredDemandeAttentes?.length === 0 && !state().loading" class="card text-center p-6">
+            <div *ngIf="state().filteredDemandeAttentes?.length === 0 && !hasAnalyseCredits() && !state().loading"
+                class="card text-center p-6">
                 <div class="flex flex-column align-items-center gap-4">
                     <i class="pi pi-check-circle text-6xl text-green-500"></i>
                     <h3 class="text-xl font-semibold text-900 m-0">Aucune demande en attente</h3>

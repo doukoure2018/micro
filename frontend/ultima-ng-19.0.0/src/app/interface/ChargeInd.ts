@@ -2,7 +2,7 @@ export interface ChargeInd {
     chargesIndiId?: number;
     referenceCredit?: string;
     libele?: string;
-    prixUnit?: number;
+    prix_unit?: number;
     qte?: number;
-    createAt?: Date;
+    create_at?: Date;
 }

@@ -11,14 +11,12 @@
                 <div class="flex gap-2">
                     <p-button label="Retour" icon="pi pi-arrow-left" outlined (onClick)="retourListe()">
                     </p-button>
-                    <p-button label="Modifier" icon="pi pi-pencil" (onClick)="modifierDemande()">
-                    </p-button>
-                    <p-button label="Imprimer" icon="pi pi-print" outlined (onClick)="imprimerResume()">
-                    </p-button>
+
                 </div>
             </div>
         </div>
     </div>
+
     <div class="grid mb-4">
         <div class="col-12">
             <p-card>
@@ -114,6 +112,7 @@
     </div>
 
     <!-- Section Indicateurs Clés avec Formules et Séparateurs -->
+    @if(state().user?.role === 'MANAGER'){
     <div class="grid mb-4">
         <div class="col-12">
             <h3 class="text-xl font-semibold text-900 mb-3">
@@ -297,7 +296,6 @@
             </div>
         </div>
     </div>
-
     <!-- Résumé des seuils - Version agrandie et centrée -->
     <div class="grid mb-4">
         <div class="col-12">
@@ -413,6 +411,12 @@
             </p-card>
         </div>
     </div>
+    }@else{
+
+    }
+
+
+
 
 
     <!-- Loading State -->
@@ -445,6 +449,7 @@
     <!-- Main Content -->
     @if (state().resumeCredit && !state().loading) {
     <!-- Indicateurs Clés -->
+    @if(state().user?.role === 'MANAGER'){
     <div class="grid mb-4">
         <div class="col-12">
             <h3 class="text-xl font-semibold text-900 mb-3">Indicateurs Clés</h3>
@@ -467,6 +472,10 @@
         </div>
         }
     </div>
+    }@else{
+
+    }
+
 
     <!-- Informations Générales -->
     <div class="grid mb-4">
@@ -510,7 +519,126 @@
             </p-card>
         </div>
     </div>
+    <!-- Personnes Caution - NOUVELLE SECTION -->
+    <div class="grid mb-4">
+        <div class="col-12">
+            <p-card>
+                <ng-template pTemplate="header">
+                    <div class="flex items-center gap-2 p-3">
+                        <i class="pi pi-users text-teal-600"></i>
+                        <h4 class="m-0">Personnes Caution</h4>
+                        <p-badge [value]="getNombrePersonnesCaution().toString()"
+                            [severity]="getNombrePersonnesCaution() > 0 ? 'success' : 'warn'">
+                        </p-badge>
+                    </div>
+                </ng-template>
 
+                <!-- Si aucune personne caution -->
+                @if (!hasPersonnesCaution()) {
+                <div class="text-center p-4">
+                    <i class="pi pi-exclamation-triangle text-4xl text-orange-500 mb-3"></i>
+                    <h5 class="text-orange-600 mb-2">Aucune personne caution</h5>
+                    <p class="text-600 mb-3">
+                        Aucune garantie personnelle n'a été renseignée pour cette demande de crédit.
+                    </p>
+                    <p-tag value="ATTENTION : Risque de garantie insuffisant" severity="warn"></p-tag>
+                </div>
+                }
+
+                <!-- Si des personnes caution existent -->
+                @if (hasPersonnesCaution()) {
+                <div class="grid">
+                    <!-- Liste détaillée des personnes caution -->
+                    <div class="col-12 lg:col-8">
+                        <h5 class="text-teal-700 mb-3">
+                            <i class="pi pi-list mr-2"></i>
+                            Détails des Personnes Caution ({{ getNombrePersonnesCaution() }})
+                        </h5>
+                        <p-table [value]="getPersonnesCautionData()" [tableStyle]="{'min-width': '100%'}"
+                            styleClass="p-datatable-sm">
+                            <ng-template pTemplate="body" let-item>
+                                <tr
+                                    [ngClass]="{'border-top-2 border-teal-200 bg-teal-50': item.label.includes('Caution') && item.label.includes('Nom')}">
+                                    <td class="font-semibold text-600"
+                                        [ngClass]="{'text-teal-700 font-bold': item.label.includes('Caution') && item.label.includes('Nom')}">
+                                        {{ item.label }}
+                                    </td>
+                                    <td
+                                        [ngClass]="{'font-semibold': item.label.includes('Caution') && item.label.includes('Nom')}">
+                                        {{ item.value }}
+                                    </td>
+                                </tr>
+                            </ng-template>
+                        </p-table>
+                    </div>
+
+                    <!-- Analyse de la garantie personnelle -->
+                    <div class="col-12 lg:col-4">
+                        <div class="garantie-analysis-card">
+                            <h5 class="text-teal-700 mb-3">
+                                <i class="pi pi-shield mr-2"></i>
+                                Analyse de Garantie
+                            </h5>
+
+                            <div class="analysis-content p-3 bg-teal-50 border-round">
+                                <!-- Score de garantie -->
+                                <div class="score-section mb-3">
+                                    <div class="flex justify-content-between align-items-center mb-2">
+                                        <span class="text-sm font-semibold text-teal-800">Niveau :</span>
+                                        <p-tag [value]="getAnalyseGarantiePersonnelle().niveau"
+                                            [severity]="getAnalyseGarantiePersonnelle().niveau === 'EXCELLENT' ? 'success' : 
+                                                      getAnalyseGarantiePersonnelle().niveau === 'BON' ? 'info' :
+                                                      getAnalyseGarantiePersonnelle().niveau === 'MOYEN' ? 'warn' : 'danger'" class="font-semibold">
+                                        </p-tag>
+                                    </div>
+
+                                    <div class="flex justify-content-between align-items-center mb-2">
+                                        <span class="text-sm font-semibold text-teal-800">Score :</span>
+                                        <span class="text-lg font-bold text-teal-700">
+                                            {{ getAnalyseGarantiePersonnelle().score }}/100
+                                        </span>
+                                    </div>
+
+                                    <p-progressBar [value]="getAnalyseGarantiePersonnelle().score"
+                                        [style]="{'height': '8px'}"
+                                        [ngClass]="'progress-' + getAnalyseGarantiePersonnelle().niveau.toLowerCase()">
+                                    </p-progressBar>
+                                </div>
+
+                                <!-- Description -->
+                                <div class="description-section mb-3">
+                                    <small class="text-teal-700 font-semibold block mb-1">Description :</small>
+                                    <p class="text-sm text-teal-800 m-0">
+                                        {{ getAnalyseGarantiePersonnelle().description }}
+                                    </p>
+                                </div>
+
+                                <!-- Recommandations -->
+                                <div class="recommendations-section">
+                                    <small class="text-teal-700 font-semibold block mb-2">Recommandations :</small>
+                                    @for (recommandation of getAnalyseGarantiePersonnelle().recommendations; track
+                                    recommandation) {
+                                    <div class="recommendation-item mb-1 p-2 bg-white border-round shadow-1">
+                                        <small class="text-teal-800">• {{ recommandation }}</small>
+                                    </div>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Résumé compact -->
+                            <div class="mt-3 p-2 bg-white border-round border-1 border-teal-200">
+                                <small class="text-teal-700 font-semibold block mb-1">Personnes identifiées :</small>
+                                @for (personne of getPersonnesCautionCompact(); track personne) {
+                                <div class="text-xs text-teal-600 mb-1">• {{ personne }}</div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                }
+            </p-card>
+        </div>
+    </div>
     <!-- Bilan Financier -->
     <div class="grid mb-4">
         <!-- Bilan Entreprise -->
@@ -645,7 +773,7 @@
         </div>
     </div>
 
-    <!-- Demande de Crédit -->
+    <!-- Section Demande de Crédit MISE À JOUR avec vraies données administratives -->
     <div class="grid mb-4">
         <div class="col-12">
             <p-card>
@@ -653,11 +781,21 @@
                     <div class="flex items-center gap-2 p-3">
                         <i class="pi pi-credit-card text-red-600"></i>
                         <h4 class="m-0">Détails de la Demande de Crédit</h4>
+                        @if (isLoadingInfoAdmin()) {
+                        <p-progressSpinner [style]="{'width': '20px', 'height': '20px'}"
+                            strokeWidth="4"></p-progressSpinner>
+                        }
                     </div>
                 </ng-template>
+
                 <div class="grid">
-                    <div class="col-12 lg:col-8">
-                        <p-table [value]="getDemandeCreditData()" [tableStyle]="{'min-width': '100%'}"
+                    <!-- Informations principales de la demande -->
+                    <div class="col-12 lg:col-6">
+                        <h5 class="text-red-700 mb-3">
+                            <i class="pi pi-info-circle mr-2"></i>
+                            Informations Principales
+                        </h5>
+                        <p-table [value]="getDemandeCreditData().slice(0, 7)" [tableStyle]="{'min-width': '100%'}"
                             styleClass="p-datatable-sm">
                             <ng-template pTemplate="body" let-item>
                                 <tr>
@@ -675,41 +813,220 @@
                             </ng-template>
                         </p-table>
                     </div>
-                    <div class="col-12 lg:col-4">
-                        <!-- Résumé financier -->
-                        <div class="bg-blue-50 p-4 border-round">
-                            <h5 class="text-blue-800 m-0 mb-3">Résumé Financier</h5>
-                            <div class="grid gap-2">
-                                <div class="col-12 flex justify-between">
-                                    <span class="text-600">Total Actif:</span>
-                                    <span class="font-semibold">{{ formatCurrency(calculerTotalActif()) }}</span>
-                                </div>
-                                <div class="col-12 flex justify-between">
-                                    <span class="text-600">Total Passif:</span>
-                                    <span class="font-semibold">{{ formatCurrency(calculerTotalPassif()) }}</span>
-                                </div>
-                                <div class="col-12 flex justify-between">
-                                    <span class="text-600">Patrimoine Personnel:</span>
-                                    <span class="font-semibold">{{ formatCurrency(calculerPatrimoinePersonnel())
-                                        }}</span>
+
+                    <div class="col-12 lg:col-6">
+                        <h5 class="text-blue-700 mb-3">
+                            <i class="pi pi-building mr-2"></i>
+                            Informations Administratives
+                            @if (hasInfoAdministrative()) {
+                            <i class="pi pi-check-circle text-green-500 ml-2" title="Données complètes chargées"></i>
+                            } @else if (isLoadingInfoAdmin()) {
+                            <i class="pi pi-spin pi-spinner text-blue-500 ml-2" title="Chargement en cours..."></i>
+                            } @else {
+                            <i class="pi pi-exclamation-triangle text-orange-500 ml-2" title="Données partielles"></i>
+                            }
+                        </h5>
+
+                        <!-- Affichage des données administratives -->
+                        @if (isLoadingInfoAdmin()) {
+                        <div class="loading-admin p-3 bg-blue-50 border-round text-center">
+                            <p-progressSpinner [style]="{'width': '30px', 'height': '30px'}"
+                                strokeWidth="4"></p-progressSpinner>
+                            <p class="text-sm text-blue-600 mt-2 mb-0">Chargement des informations détaillées...</p>
+                        </div>
+                        } @else {
+                        <p-table [value]="getDemandeCreditInfosComplementaires()" [tableStyle]="{'min-width': '100%'}"
+                            styleClass="p-datatable-sm">
+                            <ng-template pTemplate="body" let-item>
+                                <tr [ngClass]="{'bg-green-50': hasInfoAdministrative()}">
+                                    <td class="font-semibold text-600">{{ item.label }}</td>
+                                    <td class="text-700">
+                                        {{ item.value }}
+                                        @if (hasInfoAdministrative() && !item.value.startsWith('ID:')) {
+                                        <i class="pi pi-check text-green-500 ml-1 text-xs"
+                                            title="Information complète"></i>
+                                        }
+                                    </td>
+                                </tr>
+                            </ng-template>
+                        </p-table>
+                        }
+
+                        <!-- Résumé hiérarchique -->
+                        @if (hasInfoAdministrative()) {
+                        <div class="mt-3 p-2 bg-blue-50 border-round border-1 border-blue-200">
+                            <small class="text-blue-700 font-semibold block mb-1">Hiérarchie :</small>
+                            <div class="text-sm text-blue-800">{{ getResumeAdministratif() }}</div>
+                        </div>
+                        }
+
+                        <!-- Résumé financier existant -->
+                        <div class="mt-4">
+                            <h6 class="text-green-700 mb-3">
+                                <i class="pi pi-chart-bar mr-2"></i>
+                                Résumé Financier
+                            </h6>
+                            <div class="bg-green-50 p-3 border-round">
+                                <div class="grid gap-2 text-sm">
+                                    <div class="col-12 flex justify-content-between align-items-center">
+                                        <span class="text-600 font-medium">Total Actif:</span>
+                                        <span class="font-bold text-green-800">{{ formatCurrency(calculerTotalActif())
+                                            }}</span>
+                                    </div>
+                                    <div class="col-12 flex justify-content-between align-items-center">
+                                        <span class="text-600 font-medium">Total Passif:</span>
+                                        <span class="font-bold text-green-800">{{ formatCurrency(calculerTotalPassif())
+                                            }}</span>
+                                    </div>
+                                    <div class="col-12 flex justify-content-between align-items-center">
+                                        <span class="text-600 font-medium">Patrimoine Personnel:</span>
+                                        <span class="font-bold text-green-800">{{
+                                            formatCurrency(calculerPatrimoinePersonnel()) }}</span>
+                                    </div>
+                                    <div
+                                        class="col-12 flex justify-content-between align-items-center border-top-1 border-green-200 pt-2">
+                                        <span class="text-600 font-medium">Garantie Totale:</span>
+                                        <span class="font-bold text-green-700">{{ formatCurrency(getValeurGarantie())
+                                            }}</span>
+                                    </div>
+                                    @if (getNombrePersonnesCaution() > 0) {
+                                    <div class="col-12">
+                                        <small class="text-green-600 italic">
+                                            (Inclut bonus {{ getNombrePersonnesCaution() }} personne(s) caution: +{{
+                                            (getNombrePersonnesCaution() * 10).toFixed(0) }}%)
+                                        </small>
+                                    </div>
+                                    }
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+                <p-divider></p-divider>
             </p-card>
+        </div>
+    </div>
+
+
+    <!-- SECTION DEBUG/TEST mise à jour -->
+    <div class="grid mb-4" *ngIf="false">
+        <div class="col-12">
+            <p-card>
+                <ng-template pTemplate="header">
+                    <div class="flex items-center gap-2 p-3">
+                        <i class="pi pi-bug text-red-600"></i>
+                        <h4 class="m-0">Section Debug - ACTIVÉE</h4>
+                    </div>
+                </ng-template>
+
+                <div class="flex flex-wrap gap-2 mb-3">
+
+                    <p-button label="Tester Info Administrative" icon="pi pi-building" outlined
+                        (onClick)="testerInfoAdministrative()">
+                    </p-button>
+                    <p-button label="Recharger Info Admin" icon="pi pi-refresh" outlined
+                        [disabled]="isLoadingInfoAdmin()" (onClick)="chargerInfoAdministrative()">
+                    </p-button>
+
+                </div>
+
+                <!-- État actuel en temps réel -->
+                <div class="debug-status p-3 bg-gray-100 border-round mb-3">
+                    <h6 class="text-gray-700 mb-2">📊 État Actuel en Temps Réel</h6>
+                    <div class="grid text-sm">
+                        <div class="col-12 md:col-4">
+                            <p><strong>Resume crédit chargé:</strong>
+                                <span [class]="state().resumeCredit ? 'text-green-600' : 'text-red-600'">
+                                    {{ state().resumeCredit ? 'OUI' : 'NON' }}
+                                </span>
+                            </p>
+                            <p><strong>Loading principal:</strong> {{ state().loading ? 'OUI' : 'NON' }}</p>
+                            <p><strong>Loading admin:</strong> {{ state().loadingAdmin ? 'OUI' : 'NON' }}</p>
+                        </div>
+                        <div class="col-12 md:col-4">
+                            <p><strong>Info admin disponible:</strong>
+                                <span [class]="hasInfoAdministrative() ? 'text-green-600' : 'text-red-600'">
+                                    {{ hasInfoAdministrative() ? 'OUI' : 'NON' }}
+                                </span>
+                            </p>
+                            <p><strong>Nb personnes caution:</strong> {{ getNombrePersonnesCaution() }}</p>
+                            <p><strong>Résumé admin:</strong> {{ getResumeAdministratif() }}</p>
+                        </div>
+                        <div class="col-12 md:col-4">
+                            @if (state().resumeCredit?.demande_credit) {
+                            <p><strong>IDs demande:</strong></p>
+                            <small>
+                                - Délégation: {{ state().resumeCredit?.demande_credit?.delegation_id! }}<br>
+                                - Agence: {{ state().resumeCredit?.demande_credit?.agence_id }}<br>
+                                - Point vente: {{ state().resumeCredit?.demande_credit?.point_vente_id }}<br>
+                                - User: {{ state().resumeCredit?.demande_credit?.user_id }}
+                            </small>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Données administratives brutes -->
+                @if (hasInfoAdministrative()) {
+                <div class="debug-data p-3 bg-green-50 border-round">
+                    <h6 class="text-green-700 mb-2">✅ Données Administratives Chargées</h6>
+                    <div class="grid text-sm">
+                        <div class="col-12 md:col-3">
+                            <strong>Délégation:</strong><br>
+                            ID: {{ state().infoAdministrative?.delegationDto?.id }}<br>
+                            Libellé: {{ state().infoAdministrative?.delegationDto?.libele }}
+                        </div>
+                        <div class="col-12 md:col-3">
+                            <strong>Agence:</strong><br>
+                            ID: {{ state().infoAdministrative?.agenceDto?.id }}<br>
+                            Libellé: {{ state().infoAdministrative?.agenceDto?.libele }}
+                        </div>
+                        <div class="col-12 md:col-3">
+                            <strong>Point de vente:</strong><br>
+                            ID: {{ state().infoAdministrative?.pointVenteDto?.id }}<br>
+                            Libellé: {{ state().infoAdministrative?.pointVenteDto?.libele }}<br>
+                            Code: {{ state().infoAdministrative?.pointVenteDto?.code }}
+                        </div>
+                        <div class="col-12 md:col-3">
+                            <strong>Utilisateur:</strong><br>
+                            ID: {{ state().infoAdministrative?.user?.userId }}<br>
+                            Nom: {{ state().infoAdministrative?.user?.firstName }} {{
+                            state().infoAdministrative?.user?.lastName }}<br>
+                        </div>
+                    </div>
+                </div>
+                } @else {
+                <div class="debug-data p-3 bg-orange-50 border-round">
+                    <h6 class="text-orange-700 mb-2">⚠️ Aucune Donnée Administrative</h6>
+                    <p class="text-sm text-orange-800 m-0">
+                        Les informations administratives n'ont pas été chargées ou ne sont pas disponibles.
+                        Cliquez sur "Debug Complet" pour analyser le problème.
+                    </p>
+                </div>
+                }
+            </p-card>
+        </div>
+    </div>
+
+    <div class="grid mb-4">
+        <div class="col-12">
+            <app-motif-analyse [motifs_analyses]="state().resumeCredit?.motifs_analyses!" [demandeCreditId]="demandeId"
+                [user]="state().user!">
+            </app-motif-analyse>
         </div>
     </div>
 
     <!-- Actions Footer -->
     <div class="grid">
         <div class="col-12">
-            <div class="flex justify-center gap-3 p-4 bg-gray-50 border-round">
-                <p-button label="Voir son historisque de credit" icon="pi pi-list" outlined (onClick)="retourListe()">
+            <div class="flex justify-content-between align-items-center gap-3 p-4 bg-gray-50 border-round">
+                <!-- Bouton Retour à gauche -->
+                <p-button label="Retour" icon="pi pi-arrow-left" outlined (onClick)="retourListe()">
                 </p-button>
-                <p-button label="Modifier la Demande" icon="pi pi-pencil" (onClick)="modifierDemande()">
-                </p-button>
-                <p-button label="Imprimer le Résumé" icon="pi pi-print" outlined (onClick)="imprimerResume()">
+
+                <!-- Bouton Revoir l'analyse à droite -->
+                <p-button label="Revoir l'analyse complète de l'associé" icon="pi pi-eye" outlined
+                    (onClick)="viewCompleteAnalyse()">
                 </p-button>
             </div>
         </div>

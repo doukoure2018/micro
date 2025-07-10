@@ -1,417 +1,584 @@
-<div class="card h-full">
+<div class="credit-details-container">
     <p-toast></p-toast>
-    <!-- Loading indicator -->
+
+    <!-- Loading State -->
     @if(state().loading) {
-    <div class="flex justify-center items-center h-64">
-        <i class="pi pi-spin pi-spinner text-4xl"></i>
-        <span class="ml-3">Chargement des détails du crédit...</span>
-    </div>
-    } @else if(state().error) {
-    <div class="bg-red-100 text-red-700 p-4 rounded-md mb-4">
-        {{ state().error }}
-    </div>
-    } @else {
-    <!-- Header Information -->
-    <div class="bg-blue-50 dark:bg-blue-900 p-4 rounded-md mb-6">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-2xl font-bold">Détails du Crédit</h2>
-            <div class="text-sm bg-blue-100 dark:bg-blue-800 px-3 py-1 rounded-full">
-                Référence: {{ state().instanceCreditInd?.referenceCredit }}
+    <div class="loading-container">
+        <p-card styleClass="loading-card">
+            <div class="flex justify-content-center align-items-center" style="height: 200px;">
+                <p-progressSpinner strokeWidth="4" animationDuration="1s"></p-progressSpinner>
+                <span class="ml-3 text-xl font-semibold">Chargement des détails du crédit...</span>
             </div>
-        </div>
-        <!-- Appreciation Section -->
-        <div class="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
-            <h3 class="text-xl font-bold mb-4 text-primary border-b pb-2">Appréciation</h3>
+        </p-card>
+    </div>
+    }
 
-            @if(!state().appreciation) {
-            <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-md text-center">Aucune appréciation disponible</div>
-            } @else {
-            <table class="w-full border-collapse">
-                <tbody class="divide-y dark:divide-gray-700">
+    <!-- Error State -->
+    @else if(state().error) {
+    <p-message severity="error" [text]="state().error" [closable]="false" styleClass="w-full mb-4 error-message">
+    </p-message>
+    }
 
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400 font-medium">Montant Demandé</td>
-                        <td class="py-3 px-4 font-medium">{{ getFormattedAmount(state().appreciation?.montantDemande) }}
-                        </td>
-                    </tr>
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400 font-medium">Montant Suggéré par
-                            le DA
-                        </td>
-                        <td class="py-3 px-4 font-medium">{{ getFormattedAmount(state().appreciation?.montantSuggere) }}
-                        </td>
-                    </tr>
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400 font-medium">Statut</td>
-                        <td class="py-3 px-4 font-medium">
-                            <span class="px-2 py-1 rounded-full text-xs" [ngClass]="{
-                        'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200': state().appreciation?.status === 'ACCEPTED',
-                        'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200': state().appreciation?.status === 'REJECTED',
-                        'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200': state().appreciation?.status === 'PENDING' || state().appreciation?.status === 'EN_ATTENTE',
-                        'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200': !state().appreciation?.status
-                      }">
-                                {{ state().appreciation?.status || 'N/A' }}
-                            </span>
-                        </td>
-                    </tr>
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400 font-medium">Date Création</td>
-                        <td class="py-3 px-4 font-medium">{{ getFormattedDate(state().appreciation?.createdAt) }}</td>
-                    </tr>
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400 font-medium align-top">Motif</td>
-                        <td class="py-3 px-4">
-                            <div class="p-2 bg-gray-50 dark:bg-gray-700 rounded">
+    <!-- Main Content -->
+    @else {
+    <!-- Header Section -->
+    <p-card styleClass="header-card mb-4">
+        <ng-template pTemplate="header">
+            <div class="header-content">
+                <div class="flex justify-content-between align-items-center p-4">
+                    <div>
+                        <h1 class="header-title m-0">
+                            <i class="pi pi-file-edit mr-3"></i>
+                            Détails du Crédit
+                        </h1>
+                        <p class="header-subtitle mt-2 mb-0">Analyse complète de la demande de crédit</p>
+                    </div>
+                    <p-chip [label]="'Ref: ' + (state().instanceCreditInd?.referenceCredit || 'N/A')"
+                        styleClass="reference-chip">
+                        <i class="pi pi-hashtag mr-2"></i>
+                    </p-chip>
+                </div>
+            </div>
+        </ng-template>
+    </p-card>
+
+    <!-- Appréciation Section -->
+    <p-panel header="💬 Appréciation" [toggleable]="true" styleClass="appreciation-panel mb-4">
+        <ng-template pTemplate="header">
+            <div class="flex align-items-center">
+                <i class="pi pi-thumbs-up text-2xl mr-3 text-primary"></i>
+                <span class="text-xl font-bold">Appréciation</span>
+            </div>
+        </ng-template>
+
+        @if(!state().appreciation) {
+        <p-message severity="info" text="Aucune appréciation disponible" [closable]="false"></p-message>
+        } @else {
+        <div class="appreciation-content">
+            <div class="grid">
+                <div class="col-12 md:col-6">
+                    <p-card styleClass="info-card h-full">
+                        <ng-template pTemplate="header">
+                            <div class="card-header">
+                                <i class="pi pi-money-bill"></i>
+                                <span>Montants</span>
+                            </div>
+                        </ng-template>
+
+                        <div class="field-group">
+                            <label>Montant Demandé:</label>
+                            <span class="amount-value">{{ getFormattedAmount(state().appreciation?.montantDemande)
+                                }}</span>
+                        </div>
+
+                        <div class="field-group">
+                            <label>Montant Suggéré par le DA:</label>
+                            <span class="amount-value">{{ getFormattedAmount(state().appreciation?.montantSuggere)
+                                }}</span>
+                        </div>
+                    </p-card>
+                </div>
+
+                <div class="col-12 md:col-6">
+                    <p-card styleClass="info-card h-full">
+                        <ng-template pTemplate="header">
+                            <div class="card-header">
+                                <i class="pi pi-info-circle"></i>
+                                <span>Statut & Date</span>
+                            </div>
+                        </ng-template>
+
+                        <div class="field-group">
+                            <label>Statut:</label>
+                            <p-chip [label]="state().appreciation?.status || 'N/A'"
+                                [styleClass]="getStatusChipClass(state().appreciation?.status)">
+                            </p-chip>
+                        </div>
+
+                        <div class="field-group">
+                            <label>Date Création:</label>
+                            <span class="text-value">{{ getFormattedDate(state().appreciation?.createdAt) }}</span>
+                        </div>
+                    </p-card>
+                </div>
+
+                <!-- MOTIF SECTION - ULTRA VISIBLE -->
+                <div class="col-12">
+                    <div class="motif-section-wrapper">
+                        <div class="motif-container">
+                            <div class="motif-header">
+                                <div class="motif-icon-wrapper">
+                                    <i class="pi pi-comment"></i>
+                                </div>
+                                <span class="motif-title">MOTIF DE LA DÉCISION</span>
+                            </div>
+                            <div class="motif-content">
                                 {{ state().appreciation?.motif || 'Aucun motif fourni' }}
                             </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-            }
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
+        }
+    </p-panel>
 
-    <!-- Profile Information Section -->
-    <div class="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
-        <h3 class="text-xl font-bold mb-4 text-primary border-b pb-2">Informations du Profil</h3>
+    <!-- Informations du Profil -->
+    <p-panel header="👤 Informations du Profil" [toggleable]="true" styleClass="profile-panel mb-4">
+        <ng-template pTemplate="header">
+            <div class="flex align-items-center">
+                <i class="pi pi-user text-2xl mr-3 text-primary"></i>
+                <span class="text-xl font-bold">Informations du Profil</span>
+            </div>
+        </ng-template>
 
-        <!-- Client Information -->
-        <div class="mb-5">
-            <h4 class="text-lg font-semibold mb-2">Informations Client</h4>
-            <table class="w-full border-collapse">
-                <tbody class="divide-y dark:divide-gray-700">
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400 font-medium w-1/3">Nom Complet
-                        </td>
-                        <td class="py-3 px-4 font-medium">{{ state().membre?.nom_CLIENTE }}</td>
-                    </tr>
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400 font-medium">N° Membre</td>
-                        <td class="py-3 px-4 font-medium">{{ state().membre?.clientesPKId?.codCliente }}</td>
-                    </tr>
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400 font-medium">Téléphone</td>
-                        <td class="py-3 px-4 font-medium">{{ state().membre?.tel_PRINCIPAL }}</td>
-                    </tr>
-                    <!-- Add more membre fields as needed -->
-                </tbody>
-            </table>
-        </div>
+        <p-tabView styleClass="custom-tabview">
+            <!-- Client Information Tab -->
+            <p-tabPanel header="Informations Client">
+                <ng-template pTemplate="header">
+                    <i class="pi pi-user mr-2"></i>
+                    <span>Client</span>
+                </ng-template>
 
-        <!-- Credit Information -->
-        <div>
-            <h4 class="text-lg font-semibold mb-2">Informations Credit</h4>
-            <table class="w-full border-collapse">
-                <thead class="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                        <th class="py-2 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Attribut
-                        </th>
-                        <th class="py-2 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Valeur
-                        </th>
-                        <th class="py-2 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Attribut
-                        </th>
-                        <th class="py-2 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Valeur
-                        </th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y dark:divide-gray-700">
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">Moyen Personne</td>
-                        <td class="py-3 px-4">{{ state().instanceCreditInd?.moyenPerson || 'N/A' }}</td>
-                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">Bien</td>
-                        <td class="py-3 px-4">{{ state().instanceCreditInd?.bien || 'N/A' }}</td>
-                    </tr>
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">Capital</td>
-                        <td class="py-3 px-4">{{ getFormattedAmount(state().instanceCreditInd?.capital) }}</td>
-                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">Créance</td>
-                        <td class="py-3 px-4">{{ getFormattedAmount(state().instanceCreditInd?.creance) }}</td>
-                    </tr>
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">Dette</td>
-                        <td class="py-3 px-4">{{ getFormattedAmount(state().instanceCreditInd?.dette) }}</td>
-                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">Statut Activité</td>
-                        <td class="py-3 px-4">{{ state().instanceCreditInd?.statutActivite || 'N/A' }}</td>
-                    </tr>
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">Expérience</td>
-                        <td class="py-3 px-4">{{ state().instanceCreditInd?.experience || 'N/A' }}</td>
-                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">Lieux Activité</td>
-                        <td class="py-3 px-4">{{ state().instanceCreditInd?.lieuxAct || 'N/A' }}</td>
-                    </tr>
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">Nombre</td>
-                        <td class="py-3 px-4">{{ state().instanceCreditInd?.nombre || 'N/A' }}</td>
-                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">Cumul Crédit</td>
-                        <td class="py-3 px-4">{{ getFormattedAmount(state().instanceCreditInd?.cumulCredit) }}</td>
-                    </tr>
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">Nombre Crédit</td>
-                        <td class="py-3 px-4">{{ state().instanceCreditInd?.nbreCredit || 'N/A' }}</td>
-                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">Fréquence</td>
-                        <td class="py-3 px-4">{{ state().instanceCreditInd?.frequence || 'N/A' }}</td>
-                    </tr>
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">Date Fréquence</td>
-                        <td class="py-3 px-4">{{ getFormattedDate(state().instanceCreditInd?.frequenceCreatedAt) }}</td>
-                        <td class="py-3 px-4"></td>
-                        <td class="py-3 px-4"></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+                <p-card styleClass="client-info-card">
+                    <div class="grid">
+                        <div class="col-12 md:col-4">
+                            <div class="field-group">
+                                <label>Nom Complet:</label>
+                                <span class="text-value">{{ state().membre?.nom_CLIENTE || 'N/A' }}</span>
+                            </div>
+                        </div>
+                        <div class="col-12 md:col-4">
+                            <div class="field-group">
+                                <label>N° Membre:</label>
+                                <span class="text-value">{{ state().membre?.clientesPKId?.codCliente || 'N/A' }}</span>
+                            </div>
+                        </div>
+                        <div class="col-12 md:col-4">
+                            <div class="field-group">
+                                <label>Téléphone:</label>
+                                <span class="text-value">{{ state().membre?.tel_PRINCIPAL || 'N/A' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </p-card>
+            </p-tabPanel>
 
-        <!-- Profile Note -->
-        @if(state().noteProfile) {
-        <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
-            <h4 class="text-lg font-semibold mb-2">Note du Profil</h4>
-            <table class="w-full border-collapse">
-                <tbody>
-                    <tr>
-                        <td class="py-2 px-4 text-sm text-gray-500 dark:text-gray-400 w-1/6">Score:</td>
-                        <td class="py-2 px-4 font-medium">
-                            <span class="text-blue-600 dark:text-blue-400 font-bold">{{ state().noteProfile?.note
-                                }}</span>
-                        </td>
-                        <td class="py-2 px-4 text-sm text-gray-500 dark:text-gray-400 w-1/6">Date:</td>
-                        <td class="py-2 px-4 font-medium">{{ getFormattedDate(state().noteProfile?.createdAt) }}</td>
-                    </tr>
-                    <tr>
-                        <td class="py-2 px-4 text-sm text-gray-500 dark:text-gray-400 align-top">Commentaires:</td>
-                        <td class="py-2 px-4" colspan="3">
-                            <div class="p-2 bg-white dark:bg-gray-800 rounded">
+            <!-- Credit Information Tab -->
+            <p-tabPanel header="Informations Crédit">
+                <ng-template pTemplate="header">
+                    <i class="pi pi-credit-card mr-2"></i>
+                    <span>Crédit</span>
+                </ng-template>
+
+                <p-card styleClass="credit-info-card">
+                    <div class="simple-table-container">
+                        <table class="simple-credit-table w-full">
+                            <thead>
+                                <tr>
+                                    <th>Attribut</th>
+                                    <th>Valeur</th>
+                                    <th>Attribut</th>
+                                    <th>Valeur</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="attr-cell">Capital</td>
+                                    <td class="money-cell">{{ getFormattedAmount(state().instanceCreditInd?.capital) }}
+                                    </td>
+                                    <td class="attr-cell">Créance</td>
+                                    <td class="money-cell">{{ getFormattedAmount(state().instanceCreditInd?.creance) }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="attr-cell">Dette</td>
+                                    <td class="money-cell">{{ getFormattedAmount(state().instanceCreditInd?.dette) }}
+                                    </td>
+                                    <td class="attr-cell">Cumul Crédit</td>
+                                    <td class="money-cell">{{ getFormattedAmount(state().instanceCreditInd?.cumulCredit)
+                                        }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="attr-cell">Moyen Personne</td>
+                                    <td class="text-cell">{{ state().instanceCreditInd?.moyenPerson || 'N/A' }}</td>
+                                    <td class="attr-cell">Bien</td>
+                                    <td class="text-cell">{{ state().instanceCreditInd?.bien || 'N/A' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="attr-cell">Statut Activité</td>
+                                    <td class="text-cell">{{ state().instanceCreditInd?.statutActivite || 'N/A' }}</td>
+                                    <td class="attr-cell">Expérience</td>
+                                    <td class="text-cell">{{ state().instanceCreditInd?.experience || 'N/A' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="attr-cell">Lieux Activité</td>
+                                    <td class="text-cell">{{ state().instanceCreditInd?.lieuxAct || 'N/A' }}</td>
+                                    <td class="attr-cell">Nombre</td>
+                                    <td class="text-cell">{{ state().instanceCreditInd?.nombre || 'N/A' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="attr-cell">Nombre Crédit</td>
+                                    <td class="text-cell">{{ state().instanceCreditInd?.nbreCredit || 'N/A' }}</td>
+                                    <td class="attr-cell">Fréquence</td>
+                                    <td class="text-cell">{{ state().instanceCreditInd?.frequence || 'N/A' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="attr-cell">Date Fréquence</td>
+                                    <td class="text-cell">{{
+                                        getFormattedDate(state().instanceCreditInd?.frequenceCreatedAt) }}</td>
+                                    <td class="attr-cell"></td>
+                                    <td class="text-cell"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </p-card>
+            </p-tabPanel>
+
+            <!-- Profile Note Tab -->
+            <p-tabPanel header="Note du Profil">
+                <ng-template pTemplate="header">
+                    <i class="pi pi-star mr-2"></i>
+                    <span>Note</span>
+                </ng-template>
+
+                @if(state().noteProfile) {
+                <p-card styleClass="note-card">
+                    <div class="grid align-items-center mb-4">
+                        <div class="col-12 md:col-3">
+                            <div class="score-display">
+                                <div class="score-value">{{ state().noteProfile?.note || 'N/A' }}</div>
+                                <div class="score-label">Score</div>
+                            </div>
+                        </div>
+                        <div class="col-12 md:col-3">
+                            <div class="field-group">
+                                <label>Date:</label>
+                                <span class="text-value">{{ getFormattedDate(state().noteProfile?.createdAt) }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- COMMENTAIRES PROFIL - ULTRA VISIBLE -->
+                    <div class="comment-section-wrapper">
+                        <div class="comment-container">
+                            <div class="comment-header">
+                                <div class="comment-icon-wrapper">
+                                    <i class="pi pi-file-edit"></i>
+                                </div>
+                                <span class="comment-title">COMMENTAIRES DU PROFIL</span>
+                            </div>
+                            <div class="comment-content">
                                 {{ state().noteProfile?.motif || 'Aucun commentaire' }}
                             </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        }
-    </div>
+                        </div>
+                    </div>
+                </p-card>
+                } @else {
+                <p-message severity="info" text="Aucune note de profil disponible" [closable]="false"></p-message>
+                }
+            </p-tabPanel>
+        </p-tabView>
+    </p-panel>
 
-    <!-- Analyse Information Section -->
-    <!-- Analyse Information Section -->
-    <div class="mb-12 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
-        <h3 class="text-xl font-bold mb-4 text-primary border-b pb-2">Analyse</h3>
+    <!-- Analyse Section -->
+    <p-panel header="📊 Analyse Financière" [toggleable]="true" styleClass="analysis-panel mb-4">
+        <ng-template pTemplate="header">
+            <div class="flex align-items-center">
+                <i class="pi pi-chart-line text-2xl mr-3 text-primary"></i>
+                <span class="text-xl font-bold">Analyse Financière</span>
+            </div>
+        </ng-template>
 
-        <!-- Products -->
-        <div class="mb-5">
-            <h4 class="text-lg font-semibold mb-2">Produits</h4>
-            @if(!state().products?.length) {
-            <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-md text-center">Aucun produit trouvé</div>
-            } @else {
-            <div class="overflow-x-auto">
-                <table class="w-full border-collapse">
-                    <thead class="bg-gray-100 dark:bg-gray-700">
+        <p-tabView styleClass="custom-tabview">
+            <!-- Products Tab -->
+            <p-tabPanel header="Produits">
+                <ng-template pTemplate="header">
+                    <i class="pi pi-box mr-2"></i>
+                    <span>Produits</span>
+                </ng-template>
+
+                @if(!state().products?.length) {
+                <p-message severity="warn" text="Aucun produit trouvé" [closable]="false"></p-message>
+                } @else {
+                <p-table [value]="state().products!" styleClass="product-table modern-table" [paginator]="true"
+                    [rows]="5" [showCurrentPageReport]="true"
+                    currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} produits">
+                    <ng-template pTemplate="header">
                         <tr>
-                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                Produit</th>
-                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Prix
-                                Unitaire</th>
-                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                Quantité</th>
-                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                Montant</th>
-                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Date
+                            <th pSortableColumn="libele">
+                                Produit <p-sortIcon field="libele"></p-sortIcon>
+                            </th>
+                            <th pSortableColumn="prixUnit">
+                                Prix Unitaire <p-sortIcon field="prixUnit"></p-sortIcon>
+                            </th>
+                            <th pSortableColumn="qte">
+                                Quantité <p-sortIcon field="qte"></p-sortIcon>
+                            </th>
+                            <th>Montant</th>
+                            <th pSortableColumn="createdAt">
+                                Date <p-sortIcon field="createdAt"></p-sortIcon>
                             </th>
                         </tr>
-                    </thead>
-                    <tbody class="divide-y dark:divide-gray-700">
-                        @for(product of state().products; track product.produitIndId) {
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <td class="py-3 px-4">{{ product.libele }}</td>
-                            <td class="py-3 px-4">{{ getFormattedAmount(product.prixUnit) }}</td>
-                            <td class="py-3 px-4">{{ product.qte }}</td>
-                            <td class="py-3 px-4">{{ getFormattedAmount(product.prixUnit) }}</td>
-                            <td class="py-3 px-4">{{ getFormattedDate(product.createdAt) }}</td>
-                        </tr>
-                        }
-                    </tbody>
-                    <tfoot class="font-semibold bg-gray-50 dark:bg-gray-700">
+                    </ng-template>
+                    <ng-template pTemplate="body" let-product>
                         <tr>
-                            <td class="py-3 px-4" colspan="3">Total</td>
-                            <td class="py-3 px-4">{{ getFormattedAmount(getTotalProductAmount()) }}</td>
-                            <td class="py-3 px-4"></td>
+                            <td class="font-medium">{{ product.libele }}</td>
+                            <td class="amount-cell">{{ getFormattedAmount(product.prix_unit) }}</td>
+                            <td class="text-center">{{ product.qte }}</td>
+                            <td class="amount-cell">{{ getFormattedAmount(product.prix_unit * product.qte) }}</td>
+                            <td>{{ getFormattedDate(product.created_at) }}</td>
                         </tr>
-                    </tfoot>
-                </table>
-            </div>
-            }
-        </div>
+                    </ng-template>
+                    <ng-template pTemplate="summary">
+                        <div class="table-summary">
+                            <strong>Total: {{ getFormattedAmount(getTotalProductAmount()) }}</strong>
+                        </div>
+                    </ng-template>
+                </p-table>
+                }
+            </p-tabPanel>
 
-        <!-- Charges -->
-        <div class="mb-5">
-            <h4 class="text-lg font-semibold mb-2">Charges</h4>
-            @if(!state().charges?.length) {
-            <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-md text-center">Aucune charge trouvée</div>
-            } @else {
-            <div class="overflow-x-auto">
-                <table class="w-full border-collapse">
-                    <thead class="bg-gray-100 dark:bg-gray-700">
+            <!-- Charges Tab -->
+            <p-tabPanel header="Charges">
+                <ng-template pTemplate="header">
+                    <i class="pi pi-receipt mr-2"></i>
+                    <span>Charges</span>
+                </ng-template>
+
+                @if(!state().charges?.length) {
+                <p-message severity="warn" text="Aucune charge trouvée" [closable]="false"></p-message>
+                } @else {
+                <p-table [value]="state().charges!" styleClass="charges-table modern-table" [paginator]="true"
+                    [rows]="5" [showCurrentPageReport]="true"
+                    currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} charges">
+                    <ng-template pTemplate="header">
                         <tr>
-                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                Description</th>
-                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                Montant</th>
-                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Date
+                            <th pSortableColumn="libele">
+                                Description <p-sortIcon field="libele"></p-sortIcon>
+                            </th>
+                            <th pSortableColumn="prixUnit">
+                                Montant <p-sortIcon field="prixUnit"></p-sortIcon>
+                            </th>
+                            <th pSortableColumn="createAt">
+                                Date <p-sortIcon field="createAt"></p-sortIcon>
                             </th>
                         </tr>
-                    </thead>
-                    <tbody class="divide-y dark:divide-gray-700">
-                        @for(charge of state().charges; track charge.chargesIndiId) {
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <td class="py-3 px-4">{{ charge.libele }}</td>
-                            <td class="py-3 px-4">{{ getFormattedAmount(charge.prixUnit) }}</td>
-                            <td class="py-3 px-4">{{ getFormattedDate(charge.createAt) }}</td>
-                        </tr>
-                        }
-                    </tbody>
-                    <tfoot class="font-semibold bg-gray-50 dark:bg-gray-700">
+                    </ng-template>
+                    <ng-template pTemplate="body" let-charge>
                         <tr>
-                            <td class="py-3 px-4">Total</td>
-                            <td class="py-3 px-4">{{ getFormattedAmount(getTotalCharges()) }}</td>
-                            <td class="py-3 px-4"></td>
+                            <td class="font-medium">{{ charge.libele }}</td>
+                            <td class="amount-cell">{{ getFormattedAmount(charge.prix_unit) }}</td>
+                            <td>{{ getFormattedDate(charge.create_at) }}</td>
                         </tr>
-                    </tfoot>
-                </table>
-            </div>
-            }
-        </div>
+                    </ng-template>
+                    <ng-template pTemplate="summary">
+                        <div class="table-summary">
+                            <strong>Total: {{ getFormattedAmount(getTotalCharges()) }}</strong>
+                        </div>
+                    </ng-template>
+                </p-table>
+                }
+            </p-tabPanel>
 
-        <!-- Note d'Analyse -->
-        @if(state().noteAnalyse) {
-        <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
-            <h4 class="text-lg font-semibold mb-2">Note d'Analyse</h4>
-            <table class="w-full border-collapse">
-                <tbody>
-                    <tr>
-                        <td class="py-2 px-4 text-sm text-gray-500 dark:text-gray-400 w-1/6">Score:</td>
-                        <td class="py-2 px-4 font-medium">
-                            <span class="text-blue-600 dark:text-blue-400 font-bold">{{ state().noteAnalyse?.note ||
-                                'N/A' }}</span>
-                        </td>
-                        <td class="py-2 px-4 text-sm text-gray-500 dark:text-gray-400 w-1/6">Date:</td>
-                        <td class="py-2 px-4 font-medium">{{ getFormattedDate(state().noteAnalyse?.createdAt) }}</td>
-                    </tr>
-                    <tr>
-                        <td class="py-2 px-4 text-sm text-gray-500 dark:text-gray-400 align-top">Commentaires:</td>
-                        <td class="py-2 px-4" colspan="3">
-                            <div class="p-2 bg-white dark:bg-gray-800 rounded">
+            <!-- Analysis Note Tab -->
+            <p-tabPanel header="Note d'Analyse">
+                <ng-template pTemplate="header">
+                    <i class="pi pi-clipboard mr-2"></i>
+                    <span>Note</span>
+                </ng-template>
+
+                @if(state().noteAnalyse) {
+                <p-card styleClass="note-card">
+                    <div class="grid align-items-center mb-4">
+                        <div class="col-12 md:col-3">
+                            <div class="score-display">
+                                <div class="score-value">{{ state().noteAnalyse?.note || 'N/A' }}</div>
+                                <div class="score-label">Score</div>
+                            </div>
+                        </div>
+                        <div class="col-12 md:col-3">
+                            <div class="field-group">
+                                <label>Date:</label>
+                                <span class="text-value">{{ getFormattedDate(state().noteAnalyse?.createdAt) }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- COMMENTAIRES ANALYSE - ULTRA VISIBLE -->
+                    <div class="comment-section-wrapper">
+                        <div class="comment-container">
+                            <div class="comment-header">
+                                <div class="comment-icon-wrapper">
+                                    <i class="pi pi-chart-bar"></i>
+                                </div>
+                                <span class="comment-title">ANALYSE DÉTAILLÉE</span>
+                            </div>
+                            <div class="comment-content">
                                 {{ state().noteAnalyse?.motif || 'Aucun commentaire' }}
                             </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        }
-    </div>
+                        </div>
+                    </div>
+                </p-card>
+                } @else {
+                <p-message severity="info" text="Aucune note d'analyse disponible" [closable]="false"></p-message>
+                }
+            </p-tabPanel>
+        </p-tabView>
+    </p-panel>
 
-    <!-- Garantie Information Section -->
-    <div class="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
-        <h3 class="text-xl font-bold mb-4 text-primary border-b pb-2">Garanties</h3>
-
-        <!-- Garantie Matérielle -->
-        <div class="mb-5">
-            <h4 class="text-lg font-semibold mb-2">Garantie Matérielle</h4>
-            <table class="w-full border-collapse">
-                <tbody class="divide-y dark:divide-gray-700">
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400 font-medium w-1/4">Libellé</td>
-                        <td class="py-3 px-4 font-medium">{{ state().instanceCreditInd?.garantieLibele || 'N/A' }}</td>
-                    </tr>
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400 font-medium">Montant</td>
-                        <td class="py-3 px-4 font-medium">{{
-                            getFormattedAmount(state().instanceCreditInd?.garantieMontant) }}</td>
-                    </tr>
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400 font-medium">Date Création</td>
-                        <td class="py-3 px-4 font-medium">{{
-                            getFormattedDate(state().instanceCreditInd?.garantieCreatedAt) }}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Garantie Personnes Caution -->
-        <div class="mb-5">
-            <h4 class="text-lg font-semibold mb-2">Garantie Personnes Caution</h4>
-            @if(!state().garantieCaution?.length) {
-            <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-md text-center">Aucune garantie personne caution trouvée
+    <!-- Garanties Section -->
+    <p-panel header="🛡️ Garanties" [toggleable]="true" styleClass="guarantee-panel mb-4">
+        <ng-template pTemplate="header">
+            <div class="flex align-items-center">
+                <i class="pi pi-shield text-2xl mr-3 text-primary"></i>
+                <span class="text-xl font-bold">Garanties</span>
             </div>
-            } @else {
-            <div class="overflow-x-auto">
-                <table class="w-full border-collapse">
-                    <thead class="bg-gray-100 dark:bg-gray-700">
+        </ng-template>
+
+        <p-tabView styleClass="custom-tabview">
+            <!-- Material Guarantee Tab -->
+            <p-tabPanel header="Garantie Matérielle">
+                <ng-template pTemplate="header">
+                    <i class="pi pi-home mr-2"></i>
+                    <span>Matérielle</span>
+                </ng-template>
+
+                <p-card styleClass="guarantee-card">
+                    <div class="grid">
+                        <div class="col-12 md:col-4">
+                            <div class="field-group">
+                                <label>Libellé:</label>
+                                <span class="text-value">{{ state().instanceCreditInd?.garantieLibele || 'N/A' }}</span>
+                            </div>
+                        </div>
+                        <div class="col-12 md:col-4">
+                            <div class="field-group">
+                                <label>Montant:</label>
+                                <span class="amount-value">{{
+                                    getFormattedAmount(state().instanceCreditInd?.garantieMontant) }}</span>
+                            </div>
+                        </div>
+                        <div class="col-12 md:col-4">
+                            <div class="field-group">
+                                <label>Date Création:</label>
+                                <span class="text-value">{{
+                                    getFormattedDate(state().instanceCreditInd?.garantieCreatedAt) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </p-card>
+            </p-tabPanel>
+
+            <!-- Personal Guarantee Tab -->
+            <p-tabPanel header="Garantie Personnes Caution">
+                <ng-template pTemplate="header">
+                    <i class="pi pi-users mr-2"></i>
+                    <span>Caution</span>
+                </ng-template>
+
+                @if(!state().garantieCaution?.length) {
+                <p-message severity="warn" text="Aucune garantie personne caution trouvée"
+                    [closable]="false"></p-message>
+                } @else {
+                <p-table [value]="state().garantieCaution!" styleClass="guarantee-table modern-table" [paginator]="true"
+                    [rows]="5" [showCurrentPageReport]="true"
+                    currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} garanties">
+                    <ng-template pTemplate="header">
                         <tr>
-                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Nom
+                            <th pSortableColumn="nom">
+                                Nom <p-sortIcon field="nom"></p-sortIcon>
                             </th>
-                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                Prénom</th>
-                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                Téléphone</th>
-                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Âge
+                            <th pSortableColumn="prenom">
+                                Prénom <p-sortIcon field="prenom"></p-sortIcon>
                             </th>
-                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                Activité</th>
-                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Date
+                            <th>Téléphone</th>
+                            <th pSortableColumn="age">
+                                Âge <p-sortIcon field="age"></p-sortIcon>
                             </th>
+                            <th>Activité</th>
                         </tr>
-                    </thead>
-                    <tbody class="divide-y dark:divide-gray-700">
-                        @for(garantie of state().garantieCaution; track garantie.garantiepersonnecautionId) {
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <td class="py-3 px-4">{{ garantie.nom }}</td>
-                            <td class="py-3 px-4">{{ garantie.prenom }}</td>
-                            <td class="py-3 px-4">{{ garantie.telephone }}</td>
-                            <td class="py-3 px-4">{{ garantie.age }}</td>
-                            <td class="py-3 px-4">{{ garantie.activite }}</td>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-garantie>
+                        <tr>
+                            <td class="font-medium">{{ garantie.nom }}</td>
+                            <td>{{ garantie.prenom }}</td>
+                            <td>{{ garantie.telephone }}</td>
+                            <td class="text-center">{{ garantie.age }}</td>
+                            <td>{{ garantie.activite }}</td>
                         </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-            }
-        </div>
+                    </ng-template>
+                </p-table>
+                }
+            </p-tabPanel>
 
-        <!-- Garantie Note -->
-        @if(state().noteGarantie) {
-        <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
-            <h4 class="text-lg font-semibold mb-2">Note de Garantie</h4>
-            <table class="w-full border-collapse">
-                <tbody>
-                    <tr>
-                        <td class="py-2 px-4 text-sm text-gray-500 dark:text-gray-400 w-1/6">Score:</td>
-                        <td class="py-2 px-4 font-medium">
-                            <span class="text-blue-600 dark:text-blue-400 font-bold">{{ state().noteGarantie?.note ||
-                                'N/A' }}</span>
-                        </td>
-                        <td class="py-2 px-4 text-sm text-gray-500 dark:text-gray-400 w-1/6">Date:</td>
-                        <td class="py-2 px-4 font-medium">{{ getFormattedDate(state().noteGarantie?.createdAt) }}</td>
-                    </tr>
-                    <tr>
-                        <td class="py-2 px-4 text-sm text-gray-500 dark:text-gray-400 align-top">Commentaires:</td>
-                        <td class="py-2 px-4" colspan="3">
-                            <div class="p-2 bg-white dark:bg-gray-800 rounded">
+            <!-- Guarantee Note Tab -->
+            <p-tabPanel header="Note de Garantie">
+                <ng-template pTemplate="header">
+                    <i class="pi pi-star mr-2"></i>
+                    <span>Note</span>
+                </ng-template>
+
+                @if(state().noteGarantie) {
+                <p-card styleClass="note-card">
+                    <div class="grid align-items-center mb-4">
+                        <div class="col-12 md:col-3">
+                            <div class="score-display">
+                                <div class="score-value">{{ state().noteGarantie?.note || 'N/A' }}</div>
+                                <div class="score-label">Score</div>
+                            </div>
+                        </div>
+                        <div class="col-12 md:col-3">
+                            <div class="field-group">
+                                <label>Date:</label>
+                                <span class="text-value">{{ getFormattedDate(state().noteGarantie?.createdAt) }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- COMMENTAIRES GARANTIE - ULTRA VISIBLE -->
+                    <div class="comment-section-wrapper">
+                        <div class="comment-container">
+                            <div class="comment-header">
+                                <div class="comment-icon-wrapper">
+                                    <i class="pi pi-shield"></i>
+                                </div>
+                                <span class="comment-title">ÉVALUATION DE LA GARANTIE</span>
+                            </div>
+                            <div class="comment-content">
                                 {{ state().noteGarantie?.motif || 'Aucun commentaire' }}
                             </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        }
-    </div>
+                        </div>
+                    </div>
+                </p-card>
+                } @else {
+                <p-message severity="info" text="Aucune note de garantie disponible" [closable]="false"></p-message>
+                }
+            </p-tabPanel>
+        </p-tabView>
+    </p-panel>
 
     <!-- Action Buttons -->
-    <div class="flex justify-end gap-3">
-        <button pButton label="Retour" icon="pi pi-arrow-left" class="p-button-outlined"
-            (click)="router.navigate(['/dashboards/home'])"></button>
-        <button pButton label="Mise en place de Crédit dans saf" icon="pi pi-database" class="p-button-primary"
-            (click)="startInsertingCredit(state().instanceCreditInd?.referenceCredit!, state().membre?.clientesPKId?.codCliente!,state().user?.userId!)"></button>
-    </div>
+    <p-card styleClass="action-card">
+        <div class="action-buttons">
+            <p-button label="Retour" icon="pi pi-arrow-left" severity="secondary" [outlined]="true"
+                styleClass="action-btn-secondary" (onClick)="router.navigate(['/dashboards/home'])">
+            </p-button>
+
+            @if(state().appreciation?.status === 'REJECTED') {
+            <p-button label="Prendre en compte les Suggestions du DA" icon="pi pi-money-bill" severity="danger"
+                styleClass="action-btn-danger" (onClick)="updateCredit(state().instanceCreditInd?.referenceCredit!)">
+            </p-button>
+            }@else {
+            <p-button label="Mise en place de Crédit dans SAF" icon="pi pi-database" severity="primary"
+                styleClass="action-btn-primary"
+                (onClick)="startInsertingCredit(state().instanceCreditInd?.referenceCredit!, state().membre?.clientesPKId?.codCliente!, state().user?.userId!)">
+            </p-button>
+
+            }
+
+        </div>
+    </p-card>
     }
 </div>

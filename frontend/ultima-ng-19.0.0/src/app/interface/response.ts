@@ -1,5 +1,6 @@
 import { Actividad } from './actividad.model';
 import { Agence } from './agence';
+import { AnalyseComplete } from './AnalyseComplete';
 import { Appreciation } from './appreciation';
 import { BilanEntreprise } from './bilan.entreprise';
 import { BilanPersonnel } from './bilan.personnel';
@@ -7,7 +8,8 @@ import { ChargeInd } from './ChargeInd';
 import { ClientesDto } from './clientes-dto.model';
 import { CompteExploitation } from './compte.exploitation';
 import { Credit } from './credit';
-import { CreditosClienteResponseDTO } from './creditos-cliente-response.model';
+import { CreditDataResponse } from './credit.data.response';
+import { CreditosClienteResponseDTO } from './CreditosClienteResponseDTO';
 import { CreditResponse } from './creditResponse';
 import { Delegation } from './delegation';
 import { DemandeIndividuel } from './demande-individuel.interface';
@@ -15,19 +17,21 @@ import { DemandeCredit } from './demande.credit';
 import { Entreprise } from './entreprise';
 import { Garantiepersonnecaution } from './Garantiepersonnecaution';
 import { Individuel } from './individuel';
+import { InfoAdministrative } from './infoAdministrative';
 import { InstanceCreditView } from './instance-credit-view';
 import { Inversion } from './inversion.model';
+import { MotifAnalyse } from './motif.analyse';
 import { NewCredit } from './newCredit';
 import { NoteAnalyse } from './note-analyse.model';
 import { NoteGarantie } from './note-garantie.model';
 import { NoteProfile } from './note-profile.model';
 import { OriginFond } from './originFonds';
+import { Personnecaution } from './personnecaution';
 import { PlanPagos } from './plan.pagos';
 import { PointVente } from './point.vente';
 import { ProcessCreditInd } from './process.credit.ind';
 import { ProductInd } from './ProductInd';
 import { Promoteur } from './promoteur';
-import { Requisito } from './requisito.model';
 import { RequisitoRequest } from './requisitoRequest';
 import { ResultNote } from './result.note';
 import { ResumeCredit } from './resumeCredit.model';
@@ -39,15 +43,16 @@ import { SousSousActivite } from './sous-sous-activite.model';
 import { TipoPlazo } from './tipo-plazo.model';
 import { TypeCreditDto } from './typeCredit.model';
 import { IUser } from './user';
-
 export interface IResponse {
     time: Date | string;
     code: number;
-    statut: string;
+    statut?: string;
+    httpStatus?: string; // Ajout de cette propriété qui apparaît dans votre JSON
     message: string;
     path: string;
-    exception: string;
+    exception?: string;
     data: {
+        cautions: Personnecaution[];
         origineFonds: string;
         user?: IUser;
         users?: IUser[];
@@ -116,5 +121,15 @@ export interface IResponse {
         resumeCredit?: ResumeCredit;
 
         histoCredits?: CreditosClienteResponseDTO;
+        personnecautions: Personnecaution[];
+        infoAdministrative?: InfoAdministrative;
+
+        creditData?: CreditDataResponse;
+
+        motifAnalyse?: MotifAnalyse;
+
+        // AJOUT : Propriétés manquantes pour l'analyse complète
+        analyseComplete?: AnalyseComplete;
+        success?: boolean; // Pour les réponses de mise à jour
     };
 }

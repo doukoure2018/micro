@@ -4,9 +4,7 @@ import io.digiservices.ebanking.domain.CreditoDTO;
 import io.digiservices.ebanking.domain.CreditosClienteResponseDTO;
 import io.digiservices.ebanking.domain.PlanPagoDTO;
 import io.digiservices.ebanking.domain.ResumenPlanPagoDTO;
-import io.digiservices.ebanking.dto.CreditRequest;
-import io.digiservices.ebanking.dto.CreditResponse;
-import io.digiservices.ebanking.dto.RequisitoRequest;
+import io.digiservices.ebanking.dto.*;
 import io.digiservices.ebanking.entity.Creditos;
 import io.digiservices.ebanking.entity.ReqCredito;
 import io.digiservices.ebanking.exception.BlogAPIException;
@@ -31,10 +29,7 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -370,49 +365,40 @@ public class CreditosServiceImpl implements CreditosService {
 
     @Override
     public CreditosClienteResponseDTO obtenerCreditosYPlanPagosPorCliente(String codCliente) {
-        log.info("Obteniendo créditos y plan de pagos para el cliente: {}", codCliente);
+        log.info("Obtention des crédits et du plan de paiement pour le client: {}", codCliente);
 
         try {
-            // Obtener créditos
+            // 1. Obtener créditos
             List<Map<String, Object>> creditosData = creditosRepository.obtenerCreditosPorCliente(codCliente);
-            log.debug("Datos de créditos obtenidos: {} registros", creditosData.size());
+            log.debug("Crédits trouvés: {}", creditosData.size());
 
-            List<CreditoDTO> creditos = mapearCreditos(creditosData);
-
-            if (creditos.isEmpty()) {
-                log.warn("No se encontraron créditos para el cliente: {}", codCliente);
+            if (creditosData.isEmpty()) {
+                log.warn("Aucun crédit n’a été trouvé pour le client: {}", codCliente);
                 return CreditosClienteResponseDTO.builder()
                         .codCliente(codCliente)
                         .creditos(List.of())
                         .planPagos(List.of())
                         .resumenes(List.of())
-                        .mensaje("No se encontraron créditos para el cliente: " + codCliente)
+                        .evaluationRisque(null)
+                        .mensaje("Aucun crédit n’a été trouvé pour le client: " + codCliente)
                         .build();
             }
 
-            // Obtener plan de pagos
+            // 2. Obtener plan de pagos
             List<Map<String, Object>> planPagosData = creditosRepository.obtenerPlanPagosPorCliente(codCliente);
-            log.debug("Datos de plan de pagos obtenidos: {} registros", planPagosData.size());
+            log.debug("Plans de paiement trouvés: {}", planPagosData.size());
 
-            // Debug: mostrar las primeras entradas para identificar problemas de tipo
-            if (!planPagosData.isEmpty()) {
-                Map<String, Object> firstRecord = planPagosData.get(0);
-                log.debug("Tipos de datos en primer registro de plan de pagos:");
-                for (Map.Entry<String, Object> entry : firstRecord.entrySet()) {
-                    Object value = entry.getValue();
-                    log.debug("Campo: {}, Tipo: {}, Valor: {}",
-                            entry.getKey(),
-                            value != null ? value.getClass().getSimpleName() : "null",
-                            value);
-                }
-            }
-
+            // 3. Mapear los datos
+            List<CreditoDTO> creditos = mapearCreditos(creditosData);
             List<PlanPagoDTO> planPagos = mapearPlanPagos(planPagosData);
 
-            // Generar resúmenes por crédito
+            // 4. Generar resúmenes
             List<ResumenPlanPagoDTO> resumenes = generarResumenes(planPagos);
 
-            log.info("Información obtenida exitosamente para cliente {}: {} créditos, {} plan de pagos",
+            // 5. Calcular evaluación de riesgo
+            EvaluationRisqueDTO evaluacionRisque = calcularEvaluacionRiesgo(codCliente, planPagos);
+
+            log.info("Informations obtenues avec succès pour le client {}: {} créditos, {} plan de pagos",
                     codCliente, creditos.size(), planPagos.size());
 
             return CreditosClienteResponseDTO.builder()
@@ -420,30 +406,325 @@ public class CreditosServiceImpl implements CreditosService {
                     .creditos(creditos)
                     .planPagos(planPagos)
                     .resumenes(resumenes)
-                    .mensaje("Información obtenida exitosamente")
+                    .evaluationRisque(evaluacionRisque)
+                    .mensaje("Informations obtenues avec succès")
                     .build();
 
-        } catch (ClassCastException e) {
-            log.error("Error de conversión de tipos para el cliente {}: {}", codCliente, e.getMessage(), e);
-            return CreditosClienteResponseDTO.builder()
-                    .codCliente(codCliente)
-                    .creditos(List.of())
-                    .planPagos(List.of())
-                    .resumenes(List.of())
-                    .mensaje("Error de conversión de datos: " + e.getMessage())
-                    .build();
         } catch (Exception e) {
-            log.error("Error al obtener información del cliente {}: {}", codCliente, e.getMessage(), e);
+            log.error("Erreur lors de l'obtention des informations du client {}: {}", codCliente, e.getMessage(), e);
             return CreditosClienteResponseDTO.builder()
                     .codCliente(codCliente)
                     .creditos(List.of())
                     .planPagos(List.of())
                     .resumenes(List.of())
-                    .mensaje("Error al obtener información: " + e.getMessage())
+                    .evaluationRisque(null)
+                    .mensaje("Erreur lors de l'obtention des informations: " + e.getMessage())
                     .build();
         }
     }
 
+    private List<ResumenPlanPagoDTO> generarResumenes(List<PlanPagoDTO> planPagos) {
+        return planPagos.stream()
+                // IMPORTANT: Filtrer pour exclure les échéances d'ouverture (numCuota == 0)
+                .filter(pago -> pago.getNumCuota() != 0)
+                .collect(Collectors.groupingBy(PlanPagoDTO::getNumCredito))
+                .entrySet().stream()
+                .map(entry -> {
+                    Long numCredito = entry.getKey();
+                    List<PlanPagoDTO> pagosCredito = entry.getValue();
+
+                    return ResumenPlanPagoDTO.builder()
+                            .numCredito(numCredito)
+                            .totalEcheances(pagosCredito.size())
+                            .totalAPagar(sumarBigDecimal(pagosCredito, PlanPagoDTO::getMonCuota))
+                            .totalPrincipal(sumarBigDecimal(pagosCredito, PlanPagoDTO::getMonPrincipal))
+                            .totalIntereses(sumarBigDecimal(pagosCredito, PlanPagoDTO::getMonInt))
+                            .totalPagado(sumarBigDecimal(
+                                    pagosCredito.stream()
+                                            .filter(p -> "C".equals(p.getIndEstado()))
+                                            .collect(Collectors.toList()),
+                                    PlanPagoDTO::getMonCuota))
+                            .totalRestant(sumarBigDecimal(
+                                    pagosCredito.stream()
+                                            .filter(p -> Arrays.asList("N", "P", "A").contains(p.getIndEstado()))
+                                            .collect(Collectors.toList()),
+                                    PlanPagoDTO::getMonCuota))
+                            .echeancesPagadas((int) pagosCredito.stream()
+                                    .filter(p -> "C".equals(p.getIndEstado()))
+                                    .count())
+                            .echeancesRestantes((int) pagosCredito.stream()
+                                    .filter(p -> Arrays.asList("N", "P", "A").contains(p.getIndEstado()))
+                                    .count())
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    private BigDecimal sumarBigDecimal(List<PlanPagoDTO> lista, java.util.function.Function<PlanPagoDTO, BigDecimal> mapper) {
+        return lista.stream()
+                .map(mapper)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+
+    private EvaluationRisqueDTO calcularEvaluacionRiesgo(String codCliente, List<PlanPagoDTO> todosLosPagos) {
+        // Obtener los 3 últimos créditos
+        List<Map<String, Object>> ultimosCreditos = creditosRepository.obtenerUltimosTresCreditos(codCliente);
+
+        if (ultimosCreditos.isEmpty()) {
+            return EvaluationRisqueDTO.builder()
+                    .niveauRisque("INDÉTERMINÉ")
+                    .pourcentageRisque(new BigDecimal("100"))
+                    .scoreConfiance(BigDecimal.ZERO)
+                    .creditsAnalyses(0)
+                    .echeancesAnalysees(0)
+                    .echeancesRespectees(0)
+                    .historiqueRemboursement("Aucun historique")
+                    .build();
+        }
+
+        // Filtrar solo los pagos de los últimos 3 créditos
+        Set<Long> creditosAnalizar = ultimosCreditos.stream()
+                .map(c -> convertirALong(c.get("NUM_CREDITO")))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        // IMPORTANT: Excluir les échéances d'ouverture (numCuota == 0)
+        List<PlanPagoDTO> pagosAnalizar = todosLosPagos.stream()
+                .filter(p -> creditosAnalizar.contains(p.getNumCredito()))
+                .filter(p -> p.getNumCuota() != 0) // Exclure les ouvertures
+                .filter(p -> p.getFecCuota() != null && p.getFecCuota().isBefore(LocalDateTime.now()))
+                .collect(Collectors.toList());
+
+        // Calcular métricas
+        int totalEcheances = pagosAnalizar.size();
+        int echeancesRespectees = 0;
+
+        for (PlanPagoDTO pago : pagosAnalizar) {
+            if ("C".equals(pago.getIndEstado()) && pago.getFecCancelacion() != null && pago.getFecCuota() != null) {
+                // Verificar si se pagó en el mismo mes
+                if (pago.getFecCancelacion().getYear() == pago.getFecCuota().getYear() &&
+                        pago.getFecCancelacion().getMonth() == pago.getFecCuota().getMonth()) {
+                    echeancesRespectees++;
+                }
+            }
+        }
+
+        // Calcular scores
+        BigDecimal scoreConfiance = totalEcheances > 0
+                ? new BigDecimal(echeancesRespectees * 100.0 / totalEcheances).setScale(2, BigDecimal.ROUND_HALF_UP)
+                : BigDecimal.ZERO;
+
+        BigDecimal pourcentageRisque = new BigDecimal("100").subtract(scoreConfiance);
+
+        String niveauRisque;
+        String historiqueRemboursement;
+
+        if (scoreConfiance.compareTo(new BigDecimal("90")) >= 0) {
+            niveauRisque = "TRÈS FAIBLE";
+            historiqueRemboursement = "Excellent";
+        } else if (scoreConfiance.compareTo(new BigDecimal("75")) >= 0) {
+            niveauRisque = "FAIBLE";
+            historiqueRemboursement = "Bon";
+        } else if (scoreConfiance.compareTo(new BigDecimal("60")) >= 0) {
+            niveauRisque = "MODÉRÉ";
+            historiqueRemboursement = "Moyen";
+        } else if (scoreConfiance.compareTo(new BigDecimal("40")) >= 0) {
+            niveauRisque = "ÉLEVÉ";
+            historiqueRemboursement = "Faible";
+        } else {
+            niveauRisque = "TRÈS ÉLEVÉ";
+            historiqueRemboursement = "Très faible";
+        }
+
+        return EvaluationRisqueDTO.builder()
+                .niveauRisque(niveauRisque)
+                .pourcentageRisque(pourcentageRisque)
+                .scoreConfiance(scoreConfiance)
+                .creditsAnalyses(creditosAnalizar.size())
+                .echeancesAnalysees(totalEcheances)
+                .echeancesRespectees(echeancesRespectees)
+                .historiqueRemboursement(historiqueRemboursement)
+                .build();
+    }
+    private List<CreditoDTO> mapearCreditos(List<Map<String, Object>> creditosData) {
+        return creditosData.stream()
+                .map(this::mapearCredito)
+                .collect(Collectors.toList());
+    }
+
+
+
+    private List<ResumenPlanPagoDTO> mapearResumenes(List<Map<String, Object>> resumenesData) {
+        if (resumenesData == null || resumenesData.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        return resumenesData.stream()
+                .map(data -> ResumenPlanPagoDTO.builder()
+                        .numCredito(convertirALong(data.get("NUM_CREDITO")))
+                        .totalEcheances(convertirAInteger(data.get("TOTAL_ECHEANCES")))
+                        .totalAPagar(convertirABigDecimal(data.get("TOTAL_A_PAYER")))
+                        .totalPrincipal(convertirABigDecimal(data.get("TOTAL_PRINCIPAL")))
+                        .totalIntereses(convertirABigDecimal(data.get("TOTAL_INTERESES")))
+                        .totalPagado(convertirABigDecimal(data.get("TOTAL_PAGADO")))
+                        .totalRestant(convertirABigDecimal(data.get("TOTAL_RESTANT")))
+                        .echeancesPagadas(convertirAInteger(data.get("ECHEANCES_PAGADAS")))
+                        .echeancesRestantes(convertirAInteger(data.get("ECHEANCES_RESTANTES")))
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+
+
+    private CreditoDTO mapearCredito(Map<String, Object> data) {
+        // Log para debug
+        log.debug("Mapeando crédito con datos: {}", data);
+
+        return CreditoDTO.builder()
+                .codEmpresa(convertirAString(data.get("COD_EMPRESA")))
+                .codAgencia(convertirAString(data.get("COD_AGENCIA")))
+                .numCredito(convertirALong(data.get("NUM_CREDITO")))
+                .tipCredito(convertirAInteger(data.get("TIP_CREDITO")))
+                .codCliente(convertirAString(data.get("COD_CLIENTE")))
+                .monCredito(convertirABigDecimal(data.get("MON_CREDITO")))
+                .monSaldo(convertirABigDecimal(data.get("MON_SALDO")))
+                .monDesembolsado(convertirABigDecimal(data.get("MON_DESEMBOLSADO")))
+                .monPagadoPrincipal(convertirABigDecimal(data.get("MON_PAGADO_PRINCIPAL")))
+                .monPagadoIntereses(convertirABigDecimal(data.get("MON_PAGADO_INTERESES")))
+                .tasaInteres(convertirABigDecimal(data.get("TASA_INTERES")))
+                .plazoCredito(convertirAInteger(data.get("PLAZO_CREDITO")))
+                .fecApertura(convertirTimestamp(data.get("FEC_APERTURA")))
+                .fecVencimiento(convertirTimestamp(data.get("FEC_VENCIMIENTO")))
+                .fecCancelacion(convertirTimestamp(data.get("FEC_CANCELACION")))
+                .indEstado(convertirAString(data.get("IND_ESTADO")))
+                .cantCuotas(convertirAInteger(data.get("CANT_CUOTAS")))
+                .monCuota(convertirABigDecimal(data.get("MON_CUOTA")))
+                .build();
+    }
+
+    private List<PlanPagoDTO> mapearPlanPagos(List<Map<String, Object>> planPagosData) {
+        if (planPagosData == null) {
+            return new ArrayList<>();
+        }
+
+        return planPagosData.stream()
+                .map(data -> {
+                    try {
+                        return mapearPlanPago(data);
+                    } catch (Exception e) {
+                        log.error("Error al mapear plan de pago. Datos: {}. Error: {}", data, e.getMessage());
+                        throw new RuntimeException("Error al procesar plan de pago", e);
+                    }
+                })
+                .collect(Collectors.toList());
+    }
+
+    private PlanPagoDTO mapearPlanPago(Map<String, Object> data) {
+        return PlanPagoDTO.builder()
+                .codEmpresa(convertirAString(data.get("COD_EMPRESA")))
+                .codAgencia(convertirAString(data.get("COD_AGENCIA")))
+                .numCredito(convertirALong(data.get("NUM_CREDITO")))
+                .numCuota(convertirAInteger(data.get("NUM_CUOTA")))
+                .fecCuota(convertirTimestamp(data.get("FEC_CUOTA")))
+                .fecRealCuota(convertirTimestamp(data.get("FEC_REAL_CUOTA")))
+                .tipCuota(convertirAString(data.get("TIP_CUOTA")))
+                .monCuota(convertirABigDecimal(data.get("MON_CUOTA")))
+                .monPrincipal(convertirABigDecimal(data.get("MON_PRINCIPAL")))
+                .monInt(convertirABigDecimal(data.get("MON_INT")))
+                .monComision(convertirABigDecimal(data.get("MON_COMISION")))
+                .salPrincipal(convertirABigDecimal(data.get("SAL_PRINCIPAL")))
+                .salInt(convertirABigDecimal(data.get("SAL_INT")))
+                .salCredito(convertirABigDecimal(data.get("SAL_CREDITO")))
+                .fecCancelacion(convertirTimestamp(data.get("FEC_CANCELACION")))
+                .indEstado(convertirAString(data.get("IND_ESTADO")))
+                .tasInt(convertirABigDecimal(data.get("TAS_INT")))
+                .diaInt(convertirAInteger(data.get("DIA_INT")))
+                .diaPendientesInt(convertirAInteger(data.get("DIA_PENDIENTES_INT")))
+                .perCuota(convertirAString(data.get("PER_CUOTA")))
+                .build();
+    }
+
+    private String convertirAString(Object value) {
+        return value != null ? value.toString().trim() : null;
+    }
+
+    private LocalDateTime convertirTimestamp(Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof Timestamp) {
+            return ((Timestamp) value).toLocalDateTime();
+        }
+
+        if (value instanceof java.sql.Date) {
+            return ((java.sql.Date) value).toLocalDate().atStartOfDay();
+        }
+
+        if (value instanceof java.util.Date) {
+            return new Timestamp(((java.util.Date) value).getTime()).toLocalDateTime();
+        }
+
+        log.warn("Tipo de fecha no reconocido: {}", value.getClass().getName());
+        return null;
+    }
+
+    private Long convertirALong(Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
+
+        try {
+            return Long.parseLong(value.toString());
+        } catch (NumberFormatException e) {
+            log.warn("No se pudo convertir a Long: {}", value);
+            return null;
+        }
+    }
+
+    private Integer convertirAInteger(Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof Number) {
+            return ((Number) value).intValue();
+        }
+
+        try {
+            return Integer.parseInt(value.toString());
+        } catch (NumberFormatException e) {
+            log.warn("No se pudo convertir a Integer: {}", value);
+            return null;
+        }
+    }
+
+    private BigDecimal convertirABigDecimal(Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof BigDecimal) {
+            return (BigDecimal) value;
+        }
+
+        if (value instanceof Number) {
+            return new BigDecimal(value.toString());
+        }
+
+        try {
+            return new BigDecimal(value.toString());
+        } catch (NumberFormatException e) {
+            log.warn("No se pudo convertir a BigDecimal: {}", value);
+            return null;
+        }
+    }
     @Override
     public boolean existeClienteConCreditos(String codCliente) {
         try {
@@ -455,132 +736,8 @@ public class CreditosServiceImpl implements CreditosService {
         }
     }
 
-    private List<CreditoDTO> mapearCreditos(List<Map<String, Object>> creditosData) {
-        return creditosData.stream().map(this::mapearCredito).collect(Collectors.toList());
-    }
-
-    private CreditoDTO mapearCredito(Map<String, Object> data) {
-        return CreditoDTO.builder()
-                .codEmpresa(convertirAString(data.get("COD_EMPRESA")))
-                .codAgencia(convertirAString(data.get("COD_AGENCIA")))
-                .numCredito(((Number) data.get("NUM_CREDITO")).longValue())
-                .tipCredito(data.get("TIP_CREDITO") != null ? ((Number) data.get("TIP_CREDITO")).intValue() : null)
-                .codCliente(convertirAString(data.get("COD_CLIENTE")))
-                .monCredito((BigDecimal) data.get("MON_CREDITO"))
-                .monSaldo((BigDecimal) data.get("MON_SALDO"))
-                .monDesembolsado((BigDecimal) data.get("MON_DESEMBOLSADO"))
-                .monPagadoPrincipal((BigDecimal) data.get("MON_PAGADO_PRINCIPAL"))
-                .monPagadoIntereses((BigDecimal) data.get("MON_PAGADO_INTERESES"))
-                .tasaInteres((BigDecimal) data.get("TASA_INTERES"))
-                .plazoCredito(data.get("PLAZO_CREDITO") != null ? ((Number) data.get("PLAZO_CREDITO")).intValue() : null)
-                .fecApertura(convertirTimestamp((Timestamp) data.get("FEC_APERTURA")))
-                .fecVencimiento(convertirTimestamp((Timestamp) data.get("FEC_VENCIMIENTO")))
-                .fecCancelacion(convertirTimestamp((Timestamp) data.get("FEC_CANCELACION")))
-                .indEstado(convertirAString(data.get("IND_ESTADO")))
-                .cantCuotas(data.get("CANT_CUOTAS") != null ? ((Number) data.get("CANT_CUOTAS")).intValue() : null)
-                .monCuota((BigDecimal) data.get("MON_CUOTA"))
-                .build();
-    }
-
-    private List<PlanPagoDTO> mapearPlanPagos(List<Map<String, Object>> planPagosData) {
-        return planPagosData.stream().map(data -> {
-            try {
-                return mapearPlanPago(data);
-            } catch (Exception e) {
-                log.error("Error al mapear plan de pago. Datos: {}. Error: {}", data, e.getMessage());
-                throw new RuntimeException("Error al procesar plan de pago", e);
-            }
-        }).collect(Collectors.toList());
-    }
-
-    private PlanPagoDTO mapearPlanPago(Map<String, Object> data) {
-        return PlanPagoDTO.builder()
-                .codEmpresa(convertirAString(data.get("COD_EMPRESA")))
-                .codAgencia(convertirAString(data.get("COD_AGENCIA")))
-                .numCredito(((Number) data.get("NUM_CREDITO")).longValue())
-                .numCuota(((Number) data.get("NUM_CUOTA")).intValue())
-                .fecCuota(convertirTimestamp((Timestamp) data.get("FEC_CUOTA")))
-                .fecRealCuota(convertirTimestamp((Timestamp) data.get("FEC_REAL_CUOTA")))
-                .tipCuota(convertirAString(data.get("TIP_CUOTA")))
-                .monCuota((BigDecimal) data.get("MON_CUOTA"))
-                .monPrincipal((BigDecimal) data.get("MON_PRINCIPAL"))
-                .monInt((BigDecimal) data.get("MON_INT"))
-                .monComision((BigDecimal) data.get("MON_COMISION"))
-                .salPrincipal((BigDecimal) data.get("SAL_PRINCIPAL"))
-                .salInt((BigDecimal) data.get("SAL_INT"))
-                .salCredito((BigDecimal) data.get("SAL_CREDITO"))
-                .fecCancelacion(convertirTimestamp((Timestamp) data.get("FEC_CANCELACION")))
-                .indEstado(convertirAString(data.get("IND_ESTADO")))
-                .tasInt((BigDecimal) data.get("TAS_INT"))
-                .diaInt(data.get("DIA_INT") != null ? ((Number) data.get("DIA_INT")).intValue() : null)
-                .diaPendientesInt(data.get("DIA_PENDIENTES_INT") != null ? ((Number) data.get("DIA_PENDIENTES_INT")).intValue() : null)
-                .perCuota(convertirAString(data.get("PER_CUOTA")))
-                .build();
-    }
-
-    private List<ResumenPlanPagoDTO> generarResumenes(List<PlanPagoDTO> planPagos) {
-        return planPagos.stream()
-                .collect(Collectors.groupingBy(PlanPagoDTO::getNumCredito))
-                .entrySet().stream()
-                .map(entry -> {
-                    Long numCredito = entry.getKey();
-                    List<PlanPagoDTO> pagosCredito = entry.getValue();
-
-                    return ResumenPlanPagoDTO.builder()
-                            .numCredito(numCredito)
-                            .totalEcheances(pagosCredito.size())
-                            .totalAPagar(pagosCredito.stream()
-                                    .map(PlanPagoDTO::getMonCuota)
-                                    .filter(java.util.Objects::nonNull)
-                                    .reduce(BigDecimal.ZERO, BigDecimal::add))
-                            .totalPrincipal(pagosCredito.stream()
-                                    .map(PlanPagoDTO::getMonPrincipal)
-                                    .filter(java.util.Objects::nonNull)
-                                    .reduce(BigDecimal.ZERO, BigDecimal::add))
-                            .totalIntereses(pagosCredito.stream()
-                                    .map(PlanPagoDTO::getMonInt)
-                                    .filter(java.util.Objects::nonNull)
-                                    .reduce(BigDecimal.ZERO, BigDecimal::add))
-                            .totalPagado(pagosCredito.stream()
-                                    .filter(p -> "C".equals(p.getIndEstado()))
-                                    .map(PlanPagoDTO::getMonCuota)
-                                    .filter(java.util.Objects::nonNull)
-                                    .reduce(BigDecimal.ZERO, BigDecimal::add))
-                            .totalRestant(pagosCredito.stream()
-                                    .filter(p -> List.of("N", "P").contains(p.getIndEstado()))
-                                    .map(PlanPagoDTO::getMonCuota)
-                                    .filter(java.util.Objects::nonNull)
-                                    .reduce(BigDecimal.ZERO, BigDecimal::add))
-                            .echeancesPagadas((int) pagosCredito.stream()
-                                    .filter(p -> "C".equals(p.getIndEstado()))
-                                    .count())
-                            .echeancesRestantes((int) pagosCredito.stream()
-                                    .filter(p -> List.of("N", "P").contains(p.getIndEstado()))
-                                    .count())
-                            .build();
-                })
-                .collect(Collectors.toList());
-    }
-
     private LocalDateTime convertirTimestamp(Timestamp timestamp) {
         return timestamp != null ? timestamp.toLocalDateTime() : null;
     }
 
-    /**
-     * Convierte un objeto a String, manejando casos donde puede ser Character o String
-     * @param value El valor a convertir
-     * @return String convertido o null si el valor es null
-     */
-    private String convertirAString(Object value) {
-        if (value == null) {
-            return null;
-        }
-        if (value instanceof String) {
-            return ((String) value).trim(); // Trim para remover espacios de CHAR fields
-        }
-        if (value instanceof Character) {
-            return String.valueOf(value);
-        }
-        return value.toString().trim();
-    }
 }

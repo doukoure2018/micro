@@ -35,18 +35,17 @@ export class MiseEnPlaceCreditComponent {
             .pipe(
                 switchMap((params: ParamMap) => {
                     const numeroMembre = params.get('numeroMembre');
-                    const userId = params.get('userId');
                     console.log('processus de verification de numeroMembre');
-                    console.log('userId', userId);
+
                     console.log('numeroMembre', numeroMembre);
                     if (numeroMembre) {
                         const existMembre = this.userService.existNumeroMembre$(+numeroMembre);
                         this.state.set({ numeroMembre: numeroMembre, loading: true, message: undefined, error: undefined });
                         if (existMembre) {
-                            return this.router.navigate(['/dashboards/start-credit/', numeroMembre, userId]);
+                            return this.router.navigate(['/dashboards/agent-credit/start-credit/', numeroMembre]);
                             //return this.router.navigate(['/dashboards/fiche-signaletique/', numeroMembre]);
                         } else {
-                            return this.router.navigate(['/dashboards/start-credit/', numeroMembre, userId]);
+                            return this.router.navigate(['/dashboards/agent-credit/start-credit/', numeroMembre]);
                         }
                     } else {
                         this.state.set({ ...this.state(), loading: false, message: undefined, error: 'Invalide Code AgenceId or not exist' });

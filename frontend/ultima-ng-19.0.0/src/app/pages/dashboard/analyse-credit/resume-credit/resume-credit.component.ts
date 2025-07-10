@@ -1,3 +1,5 @@
+import { InfoAdministrative } from '@/interface/infoAdministrative';
+import { Personnecaution } from '@/interface/personnecaution';
 import { IResponse } from '@/interface/response';
 import { ResumeCredit } from '@/interface/resumeCredit.model';
 import { UserService } from '@/service/user.service';
@@ -5,6 +7,7 @@ import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
+import { AccordionModule } from 'primeng/accordion';
 import { MessageService } from 'primeng/api';
 import { BadgeModule } from 'primeng/badge';
 import { ButtonModule } from 'primeng/button';
@@ -17,6 +20,9 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
+import { TooltipModule } from 'primeng/tooltip';
+import { MotifAnalyseComponent } from './motif-analyse/motif-analyse.component';
+import { IUser } from '@/interface/user';
 
 type PrimeSeverity = 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast';
 interface IndicateurCle {
@@ -38,396 +44,25 @@ interface TableDataItem {
 
 @Component({
     selector: 'app-resume-credit',
-    imports: [CommonModule, CardModule, PanelModule, TableModule, TagModule, ButtonModule, ProgressSpinnerModule, ToastModule, BadgeModule, DividerModule, SkeletonModule, ProgressBarModule],
+    imports: [CommonModule, CardModule, PanelModule, TableModule, TagModule, ButtonModule, ProgressSpinnerModule, ToastModule, BadgeModule, DividerModule, SkeletonModule, ProgressBarModule, TooltipModule, AccordionModule, MotifAnalyseComponent],
     templateUrl: './resume-credit.component.html',
-    styles: [
-        `
-            .recommendation-list {
-                max-height: 300px;
-                overflow-y: auto;
-            }
-
-            .risk-analysis .p-progressbar {
-                border-radius: 10px;
-            }
-
-            .progress-excellent .p-progressbar-value {
-                background: linear-gradient(90deg, #27ae60, #2ecc71);
-            }
-
-            .progress-bon .p-progressbar-value {
-                background: linear-gradient(90deg, #3498db, #5dade2);
-            }
-
-            .progress-acceptable .p-progressbar-value {
-                background: linear-gradient(90deg, #f39c12, #e67e22);
-            }
-
-            .progress-risque .p-progressbar-value {
-                background: linear-gradient(90deg, #e74c3c, #ec7063);
-            }
-
-            .conseil-item {
-                transition: all 0.3s ease;
-            }
-
-            .conseil-item:hover {
-                transform: translateX(5px);
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            }
-
-            .decision-recommendation {
-                border-left: 4px solid #8e44ad;
-            }
-
-            .bg-accorder-50 {
-                background-color: rgba(39, 174, 96, 0.1);
-                border-left-color: #27ae60;
-            }
-
-            .bg-accorder-avec-conditions-50 {
-                background-color: rgba(52, 152, 219, 0.1);
-                border-left-color: #3498db;
-            }
-
-            .bg-etude-approfondie-50 {
-                background-color: rgba(243, 156, 18, 0.1);
-                border-left-color: #f39c12;
-            }
-
-            .bg-refuser-50 {
-                background-color: rgba(231, 76, 60, 0.1);
-                border-left-color: #e74c3c;
-            }
-
-            .indicator-card-simple {
-                background: white;
-                border: 1px solid #e9ecef;
-                border-radius: 12px;
-                padding: 1.5rem;
-                height: 100%;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-                transition: all 0.3s ease;
-                position: relative;
-            }
-
-            .indicator-card-simple:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            }
-
-            .indicator-header h5 {
-                font-size: 1rem;
-                line-height: 1.2;
-            }
-
-            .indicator-header small {
-                font-size: 0.75rem;
-                font-style: italic;
-            }
-
-            .indicator-value {
-                color: #2c3e50;
-            }
-
-            .indicator-details {
-                border-top: 1px solid #e9ecef;
-                padding-top: 1rem;
-                margin-top: 1rem;
-            }
-
-            /* Styles pour les séparateurs */
-            .separator-container {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                margin: 1rem 0;
-            }
-
-            .indicator-separator {
-                width: 80%;
-                height: 2px;
-                background: linear-gradient(90deg, transparent 0%, #3498db 20%, #2ecc71 40%, #f39c12 60%, #e74c3c 80%, transparent 100%);
-                border-radius: 2px;
-                position: relative;
-                opacity: 0.7;
-            }
-
-            .indicator-separator::before {
-                content: '';
-                position: absolute;
-                left: 50%;
-                top: 50%;
-                transform: translate(-50%, -50%);
-                width: 12px;
-                height: 12px;
-                background: #fff;
-                border: 2px solid #3498db;
-                border-radius: 50%;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            }
-
-            /* Alternative: Séparateur avec texte */
-            .separator-with-text {
-                position: relative;
-                text-align: center;
-                margin: 1.5rem 0;
-            }
-
-            .separator-with-text::before {
-                content: '';
-                position: absolute;
-                top: 50%;
-                left: 0;
-                right: 0;
-                height: 1px;
-                background: linear-gradient(90deg, transparent, #dee2e6, transparent);
-            }
-
-            .separator-with-text span {
-                background: white;
-                padding: 0 1rem;
-                color: #6c757d;
-                font-size: 0.8rem;
-                font-weight: 500;
-            }
-
-            /* Séparateurs responsives */
-            @media (max-width: 992px) {
-                .separator-container {
-                    margin: 0.5rem 0;
-                }
-
-                .indicator-separator {
-                    width: 60%;
-                    height: 1px;
-                }
-
-                .indicator-separator::before {
-                    width: 8px;
-                    height: 8px;
-                }
-            }
-
-            @media (max-width: 768px) {
-                .indicator-card-simple {
-                    padding: 1rem;
-                    margin-bottom: 1.5rem;
-                }
-
-                .indicator-value {
-                    font-size: 2rem !important;
-                }
-
-                .indicator-header h5 {
-                    font-size: 0.9rem;
-                }
-
-                .indicator-header small {
-                    font-size: 0.7rem;
-                }
-
-                /* Masquer les séparateurs sur mobile */
-                .separator-container {
-                    display: none;
-                }
-            }
-
-            /* Variante: Séparateur en pointillés */
-            .dotted-separator {
-                width: 100%;
-                height: 1px;
-                background: repeating-linear-gradient(90deg, #3498db 0px, #3498db 4px, transparent 4px, transparent 8px);
-            }
-
-            /* Variante: Séparateur avec ombre */
-            .shadow-separator {
-                width: 80%;
-                height: 1px;
-                background: #e9ecef;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-                border-radius: 1px;
-            }
-            .seuils-card-large {
-                max-width: 1200px;
-                margin: 0 auto;
-            }
-
-            .seuils-content {
-                padding: 2rem;
-            }
-
-            .seuils-section,
-            .evaluation-section {
-                height: 100%;
-                display: flex;
-                flex-direction: column;
-            }
-
-            .seuils-list {
-                flex: 1;
-                border-left: 4px solid #27ae60;
-            }
-
-            .seuils-list ul li {
-                transition: all 0.3s ease;
-            }
-
-            .seuils-list ul li:hover {
-                transform: translateX(5px);
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            }
-
-            .evaluation-box {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                min-height: 350px;
-            }
-
-            .evaluation-main {
-                text-align: center;
-            }
-
-            .progress-section {
-                margin: 1.5rem 0;
-            }
-
-            .progress-excellent .p-progressbar-value {
-                background: linear-gradient(90deg, #27ae60, #2ecc71);
-            }
-
-            .progress-bon .p-progressbar-value {
-                background: linear-gradient(90deg, #3498db, #5dade2);
-            }
-
-            .progress-acceptable .p-progressbar-value {
-                background: linear-gradient(90deg, #f39c12, #e67e22);
-            }
-
-            .progress-risque .p-progressbar-value {
-                background: linear-gradient(90deg, #e74c3c, #ec7063);
-            }
-
-            .status-indicator {
-                margin-top: 1rem;
-            }
-
-            .recapitulatif-centre {
-                border: 2px dashed #dee2e6;
-                background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            }
-
-            .metric-item {
-                text-align: center;
-                padding: 0.5rem;
-            }
-
-            .metric-separator {
-                font-size: 1.5rem;
-                color: #dee2e6;
-                font-weight: bold;
-            }
-
-            /* Responsive */
-            @media (max-width: 992px) {
-                .seuils-content {
-                    padding: 1.5rem;
-                }
-
-                .evaluation-box {
-                    min-height: 300px;
-                    margin-top: 2rem;
-                }
-
-                .text-5xl {
-                    font-size: 3rem !important;
-                }
-            }
-
-            @media (max-width: 768px) {
-                .seuils-content {
-                    padding: 1rem;
-                }
-
-                .text-2xl {
-                    font-size: 1.5rem !important;
-                }
-
-                .text-5xl {
-                    font-size: 2.5rem !important;
-                }
-
-                .evaluation-box {
-                    min-height: 250px;
-                    padding: 1rem !important;
-                }
-
-                .metric-item {
-                    margin: 0.5rem 0;
-                }
-
-                .metric-separator {
-                    display: none;
-                }
-
-                .flex-wrap .metric-item {
-                    flex: 1;
-                    min-width: 80px;
-                }
-            }
-
-            /* Animation pour les éléments */
-            .seuils-list ul li,
-            .evaluation-box,
-            .metric-item {
-                animation: fadeInUp 0.6s ease forwards;
-            }
-
-            .seuils-list ul li:nth-child(1) {
-                animation-delay: 0.1s;
-            }
-            .seuils-list ul li:nth-child(2) {
-                animation-delay: 0.2s;
-            }
-            .seuils-list ul li:nth-child(3) {
-                animation-delay: 0.3s;
-            }
-            .seuils-list ul li:nth-child(4) {
-                animation-delay: 0.4s;
-            }
-            .seuils-list ul li:nth-child(5) {
-                animation-delay: 0.5s;
-            }
-            .seuils-list ul li:nth-child(6) {
-                animation-delay: 0.6s;
-            }
-
-            @keyframes fadeInUp {
-                from {
-                    opacity: 0;
-                    transform: translateY(20px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-        `
-    ],
+    styleUrl: './resume-credit.component.scss',
     providers: [MessageService]
 })
 export class ResumeCreditComponent {
     state = signal<{
+        user?: IUser;
         resumeCredit?: ResumeCredit;
+        infoAdministrative?: InfoAdministrative;
         loading: boolean;
+        loadingAdmin: boolean; // NOUVEAU
         message: string | undefined;
         error: string | any;
         searching: boolean;
     }>({
         loading: false,
         message: undefined,
+        loadingAdmin: false, // NOUVEAU
         error: undefined,
         searching: false
     });
@@ -478,7 +113,6 @@ export class ResumeCreditComponent {
 
         console.log('🚀 Chargement du résumé pour la demande:', this.demandeId);
 
-        // Appel de l'API pour récupérer le résumé
         this.analyseCreditService
             .obtenirResumeCredit$(this.demandeId)
             .pipe(takeUntilDestroyed(this.destroyRef))
@@ -490,9 +124,13 @@ export class ResumeCreditComponent {
                         this.state.update((current) => ({
                             ...current,
                             resumeCredit: response.data.resumeCredit,
+                            user: response.data.user,
                             loading: false,
                             message: 'Résumé chargé avec succès'
                         }));
+
+                        // NOUVEAU : Charger les infos administratives une fois le résumé chargé
+                        this.chargerInfoAdministrative();
 
                         this.messageService.add({
                             severity: 'success',
@@ -505,6 +143,86 @@ export class ResumeCreditComponent {
                 },
                 error: (error) => {
                     this.gererErreur('Erreur lors du chargement du résumé', error);
+                }
+            });
+    }
+
+    // MÉTHODE CORRIGÉE : Charger les informations administratives
+    chargerInfoAdministrative(): void {
+        const demande = this.state().resumeCredit?.demande_credit;
+
+        // CORRECTION : Vérification explicite pour accepter 0 comme valeur valide
+        if (!demande || demande.delegation_id == null || demande.agence_id == null || demande.point_vente_id == null || demande.user_id == null) {
+            console.warn('⚠️ Informations administratives incomplètes dans la demande');
+            console.log('🔍 Détails des IDs:', {
+                delegation_id: demande?.delegation_id,
+                agence_id: demande?.agence_id,
+                point_vente_id: demande?.point_vente_id,
+                user_id: demande?.user_id
+            });
+            return;
+        }
+
+        this.state.update((current) => ({
+            ...current,
+            loadingAdmin: true
+        }));
+
+        console.log('🏢 Chargement des informations administratives...');
+        console.log('📋 IDs utilisés:', {
+            delegation_id: demande.delegation_id,
+            agence_id: demande.agence_id,
+            point_vente_id: demande.point_vente_id,
+            user_id: demande.user_id
+        });
+
+        this.analyseCreditService
+            .getInfoAdministrative$(demande.delegation_id, demande.agence_id, demande.point_vente_id)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    console.log('✅ Informations administratives reçues:', response);
+
+                    if (response.data?.infoAdministrative) {
+                        this.state.update((current) => ({
+                            ...current,
+                            infoAdministrative: response.data.infoAdministrative,
+                            loadingAdmin: false
+                        }));
+
+                        console.log('📋 Infos admin chargées:', response.data.infoAdministrative);
+
+                        this.messageService.add({
+                            severity: 'success',
+                            summary: 'Succès',
+                            detail: 'Informations administratives chargées'
+                        });
+                    } else {
+                        console.warn('⚠️ Aucune donnée administrative trouvée');
+                        this.state.update((current) => ({
+                            ...current,
+                            loadingAdmin: false
+                        }));
+
+                        this.messageService.add({
+                            severity: 'warn',
+                            summary: 'Attention',
+                            detail: 'Structure de données administrative non trouvée'
+                        });
+                    }
+                },
+                error: (error) => {
+                    console.error('❌ Erreur lors du chargement des infos admin:', error);
+                    this.state.update((current) => ({
+                        ...current,
+                        loadingAdmin: false
+                    }));
+
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Erreur',
+                        detail: `Impossible de charger les détails administratifs: ${error.message || 'Erreur inconnue'}`
+                    });
                 }
             });
     }
@@ -789,21 +507,20 @@ export class ResumeCreditComponent {
 
     retourListe(): void {
         if (this.userId) {
-            this.router.navigate([`/dashboards/credit/${this.userId}`]);
+            this.router.navigate([`/dashboards`]);
         } else {
             this.router.navigate(['/dashboards/credit']);
         }
     }
 
-    modifierDemande(): void {
-        if (this.demandeId && this.userId) {
-            this.router.navigate([`/dashboards/credit/${this.userId}/edit/${this.demandeId}`]);
+    viewCompleteAnalyse(): void {
+        console.log(this.state().resumeCredit?.demande_credit_id!);
+        if (this.state().resumeCredit?.demande_credit_id) {
+            this.router.navigate([`/dashboards/credit/update-analyse-credit/${this.state().resumeCredit?.demande_credit_id!}`]);
         }
     }
 
-    imprimerResume(): void {
-        window.print();
-    }
+    // credit/resume-credit/:demandeId
 
     // ========================================
     // MÉTHODES POUR LES DONNÉES DES TABLEAUX
@@ -946,6 +663,9 @@ export class ResumeCreditComponent {
         ];
     }
 
+    /**
+     * Méthode mise à jour avec les nouvelles colonnes
+     */
     getDemandeCreditData(): TableDataItem[] {
         const demande = this.state().resumeCredit?.demande_credit;
         if (!demande) return [];
@@ -954,6 +674,7 @@ export class ResumeCreditComponent {
             { label: 'Date demande', value: this.formatDateForDisplay(demande.date_demande) || '-' },
             { label: 'Montant demandé', value: this.formatCurrency(demande.montant_demande || 0) },
             { label: 'Durée', value: `${demande.duree_mois || 0} mois` },
+            { label: 'Objet du financement', value: demande.objet_financement || '-' },
             { label: 'Mensualité estimée', value: this.formatCurrency(this.calculerMensualite()) },
             {
                 label: 'Ratio crédit/Revenus totaux',
@@ -961,14 +682,18 @@ export class ResumeCreditComponent {
                 severity: this.getRatioCreditCASeverity(),
                 isRatio: true
             },
-            { label: 'Statut', value: demande.statut || '-', isStatus: true }
+            { label: 'Statut', value: demande.statut || '-', isStatus: true },
+            // NOUVELLES COLONNES
+            { label: 'ID Délégation', value: demande.delegation_id ? `${demande.delegation_id}` : 'Non renseigné' },
+            { label: 'ID Agence', value: demande.agence_id ? `${demande.agence_id}` : 'Non renseigné' },
+            { label: 'ID Point de vente', value: demande.point_vente_id ? `${demande.point_vente_id}` : 'Non renseigné' },
+            { label: 'ID Utilisateur', value: demande.user_id ? `${demande.user_id}` : 'Non renseigné' }
         ];
     }
 
-    // ========================================
-    // INDICATEURS CLÉS MODIFIÉS
-    // ========================================
-
+    /**
+     * Mise à jour des indicateurs clés pour inclure la garantie
+     */
     getIndicateursCles(): IndicateurCle[] {
         const resume = this.state().resumeCredit;
         if (!resume) return [];
@@ -1002,6 +727,8 @@ export class ResumeCreditComponent {
                 severity: this.getRatioDependanceSeverity(this.calculerRatioDependancePrevisionnel()),
                 color: 'red'
             },
+            // NOUVEL INDICATEUR : Garantie personnelle
+            this.getIndicateurGarantie(),
             {
                 icon: 'pi pi-wallet',
                 label: 'Patrimoine personnel',
@@ -1011,7 +738,6 @@ export class ResumeCreditComponent {
             }
         ];
     }
-
     // ========================================
     // MÉTHODES DE CALCUL DES RATIOS AVEC FORMULES EXACTES
     // ========================================
@@ -1262,6 +988,9 @@ export class ResumeCreditComponent {
         return ratio.toFixed(1);
     }
 
+    /**
+     * Calcul amélioré de la valeur de garantie incluant les personnes caution
+     */
     getValeurGarantie(): number {
         const resumeCredit = this.state().resumeCredit;
 
@@ -1269,8 +998,17 @@ export class ResumeCreditComponent {
         const patrimoinePersonnel = this.calculerPatrimoinePersonnel();
         const totalActif = this.calculerTotalActif();
 
-        // Garantie = patrimoine personnel + 50% de l'actif professionnel
-        return patrimoinePersonnel + totalActif * 0.5;
+        // Base de garantie = patrimoine personnel + 50% de l'actif professionnel
+        let garantieBase = patrimoinePersonnel + totalActif * 0.5;
+
+        // Bonus basé sur le nombre de personnes caution
+        const nbPersonnes = this.getNombrePersonnesCaution();
+        const bonusPersonnesCaution = nbPersonnes * 0.1; // 10% par personne caution
+
+        // Coefficient multiplicateur basé sur les personnes caution
+        const coefficientCaution = 1 + Math.min(bonusPersonnesCaution, 0.3); // Maximum 30% de bonus
+
+        return garantieBase * coefficientCaution;
     }
 
     getMontantCredit(): number {
@@ -1684,104 +1422,161 @@ export class ResumeCreditComponent {
     }
 
     /**
-     * Export de l'analyse complète
+     * Export de l'analyse complète incluant les personnes caution
      */
+
     exporterAnalyseComplete(): void {
+        const infoAdmin = this.state().infoAdministrative;
+
         const analyseComplete = {
             // Informations générales
             date_analyse: new Date().toISOString(),
             montant_demande: this.formatCurrency(this.getMontantCredit()),
 
-            // Ratios détaillés
-            ratios: {
-                R1_capacite: {
-                    valeur: this.calculerR1Capacite() + '%',
-                    statut: this.getStatutR1(),
-                    formule: '(Cash Flow + Autres revenus) / Traite revenus',
-                    details: {
-                        cash_flow: this.formatCurrency(this.getCashFlow()),
-                        autres_revenus: this.formatCurrency(this.getAutresRevenus()),
-                        traite_revenus: this.formatCurrency(this.getTraiteRevenus())
-                    }
-                },
-                R2_solvabilite: {
-                    valeur: this.calculerR2Solvabilite() + '%',
-                    statut: this.getStatutR2(),
-                    formule: 'Capitaux propres / Total Actif',
-                    details: {
-                        capitaux_propres: this.formatCurrency(this.getCapitauxPropres()),
-                        total_actif: this.formatCurrency(this.getTotalActif())
-                    }
-                },
-                R3_liquidite: {
-                    valeur: this.calculerR3Liquidite() + '%',
-                    statut: this.getStatutR3(),
-                    formule: '(Créances + Trésorerie) / Dettes court terme',
-                    details: {
-                        creances_tresorerie: this.formatCurrency(this.getCreancesEtTresorerie()),
-                        dettes_court_terme: this.formatCurrency(this.getDettesCourtTerme())
-                    }
-                },
-                R4_endettement: {
-                    valeur: this.calculerR4Endettement() + '%',
-                    statut: this.getStatutR4(),
-                    formule: '(Dettes totales + Crédit) / (Total Actif + Crédit)',
-                    details: {
-                        dettes_avec_credit: this.formatCurrency(this.getDettesTotalesAvecCredit()),
-                        actif_avec_credit: this.formatCurrency(this.getTotalActifAvecCredit())
-                    }
-                },
-                R5_dependance: {
-                    valeur: this.calculerR5Dependance() + '%',
-                    statut: this.getStatutR5(),
-                    formule: 'Autres revenus / Revenus totaux',
-                    details: {
-                        autres_revenus: this.formatCurrency(this.getAutresRevenus()),
-                        revenus_totaux: this.formatCurrency(this.getRevenusTorauxPrevisionnel())
-                    }
-                },
-                R6_couverture: {
-                    valeur: this.calculerR6Couverture() + '%',
-                    statut: this.getStatutR6(),
-                    formule: 'Valeur de la garantie / Crédit',
-                    details: {
-                        valeur_garantie: this.formatCurrency(this.getValeurGarantie()),
-                        montant_credit: this.formatCurrency(this.getMontantCredit())
-                    }
-                }
+            // Personnes caution (existant)
+            personnes_caution: {
+                nombre: this.getNombrePersonnesCaution(),
+                liste: this.state().resumeCredit?.personnes_caution || [],
+                analyse_garantie: this.getAnalyseGarantiePersonnelle()
             },
 
-            // Évaluation globale
+            // INFORMATIONS ADMINISTRATIVES CORRIGÉES
+            informations_administratives: infoAdmin
+                ? {
+                      delegation: {
+                          id: infoAdmin.delegationDto.id,
+                          libele: infoAdmin.delegationDto.libele
+                      },
+                      agence: {
+                          id: infoAdmin.agenceDto.id,
+                          libele: infoAdmin.agenceDto.libele,
+                          delegation_id: infoAdmin.agenceDto.delegation_id
+                      },
+                      point_vente: {
+                          id: infoAdmin.pointVenteDto.id,
+                          libele: infoAdmin.pointVenteDto.libele,
+                          code: infoAdmin.pointVenteDto.code,
+                          delegation_id: infoAdmin.pointVenteDto.delegation_id,
+                          agence_id: infoAdmin.pointVenteDto.agence_id
+                      },
+                      utilisateur_traitant: {
+                          userId: infoAdmin.user.userId,
+                          firstName: infoAdmin.user.firstName,
+                          lastName: infoAdmin.user.lastName,
+                          email: infoAdmin.user.email,
+                          username: infoAdmin.user.username,
+                          phone: infoAdmin.user.phone,
+                          role: infoAdmin.user.role,
+                          lastLogin: infoAdmin.user.lastLogin,
+                          enabled: infoAdmin.user.enabled
+                      },
+                      resume_hierarchique: this.getResumeAdministratif()
+                  }
+                : {
+                      message: 'Informations administratives non disponibles',
+                      fallback_ids: {
+                          delegation_id: this.state().resumeCredit?.demande_credit?.delegation_id,
+                          agence_id: this.state().resumeCredit?.demande_credit?.agence_id,
+                          point_vente_id: this.state().resumeCredit?.demande_credit?.point_vente_id,
+                          user_id: this.state().resumeCredit?.demande_credit?.user_id
+                      }
+                  },
+
+            // Ratios détaillés (existant)
+            ratios: this.getResumeRatios(),
+
+            // Évaluation globale (existant)
             evaluation: {
                 statut_global: this.getEvaluationGlobale(),
                 score_risque: this.getScoreRisque(),
                 seuils_respectes: this.getNbSeuilsRespetes() + '/6'
             },
 
-            // Recommandations
+            // Recommandations (existant)
             recommandations: this.getRecommandations(),
             conseils_amelioration: this.getConseilsAmelioration(),
-
-            // Analyse de risque
             analyse_risque: this.getAnalyseRisque(),
-
-            // Décision recommandée
             decision_recommandee: this.getRecommandationDecision()
         };
 
-        // Affichage dans la console pour copier
-        console.log('=== EXPORT ANALYSE COMPLÈTE ===');
+        console.log('=== EXPORT ANALYSE COMPLÈTE AVEC INFOS ADMINISTRATIVES CORRIGÉES ===');
         console.log(JSON.stringify(analyseComplete, null, 2));
 
-        // Notification
         this.messageService.add({
             severity: 'success',
             summary: 'Export terminé',
-            detail: 'Analyse exportée dans la console (F12 > Console)'
+            detail: 'Analyse exportée avec informations administratives complètes'
         });
 
-        // Option: téléchargement en fichier JSON
         this.telechargerAnalyseJSON(analyseComplete);
+    }
+
+    /**
+     * Test des informations administratives
+     */
+    testerInfoAdministrative(): void {
+        console.log('=== TEST INFORMATIONS ADMINISTRATIVES ===');
+
+        const hasInfo = this.hasInfoAdministrative();
+        const isLoading = this.isLoadingInfoAdmin();
+        const tracabilite = this.getTracabiliteDetaillee();
+        const resume = this.getResumeAdministratif();
+
+        console.log('Données disponibles:', hasInfo);
+        console.log('En cours de chargement:', isLoading);
+        console.log('Résumé:', resume);
+        console.log('Tracabilité détaillée:', tracabilite);
+
+        if (hasInfo) {
+            console.log('Informations complètes:', this.state().infoAdministrative);
+        }
+
+        this.messageService.add({
+            severity: 'info',
+            summary: 'Test terminé',
+            detail: `Infos admin: ${hasInfo ? 'Disponibles' : 'Non disponibles'}`
+        });
+    }
+
+    /**
+     * Méthode de test incluant les nouvelles données
+     */
+    testerAnalyseCompleteAvecCautions(): void {
+        console.log('=== ANALYSE COMPLÈTE AVEC PERSONNES CAUTION ===');
+
+        // Informations des personnes caution
+        console.log('\n1. PERSONNES CAUTION:');
+        console.log('Nombre:', this.getNombrePersonnesCaution());
+        console.log('Liste:', this.getPersonnesCautionCompact());
+
+        const analyseGarantie = this.getAnalyseGarantiePersonnelle();
+        console.log('Analyse garantie:', analyseGarantie);
+
+        // Informations complémentaires demande
+        console.log('\n2. INFORMATIONS COMPLÉMENTAIRES DEMANDE:');
+        const demande = this.state().resumeCredit?.demande_credit;
+        console.log('Délégation ID:', demande?.delegation_id || 'Non renseigné');
+        console.log('Agence ID:', demande?.agence_id || 'Non renseigné');
+        console.log('Point de vente ID:', demande?.point_vente_id || 'Non renseigné');
+        console.log('User ID:', demande?.user_id || 'Non renseigné');
+
+        // Ratios avec nouvelles données
+        console.log('\n3. RATIOS AVEC GARANTIES AMÉLIORÉES:');
+        console.log('R6 - Couverture (avec bonus cautions):', this.calculerR6Couverture() + '%', '(' + this.getStatutR6() + ')');
+        console.log('Valeur garantie totale:', this.formatCurrency(this.getValeurGarantie()));
+        console.log('Bonus personnes caution:', `${this.getNombrePersonnesCaution()} personne(s) = +${(this.getNombrePersonnesCaution() * 10).toFixed(0)}%`);
+
+        // Suite de l'analyse existante...
+        console.log('\n4. ÉVALUATION GLOBALE:');
+        console.log('Statut:', this.getEvaluationGlobale());
+        console.log('Score de risque:', this.getScoreRisque() + '/100');
+
+        // Toast notification
+        this.messageService.add({
+            severity: 'info',
+            summary: 'Test terminé',
+            detail: 'Analyse avec personnes caution - Consultez la console'
+        });
     }
 
     /**
@@ -1839,5 +1634,279 @@ export class ResumeCreditComponent {
             default:
                 return 'pi pi-question-circle';
         }
+    }
+
+    /**
+     * Récupère les données des personnes caution pour affichage
+     */
+    getPersonnesCautionData(): TableDataItem[] {
+        const personnes = this.state().resumeCredit?.personnes_caution;
+        if (!personnes || !Array.isArray(personnes) || personnes.length === 0) {
+            return [{ label: 'Aucune personne caution', value: 'Pas de garantie personnelle enregistrée' }];
+        }
+
+        const data: TableDataItem[] = [];
+
+        personnes.forEach((personne: Personnecaution, index: number) => {
+            data.push(
+                { label: `Caution ${index + 1} - Nom`, value: personne.nom || '-' },
+                { label: `Caution ${index + 1} - Prénom`, value: personne.prenom || '-' },
+                { label: `Caution ${index + 1} - Téléphone`, value: personne.telephone || '-' },
+                { label: `Caution ${index + 1} - Activité`, value: personne.activite || '-' },
+                { label: `Caution ${index + 1} - Âge`, value: personne.age ? `${personne.age} ans` : '-' },
+                { label: `Caution ${index + 1} - Profession`, value: personne.profession || '-' }
+            );
+
+            // Ajouter un séparateur si ce n'est pas la dernière personne
+            if (index < personnes.length - 1) {
+                data.push({ label: '---', value: '---' });
+            }
+        });
+
+        return data;
+    }
+
+    /**
+     * Récupère le nombre de personnes caution
+     */
+    getNombrePersonnesCaution(): number {
+        const personnes = this.state().resumeCredit?.personnes_caution;
+        return personnes && Array.isArray(personnes) ? personnes.length : 0;
+    }
+
+    /**
+     * Vérifie si des personnes caution existent
+     */
+    hasPersonnesCaution(): boolean {
+        return this.getNombrePersonnesCaution() > 0;
+    }
+
+    /**
+     * Récupère la liste des personnes caution pour affichage compact
+     */
+    getPersonnesCautionCompact(): string[] {
+        const personnes = this.state().resumeCredit?.personnes_caution;
+        if (!personnes || !Array.isArray(personnes)) return [];
+
+        return personnes.map((personne: Personnecaution) => `${personne.prenom || ''} ${personne.nom || ''} - ${personne.profession || 'N/A'}`);
+    }
+
+    /**
+     * Analyse du profil de garantie basé sur les personnes caution
+     */
+    getAnalyseGarantiePersonnelle(): {
+        niveau: string;
+        score: number;
+        description: string;
+        recommendations: string[];
+    } {
+        const nbPersonnes = this.getNombrePersonnesCaution();
+        const personnes = this.state().resumeCredit?.personnes_caution || [];
+
+        // Calcul du score basé sur le nombre et la qualité des cautions
+        let score = 0;
+        let niveau = 'INSUFFISANT';
+        let description = '';
+        const recommendations: string[] = [];
+
+        if (nbPersonnes === 0) {
+            score = 20;
+            niveau = 'INSUFFISANT';
+            description = 'Aucune personne caution renseignée';
+            recommendations.push('Désigner au moins une personne caution solvable');
+        } else if (nbPersonnes === 1) {
+            score = 60;
+            niveau = 'MOYEN';
+            description = 'Une seule personne caution';
+            recommendations.push('Envisager une seconde personne caution pour renforcer les garanties');
+        } else if (nbPersonnes === 2) {
+            score = 85;
+            niveau = 'BON';
+            description = 'Deux personnes caution - profil correct';
+            recommendations.push('Vérifier la solvabilité des personnes caution');
+        } else {
+            score = 95;
+            niveau = 'EXCELLENT';
+            description = 'Plusieurs personnes caution - très bon profil de garantie';
+        }
+
+        // Vérifications complémentaires
+        const personnesSansActivite = personnes.filter((p: Personnecaution) => !p.activite || !p.profession);
+        if (personnesSansActivite.length > 0) {
+            score -= 10;
+            recommendations.push(`Compléter les informations d'activité pour ${personnesSansActivite.length} personne(s)`);
+        }
+
+        return { niveau, score, description, recommendations };
+    }
+
+    // ========================================
+    // MÉTHODES UTILITAIRES POUR LES INDICATEURS
+    // ========================================
+
+    /**
+     * Indicateur de garantie dans les indicateurs clés
+     */
+    getIndicateurGarantie(): IndicateurCle {
+        const analyse = this.getAnalyseGarantiePersonnelle();
+        let severity: PrimeSeverity = 'secondary';
+
+        switch (analyse.niveau) {
+            case 'EXCELLENT':
+                severity = 'success';
+                break;
+            case 'BON':
+                severity = 'info';
+                break;
+            case 'MOYEN':
+                severity = 'warn';
+                break;
+            case 'INSUFFISANT':
+                severity = 'danger';
+                break;
+        }
+
+        return {
+            icon: 'pi pi-users',
+            label: 'Garantie personnelle',
+            value: `${this.getNombrePersonnesCaution()} personne(s)`,
+            severity: severity,
+            color: 'teal'
+        };
+    }
+
+    /**
+     * MÉTHODE CORRIGÉE : Données complètes des informations administratives
+     */
+    getDemandeCreditInfosComplementaires(): TableDataItem[] {
+        const infoAdmin = this.state().infoAdministrative;
+        const demande = this.state().resumeCredit?.demande_credit;
+
+        if (!infoAdmin || !demande) {
+            // Fallback vers les IDs si les données complètes ne sont pas disponibles
+            return [
+                { label: 'Délégation', value: demande?.delegation_id ? `ID: ${demande.delegation_id}` : 'Non renseignée' },
+                { label: 'Agence', value: demande?.agence_id ? `ID: ${demande.agence_id}` : 'Non renseignée' },
+                { label: 'Point de vente', value: demande?.point_vente_id ? `ID: ${demande.point_vente_id}` : 'Non renseigné' },
+                { label: 'Utilisateur', value: demande?.user_id ? `ID: ${demande.user_id}` : 'Non renseigné' }
+            ];
+        }
+
+        // CORRECTION : Utilise les vraies propriétés de l'API
+        return [
+            {
+                label: 'Délégation',
+                value: infoAdmin.delegationDto.libele!
+            },
+            {
+                label: 'Agence',
+                value: infoAdmin.agenceDto.libele! // "libele" au lieu de "nom"
+            },
+            {
+                label: 'Point de vente',
+                value: `${infoAdmin.pointVenteDto.libele} (${infoAdmin.pointVenteDto.code})` // "libele" et "code"
+            },
+            {
+                label: 'Utilisateur traitant',
+                value: `${infoAdmin.user.firstName} ${infoAdmin.user.lastName} - ${infoAdmin.user.role}` // "firstName", "lastName", "role"
+            }
+        ];
+    }
+
+    /**
+     * MÉTHODE CORRIGÉE : Données détaillées pour la traçabilité
+     */
+    getTracabiliteDetaillee(): {
+        delegation: any;
+        agence: any;
+        pointVente: any;
+        user: any;
+    } {
+        const infoAdmin = this.state().infoAdministrative;
+        const demande = this.state().resumeCredit?.demande_credit;
+
+        if (!infoAdmin || !demande) {
+            return {
+                delegation: {
+                    id: demande?.delegation_id || 'N/A',
+                    nom: 'Information non disponible',
+                    details: 'Chargement...'
+                },
+                agence: {
+                    id: demande?.agence_id || 'N/A',
+                    nom: 'Information non disponible',
+                    details: 'Chargement...'
+                },
+                pointVente: {
+                    id: demande?.point_vente_id || 'N/A',
+                    nom: 'Information non disponible',
+                    details: 'Chargement...'
+                },
+                user: {
+                    id: demande?.user_id || 'N/A',
+                    nom: 'Information non disponible',
+                    details: 'Chargement...'
+                }
+            };
+        }
+
+        // CORRECTION : Utilise les vraies propriétés de l'API
+        return {
+            delegation: {
+                id: infoAdmin.delegationDto.id,
+                nom: infoAdmin.delegationDto.libele, // "libele" au lieu de "nom"
+                details: `Délégation de ${infoAdmin.delegationDto.libele}`,
+                code: `DEL-${infoAdmin.delegationDto.id}` // Généré car pas dans l'API
+            },
+            agence: {
+                id: infoAdmin.agenceDto.id,
+                nom: infoAdmin.agenceDto.libele, // "libele" au lieu de "nom"
+                details: `Agence ${infoAdmin.agenceDto.libele}`,
+                delegation_id: infoAdmin.agenceDto.delegation_id
+            },
+            pointVente: {
+                id: infoAdmin.pointVenteDto.id,
+                nom: infoAdmin.pointVenteDto.libele, // "libele" au lieu de "nom"
+                code: infoAdmin.pointVenteDto.code,
+                details: `Point de vente ${infoAdmin.pointVenteDto.libele} (Code: ${infoAdmin.pointVenteDto.code})`,
+                agence_id: infoAdmin.pointVenteDto.agence_id,
+                delegation_id: infoAdmin.pointVenteDto.delegation_id
+            },
+            user: {
+                id: infoAdmin.user.userId, // "userId" au lieu de "user_id"
+                nom: `${infoAdmin.user.firstName} ${infoAdmin.user.lastName}`, // "firstName" et "lastName"
+                email: infoAdmin.user.email,
+                details: infoAdmin.user.role || 'Rôle non spécifié', // "role" au lieu de "fonction"
+                username: infoAdmin.user.username,
+                phone: infoAdmin.user.phone || 'Non renseigné',
+                lastLogin: infoAdmin.user.lastLogin || 'Jamais connecté',
+                enabled: infoAdmin.user.enabled
+            }
+        };
+    }
+
+    /**
+     * Vérifie si les informations administratives sont disponibles
+     */
+    hasInfoAdministrative(): boolean {
+        return !!this.state().infoAdministrative;
+    }
+
+    /**
+     * Vérifie si les informations administratives sont en cours de chargement
+     */
+    isLoadingInfoAdmin(): boolean {
+        return this.state().loadingAdmin;
+    }
+
+    /**
+     * MÉTHODE CORRIGÉE : Résumé administratif
+     */
+    getResumeAdministratif(): string {
+        const info = this.state().infoAdministrative;
+        if (!info) return 'Informations en cours de chargement...';
+
+        // CORRECTION : Utilise les vraies propriétés
+        return `${info.delegationDto.libele} > ${info.agenceDto.libele} > ${info.pointVenteDto.libele} (${info.pointVenteDto.code})`;
     }
 }

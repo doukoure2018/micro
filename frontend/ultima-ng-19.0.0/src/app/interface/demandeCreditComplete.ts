@@ -1,66 +1,79 @@
+import { Personnecaution } from './personnecaution';
+
 export interface DemandeCreditCompleteDTO {
     // Données du promoteur
     nomPromoteur: string;
     prenomPromoteur: string;
-    dateNaissancePromoteur: string; // format 'yyyy-MM-dd'
+    dateNaissancePromoteur: string; // Always format as 'yyyy-MM-dd'
     numeroIdentitePromoteur: string;
-    adressePromoteur?: string; // Optionnel
-    telephonePromoteur?: string; // Optionnel
-    emailPromoteur?: string; // Optionnel
+    adressePromoteur?: string;
+    telephonePromoteur?: string;
+    emailPromoteur?: string;
 
     // Données de l'entreprise
     nomEntreprise: string;
-    formeJuridique?: string; // Optionnel
-    secteurActivite?: string; // Optionnel
-    dateCreationEntreprise?: string; // format 'yyyy-MM-dd', optionnel
-    numeroRegistre?: string; // Optionnel
-    adresseEntreprise?: string; // Optionnel
-    telephoneEntreprise?: string; // Optionnel
-    emailEntreprise?: string; // Optionnel
+    formeJuridique?: string;
+    secteurActivite?: string;
+    dateCreationEntreprise: string; // Always format as 'yyyy-MM-dd'
+    numeroRegistre?: string;
+    adresseEntreprise?: string;
+    telephoneEntreprise?: string;
+    emailEntreprise?: string;
 
     // Bilan de l'entreprise
-    liquidites?: number; // Optionnel, défaut 0
-    creancesClients?: number; // Optionnel, défaut 0
-    valeurStocks?: number; // Optionnel, défaut 0
-    valeurEquipements?: number; // Optionnel, défaut 0
-    dettesFournisseurs?: number; // Optionnel, défaut 0
-    emprunts?: number; // Optionnel, défaut 0
-    capitalPropre?: number; // Optionnel, défaut 0
+    liquidites: number;
+    creancesClients: number;
+    valeurStocks: number;
+    valeurEquipements: number;
+    dettesFournisseurs: number;
+    emprunts: number;
+    capitalPropre: number;
 
     // Bilan personnel
-    epargnes?: number; // Optionnel, défaut 0
-    valeurBiensDurables?: number; // Optionnel, défaut 0
+    epargnes: number;
+    valeurBiensDurables: number;
+    libeleGarantie?: string;
+    montantGarantie: number;
 
-    // Compte d'exploitation actuel
-    dateDebutPeriodeActuel?: string;
-    dateFinPeriodeActuel?: string;
-    autresRevenusActuel?: number;
-    chiffreAffairesActuel?: number;
-    coutMarchandisesActuel?: number; // Optionnel, défaut 0
-    coutTransportProductionActuel?: number; // Optionnel, défaut 0
-    fraisTransportPersonnelActuel?: number; // Optionnel, défaut 0
-    fraisManutentionActuel?: number; // Optionnel, défaut 0
-    montantAideExterneActuel?: number; // Optionnel, défaut 0
-    fraisHebergementRestaurationActuel?: number; // Optionnel, défaut 0
-    impotsActuel?: number; // Optionnel, défaut 0
-    loyersActuel?: number; // Optionnel, défaut 0
+    // Compte d'exploitation actuel - REQUIRED DATES
+    dateDebutPeriodeActuel: string; // REQUIRED - format 'yyyy-MM-dd'
+    dateFinPeriodeActuel: string; // REQUIRED - format 'yyyy-MM-dd'
+    chiffreAffairesActuel: number;
+    autresRevenusActuel: number;
+    coutMarchandisesActuel: number;
+    coutTransportProductionActuel: number;
+    fraisTransportPersonnelActuel: number;
+    fraisManutentionActuel: number;
+    montantAideExterneActuel: number;
+    fraisHebergementRestaurationActuel: number;
+    impotsActuel: number;
+    loyersActuel: number;
 
-    // Compte d'exploitation prévisionnel
-    dateDebutPeriodePrevisionnel?: string; // format 'yyyy-MM-dd', optionnel
-    dateFinPeriodePrevisionnel?: string; // format 'yyyy-MM-dd', optionnel
-    chiffreAffairesPrevisionnel?: number; // Optionnel, défaut 0
-    autresRevenusPrevisionnel?: number; // Optionnel, défaut 0
-    coutMarchandisesPrevisionnel?: number; // Optionnel, défaut 0
-    coutTransportProductionPrevisionnel?: number; // Optionnel, défaut 0
-    fraisTransportPersonnelPrevisionnel?: number; // Optionnel, défaut 0
-    fraisManutentionPrevisionnel?: number; // Optionnel, défaut 0
-    montantAideExternePrevisionnel?: number; // Optionnel, défaut 0
-    fraisHebergementRestaurationPrevisionnel?: number; // Optionnel, défaut 0
-    impotsPrevisionnel?: number; // Optionnel, défaut 0
-    loyersPrevisionnel?: number; // Optionnel, défaut 0
+    // Compte d'exploitation prévisionnel - REQUIRED DATES
+    dateDebutPeriodePrevisionnel: string; // REQUIRED - format 'yyyy-MM-dd'
+    dateFinPeriodePrevisionnel: string; // REQUIRED - format 'yyyy-MM-dd'
+    chiffreAffairesPrevisionnel: number;
+    autresRevenusPrevisionnel: number;
+    coutMarchandisesPrevisionnel: number;
+    coutTransportProductionPrevisionnel: number;
+    fraisTransportPersonnelPrevisionnel: number;
+    fraisManutentionPrevisionnel: number;
+    montantAideExternePrevisionnel: number;
+    fraisHebergementRestaurationPrevisionnel: number;
+    impotsPrevisionnel: number;
+    loyersPrevisionnel: number;
 
-    // Demande de crédit (champs obligatoires)
+    // Demande de crédit
     montantDemande: number;
     dureeMois: number;
-    objetFinancement?: string; // Optionnel
+    objetFinancement: string;
+
+    // Personnecautions
+    personnecautions?: Personnecaution[];
+
+    // Location and user fields - ensure they're numbers
+    delegationId?: number;
+    agenceId?: number;
+    pointVenteId?: number;
+    userId: number; // This should NOT be optional
 }

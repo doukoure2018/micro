@@ -8,10 +8,10 @@ spring:
     cache: false
 
   mail:
-    host: smtp.gmail.com
-    port: 587
-    username: douklifsa93@gmail.com
-    password: uppv zody hnsl bbzu
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -22,8 +22,6 @@ spring:
           starttls:
             enable: true
             required: true
-    verify:
-      host: http://localhost:4200
     default-encoding: UTF-8
 
   cloud:
@@ -34,10 +32,16 @@ spring:
 
   datasource:
     url: jdbc:postgresql://postgresdb:5432/localdb
-    username: user2711
-    password: admin2711
+    username: ${DB_USERNAME:user2711}
+    password: ${DB_PASSWORD:admin2711}
     hikari:
       connection-test-query: SELECT 1
+      maximum-pool-size: 8
+      minimum-idle: 2
+      idle-timeout: 30000
+      connection-timeout: 30000
+      max-lifetime: 1800000
+
   main:
     allow-bean-definition-overriding: true
 
@@ -67,6 +71,11 @@ spring:
       properties:
         fetch.message.max.bytes: 1300000000
         max.partition.fetch.bytes: 1300000000
+        enable.auto.commit: false
+        auto.offset.reset: earliest
+        session.timeout.ms: 30000
+        heartbeat.interval.ms: 10000
+        spring.json.trusted.packages: "io.digiservices.notificationservice.domain,io.digiservices.userservice.domain"
     properties:
       spring:
         json:
@@ -77,20 +86,59 @@ spring:
 eureka:
   instance:
     prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
   client:
     service-url:
       defaultZone: http://admin:admin2711@discoveryserver:5002/eureka/
+    register-with-eureka: true
+    fetch-registry: true
 
 ui:
   app:
-    url: http://localhost:4200
+    url: ${UI_APP_URL:http://localhost:4200}
+
+verify:
+  email:
+    host: ${UI_APP_URL:http://localhost:4200}
 
 key:
-  private: private.key
-  public: public.key
+  private: "/app/keys/private.key"
+  public: "/app/keys/public.key"
 
 server:
   port: 8086
+  tomcat:
+    max-threads: 50
+    min-spare-threads: 5
+    max-connections: 2000
+    accept-count: 50
 
 jwks:
   uri: http://authorizationserver:8080/oauth2/jwks
+
+logging:
+  level:
+    root: INFO
+    io.digiservices: DEBUG
+    org.springframework: INFO
+    org.hibernate: INFO
+    com.netflix.discovery: INFO
+    org.springframework.kafka: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true

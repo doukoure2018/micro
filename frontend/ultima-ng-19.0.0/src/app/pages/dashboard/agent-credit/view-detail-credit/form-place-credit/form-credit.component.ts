@@ -211,11 +211,11 @@ export class FormCreditComponent {
 
         const formValue = form.value;
         // Utiliser les valeurs dynamiques du backend
-        const userCode = this.state().user?.username || '';
+        const userCode = this.state().user?.username.toLocaleUpperCase() || '';
         const empresaCode = '00000';
         const agenciaCode = this.state().membre?.codAgencia || '';
 
-        console.log('Using dynamic user code:', userCode);
+        console.log('Using dynamic user code:', userCode.toUpperCase());
         console.log('Using empresa code:', empresaCode);
         console.log('Using dynamic agencia code:', agenciaCode);
 

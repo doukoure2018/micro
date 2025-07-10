@@ -16,7 +16,7 @@
                     @if(user?.role ==='AGENT_CREDIT' && state().nombreDemandeInd! > 0){
                     <p-message severity="info">
                         Nouvelle demande Pour la Selection, Vour pour plus de details.
-                        <a [routerLink]="['/dashboards/agent-credit/list-selection-ind/', user?.agenceId,user?.userId]"
+                        <a [routerLink]="['/dashboards/agent-credit/list-selection-ind']"
                             class="px-2 py-1 ml-2 font-bold bg-blue-100 text-blue-700 rounded-md border border-blue-300 hover:bg-blue-200">
                             Voir la liste →
                         </a>
@@ -52,8 +52,8 @@
                         <p-sortIcon field="nom"></p-sortIcon>
                     </th>
 
-                    <th pSortableColumn="numeroMembre" class="white-space-nowrap" style="width:15%">N°
-                        Membre <p-sortIcon field="numeroMembre"></p-sortIcon></th>
+                    <th pSortableColumn="numeroMembre" class="white-space-nowrap" style="width:15%">
+                        N° Membre <p-sortIcon field="numeroMembre"></p-sortIcon></th>
                     <th pSortableColumn="montant" class="white-space-nowrap" style="width:10%">Montant
                         <p-sortIcon field="montant"></p-sortIcon>
                     </th>
@@ -82,8 +82,8 @@
                         </p-tag>
                     </td>
                     <td>
-                        <button pButton pRipple label="Mise en Place"
-                            (click)="miseEnPlaceCredit(demande.numeroMembre,user?.userId!)" class="ml-auto" text>
+                        <button pButton pRipple label="Mise en Place" (click)="miseEnPlaceCredit(demande.numeroMembre)"
+                            class="ml-auto" text>
                         </button>
                     </td>
                 </tr>
@@ -141,8 +141,7 @@
                     </td>
                     <td>
                         <button pButton pRipple label="Détails"
-                            (click)="viewCreditDetails(credit.referenceCredit,credit.codeMembre,credit.userId)"
-                            class="ml-auto" text>
+                            (click)="viewCreditDetails(credit.referenceCredit,credit.codeMembre)" class="ml-auto" text>
                         </button>
                     </td>
                 </tr>

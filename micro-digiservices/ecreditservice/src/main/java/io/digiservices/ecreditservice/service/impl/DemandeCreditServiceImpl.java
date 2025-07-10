@@ -1,12 +1,16 @@
 package io.digiservices.ecreditservice.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digiservices.ecreditservice.dto.DemandeCredit;
 import io.digiservices.ecreditservice.dto.DemandeCreditCompleteDTO;
+import io.digiservices.ecreditservice.dto.DemandeUpdateRequest;
+import io.digiservices.ecreditservice.dto.MotifAnalyse;
 import io.digiservices.ecreditservice.repository.DemandeCreditRepository;
 import io.digiservices.ecreditservice.service.DemandeCreditService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -19,6 +23,7 @@ import java.util.Map;
 @Slf4j
 public class DemandeCreditServiceImpl implements DemandeCreditService {
     private final DemandeCreditRepository demandeCreditRepository;
+    private final ObjectMapper objectMapper;
 
     @Override
     public DemandeCredit saveDemandeCredit(Long entrepriseId,DemandeCredit demandeCredit) {
@@ -68,6 +73,48 @@ public class DemandeCreditServiceImpl implements DemandeCreditService {
     public Map<String, Object> obtenirResumeComplet(Integer demandeCreditId) {
         return demandeCreditRepository.obtenirResumeComplet(demandeCreditId);
     }
+
+    @Override
+    public MotifAnalyse addMotifAnalyse(MotifAnalyse motifAnalyse) {
+        return demandeCreditRepository.addMotifAnalyse(motifAnalyse);
+    }
+
+    @Override
+    public Map<String, Object> obtenirAnalyseComplete(Integer demandeCreditId) {
+        return demandeCreditRepository.obtenirAnalyseComplete(demandeCreditId);
+    }
+
+    @Override
+    @Transactional
+    public Boolean mettreAJourDemande(DemandeUpdateRequest request, String cautionsJson) {
+        try {
+            // CORRECTION: Convertir les cautions en JSON dans le service
+             cautionsJson = "[]";
+            if (request.getCautions() != null && !request.getCautions().isEmpty()) {
+                cautionsJson = objectMapper.writeValueAsString(request.getCautions());
+            }
+
+            log.info("Mise à jour de la demande de crédit ID: {}", request.getDemandeCreditId());
+            log.debug("Cautions JSON: {}", cautionsJson);
+
+            // CORRECTION: Appeler la méthode du repository avec les deux paramètres
+            Boolean result = demandeCreditRepository.mettreAJourDemande(request, cautionsJson);
+
+            if (result) {
+                log.info("Demande de crédit {} mise à jour avec succès", request.getDemandeCreditId());
+            } else {
+                log.error("Échec de la mise à jour de la demande de crédit {}", request.getDemandeCreditId());
+            }
+
+            return result;
+
+        } catch (Exception e) {
+            log.error("Erreur lors de la mise à jour de la demande {}: {}",
+                    request.getDemandeCreditId(), e.getMessage(), e);
+            return false;
+        }
+    }
+
     // Méthode de validation (optionnelle)
     private void validateDemande(DemandeCreditCompleteDTO demande) {
         if (demande == null) {

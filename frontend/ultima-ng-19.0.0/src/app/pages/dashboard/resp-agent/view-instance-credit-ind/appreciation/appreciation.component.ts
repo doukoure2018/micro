@@ -144,7 +144,7 @@ export class AppreciationComponent {
     }
 
     navigateToDashboard(): void {
-        this.router.navigate(['/dashboard/home']);
+        this.router.navigate(['/dashboards/home']);
     }
 
     resetForm(): void {

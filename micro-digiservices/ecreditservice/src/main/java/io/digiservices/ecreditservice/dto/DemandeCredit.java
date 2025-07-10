@@ -22,4 +22,9 @@ public class DemandeCredit {
     private String statut;               // corresponds to statut
     private LocalDateTime dateEnregistrement; // corresponds to date_enregistrement
     private LocalDateTime dateModification;   // corresponds to date_modification
+
+    private Long delegationId;
+    private Long agenceId;
+    private Long pointVenteId;
+    private Long userId;
 }

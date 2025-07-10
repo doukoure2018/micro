@@ -336,87 +336,349 @@
                 </form>
             </p-tabPanel>
 
-            <!-- Tab 6: Résumé et validation -->
+            <!-- Tab 6: Résumé et validation - Version Améliorée -->
             <p-tabPanel header="Résumé et validation">
-                <p-card>
-                    <h3 class="text-xl font-medium mb-4">Résumé du crédit</h3>
-
-                    <div class="grid mb-4">
-                        <div class="col-12 md:col-6">
-                            <h4 class="text-lg font-medium mb-3">Informations générales</h4>
-                            <div class="flex flex-column gap-2">
-                                <div class="flex justify-content-between">
-                                    <span class="text-600">Numéro Membre:</span>
-                                    <span class="text-900 font-medium">{{ creditForm.get('numeroMembre')?.value
-                                        }}</span>
-                                </div>
-                                <div class="flex justify-content-between">
-                                    <span class="text-600">Référence Crédit:</span>
-                                    <span class="text-900 font-medium">{{ creditForm.get('referenceCredit')?.value
-                                        }}</span>
-                                </div>
-                                <div class="flex justify-content-between">
-                                    <span class="text-600">Cumul Crédit:</span>
-                                    <span class="text-900 font-medium">{{ creditForm.get('cumulCredit')?.value |
-                                        currency:'GNF':'symbol':'1.0-2' }}</span>
-                                </div>
-                                <div class="flex justify-content-between">
-                                    <span class="text-600">Nombre de Crédit:</span>
-                                    <span class="text-900 font-medium">{{ creditForm.get('nbreCredit')?.value }}</span>
-                                </div>
-                                <div class="flex justify-content-between">
-                                    <span class="text-600">Capital:</span>
-                                    <span class="text-900 font-medium">{{ creditForm.get('capital')?.value |
-                                        currency:'GNF':'symbol':'1.0-2' }}</span>
-                                </div>
-                                <div class="flex justify-content-between">
-                                    <span class="text-600">Fréquence:</span>
-                                    <span class="text-900 font-medium">{{ creditForm.get('frequence')?.value }}</span>
-                                </div>
-                                <div class="flex justify-content-between">
-                                    <span class="text-600">Garantie:</span>
-                                    <span class="text-900 font-medium">{{ creditForm.get('garantieLibele')?.value }} ({{
-                                        creditForm.get('garantieMontant')?.value | currency:'GNF':'symbol':'1.0-2'
-                                        }})</span>
-                                </div>
+                <div class="surface-0">
+                    <!-- En-tête avec indicateur de progression -->
+                    <div class="border-bottom-1 surface-border p-4 mb-4">
+                        <div class="flex align-items-center justify-content-between">
+                            <div>
+                                <h2 class="text-2xl font-bold text-900 m-0 mb-2">📋 Résumé du Crédit</h2>
+                                <p class="text-600 m-0">Vérifiez toutes les informations avant validation</p>
                             </div>
-                        </div>
-
-                        <div class="col-12 md:col-6">
-                            <h4 class="text-lg font-medium mb-3">Détails des produits, charges et cautions</h4>
-                            <div class="flex flex-column gap-2">
-                                <div class="flex justify-content-between">
-                                    <span class="text-600">Nombre de produits:</span>
-                                    <span class="text-900 font-medium">{{ produits.length }}</span>
-                                </div>
-                                <div class="flex justify-content-between">
-                                    <span class="text-600">Nombre de charges:</span>
-                                    <span class="text-900 font-medium">{{ charges.length }}</span>
-                                </div>
-                                <div class="flex justify-content-between">
-                                    <span class="text-600">Nombre de cautions:</span>
-                                    <span class="text-900 font-medium">{{ cautions.length }}</span>
-                                </div>
-                                <div class="flex justify-content-between">
-                                    <span class="text-600">Montant total produits:</span>
-                                    <span class="text-900 font-medium">{{ calculateTotalProduits() |
-                                        currency:'GNF':'symbol':'1.0-2' }}</span>
-                                </div>
-                                <div class="flex justify-content-between">
-                                    <span class="text-600">Montant total charges:</span>
-                                    <span class="text-900 font-medium">{{ calculateTotalCharges() |
-                                        currency:'GNF':'symbol':'1.0-2' }}</span>
-                                </div>
+                            <div class="flex align-items-center gap-2">
+                                <i class="pi pi-check-circle text-green-500 text-2xl"></i>
+                                <span class="text-green-600 font-medium">Prêt pour validation</span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="flex gap-3 justify-content-center mt-4">
-                        <p-button label="Précédent" icon="pi pi-arrow-left" (click)="prevStep()"></p-button>
-                        <p-button label="Valider" icon="pi pi-check" [loading]="state().submitLoading"
-                            [disabled]="!isFormValid()" (click)="processCreditInd()" severity="success"></p-button>
+                    <!-- Section 1: Informations Principales -->
+                    <p-card class="mb-4">
+                        <ng-template pTemplate="header">
+                            <div class="flex align-items-center gap-2 p-3 bg-blue-50 border-round-top">
+                                <i class="pi pi-user text-blue-600"></i>
+                                <h3 class="text-lg font-semibold text-blue-900 m-0">Informations Principales</h3>
+                            </div>
+                        </ng-template>
+
+                        <div class="grid">
+                            <div class="col-12 md:col-6">
+                                <div class="bg-gray-50 border-round p-3 mb-3">
+                                    <div class="flex align-items-center justify-content-between mb-2">
+                                        <span class="text-500 text-sm font-medium">NUMÉRO MEMBRE</span>
+                                        <p-tag [value]="creditForm.get('numeroMembre')?.value" severity="info"></p-tag>
+                                    </div>
+                                    <span class="text-900 font-bold text-lg">{{ creditForm.get('numeroMembre')?.value
+                                        }}</span>
+                                </div>
+                            </div>
+
+                            <div class="col-12 md:col-6">
+                                <div class="bg-gray-50 border-round p-3 mb-3">
+                                    <div class="flex align-items-center justify-content-between mb-2">
+                                        <span class="text-500 text-sm font-medium">RÉFÉRENCE CRÉDIT</span>
+                                        <i class="pi pi-copy text-400 cursor-pointer"
+                                            pTooltip="Copier la référence"></i>
+                                    </div>
+                                    <span class="text-900 font-bold text-lg">{{ creditForm.get('referenceCredit')?.value
+                                        }}</span>
+                                </div>
+                            </div>
+
+                            <div class="col-12 md:col-4">
+                                <div class="text-center p-3 border-1 surface-border border-round">
+                                    <div class="text-blue-600 font-bold text-2xl mb-2">
+                                        {{ creditForm.get('cumulCredit')?.value | currency:'GNF':'symbol':'1.0-0' }}
+                                    </div>
+                                    <div class="text-500 text-sm">Cumul Crédit</div>
+                                </div>
+                            </div>
+
+                            <div class="col-12 md:col-4">
+                                <div class="text-center p-3 border-1 surface-border border-round">
+                                    <div class="text-green-600 font-bold text-2xl mb-2">
+                                        {{ creditForm.get('capital')?.value | currency:'GNF':'symbol':'1.0-0' }}
+                                    </div>
+                                    <div class="text-500 text-sm">Capital Demandé</div>
+                                </div>
+                            </div>
+
+                            <div class="col-12 md:col-4">
+                                <div class="text-center p-3 border-1 surface-border border-round">
+                                    <div class="text-orange-600 font-bold text-2xl mb-2">
+                                        {{ creditForm.get('nbreCredit')?.value }}
+                                    </div>
+                                    <div class="text-500 text-sm">Nombre de Crédits</div>
+                                </div>
+                            </div>
+                        </div>
+                    </p-card>
+
+                    <!-- Section 2: Détails Activité -->
+                    <p-card class="mb-4">
+                        <ng-template pTemplate="header">
+                            <div class="flex align-items-center gap-2 p-3 bg-green-50 border-round-top">
+                                <i class="pi pi-briefcase text-green-600"></i>
+                                <h3 class="text-lg font-semibold text-green-900 m-0">Activité & Expérience</h3>
+                            </div>
+                        </ng-template>
+
+                        <div class="grid">
+                            <div class="col-12 md:col-6">
+                                <div class="p-3">
+                                    <div class="text-500 text-sm mb-1">Statut d'Activité</div>
+                                    <div class="text-900 font-semibold">{{ creditForm.get('statutActivite')?.value }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 md:col-6">
+                                <div class="p-3">
+                                    <div class="text-500 text-sm mb-1">Expérience</div>
+                                    <div class="text-900 font-semibold">{{ creditForm.get('experience')?.value }}</div>
+                                </div>
+                            </div>
+                            <div class="col-12 md:col-6">
+                                <div class="p-3">
+                                    <div class="text-500 text-sm mb-1">Lieu d'Activité</div>
+                                    <div class="text-900 font-semibold">{{ creditForm.get('lieuxAct')?.value }}</div>
+                                </div>
+                            </div>
+                            <div class="col-12 md:col-6">
+                                <div class="p-3">
+                                    <div class="text-500 text-sm mb-1">Fréquence</div>
+                                    <p-tag [value]="creditForm.get('frequence')?.value + ' fois'"
+                                        severity="warn"></p-tag>
+                                </div>
+                            </div>
+                        </div>
+                    </p-card>
+
+                    <!-- Section 3: Produits -->
+                    <p-card class="mb-4">
+                        <ng-template pTemplate="header">
+                            <div
+                                class="flex align-items-center justify-content-between p-3 bg-purple-50 border-round-top">
+                                <div class="flex align-items-center gap-2">
+                                    <i class="pi pi-shopping-cart text-purple-600"></i>
+                                    <h3 class="text-lg font-semibold text-purple-900 m-0">Produits ({{ produits.length
+                                        }})</h3>
+                                </div>
+                                <p-tag [value]="(calculateTotalProduits() | currency:'GNF':'symbol':'1.0-0') ?? ''"
+                                    severity="success"></p-tag>
+                            </div>
+                        </ng-template>
+
+                        <div class="grid" *ngIf="produits.length > 0">
+                            <div class="col-12 md:col-6 lg:col-4"
+                                *ngFor="let produit of produits.controls; let i = index">
+                                <div class="border-1 surface-border border-round p-3 h-full">
+                                    <div class="flex align-items-start justify-content-between mb-2">
+                                        <h4 class="text-900 font-semibold m-0 text-sm">{{ produit.get('libele')?.value
+                                            }}</h4>
+                                        <span class="text-xs text-500">#{{ i + 1 }}</span>
+                                    </div>
+                                    <div class="text-600 text-xs mb-2">
+                                        {{ produit.get('observation')?.value || 'Aucuneobservation' }}
+                                    </div>
+                                    <div class="flex align-items-center justify-content-between">
+                                        <div class="text-900 font-bold">
+                                            {{ (produit.get('prixUnit')?.value * produit.get('qte')?.value) |
+                                            currency:'GNF':'symbol':'1.0-0' }}
+                                        </div>
+                                        <div class="text-500 text-xs">
+                                            {{ produit.get('qte')?.value }} × {{ produit.get('prixUnit')?.value |
+                                            currency:'GNF':'symbol':'1.0-0' }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div *ngIf="produits.length === 0" class="text-center p-4">
+                            <i class="pi pi-info-circle text-400 text-4xl mb-3"></i>
+                            <p class="text-500">Aucun produit ajouté</p>
+                        </div>
+                    </p-card>
+
+                    <!-- Section 4: Charges -->
+                    <p-card class="mb-4">
+                        <ng-template pTemplate="header">
+                            <div class="flex align-items-center justify-content-between p-3 bg-red-50 border-round-top">
+                                <div class="flex align-items-center gap-2">
+                                    <i class="pi pi-minus-circle text-red-600"></i>
+                                    <h3 class="text-lg font-semibold text-red-900 m-0">Charges ({{ charges.length }})
+                                    </h3>
+                                </div>
+                                <p-tag [value]="(calculateTotalCharges() | currency:'GNF':'symbol':'1.0-0') ?? ''"
+                                    severity="danger"></p-tag>
+                            </div>
+                        </ng-template>
+
+                        <div class="grid" *ngIf="charges.length > 0">
+                            <div class="col-12 md:col-6 lg:col-4"
+                                *ngFor="let charge of charges.controls; let i = index">
+                                <div class="border-1 surface-border border-round p-3 h-full">
+                                    <div class="flex align-items-start justify-content-between mb-2">
+                                        <h4 class="text-900 font-semibold m-0 text-sm">{{ charge.get('libele')?.value }}
+                                        </h4>
+                                        <span class="text-xs text-500">#{{ i + 1 }}</span>
+                                    </div>
+                                    <div class="flex align-items-center justify-content-between">
+                                        <div class="text-900 font-bold">
+                                            {{ (charge.get('prixUnit')?.value * charge.get('qte')?.value) |
+                                            currency:'GNF':'symbol':'1.0-0' }}
+                                        </div>
+                                        <div class="text-500 text-xs">
+                                            {{ charge.get('qte')?.value }} × {{ charge.get('prixUnit')?.value |
+                                            currency:'GNF':'symbol':'1.0-0' }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div *ngIf="charges.length === 0" class="text-center p-4">
+                            <i class="pi pi-info-circle text-400 text-4xl mb-3"></i>
+                            <p class="text-500">Aucune charge ajoutée</p>
+                        </div>
+                    </p-card>
+
+                    <!-- Section 5: Garantie -->
+                    <p-card class="mb-4">
+                        <ng-template pTemplate="header">
+                            <div class="flex align-items-center gap-2 p-3 bg-teal-50 border-round-top">
+                                <i class="pi pi-shield text-teal-600"></i>
+                                <h3 class="text-lg font-semibold text-teal-900 m-0">Garantie</h3>
+                            </div>
+                        </ng-template>
+
+                        <div class="grid">
+                            <div class="col-12 md:col-8">
+                                <div class="p-3">
+                                    <div class="text-500 text-sm mb-2">Type de Garantie</div>
+                                    <div class="text-900 font-bold text-lg mb-3">{{
+                                        creditForm.get('garantieLibele')?.value }}</div>
+                                    <div class="text-500 text-sm mb-1">Montant</div>
+                                    <div class="text-teal-600 font-bold text-xl">
+                                        {{ creditForm.get('garantieMontant')?.value | currency:'GNF':'symbol':'1.0-0' }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 md:col-4"
+                                *ngIf="creditForm.get('itAss')?.value || creditForm.get('itPc')?.value">
+                                <div class="p-3">
+                                    <div class="text-500 text-sm mb-2">Localisation</div>
+                                    <div class="text-900 text-sm mb-1" *ngIf="creditForm.get('itAss')?.value">
+                                        <strong>IT Ass:</strong> {{ creditForm.get('itAss')?.value }}
+                                    </div>
+                                    <div class="text-900 text-sm" *ngIf="creditForm.get('itPc')?.value">
+                                        <strong>IT PC:</strong> {{ creditForm.get('itPc')?.value }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </p-card>
+
+                    <!-- Section 6: Cautions -->
+                    <p-card class="mb-4">
+                        <ng-template pTemplate="header">
+                            <div class="flex align-items-center gap-2 p-3 bg-indigo-50 border-round-top">
+                                <i class="pi pi-users text-indigo-600"></i>
+                                <h3 class="text-lg font-semibold text-indigo-900 m-0">Personnes Caution ({{
+                                    cautions.length }})</h3>
+                            </div>
+                        </ng-template>
+
+                        <div class="grid" *ngIf="cautions.length > 0">
+                            <div class="col-12 md:col-6 lg:col-4"
+                                *ngFor="let caution of cautions.controls; let i = index">
+                                <div class="border-1 surface-border border-round p-3 h-full">
+                                    <div class="flex align-items-center gap-3 mb-3">
+                                        <!-- Solution 1: Utiliser seulement la première lettre de chaque champ -->
+                                        <p-avatar
+                                            [label]="(caution.get('prenom')?.value || '?').charAt(0) + (caution.get('nom')?.value || '?').charAt(0)"
+                                            shape="circle" size="large" styleClass="bg-indigo-100 text-indigo-900">
+                                        </p-avatar>
+
+                                        <!-- Solution 2: Ou utiliser un icône générique -->
+                                        <!-- <p-avatar icon="pi pi-user" shape="circle" size="large" styleClass="bg-indigo-100 text-indigo-900"></p-avatar> -->
+
+                                        <div>
+                                            <div class="text-900 font-semibold">
+                                                {{ caution.get('prenom')?.value }} {{ caution.get('nom')?.value }}
+                                            </div>
+                                            <div class="text-500 text-xs">{{ caution.get('age')?.value }} ans</div>
+                                        </div>
+                                    </div>
+                                    <div class="text-600 text-sm mb-1">{{ caution.get('profession')?.value }}</div>
+                                    <div class="text-600 text-sm mb-1">{{ caution.get('activite')?.value }}</div>
+                                    <div class="text-primary font-medium text-sm">{{ caution.get('telephone')?.value }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div *ngIf="cautions.length === 0" class="text-center p-4">
+                            <i class="pi pi-info-circle text-400 text-4xl mb-3"></i>
+                            <p class="text-500">Aucune caution ajoutée</p>
+                        </div>
+                    </p-card>
+
+                    <!-- Section 7: Totaux et Calculs -->
+                    <p-card class="mb-4">
+                        <ng-template pTemplate="header">
+                            <div class="flex align-items-center gap-2 p-3 bg-yellow-50 border-round-top">
+                                <i class="pi pi-calculator text-yellow-600"></i>
+                                <h3 class="text-lg font-semibold text-yellow-900 m-0">Synthèse Financière</h3>
+                            </div>
+                        </ng-template>
+
+                        <div class="grid">
+                            <div class="col-12 md:col-3">
+                                <div class="text-center p-3 bg-green-50 border-round">
+                                    <div class="text-green-600 font-bold text-xl mb-1">
+                                        {{ calculateTotalProduits() | currency:'GNF':'symbol':'1.0-0' }}
+                                    </div>
+                                    <div class="text-green-700 text-sm">Total Produits</div>
+                                </div>
+                            </div>
+                            <div class="col-12 md:col-3">
+                                <div class="text-center p-3 bg-red-50 border-round">
+                                    <div class="text-red-600 font-bold text-xl mb-1">
+                                        {{ calculateTotalCharges() | currency:'GNF':'symbol':'1.0-0' }}
+                                    </div>
+                                    <div class="text-red-700 text-sm">Total Charges</div>
+                                </div>
+                            </div>
+                            <div class="col-12 md:col-3">
+                                <div class="text-center p-3 bg-blue-50 border-round">
+                                    <div class="text-blue-600 font-bold text-xl mb-1">
+                                        {{ (calculateTotalProduits() - calculateTotalCharges()) |
+                                        currency:'GNF':'symbol':'1.0-0' }}
+                                    </div>
+                                    <div class="text-blue-700 text-sm">Résultat Net</div>
+                                </div>
+                            </div>
+                            <div class="col-12 md:col-3">
+                                <div class="text-center p-3 bg-teal-50 border-round">
+                                    <div class="text-teal-600 font-bold text-xl mb-1">
+                                        {{ creditForm.get('garantieMontant')?.value | currency:'GNF':'symbol':'1.0-0' }}
+                                    </div>
+                                    <div class="text-teal-700 text-sm">Garantie</div>
+                                </div>
+                            </div>
+                        </div>
+                    </p-card>
+
+                    <!-- Boutons d'Action -->
+                    <div class="flex gap-3 justify-content-center pt-4 border-top-1 surface-border">
+                        <p-button label="Précédent" icon="pi pi-arrow-left" (click)="prevStep()" severity="secondary"
+                            size="large">
+                        </p-button>
+                        <p-button label="Valider le Crédit" icon="pi pi-check" [loading]="state().submitLoading"
+                            [disabled]="!isFormValid()" (click)="processCreditInd()" severity="success" size="large"
+                            styleClass="px-5">
+                        </p-button>
                     </div>
-                </p-card>
+                </div>
             </p-tabPanel>
         </p-tabView>
     </div>

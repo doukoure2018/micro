@@ -45,6 +45,50 @@ export class AppMenu {
                                   label: 'Analyse de Credit',
                                   icon: 'pi pi-fw pi-hourglass',
                                   routerLink: ['/dashboards/credit', this.user?.userId]
+                              },
+                              {
+                                  label: 'Membre',
+                                  icon: 'pi pi-th-large',
+                                  items: [
+                                      {
+                                          label: 'adhesion',
+                                          icon: 'pi pi-fw pi-user',
+                                          items: [
+                                              {
+                                                  label: 'Personne Physique',
+                                                  icon: 'pi pi-fw pi-user',
+                                                  routerLink: ['/membre/adhesion/pphysique']
+                                              },
+                                              {
+                                                  label: 'Personne Morale',
+                                                  icon: 'pi pi-fw pi-user',
+                                                  routerLink: ['/membre/adhesion/pmorale']
+                                              }
+                                          ]
+                                      },
+
+                                      {
+                                          label: 'Compte',
+                                          icon: 'pi pi-fw pi-user',
+                                          items: [
+                                              {
+                                                  label: 'Personne Physique',
+                                                  icon: 'pi pi-fw pi-inbox',
+                                                  routerLink: ['/membre/compte/cphysique']
+                                              },
+                                              {
+                                                  label: 'Personne Morale',
+                                                  icon: 'pi pi-fw pi-user',
+                                                  routerLink: ['/membre/compte/cmorale']
+                                              }
+                                          ]
+                                      },
+                                      {
+                                          label: 'Liaison Compte',
+                                          icon: 'pi pi-fw pi-check-square',
+                                          routerLink: ['/membre/liaison']
+                                      }
+                                  ]
                               }
                           ]
                         : this.user?.role === 'DA'
@@ -58,9 +102,9 @@ export class AppMenu {
                           : this.user?.role === 'MANAGER'
                             ? [
                                   {
-                                      label: 'Rapports Manager',
-                                      icon: 'pi pi-fw pi-chart-bar',
-                                      routerLink: ['/dashboards/manager']
+                                      label: 'Analyse de Credit',
+                                      icon: 'pi pi-fw pi-hourglass',
+                                      routerLink: ['/dashboards/credit', this.user?.userId]
                                   }
                               ]
                             : this.user?.role === 'SUPER_ADMIN'

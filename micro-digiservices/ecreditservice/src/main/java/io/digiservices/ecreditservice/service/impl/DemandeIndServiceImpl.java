@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -21,8 +22,13 @@ public class DemandeIndServiceImpl implements DemandeIndService {
     }
 
     @Override
-    public List<DemandeIndividuel> getListDemandeAttente(Long pointventeId) {
-        return demandeIndRepository.getListDemandeAttente(pointventeId);
+    public List<DemandeIndividuel> getListDemandeAttente(Long pointventeId,Long agenceId) {
+        return demandeIndRepository.getListDemandeAttente(pointventeId,agenceId);
+    }
+
+    @Override
+    public List<DemandeIndividuel> getListDemandeAttenteNotification(Long pointventeId,Long agenceId) {
+        return demandeIndRepository.getListDemandeAttenteNotification(pointventeId,agenceId);
     }
 
     @Override
@@ -56,7 +62,7 @@ public class DemandeIndServiceImpl implements DemandeIndService {
     }
 
     @Override
-    public CreditDto getListCreditAttente(Long agenceId) {
+    public List<CreditDto> getListCreditAttente(Long agenceId) {
         return demandeIndRepository.getListCreditAttente(agenceId);
     }
 
@@ -147,6 +153,11 @@ public class DemandeIndServiceImpl implements DemandeIndService {
     @Override
     public CreditDto getCreditByReference(String referenceCredit) {
         return demandeIndRepository.getCreditByReference(referenceCredit);
+    }
+
+    @Override
+    public List<DemandeCredit> listDemandeAnalyseCreditByUserId() {
+        return demandeIndRepository.listDemandeAnalyseCreditByUserId();
     }
 
 
