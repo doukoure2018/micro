@@ -20,6 +20,7 @@
 		<module>notificationservice</module>
         <module>ecreditservice</module>
         <module>clients</module>
+        <module>database-migrations</module>
     </modules>
 
 	<properties>
