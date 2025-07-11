@@ -78,7 +78,7 @@ public class IndividuelResource {
                                                   HttpServletRequest request) {
 
         try {
-            // Récupérer les données du crédit
+            // Récupérer les données pour le credit
             CreditDataResponse creditData = individuelService.getCreditData(referenceCredit);
 
             return ok().body(getResponse(request,
