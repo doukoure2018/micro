@@ -430,4 +430,10 @@ public class UserResource {
         var user= userService.getUserByUuid(userUuid);
         return ResponseEntity.ok(user);
     }
+
+    @GetMapping("/offLine/test")
+    public ResponseEntity<String> offLineTest()
+    {
+        return ResponseEntity.ok("This is offline test Migration");
+    }
 }
