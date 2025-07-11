@@ -1,4 +1,4 @@
-import { AnalyseCompleteData } from './AnalyseCompleteData';
+import { AnalyseCompleteData } from './analyseCompleteData';
 
 export interface AnalyseComplete {
     data: AnalyseCompleteData;

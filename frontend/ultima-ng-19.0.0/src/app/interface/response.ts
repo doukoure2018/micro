@@ -1,6 +1,6 @@
 import { Actividad } from './actividad.model';
 import { Agence } from './agence';
-import { AnalyseComplete } from './AnalyseComplete';
+import { AnalyseComplete } from './analyseComplete';
 import { Appreciation } from './appreciation';
 import { BilanEntreprise } from './bilan.entreprise';
 import { BilanPersonnel } from './bilan.personnel';
