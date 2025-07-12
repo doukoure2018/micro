@@ -1,0 +1,53 @@
+name: CD - Deploy Frontend
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - frontend/**
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    env:
+      API_BASE_URL: "http://51.91.254.218:8000"   # Mets ta vraie URL ici si besoin
+      AUTH_SERVER_URL: "http://51.91.254.218:8080"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        run: |
+          echo "${{ secrets.DOCKERHUB_ACCESS_TOKEN }}" | docker login \
+            -u ${{ secrets.DOCKERHUB_USERNAME }} \
+            --password-stdin
+
+      - name: Build and Push Docker Image
+        run: |
+          docker build \
+            -t doukoure93/digicrg-app:latest \
+            --build-arg API_BASE_URL=$API_BASE_URL \
+            --build-arg AUTH_SERVER_URL=$AUTH_SERVER_URL \
+            --file frontend/ultima-ng-19.0.0/Dockerfile \
+            frontend/ultima-ng-19.0.0/
+          docker push doukoure93/digicrg-app:latest
+
+      - name: Deploy to VPS Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USERNAME }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          port: ${{ secrets.PROD_PORT || 22 }}
+          script: |
+            sudo docker pull doukoure93/digicrg-app:latest
+            sudo docker stop digicrg-app || true
+            sudo docker rm digicrg-app || true
+            sudo docker run -d \
+              --name digicrg-app \
+              -p 4200:4200 \
+              --restart unless-stopped \
+              doukoure93/digicrg-app:latest
