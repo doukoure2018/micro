@@ -102,7 +102,7 @@ jobs:
           script: |
             set -e
             cd ~/microservices
-            
+  
             echo "Pulling all images..."
             docker pull doukoure93/userservice:latest
             docker pull doukoure93/authorizationserver:latest
@@ -117,6 +117,11 @@ jobs:
             
             sleep 5
             
+            echo "Force stop all containers (clean slate)..."
+            docker kill $(docker ps -q) || true
+            docker rm $(docker ps -a -q) || true
+            
+            echo "Remove ALL unused networks..."
             docker network prune -f
             
             echo "DB migrations"
@@ -126,3 +131,4 @@ jobs:
             docker compose --env-file .env.prod up -d
             
             echo "Deployment done! 🚀"
+
