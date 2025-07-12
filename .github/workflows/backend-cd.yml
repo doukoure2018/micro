@@ -25,22 +25,22 @@ jobs:
       deployment_id: ${{ steps.deployment_id.outputs.id }}
     
     steps:
-    - name: Ì≥• Checkout code
+    - name: ÔøΩ Checkout code
       uses: actions/checkout@v4
       
-    - name: Ì¥¢ Count Migration Files
+    - name: ÔøΩ Count Migration Files
       id: count_migrations
       run: |
         migration_count=$(find micro-digiservices/database-migrations/src/main/resources/db/migration -name "*.sql" | wc -l)
         echo "count=$migration_count" >> $GITHUB_OUTPUT
-        echo "Ì≥Ñ Found $migration_count migration files"
+        echo "ÔøΩ Found $migration_count migration files"
         
-    - name: Ìø∑Ô∏è Generate Deployment ID
+    - name: ÔøΩÔ∏è Generate Deployment ID
       id: deployment_id
       run: |
         deployment_id="deploy-$(date +%Y%m%d-%H%M%S)-${GITHUB_SHA:0:7}"
         echo "id=$deployment_id" >> $GITHUB_OUTPUT
-        echo "Ìø∑Ô∏è Deployment ID: $deployment_id"
+        echo "ÔøΩÔ∏è Deployment ID: $deployment_id"
 
   # Deploy to production
   deploy-production:
@@ -49,10 +49,10 @@ jobs:
     environment: production
     
     steps:
-    - name: Ì≥• Checkout code
+    - name: ÔøΩ Checkout code
       uses: actions/checkout@v4
     
-    - name: Ì∫Ä Deploy to Production Server
+    - name: ÔøΩ Deploy to Production Server
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.PROD_HOST }}
@@ -62,9 +62,9 @@ jobs:
         script: |
           set -e  # Exit on any error
           
-          echo "Ì∫Ä Starting production deployment..."
-          echo "Ìø∑Ô∏è Deployment ID: ${{ needs.pre-deployment.outputs.deployment_id }}"
-          echo "Ì≥Ñ Migration files: ${{ needs.pre-deployment.outputs.migration_count }}"
+          echo "ÔøΩ Starting production deployment..."
+          echo "ÔøΩÔ∏è Deployment ID: ${{ needs.pre-deployment.outputs.deployment_id }}"
+          echo "ÔøΩ Migration files: ${{ needs.pre-deployment.outputs.migration_count }}"
           echo "========================================"
           
           # Navigate to project directory
@@ -73,7 +73,7 @@ jobs:
           # Create deployment backup
           BACKUP_DIR="/tmp/backups/${{ needs.pre-deployment.outputs.deployment_id }}"
           mkdir -p "$BACKUP_DIR"
-          echo "Ì≤æ Creating backup at $BACKUP_DIR"
+          echo "üíæ Creating backup at $BACKUP_DIR"
           
           # Backup current state
           if [ -f docker-compose.yml ]; then
@@ -85,33 +85,62 @@ jobs:
             docker compose exec -T postgresdb pg_dump -U user2711 -d localdb > "$BACKUP_DIR/database_backup.sql" || echo "‚ö†Ô∏è Database backup failed"
           fi
           
-          # Pull latest code (includes new migrations)
-          echo "Ì≥• Pulling latest code..."
-          cd micro-digiservices
-          git fetch origin
-          git reset --hard origin/main
-          git pull origin main
-          cd ..
+          # Remove any existing source code directory (for clean deployment)
+          rm -rf micro-digiservices/
           
-          # Verify migration files
-          migration_files=$(find micro-digiservices/database-migrations/src/main/resources/db/migration -name "*.sql" | wc -l)
-          echo "‚úÖ Found $migration_files migration files on server"
+          # Clone fresh from GitHub for this deployment
+          echo "üì• Cloning latest code from GitHub..."
+          git clone https://github.com/doukoure2018/micro.git temp-deployment
+          mv temp-deployment micro-digiservices
           
-          # Load production environment
+          # Verify migration files are available
+          migration_files=$(find micro-digiservices/database-migrations/src/main/resources/db/migration -name "*.sql" | wc -l 2>/dev/null || echo "0")
+          echo "‚úÖ Found $migration_files migration files for deployment"
+          
+          if [ "$migration_files" -eq 0 ]; then
+            echo "‚ùå No migration files found! Check if files are committed to repository."
+            exit 1
+          fi
+          
+          # Load production environment with proper export
           if [ -f .env.prod ]; then
+            echo "üîß Loading production environment..."
+          
+            # Export environment variables for Docker Compose
+            set -a  # Automatically export all variables
             source .env.prod
-            echo "‚úÖ Production environment loaded"
+            set +a  # Turn off automatic export
+          
+            # Explicitly export critical variables
+            export SPRING_PROFILES_ACTIVE POSTGRES_USER POSTGRES_DATABASE POSTGRES_PASSWORD
+            export DB_USERNAME DB_PASSWORD UI_APP_URL BACKEND_APP_URL API_BASE_URL AUTH_SERVER_URL
+            export MAIL_HOST MAIL_PORT MAIL_USERNAME MAIL_PASSWORD
+            export OAUTH2_CLIENT_ID OAUTH2_SCOPE OAUTH2_RESPONSE_TYPE OAUTH2_CODE_CHALLENGE_METHOD
+            export SESSION_COOKIE_SECURE PGADMIN_EMAIL PGADMIN_PASSWORD KAFKA_ADVERTISED_LISTENERS
+          
+            # Verify critical variables are exported
+            echo "‚úÖ Environment verification:"
+            echo "POSTGRES_USER: ${POSTGRES_USER:-NOT_SET}"
+            echo "DB_USERNAME: ${DB_USERNAME:-NOT_SET}"
+            echo "POSTGRES_DATABASE: ${POSTGRES_DATABASE:-NOT_SET}"
+          
+            if [ -z "$POSTGRES_USER" ] || [ -z "$DB_USERNAME" ] || [ -z "$POSTGRES_DATABASE" ]; then
+              echo "‚ùå Critical environment variables not set!"
+              exit 1
+            fi
+          
+            echo "‚úÖ Production environment loaded and exported"
           else
             echo "‚ùå .env.prod not found!"
             exit 1
           fi
           
           # Stop existing services gracefully
-          echo "Ìªë Stopping existing services..."
+          echo "üõë Stopping existing services..."
           docker compose down --timeout 30
           
           # Start database first
-          echo "Ì∑ÑÔ∏è Starting database..."
+          echo "üóÑÔ∏è Starting database..."
           docker compose --env-file .env.prod up -d postgresdb
           
           # Wait for database to be ready
@@ -130,28 +159,28 @@ jobs:
           if [ "$SKIP_MIGRATIONS" = "true" ]; then
             echo "‚è≠Ô∏è Skipping migrations (manual override)"
           else
-            # Run database migrations
-            echo "Ì∑ÉÔ∏è Running database migrations..."
-            
+            # Run database migrations using the fresh code
+            echo "üóÉÔ∏è Running database migrations..."
+          
             # Show current migration status
-            echo "Ì≥ã Current migration status:"
+            echo "üìã Current migration status:"
             docker compose exec -T postgresdb psql -U $POSTGRES_USER -d $POSTGRES_DATABASE -c "
               SELECT version, description, installed_on 
               FROM flyway_schema_history 
               ORDER BY installed_rank DESC 
               LIMIT 5;
             " 2>/dev/null || echo "No previous migrations found"
-            
+          
             # Run migrations using Docker Flyway
             docker compose --env-file .env.prod --profile migration up flyway-migrations
-            
+          
             # Check migration result
             migration_exit_code=$?
             if [ $migration_exit_code -eq 0 ]; then
               echo "‚úÖ Database migrations completed successfully!"
-              
+          
               # Show updated migration status
-              echo "Ì≥ã Updated migration status:"
+              echo "üìã Updated migration status:"
               docker compose exec -T postgresdb psql -U $POSTGRES_USER -d $POSTGRES_DATABASE -c "
                 SELECT version, description, installed_on 
                 FROM flyway_schema_history 
@@ -160,34 +189,38 @@ jobs:
               "
             else
               echo "‚ùå Database migrations failed!"
-              echo "Ì≥ã Migration logs:"
+              echo "üìã Migration logs:"
               docker compose logs flyway-migrations
-              
-              echo "Ì¥Ñ Rolling back deployment..."
+          
+              echo "üîÑ Rolling back deployment..."
               docker compose down
-              
+          
               # Restore database if backup exists
               if [ -f "$BACKUP_DIR/database_backup.sql" ]; then
-                echo "Ì¥Ñ Restoring database backup..."
+                echo "üîÑ Restoring database backup..."
                 docker compose --env-file .env.prod up -d postgresdb
                 sleep 10
                 docker compose exec -T postgresdb psql -U $POSTGRES_USER -d $POSTGRES_DATABASE < "$BACKUP_DIR/database_backup.sql" || echo "Database restore failed"
               fi
-              
+          
               exit 1
             fi
           fi
           
           # Start application services
-          echo "Ì∫Ä Starting application services..."
+          echo "üöÄ Starting application services..."
           docker compose --env-file .env.prod --profile services up -d
+          
+          # Clean up source code after deployment (optional)
+          echo "üßπ Cleaning up temporary source files..."
+          rm -rf micro-digiservices/
           
           # Wait for services to initialize
           echo "‚è≥ Waiting for services to initialize..."
           sleep 45
           
           # Health check services
-          echo "Ìø• Running health checks..."
+          echo "ÔøΩ Running health checks..."
           services=("postgresdb:5432" "authorizationserver:8080" "userservice:8085" "gateway:8000" "discoveryserver:5002")
           failed_services=()
           
@@ -203,28 +236,28 @@ jobs:
           
           # Final deployment status
           echo ""
-          echo "Ì≥ä Deployment Summary:"
+          echo "ÔøΩ Deployment Summary:"
           echo "========================================"
           docker compose ps
           
           if [ ${#failed_services[@]} -eq 0 ]; then
             echo ""
-            echo "Ìæâ DEPLOYMENT SUCCESSFUL!"
-            echo "Ìø∑Ô∏è Deployment ID: ${{ needs.pre-deployment.outputs.deployment_id }}"
-            echo "Ìºê Production URLs:"
+            echo "ÔøΩ DEPLOYMENT SUCCESSFUL!"
+            echo "ÔøΩÔ∏è Deployment ID: ${{ needs.pre-deployment.outputs.deployment_id }}"
+            echo "ÔøΩ Production URLs:"
             echo "  - Gateway: http://51.91.254.218:8000"
             echo "  - Authorization: http://51.91.254.218:8080"
             echo "  - User Service: http://51.91.254.218:8085"
             echo "  - Discovery: http://51.91.254.218:5002"
             echo ""
-            echo "Ì≤æ Backup location: $BACKUP_DIR"
+            echo "ÔøΩ Backup location: $BACKUP_DIR"
             echo "========================================"
           else
             echo ""
             echo "‚ö†Ô∏è DEPLOYMENT COMPLETED WITH ISSUES"
             echo "Failed services: ${failed_services[*]}"
-            echo "Ì≥ã Check logs: docker compose logs [service-name]"
-            echo "Ì≤æ Backup available at: $BACKUP_DIR"
+            echo "ÔøΩ Check logs: docker compose logs [service-name]"
+            echo "ÔøΩ Backup available at: $BACKUP_DIR"
             echo "========================================"
           fi
 
@@ -235,9 +268,9 @@ jobs:
     if: always()
     
     steps:
-    - name: Ì¥ç Verify Deployment
+    - name: ÔøΩ Verify Deployment
       run: |
-        echo "Ì¥ç Post-deployment verification..."
+        echo "ÔøΩ Post-deployment verification..."
         
         # Test basic connectivity
         services=("8080" "8085" "8000" "5002")
@@ -249,13 +282,13 @@ jobs:
           fi
         done
         
-    - name: Ì≥ã Deployment Report
+    - name: ÔøΩ Deployment Report
       run: |
-        echo "Ì≥ã Deployment Report"
+        echo "ÔøΩ Deployment Report"
         echo "==================="
-        echo "Ìø∑Ô∏è Deployment ID: ${{ needs.pre-deployment.outputs.deployment_id }}"
-        echo "Ì¥Ñ Git Commit: ${{ github.sha }}"
-        echo "Ì±§ Triggered by: ${{ github.actor }}"
-        echo "Ì≥Ñ Migration files: ${{ needs.pre-deployment.outputs.migration_count }}"
-        echo "Ìµê Deployment time: $(date)"
+        echo "ÔøΩÔ∏è Deployment ID: ${{ needs.pre-deployment.outputs.deployment_id }}"
+        echo "ÔøΩ Git Commit: ${{ github.sha }}"
+        echo "ÔøΩ Triggered by: ${{ github.actor }}"
+        echo "ÔøΩ Migration files: ${{ needs.pre-deployment.outputs.migration_count }}"
+        echo "ÔøΩ Deployment time: $(date)"
         echo "==================="
