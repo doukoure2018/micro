@@ -9,7 +9,7 @@ on:
       - '!micro-digiservices/frontend/**'
 
 env:
-  REGISTRY: doukoure93 # <- Remplace par ton DockerHub username si besoin
+  REGISTRY: doukoure93 # Ton DockerHub username
 
 jobs:
   build-and-push:
@@ -28,65 +28,64 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
 
-      # Build & push tes backends/services seulement
-#      - name: Build & push userservice
-#        uses: docker/build-push-action@v5
-#        with:
-#          context: ./micro-digiservices/userservice
-#          file: ./micro-digiservices/userservice/Dockerfile
-#          push: true
-#          tags: ${{ env.REGISTRY }}/userservice:latest
-#
-#      - name: Build & push authorizationserver
-#        uses: docker/build-push-action@v5
-#        with:
-#          context: ./micro-digiservices/authorizationserver
-#          file: ./micro-digiservices/authorizationserver/Dockerfile
-#          push: true
-#          tags: ${{ env.REGISTRY }}/authorizationserver:latest
-#
-#      - name: Build & push ecreditservice
-#        uses: docker/build-push-action@v5
-#        with:
-#          context: ./micro-digiservices/ecreditservice
-#          file: ./micro-digiservices/ecreditservice/Dockerfile
-#          push: true
-#          tags: ${{ env.REGISTRY }}/ecreditservice:latest
-#
-#      - name: Build & push notificationservice
-#        uses: docker/build-push-action@v5
-#        with:
-#          context: ./micro-digiservices/notificationservice
-#          file: ./micro-digiservices/notificationservice/Dockerfile
-#          push: true
-#          tags: ${{ env.REGISTRY }}/notificationservice:latest
-#
-#      - name: Build & push gateway
-#        uses: docker/build-push-action@v5
-#        with:
-#          context: ./micro-digiservices/gateway
-#          file: ./micro-digiservices/gateway/Dockerfile
-#          push: true
-#          tags: ${{ env.REGISTRY }}/gateway:latest
-#
-#      - name: Build & push discoveryserver
-#        uses: docker/build-push-action@v5
-#        with:
-#          context: ./micro-digiservices/discoveryserver
-#          file: ./micro-digiservices/discoveryserver/Dockerfile
-#          push: true
-#          tags: ${{ env.REGISTRY }}/discoveryserver:latest
-#
-#      - name: Build & push ebankingservice
-#        uses: docker/build-push-action@v5
-#        with:
-#          context: ./micro-digiservices/ebankingservice
-#          file: ./micro-digiservices/ebankingservice/Dockerfile
-#          push: true
-#          tags: ${{ env.REGISTRY }}/ebanking:latest
+      # ====== Build & push chaque microservice ======
+      - name: Build & push userservice
+        uses: docker/build-push-action@v5
+        with:
+          context: ./micro-digiservices/userservice
+          file: ./micro-digiservices/userservice/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/userservice:latest
 
-      # --- Tu ajoutes ici tout autre service custom ---
-      # (Postgres, kafka, zookeeper, flyway-migrations, pgadmin prennent leurs images officielles, pas besoin de build/push)
+      - name: Build & push authorizationserver
+        uses: docker/build-push-action@v5
+        with:
+          context: ./micro-digiservices/authorizationserver
+          file: ./micro-digiservices/authorizationserver/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/authorizationserver:latest
+
+      - name: Build & push ecreditservice
+        uses: docker/build-push-action@v5
+        with:
+          context: ./micro-digiservices/ecreditservice
+          file: ./micro-digiservices/ecreditservice/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/ecreditservice:latest
+
+      - name: Build & push notificationservice
+        uses: docker/build-push-action@v5
+        with:
+          context: ./micro-digiservices/notificationservice
+          file: ./micro-digiservices/notificationservice/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/notificationservice:latest
+
+      - name: Build & push gateway
+        uses: docker/build-push-action@v5
+        with:
+          context: ./micro-digiservices/gateway
+          file: ./micro-digiservices/gateway/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/gateway:latest
+
+      - name: Build & push discoveryserver
+        uses: docker/build-push-action@v5
+        with:
+          context: ./micro-digiservices/discoveryserver
+          file: ./micro-digiservices/discoveryserver/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/discoveryserver:latest
+
+      - name: Build & push ebankingservice
+        uses: docker/build-push-action@v5
+        with:
+          context: ./micro-digiservices/ebankingservice
+          file: ./micro-digiservices/ebankingservice/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/ebanking:latest
+
+      # === Ajoute d'autres services ici si besoin ===
 
   deploy:
     runs-on: ubuntu-latest
@@ -103,9 +102,6 @@ jobs:
           script: |
             set -e
             cd ~/microservices
-
-            echo "Synchronisation du code..."
-            git pull origin main
 
             echo "Pulling all images..."
             docker pull doukoure93/userservice:latest
@@ -134,6 +130,3 @@ jobs:
             docker compose --env-file .env.prod up -d
 
             echo "Deployment done! 🚀"
-  
-  
-
