@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - micro-digiservices/**
+      - '!micro-digiservices/frontend/**'
 
 env:
   REGISTRY: doukoure93 # <- Remplace par ton DockerHub username si besoin
