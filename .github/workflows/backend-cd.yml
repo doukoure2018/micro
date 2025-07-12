@@ -28,61 +28,61 @@ jobs:
           password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
 
       # Build & push tes backends/services seulement
-      - name: Build & push userservice
-        uses: docker/build-push-action@v5
-        with:
-          context: ./micro-digiservices/userservice
-          file: ./micro-digiservices/userservice/Dockerfile
-          push: true
-          tags: ${{ env.REGISTRY }}/userservice:latest
-
-      - name: Build & push authorizationserver
-        uses: docker/build-push-action@v5
-        with:
-          context: ./micro-digiservices/authorizationserver
-          file: ./micro-digiservices/authorizationserver/Dockerfile
-          push: true
-          tags: ${{ env.REGISTRY }}/authorizationserver:latest
-
-      - name: Build & push ecreditservice
-        uses: docker/build-push-action@v5
-        with:
-          context: ./micro-digiservices/ecreditservice
-          file: ./micro-digiservices/ecreditservice/Dockerfile
-          push: true
-          tags: ${{ env.REGISTRY }}/ecreditservice:latest
-
-      - name: Build & push notificationservice
-        uses: docker/build-push-action@v5
-        with:
-          context: ./micro-digiservices/notificationservice
-          file: ./micro-digiservices/notificationservice/Dockerfile
-          push: true
-          tags: ${{ env.REGISTRY }}/notificationservice:latest
-
-      - name: Build & push gateway
-        uses: docker/build-push-action@v5
-        with:
-          context: ./micro-digiservices/gateway
-          file: ./micro-digiservices/gateway/Dockerfile
-          push: true
-          tags: ${{ env.REGISTRY }}/gateway:latest
-
-      - name: Build & push discoveryserver
-        uses: docker/build-push-action@v5
-        with:
-          context: ./micro-digiservices/discoveryserver
-          file: ./micro-digiservices/discoveryserver/Dockerfile
-          push: true
-          tags: ${{ env.REGISTRY }}/discoveryserver:latest
-
-      - name: Build & push ebankingservice
-        uses: docker/build-push-action@v5
-        with:
-          context: ./micro-digiservices/ebankingservice
-          file: ./micro-digiservices/ebankingservice/Dockerfile
-          push: true
-          tags: ${{ env.REGISTRY }}/ebanking:latest
+#      - name: Build & push userservice
+#        uses: docker/build-push-action@v5
+#        with:
+#          context: ./micro-digiservices/userservice
+#          file: ./micro-digiservices/userservice/Dockerfile
+#          push: true
+#          tags: ${{ env.REGISTRY }}/userservice:latest
+#
+#      - name: Build & push authorizationserver
+#        uses: docker/build-push-action@v5
+#        with:
+#          context: ./micro-digiservices/authorizationserver
+#          file: ./micro-digiservices/authorizationserver/Dockerfile
+#          push: true
+#          tags: ${{ env.REGISTRY }}/authorizationserver:latest
+#
+#      - name: Build & push ecreditservice
+#        uses: docker/build-push-action@v5
+#        with:
+#          context: ./micro-digiservices/ecreditservice
+#          file: ./micro-digiservices/ecreditservice/Dockerfile
+#          push: true
+#          tags: ${{ env.REGISTRY }}/ecreditservice:latest
+#
+#      - name: Build & push notificationservice
+#        uses: docker/build-push-action@v5
+#        with:
+#          context: ./micro-digiservices/notificationservice
+#          file: ./micro-digiservices/notificationservice/Dockerfile
+#          push: true
+#          tags: ${{ env.REGISTRY }}/notificationservice:latest
+#
+#      - name: Build & push gateway
+#        uses: docker/build-push-action@v5
+#        with:
+#          context: ./micro-digiservices/gateway
+#          file: ./micro-digiservices/gateway/Dockerfile
+#          push: true
+#          tags: ${{ env.REGISTRY }}/gateway:latest
+#
+#      - name: Build & push discoveryserver
+#        uses: docker/build-push-action@v5
+#        with:
+#          context: ./micro-digiservices/discoveryserver
+#          file: ./micro-digiservices/discoveryserver/Dockerfile
+#          push: true
+#          tags: ${{ env.REGISTRY }}/discoveryserver:latest
+#
+#      - name: Build & push ebankingservice
+#        uses: docker/build-push-action@v5
+#        with:
+#          context: ./micro-digiservices/ebankingservice
+#          file: ./micro-digiservices/ebankingservice/Dockerfile
+#          push: true
+#          tags: ${{ env.REGISTRY }}/ebanking:latest
 
       # --- Tu ajoutes ici tout autre service custom ---
       # (Postgres, kafka, zookeeper, flyway-migrations, pgadmin prennent leurs images officielles, pas besoin de build/push)
