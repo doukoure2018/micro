@@ -103,7 +103,10 @@ jobs:
           script: |
             set -e
             cd ~/microservices
-  
+
+            echo "Synchronisation du code..."
+            git pull origin main
+
             echo "Pulling all images..."
             docker pull doukoure93/userservice:latest
             docker pull doukoure93/authorizationserver:latest
@@ -112,24 +115,25 @@ jobs:
             docker pull doukoure93/gateway:latest
             docker pull doukoure93/discoveryserver:latest
             docker pull doukoure93/ebanking:latest
-            
+
             echo "Stop stack"
             docker compose --env-file .env.prod down
-            
             sleep 5
-            
+
             echo "Force stop all containers (clean slate)..."
             docker kill $(docker ps -q) || true
             docker rm $(docker ps -a -q) || true
-            
+
             echo "Remove ALL unused networks..."
             docker network prune -f
-            
+
             echo "DB migrations"
             docker compose --env-file .env.prod --profile migration up flyway-migrations
-            
+
             echo "Start stack"
             docker compose --env-file .env.prod up -d
-            
+
             echo "Deployment done! 🚀"
+  
+  
 
