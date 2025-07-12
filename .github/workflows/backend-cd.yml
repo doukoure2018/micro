@@ -115,6 +115,10 @@ jobs:
             echo "Stop stack"
             docker compose --env-file .env.prod down
             
+            sleep 5
+            
+            docker network prune -f
+            
             echo "DB migrations"
             docker compose --env-file .env.prod --profile migration up flyway-migrations
             
