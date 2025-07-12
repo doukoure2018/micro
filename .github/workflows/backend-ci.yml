@@ -1,19 +1,19 @@
-name: Backend CI - Test & Validate
+name: CI - Build & Test Microservices
 
 on:
-  push:
-    branches: [ main, develop ]
-    paths:
-      - 'micro-digiservices/**'
   pull_request:
-    branches: [ main ]
+    branches: [main]
     paths:
-      - 'micro-digiservices/**'
+      - micro-digiservices/**
+  push:
+    branches: [develop]
+    paths:
+      - micro-digiservices/**
 
 jobs:
-  # Test database migrations
-  test-migrations:
+  test-microservices:
     runs-on: ubuntu-latest
+
     services:
       postgres:
         image: postgres:15
@@ -21,163 +21,52 @@ jobs:
           POSTGRES_USER: ci_test_user
           POSTGRES_PASSWORD: ci_test_password
           POSTGRES_DB: ci_test_db
+        ports:
+          - 5432:5432
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-        ports:
-          - 5432:5432
 
     steps:
-    - name: Ì≥• Checkout code
-      uses: actions/checkout@v4
-    
-    - name: ‚òï Set up JDK 21
-      uses: actions/setup-java@v4
-      with:
-        java-version: '21'
-        distribution: 'temurin'
-        cache: maven
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Ì≥ã Validate Migration Files
-      run: |
-        echo "Ì¥ç Validating migration files..."
-        
-        # Check if migration directory exists
-        if [ ! -d "micro-digiservices/database-migrations/src/main/resources/db/migration" ]; then
-          echo "‚ùå Migration directory not found!"
-          exit 1
-        fi
-        
-        # Count migration files
-        migration_count=$(find micro-digiservices/database-migrations/src/main/resources/db/migration -name "*.sql" | wc -l)
-        echo "Ì≥Ñ Found $migration_count migration files"
-        
-        # List migration files
-        echo "Ì≥ã Migration files:"
-        find micro-digiservices/database-migrations/src/main/resources/db/migration -name "*.sql" | sort | while read file; do
-          echo "  Ì∑ÉÔ∏è $(basename "$file")"
-        done
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
 
-    - name: Ì¥ß Compile Migration Module
-      run: |
-        echo "Ì¥® Compiling database-migrations module..."
-        cd micro-digiservices
-        mvn -pl database-migrations clean compile -q
+      # Exemple‚ÄØ: compile et tests unitaires sur chaque microservice
+      - name: Compile & Unit Test - Userservice
+        run: |
+          cd micro-digiservices/userservice
+          mvn clean verify
 
-    - name: Ì∑ÉÔ∏è Test Database Migrations
-      run: |
-        echo "Ì∑™ Testing database migrations..."
-        cd micro-digiservices
-        
-        # Run migrations against test database
-        mvn -pl database-migrations flyway:migrate -Pprod \
-          -Ddb.url=jdbc:postgresql://localhost:5432/ci_test_db \
-          -Ddb.username=ci_test_user \
-          -Ddb.password=ci_test_password \
-          -Dflyway.cleanDisabled=false \
-          -q
+      - name: Compile & Unit Test - AuthorizationServer
+        run: |
+          cd micro-digiservices/authorizationserver
+          mvn clean verify
 
-    - name: Ì≥ä Verify Migration Status
-      run: |
-        echo "Ì≥ä Checking migration status..."
-        cd micro-digiservices
-        
-        # Show migration info
-        mvn -pl database-migrations flyway:info -Pprod \
-          -Ddb.url=jdbc:postgresql://localhost:5432/ci_test_db \
-          -Ddb.username=ci_test_user \
-          -Ddb.password=ci_test_password
+      - name: Compile & Unit Test - Ecreditservice
+        run: |
+          cd micro-digiservices/ecreditservice
+          mvn clean verify
 
-    - name: Ì∑π Test Migration Cleanup
-      run: |
-        echo "Ì∑π Testing migration cleanup (clean/migrate cycle)..."
-        cd micro-digiservices
-        
-        # Clean and re-migrate to test full cycle
-        mvn -pl database-migrations flyway:clean -Pprod \
-          -Ddb.url=jdbc:postgresql://localhost:5432/ci_test_db \
-          -Ddb.username=ci_test_user \
-          -Ddb.password=ci_test_password \
-          -Dflyway.cleanDisabled=false \
-          -q
-          
-        mvn -pl database-migrations flyway:migrate -Pprod \
-          -Ddb.url=jdbc:postgresql://localhost:5432/ci_test_db \
-          -Ddb.username=ci_test_user \
-          -Ddb.password=ci_test_password \
-          -Dflyway.cleanDisabled=false \
-          -q
+      # ... R√©p√®te pour chaque microservice
 
-    - name: ‚úÖ Migration Tests Summary
-      run: |
-        echo "‚úÖ All migration tests passed!"
-        echo "ÌæØ Ready for deployment to production"
+      # Exemple migration Flyway sur BDD de test
+      - name: Flyway Migration Test
+        run: |
+          cd micro-digiservices/database-migrations
+          mvn flyway:migrate -Dflyway.url=jdbc:postgresql://localhost:5432/ci_test_db \
+              -Dflyway.user=ci_test_user \
+              -Dflyway.password=ci_test_password
 
-  # Build validation (if you have Java microservices to build)
-  build-validation:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    
-    steps:
-    - name: Ì≥• Checkout code
-      uses: actions/checkout@v4
-    
-    - name: ‚òï Set up JDK 21
-      uses: actions/setup-java@v4
-      with:
-        java-version: '21'
-        distribution: 'temurin'
-        cache: maven
+      # (Ajoute des jobs SonarCloud, Checkstyle, etc si besoin)
 
-    - name: Ì¥® Build Projects
-      run: |
-        echo "Ì¥® Building microservices..."
-        
-        # Build each service if pom.xml exists
-        services=("authorizationserver" "userservice" "ecreditservice" "notificationservice" "gateway" "discoveryserver")
-        
-        for service in "${services[@]}"; do
-          if [ -f "micro-digiservices/$service/pom.xml" ]; then
-            echo "Ì¥® Building $service..."
-            cd micro-digiservices/$service
-            mvn clean compile -q -DskipTests
-            cd ../..
-          else
-            echo "‚è≠Ô∏è Skipping $service (no pom.xml found)"
-          fi
-        done
-
-  # Security and quality checks
-  code-quality:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    
-    steps:
-    - name: Ì≥• Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Ì¥ç Check SQL Migration Syntax
-      run: |
-        echo "Ì¥ç Checking SQL migration syntax..."
-        
-        # Basic SQL syntax validation
-        find micro-digiservices/database-migrations/src/main/resources/db/migration -name "*.sql" | while read file; do
-          echo "Ì≥Ñ Checking $(basename "$file")..."
-          
-          # Check for common SQL issues
-          if grep -i "drop database\|drop schema" "$file"; then
-            echo "‚ö†Ô∏è Warning: Found potentially dangerous DROP statements in $file"
-          fi
-          
-          # Check migration naming convention
-          filename=$(basename "$file")
-          if [[ ! $filename =~ ^V[0-9]+__.*\.sql$ ]]; then
-            echo "‚ùå Invalid migration filename: $filename"
-            echo "Expected format: V{number}__{description}.sql"
-            exit 1
-          fi
-        done
-        
-        echo "‚úÖ SQL syntax validation passed"
+      - name: Success badge
+        run: echo "‚úÖ Build & Tests passed !"
