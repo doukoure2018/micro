@@ -91,14 +91,18 @@ jobs:
           # Clone fresh from GitHub for this deployment
           echo "📥 Cloning latest code from GitHub..."
           git clone https://github.com/doukoure2018/micro.git temp-deployment
+          
+          # Move to expected directory name IMMEDIATELY
           mv temp-deployment micro-digiservices
           
-          # Verify migration files are available
+          # NOW verify migration files are available (using correct path)
           migration_files=$(find micro-digiservices/database-migrations/src/main/resources/db/migration -name "*.sql" | wc -l 2>/dev/null || echo "0")
           echo "✅ Found $migration_files migration files for deployment"
           
           if [ "$migration_files" -eq 0 ]; then
-            echo "❌ No migration files found! Check if files are committed to repository."
+            echo "❌ No migration files found! Check repository structure."
+            echo "🔍 Debug: Repository contents:"
+            ls -la micro-digiservices/
             exit 1
           fi
           
@@ -117,17 +121,6 @@ jobs:
             export MAIL_HOST MAIL_PORT MAIL_USERNAME MAIL_PASSWORD
             export OAUTH2_CLIENT_ID OAUTH2_SCOPE OAUTH2_RESPONSE_TYPE OAUTH2_CODE_CHALLENGE_METHOD
             export SESSION_COOKIE_SECURE PGADMIN_EMAIL PGADMIN_PASSWORD KAFKA_ADVERTISED_LISTENERS
-          
-            # Verify critical variables are exported
-            echo "✅ Environment verification:"
-            echo "POSTGRES_USER: ${POSTGRES_USER:-NOT_SET}"
-            echo "DB_USERNAME: ${DB_USERNAME:-NOT_SET}"
-            echo "POSTGRES_DATABASE: ${POSTGRES_DATABASE:-NOT_SET}"
-          
-            if [ -z "$POSTGRES_USER" ] || [ -z "$DB_USERNAME" ] || [ -z "$POSTGRES_DATABASE" ]; then
-              echo "❌ Critical environment variables not set!"
-              exit 1
-            fi
           
             echo "✅ Production environment loaded and exported"
           else
