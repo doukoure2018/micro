@@ -1,4 +1,7 @@
-name: CD - Deploy Frontend
+name: CD - Deploy Frontend to OVH
+
+permissions:
+  contents: write
 
 on:
   workflow_dispatch:
@@ -11,43 +14,125 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    env:
-      API_BASE_URL: "http://51.91.254.218:8000"   # Mets ta vraie URL ici si besoin
-      AUTH_SERVER_URL: "http://51.91.254.218:8080"
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Login to Docker Hub
-        run: |
-          echo "${{ secrets.DOCKERHUB_ACCESS_TOKEN }}" | docker login \
-            -u ${{ secrets.DOCKERHUB_USERNAME }} \
-            --password-stdin
+      - name: Notify deployment start
+        run: >
+          curl -X POST -H 'Content-type: application/json'
+          --data '{"text":":react: Frontend deployment to OVH started\nCommit: https://github.com/${{ github.repository }}/commit/${{ github.sha }}\nMessage: ${{ github.event.head_commit.message }}"}'
+          ${{ secrets.SLACK_WEBHOOK_URL }}
 
-      - name: Build and Push Docker Image
+      - name: Docker Hub login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
+
+      - name: Generate build tag
+        id: build-number
+        run: echo "BUILD_NUMBER=$(date '+%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
+
+      - name: Build and push frontend image
         run: |
+          cd frontend/ultima-ng-19.0.0
+          
+          # Build avec tag horodaté et latest
           docker build \
+            -t doukoure93/digicrg-app:${{ steps.build-number.outputs.BUILD_NUMBER }} \
             -t doukoure93/digicrg-app:latest \
-            --build-arg API_BASE_URL=$API_BASE_URL \
-            --build-arg AUTH_SERVER_URL=$AUTH_SERVER_URL \
-            --file frontend/ultima-ng-19.0.0/Dockerfile \
-            frontend/ultima-ng-19.0.0/
+            --build-arg API_BASE_URL=http://${{ secrets.OVH_HOST }}:8000 \
+            --build-arg AUTH_SERVER_URL=http://${{ secrets.OVH_HOST }}:8080 \
+            --file Dockerfile \
+            .
+          
+          # Push les deux tags
+          docker push doukoure93/digicrg-app:${{ steps.build-number.outputs.BUILD_NUMBER }}
           docker push doukoure93/digicrg-app:latest
 
-      - name: Deploy to VPS Server
+      - name: Notify image pushed
+        run: >
+          curl -X POST -H 'Content-type: application/json'
+          --data '{"text":":whale: Frontend image pushed to DockerHub!\nTag: ${{ steps.build-number.outputs.BUILD_NUMBER }}"}'
+          ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Deploy to OVH server
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.PROD_HOST }}
-          username: ${{ secrets.PROD_USERNAME }}
+          host: ${{ secrets.OVH_HOST }}
+          username: ${{ secrets.OVH_USER }}
           key: ${{ secrets.PROD_SSH_KEY }}
-          port: ${{ secrets.PROD_PORT || 22 }}
+          port: ${{ secrets.OVH_PORT || 22 }}
           script: |
-            sudo docker pull doukoure93/digicrg-app:latest
+            # Pull la nouvelle image
+            sudo docker pull doukoure93/digicrg-app:${{ steps.build-number.outputs.BUILD_NUMBER }}
+            
+            # Arrêter et supprimer l'ancien conteneur
             sudo docker stop digicrg-app || true
             sudo docker rm digicrg-app || true
+            
+            # Démarrer le nouveau conteneur avec le tag spécifique
             sudo docker run -d \
               --name digicrg-app \
+              --network spring \
               -p 4200:4200 \
+              -e API_BASE_URL=http://${{ secrets.OVH_HOST }}:8000 \
+              -e AUTH_SERVER_URL=http://${{ secrets.OVH_HOST }}:8080 \
               --restart unless-stopped \
-              doukoure93/digicrg-app:latest
+              doukoure93/digicrg-app:${{ steps.build-number.outputs.BUILD_NUMBER }}
+            
+            # Vérifier que le conteneur est bien démarré
+            sleep 10
+            if sudo docker ps | grep -q "digicrg-app.*Up"; then
+              echo "✅ Frontend deployed successfully"
+              sudo docker logs digicrg-app --tail=20
+            else
+              echo "❌ Frontend deployment failed"
+              sudo docker logs digicrg-app --tail=50
+              exit 1
+            fi
+
+      - name: Verify deployment health
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.OVH_HOST }}
+          username: ${{ secrets.OVH_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          port: ${{ secrets.OVH_PORT || 22 }}
+          script: |
+            # Test HTTP response
+            max_attempts=30
+            attempt=0
+            
+            echo "Testing frontend availability..."
+            while [ $attempt -lt $max_attempts ]; do
+              if curl -f -s -o /dev/null -w "%{http_code}" http://localhost:4200 | grep -q "200"; then
+                echo "✅ Frontend is responding correctly"
+                break
+              else
+                echo "Waiting for frontend to be ready... ($attempt/$max_attempts)"
+                sleep 2
+                attempt=$((attempt + 1))
+              fi
+            done
+            
+            if [ $attempt -eq $max_attempts ]; then
+              echo "❌ Frontend health check failed after $max_attempts attempts"
+              sudo docker logs digicrg-app --tail=100
+              exit 1
+            fi
+
+      - name: Final success notification
+        run: >
+          curl -X POST -H 'Content-type: application/json'
+          --data '{"text":":white_check_mark: Frontend deployment to OVH complete!\n:globe_with_meridians: Access at: http://${{ secrets.OVH_HOST }}:4200\n:package: Version: ${{ steps.build-number.outputs.BUILD_NUMBER }}"}'
+          ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Error notification
+        if: failure()
+        run: >
+          curl -X POST -H 'Content-type: application/json'
+          --data '{"text":":rotating_light: Frontend deployment failed!\n:stopwatch: Status: ${{ job.status }}\n:link: Check logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"}'
+          ${{ secrets.SLACK_WEBHOOK_URL }}
