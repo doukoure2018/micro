@@ -443,10 +443,4 @@ public class UserResource {
         return ResponseEntity.ok("This is offline test Migration test2 plus autre");
     }
 
-    @GetMapping("/offLine/test3")
-    public ResponseEntity<String> offLineTest3()
-    {
-        return ResponseEntity.ok("This is offline test Migration test3");
-    }
-
 }
