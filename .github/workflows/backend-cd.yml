@@ -21,9 +21,9 @@ jobs:
       postgres:
         image: postgres:17.2
         env:
-          POSTGRES_USER: manager2711
-          POSTGRES_PASSWORD: manager2711
-          POSTGRES_DB: localdb
+          POSTGRES_USER: user2711
+          POSTGRES_PASSWORD: admin2711
+          POSTGRES_DATABASE: localdb
         ports:
           - 5432:5432
         options:
