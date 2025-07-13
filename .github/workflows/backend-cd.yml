@@ -97,7 +97,7 @@ jobs:
           mvn -ntp -B verify -DskipTests -Ddocker.image.tag=latest jib:build
 
       - name: Build and push E-Banking Service
-        working-directory: ./micro-digiservices/ebankingservice
+        working-directory: ./micro-digiservices/ebanking
         run: |
           mvn -ntp -B verify -DskipTests -Ddocker.image.tag=${{ steps.build-number.outputs.BUILD_NUMBER }} jib:build
           mvn -ntp -B verify -DskipTests -Ddocker.image.tag=latest jib:build
