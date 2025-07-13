@@ -65,26 +65,26 @@ jobs:
       - name: Build and push Discovery Server
         working-directory: ./micro-digiservices/discoveryserver
         run: |
-          mvn -ntp -B verify -Ddocker.image.tag=${{ steps.build-number.outputs.BUILD_NUMBER }} jib:build
-          mvn -ntp -B verify -Ddocker.image.tag=latest jib:build
+          mvn -ntp -B verify -DskipTests -Ddocker.image.tag=${{ steps.build-number.outputs.BUILD_NUMBER }} jib:build
+          mvn -ntp -B verify -DskipTests -Ddocker.image.tag=latest jib:build
 
       - name: Build and push Gateway
         working-directory: ./micro-digiservices/gateway
         run: |
-          mvn -ntp -B verify -Ddocker.image.tag=${{ steps.build-number.outputs.BUILD_NUMBER }} jib:build
-          mvn -ntp -B verify -Ddocker.image.tag=latest jib:build
+          mvn -ntp -B verify -DskipTests -Ddocker.image.tag=${{ steps.build-number.outputs.BUILD_NUMBER }} jib:build
+          mvn -ntp -B verify -DskipTests -Ddocker.image.tag=latest jib:build
 
       - name: Build and push Authorization Server
         working-directory: ./micro-digiservices/authorizationserver
         run: |
-          mvn -ntp -B verify -Ddocker.image.tag=${{ steps.build-number.outputs.BUILD_NUMBER }} jib:build
-          mvn -ntp -B verify -Ddocker.image.tag=latest jib:build
+          mvn -ntp -B verify -DskipTests -Ddocker.image.tag=${{ steps.build-number.outputs.BUILD_NUMBER }} jib:build
+          mvn -ntp -B verify -DskipTests -Ddocker.image.tag=latest jib:build
 
       - name: Build and push User Service
         working-directory: ./micro-digiservices/userservice
         run: |
-          mvn -ntp -B verify -Ddocker.image.tag=${{ steps.build-number.outputs.BUILD_NUMBER }} jib:build
-          mvn -ntp -B verify -Ddocker.image.tag=latest jib:build
+          mvn -ntp -B verify -DskipTests -Ddocker.image.tag=${{ steps.build-number.outputs.BUILD_NUMBER }} jib:build
+          mvn -ntp -B verify -DskipTests -Ddocker.image.tag=latest jib:build
 
       - name: Build and push E-Credit Service
         working-directory: ./micro-digiservices
@@ -93,20 +93,20 @@ jobs:
           mvn -ntp -B install -DskipTests -pl clients
           # Now build ecreditservice
           cd ecreditservice
-          mvn -ntp -B verify -Ddocker.image.tag=${{ steps.build-number.outputs.BUILD_NUMBER }} jib:build
-          mvn -ntp -B verify -Ddocker.image.tag=latest jib:build
+          mvn -ntp -B verify -DskipTests -Ddocker.image.tag=${{ steps.build-number.outputs.BUILD_NUMBER }} jib:build
+          mvn -ntp -B verify -DskipTests -Ddocker.image.tag=latest jib:build
 
       - name: Build and push E-Banking Service
         working-directory: ./micro-digiservices/ebankingservice
         run: |
-          mvn -ntp -B verify -Ddocker.image.tag=${{ steps.build-number.outputs.BUILD_NUMBER }} jib:build
-          mvn -ntp -B verify -Ddocker.image.tag=latest jib:build
+          mvn -ntp -B verify -DskipTests -Ddocker.image.tag=${{ steps.build-number.outputs.BUILD_NUMBER }} jib:build
+          mvn -ntp -B verify -DskipTests -Ddocker.image.tag=latest jib:build
 
       - name: Build and push Notification Service
         working-directory: ./micro-digiservices/notificationservice
         run: |
-          mvn -ntp -B verify -Ddocker.image.tag=${{ steps.build-number.outputs.BUILD_NUMBER }} jib:build
-          mvn -ntp -B verify -Ddocker.image.tag=latest jib:build
+          mvn -ntp -B verify -DskipTests -Ddocker.image.tag=${{ steps.build-number.outputs.BUILD_NUMBER }} jib:build
+          mvn -ntp -B verify -DskipTests -Ddocker.image.tag=latest jib:build
 
       - name: Notify images pushed
         run: >
