@@ -58,6 +58,10 @@ jobs:
         run: echo "BUILD_NUMBER=$(date '+%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
 
       # Build and push each microservice with Maven/Jib
+      - name: Install parent POM
+        working-directory: ./micro-digiservices
+        run: mvn -N install
+
       - name: Build and push Discovery Server
         working-directory: ./micro-digiservices/discoveryserver
         run: |
@@ -83,8 +87,12 @@ jobs:
           mvn -ntp -B verify -Ddocker.image.tag=latest jib:build
 
       - name: Build and push E-Credit Service
-        working-directory: ./micro-digiservices/ecreditservice
+        working-directory: ./micro-digiservices
         run: |
+          # Build clients module first as it's a dependency
+          mvn -ntp -B install -DskipTests -pl clients
+          # Now build ecreditservice
+          cd ecreditservice
           mvn -ntp -B verify -Ddocker.image.tag=${{ steps.build-number.outputs.BUILD_NUMBER }} jib:build
           mvn -ntp -B verify -Ddocker.image.tag=latest jib:build
 
