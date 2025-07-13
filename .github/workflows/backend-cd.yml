@@ -58,9 +58,9 @@ jobs:
         run: echo "BUILD_NUMBER=$(date '+%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
 
       # Build and push each microservice with Maven/Jib
-      - name: Install parent POM
+      - name: Install all modules (including clients)
         working-directory: ./micro-digiservices
-        run: mvn -N install
+        run: mvn -ntp -B install -DskipTests
 
       - name: Build and push Discovery Server
         working-directory: ./micro-digiservices/discoveryserver
