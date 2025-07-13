@@ -39,6 +39,7 @@ services:
       - FLYWAY_VALIDATE_ON_MIGRATE=true
       - FLYWAY_OUT_OF_ORDER=false
       - FLYWAY_CLEAN_DISABLED=true
+      - FLYWAY_BASELINE_VERSION=7
     volumes:
       - ./micro-digiservices/database-migrations/src/main/resources/db/migration:/flyway/sql
     command: migrate
