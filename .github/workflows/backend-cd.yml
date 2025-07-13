@@ -1,132 +1,233 @@
-name: CD - Deploy Microservices
+name: CD - Deploy Microservices to OVH
+
+permissions:
+  contents: write
 
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
       - micro-digiservices/**
+      - docker-compose.yml
+      - .env.prod
       - '!micro-digiservices/frontend/**'
 
-env:
-  REGISTRY: doukoure93 # Ton DockerHub username
-
 jobs:
-  build-and-push:
+  build-and-deploy:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17.2
+        env:
+          POSTGRES_USER: manager2711
+          POSTGRES_PASSWORD: manager2711
+          POSTGRES_DB: localdb
+        ports:
+          - 5432:5432
+        options:
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Notify deployment start
+        run: >
+          curl -X POST -H 'Content-type: application/json'
+          --data '{"text":":rocket: Microservices deployment to OVH started\nCommit: https://github.com/${{ github.repository }}/commit/${{ github.sha }}\nMessage: ${{ github.event.head_commit.message }}"}'
+          ${{ secrets.SLACK_WEBHOOK_URL }}
 
-      - name: Docker login
-        uses: docker/login-action@v2
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+
+      - name: Docker Hub login
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
 
-      # ====== Build & push chaque microservice ======
-      - name: Build & push userservice
-        uses: docker/build-push-action@v5
-        with:
-          context: ./micro-digiservices/userservice
-          file: ./micro-digiservices/userservice/Dockerfile
-          push: true
-          tags: ${{ env.REGISTRY }}/userservice:latest
+      - name: Generate build tag
+        id: build-number
+        run: echo "BUILD_NUMBER=$(date '+%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
 
-      - name: Build & push authorizationserver
-        uses: docker/build-push-action@v5
-        with:
-          context: ./micro-digiservices/authorizationserver
-          file: ./micro-digiservices/authorizationserver/Dockerfile
-          push: true
-          tags: ${{ env.REGISTRY }}/authorizationserver:latest
+      # Build and push each microservice with Maven/Jib
+      - name: Build and push Discovery Server
+        working-directory: ./micro-digiservices/discoveryserver
+        run: |
+          mvn -ntp -B verify -Ddocker.image.tag=${{ steps.build-number.outputs.BUILD_NUMBER }} jib:build
+          mvn -ntp -B verify -Ddocker.image.tag=latest jib:build
 
-      - name: Build & push ecreditservice
-        uses: docker/build-push-action@v5
-        with:
-          context: ./micro-digiservices/ecreditservice
-          file: ./micro-digiservices/ecreditservice/Dockerfile
-          push: true
-          tags: ${{ env.REGISTRY }}/ecreditservice:latest
+      - name: Build and push Gateway
+        working-directory: ./micro-digiservices/gateway
+        run: |
+          mvn -ntp -B verify -Ddocker.image.tag=${{ steps.build-number.outputs.BUILD_NUMBER }} jib:build
+          mvn -ntp -B verify -Ddocker.image.tag=latest jib:build
 
-      - name: Build & push notificationservice
-        uses: docker/build-push-action@v5
-        with:
-          context: ./micro-digiservices/notificationservice
-          file: ./micro-digiservices/notificationservice/Dockerfile
-          push: true
-          tags: ${{ env.REGISTRY }}/notificationservice:latest
+      - name: Build and push Authorization Server
+        working-directory: ./micro-digiservices/authorizationserver
+        run: |
+          mvn -ntp -B verify -Ddocker.image.tag=${{ steps.build-number.outputs.BUILD_NUMBER }} jib:build
+          mvn -ntp -B verify -Ddocker.image.tag=latest jib:build
 
-      - name: Build & push gateway
-        uses: docker/build-push-action@v5
-        with:
-          context: ./micro-digiservices/gateway
-          file: ./micro-digiservices/gateway/Dockerfile
-          push: true
-          tags: ${{ env.REGISTRY }}/gateway:latest
+      - name: Build and push User Service
+        working-directory: ./micro-digiservices/userservice
+        run: |
+          mvn -ntp -B verify -Ddocker.image.tag=${{ steps.build-number.outputs.BUILD_NUMBER }} jib:build
+          mvn -ntp -B verify -Ddocker.image.tag=latest jib:build
 
-      - name: Build & push discoveryserver
-        uses: docker/build-push-action@v5
-        with:
-          context: ./micro-digiservices/discoveryserver
-          file: ./micro-digiservices/discoveryserver/Dockerfile
-          push: true
-          tags: ${{ env.REGISTRY }}/discoveryserver:latest
+      - name: Build and push E-Credit Service
+        working-directory: ./micro-digiservices/ecreditservice
+        run: |
+          mvn -ntp -B verify -Ddocker.image.tag=${{ steps.build-number.outputs.BUILD_NUMBER }} jib:build
+          mvn -ntp -B verify -Ddocker.image.tag=latest jib:build
 
-      - name: Build & push ebankingservice
-        uses: docker/build-push-action@v5
-        with:
-          context: ./micro-digiservices/ebankingservice
-          file: ./micro-digiservices/ebankingservice/Dockerfile
-          push: true
-          tags: ${{ env.REGISTRY }}/ebanking:latest
+      - name: Build and push E-Banking Service
+        working-directory: ./micro-digiservices/ebankingservice
+        run: |
+          mvn -ntp -B verify -Ddocker.image.tag=${{ steps.build-number.outputs.BUILD_NUMBER }} jib:build
+          mvn -ntp -B verify -Ddocker.image.tag=latest jib:build
 
-      # === Ajoute d'autres services ici si besoin ===
+      - name: Build and push Notification Service
+        working-directory: ./micro-digiservices/notificationservice
+        run: |
+          mvn -ntp -B verify -Ddocker.image.tag=${{ steps.build-number.outputs.BUILD_NUMBER }} jib:build
+          mvn -ntp -B verify -Ddocker.image.tag=latest jib:build
 
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build-and-push
+      - name: Notify images pushed
+        run: >
+          curl -X POST -H 'Content-type: application/json'
+          --data '{"text":":whale: All microservices images pushed to DockerHub!\nTag: ${{ steps.build-number.outputs.BUILD_NUMBER }}"}'
+          ${{ secrets.SLACK_WEBHOOK_URL }}
 
-    steps:
-      - name: Deploy on VPS (SSH)
+      # Deploy to OVH server - Tout intégré ici
+      - name: Deploy to OVH server
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.PROD_HOST }}
-          username: ${{ secrets.PROD_USERNAME }}
+          host: ${{ secrets.OVH_HOST }}
+          username: ${{ secrets.OVH_USER }}
           key: ${{ secrets.PROD_SSH_KEY }}
-          port: ${{ secrets.PROD_PORT || 22 }}
           script: |
-            set -e
-            cd ~/microservices
+            # Se déplacer dans le répertoire du projet
+            cd ~/microservices || mkdir -p ~/microservices && cd ~/microservices
+            
+            # Cloner ou mettre à jour le repository
+            if [ -d ".git" ]; then
+              echo "📥 Pulling latest changes..."
+              git pull origin main
+            else
+              echo "📥 Cloning repository..."
+              git clone https://github.com/${{ github.repository }} .
+              git checkout main
+            fi
+            
+            # Créer les répertoires nécessaires
+            echo "📁 Creating required directories..."
+            mkdir -p logs/{discoveryserver,gateway,authorizationserver,userservice,ecreditservice,ebankingservice,notificationservice,frontend}
+            mkdir -p keys
+            
+            # Vérifier que .env.prod existe
+            if [ ! -f .env.prod ]; then
+              echo "⚠️ Creating .env.prod from template..."
+              cp .env.docker .env.prod || echo "No template found, please create .env.prod manually"
+            fi
+            
+            # Créer le réseau Docker si nécessaire
+            sudo docker network inspect spring >/dev/null 2>&1 || sudo docker network create spring
+            
+            # Arrêter tous les conteneurs existants
+            echo "🛑 Stopping existing services..."
+            sudo docker compose --env-file .env.prod down || true
+            
+            # Nettoyer
+            echo "🧹 Cleaning up..."
+            sudo docker system prune -f
+            
+            # Démarrer PostgreSQL et Kafka en premier
+            echo "🏗️ Starting infrastructure services..."
+            sudo docker compose --env-file .env.prod up -d postgresdb zookeeper kafka
+            
+            # Attendre que PostgreSQL soit prêt
+            echo "⏳ Waiting for PostgreSQL..."
+            count=0
+            until sudo docker compose --env-file .env.prod exec -T postgresdb pg_isready -U manager2711 || [ $count -eq 30 ]; do
+              echo "Waiting for PostgreSQL... ($count/30)"
+              sleep 2
+              count=$((count + 1))
+            done
+            
+            if [ $count -eq 30 ]; then
+              echo "❌ PostgreSQL failed to start!"
+              exit 1
+            fi
+            
+            # Exécuter les migrations Flyway
+            echo "🗄️ Running database migrations..."
+            sudo docker compose --env-file .env.prod --profile migration up flyway-migrations || echo "Migrations completed or already applied"
+            
+            # Démarrer Discovery Server en premier
+            echo "🔍 Starting Discovery Server..."
+            sudo docker compose --env-file .env.prod up -d discoveryserver
+            sleep 30
+            
+            # Démarrer Gateway et Authorization Server
+            echo "🔐 Starting Gateway and Authorization Server..."
+            sudo docker compose --env-file .env.prod up -d gateway authorizationserver
+            sleep 20
+            
+            # Démarrer tous les autres microservices
+            echo "🚀 Starting all microservices..."
+            sudo docker compose --env-file .env.prod up -d
+            
+            # Attendre le démarrage complet
+            echo "⏳ Waiting for all services to start..."
+            sleep 60
+            
+            # Vérifier l'état des services
+            echo "🏥 Checking services health..."
+            services=("postgresdb" "kafka" "discoveryserver" "gateway" "authorizationserver" "userservice" "ecreditservice" "ebankingservice" "notificationservice")
+            all_healthy=true
+            
+            for service in "${services[@]}"; do
+              if sudo docker compose --env-file .env.prod ps | grep -q "$service.*Up"; then
+                echo "✅ $service is running"
+              else
+                echo "❌ $service is not running"
+                all_healthy=false
+              fi
+            done
+            
+            # Afficher les logs si problème
+            if [ "$all_healthy" = false ]; then
+              echo "⚠️ Some services failed. Recent logs:"
+              sudo docker compose --env-file .env.prod logs --tail=100
+              exit 1
+            fi
+            
+            # Afficher les URLs d'accès
+            echo ""
+            echo "🌐 Deployment successful! Services available at:"
+            echo "   • Gateway: http://${{ secrets.OVH_HOST }}:8000"
+            echo "   • Discovery: http://${{ secrets.OVH_HOST }}:5002"
+            echo "   • Auth Server: http://${{ secrets.OVH_HOST }}:8080"
+            echo "   • Frontend: http://${{ secrets.OVH_HOST }}:4200"
+            echo ""
 
-            echo "Pulling all images..."
-            docker pull doukoure93/userservice:latest
-            docker pull doukoure93/authorizationserver:latest
-            docker pull doukoure93/ecreditservice:latest
-            docker pull doukoure93/notificationservice:latest
-            docker pull doukoure93/gateway:latest
-            docker pull doukoure93/discoveryserver:latest
-            docker pull doukoure93/ebanking:latest
+      - name: Final success notification
+        run: >
+          curl -X POST -H 'Content-type: application/json'
+          --data '{"text":":white_check_mark: Microservices deployment to OVH complete!\n:globe_with_meridians: Services:\n• Gateway: http://${{ secrets.OVH_HOST }}:8000\n• Discovery: http://${{ secrets.OVH_HOST }}:5002\n• Auth Server: http://${{ secrets.OVH_HOST }}:8080\n• Frontend: http://${{ secrets.OVH_HOST }}:4200\n:rocket: Build tag: ${{ steps.build-number.outputs.BUILD_NUMBER }}"}'
+          ${{ secrets.SLACK_WEBHOOK_URL }}
 
-            echo "Stop stack"
-            docker compose --env-file .env.prod down
-            sleep 5
-
-            echo "Force stop all containers (clean slate)..."
-            docker kill $(docker ps -q) || true
-            docker rm $(docker ps -a -q) || true
-
-            echo "Remove ALL unused networks..."
-            docker network prune -f
-
-            echo "DB migrations"
-            docker compose --env-file .env.prod --profile migration up flyway-migrations
-
-            echo "Start stack"
-            docker compose --env-file .env.prod up -d
-
-            echo "Deployment done! 🚀"
+      - name: Error notification
+        if: failure()
+        run: >
+          curl -X POST -H 'Content-type: application/json'
+          --data '{"text":":rotating_light: OVH microservices deployment failed!\n:stopwatch: Status: ${{ job.status }}\n:link: Check logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"}'
+          ${{ secrets.SLACK_WEBHOOK_URL }}
