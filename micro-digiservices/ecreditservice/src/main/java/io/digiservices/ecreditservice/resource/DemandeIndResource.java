@@ -404,7 +404,7 @@ public class DemandeIndResource {
                                                            HttpServletRequest request)
     {
         return created(getUri()).body(getResponse(request,emptyMap(),
-                "This is a test for migration", OK));
+                "This is a test for migration and CD frontend", OK));
     }
 
     private URI getUri() {
