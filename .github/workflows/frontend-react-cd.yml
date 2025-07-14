@@ -58,7 +58,7 @@ jobs:
           --data '{"text":":whale: Frontend image pushed to DockerHub!\nTag: ${{ steps.build-number.outputs.BUILD_NUMBER }}"}'
           ${{ secrets.SLACK_WEBHOOK_URL }}
 
-      - name: Deploy to OVH server
+      - name: Deploy frontend to OVH server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.OVH_HOST }}
@@ -66,36 +66,15 @@ jobs:
           key: ${{ secrets.PROD_SSH_KEY }}
           port: ${{ secrets.OVH_PORT || 22 }}
           script: |
-            # Ensure network exists (run in the same SSH session)
-            sudo docker network inspect spring >/dev/null 2>&1 || sudo docker network create spring
-
-            # Pull the new image
-            sudo docker pull doukoure93/digicrg-app:${{ steps.build-number.outputs.BUILD_NUMBER }}
-
-            # Stop and remove old container
-            sudo docker stop digicrg-app || true
-            sudo docker rm digicrg-app || true
-
-            # Run the new container
-            sudo docker run -d \
-              --name digicrg-app \
-              --network spring \
-              -p 4200:4200 \
-              -e API_BASE_URL=http://${{ secrets.OVH_HOST }}:8000 \
-              -e AUTH_SERVER_URL=http://${{ secrets.OVH_HOST }}:8080 \
-              --restart unless-stopped \
-              doukoure93/digicrg-app:${{ steps.build-number.outputs.BUILD_NUMBER }}
-
-            # Wait and check
-            sleep 10
-            if sudo docker ps | grep -q "digicrg-app.*Up"; then
-              echo "✅ Frontend deployed successfully"
-              sudo docker logs digicrg-app --tail=20
-            else
-              echo "❌ Frontend deployment failed"
-              sudo docker logs digicrg-app --tail=50
-              exit 1
-            fi
+            cd ~/microservices  # adapte si ton compose est ailleurs !
+            # Pull juste l'image frontend (les autres restent stables)
+            sudo docker compose pull digicrg-app
+            # Redémarre uniquement le service frontend
+            sudo docker compose up -d digicrg-app
+            sudo docker compose ps
+            # Vérifie que tout est bien UP
+            sleep 5
+            sudo docker compose logs --tail=30 digicrg-app
       
 
       - name: Verify deployment health
