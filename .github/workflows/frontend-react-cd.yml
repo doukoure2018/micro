@@ -66,13 +66,14 @@ jobs:
           key: ${{ secrets.PROD_SSH_KEY }}
           port: ${{ secrets.OVH_PORT || 22 }}
           script: |
-            cd ~/microservices  # adapte si ton compose est ailleurs !
-            # Pull juste l'image frontend (les autres restent stables)
-            sudo docker compose pull digicrg-app
-            # Redémarre uniquement le service frontend
-            sudo docker compose up -d digicrg-app
+            cd ~/microservices
+            # Supprimer l'ancien container frontend si il existe (Dead/Exited)
+            sudo docker rm -f digicrg-app || true
+            # Met à jour l'image frontend
+            sudo docker compose --env-file .env.prod pull digicrg-app
+            # Maintenant on relance proprement
+            sudo docker compose --env-file .env.prod up -d digicrg-app
             sudo docker compose ps
-            # Vérifie que tout est bien UP
             sleep 5
             sudo docker compose logs --tail=30 digicrg-app
       
