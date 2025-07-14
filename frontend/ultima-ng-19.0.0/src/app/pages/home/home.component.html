@@ -4,8 +4,9 @@
         <p-progress-spinner ariaLabel="Verifying account" [style]="{'width': '5rem', 'height': '5rem'}" strokeWidth="4"
             animationDuration=".5s" class="text-primary" />
     </div>
-    <h2 class="text-2xl font-semibold mb-2">Verifying account...</h2>
-    <p class="text-surface-600 dark:text-surface-300">Please wait while we validate your credentials</p>
+    <h2 class="text-2xl font-semibold mb-2">Vérification du compte...</h2>
+    <p class="text-surface-600 dark:text-surface-300">Veuillez patienter pendant que nous vérifions vos identifiants.
+    </p>
 </div>
 } @else {
 <div class="bg-surface-50 dark:bg-surface-950">
@@ -41,8 +42,6 @@
                                     class="p-button-sm">
                                 </p-button>
                                 <p-menu #demandesMenu [model]="demandesItems" [popup]="true"></p-menu>
-
-
                             </div>
                         </div>
 
