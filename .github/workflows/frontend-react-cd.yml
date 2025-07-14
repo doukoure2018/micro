@@ -66,13 +66,15 @@ jobs:
           key: ${{ secrets.PROD_SSH_KEY }}
           port: ${{ secrets.OVH_PORT || 22 }}
           script: |
+            sudo docker network inspect spring >/dev/null 2>&1 || sudo docker network create spring
+
             # Pull la nouvelle image
             sudo docker pull doukoure93/digicrg-app:${{ steps.build-number.outputs.BUILD_NUMBER }}
-            
+
             # Arrêter et supprimer l'ancien conteneur
             sudo docker stop digicrg-app || true
             sudo docker rm digicrg-app || true
-            
+
             # Démarrer le nouveau conteneur avec le tag spécifique
             sudo docker run -d \
               --name digicrg-app \
@@ -82,7 +84,7 @@ jobs:
               -e AUTH_SERVER_URL=http://${{ secrets.OVH_HOST }}:8080 \
               --restart unless-stopped \
               doukoure93/digicrg-app:${{ steps.build-number.outputs.BUILD_NUMBER }}
-            
+
             # Vérifier que le conteneur est bien démarré
             sleep 10
             if sudo docker ps | grep -q "digicrg-app.*Up"; then
@@ -93,6 +95,7 @@ jobs:
               sudo docker logs digicrg-app --tail=50
               exit 1
             fi
+      
 
       - name: Verify deployment health
         uses: appleboy/ssh-action@v1.0.3
