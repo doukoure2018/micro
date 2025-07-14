@@ -164,7 +164,7 @@ jobs:
             # Attendre que PostgreSQL soit prêt
             echo "⏳ Waiting for PostgreSQL..."
             count=0
-            until sudo docker compose --env-file .env.prod exec -T postgresdb pg_isready -U manager2711 || [ $count -eq 30 ]; do
+            until sudo docker compose --env-file .env.prod exec -T postgresdb pg_isready -U user2711 || [ $count -eq 30 ]; do
               echo "Waiting for PostgreSQL... ($count/30)"
               sleep 2
               count=$((count + 1))
