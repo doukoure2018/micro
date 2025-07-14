@@ -48,4 +48,11 @@ COPY default.conf /etc/nginx/conf.d/default.conf
 HEALTHCHECK --interval=30s --timeout=3s \
   CMD curl --fail http://localhost:4200 || exit 1
 
+# 11. Add wait-for-gateway entrypoint script
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+# 12. Entrypoint
+ENTRYPOINT ["/docker-entrypoint.sh"]
+
 EXPOSE 4200
