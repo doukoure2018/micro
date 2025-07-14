@@ -66,16 +66,17 @@ jobs:
           key: ${{ secrets.PROD_SSH_KEY }}
           port: ${{ secrets.OVH_PORT || 22 }}
           script: |
+            # Ensure network exists (run in the same SSH session)
             sudo docker network inspect spring >/dev/null 2>&1 || sudo docker network create spring
 
-            # Pull la nouvelle image
+            # Pull the new image
             sudo docker pull doukoure93/digicrg-app:${{ steps.build-number.outputs.BUILD_NUMBER }}
 
-            # Arrêter et supprimer l'ancien conteneur
+            # Stop and remove old container
             sudo docker stop digicrg-app || true
             sudo docker rm digicrg-app || true
 
-            # Démarrer le nouveau conteneur avec le tag spécifique
+            # Run the new container
             sudo docker run -d \
               --name digicrg-app \
               --network spring \
@@ -85,7 +86,7 @@ jobs:
               --restart unless-stopped \
               doukoure93/digicrg-app:${{ steps.build-number.outputs.BUILD_NUMBER }}
 
-            # Vérifier que le conteneur est bien démarré
+            # Wait and check
             sleep 10
             if sudo docker ps | grep -q "digicrg-app.*Up"; then
               echo "✅ Frontend deployed successfully"
