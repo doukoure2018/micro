@@ -17,6 +17,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.internal.bytebuddy.pool.TypePool;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -396,6 +397,14 @@ public class DemandeIndResource {
         return created(getUri()).body(getResponse(request,Map.of(
                         "usuarios",ebankingClient.getListUsuariosByCodAgenciaOffLine(codAgencia,codPuesto,indActivo)),
                 "Liste des usager actifs dans saf", OK));
+    }
+
+    @GetMapping("/test/migration")
+    public ResponseEntity<Response> test(@NotNull Authentication authentication,
+                                                           HttpServletRequest request)
+    {
+        return created(getUri()).body(getResponse(request,emptyMap(),
+                "This is a test for migration", OK));
     }
 
     private URI getUri() {
