@@ -6,6 +6,7 @@ import { Entreprise } from './entreprise';
 import { MotifAnalyse } from './motif.analyse';
 import { Personnecaution } from './personnecaution';
 import { Promoteur } from './promoteur';
+import { IUser } from './user';
 
 export interface ResumeCredit {
     success?: boolean;
@@ -20,4 +21,5 @@ export interface ResumeCredit {
     demande_credit?: DemandeCredit;
     personnes_caution: Personnecaution[];
     motifs_analyses?: MotifAnalyse[];
+    utilisateur?: IUser;
 }
