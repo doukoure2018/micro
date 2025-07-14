@@ -150,6 +150,7 @@ export class ResumeCreditComponent {
     // MÉTHODE CORRIGÉE : Charger les informations administratives
     chargerInfoAdministrative(): void {
         const demande = this.state().resumeCredit?.demande_credit;
+        const userInfo = this.state().resumeCredit?.utilisateur;
 
         // CORRECTION : Vérification explicite pour accepter 0 comme valeur valide
         if (!demande || demande.delegation_id == null || demande.agence_id == null || demande.point_vente_id == null || demande.user_id == null) {
@@ -1780,6 +1781,7 @@ export class ResumeCreditComponent {
      */
     getDemandeCreditInfosComplementaires(): TableDataItem[] {
         const infoAdmin = this.state().infoAdministrative;
+        const infoUser = this.state().resumeCredit?.utilisateur;
         const demande = this.state().resumeCredit?.demande_credit;
 
         if (!infoAdmin || !demande) {
@@ -1792,7 +1794,6 @@ export class ResumeCreditComponent {
             ];
         }
 
-        // CORRECTION : Utilise les vraies propriétés de l'API
         return [
             {
                 label: 'Délégation',
@@ -1800,15 +1801,16 @@ export class ResumeCreditComponent {
             },
             {
                 label: 'Agence',
-                value: infoAdmin.agenceDto.libele! // "libele" au lieu de "nom"
+                value: infoAdmin.agenceDto.libele!
             },
             {
                 label: 'Point de vente',
-                value: `${infoAdmin.pointVenteDto.libele} (${infoAdmin.pointVenteDto.code})` // "libele" et "code"
+                value: `${infoAdmin.pointVenteDto.libele} (${infoAdmin.pointVenteDto.code})`
             },
             {
                 label: 'Utilisateur traitant',
-                value: `${infoAdmin.user.firstName} ${infoAdmin.user.lastName} - ${infoAdmin.user.role}` // "firstName", "lastName", "role"
+                // CORRECTION : Utilise les propriétés réelles des données + casting vers any pour éviter les erreurs TypeScript
+                value: `${(infoUser as any)?.first_name || ''} ${(infoUser as any)?.last_name || ''} - ${(infoUser as any)?.username || 'N/A'}`
             }
         ];
     }

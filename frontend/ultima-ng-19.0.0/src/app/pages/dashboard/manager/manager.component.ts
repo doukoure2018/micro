@@ -134,10 +134,10 @@ export class ManagerComponent {
         }).format(amount);
     }
 
-    viewDetailDemandeCredit(demandeId: number): void {
+    viewDetailDemandeCredit(demandeId: number, userId: number): void {
         console.log('Demande ID:', demandeId);
-        console.log('User ID:', this.user?.userId);
-        this.router.navigate([`dashboards/credit/${this.user?.userId}/resume-credit/${demandeId}`]);
+        //console.log('User ID:', userId);
+        this.router.navigate([`dashboards/credit/${userId}/resume-credit/${demandeId}`]);
     }
 
     newAnalyseCredit(userId: number): void {
