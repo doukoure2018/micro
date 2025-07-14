@@ -399,7 +399,7 @@ public class DemandeIndResource {
                 "Liste des usager actifs dans saf", OK));
     }
 
-    @GetMapping("/test/migration")
+    @GetMapping("/testMigration")
     public ResponseEntity<Response> test(@NotNull Authentication authentication,
                                                            HttpServletRequest request)
     {
