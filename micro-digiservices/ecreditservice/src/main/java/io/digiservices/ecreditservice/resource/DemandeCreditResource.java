@@ -237,6 +237,12 @@ public class DemandeCreditResource {
                 OK));
     }
 
+
+    /**
+     * Analyse de credit
+     * @return
+     */
+
     private URI getUri() {
         return URI.create("/credit/demandeCreditId");
     }

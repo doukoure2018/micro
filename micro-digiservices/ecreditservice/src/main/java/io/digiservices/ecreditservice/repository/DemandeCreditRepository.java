@@ -22,4 +22,10 @@ public interface DemandeCreditRepository {
     Map<String, Object> obtenirAnalyseComplete(Integer demandeCreditId);
 
     Boolean mettreAJourDemande(DemandeUpdateRequest request, String cautionsJson);
+
+
+    // analyse de credit
+
+
+
 }
