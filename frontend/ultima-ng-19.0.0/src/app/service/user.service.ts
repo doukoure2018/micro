@@ -210,6 +210,8 @@ export class UserService {
 
     updateAnalyseComplet$ = (demandeUpdateRequest: DemandeUpdateRequest) => <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/analyseComplet/update`, demandeUpdateRequest).pipe(tap(console.log), catchError(this.handleError));
 
+    // Dans votre service UserService, ajouter ces méthodes :
+
     handleError = (httpErrorResponse: HttpErrorResponse): Observable<never> => {
         console.log(httpErrorResponse);
         let error: string = 'An error occurred. Please try again.';
