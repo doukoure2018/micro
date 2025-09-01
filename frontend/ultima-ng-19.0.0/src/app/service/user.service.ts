@@ -14,6 +14,9 @@ import { Delegation } from '@/interface/delegation';
 import { Agence } from '@/interface/agence';
 import { MotifAnalyse } from '@/interface/motif.analyse';
 import { DemandeUpdateRequest } from '@/interface/DemandeUpdateRequest';
+import { CreateStockDto } from '@/interface/CreateStockDto';
+import { DemandeIndividuel } from '@/interface/demande-individuel.interface';
+import { Avis } from '@/interface/avis';
 
 @Injectable()
 export class UserService {
@@ -83,7 +86,7 @@ export class UserService {
 
     getTypeCreditos$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ebanking/typeCredit`).pipe(tap(console.log), catchError(this.handleError));
 
-    addDemandeInd$ = (demandeIndividuel: any) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/addDemandeInd`, demandeIndividuel).pipe(tap(console.log), catchError(this.handleError));
+    //addDemandeInd$ = (demandeIndividuel: any) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/addDemandeInd`, demandeIndividuel).pipe(tap(console.log), catchError(this.handleError));
 
     getAllAgencesByDelegationId$ = (delegationId: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ebanking/agences/${delegationId}`).pipe(tap(console.log), catchError(this.handleError));
 
@@ -101,14 +104,14 @@ export class UserService {
 
     getInformationAgence$ = (agenceId: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ebanking/agence/${agenceId}`).pipe(tap(console.log), catchError(this.handleError));
 
-    getInfoPointService$ = (pointvente_id: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ebanking/pointvente/${pointvente_id}`).pipe(tap(console.log), catchError(this.handleError));
+    //getInfoPointService$ = (pointvente_id: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ebanking/pointvente/${pointvente_id}`).pipe(tap(console.log), catchError(this.handleError));
 
     getAllDemandeCreditByDate$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/selection`).pipe(tap(console.log), catchError(this.handleError));
 
     // add document pour la selection
-    addDocuments$ = (demandeindividuel_id: number, formData: FormData) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/image/${demandeindividuel_id}`, formData).pipe(tap(console.log), catchError(this.handleError));
+    addDocuments$ = (demandeindividuelId: number, formData: FormData) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/image/${demandeindividuelId}`, formData).pipe(tap(console.log), catchError(this.handleError));
 
-    getAllDocuments$ = (demandeindividuel_id: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/images/${demandeindividuel_id}`).pipe(tap(console.log), catchError(this.handleError));
+    getAllDocuments$ = (demandeindividuelId: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/images/${demandeindividuelId}`).pipe(tap(console.log), catchError(this.handleError));
 
     deleteDocument$ = (selection_id: number, demandeindividuel_id: number) =>
         <Observable<IResponse>>this.http.delete<IResponse>(`${this.server}/ecredit/${selection_id}/${demandeindividuel_id}/delecteDocument`).pipe(tap(console.log), catchError(this.handleError));
@@ -210,7 +213,386 @@ export class UserService {
 
     updateAnalyseComplet$ = (demandeUpdateRequest: DemandeUpdateRequest) => <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/analyseComplet/update`, demandeUpdateRequest).pipe(tap(console.log), catchError(this.handleError));
 
-    // Dans votre service UserService, ajouter ces méthodes :
+    // Services pour la gestion des stocks
+    createStock$ = (stockDto: CreateStockDto) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/stock`, stockDto).pipe(tap(console.log), catchError(this.handleError));
+
+    updateStock$ = (idCmd: number, stockDto: any) => <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/stock/${idCmd}`, stockDto).pipe(tap(console.log), catchError(this.handleError));
+
+    updateStockStatus$ = (idCmd: number, statusDto: any) => <Observable<IResponse>>this.http.patch<IResponse>(`${this.server}/ecredit/stock/${idCmd}/status`, statusDto).pipe(tap(console.log), catchError(this.handleError));
+
+    getAllStockEncours$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/stock/encours`).pipe(tap(console.log), catchError(this.handleError));
+
+    getAllStock$ = (page: number = 0, size: number = 10) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/stock?page=${page}&size=${size}`).pipe(tap(console.log), catchError(this.handleError));
+
+    getStockById$ = (idCmd: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/stock/${idCmd}`).pipe(tap(console.log), catchError(this.handleError));
+
+    getStockByUser$ = (userId: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/stock/user/${userId}`).pipe(tap(console.log), catchError(this.handleError));
+
+    getStockStatistics$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/stock/statistics`).pipe(tap(console.log), catchError(this.handleError));
+
+    approveStock$ = (idCmd: number, traitePar: number, observations?: string) =>
+        <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/stock/${idCmd}/approve?traitePar=${traitePar}${observations ? '&observations=' + observations : ''}`, {}).pipe(tap(console.log), catchError(this.handleError));
+
+    rejectStock$ = (idCmd: number, traitePar: number, motif: string, observations?: string) =>
+        <Observable<IResponse>>(
+            this.http.post<IResponse>(`${this.server}/ecredit/stock/${idCmd}/reject?traitePar=${traitePar}&motif=${motif}${observations ? '&observations=' + observations : ''}`, {}).pipe(tap(console.log), catchError(this.handleError))
+        );
+
+    getStockEncoursByDelegation$ = (delegationId: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/stock/encours/${delegationId}`).pipe(tap(console.log), catchError(this.handleError));
+
+    getCategoriesStock$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/listCategorieStock`).pipe(tap(console.log), catchError(this.handleError));
+
+    /**
+     * Valider une commande
+     */
+    validateCommand(idCmd: number, observations?: string): Observable<any> {
+        const body = {
+            stateValidation: 'VALIDER',
+            observations: observations || null
+        };
+
+        return this.http.put(`${this.server}/ecredit/update/stock/${idCmd}`, body);
+    }
+
+    /**
+     * Rejeter une commande
+     */
+    rejectCommand(idCmd: number, motif: string, observations?: string): Observable<any> {
+        const body = {
+            stateValidation: 'REJETER',
+            motif: motif,
+            observations: observations || null
+        };
+
+        return this.http.put(`${this.server}/ecredit/update/stock/${idCmd}`, body);
+    }
+
+    /**
+     * Alternative: Endpoints séparés si vous les préférez
+     */
+    validateCommandDirect(idCmd: number, observations?: string): Observable<any> {
+        const body = observations ? { observations } : {};
+        return this.http.put(`${this.server}/ecredit/validate/${idCmd}`, body);
+    }
+
+    rejectCommandDirect(idCmd: number, motif: string, observations?: string): Observable<any> {
+        const body = {
+            motif: motif,
+            observations: observations || null
+        };
+        return this.http.put(`${this.server}/ecredit/reject/${idCmd}`, body);
+    }
+
+    // Analyse de credit
+    getDossierCredit$ = (dossierId: number): Observable<IResponse> => this.http.get<IResponse>(`${this.server}/ecredit/dossiers/${dossierId}`).pipe(tap(console.log), catchError(this.handleError));
+
+    getClient$ = (clientId: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/clients/${clientId}`).pipe(tap(console.log), catchError(this.handleError));
+
+    getClients$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/clients`).pipe(tap(console.log), catchError(this.handleError));
+
+    createClient$ = (clientData: any) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/clients`, clientData).pipe(tap(console.log), catchError(this.handleError));
+    // Prévisions de trésorerie
+
+    // ✅ Initialiser les prévisions pour un dossier
+    initializePrevisions$ = (dossierId: number, nbMois: number = 12): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/dossiers/${dossierId}/previsions/init?nbMois=${nbMois}`, {}).pipe(tap(console.log), catchError(this.handleError));
+
+    // ✅ Récupérer UNE prévision par son ID
+    getPrevisionById$ = (previsionId: number): Observable<IResponse> => this.http.get<IResponse>(`${this.server}/ecredit/previsions/${previsionId}`).pipe(tap(console.log), catchError(this.handleError));
+
+    getPrevisionsTresorerie$ = (dossierId: number): Observable<IResponse> => this.http.get<IResponse>(`${this.server}/ecredit/dossiers/${dossierId}/previsions`).pipe(tap(console.log), catchError(this.handleError));
+
+    updatePrevisionsTresorerie$ = (dossierId: number, previsionData: any) => <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/previsions/${dossierId}`, previsionData).pipe(tap(console.log), catchError(this.handleError));
+
+    importPrevisionsTresorerie$ = (dossierId: number, formData: FormData) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/previsions/${dossierId}/import`, formData).pipe(tap(console.log), catchError(this.handleError));
+
+    exportPrevisionsTresorerie$ = (dossierId: number) => <Observable<Blob>>this.http.get(`${this.server}/ecredit/previsions/${dossierId}/export`, { responseType: 'blob' }).pipe(catchError(this.handleError));
+
+    analyserCapaciteRemboursement$ = (dossierId: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/previsions/${dossierId}/analyse`).pipe(tap(console.log), catchError(this.handleError));
+
+    getCategoriesEncaissement$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/categories/encaissement`).pipe(tap(console.log), catchError(this.handleError));
+
+    getCategoriesDecaissement$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/categories/decaissement`).pipe(tap(console.log), catchError(this.handleError));
+
+    // user.service.ts
+    savePrevisionsTresorerie$ = (dossierId: number, previsions: any): Observable<IResponse> => {
+        if (!dossierId || dossierId === 0) {
+            return throwError(() => new Error('ID du dossier invalide'));
+        }
+
+        return this.http.post<IResponse>(`${this.server}/ecredit/dossiers/${dossierId}/previsions`, previsions).pipe(tap(console.log), catchError(this.handleError));
+    };
+
+    // Créer un dossier de crédit
+    createDossierCredit$ = (dossierData: any): Observable<IResponse> => this.http.post<IResponse>(`${this.server}/ecredit/dossiers`, dossierData).pipe(tap(console.log), catchError(this.handleError));
+    // Récupérer les dossiers d'un client
+    getDossiersByClient$ = (clientId: number): Observable<IResponse> => this.http.get<IResponse>(`${this.server}/ecredit/clients/${clientId}/dossiers`).pipe(tap(console.log), catchError(this.handleError));
+    // Récupérer les lignes d'encaissement
+    getLignesEncaissement$ = (previsionId: number): Observable<IResponse> => this.http.get<IResponse>(`${this.server}/ecredit/previsions/${previsionId}/encaissements`).pipe(tap(console.log), catchError(this.handleError));
+
+    // Récupérer les lignes de décaissement
+    getLignesDecaissement$ = (previsionId: number): Observable<IResponse> => this.http.get<IResponse>(`${this.server}/ecredit/previsions/${previsionId}/decaissements`).pipe(tap(console.log), catchError(this.handleError));
+
+    saveEncaissements$ = (previsionId: number, lignes: any[]): Observable<IResponse> => this.http.post<IResponse>(`${this.server}/ecredit/previsions/${previsionId}/encaissements`, lignes).pipe(tap(console.log), catchError(this.handleError));
+
+    saveDecaissements$ = (previsionId: number, lignes: any[]): Observable<IResponse> => this.http.post<IResponse>(`${this.server}/ecredit/previsions/${previsionId}/decaissements`, lignes).pipe(tap(console.log), catchError(this.handleError));
+
+    /**
+     * Créer une nouvelle demande individuelle avec garanties
+     * Utilise la procédure stockée pour insérer la demande et ses garanties
+     * @param demandeIndividuel - Objet contenant toutes les informations de la demande et les garanties
+     * @returns Observable<IResponse> avec l'ID de la demande créée
+     */
+    addDemandeIndWithGaranties$ = (demandeIndividuel: DemandeIndividuel): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/addDemandeInd`, demandeIndividuel).pipe(
+            tap((response) => {
+                console.log('Demande avec garanties créée:', response);
+                if (response.data && response.data.demandeId) {
+                    console.log('ID de la demande créée:', response.data.demandeId);
+                }
+            }),
+            catchError(this.handleError)
+        );
+
+    /**
+     * Récupérer une demande individuelle avec toutes ses garanties
+     * @param demandeId - ID de la demande à récupérer
+     * @returns Observable<IResponse> contenant la demande complète avec ses garanties
+     */
+    getDemandeWithGaranties$ = (demandeId: number): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/${demandeId}`).pipe(
+            tap((response) => {
+                console.log('Demande avec garanties récupérée:', response);
+                if (response.data && response.data.demandeIndividuel) {
+                    const garanties = response.data.demandeIndividuel.garanties;
+                    console.log(`Nombre de garanties: ${garanties ? garanties.length : 0}`);
+                }
+            }),
+            catchError(this.handleError)
+        );
+
+    /**
+     * Récupérer toutes les demandes en attente avec leurs garanties
+     * @param agenceId - ID de l'agence (optionnel)
+     * @param pointventeId - ID du point de vente (optionnel)
+     * @returns Observable<IResponse> contenant la liste des demandes
+     */
+    getDemandesEnAttenteWithGaranties$ = (agenceId?: number, pointventeId?: number): Observable<IResponse> => {
+        let url = `${this.server}/ecredit/demandes/attente`;
+        const params: string[] = [];
+
+        if (agenceId) {
+            params.push(`agenceId=${agenceId}`);
+        }
+        if (pointventeId) {
+            params.push(`pointventeId=${pointventeId}`);
+        }
+
+        if (params.length > 0) {
+            url += `?${params.join('&')}`;
+        }
+
+        return this.http.get<IResponse>(url).pipe(
+            tap((response) => console.log('Demandes en attente avec garanties:', response)),
+            catchError(this.handleError)
+        );
+    };
+
+    /**
+     * Mettre à jour le statut d'une demande avec garanties
+     * @param demandeId - ID de la demande
+     * @param statut - Nouveau statut
+     * @param codUsuarios - Code de l'utilisateur effectuant la mise à jour
+     * @returns Observable<IResponse>
+     */
+    updateStatutDemandeWithGaranties$ = (demandeId: number, statut: string, codUsuarios: string): Observable<IResponse> =>
+        this.http.put<IResponse>(`${this.server}/ecredit/demandes/${demandeId}/statut?statut=${statut}&codUsuarios=${codUsuarios}`, {}).pipe(
+            tap((response) => console.log('Statut de la demande mis à jour:', response)),
+            catchError(this.handleError)
+        );
+
+    /**
+     * Valider une demande avec ses garanties
+     * @param demandeId - ID de la demande à valider
+     * @returns Observable<IResponse>
+     */
+    validerDemandeWithGaranties$ = (demandeId: number): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/demandes/${demandeId}/valider`, {}).pipe(
+            tap((response) => console.log('Demande validée:', response)),
+            catchError(this.handleError)
+        );
+
+    /**
+     * Rejeter une demande avec ses garanties
+     * @param demandeId - ID de la demande à rejeter
+     * @param motif - Motif du rejet
+     * @returns Observable<IResponse>
+     */
+    rejeterDemandeWithGaranties$ = (demandeId: number, motif: string): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/demandes/${demandeId}/rejeter`, { motif }).pipe(
+            tap((response) => console.log('Demande rejetée:', response)),
+            catchError(this.handleError)
+        );
+
+    /**
+     * Obtenir les statistiques des garanties par type
+     * @returns Observable<IResponse>
+     */
+    getStatistiquesGaranties$ = (): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/demandes/statistiques/garanties`).pipe(
+            tap((response) => console.log('Statistiques des garanties:', response)),
+            catchError(this.handleError)
+        );
+
+    /**
+     * Rechercher des demandes avec garanties par critères
+     * @param criteres - Objet contenant les critères de recherche
+     * @returns Observable<IResponse>
+     */
+    searchDemandesWithGaranties$ = (criteres: { numeroMembre?: string; typeGarantie?: string; montantMin?: number; montantMax?: number; dateDebut?: string; dateFin?: string; statut?: string }): Observable<IResponse> => {
+        const params = new URLSearchParams();
+        Object.keys(criteres).forEach((key) => {
+            const value = criteres[key as keyof typeof criteres];
+            if (value !== undefined && value !== null && value !== '') {
+                params.append(key, value.toString());
+            }
+        });
+
+        return this.http.get<IResponse>(`${this.server}/ecredit/demandes/search?${params.toString()}`).pipe(
+            tap((response) => console.log('Résultats de recherche:', response)),
+            catchError(this.handleError)
+        );
+    };
+
+    /**
+     * Exporter les demandes avec garanties en Excel
+     * @param filtres - Filtres à appliquer pour l'export
+     * @returns Observable<Blob>
+     */
+    exportDemandesWithGaranties$ = (filtres?: { dateDebut?: string; dateFin?: string; statut?: string; agenceId?: number }): Observable<Blob> => {
+        const params = new URLSearchParams();
+        if (filtres) {
+            Object.keys(filtres).forEach((key) => {
+                const value = filtres[key as keyof typeof filtres];
+                if (value !== undefined && value !== null) {
+                    params.append(key, value.toString());
+                }
+            });
+        }
+
+        return this.http.get(`${this.server}/ecredit/demandes/export?${params.toString()}`, { responseType: 'blob' }).pipe(
+            tap(() => console.log('Export des demandes généré')),
+            catchError(this.handleError)
+        );
+    };
+
+    /**
+     * Obtenir l'historique d'une demande avec garanties
+     * @param demandeId - ID de la demande
+     * @returns Observable<IResponse>
+     */
+    getHistoriqueDemandeWithGaranties$ = (demandeId: number): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/demandes/${demandeId}/historique`).pipe(
+            tap((response) => console.log('Historique de la demande:', response)),
+            catchError(this.handleError)
+        );
+
+    /**
+     * Modifier les garanties d'une demande existante
+     * @param demandeId - ID de la demande
+     * @param garanties - Nouvelles garanties
+     * @returns Observable<IResponse>
+     */
+    updateGarantiesDemande$ = (demandeId: number, garanties: any[]): Observable<IResponse> =>
+        this.http.put<IResponse>(`${this.server}/ecredit/demandes/${demandeId}/garanties`, { garanties }).pipe(
+            tap((response) => console.log('Garanties mises à jour:', response)),
+            catchError(this.handleError)
+        );
+
+    /**
+     * Calculer la capacité d'emprunt basée sur les garanties
+     * @param garanties - Liste des garanties
+     * @returns Observable<IResponse>
+     */
+    calculerCapaciteEmprunt$ = (garanties: any[]): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/demandes/calculer-capacite`, { garanties }).pipe(
+            tap((response) => console.log("Capacité d'emprunt calculée:", response)),
+            catchError(this.handleError)
+        );
+
+    /**
+     * @deprecated Utiliser addDemandeIndWithGaranties$ à la place
+     * Ancienne méthode conservée pour compatibilité
+     */
+    addDemandeInd$ = (demandeIndividuel: any): Observable<IResponse> => {
+        console.warn('addDemandeInd$ est déprécié. Utilisez addDemandeIndWithGaranties$ à la place.');
+        return this.addDemandeIndWithGaranties$(demandeIndividuel);
+    };
+
+    /**
+     * Récupérer toutes les demandes avec garanties selon les critères
+     * @param agenceId - ID de l'agence (optionnel)
+     * @param pointVenteId - ID du point de vente (optionnel)
+     * @returns Observable<IResponse> contenant la liste des demandes avec leurs garanties
+     */
+    getAllDemandesWithGaranties$ = (agenceId?: number, pointVenteId?: number): Observable<IResponse> => {
+        let url = `${this.server}/ecredit/all-with-garanties`;
+        const params: string[] = [];
+
+        if (agenceId) {
+            params.push(`agenceId=${agenceId}`);
+        }
+        if (pointVenteId) {
+            params.push(`pointVenteId=${pointVenteId}`);
+        }
+
+        if (params.length > 0) {
+            url += `?${params.join('&')}`;
+        }
+
+        return this.http.get<IResponse>(url).pipe(
+            tap((response) => {
+                console.log('Toutes les demandes avec garanties récupérées:', response);
+                if (response.data && response.data.demandeAttentes) {
+                    console.log(`Nombre total de demandes: ${response.data.count}`);
+                }
+            }),
+            catchError(this.handleError)
+        );
+    };
+
+    // =============================================
+    // 2. Service Avis (dans user.service.ts - ajouter ces méthodes)
+    // =============================================
+    // Ajouter ces méthodes dans votre UserService existant:
+
+    /**
+     * Créer un nouvel avis
+     */
+    createAvis$(avis: Avis): Observable<IResponse> {
+        return this.http.post<IResponse>(`${this.server}/ecredit/avis`, avis).pipe(catchError(this.handleError));
+    }
+
+    /**
+     * Récupérer tous les avis d'une demande
+     */
+    getAvisByDemande$(demandeId: number): Observable<IResponse> {
+        return this.http.get<IResponse>(`${this.server}/ecredit/avis/demande/${demandeId}`).pipe(catchError(this.handleError));
+    }
+
+    /**
+     * Mettre à jour un avis
+     */
+    updateAvis$(avisId: number, avis: Avis): Observable<IResponse> {
+        return this.http.put<IResponse>(`${this.server}/ecredit/avis/${avisId}`, avis).pipe(catchError(this.handleError));
+    }
+
+    /**
+     * Supprimer un avis
+     */
+    deleteAvis$(avisId: number): Observable<IResponse> {
+        return this.http.delete<IResponse>(`${this.server}/ecredit/avis/${avisId}`).pipe(catchError(this.handleError));
+    }
 
     handleError = (httpErrorResponse: HttpErrorResponse): Observable<never> => {
         console.log(httpErrorResponse);

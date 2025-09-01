@@ -1,6 +1,7 @@
 package io.digiservices.ecreditservice.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -27,4 +28,6 @@ public class DemandeCredit {
     private Long agenceId;
     private Long pointVenteId;
     private Long userId;
+    private Long demandeIndividuelId;
+
 }

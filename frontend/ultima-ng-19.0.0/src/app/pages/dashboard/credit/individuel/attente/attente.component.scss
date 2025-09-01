@@ -1,0 +1,185 @@
+// Styles pour le composant Attente
+
+.garantie-item {
+    transition: all 0.3s ease;
+    border: 1px solid var(--surface-border);
+
+    &:hover {
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+}
+
+.totaux-garanties {
+    border: 2px solid var(--primary-color);
+    background: linear-gradient(to right, var(--surface-50), var(--surface-100));
+}
+
+.field-group {
+    .mb-2 {
+        display: flex;
+        align-items: center;
+
+        label {
+            min-width: 180px;
+            color: var(--text-color-secondary);
+        }
+
+        span {
+            color: var(--text-color);
+        }
+    }
+}
+
+// Animation pour l'expansion des lignes
+::ng-deep {
+    .p-datatable {
+        .p-datatable-tbody {
+            tr {
+                &.p-row-expansion {
+                    animation: slideDown 0.3s ease-out;
+                }
+            }
+        }
+
+        // Style pour les lignes expansibles
+        .p-datatable-row-expansion {
+            background: var(--surface-ground) !important;
+        }
+    }
+
+    // Amélioration du style des badges
+    .p-badge {
+        font-size: 0.9rem;
+        min-width: 1.5rem;
+        height: 1.5rem;
+        line-height: 1.5rem;
+    }
+
+    // Style pour les tags
+    .p-tag {
+        font-weight: 600;
+        padding: 0.25rem 0.75rem;
+    }
+}
+
+// Animation slideDown
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        max-height: 1000px;
+    }
+}
+
+// Responsive adjustments
+@media screen and (max-width: 768px) {
+    .field-group {
+        .mb-2 {
+            flex-direction: column;
+            align-items: flex-start;
+
+            label {
+                min-width: auto;
+                margin-bottom: 0.25rem;
+            }
+        }
+    }
+}
+
+// Style pour le statut
+.status-badge {
+    &.status-approved {
+        background-color: var(--green-500);
+        color: white;
+    }
+
+    &.status-pending {
+        background-color: var(--blue-500);
+        color: white;
+    }
+
+    &.status-rejected {
+        background-color: var(--red-500);
+        color: white;
+    }
+}
+
+// Amélioration de la table
+::ng-deep .p-datatable {
+    .p-datatable-header {
+        background: var(--surface-card);
+        border: none;
+        padding: 1rem;
+    }
+
+    .p-datatable-thead > tr > th {
+        background: var(--surface-50);
+        color: var(--text-color);
+        font-weight: 600;
+        border-color: var(--surface-border);
+    }
+
+    .p-datatable-tbody > tr {
+        transition: all 0.2s;
+
+        &:hover {
+            background: var(--surface-50) !important;
+        }
+
+        > td {
+            border-color: var(--surface-border);
+        }
+    }
+
+    // Style pour le bouton d'expansion
+    .p-row-toggler {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 50%;
+        transition: all 0.2s;
+
+        &:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+    }
+}
+
+// Card styles dans l'expansion
+::ng-deep .p-card {
+    box-shadow: none;
+    border: 1px solid var(--surface-border);
+
+    .p-card-body {
+        padding: 1.5rem;
+    }
+
+    h5 {
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+
+        i {
+            font-size: 1.2rem;
+        }
+    }
+}
+
+// Loading state
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+
+    .pi-spin {
+        font-size: 3rem;
+        color: var(--primary-color);
+    }
+}

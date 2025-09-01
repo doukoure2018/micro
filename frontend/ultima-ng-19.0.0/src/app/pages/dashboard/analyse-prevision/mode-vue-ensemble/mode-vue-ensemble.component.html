@@ -1,0 +1,352 @@
+<!-- mode-vue-ensemble.component.html -->
+<div class="vue-ensemble-container">
+    <p-card>
+        <ng-template pTemplate="header">
+            <div class="flex justify-content-between align-items-center p-3">
+                <h3>
+                    <i class="pi pi-table mr-2"></i>
+                    Vue d'ensemble - Tableau récapitulatif
+                </h3>
+                <p-tag [value]="'12 mois'" severity="info">
+                </p-tag>
+            </div>
+        </ng-template>
+
+        <div class="table-container">
+            <p-table [value]="[1]" [scrollable]="true" scrollHeight="600px" styleClass="p-datatable-gridlines">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th class="sticky-column">Éléments</th>
+                        <th *ngFor="let m of mois" class="text-center month-header">
+                            Mois {{ m }}
+                        </th>
+                        <th class="text-center cumul-header">Cumuls</th>
+                    </tr>
+                </ng-template>
+
+                <ng-template pTemplate="body">
+                    <!-- Solde début -->
+                    <tr>
+                        <td class="sticky-column font-bold">
+                            <i class="pi pi-wallet mr-2"></i>
+                            Solde Début de période
+                        </td>
+                        <td *ngFor="let m of mois" class="text-right">
+                            {{ formatMontant(getFieldValue(m, 'soldeDebut')) }}
+                        </td>
+                        <td class="text-right font-bold">-</td>
+                    </tr>
+
+                    <!-- SECTION ENCAISSEMENTS -->
+                    <tr class="section-header">
+                        <td colspan="14" class="font-bold bg-green-50">
+                            <i class="pi pi-arrow-down mr-2"></i>
+                            ENCAISSEMENTS
+                        </td>
+                    </tr>
+
+                    <!-- Ventes -->
+                    <tr>
+                        <td class="sticky-column">Ventes</td>
+                        <td *ngFor="let m of mois" class="text-right">
+                            {{ formatMontant(getFieldValue(m, 'ventes')) }}
+                        </td>
+                        <td class="text-right font-bold text-green-600">
+                            {{ formatMontant(getCumuls().ventes) }}
+                        </td>
+                    </tr>
+
+                    <!-- Autres revenus -->
+                    <tr>
+                        <td class="sticky-column">Autres revenus</td>
+                        <td *ngFor="let m of mois" class="text-right">
+                            {{ formatMontant(getFieldValue(m, 'autresRevenus')) }}
+                        </td>
+                        <td class="text-right font-bold text-green-600">
+                            {{ formatMontant(getCumuls().autresRevenus) }}
+                        </td>
+                    </tr>
+
+                    <!-- Prêt -->
+                    <tr>
+                        <td class="sticky-column">Prêt</td>
+                        <td *ngFor="let m of mois" class="text-right">
+                            {{ formatMontant(getFieldValue(m, 'pret')) }}
+                        </td>
+                        <td class="text-right font-bold text-green-600">
+                            {{ formatMontant(getCumuls().pret) }}
+                        </td>
+                    </tr>
+
+                    <!-- Total Encaissements -->
+                    <tr class="total-row bg-green-100">
+                        <td class="sticky-column font-bold">Total Encaissements</td>
+                        <td *ngFor="let m of mois" class="text-right font-bold">
+                            {{ formatMontant(getFieldValue(m, 'totalEncaissements')) }}
+                        </td>
+                        <td class="text-right font-bold text-green-700">
+                            {{ formatMontant(getCumuls().totalEncaissements) }}
+                        </td>
+                    </tr>
+
+                    <!-- Disponible en caisse -->
+                    <tr class="total-row">
+                        <td class="sticky-column font-bold">
+                            <i class="pi pi-money-bill mr-2"></i>
+                            Disponible en caisse/banque
+                        </td>
+                        <td *ngFor="let m of mois" class="text-right font-bold">
+                            {{ formatMontant(getFieldValue(m, 'disponibleEnCaisse')) }}
+                        </td>
+                        <td class="text-right font-bold">-</td>
+                    </tr>
+
+                    <!-- SECTION DÉCAISSEMENTS -->
+                    <tr class="section-header">
+                        <td colspan="14" class="font-bold bg-red-50">
+                            <i class="pi pi-arrow-up mr-2"></i>
+                            DÉCAISSEMENTS
+                        </td>
+                    </tr>
+
+                    <!-- Achat marchandises -->
+                    <tr>
+                        <td class="sticky-column">Achat marchandises</td>
+                        <td *ngFor="let m of mois" class="text-right">
+                            {{ formatMontant(getFieldValue(m, 'achatmarchandises')) }}
+                        </td>
+                        <td class="text-right font-bold text-red-600">
+                            {{ formatMontant(getCumuls().achatMarchandises) }}
+                        </td>
+                    </tr>
+
+                    <!-- Main d'œuvre -->
+                    <tr>
+                        <td class="sticky-column">Main d'œuvre</td>
+                        <td *ngFor="let m of mois" class="text-right">
+                            {{ formatMontant(getFieldValue(m, 'mainoeuvre')) }}
+                        </td>
+                        <td class="text-right font-bold text-red-600">
+                            {{ formatMontant(getCumuls().mainoeuvre) }}
+                        </td>
+                    </tr>
+
+                    <!-- Investissement -->
+                    <tr>
+                        <td class="sticky-column">Investissement</td>
+                        <td *ngFor="let m of mois" class="text-right">
+                            {{ formatMontant(getFieldValue(m, 'investissement')) }}
+                        </td>
+                        <td class="text-right font-bold text-red-600">
+                            {{ formatMontant(getCumuls().investissement) }}
+                        </td>
+                    </tr>
+
+                    <!-- Impôts et taxes -->
+                    <tr>
+                        <td class="sticky-column">Impôts et taxes</td>
+                        <td *ngFor="let m of mois" class="text-right">
+                            {{ formatMontant(getFieldValue(m, 'impotstaxes')) }}
+                        </td>
+                        <td class="text-right font-bold text-red-600">
+                            {{ formatMontant(getCumuls().impotstaxes) }}
+                        </td>
+                    </tr>
+
+                    <!-- Loyer -->
+                    <tr>
+                        <td class="sticky-column">Loyer</td>
+                        <td *ngFor="let m of mois" class="text-right">
+                            {{ formatMontant(getFieldValue(m, 'loyer')) }}
+                        </td>
+                        <td class="text-right font-bold text-red-600">
+                            {{ formatMontant(getCumuls().loyer) }}
+                        </td>
+                    </tr>
+
+                    <!-- Utilities -->
+                    <tr>
+                        <td class="sticky-column">Eau, Électricité, téléphone</td>
+                        <td *ngFor="let m of mois" class="text-right">
+                            {{ formatMontant(getFieldValue(m, 'utilities')) }}
+                        </td>
+                        <td class="text-right font-bold text-red-600">
+                            {{ formatMontant(getCumuls().utilities) }}
+                        </td>
+                    </tr>
+
+                    <!-- Transport -->
+                    <tr>
+                        <td class="sticky-column">Transport</td>
+                        <td *ngFor="let m of mois" class="text-right">
+                            {{ formatMontant(getFieldValue(m, 'transport')) }}
+                        </td>
+                        <td class="text-right font-bold text-red-600">
+                            {{ formatMontant(getCumuls().transport) }}
+                        </td>
+                    </tr>
+
+                    <!-- Salaires -->
+                    <tr>
+                        <td class="sticky-column">Salaires personnel</td>
+                        <td *ngFor="let m of mois" class="text-right">
+                            {{ formatMontant(getFieldValue(m, 'salaires')) }}
+                        </td>
+                        <td class="text-right font-bold text-red-600">
+                            {{ formatMontant(getCumuls().salaires) }}
+                        </td>
+                    </tr>
+
+                    <!-- Frais téléphone -->
+                    <tr>
+                        <td class="sticky-column">Frais téléphone</td>
+                        <td *ngFor="let m of mois" class="text-right">
+                            {{ formatMontant(getFieldValue(m, 'fraistelephone')) }}
+                        </td>
+                        <td class="text-right font-bold text-red-600">
+                            {{ formatMontant(getCumuls().fraistelephone) }}
+                        </td>
+                    </tr>
+
+                    <!-- Charges financières -->
+                    <tr>
+                        <td class="sticky-column">Charges financières</td>
+                        <td *ngFor="let m of mois" class="text-right">
+                            {{ formatMontant(getFieldValue(m, 'chargesfinancieres')) }}
+                        </td>
+                        <td class="text-right font-bold text-red-600">
+                            {{ formatMontant(getCumuls().chargesfinancieres) }}
+                        </td>
+                    </tr>
+
+                    <!-- Entretien -->
+                    <tr>
+                        <td class="sticky-column">Entretien et réparation</td>
+                        <td *ngFor="let m of mois" class="text-right">
+                            {{ formatMontant(getFieldValue(m, 'entretien')) }}
+                        </td>
+                        <td class="text-right font-bold text-red-600">
+                            {{ formatMontant(getCumuls().entretien) }}
+                        </td>
+                    </tr>
+
+                    <!-- Autres dépenses -->
+                    <tr>
+                        <td class="sticky-column">Autres dépenses</td>
+                        <td *ngFor="let m of mois" class="text-right">
+                            {{ formatMontant(getFieldValue(m, 'autresdepenses')) }}
+                        </td>
+                        <td class="text-right font-bold text-red-600">
+                            {{ formatMontant(getCumuls().autresdepenses) }}
+                        </td>
+                    </tr>
+
+                    <!-- Total Décaissements -->
+                    <tr class="total-row bg-red-100">
+                        <td class="sticky-column font-bold">Total Décaissements</td>
+                        <td *ngFor="let m of mois" class="text-right font-bold">
+                            {{ formatMontant(getFieldValue(m, 'totalDecaissements')) }}
+                        </td>
+                        <td class="text-right font-bold text-red-700">
+                            {{ formatMontant(getCumuls().totalDecaissements) }}
+                        </td>
+                    </tr>
+
+                    <!-- SECTION RÉSULTATS -->
+                    <tr class="section-header">
+                        <td colspan="14" class="font-bold bg-blue-50">
+                            <i class="pi pi-calculator mr-2"></i>
+                            RÉSULTATS
+                        </td>
+                    </tr>
+
+                    <!-- Excédent/Déficit -->
+                    <tr class="total-row">
+                        <td class="sticky-column font-bold">Excédent (Déficit)</td>
+                        <td *ngFor="let m of mois" class="text-right font-bold"
+                            [ngClass]="getMontantClass(getFieldValue(m, 'excedentDeficit'))">
+                            {{ formatMontant(getFieldValue(m, 'excedentDeficit')) }}
+                        </td>
+                        <td class="text-right font-bold" [ngClass]="getMontantClass(getCumuls().excedentDeficit)">
+                            {{ formatMontant(getCumuls().excedentDeficit) }}
+                        </td>
+                    </tr>
+
+                    <!-- Intérêts à verser -->
+                    <tr>
+                        <td class="sticky-column">Intérêts à verser</td>
+                        <td *ngFor="let m of mois" class="text-right">
+                            {{ formatMontant(getFieldValue(m, 'interetsAVerser')) }}
+                        </td>
+                        <td class="text-right font-bold text-orange-600">
+                            {{ formatMontant(getCumuls().interetsAVerser) }}
+                        </td>
+                    </tr>
+
+                    <!-- Remboursement capital -->
+                    <tr>
+                        <td class="sticky-column">Remboursement capital</td>
+                        <td *ngFor="let m of mois" class="text-right">
+                            {{ formatMontant(getFieldValue(m, 'remboursementCapital')) }}
+                        </td>
+                        <td class="text-right font-bold text-orange-600">
+                            {{ formatMontant(getCumuls().remboursementCapital) }}
+                        </td>
+                    </tr>
+
+                    <!-- Solde Fin -->
+                    <tr class="final-row bg-primary-50">
+                        <td class="sticky-column font-bold text-primary">
+                            <i class="pi pi-check-circle mr-2"></i>
+                            Solde Fin de Période
+                        </td>
+                        <td *ngFor="let m of mois" class="text-right font-bold text-lg"
+                            [ngClass]="getMontantClass(getFieldValue(m, 'soldeFin'))">
+                            {{ formatMontant(getFieldValue(m, 'soldeFin')) }}
+                        </td>
+                        <td class="text-right font-bold">-</td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+
+        <!-- Résumé des totaux -->
+        <div class="summary-section mt-4 p-3 surface-100 border-round">
+            <h4 class="mb-3">
+                <i class="pi pi-chart-bar mr-2"></i>
+                Résumé Global
+            </h4>
+            <div class="grid">
+                <div class="col-12 md:col-4">
+                    <div class="summary-card bg-green-50 p-3 border-round">
+                        <label class="text-sm text-green-700">Total Encaissements</label>
+                        <div class="text-2xl font-bold text-green-800">
+                            {{ formatMontant(getCumuls().totalEncaissements) }} GNF
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 md:col-4">
+                    <div class="summary-card bg-red-50 p-3 border-round">
+                        <label class="text-sm text-red-700">Total Décaissements</label>
+                        <div class="text-2xl font-bold text-red-800">
+                            {{ formatMontant(getCumuls().totalDecaissements) }} GNF
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 md:col-4">
+                    <div class="summary-card p-3 border-round"
+                        [ngClass]="getCumuls().excedentDeficit >= 0 ? 'bg-blue-50' : 'bg-orange-50'">
+                        <label class="text-sm"
+                            [ngClass]="getCumuls().excedentDeficit >= 0 ? 'text-blue-700' : 'text-orange-700'">
+                            Résultat Net
+                        </label>
+                        <div class="text-2xl font-bold"
+                            [ngClass]="getCumuls().excedentDeficit >= 0 ? 'text-blue-800' : 'text-orange-800'">
+                            {{ formatMontant(getCumuls().excedentDeficit) }} GNF
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </p-card>
+</div>

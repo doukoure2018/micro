@@ -1,0 +1,146 @@
+.preview-dialog .p-dialog-content {
+    padding: 1.5rem;
+}
+
+.preview-dialog .p-dialog-header {
+    padding: 1.5rem 1.5rem 1rem 1.5rem;
+}
+
+/* PDF Preview Dialog */
+.pdf-preview-dialog .p-dialog-content {
+    padding: 1rem;
+    height: calc(80vh - 120px);
+    overflow: hidden;
+}
+
+.pdf-preview-dialog .p-dialog-header {
+    background: linear-gradient(to right, #dc2626, #ef4444);
+    color: white;
+}
+
+.pdf-preview-dialog .p-dialog-header .p-dialog-title {
+    color: white;
+    font-weight: 600;
+}
+
+.pdf-preview-dialog .p-dialog-header .p-dialog-header-icons button {
+    color: white;
+}
+
+.pdf-preview-dialog .p-dialog-header .p-dialog-header-icons button:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Document Cards */
+.document-card {
+    transition: all 0.3s ease;
+    border: 1px solid var(--surface-border);
+}
+
+.document-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+/* File type specific styles */
+.file-type-pdf {
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    border: 1px solid #fca5a5;
+}
+
+.file-type-image {
+    background: linear-gradient(135deg, #f3e8ff, #e9d5ff);
+    border: 1px solid #c4b5fd;
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+    .file-type-pdf {
+        background: linear-gradient(135deg, #7f1d1d, #991b1b);
+        border-color: #dc2626;
+    }
+
+    .file-type-image {
+        background: linear-gradient(135deg, #581c87, #6b21a8);
+        border-color: #a855f7;
+    }
+}
+
+/* Modern grid responsiveness */
+@media (max-width: 640px) {
+    .documents-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+    .documents-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1025px) {
+    .documents-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Smooth animations */
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Animation pour l'apparition des avis */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.p-timeline-event {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Style pour le formulaire d'avis */
+.field textarea {
+    font-family: inherit;
+    transition: all 0.3s ease;
+}
+
+.field textarea:focus {
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Badge personnalisé pour le compteur d'avis */
+.p-badge.p-badge-info {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Card d'avis utilisateur actuel */
+.current-user-avis {
+    border-left: 4px solid #3b82f6;
+}
+
+/* Hover effect sur les cards d'avis */
+.p-card:hover {
+    box-shadow:
+        0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: box-shadow 0.3s ease;
+}

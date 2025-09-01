@@ -1,29 +1,34 @@
 package io.digiservices.ecreditservice.repository.impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import io.digiservices.clients.UserClient;
 import io.digiservices.ecreditservice.dto.*;
 import io.digiservices.ecreditservice.exception.ApiException;
+import io.digiservices.ecreditservice.query.DemandeIndQuery;
 import io.digiservices.ecreditservice.repository.DemandeIndRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.SqlParameterSource;
-import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.jdbc.core.JdbcTemplate;
 
+import org.springframework.jdbc.core.simple.JdbcClient;
+
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
+import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
 import static io.digiservices.ecreditservice.query.DemandeIndQuery.*;
 import static io.digiservices.ecreditservice.query.IndividuelQuery.SELECT_INDIVIDUEL_BY_NUMERO_MEMBRE;
-import static io.digiservices.ecreditservice.utils.UserUtils.randomUUUID;
+
 
 @Service
 @RequiredArgsConstructor
@@ -31,20 +36,22 @@ import static io.digiservices.ecreditservice.utils.UserUtils.randomUUUID;
 public class DemandeIndRepositoryImpl implements DemandeIndRepository {
     private final JdbcClient jdbcClient;
     private final UserClient userClient;
+    private final JdbcTemplate jdbcTemplate;
+    private final ObjectMapper objectMapper;
 
     @Override
     public void addNewDemandeInd(DemandeIndividuel demandeIndividuel) {
-        try {
-            jdbcClient.sql(INSERT_NEW_DEMANDE_IND_QUERY)
-                    .paramSource(getParamSource(demandeIndividuel))
-                    .update();
-        } catch (EmptyResultDataAccessException exception) {
-            log.error(exception.getMessage());
-            throw new ApiException("No user found by email");
-        } catch (Exception e) {
-            log.error(e.getMessage());
-            throw new ApiException("An error occurred please try again");
-        }
+//        try {
+//            jdbcClient.sql(INSERT_NEW_DEMANDE_IND_QUERY)
+//                    .paramSource(getParamSource(demandeIndividuel))
+//                    .update();
+//        } catch (EmptyResultDataAccessException exception) {
+//            log.error(exception.getMessage());
+//            throw new ApiException("No user found by email");
+//        } catch (Exception e) {
+//            log.error(e.getMessage());
+//            throw new ApiException("An error occurred please try again");
+//        }
     }
 
     @Override
@@ -108,7 +115,7 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
     @Override
     public DemandeIndividuel getDetailDemandeIndividuel(Long demandeIndividuelId) {
         try {
-            return jdbcClient.sql(SELECT_DEMANDE_INDIVIDUEL_QUERY).param("demandeIndividuelId",demandeIndividuelId).query(DemandeIndividuel.class).single();
+            return jdbcClient.sql(GET_INSTANCE_DEMANDE_INDIVIDUEL_BY_ID_QUERY).param("demandeIndividuelId",demandeIndividuelId).query(DemandeIndividuel.class).single();
         } catch (EmptyResultDataAccessException exception) {
             log.error(exception.getMessage());
             throw new ApiException("No demandeInd found by email");
@@ -265,7 +272,7 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
             creditParams.put("pointventeId", lastDemandeCredit.getPos());
             creditParams.put("individuelId", individuelId);
             creditParams.put("userId", userId);
-            creditParams.put("montantCredit", lastDemandeCredit.getMontant());
+            //creditParams.put("montantCredit", lastDemandeCredit.getMontant());
 
             int rowsAffected = jdbcClient.sql(INSERT_START_NEW_CREDIT)
                     .params(creditParams)
@@ -593,43 +600,397 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
     @Override
     public List<DemandeCredit> listDemandeAnalyseCreditByUserId() {
         try {
-            return jdbcClient.sql(SELECT_DEMANDE_CREDIT_BY_USER_ID_QUERY)
-                    .query(DemandeCredit.class).list();
+            return jdbcTemplate.query(
+                    DemandeIndQuery.SELECT_DEMANDE_CREDIT_BY_USER_ID_QUERY,
+                    (rs, rowNum) -> {
+                        // Mapper les résultats vers DemandeCredit
+                        DemandeCredit demande = new DemandeCredit();
+                        // ... mapping des champs
+                        return demande;
+                    }
+            );
         } catch (EmptyResultDataAccessException exception) {
             throw new ApiException("No Credit found");
         } catch (Exception e) {
-            log.error("Error getting note garantie: {}", e.getMessage(), e);
+            log.error("Error getting demande credit: {}", e.getMessage(), e);
             throw new ApiException("An error occurred please try again");
         }
     }
 
-    private SqlParameterSource getParamSource(DemandeIndividuel demandeIndividuel) {
-        MapSqlParameterSource params = new MapSqlParameterSource();
 
-        params.addValue("nom", demandeIndividuel.getNom());
-        params.addValue("prenom", demandeIndividuel.getPrenom());
-        params.addValue("telephone", demandeIndividuel.getTelephone());
-        params.addValue("age", demandeIndividuel.getAge());
-        params.addValue("numero_membre", demandeIndividuel.getNumeroMembre());
-        params.addValue("delegation", demandeIndividuel.getDelegation());
-        params.addValue("agence", demandeIndividuel.getAgence());
-        params.addValue("pos", demandeIndividuel.getPos());
-        params.addValue("quartier", demandeIndividuel.getQuartier());
-        params.addValue("fonction", demandeIndividuel.getFonction());
-        params.addValue("createdAt", demandeIndividuel.getCreatedAt());
-        params.addValue("montant", demandeIndividuel.getMontant());
-        params.addValue("activite", demandeIndividuel.getActivite());
-        params.addValue("statut_demande", demandeIndividuel.getStatutDemande());
-        params.addValue("commune_residence", demandeIndividuel.getCommuneResidence());
-        params.addValue("validation_state", demandeIndividuel.getValidationState());
-        params.addValue("type_apport", demandeIndividuel.getTypeApport());
-        params.addValue("statut_selection", demandeIndividuel.getStatutSelection());
-        params.addValue("current_activite", demandeIndividuel.getCurrentActivite());
-        params.addValue("raison", demandeIndividuel.getRaison());
-        params.addValue("object", demandeIndividuel.getObject());
-        params.addValue("tip_credito", demandeIndividuel.getTipCredito());
-        params.addValue("cod_usuarios", demandeIndividuel.getCodUsuarios());
+    @Override
+    @Transactional
+    public DemandeResponse addNewDemandeIndWithGaranties(DemandeIndividuel demande) {
+        Connection connection = null;
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
 
-        return params;
+        try {
+            // Obtenir la connexion
+            connection = jdbcTemplate.getDataSource().getConnection();
+
+            // Préparer la requête avec le nouveau paramètre
+            String sql = DemandeIndQuery.CALL_INSERT_DEMANDE_WITH_GARANTIES_PROC_V2;
+            statement = connection.prepareStatement(sql);
+
+            // Définir les paramètres (1 à 43 maintenant)
+            int paramIndex = 1;
+
+            // Informations personnelles
+            statement.setString(paramIndex++, demande.getNom());
+            statement.setString(paramIndex++, demande.getPrenom());
+            statement.setString(paramIndex++, demande.getTelephone());
+            statement.setString(paramIndex++, demande.getNumeroMembre());
+            statement.setInt(paramIndex++, demande.getDelegation());
+            statement.setInt(paramIndex++, demande.getAgence());
+            statement.setInt(paramIndex++, demande.getPos());
+            statement.setString(paramIndex++, demande.getTypePiece());
+            statement.setString(paramIndex++, demande.getNumId());
+
+            statement.setDate(paramIndex++, demande.getDateNaissance() != null ?
+                    java.sql.Date.valueOf(demande.getDateNaissance()) : null);
+            statement.setString(paramIndex++, demande.getLieuxNaissance());
+            statement.setString(paramIndex++, demande.getGenre());
+            statement.setString(paramIndex++, demande.getSituationMatrimoniale());
+            statement.setInt(paramIndex++, demande.getNombrePersonneEnCharge());
+            statement.setInt(paramIndex++, demande.getNombrePersonneScolarise());
+            statement.setString(paramIndex++, demande.getAddresseDomicileContact());
+            statement.setString(paramIndex++, demande.getTypePropriete());
+            statement.setInt(paramIndex++, demande.getNombreAnneeHabitation());
+
+            // Activité
+            statement.setString(paramIndex++, demande.getTypeActivite());
+            statement.setString(paramIndex++, demande.getSousActivite());
+            statement.setString(paramIndex++, demande.getSousSousActivite());
+            statement.setString(paramIndex++, demande.getDescriptionActivite());
+            statement.setInt(paramIndex++, demande.getNombreAnneeActivite());
+            statement.setString(paramIndex++, demande.getAdresseLieuActivite());
+            statement.setString(paramIndex++, demande.getAutreActivite());
+            statement.setString(paramIndex++, demande.getLieuActivite());
+
+            // Modalités
+            statement.setBigDecimal(paramIndex++, demande.getMontantDemande());
+            statement.setInt(paramIndex++, demande.getDureeDemande());
+            statement.setString(paramIndex++, demande.getPeriodiciteRemboursement());
+            statement.setBigDecimal(paramIndex++, demande.getTauxInteret());
+            statement.setObject(paramIndex++, demande.getPeriodeDiffere(), Types.INTEGER);
+            statement.setInt(paramIndex++, demande.getNombreEcheance());
+            statement.setBigDecimal(paramIndex++, demande.getEcheance());
+            statement.setString(paramIndex++, demande.getObjectCredit());
+            statement.setString(paramIndex++, demande.getDetailObjectCredit());
+            statement.setString(paramIndex++, demande.getStatutCredit());
+            statement.setObject(paramIndex++, demande.getRangCredit(), Types.INTEGER);
+
+            // Système
+            statement.setInt(paramIndex++, demande.getTipCredito());
+            statement.setString(paramIndex++, demande.getCodUsuarios());
+            statement.setString(paramIndex++, demande.getStatutDemande());
+            statement.setString(paramIndex++, demande.getValidationState());
+            statement.setString(paramIndex++, demande.getCurrentActivite());
+
+            // Nature client - NOUVEAU PARAMÈTRE (43)
+            statement.setString(paramIndex++, demande.getNatureClient() != null ?
+                    demande.getNatureClient() : "Individuel");
+
+            // Garanties - Paramètre 44
+            if (demande.getGaranties() != null && !demande.getGaranties().isEmpty()) {
+                Array garantiesArray = createGarantiesArray(connection, demande.getGaranties());
+                statement.setArray(paramIndex, garantiesArray);
+            } else {
+                statement.setNull(paramIndex, Types.ARRAY);
+            }
+
+            // Exécuter la requête
+            resultSet = statement.executeQuery();
+
+            // Traiter le résultat
+            if (resultSet.next()) {
+                DemandeResponse response = new DemandeResponse();
+                response.setDemandeId(resultSet.getLong("demande_id"));
+                response.setMessage(resultSet.getString("message"));
+                response.setSuccess(resultSet.getBoolean("success"));
+
+                if (!response.isSuccess()) {
+                    throw new ApiException(response.getMessage());
+                }
+
+                log.info("Demande créée avec succès - ID: {}, Nature client: {}",
+                        response.getDemandeId(), demande.getNatureClient());
+                return response;
+            } else {
+                throw new ApiException("Aucun résultat retourné par la procédure stockée");
+            }
+
+        } catch (SQLException e) {
+            log.error("Erreur SQL lors de l'insertion de la demande: {}", e.getMessage(), e);
+            throw new ApiException("Erreur lors de la création de la demande: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Erreur lors de l'insertion de la demande: {}", e.getMessage(), e);
+            throw new ApiException("Erreur lors de la création de la demande: " + e.getMessage());
+        } finally {
+            // Fermer les ressources
+            try {
+                if (resultSet != null) resultSet.close();
+                if (statement != null) statement.close();
+                if (connection != null) connection.close();
+            } catch (SQLException e) {
+                log.error("Erreur lors de la fermeture des ressources: {}", e.getMessage());
+            }
+        }
     }
+    /**
+     * Créer un tableau PostgreSQL de type garantie_input[]
+     */
+    private Array createGarantiesArray(Connection connection, List<GarantiePropose> garanties) throws SQLException {
+        // Créer les structs pour chaque garantie
+        String[] garantiesStrings = new String[garanties.size()];
+
+        for (int i = 0; i < garanties.size(); i++) {
+            GarantiePropose g = garanties.get(i);
+
+            // Formater chaque garantie comme un record PostgreSQL
+            // Format: (type_garantie, description_garantie, valeur_garantie)
+            String typeGarantie = escapeString(g.getTypeGarantie());
+            String description = escapeString(g.getDescriptionGarantie());
+            String valeur = g.getValeurGarantie().toString();
+
+            // Créer le record au format PostgreSQL
+            garantiesStrings[i] = String.format("(\"%s\",\"%s\",%s)",
+                    typeGarantie,
+                    description,
+                    valeur
+            );
+        }
+
+        // Créer l'array PostgreSQL
+        return connection.createArrayOf("garantie_input", garantiesStrings);
+    }
+
+
+    /**
+     * Échapper les caractères spéciaux pour PostgreSQL
+     */
+    private String escapeString(String value) {
+        if (value == null) {
+            return "";
+        }
+        // Échapper les guillemets doubles et les backslashes
+        return value
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("'", "''");
+    }
+    @Override
+    public DemandeIndividuel getDemandeWithGaranties(Long demandeId) {
+        try {
+            // Utiliser la constante de la classe DemandeIndQuery
+            return jdbcTemplate.queryForObject(
+                    DemandeIndQuery.CALL_GET_DEMANDE_WITH_GARANTIES_FUNC,
+                    new Object[]{demandeId},
+                    (rs, rowNum) -> {
+                        String demandeJson = rs.getString("demande_data");
+                        String garantiesJson = rs.getString("garanties_data");
+
+                        return parseDemandeFromJson(demandeJson, garantiesJson);
+                    }
+            );
+        } catch (EmptyResultDataAccessException e) {
+            log.error("Demande non trouvée avec l'ID: {}", demandeId);
+            throw new ApiException("Demande non trouvée");
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération de la demande: {}", e.getMessage(), e);
+            throw new ApiException("Erreur lors de la récupération de la demande");
+        }
+    }
+
+    @Override
+    public List<DemandeIndividuel> getAllDemandesWithGaranties(Long agenceId, Long pointVenteId) {
+        try {
+            return jdbcTemplate.query(
+                    DemandeIndQuery.CALL_GET_ALL_DEMANDES_WITH_GARANTIES_FUNC,
+                    new Object[]{agenceId, pointVenteId},
+                    (rs, rowNum) -> {
+                        String demandeJson = rs.getString("demande_data");
+                        String garantiesJson = rs.getString("garanties_data");
+
+                        return parseDemandeFromJson(demandeJson, garantiesJson);
+                    }
+            );
+        } catch (EmptyResultDataAccessException e) {
+            log.info("Aucune demande trouvée pour agence: {}, point de vente: {}", agenceId, pointVenteId);
+            return new ArrayList<>();
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des demandes: {}", e.getMessage(), e);
+            throw new ApiException("Erreur lors de la récupération des demandes");
+        }
+    }
+    @Override
+    public boolean checkDemandeExists(Long demandeindividuelId) {
+        return jdbcClient.sql(CHECK_DEMANDE_EXIST)
+                .param("demandeindividuelId", demandeindividuelId)
+                .query(Boolean.class)
+                .single();
+    }
+
+    private DemandeIndividuel parseDemandeFromJson(String demandeJson, String garantiesJson) {
+        try {
+            // Configurer ObjectMapper pour gérer les différents formats de noms
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            // Configurer pour accepter les snake_case
+            objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+
+            // Parser manuellement le JSON de la demande car les noms ne correspondent pas exactement
+            Map<String, Object> demandeMap = objectMapper.readValue(demandeJson, new TypeReference<Map<String, Object>>() {});
+
+            DemandeIndividuel demande = new DemandeIndividuel();
+
+            // Mapper tous les champs manuellement
+            demande.setDemandeIndividuelId(getLongValue(demandeMap, "demandeindividuel_id"));
+            demande.setNom((String) demandeMap.get("nom"));
+            demande.setPrenom((String) demandeMap.get("prenom"));
+            demande.setTelephone((String) demandeMap.get("telephone"));
+            demande.setAge(getIntegerValue(demandeMap, "age"));
+            demande.setNumeroMembre((String) demandeMap.get("numero_membre"));
+            demande.setDelegation(getIntegerValue(demandeMap, "delegation"));
+            demande.setAgence(getIntegerValue(demandeMap, "agence"));
+            demande.setPos(getIntegerValue(demandeMap, "pos"));
+
+            // Champs avec underscore
+            demande.setTypePiece((String) demandeMap.get("type_piece"));
+            demande.setNumId((String) demandeMap.get("numid"));
+
+            // Date de naissance
+            if (demandeMap.get("date_naissance") != null) {
+                demande.setDateNaissance(LocalDate.parse(demandeMap.get("date_naissance").toString()));
+            }
+
+            demande.setLieuxNaissance((String) demandeMap.get("lieux_naissance"));
+            demande.setGenre((String) demandeMap.get("genre"));
+            demande.setSituationMatrimoniale((String) demandeMap.get("situation_matrimoniale"));
+            demande.setNombrePersonneEnCharge(getIntegerValue(demandeMap, "nombre_personne_en_charge"));
+            demande.setNombrePersonneScolarise(getIntegerValue(demandeMap, "nombre_personne_scolarise"));
+            demande.setAddresseDomicileContact((String) demandeMap.get("addresse_domicile_contact"));
+            demande.setTypePropriete((String) demandeMap.get("type_propriete"));
+            demande.setNombreAnneeHabitation(getIntegerValue(demandeMap, "nombre_annee_habitation"));
+
+            // Activités
+            demande.setTypeActivite((String) demandeMap.get("type_activite"));
+            demande.setSousActivite((String) demandeMap.get("sous_activite"));
+            demande.setSousSousActivite((String) demandeMap.get("sous_sous_activite"));
+            demande.setDescriptionActivite((String) demandeMap.get("description_activite"));
+            demande.setNombreAnneeActivite(getIntegerValue(demandeMap, "nombre_annee_activite"));
+            demande.setAdresseLieuActivite((String) demandeMap.get("adresse_lieu_activite"));
+            demande.setAutreActivite((String) demandeMap.get("autre_activite"));
+            demande.setLieuActivite((String) demandeMap.get("lieu_activite"));
+
+            // Modalités financières
+            demande.setMontantDemande(getBigDecimalValue(demandeMap, "montant_demande"));
+            demande.setDureeDemande(getIntegerValue(demandeMap, "duree_demande"));
+            demande.setPeriodiciteRemboursement((String) demandeMap.get("periodicite_remboursement"));
+            demande.setTauxInteret(getBigDecimalValue(demandeMap, "taux_interet"));
+            demande.setPeriodeDiffere(getIntegerValue(demandeMap, "periode_differe"));
+            demande.setNombreEcheance(getIntegerValue(demandeMap, "nombre_echeance"));
+            demande.setEcheance(getBigDecimalValue(demandeMap, "echeance"));
+            demande.setObjectCredit((String) demandeMap.get("object_credit"));
+            demande.setDetailObjectCredit((String) demandeMap.get("detail_object_credit"));
+            demande.setStatutCredit((String) demandeMap.get("statut_credit"));
+            demande.setRangCredit(getIntegerValue(demandeMap, "rang_credit"));
+
+            // Système
+            demande.setTipCredito(getIntegerValue(demandeMap, "tip_credito"));
+            demande.setCodUsuarios((String) demandeMap.get("cod_usuarios"));
+            demande.setStatutDemande((String) demandeMap.get("statut_demande"));
+            demande.setValidationState((String) demandeMap.get("validation_state"));
+            demande.setCurrentActivite((String) demandeMap.get("current_activite"));
+            demande.setStatutSelection((String) demandeMap.get("statut_selection"));
+
+            // Timestamp
+            if (demandeMap.get("createdat") != null) {
+                String timestampStr = demandeMap.get("createdat").toString();
+                demande.setCreatedAt(LocalDateTime.parse(timestampStr));
+            }
+
+            // Parser les garanties (elles sont déjà en camelCase)
+            // Parser les garanties
+            try {
+                log.debug("Parsing garanties JSON: {}", garantiesJson);
+
+                if (garantiesJson != null && !garantiesJson.equals("[]") && !garantiesJson.isEmpty()) {
+                    // Désactiver FAIL_ON_UNKNOWN_PROPERTIES pour les garanties aussi
+                    ObjectMapper garantieMapper = new ObjectMapper();
+                    garantieMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+                    // Parser directement en liste de GarantiePropose
+                    JavaType garantieListType = garantieMapper.getTypeFactory()
+                            .constructCollectionType(List.class, GarantiePropose.class);
+
+                    List<GarantiePropose> garanties = garantieMapper.readValue(garantiesJson, garantieListType);
+
+                    log.debug("Parsed {} garanties", garanties.size());
+                    demande.setGaranties(garanties);
+                } else {
+                    log.debug("No garanties found");
+                    demande.setGaranties(new ArrayList<>());
+                }
+            } catch (Exception e) {
+                log.error("Error parsing garanties: {}", e.getMessage());
+                // En cas d'erreur, essayer le mapping manuel
+                try {
+                    List<Map<String, Object>> garantiesList = objectMapper.readValue(
+                            garantiesJson,
+                            new TypeReference<List<Map<String, Object>>>() {}
+                    );
+
+                    List<GarantiePropose> garanties = new ArrayList<>();
+                    for (Map<String, Object> map : garantiesList) {
+                        GarantiePropose g = new GarantiePropose();
+                        g.setGarantieProposeId(getLongValue(map, "garantieProposeId"));
+                        g.setTypeGarantie((String) map.get("typeGarantie"));
+                        g.setDescriptionGarantie((String) map.get("descriptionGarantie"));
+                        g.setValeurGarantie(getBigDecimalValue(map, "valeurGarantie"));
+                        g.setValeurEmprunte(getBigDecimalValue(map, "valeurEmprunte"));
+                        garanties.add(g);
+                    }
+                    demande.setGaranties(garanties);
+                } catch (Exception ex) {
+                    log.error("Failed to parse garanties manually: {}", ex.getMessage());
+                    demande.setGaranties(new ArrayList<>());
+                }
+            }
+
+            return demande;
+
+        } catch (Exception e) {
+            log.error("Erreur lors du parsing JSON: {}", e.getMessage(), e);
+            throw new ApiException("Erreur lors du traitement des données");
+        }
+    }
+
+    // Méthodes utilitaires pour gérer les conversions
+    private Long getLongValue(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        if (value == null) return null;
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
+        return Long.parseLong(value.toString());
+    }
+
+    private Integer getIntegerValue(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        if (value == null) return null;
+        if (value instanceof Number) {
+            return ((Number) value).intValue();
+        }
+        return Integer.parseInt(value.toString());
+    }
+
+    private BigDecimal getBigDecimalValue(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        if (value == null) return null;
+        return new BigDecimal(value.toString());
+    }
+
+
 }

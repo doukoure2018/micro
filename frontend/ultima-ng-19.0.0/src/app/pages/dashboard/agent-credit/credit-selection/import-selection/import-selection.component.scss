@@ -1,0 +1,241 @@
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Styles pour la classe card de PrimeNG */
+.card {
+    background: var(--surface-card);
+    padding: 2rem;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    box-shadow:
+        0 2px 1px -1px rgba(0, 0, 0, 0.2),
+        0 1px 1px 0 rgba(0, 0, 0, 0.14),
+        0 1px 3px 0 rgba(0, 0, 0, 0.12);
+}
+
+/* Custom file upload button */
+.custom-file-upload .p-button {
+    background: linear-gradient(to right, var(--primary-500), var(--primary-600));
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.custom-file-upload .p-button:hover {
+    background: linear-gradient(to right, var(--primary-600), var(--primary-700));
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* Preview dialog styles */
+.preview-dialog .p-dialog-content {
+    padding: 1.5rem;
+}
+
+.preview-dialog .p-dialog-header {
+    padding: 1.5rem 1.5rem 1rem 1.5rem;
+}
+
+/* Loading Animation */
+@keyframes shimmer {
+    0% {
+        background-position: -200px 0;
+    }
+    100% {
+        background-position: calc(200px + 100%) 0;
+    }
+}
+
+.loading-shimmer {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    background-size: 200px 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+/* Smooth Animations */
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Card hover effects */
+.shadow:hover {
+    box-shadow:
+        0 20px 25px -5px rgba(0, 0, 0, 0.1),
+        0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Grid responsiveness */
+@media (max-width: 640px) {
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .grid.grid-cols-12 .col-span-12 {
+        grid-column: span 12 / span 12;
+    }
+
+    .grid.grid-cols-12 .md\\:col-span-6 {
+        grid-column: span 12 / span 12;
+    }
+
+    .grid.grid-cols-12 .lg\\:col-span-4 {
+        grid-column: span 12 / span 12;
+    }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+    .grid.grid-cols-12 .md\\:col-span-6 {
+        grid-column: span 6 / span 6;
+    }
+
+    .grid.grid-cols-12 .lg\\:col-span-4 {
+        grid-column: span 6 / span 6;
+    }
+}
+
+@media (min-width: 1025px) {
+    .grid.grid-cols-12 .lg\\:col-span-4 {
+        grid-column: span 4 / span 4;
+    }
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+    .card {
+        background: var(--surface-900);
+        color: var(--text-color);
+    }
+}
+
+.pdf-preview-dialog .p-dialog-content {
+    padding: 1rem;
+    height: calc(80vh - 120px);
+    overflow: hidden;
+}
+
+.pdf-preview-dialog .p-dialog-header {
+    background: linear-gradient(to right, #dc2626, #ef4444);
+    color: white;
+}
+
+.pdf-preview-dialog .p-dialog-header .p-dialog-title {
+    color: white;
+    font-weight: 600;
+}
+
+.pdf-preview-dialog .p-dialog-header .p-dialog-header-icons button {
+    color: white;
+}
+
+.pdf-preview-dialog .p-dialog-header .p-dialog-header-icons button:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Styles pour les différents types de fichiers */
+.file-type-pdf {
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    border: 1px solid #fca5a5;
+}
+
+.file-type-word {
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    border: 1px solid #93c5fd;
+}
+
+.file-type-excel {
+    background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+    border: 1px solid #86efac;
+}
+
+.file-type-image {
+    background: linear-gradient(135deg, #f3e8ff, #e9d5ff);
+    border: 1px solid #c4b5fd;
+}
+
+/* Animation pour le chargement PDF */
+.pdf-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    background: #f8fafc;
+    border-radius: 8px;
+}
+
+.pdf-loading::after {
+    content: '';
+    width: 40px;
+    height: 40px;
+    border: 4px solid #e2e8f0;
+    border-top: 4px solid #dc2626;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Responsive pour mobile */
+@media (max-width: 768px) {
+    .pdf-preview-dialog {
+        width: 95vw !important;
+        height: 90vh !important;
+    }
+
+    .pdf-preview-dialog .p-dialog-content {
+        height: calc(90vh - 120px);
+    }
+}
+
+/* Styles pour les badges de type de fichier */
+.file-badge {
+    transition: all 0.2s ease;
+}
+
+.file-badge:hover {
+    transform: scale(1.05);
+}
+
+/* Amélioration du contraste pour le mode sombre */
+@media (prefers-color-scheme: dark) {
+    .file-type-pdf {
+        background: linear-gradient(135deg, #7f1d1d, #991b1b);
+        border-color: #dc2626;
+    }
+
+    .file-type-word {
+        background: linear-gradient(135deg, #1e3a8a, #1d4ed8);
+        border-color: #3b82f6;
+    }
+
+    .file-type-excel {
+        background: linear-gradient(135deg, #14532d, #166534);
+        border-color: #22c55e;
+    }
+
+    .file-type-image {
+        background: linear-gradient(135deg, #581c87, #6b21a8);
+        border-color: #a855f7;
+    }
+}

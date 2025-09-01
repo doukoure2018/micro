@@ -62,7 +62,6 @@ spring:
       group-id: topicgroupid
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-      # Add producer configuration for large messages
       properties:
         max.request.size: 1300000000
     properties:
@@ -70,7 +69,6 @@ spring:
         json:
           type:
             mapping: Notification:io.digiservices.userservice.domain.Notification
-      # Add global properties for handling large messages
       message.max.bytes: 1300000000
       max.request.size: 1300000000
 
@@ -124,6 +122,9 @@ logging:
     deserialization:
       fail-on-unknown-properties: false
     property-naming-strategy: SNAKE_CASE
+    date-format: yyyy-MM-dd'T'HH:mm:ss
 
 jwks:
   uri: http://localhost:8080/oauth2/jwks
+
+

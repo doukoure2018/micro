@@ -45,7 +45,8 @@
                     <!-- Conditional Location Fields -->
                     @if(state().selectedRole && shouldShowLocationFields(state().selectedRole?.name!)) {
                     <!-- Delegation Field -->
-                    <div class="mb-6 col-span-12 md:col-span-6">
+                    <div class="mb-6 col-span-12"
+                        [ngClass]="{'md:col-span-6': shouldShowAgenceField(state().selectedRole?.name!)}">
                         <label for="delegation" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
                             Délégation *
                         </label>
@@ -74,7 +75,8 @@
                         }
                     </div>
 
-                    <!-- Agence Field -->
+                    <!-- Agence Field (not shown for DR role) -->
+                    @if(shouldShowAgenceField(state().selectedRole?.name!)) {
                     <div class="mb-6 col-span-12 md:col-span-6">
                         <label for="agence" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
                             Agence *
@@ -102,6 +104,7 @@
                         <p-message severity="error" text="Agence is required"></p-message>
                         }
                     </div>
+                    }
 
                     <!-- Point Vente Field (only for AGENT_CREDIT) -->
                     @if(shouldShowPointVenteField(state().selectedRole?.name!)) {

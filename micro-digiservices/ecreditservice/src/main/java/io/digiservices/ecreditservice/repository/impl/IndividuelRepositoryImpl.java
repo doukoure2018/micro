@@ -79,7 +79,7 @@ public class IndividuelRepositoryImpl implements IndividuelRepository {
 
                     // Update the request status
                     int rowsAffected = jdbcClient.sql(UPDATE_STATUT_DEMANDE_QUERY)
-                            .params(Map.of("demandeindividuel_id", demandeIndividuel.getDemandeindividuel_id()))
+                            .params(Map.of("demandeindividuel_id", demandeIndividuel.getDemandeIndividuelId()))
                             .update();
 
                     if (rowsAffected == 0) {

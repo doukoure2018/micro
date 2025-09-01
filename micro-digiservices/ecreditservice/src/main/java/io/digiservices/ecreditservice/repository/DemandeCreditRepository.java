@@ -23,6 +23,8 @@ public interface DemandeCreditRepository {
 
     Boolean mettreAJourDemande(DemandeUpdateRequest request, String cautionsJson);
 
+    DemandeCredit getDemandeCreditByDemandeInd(Long demandeIndividuelId);
+
 
     // analyse de credit
 

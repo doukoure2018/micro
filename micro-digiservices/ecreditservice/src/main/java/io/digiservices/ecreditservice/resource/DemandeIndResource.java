@@ -9,25 +9,24 @@ import io.digiservices.clients.domain.User;
 import io.digiservices.ecreditservice.domain.Response;
 import io.digiservices.ecreditservice.dto.*;
 import io.digiservices.ecreditservice.exception.ApiException;
-import io.digiservices.ecreditservice.service.BilanEntrepriseService;
-import io.digiservices.ecreditservice.service.DemandeCreditService;
-import io.digiservices.ecreditservice.service.DemandeIndService;
-import io.digiservices.ecreditservice.service.SelectionService;
+import io.digiservices.ecreditservice.service.*;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ValidationException;
 import org.modelmapper.internal.bytebuddy.pool.TypePool;
+import org.modelmapper.spi.ErrorMessage;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.net.URI;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static io.digiservices.ecreditservice.utils.RequestUtils.getResponse;
 import static java.util.Collections.emptyMap;
@@ -38,6 +37,7 @@ import static org.springframework.http.ResponseEntity.created;
 @RestController
 @RequestMapping("/ecredit")
 @RequiredArgsConstructor
+@Slf4j
 public class DemandeIndResource {
 
     private final DemandeIndService demandeIndService;
@@ -45,13 +45,160 @@ public class DemandeIndResource {
     private final UserClient userClient;
     private final EbankingClient ebankingClient;
     private final DemandeCreditService demandeCreditService;
+    private final AnalyseService analyseService;
 
     @PostMapping("/addDemandeInd")
-    public ResponseEntity<Response> addDemandeInd(@RequestBody DemandeIndividuel demandeIndividuel, HttpServletRequest request) {
-        demandeIndService.addDemandeInd(demandeIndividuel);
-        return created(getUri()).body(getResponse(request, emptyMap(), "DemandeInd Created Successfully", CREATED));
+    public ResponseEntity<Response> addDemandeIndWithGaranties(
+            @Valid @RequestBody DemandeIndividuel demandeIndividuel) {
+
+        try {
+            // Validation de la nature du client
+            validateNatureClient(demandeIndividuel);
+
+            // Validation des types de garanties
+            validateGaranties(demandeIndividuel.getGaranties());
+
+            DemandeResponse result = demandeIndService.addDemandeIndWithGaranties(demandeIndividuel);
+
+            Map<String, Object> data = Map.of(
+                    "demandeId", result.getDemandeId(),
+                    "message", result.getMessage(),
+                    "success", result.isSuccess(),
+                    "natureClient", demandeIndividuel.getNatureClient()
+            );
+
+            return ResponseEntity
+                    .created(URI.create("/api/demandes/" + result.getDemandeId()))
+                    .body(Response.builder()
+                            .timeStamp(System.currentTimeMillis())
+                            .data(data)
+                            .message("Demande créée avec succès")
+                            .status(CREATED)
+                            .statusCode(CREATED.value())
+                            .build());
+
+        } catch (ValidationException e) {
+            log.error("Erreur de validation: ", e);
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(Response.builder()
+                            .timeStamp(System.currentTimeMillis())
+                            .message("Erreur de validation: " + e.getMessage())
+                            .status(HttpStatus.BAD_REQUEST)
+                            .statusCode(HttpStatus.BAD_REQUEST.value())
+                            .build());
+        } catch (Exception e) {
+            log.error("Erreur lors de la création de la demande: ", e);
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(Response.builder()
+                            .timeStamp(System.currentTimeMillis())
+                            .message("Erreur: " + e.getMessage())
+                            .status(HttpStatus.BAD_REQUEST)
+                            .statusCode(HttpStatus.BAD_REQUEST.value())
+                            .build());
+        }
     }
 
+    private void validateNatureClient(DemandeIndividuel demande) {
+        List<String> validNatures = Arrays.asList("Individuel", "PME", "Groupe Solidaire", "Autre");
+
+        if (demande.getNatureClient() == null || demande.getNatureClient().isEmpty()) {
+            demande.setNatureClient("Individuel"); // Valeur par défaut
+        } else if (!validNatures.contains(demande.getNatureClient())) {
+            List<ErrorMessage> errors = new ArrayList<>();
+            errors.add(new ErrorMessage("Nature client invalide: " + demande.getNatureClient()));
+            throw new ValidationException(errors);
+        }
+    }
+
+    private void validateGaranties(List<GarantiePropose> garanties) {
+        if (garanties == null || garanties.isEmpty()) {
+            List<ErrorMessage> errors = new ArrayList<>();
+            errors.add(new ErrorMessage("Au moins une garantie est requise"));
+            throw new ValidationException(errors);
+        }
+
+        List<String> validTypes = Arrays.asList(
+                "Caution Solidaire",
+                "Garantie Financiere",
+                "Garantie Materielle",
+                "Autre Garantie"
+        );
+
+        for (GarantiePropose garantie : garanties) {
+            if (!validTypes.contains(garantie.getTypeGarantie())) {
+                List<ErrorMessage> errors = new ArrayList<>();
+                errors.add(new ErrorMessage("Type de garantie invalide: " + garantie.getTypeGarantie()));
+                throw new ValidationException(errors);
+            }
+
+            if (garantie.getValeurGarantie() == null || garantie.getValeurGarantie().compareTo(BigDecimal.ZERO) <= 0) {
+                List<ErrorMessage> errors = new ArrayList<>();
+                errors.add(new ErrorMessage("La valeur de la garantie doit être positive"));
+                throw new ValidationException(errors);
+            }
+        }
+    }
+
+    @GetMapping("/{demandeId}")
+    public ResponseEntity<Response> getDemandeWithGaranties(@NotNull Authentication authentication,
+                                                            @PathVariable(name = "demandeId") Long demandeId) {
+        try {
+            DemandeIndividuel demandeIndividuel = demandeIndService.getDemandeWithGaranties(demandeId);
+            //get Instance user connected
+            User user = userClient.getUserByUuid(authentication.getName());
+
+            // check if demandeid existe in demande_credit
+            DemandeCredit demande_credit = demandeCreditService.getDemandeCreditByDemandeInd(demandeIndividuel.getDemandeIndividuelId());
+
+            //Get Information Dossier by demandeIndividuelId
+            DossierCreditDto dossierCredit = analyseService.getDossierByDemandeIndividuelId(demandeId);
+
+            // Créer la réponse avec ou sans demandeCredit
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("demandeIndividuel", demandeIndividuel);
+            responseData.put("user", user);
+
+            if (demande_credit != null) {
+                responseData.put("demande_credit", demande_credit);
+                responseData.put("hasDemandeCredit", true);
+            } else {
+                responseData.put("demande_credit", null);
+                responseData.put("hasDemandeCredit", false);
+            }
+
+            if (dossierCredit != null) {
+                responseData.put("dossierCredit", dossierCredit);
+                responseData.put("hasDossierCredit", true);
+            } else {
+                responseData.put("dossierCredit", null);
+                responseData.put("hasDossierCredit", false);
+            }
+
+            return ResponseEntity.ok(
+                    Response.builder()
+                            .timeStamp(System.currentTimeMillis())
+                            .data(responseData)
+                            .message(demande_credit != null ?
+                                    "Demande récupérée avec succès" :
+                                    "Demande récupérée avec succès (pas encore de demande de crédit associée)")
+                            .status(OK)
+                            .statusCode(OK.value())
+                            .build()
+            );
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération de la demande: ", e);
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Response.builder()
+                            .timeStamp(System.currentTimeMillis())
+                            .message("Erreur interne du serveur")
+                            .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                            .build());
+        }
+    }
 
     @GetMapping("/attente")
     public ResponseEntity<Response> listDemandAttente(@NotNull Authentication authentication,
@@ -118,7 +265,8 @@ public class DemandeIndResource {
     @GetMapping("/selection")
     public ResponseEntity<Response> listeDemandeCreditSelection(@NotNull Authentication authentication,
                                                       HttpServletRequest request) {
-        return created(getUri()).body(getResponse(request,Map.of("demandeAttentes",demandeIndService.getListDemandeCreditByDate(userClient.getUserByUuid(authentication.getName()).getPointventeId())), "Liste des demandes en attente", OK));
+        return created(getUri()).body(getResponse(request,
+                                          Map.of("demandeAttentes",demandeIndService.getListDemandeCreditByDate(userClient.getUserByUuid(authentication.getName()).getPointventeId())), "Liste des demandes en attente", OK));
     }
 
     @PatchMapping("/update/{statut}/{codUsuarios}/{demandeindividuel_id}")
@@ -369,6 +517,7 @@ public class DemandeIndResource {
     @GetMapping("/newDemandeInd")
     public ResponseEntity<Response> newDemandeInd(HttpServletRequest request)
     {
+
         return created(getUri()).body(getResponse(request,Map.of(
                      "delegations",userClient.getAllDelegationOffLine(),
                      "agences",userClient.allAgenceOfLine(),
@@ -399,12 +548,49 @@ public class DemandeIndResource {
                 "Liste des usager actifs dans saf", OK));
     }
 
-    @GetMapping("/testMigration")
-    public ResponseEntity<Response> test(@NotNull Authentication authentication,
-                                                           HttpServletRequest request)
-    {
-        return created(getUri()).body(getResponse(request,emptyMap(),
-                "This is a test for migration and add Moumine", OK));
+    /**
+     * Récupérer toutes les demandes avec garanties (sans pagination)
+     */
+    @GetMapping("/all-with-garanties")
+    public ResponseEntity<Response> getAllDemandesWithGaranties(
+            @RequestParam(name = "agenceId", required = false) Long agenceId,
+            @RequestParam(name = "pointVenteId", required = false) Long pointVenteId) {
+        try {
+            List<DemandeIndividuel> demandes = demandeIndService.getAllDemandesWithGaranties(agenceId, pointVenteId);
+
+            return ResponseEntity.ok(
+                    Response.builder()
+                            .timeStamp(System.currentTimeMillis())
+                            .data(Map.of(
+                                    "demandes", demandes,
+                                    "count", demandes.size()
+                            ))
+                            .message(String.format("Récupération de %d demandes avec succès", demandes.size()))
+                            .status(OK)
+                            .statusCode(OK.value())
+                            .build()
+            );
+        } catch (ApiException e) {
+            log.error("Erreur de validation: ", e);
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(Response.builder()
+                            .timeStamp(System.currentTimeMillis())
+                            .message(e.getMessage())
+                            .status(HttpStatus.BAD_REQUEST)
+                            .statusCode(HttpStatus.BAD_REQUEST.value())
+                            .build());
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des demandes: ", e);
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Response.builder()
+                            .timeStamp(System.currentTimeMillis())
+                            .message("Erreur lors de la récupération des demandes")
+                            .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                            .build());
+        }
     }
 
     private URI getUri() {

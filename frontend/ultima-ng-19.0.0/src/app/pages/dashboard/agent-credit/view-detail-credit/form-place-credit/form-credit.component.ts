@@ -14,11 +14,10 @@ import { TipoPlazo } from '@/interface/tipo-plazo.model';
 import { TypeCreditDto } from '@/interface/typeCredit.model';
 import { IUser } from '@/interface/user';
 import { UserService } from '@/service/user.service';
-import { Point } from '@angular/cdk/drag-drop';
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormBuilder, FormGroup, FormsModule, NgForm, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, NgForm } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
@@ -175,7 +174,6 @@ export class FormCreditComponent {
         const sousActiviteId = event.value;
 
         if (sousActiviteId && this.state().selectedActividad) {
-            // Filter sous-sous-activités based on activité AND sous-activité
             const filteredSousSousActivites = this.state().sousSousActividas?.filter((ssa) => ssa.codActividad === this.state().selectedActividad && ssa.codSousActivite === sousActiviteId) || [];
 
             this.state.set({

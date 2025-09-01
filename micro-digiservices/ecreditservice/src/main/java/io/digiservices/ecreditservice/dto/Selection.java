@@ -1,5 +1,6 @@
 package io.digiservices.ecreditservice.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Getter;
 import lombok.Setter;
@@ -13,6 +14,7 @@ public class Selection {
 
     private Long selectionId;
     private String doc;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss.SSSSSS")
     private LocalDateTime createdAt;
     private String statutSelection;
     private Long userId;

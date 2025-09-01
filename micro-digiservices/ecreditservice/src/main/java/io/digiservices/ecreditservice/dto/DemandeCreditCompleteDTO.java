@@ -15,7 +15,9 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DemandeCreditCompleteDTO {
 
+
     // Données du promoteur
+    private Long demandeIndividuelId;
     private String nomPromoteur;
     private String prenomPromoteur;
 

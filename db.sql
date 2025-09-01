@@ -1106,6 +1106,7 @@ INSERT INTO roles (role_uuid, name, authority) VALUES ('7f907494-90b0-4165-b2fd-
 INSERT INTO roles (role_uuid, name, authority) VALUES ('838ca5ee-eb15-427a-b380-6cf7bfbd68b7', 'SUPER_ADMIN', 'app:create,app:read,app:update,app:delete,user:create,user:read,user:update,user:delete,ticket:create,ticket:read,ticket:update,ticket:delete,comment:create,comment:read,comment:update,comment:delete,task:create,task:read,task:update,task:delete');
 
 -- Populate priorities table
+
 INSERT INTO priorities (priority, description) VALUES ('LOW', 'This is low priority');
 INSERT INTO priorities (priority, description) VALUES ('MEDIUM', 'This is medium priority');
 INSERT INTO priorities (priority, description) VALUES ('HIGH', 'This is high priority');
@@ -1192,3 +1193,244 @@ CREATE TABLE motif_analyses (
                                 motif_date DATE NOT NULL DEFAULT CURRENT_DATE,
                                 motif VARCHAR(500) NOT NULL  -- Consider if this should be required
 );
+
+
+
+-- =====================================================
+-- PROCÉDURE STOCKÉE: Insertion demande individuelle avec garanties
+-- =====================================================
+
+-- Type pour les garanties
+CREATE TYPE garantie_input AS (
+    type_garantie VARCHAR(100),
+    description_garantie TEXT,
+    valeur_garantie DECIMAL(15,2)
+    );
+
+-- Procédure stockée principale
+CREATE OR REPLACE FUNCTION insert_demande_with_garanties(
+    -- Informations personnelles
+    p_nom VARCHAR(255),
+    p_prenom VARCHAR(255),
+    p_telephone VARCHAR(255),
+    p_numero_membre VARCHAR(255),
+    p_delegation INTEGER,
+    p_agence INTEGER,
+    p_pos INTEGER,
+    p_type_piece VARCHAR(100),
+    p_numId VARCHAR(255),
+    p_date_naissance DATE,
+    p_lieux_naissance VARCHAR(255),
+    p_genre VARCHAR(20),
+    p_situation_matrimoniale VARCHAR(50),
+    p_nombre_personne_en_charge INTEGER,
+    p_nombre_personne_scolarise INTEGER,
+    p_addresse_domicile_contact TEXT,
+    p_type_propriete VARCHAR(100),
+    p_nombre_annee_habitation INTEGER,
+
+    -- Informations activité
+    p_type_activite VARCHAR(255),
+    p_sous_activite VARCHAR(255),
+    p_sous_sous_activite VARCHAR(255),
+    p_description_activite TEXT,
+    p_nombre_annee_activite INTEGER,
+    p_adresse_lieu_activite TEXT,
+    p_autre_activite VARCHAR(255),
+    p_lieu_activite VARCHAR(255),
+
+    -- Modalités de la demande
+    p_montant_demande DECIMAL(15,2),
+    p_duree_demande INTEGER,
+    p_periodicite_remboursement VARCHAR(50),
+    p_taux_interet DECIMAL(5,2),
+    p_periode_differe INTEGER,
+    p_nombre_echeance INTEGER,
+    p_echeance DECIMAL(15,2),
+    p_object_credit VARCHAR(100),
+    p_detail_object_credit TEXT,
+    p_statut_credit VARCHAR(50),
+    p_rang_credit INTEGER,
+
+    -- Informations système
+    p_tip_credito INTEGER,
+    p_cod_usuarios VARCHAR(255),
+    p_statut_demande VARCHAR(255),
+    p_validation_state VARCHAR(255),
+    p_current_activite VARCHAR(255),
+
+    -- Tableau de garanties
+    p_garanties garantie_input[]
+)
+RETURNS TABLE (
+    demande_id BIGINT,
+    message TEXT,
+    success BOOLEAN
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+v_demande_id BIGINT;
+    v_garantie garantie_input;
+    v_error_message TEXT;
+BEGIN
+    -- Début de la transaction
+BEGIN
+        -- 1. Insertion de la demande principale
+INSERT INTO demandeIndividuel (
+    nom, prenom, telephone, numero_membre,
+    delegation, agence, pos,
+    type_piece, numId, date_naissance, lieux_naissance,
+    genre, situation_matrimoniale,
+    nombre_personne_en_charge, nombre_personne_scolarise,
+    addresse_domicile_contact, type_propriete, nombre_annee_habitation,
+    type_activite, sous_activite, sous_sous_activite,
+    description_activite, nombre_annee_activite,
+    adresse_lieu_activite, autre_activite, lieu_activite,
+    montant_demande, duree_demande, periodicite_remboursement,
+    taux_interet, periode_differe, nombre_echeance, echeance,
+    object_credit, detail_object_credit,
+    statut_credit, rang_credit,
+    tip_credito, cod_usuarios,
+    statut_demande, validation_state, current_activite,
+    createdAt
+) VALUES (
+             p_nom, p_prenom, p_telephone, p_numero_membre,
+             p_delegation, p_agence, p_pos,
+             p_type_piece, p_numId, p_date_naissance, p_lieux_naissance,
+             p_genre, p_situation_matrimoniale,
+             p_nombre_personne_en_charge, p_nombre_personne_scolarise,
+             p_addresse_domicile_contact, p_type_propriete, p_nombre_annee_habitation,
+             p_type_activite, p_sous_activite, p_sous_sous_activite,
+             p_description_activite, p_nombre_annee_activite,
+             p_adresse_lieu_activite, p_autre_activite, p_lieu_activite,
+             p_montant_demande, p_duree_demande, p_periodicite_remboursement,
+             p_taux_interet, p_periode_differe, p_nombre_echeance, p_echeance,
+             p_object_credit, p_detail_object_credit,
+             p_statut_credit, p_rang_credit,
+             p_tip_credito, p_cod_usuarios,
+             p_statut_demande, p_validation_state, p_current_activite,
+             CURRENT_TIMESTAMP
+         )
+    RETURNING demandeIndividuel_id INTO v_demande_id;
+
+-- 2. Insertion des garanties si fournies
+IF p_garanties IS NOT NULL AND array_length(p_garanties, 1) > 0 THEN
+            FOREACH v_garantie IN ARRAY p_garanties
+            LOOP
+                INSERT INTO garantie_propose (
+                    demandeIndividuel_id,
+                    type_garantie,
+                    description_garantie,
+                    valeur_garantie
+                ) VALUES (
+                    v_demande_id,
+                    v_garantie.type_garantie,
+                    v_garantie.description_garantie,
+                    v_garantie.valeur_garantie
+                );
+END LOOP;
+END IF;
+
+        -- Retour de succès
+RETURN QUERY
+SELECT
+    v_demande_id,
+    'Demande créée avec succès'::TEXT,
+        TRUE;
+
+EXCEPTION
+        WHEN OTHERS THEN
+            -- En cas d'erreur, annuler la transaction
+            GET STACKED DIAGNOSTICS v_error_message = MESSAGE_TEXT;
+
+RETURN QUERY
+SELECT
+    0::BIGINT,
+        'Erreur lors de la création de la demande: ' || v_error_message,
+    FALSE;
+END;
+END;
+$$;
+
+-- =====================================================
+-- FONCTION HELPER: Validation des données avant insertion
+-- =====================================================
+CREATE OR REPLACE FUNCTION validate_demande_data(
+    p_montant_demande DECIMAL,
+    p_duree_demande INTEGER,
+    p_taux_interet DECIMAL
+)
+RETURNS TABLE (
+    is_valid BOOLEAN,
+    error_messages TEXT[]
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+v_errors TEXT[] := ARRAY[]::TEXT[];
+BEGIN
+    -- Validation du montant
+    IF p_montant_demande IS NULL OR p_montant_demande <= 0 THEN
+        v_errors := array_append(v_errors, 'Le montant demandé doit être supérieur à 0');
+END IF;
+
+    -- Validation de la durée
+    IF p_duree_demande IS NULL OR p_duree_demande <= 0 THEN
+        v_errors := array_append(v_errors, 'La durée du prêt doit être supérieure à 0');
+END IF;
+
+    -- Validation du taux d'intérêt
+    IF p_taux_interet IS NULL OR p_taux_interet < 0 THEN
+        v_errors := array_append(v_errors, 'Le taux d''intérêt ne peut pas être négatif');
+END IF;
+
+RETURN QUERY
+SELECT
+    array_length(v_errors, 1) IS NULL,
+    v_errors;
+END;
+$$;
+
+-- =====================================================
+-- FONCTION: Récupérer une demande avec ses garanties
+-- =====================================================
+CREATE OR REPLACE FUNCTION get_demande_with_garanties(p_demande_id BIGINT)
+RETURNS TABLE (
+    demande_data JSON,
+    garanties_data JSON
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+RETURN QUERY
+SELECT
+    row_to_json(d.*) as demande_data,
+    COALESCE(
+            json_agg(
+                    json_build_object(
+                            'garantie_id', g.garantie_propose_id,
+                            'type_garantie', g.type_garantie,
+                            'description_garantie', g.description_garantie,
+                            'valeur_garantie', g.valeur_garantie,
+                            'valeur_emprunte', g.valeur_emprunte
+                    )
+            ) FILTER (WHERE g.garantie_propose_id IS NOT NULL),
+            '[]'::json
+    ) as garanties_data
+FROM demandeIndividuel d
+         LEFT JOIN garantie_propose g ON d.demandeIndividuel_id = g.demandeIndividuel_id
+WHERE d.demandeIndividuel_id = p_demande_id
+GROUP BY d.demandeIndividuel_id, d.nom, d.prenom, d.telephone, d.numero_membre,
+         d.delegation, d.agence, d.pos, d.type_piece, d.numId, d.date_naissance,
+         d.lieux_naissance, d.genre, d.situation_matrimoniale, d.nombre_personne_en_charge,
+         d.nombre_personne_scolarise, d.addresse_domicile_contact, d.type_propriete,
+         d.nombre_annee_habitation, d.type_activite, d.sous_activite, d.sous_sous_activite,
+         d.description_activite, d.nombre_annee_activite, d.adresse_lieu_activite,
+         d.autre_activite, d.lieu_activite, d.montant_demande, d.duree_demande,
+         d.periodicite_remboursement, d.taux_interet, d.periode_differe, d.nombre_echeance,
+         d.echeance, d.object_credit, d.detail_object_credit, d.statut_credit, d.rang_credit,
+         d.tip_credito, d.cod_usuarios, d.statut_demande, d.validation_state,
+         d.current_activite, d.statut_selection, d.createdAt, d.age;
+END;
+$$;

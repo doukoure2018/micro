@@ -36,7 +36,15 @@ public class RequestUtils {
     };
 
     public static Response handleErrorResponse(String message, String exception, HttpServletRequest request, HttpStatusCode status) {
-        return new Response(now().toString(), status.value(), request.getRequestURI(), HttpStatus.valueOf(status.value()), message, exception, emptyMap());
+        return new Response(
+                System.currentTimeMillis(),  // Utiliser un Long timestamp
+                status.value(),
+                request.getRequestURI(),
+                HttpStatus.valueOf(status.value()),
+                message,
+                exception,
+                emptyMap()
+        );
     }
 
     public static void handleErrorResponse(HttpServletRequest request, HttpServletResponse response, Exception exception) {
@@ -62,7 +70,15 @@ public class RequestUtils {
     }
 
     public static Response getResponse(HttpServletRequest request, Map<?, ?> data, String message, HttpStatus status){
-        return new Response(now().toString(), status.value(), request.getRequestURI(), status, message, EMPTY, data);
+        return new Response(
+                System.currentTimeMillis(),  // Utiliser un Long timestamp
+                status.value(),
+                request.getRequestURI(),
+                status,
+                message,
+                EMPTY,
+                data
+        );
     }
 
     private static final BiFunction<Exception, HttpStatus, String> errorReason = (exception, httpStatus) -> {
@@ -85,6 +101,14 @@ public class RequestUtils {
     private static Response getErrorResponse(HttpServletRequest request, HttpServletResponse response, Exception exception, HttpStatus status) {
         response.setContentType(APPLICATION_JSON_VALUE);
         response.setStatus(status.value());
-        return new Response(now().toString(), status.value(), request.getRequestURI(), HttpStatus.valueOf(status.value()), errorReason.apply(exception, status), getRootCauseMessage(exception), emptyMap());
+        return new Response(
+                System.currentTimeMillis(),  // Utiliser un Long timestamp
+                status.value(),
+                request.getRequestURI(),
+                HttpStatus.valueOf(status.value()),
+                errorReason.apply(exception, status),
+                getRootCauseMessage(exception),
+                emptyMap()
+        );
     }
 }

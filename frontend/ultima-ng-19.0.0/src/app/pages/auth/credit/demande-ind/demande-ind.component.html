@@ -1,273 +1,727 @@
-<div class="card">
+<!-- demande-ind.component.html -->
+<div class="container-fluid p-4">
     <p-toast></p-toast>
-    <span class="text-surface-900 dark:text-surface-0 text-xl font-bold mb-6 block">
-        Formulaire de demande de credit Individuel <strong>{{ state().clientData?.nom_CLIENTE}}</strong>
-    </span>
 
-    <div class="col-span-12 lg:col-span-2">
-        @if(state().submitting) {
-        <div class="flex justify-center mb-4">
-            <p-progressSpinner [style]="{ width: '50px', height: '50px' }"></p-progressSpinner>
+    <!-- Header -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h2 class="mb-0">
+                <i class="pi pi-file-edit mr-2"></i>
+                DEMANDE DE CRÉDIT - GROS DOSSIER
+            </h2>
+            @if(state().clientData) {
+            <p class="mt-2 mb-0">Client: <strong>{{ state().clientData?.nom_CLIENTE }}</strong></p>
+            }
         </div>
-        }
-    </div>
 
-    <div class="col-span-12 lg:col-span-10">
-        <form #demandeForm="ngForm" (ngSubmit)="createDemande(demandeForm)">
-            <div class="grid grid-cols-12 gap-4">
-                <!-- Personal Information -->
-                <div class="mb-4 col-span-12 md:col-span-4">
-                    <label for="nom" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
-                        Nom
-                    </label>
-                    <input pInputText ngModel name="nom" id="nom" type="text" required [disabled]="state().submitting"
-                        class="w-full" />
-                    @if(demandeForm.controls['nom'] && demandeForm.controls['nom'].invalid &&
-                    demandeForm.controls['nom'].touched) {
-                    <p-message severity="error" text="Le nom est obligatoire"></p-message>
-                    }
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label>Date de la demande:</label>
+                    <strong>{{ today | date:'dd/MM/yyyy' }}</strong>
                 </div>
-                <div class="mb-4 col-span-12 md:col-span-4">
-                    <label for="prenom" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
-                        Prénom
-                    </label>
-                    <input pInputText ngModel name="prenom" id="prenom" type="text" required
-                        [disabled]="state().submitting" class="w-full" />
-                    @if(demandeForm.controls['prenom'] && demandeForm.controls['prenom'].invalid &&
-                    demandeForm.controls['prenom'].touched) {
-                    <p-message severity="error" text="Le prénom est obligatoire"></p-message>
-                    }
+                <div class="col-md-4">
+                    <label>Agence de:</label>
+                    <strong>{{ selectedAgence?.libele || '-' }}</strong>
                 </div>
-                <div class="mb-2 col-span-12 md:col-span-2">
-                    <label for="telephone" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
-                        Téléphone
-                    </label>
-                    <input pInputText ngModel name="telephone" id="telephone" type="text" required
-                        [disabled]="state().submitting" class="w-full" />
-                    @if(demandeForm.controls['telephone'] && demandeForm.controls['telephone'].invalid &&
-                    demandeForm.controls['telephone'].touched) {
-                    <p-message severity="error" text="Le téléphone est obligatoire"></p-message>
-                    }
-                </div>
-                <div class="mb-2 col-span-12 md:col-span-2">
-                    <label for="age" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
-                        Âge
-                    </label>
-                    <p-inputNumber ngModel name="age" id="age" [min]="18" [max]="100" required
-                        [disabled]="state().submitting" styleClass="w-full"></p-inputNumber>
-                    @if(demandeForm.controls['age'] && demandeForm.controls['age'].invalid &&
-                    demandeForm.controls['age'].touched) {
-                    <p-message severity="error" text="L'âge est obligatoire"></p-message>
-                    }
-                </div>
-                <!-- Location Information -->
-                <div class="mb-4 col-span-12 md:col-span-4">
-                    <label for="delegation" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
-                        Délégation
-                    </label>
-                    <p-dropdown ngModel name="delegation" [options]="state().allDelegations || []" optionLabel="libele"
-                        dataKey="id" [filter]="true" filterBy="libele" [showClear]="true"
-                        placeholder="Sélectionner une délégation" required
-                        [disabled]="state().submitting || state().loading" styleClass="w-full" appendTo="body"
-                        (onChange)="onDelegationChange($event)">
-                    </p-dropdown>
-                    @if(demandeForm.controls['delegation'] && demandeForm.controls['delegation'].invalid &&
-                    demandeForm.controls['delegation'].touched) {
-                    <p-message severity="error" text="La délégation est obligatoire"></p-message>
-                    }
-                </div>
-                <div class="mb-4 col-span-12 md:col-span-4">
-                    <label for="agence" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
-                        Agence
-                    </label>
-                    <p-dropdown ngModel name="agence" [options]="state().filteredAgences || []" optionLabel="libele"
-                        dataKey="id" [filter]="true" filterBy="libele" [showClear]="true"
-                        placeholder="Sélectionner une agence" required
-                        [disabled]="state().submitting || !state().filteredAgences || state().filteredAgences!.length === 0"
-                        styleClass="w-full" appendTo="body" (onChange)="onAgenceChange($event)">
-                    </p-dropdown>
-                    @if(demandeForm.controls['agence'] && demandeForm.controls['agence'].invalid &&
-                    demandeForm.controls['agence'].touched) {
-                    <p-message severity="error" text="L'agence est obligatoire"></p-message>
-                    }
-                </div>
-                <div class="mb-4 col-span-12 md:col-span-4">
-                    <label for="pos" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
-                        Point de Vente
-                    </label>
-                    <p-dropdown ngModel name="pos" [options]="state().filteredPointsVente || []" optionLabel="libele"
-                        dataKey="id" [filter]="true" filterBy="libele" [showClear]="true"
-                        placeholder="Sélectionner un point de vente" required
-                        [disabled]="state().submitting || !state().filteredPointsVente || state().filteredPointsVente!.length === 0"
-                        styleClass="w-full" appendTo="body">
-                    </p-dropdown>
-                    @if(demandeForm.controls['pos'] && demandeForm.controls['pos'].invalid &&
-                    demandeForm.controls['pos'].touched) {
-                    <p-message severity="error" text="Le point de vente est obligatoire"></p-message>
-                    }
-                </div>
-
-                <div class="mb-6 col-span-12 md:col-span-6">
-                    <label for="numeroMembre" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
-                        Numéro de Membre
-                    </label>
-                    <input pInputText [ngModel]="state().clientData?.clientesPKId?.codCliente" name="numeroMembre"
-                        id="numeroMembre" type="text" required [disabled]="state().submitting" class="w-full" />
-                    @if(demandeForm.controls['numeroMembre'] && demandeForm.controls['numeroMembre'].invalid &&
-                    demandeForm.controls['numeroMembre'].touched) {
-                    <p-message severity="error" text="Le numéro de membre est obligatoire"></p-message>
-                    }
-                </div>
-
-                <div class="mb-6 col-span-12 md:col-span-6">
-                    <label for="quartier" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
-                        Quartier
-                    </label>
-                    <input pInputText ngModel name="quartier" id="quartier" type="text" required
-                        [disabled]="state().submitting" class="w-full" />
-                    @if(demandeForm.controls['quartier'] && demandeForm.controls['quartier'].invalid &&
-                    demandeForm.controls['quartier'].touched) {
-                    <p-message severity="error" text="Le quartier est obligatoire"></p-message>
-                    }
-                </div>
-                <div class="mb-6 col-span-12 md:col-span-6">
-                    <label for="communeResidence" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
-                        Commune de Résidence
-                    </label>
-                    <input pInputText ngModel name="communeResidence" id="communeResidence" type="text" required
-                        [disabled]="state().submitting" class="w-full" />
-                    @if(demandeForm.controls['communeResidence'] && demandeForm.controls['communeResidence'].invalid
-                    &&
-                    demandeForm.controls['communeResidence'].touched) {
-                    <p-message severity="error" text="La commune de résidence est obligatoire"></p-message>
-                    }
-                </div>
-
-                <!-- Professional Information -->
-                <div class="mb-6 col-span-12 md:col-span-6">
-                    <label for="fonction" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
-                        Fonction
-                    </label>
-                    <input pInputText ngModel name="fonction" id="fonction" type="text" required
-                        [disabled]="state().submitting" class="w-full" />
-                    @if(demandeForm.controls['fonction'] && demandeForm.controls['fonction'].invalid &&
-                    demandeForm.controls['fonction'].touched) {
-                    <p-message severity="error" text="La fonction est obligatoire"></p-message>
-                    }
-                </div>
-                <div class="mb-6 col-span-12 md:col-span-6">
-                    <label for="activite" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
-                        Activité
-                    </label>
-                    <input pInputText ngModel name="activite" id="activite" type="text" required
-                        [disabled]="state().submitting" class="w-full" />
-                    @if(demandeForm.controls['activite'] && demandeForm.controls['activite'].invalid &&
-                    demandeForm.controls['activite'].touched) {
-                    <p-message severity="error" text="L'activité est obligatoire"></p-message>
-                    }
-                </div>
-                <div class="mb-6 col-span-12 md:col-span-6">
-                    <label for="currentActivite" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
-                        Activité Actuelle
-                    </label>
-                    <input pInputText ngModel name="currentActivite" id="currentActivite" type="text" required
-                        [disabled]="state().submitting" class="w-full" />
-                    @if(demandeForm.controls['currentActivite'] && demandeForm.controls['currentActivite'].invalid
-                    &&
-                    demandeForm.controls['currentActivite'].touched) {
-                    <p-message severity="error" text="L'activité actuelle est obligatoire"></p-message>
-                    }
-                </div>
-
-                <!-- Loan Information -->
-                <div class="mb-6 col-span-12 md:col-span-6">
-                    <label for="montant" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
-                        Montant
-                    </label>
-                    <p-inputNumber ngModel name="montant" id="montant" [min]="1" required mode="currency" currency="HTG"
-                        [disabled]="state().submitting" styleClass="w-full"></p-inputNumber>
-                    @if(demandeForm.controls['montant'] && demandeForm.controls['montant'].invalid &&
-                    demandeForm.controls['montant'].touched) {
-                    <p-message severity="error" text="Le montant est obligatoire"></p-message>
-                    }
-                </div>
-                <div class="mb-6 col-span-12 md:col-span-6">
-                    <label for="typeApport" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
-                        Type d'Apport
-                    </label>
-                    <input pInputText ngModel name="typeApport" id="typeApport" type="text" required
-                        [disabled]="state().submitting" class="w-full" />
-                    @if(demandeForm.controls['typeApport'] && demandeForm.controls['typeApport'].invalid &&
-                    demandeForm.controls['typeApport'].touched) {
-                    <p-message severity="error" text="Le type d'apport est obligatoire"></p-message>
-                    }
-                </div>
-                <div class="mb-6 col-span-12 md:col-span-6">
-                    <label for="tipCredito" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
-                        Type de Crédit
-                    </label>
-                    <p-dropdown ngModel name="tipCredito" [options]="state().typeCreditos || []"
-                        optionLabel="des_TIP_CREDITO" [filter]="true" filterBy="des_TIP_CREDITO" [showClear]="true"
-                        required placeholder="Sélectionner un type de crédit"
-                        [disabled]="state().submitting || state().loading" styleClass="w-full" appendTo="body">
-                        <ng-template pTemplate="selectedItem" let-credit>
-                            <div class="flex items-center">
-                                <span>{{ credit?.des_TIP_CREDITO }}</span>
-                            </div>
-                        </ng-template>
-                        <ng-template pTemplate="item" let-credit>
-                            <div class="flex items-center">
-                                <span>{{ credit.des_TIP_CREDITO }}</span>
-                                @if(credit.tasa_INTERES) {
-                                <span class="ml-2 text-xs text-gray-500">(Taux: {{ credit.tasa_INTERES }}%)</span>
-                                }
-                            </div>
-                        </ng-template>
-                    </p-dropdown>
-                    @if(demandeForm.controls['tipCredito'] && demandeForm.controls['tipCredito'].invalid &&
-                    demandeForm.controls['tipCredito'].touched) {
-                    <p-message severity="error" text="Le type de crédit est obligatoire"></p-message>
-                    }
-                </div>
-                <div class="mb-6 col-span-12 md:col-span-6">
-                    <label for="raison" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
-                        Raison
-                    </label>
-                    <input pInputText ngModel name="raison" id="raison" type="text" required
-                        [disabled]="state().submitting" class="w-full" />
-                    @if(demandeForm.controls['raison'] && demandeForm.controls['raison'].invalid &&
-                    demandeForm.controls['raison'].touched) {
-                    <p-message severity="error" text="La raison est obligatoire"></p-message>
-                    }
-                </div>
-                <div class="mb-6 col-span-12">
-                    <label for="object" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
-                        Objet de la demande
-                    </label>
-                    <textarea pTextarea ngModel name="object" id="object" rows="3" [autoResize]="true" required
-                        [disabled]="state().submitting" class="w-full"></textarea>
-                    @if(demandeForm.controls['object'] && demandeForm.controls['object'].invalid &&
-                    demandeForm.controls['object'].touched) {
-                    <p-message severity="error" text="L'objet de la demande est obligatoire"></p-message>
-                    }
-                </div>
-
-                <!-- Hidden fields with default values -->
-                <input type="hidden" ngModel name="statutDemande" value="EN_ATTENTE">
-                <input type="hidden" ngModel name="validationState" value="NOUVEAU">
-
-                <div class="col-span-12">
-                    <div class="flex gap-3">
-                        <button pButton pRipple type="submit" label="Soumettre la demande" icon="pi pi-save"
-                            [loading]="state().submitting"
-                            [disabled]="demandeForm && demandeForm.invalid || state().submitting"
-                            class="w-auto mt-3"></button>
-                        <button pButton pRipple type="button" label="Annuler" icon="pi pi-times"
-                            (click)="demandeForm.resetForm()" [disabled]="state().submitting"
-                            class="p-button-secondary w-auto mt-3"></button>
-                    </div>
+                <div class="col-md-4">
+                    <label>Agent de crédit:</label>
+                    <strong>{{ currentUser?.name || '-' }}</strong>
                 </div>
             </div>
-        </form>
+        </div>
     </div>
+
+    <!-- Loading Spinner -->
+    @if(state().submitting || state().loading) {
+    <div class="d-flex justify-content-center my-4">
+        <p-progressSpinner [style]="{ width: '50px', height: '50px' }"></p-progressSpinner>
+    </div>
+    }
+
+    <!-- Main Form -->
+    <form #demandeForm="ngForm" (ngSubmit)="createDemande(demandeForm)">
+
+        <!-- SECTION 1: INFORMATIONS SUR LE MEMBRE/CLIENT -->
+        <p-panel header="1. INFORMATIONS SUR LE MEMBRE/CLIENT" [toggleable]="true" class="mb-3">
+            <div class="grid">
+
+                <!-- Row 1 -->
+                <div class="col-12 md:col-6 lg:col-3">
+                    <label for="nom" class="block mb-2">Nom et Prénoms *</label>
+                    <div class="p-inputgroup">
+                        <input pInputText [(ngModel)]="formData.nom" name="nom" id="nom" required
+                            [disabled]="state().submitting" class="w-full" placeholder="Nom">
+                    </div>
+                </div>
+
+                <div class="col-12 md:col-6 lg:col-3">
+                    <label class="block mb-2">&nbsp;</label>
+                    <input pInputText [(ngModel)]="formData.prenom" name="prenom" required
+                        [disabled]="state().submitting" class="w-full" placeholder="Prénom(s)">
+                </div>
+
+                <div class="col-12 md:col-6 lg:col-3">
+                    <label for="numeroMembre" class="block mb-2">Numéro/membre *</label>
+                    <input pInputText [(ngModel)]="formData.numeroMembre"
+                        [value]="state().clientData?.clientesPKId?.codCliente" name="numeroMembre" id="numeroMembre"
+                        required [disabled]="state().submitting" class="w-full">
+                </div>
+
+                <div class="col-12 md:col-6 lg:col-3">
+                    <label for="telephone" class="block mb-2">Téléphone *</label>
+                    <input pInputText [(ngModel)]="formData.telephone" name="telephone" id="telephone" required
+                        [disabled]="state().submitting" class="w-full" placeholder="Ex: 620000000">
+                </div>
+
+                <!-- Row 2: Type de pièce et informations -->
+                <div class="col-12 md:col-6 lg:col-3">
+                    <label for="typePiece" class="block mb-2">Type de pièce d'identité *</label>
+                    <p-dropdown [(ngModel)]="formData.typePiece" name="typePiece" [options]="typePieceOptions"
+                        optionLabel="label" optionValue="value" placeholder="Sélectionner" [showClear]="true" required
+                        [disabled]="state().submitting" styleClass="w-full">
+                    </p-dropdown>
+                </div>
+
+                <div class="col-12 md:col-6 lg:col-3">
+                    <label for="numId" class="block mb-2">Référence/N° *</label>
+                    <input pInputText [(ngModel)]="formData.numId" name="numId" id="numId" required
+                        [disabled]="state().submitting" class="w-full" placeholder="Numéro de la pièce">
+                </div>
+
+                <div class="col-12 md:col-6 lg:col-3">
+                    <label for="dateNaissance" class="block mb-2">Date et lieu de naissance *</label>
+                    <p-calendar [(ngModel)]="formData.dateNaissance" name="dateNaissance" dateFormat="dd/mm/yy"
+                        [showIcon]="true" required [disabled]="state().submitting" styleClass="w-full">
+                    </p-calendar>
+                </div>
+
+                <div class="col-12 md:col-6 lg:col-3">
+                    <label class="block mb-2">&nbsp;</label>
+                    <input pInputText [(ngModel)]="formData.lieuxNaissance" name="lieuxNaissance" required
+                        [disabled]="state().submitting" class="w-full" placeholder="Lieu de naissance">
+                </div>
+
+                <!-- Row 3: Genre et situation -->
+                <div class="col-12 md:col-6 lg:col-2">
+                    <label class="block mb-2">Genre *</label>
+                    <div class="flex gap-3">
+                        <div class="field-radiobutton">
+                            <p-radioButton [(ngModel)]="formData.genre" name="genre" value="Masculin" inputId="masculin"
+                                [disabled]="state().submitting">
+                            </p-radioButton>
+                            <label for="masculin" class="ml-2">M</label>
+                        </div>
+                        <div class="field-radiobutton">
+                            <p-radioButton [(ngModel)]="formData.genre" name="genre" value="Feminin" inputId="feminin"
+                                [disabled]="state().submitting">
+                            </p-radioButton>
+                            <label for="feminin" class="ml-2">F</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 md:col-6 lg:col-4">
+                    <label for="situationMatrimoniale" class="block mb-2">Situation matrimoniale *</label>
+                    <p-dropdown [(ngModel)]="formData.situationMatrimoniale" name="situationMatrimoniale"
+                        [options]="situationMatrimonialeOptions" optionLabel="label" optionValue="value"
+                        placeholder="Sélectionner" required [disabled]="state().submitting" styleClass="w-full">
+                    </p-dropdown>
+                </div>
+
+                <div class="col-12 md:col-6 lg:col-3">
+                    <label for="nombrePersonneEnCharge" class="block mb-2">Nombre de personnes à charge *</label>
+                    <p-inputNumber [(ngModel)]="formData.nombrePersonneEnCharge" name="nombrePersonneEnCharge" [min]="0"
+                        required [disabled]="state().submitting" styleClass="w-full">
+                    </p-inputNumber>
+                </div>
+
+                <div class="col-12 md:col-6 lg:col-3">
+                    <label for="nombrePersonneScolarise" class="block mb-2">Nombre d'enfants scolarisés</label>
+                    <p-inputNumber [(ngModel)]="formData.nombrePersonneScolarise" name="nombrePersonneScolarise"
+                        [min]="0" [disabled]="state().submitting" styleClass="w-full">
+                    </p-inputNumber>
+                </div>
+
+                <!-- Row 4: Adresse et domicile -->
+                <div class="col-12 md:col-6">
+                    <label for="addresseDomicileContact" class="block mb-2">Adresse de domicile et Contact *</label>
+                    <textarea pTextarea [(ngModel)]="formData.addresseDomicileContact" name="addresseDomicileContact"
+                        rows="2" required [disabled]="state().submitting" class="w-full" placeholder="Adresse complète">
+          </textarea>
+                </div>
+
+                <div class="col-12 md:col-6 lg:col-3">
+                    <label for="typePropriete" class="block mb-2">Type de propriété *</label>
+                    <p-dropdown [(ngModel)]="formData.typePropriete" name="typePropriete"
+                        [options]="typeProprieteOptions" optionLabel="label" optionValue="value"
+                        placeholder="Sélectionner" required [disabled]="state().submitting" styleClass="w-full">
+                    </p-dropdown>
+                </div>
+
+                <div class="col-12 md:col-6 lg:col-3">
+                    <label for="nombreAnneeHabitation" class="block mb-2">Nombre d'années à l'adresse *</label>
+                    <p-inputNumber [(ngModel)]="formData.nombreAnneeHabitation" name="nombreAnneeHabitation" [min]="0"
+                        required [disabled]="state().submitting" styleClass="w-full">
+                    </p-inputNumber>
+                </div>
+                <div class="col-12">
+                    <p-divider align="left">
+                        <div class="px-2">Nature du Client</div>
+                    </p-divider>
+                </div>
+                <div class="col-12 md:col-6 lg:col-4">
+                    <label for="natureClient" class="block mb-2">Nature du client *</label>
+                    <p-dropdown [(ngModel)]="formData.natureClient" name="natureClient" [options]="natureClientOptions"
+                        optionLabel="label" optionValue="value" placeholder="Sélectionner la nature du client" required
+                        [disabled]="state().submitting" styleClass="w-full" (onChange)="onNatureClientChange($event)">
+                        <ng-template pTemplate="selectedItem" let-option>
+                            <div class="flex align-items-center" *ngIf="option">
+                                <i [class]="option.icon + ' mr-2'"></i>
+                                <span>{{ option.label }}</span>
+                            </div>
+                        </ng-template>
+                        <ng-template pTemplate="item" let-option>
+                            <div class="flex align-items-center">
+                                <i [class]="option.icon + ' mr-2'"></i>
+                                <span>{{ option.label }}</span>
+                            </div>
+                        </ng-template>
+                    </p-dropdown>
+                </div>
+                <div class="col-12 md:col-6 lg:col-8">
+                    <!-- Message d'information selon la nature sélectionnée -->
+                    @if(formData.natureClient === 'PME') {
+                    <p-message severity="info"
+                        text="Pour une PME, veuillez renseigner les informations du représentant légal de l'entreprise.">
+                    </p-message>
+                    }
+                    @if(formData.natureClient === 'Groupe Solidaire') {
+                    <p-message severity="info"
+                        text="Pour un groupe solidaire, veuillez renseigner les informations du chef de groupe.">
+                    </p-message>
+                    }
+                    @if(formData.natureClient === 'Autre') {
+                    <p-message severity="warn" text="Veuillez préciser la nature dans la description de l'activité.">
+                    </p-message>
+                    }
+                </div>
+
+                <!-- Row 5: Localisation administrative -->
+                <div class="col-12">
+                    <p-divider align="left">
+                        <div class="px-2">Localisation Administrative</div>
+                    </p-divider>
+                </div>
+
+                <div class="col-12 md:col-6 lg:col-4">
+                    <label for="delegation" class="block mb-2">Délégation *</label>
+                    <p-dropdown [(ngModel)]="formData.delegation" name="delegation"
+                        [options]="state().allDelegations || []" optionLabel="libele" dataKey="id" [filter]="true"
+                        filterBy="libele" [showClear]="true" placeholder="Sélectionner une délégation" required
+                        [disabled]="state().submitting || state().loading" styleClass="w-full"
+                        (onChange)="onDelegationChange($event)">
+                    </p-dropdown>
+                </div>
+
+                <div class="col-12 md:col-6 lg:col-4">
+                    <label for="agence" class="block mb-2">Agence *</label>
+                    <p-dropdown [(ngModel)]="formData.agence" name="agence" [options]="state().filteredAgences || []"
+                        optionLabel="libele" dataKey="id" [filter]="true" filterBy="libele" [showClear]="true"
+                        placeholder="Sélectionner une agence" required
+                        [disabled]="state().submitting || !state().filteredAgences?.length" styleClass="w-full"
+                        (onChange)="onAgenceChange($event)">
+                    </p-dropdown>
+                </div>
+
+                <div class="col-12 md:col-6 lg:col-4">
+                    <label for="pos" class="block mb-2">Point de Vente *</label>
+                    <p-dropdown [(ngModel)]="formData.pos" name="pos" [options]="state().filteredPointsVente || []"
+                        optionLabel="libele" dataKey="id" [filter]="true" filterBy="libele" [showClear]="true"
+                        placeholder="Sélectionner un point de vente" required
+                        [disabled]="state().submitting || !state().filteredPointsVente?.length" styleClass="w-full">
+                    </p-dropdown>
+                </div>
+
+            </div>
+        </p-panel>
+
+        <!-- SECTION 2: ACTIVITÉS -->
+        <p-panel header="2. ACTIVITÉS" [toggleable]="true" class="mb-3">
+            <div class="grid">
+
+                <!-- Type d'activité principal avec dropdown -->
+                <div class="col-12 md:col-6 lg:col-4">
+                    <label for="typeActivite" class="block mb-2">Type d'activité *</label>
+                    <p-dropdown [(ngModel)]="formData.typeActivite" name="typeActivite" [options]="activiteOptions"
+                        optionLabel="label" optionValue="value" placeholder="Sélectionner une activité" [filter]="true"
+                        filterBy="label" [showClear]="true" required [disabled]="state().submitting" styleClass="w-full"
+                        (onChange)="onActiviteChange($event)">
+                        <ng-template pTemplate="selectedItem" let-option>
+                            <div class="flex align-items-center">
+                                <span>{{ option?.label }}</span>
+                            </div>
+                        </ng-template>
+                        <ng-template pTemplate="item" let-option>
+                            <div class="flex align-items-center">
+                                <span class="font-bold mr-2">{{ option.value }}</span>
+                                <span>{{ option.label }}</span>
+                            </div>
+                        </ng-template>
+                    </p-dropdown>
+                </div>
+
+                <!-- Sous-activité avec dropdown -->
+                <div class="col-12 md:col-6 lg:col-4">
+                    <label for="sousActivite" class="block mb-2">Sous-activité *</label>
+                    <p-dropdown [(ngModel)]="formData.sousActivite" name="sousActivite" [options]="sousActiviteOptions"
+                        optionLabel="label" optionValue="value" placeholder="Sélectionner une sous-activité"
+                        [filter]="true" filterBy="label" [showClear]="true" required
+                        [disabled]="state().submitting || !selectedActivite" styleClass="w-full"
+                        (onChange)="onSousActiviteChange($event)">
+                        <ng-template pTemplate="selectedItem" let-option>
+                            <div class="flex align-items-center">
+                                <span>{{ option?.label }}</span>
+                            </div>
+                        </ng-template>
+                        <ng-template pTemplate="item" let-option>
+                            <div class="flex align-items-center">
+                                <span class="font-bold mr-2">{{ option.value }}</span>
+                                <span>{{ option.label }}</span>
+                            </div>
+                        </ng-template>
+                    </p-dropdown>
+                </div>
+
+                <!-- Sous-sous-activité avec dropdown -->
+                <div class="col-12 md:col-6 lg:col-4">
+                    <label for="sousSousActivite" class="block mb-2">Sous-sous-activité</label>
+                    <p-dropdown [(ngModel)]="formData.sousSousActivite" name="sousSousActivite"
+                        [options]="sousSousActiviteOptions" optionLabel="label" optionValue="value"
+                        placeholder="Sélectionner (optionnel)" [filter]="true" filterBy="label" [showClear]="true"
+                        [disabled]="state().submitting || !selectedSousActivite" styleClass="w-full"
+                        (onChange)="onSousSousActiviteChange($event)">
+                        <ng-template pTemplate="selectedItem" let-option>
+                            <div class="flex align-items-center">
+                                <span>{{ option?.label }}</span>
+                            </div>
+                        </ng-template>
+                        <ng-template pTemplate="item" let-option>
+                            <div class="flex align-items-center">
+                                <span class="font-bold mr-2">{{ option.value }}</span>
+                                <span>{{ option.label }}</span>
+                            </div>
+                        </ng-template>
+                    </p-dropdown>
+                </div>
+
+                <!-- Affichage de la sélection actuelle -->
+                @if(selectedActivite || selectedSousActivite || selectedSousSousActivite) {
+                <div class="col-12">
+                    <p-message severity="info">
+                        <div class="flex flex-column gap-2">
+                            <span class="font-bold">Activité sélectionnée:</span>
+                            <span>
+                                {{ selectedActivite?.libelle }}
+                                @if(selectedSousActivite) {
+                                → {{ selectedSousActivite.libelle }}
+                                }
+                                @if(selectedSousSousActivite) {
+                                → {{ selectedSousSousActivite.libelle }}
+                                }
+                            </span>
+                        </div>
+                    </p-message>
+                </div>
+                }
+
+                <div class="col-12">
+                    <label for="descriptionActivite" class="block mb-2">Description de l'activité *</label>
+                    <textarea pTextarea [(ngModel)]="formData.descriptionActivite" name="descriptionActivite" rows="3"
+                        required [disabled]="state().submitting" class="w-full"
+                        placeholder="Décrivez en détail votre activité actuelle">
+            </textarea>
+                </div>
+
+                <div class="col-12 md:col-6 lg:col-3">
+                    <label for="nombreAnneeActivite" class="block mb-2">Nombre d'années dans l'activité *</label>
+                    <p-inputNumber [(ngModel)]="formData.nombreAnneeActivite" name="nombreAnneeActivite" [min]="0"
+                        required [disabled]="state().submitting" styleClass="w-full">
+                    </p-inputNumber>
+                </div>
+
+                <div class="col-12 md:col-6 lg:col-9">
+                    <label for="adresseLieuActivite" class="block mb-2">Adresse du lieu d'activité *</label>
+                    <input pInputText [(ngModel)]="formData.adresseLieuActivite" name="adresseLieuActivite" required
+                        [disabled]="state().submitting" class="w-full"
+                        placeholder="Adresse complète du lieu d'exercice de l'activité">
+                </div>
+
+                <div class="col-12 md:col-6">
+                    <label for="autreActivite" class="block mb-2">Autres activités (optionnel)</label>
+                    <input pInputText [(ngModel)]="formData.autreActivite" name="autreActivite"
+                        [disabled]="state().submitting" class="w-full" placeholder="Activités secondaires éventuelles">
+                </div>
+
+                <div class="col-12 md:col-6">
+                    <label for="lieuActivite" class="block mb-2">Lieu de l'activité (optionnel)</label>
+                    <input pInputText [(ngModel)]="formData.lieuActivite" name="lieuActivite"
+                        [disabled]="state().submitting" class="w-full" placeholder="Précisions sur le lieu">
+                </div>
+
+            </div>
+        </p-panel>
+
+        <!-- SECTION 3: MODALITÉS DE LA DEMANDE -->
+        <p-panel header="3. MODALITÉS DE LA DEMANDE" [toggleable]="true" class="mb-3">
+            <div class="grid">
+
+                <div class="col-12 md:col-6 lg:col-3">
+                    <label for="montantDemande" class="block mb-2">Montant demandé (GNF) *</label>
+                    <p-inputNumber [(ngModel)]="formData.montantDemande" name="montantDemande" mode="currency"
+                        currency="GNF" locale="fr-FR" [min]="1" required [disabled]="state().submitting"
+                        styleClass="w-full">
+                    </p-inputNumber>
+                </div>
+
+                <div class="col-12 md:col-6 lg:col-3">
+                    <label for="dureeDemande" class="block mb-2">Durée demandée (mois) *</label>
+                    <p-inputNumber [(ngModel)]="formData.dureeDemande" name="dureeDemande" [min]="1" suffix=" mois"
+                        required [disabled]="state().submitting" styleClass="w-full">
+                    </p-inputNumber>
+                </div>
+
+                <div class="col-12 md:col-6 lg:col-3">
+                    <label for="periodiciteRemboursement" class="block mb-2">Périodicité de remboursement *</label>
+                    <p-dropdown [(ngModel)]="formData.periodiciteRemboursement" name="periodiciteRemboursement"
+                        [options]="periodiciteOptions" optionLabel="label" optionValue="value"
+                        placeholder="Sélectionner" required [disabled]="state().submitting" styleClass="w-full">
+                    </p-dropdown>
+                </div>
+
+                <div class="col-12 md:col-6 lg:col-3">
+                    <label for="tauxInteret" class="block mb-2">Taux d'intérêt (%) *</label>
+                    <p-inputNumber [(ngModel)]="formData.tauxInteret" name="tauxInteret" [min]="0" [max]="100"
+                        suffix="%" [minFractionDigits]="2" [maxFractionDigits]="2" required
+                        [disabled]="state().submitting" styleClass="w-full">
+                    </p-inputNumber>
+                </div>
+
+                <div class="col-12 md:col-6 lg:col-3">
+                    <label for="periodeDiffere" class="block mb-2">Période de différé (mois)</label>
+                    <p-inputNumber [(ngModel)]="formData.periodeDiffere" name="periodeDiffere" [min]="0" suffix=" mois"
+                        [disabled]="state().submitting" styleClass="w-full">
+                    </p-inputNumber>
+                </div>
+
+                <div class="col-12 md:col-6 lg:col-3">
+                    <label for="nombreEcheance" class="block mb-2">Nombre d'échéances *</label>
+                    <p-inputNumber [(ngModel)]="formData.nombreEcheance" name="nombreEcheance" [min]="1" required
+                        [disabled]="state().submitting" styleClass="w-full">
+                    </p-inputNumber>
+                </div>
+
+                <div class="col-12 md:col-6 lg:col-3">
+                    <label for="echeance" class="block mb-2">Échéance calculée (GNF)</label>
+                    <p-inputNumber [(ngModel)]="formData.echeance" name="echeance" mode="currency" currency="GNF"
+                        locale="fr-FR" [disabled]="state().submitting" styleClass="w-full">
+                    </p-inputNumber>
+                </div>
+
+                <div class="col-12 md:col-6 lg:col-3">
+                    <label for="tipCredito" class="block mb-2">Type de Crédit *</label>
+                    <p-dropdown [(ngModel)]="formData.tipCredito" name="tipCredito" [options]="typeCreditOptions"
+                        optionLabel="label" optionValue="value" [filter]="true" filterBy="label" [showClear]="true"
+                        required placeholder="Sélectionner un type de crédit" [disabled]="state().submitting"
+                        styleClass="w-full" (onChange)="onTypeCreditChange($event)">
+                        <ng-template pTemplate="selectedItem" let-option>
+                            <div class="flex align-items-center">
+                                <span>{{ option?.label }}</span>
+                            </div>
+                        </ng-template>
+                        <ng-template pTemplate="item" let-option>
+                            <div class="flex align-items-center justify-content-between w-full">
+                                <span>{{ option.label }}</span>
+                                <span class="text-xs text-gray-500 ml-2">({{ option.value }})</span>
+                            </div>
+                        </ng-template>
+                    </p-dropdown>
+                </div>
+
+                <div class="col-12">
+                    <p-divider align="left">
+                        <div class="px-2">Objet du crédit</div>
+                    </p-divider>
+                </div>
+
+                <div class="col-12 md:col-6 lg:col-4">
+                    <label for="objectCredit" class="block mb-2">Objet du crédit sollicité *</label>
+                    <p-dropdown [(ngModel)]="formData.objectCredit" name="objectCredit" [options]="objectCreditOptions"
+                        optionLabel="label" optionValue="value" placeholder="Sélectionner" required
+                        [disabled]="state().submitting" styleClass="w-full">
+                    </p-dropdown>
+                </div>
+
+                <div class="col-12 md:col-6 lg:col-8">
+                    <label for="detailObjectCredit" class="block mb-2">Détail de l'objet de crédit *</label>
+                    <textarea pTextarea [(ngModel)]="formData.detailObjectCredit" name="detailObjectCredit" rows="2"
+                        required [disabled]="state().submitting" class="w-full"
+                        placeholder="Précisez l'utilisation prévue du crédit">
+          </textarea>
+                </div>
+
+                <div class="col-12 md:col-6 lg:col-3">
+                    <label class="block mb-2">Statut du crédit *</label>
+                    <div class="flex gap-3">
+                        @for(option of statutCreditOptions; track option.value) {
+                        <div class="field-radiobutton">
+                            <p-radioButton [(ngModel)]="formData.statutCredit" name="statutCredit"
+                                [value]="option.value" [inputId]="option.value" [disabled]="state().submitting">
+                            </p-radioButton>
+                            <label [for]="option.value" class="ml-2">{{ option.label }}</label>
+                        </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="col-12 md:col-6 lg:col-3">
+                    <label for="rangCredit" class="block mb-2">Rang de crédit</label>
+                    <p-inputNumber [(ngModel)]="formData.rangCredit" name="rangCredit" [min]="1"
+                        [disabled]="state().submitting" styleClass="w-full">
+                    </p-inputNumber>
+                </div>
+
+            </div>
+        </p-panel>
+
+        <!-- SECTION 4: GARANTIES PROPOSÉES -->
+        <p-panel header="4. GARANTIES PROPOSÉES" [toggleable]="true" class="mb-3">
+
+            <div class="mb-3 flex justify-content-between align-items-center">
+                <button type="button" pButton icon="pi pi-plus" label="Ajouter une garantie" class="p-button-success"
+                    (click)="showAddGarantieDialog()" [disabled]="state().submitting">
+                </button>
+
+                <!-- Badge informatif pour les nouveaux types -->
+                <div class="flex gap-2">
+                    <p-chip label="Financière" icon="pi pi-dollar"
+                        [style]="{'background-color': '#10b981', 'color': 'white'}"></p-chip>
+                    <p-chip label="Matérielle" icon="pi pi-box"
+                        [style]="{'background-color': '#3b82f6', 'color': 'white'}"></p-chip>
+                    <p-chip label="Caution" icon="pi pi-users"
+                        [style]="{'background-color': '#f59e0b', 'color': 'white'}"></p-chip>
+                </div>
+            </div>
+
+            <p-table [value]="state().garanties" [responsive]="true" styleClass="p-datatable-sm">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Type de Garantie</th>
+                        <th>Nature / Description des garanties</th>
+                        <th>Valeur de la garantie</th>
+                        <th>Valeur d'emprunt (75%)</th>
+                        <th style="width: 100px;">Actions</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-garantie let-i="rowIndex">
+                    <tr>
+                        <td>
+                            <div class="flex align-items-center gap-2">
+                                <!-- Icône selon le type de garantie -->
+                                @switch(garantie.typeGarantie) {
+                                @case('Garantie Financiere') {
+                                <i class="pi pi-dollar text-green-500"></i>
+                                }
+                                @case('Garantie Materielle') {
+                                <i class="pi pi-box text-blue-500"></i>
+                                }
+                                @case('Caution Solidaire') {
+                                <i class="pi pi-users text-orange-500"></i>
+                                }
+                                @default {
+                                <i class="pi pi-question-circle text-gray-500"></i>
+                                }
+                                }
+                                <span>{{ garantie.typeGarantie }}</span>
+                            </div>
+                        </td>
+                        <td>{{ garantie.descriptionGarantie }}</td>
+                        <td>{{ garantie.valeurGarantie | currency:'GNF':'symbol':'1.0-0' }}</td>
+                        <td>{{ garantie.valeurEmprunte | currency:'GNF':'symbol':'1.0-0' }}</td>
+                        <td>
+                            <button type="button" pButton icon="pi pi-pencil" class="p-button-text p-button-sm"
+                                (click)="editGarantie(garantie, i)" [disabled]="state().submitting">
+                            </button>
+                            <button type="button" pButton icon="pi pi-trash"
+                                class="p-button-text p-button-danger p-button-sm" (click)="deleteGarantie(i)"
+                                [disabled]="state().submitting">
+                            </button>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="footer">
+                    <tr>
+                        <td colspan="2"><strong>Total</strong></td>
+                        <td><strong>{{ calculateTotalGaranties() | currency:'GNF':'symbol':'1.0-0' }}</strong></td>
+                        <td><strong>{{ calculateTotalEmpruntable() | currency:'GNF':'symbol':'1.0-0' }}</strong></td>
+                        <td></td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="5" class="text-center">
+                            <i class="pi pi-exclamation-triangle mr-2"></i>
+                            Aucune garantie ajoutée. Veuillez ajouter au moins une garantie.
+                        </td>
+                    </tr>
+                </ng-template>
+            </p-table>
+            <div class="mt-3">
+                <p-message severity="info">
+                    <div class="flex flex-column gap-1">
+                        <span><strong>Types de garanties disponibles:</strong></span>
+                        <span>• <strong>Garantie Financière:</strong> Dépôt à terme, compte bloqué, etc.</span>
+                        <span>• <strong>Garantie Matérielle:</strong> Biens immobiliers, véhicules, équipements,
+                            etc.</span>
+                        <span>• <strong>Caution Solidaire:</strong> Engagement d'un tiers garant</span>
+                        <span>• <strong>Autre Garantie:</strong> Toute autre forme de garantie acceptée</span>
+                    </div>
+                </p-message>
+            </div>
+
+            <div class="mt-3">
+                <p-message severity="info"
+                    text="Note: La valeur d'emprunt est automatiquement calculée à 75% de la valeur de la garantie">
+                </p-message>
+            </div>
+
+        </p-panel>
+
+        <!-- Actions Buttons -->
+        <div class="flex justify-content-between align-items-center mt-4">
+            <div>
+                <button type="button" pButton icon="pi pi-arrow-left" label="Retour" class="p-button-secondary"
+                    (click)="router.navigate(['/demandes'])" [disabled]="state().submitting">
+                </button>
+            </div>
+            <div class="flex gap-2">
+                <button type="button" pButton icon="pi pi-times" label="Annuler" class="p-button-danger"
+                    (click)="demandeForm.resetForm()" [disabled]="state().submitting">
+                </button>
+                <button type="submit" pButton icon="pi pi-save" label="Soumettre la demande"
+                    [loading]="state().submitting"
+                    [disabled]="demandeForm.invalid || state().submitting || state().garanties.length === 0">
+                </button>
+            </div>
+        </div>
+
+    </form>
+
+    <!-- Dialog for Adding/Editing Garantie -->
+    <p-dialog [(visible)]="state().showGarantieDialog"
+        [header]="state().editingGarantieIndex !== undefined ? 'Modifier la garantie' : 'Ajouter une garantie'"
+        [modal]="true" [style]="{ width: '500px' }" [draggable]="false" [resizable]="false">
+
+        <div class="grid">
+            <div class="col-12">
+                <label for="typeGarantie" class="block mb-2">Type de garantie *</label>
+                <p-dropdown [(ngModel)]="state().currentGarantie.typeGarantie" [options]="typeGarantieOptions"
+                    optionLabel="label" optionValue="value" placeholder="Sélectionner" styleClass="w-full">
+                    <ng-template pTemplate="selectedItem" let-option>
+                        <div class="flex align-items-center" *ngIf="option">
+                            @switch(option.value) {
+                            @case('Garantie Financiere') {
+                            <i class="pi pi-dollar mr-2 text-green-500"></i>
+                            }
+                            @case('Garantie Materielle') {
+                            <i class="pi pi-box mr-2 text-blue-500"></i>
+                            }
+                            @case('Caution Solidaire') {
+                            <i class="pi pi-users mr-2 text-orange-500"></i>
+                            }
+                            @default {
+                            <i class="pi pi-question-circle mr-2 text-gray-500"></i>
+                            }
+                            }
+                            <span>{{ option.label }}</span>
+                        </div>
+                    </ng-template>
+                    <ng-template pTemplate="item" let-option>
+                        <div class="flex align-items-center">
+                            @switch(option.value) {
+                            @case('Garantie Financiere') {
+                            <i class="pi pi-dollar mr-2 text-green-500"></i>
+                            }
+                            @case('Garantie Materielle') {
+                            <i class="pi pi-box mr-2 text-blue-500"></i>
+                            }
+                            @case('Caution Solidaire') {
+                            <i class="pi pi-users mr-2 text-orange-500"></i>
+                            }
+                            @default {
+                            <i class="pi pi-question-circle mr-2 text-gray-500"></i>
+                            }
+                            }
+                            <span>{{ option.label }}</span>
+                        </div>
+                    </ng-template>
+                </p-dropdown>
+            </div>
+
+            <!-- Exemples de description selon le type sélectionné -->
+            <div class="col-12">
+                @if(state().currentGarantie.typeGarantie === 'Garantie Financiere') {
+                <p-message severity="info" [closable]="false"
+                    text="Ex: Compte DAT n°12345 à la Banque XYZ, montant 50.000.000 GNF">
+                </p-message>
+                }
+                @if(state().currentGarantie.typeGarantie === 'Garantie Materielle') {
+                <p-message severity="info" [closable]="false"
+                    text="Ex: Terrain avec titre foncier n°TF-2024-001, superficie 500m²">
+                </p-message>
+                }
+                @if(state().currentGarantie.typeGarantie === 'Caution Solidaire') {
+                <p-message severity="info" [closable]="false"
+                    text="Ex: M. Jean DUPONT, fonctionnaire, matricule n°12345">
+                </p-message>
+                }
+            </div>
+
+            <div class="col-12">
+                <label for="descriptionGarantie" class="block mb-2">Description de la garantie *</label>
+                <textarea pTextarea [(ngModel)]="state().currentGarantie.descriptionGarantie" rows="3" class="w-full"
+                    placeholder="Décrivez précisément la garantie proposée">
+            </textarea>
+            </div>
+
+            <div class="col-12">
+                <label for="valeurGarantie" class="block mb-2">Valeur de la garantie (GNF) *</label>
+                <p-inputNumber [(ngModel)]="state().currentGarantie.valeurGarantie" mode="currency" currency="GNF"
+                    locale="fr-FR" [min]="1" styleClass="w-full">
+                </p-inputNumber>
+            </div>
+
+            <div class="col-12">
+                <p-message severity="success" [closable]="false">
+                    <div class="flex justify-content-between align-items-center w-full">
+                        <span>Valeur empruntable (75%):</span>
+                        <strong>{{ (state().currentGarantie.valeurGarantie * 0.75) | currency:'GNF':'symbol':'1.0-0'
+                            }}</strong>
+                    </div>
+                </p-message>
+            </div>
+        </div>
+
+        <ng-template pTemplate="footer">
+            <button type="button" pButton icon="pi pi-times" label="Annuler" class="p-button-text"
+                (click)="cancelGarantie()">
+            </button>
+            <button type="button" pButton icon="pi pi-check" label="Valider" (click)="saveGarantie()" [disabled]="!state().currentGarantie.typeGarantie || 
+                       !state().currentGarantie.descriptionGarantie || 
+                       state().currentGarantie.valeurGarantie <= 0">
+            </button>
+        </ng-template>
+
+    </p-dialog>
+
 </div>

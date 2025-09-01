@@ -1,76 +1,235 @@
 <div class="card">
+    <!-- En-tête avec filtres et recherche -->
     <p-table #dt [value]="state().demandeAttentes!" [paginator]="true" paginatorDropdownAppendTo="body" [rows]="10"
         [showCurrentPageReport]="true" responsiveLayout="scroll"
-        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
+        currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} entrées"
         [rowsPerPageOptions]="[10, 25, 50]"
-        [globalFilterFields]="['nom', 'prenom', 'numeroMembre', 'activite', 'telephone']">
+        [globalFilterFields]="['nom', 'prenom', 'numeroMembre', 'typeActivite', 'telephone', 'montantDemande']">
+
         <ng-template pTemplate="caption">
             <div class="flex flex-wrap gap-2 items-center justify-between">
+                <div class="flex gap-2">
+                    <button pButton icon="pi pi-refresh" class="p-button-outlined p-button-sm"
+                        pTooltip="Rafraîchir les données" (click)="refreshData()">
+                    </button>
+
+                    @if(state().agenceId || state().pointVenteId) {
+                    <button pButton icon="pi pi-filter-slash" label="Réinitialiser filtres"
+                        class="p-button-text p-button-sm" (click)="clearFilters()">
+                    </button>
+                    }
+                </div>
+
                 <p-icon-field class="w-full sm:w-80 order-1 sm:order-none">
                     <p-inputicon class="pi pi-search" />
-                    <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Global Search"
-                        class="w-full" />
+                    <input pInputText type="text" (input)="onGlobalFilter(dt, $event)"
+                        placeholder="Recherche globale..." class="w-full" />
                 </p-icon-field>
             </div>
         </ng-template>
+
         <ng-template pTemplate="header">
             <tr>
-                <th pSortableColumn="demandeIndividuelId" class="white-space-nowrap" style="width:5%">ID <p-sortIcon
-                        field="demandeIndividuelId"></p-sortIcon></th>
-                <th pSortableColumn="nom" class="white-space-nowrap" style="width:15%">Nom <p-sortIcon
-                        field="nom"></p-sortIcon></th>
-
-                <th pSortableColumn="numeroMembre" class="white-space-nowrap" style="width:15%">N° Membre <p-sortIcon
-                        field="numeroMembre"></p-sortIcon></th>
-                <th pSortableColumn="montant" class="white-space-nowrap" style="width:10%">Montant <p-sortIcon
-                        field="montant"></p-sortIcon></th>
-                <th pSortableColumn="activite" class="white-space-nowrap" style="width:15%">Activité <p-sortIcon
-                        field="activite"></p-sortIcon></th>
-                <th pSortableColumn="statutDemande" class="white-space-nowrap" style="width:15%">Statut <p-sortIcon
-                        field="statutDemande"></p-sortIcon></th>
-                <th pSortableColumn="statutDemande" class="white-space-nowrap" style="width:15%">Statut Validation
-                    <p-sortIcon field="statutDemande"></p-sortIcon>
+                <th pSortableColumn="demandeIndividuelId" style="width:5%">
+                    ID <p-sortIcon field="demandeIndividuelId"></p-sortIcon>
                 </th>
-                <th pSortableColumn="createdAt" class="white-space-nowrap" style="width:10%">Date <p-sortIcon
-                        field="createdAt"></p-sortIcon></th>
-                <th class="white-space-nowrap" style="width:10%">Action </th>
+                <th pSortableColumn="nom" style="width:20%">
+                    Demandeur <p-sortIcon field="nom"></p-sortIcon>
+                </th>
+                <th pSortableColumn="numeroMembre" style="width:10%">
+                    N° Membre <p-sortIcon field="numeroMembre"></p-sortIcon>
+                </th>
+                <th pSortableColumn="montantDemande" style="width:12%">
+                    Montant <p-sortIcon field="montantDemande"></p-sortIcon>
+                </th>
+                <th pSortableColumn="typeActivite" style="width:15%">
+                    Activité <p-sortIcon field="typeActivite"></p-sortIcon>
+                </th>
+                <th style="width:8%">
+                    Garanties
+                </th>
+                <th pSortableColumn="dureeDemande" style="width:8%">
+                    Durée <p-sortIcon field="dureeDemande"></p-sortIcon>
+                </th>
+                <th pSortableColumn="statutDemande" style="width:12%">
+                    Statut <p-sortIcon field="statutDemande"></p-sortIcon>
+                </th>
+                <th pSortableColumn="createdAt" style="width:10%">
+                    Date <p-sortIcon field="createdAt"></p-sortIcon>
+                </th>
+                <th style="width:10%">Actions</th>
             </tr>
         </ng-template>
+
         <ng-template pTemplate="body" let-demande>
             <tr>
-                <td>{{ demande.demandeindividuel_id
-                    }}</td>
-                <td> {{ demande.prenom }} {{ demande.nom }}</td>
-                <td>{{ demande.numeroMembre }}</td>
-                <td>{{ demande.montant | currency:'GNF ' }}</td>
-                <td>{{ demande.activite }}</td>
                 <td>
-                    <p-tag [value]="getStatusLabel(demande.statutDemande, demande.validationState)"
-                        [severity]="getStatusSeverity(demande.statutDemande, demande.validationState)">
-                    </p-tag>
+                    <span class="font-bold text-primary">
+                        #{{ demande.demandeIndividuelId || demande.demandeindividuel_id }}
+                    </span>
                 </td>
                 <td>
-                    <p-tag [value]="getStateValidation(demande.statutDemande, demande.validationState)"
-                        severity="secondary">
-                    </p-tag>
+                    <div class="flex flex-column gap-1">
+                        <span class="font-semibold">
+                            {{ demande.prenom }} {{ demande.nom }}
+                        </span>
+                        <small class="text-gray-500">
+                            <i class="pi pi-phone mr-1"></i>{{ demande.telephone }}
+                        </small>
+                        @if(demande.addresseDomicileContact) {
+                        <small class="text-gray-500">
+                            <i class="pi pi-map-marker mr-1"></i>{{ demande.addresseDomicileContact }}
+                        </small>
+                        }
+                    </div>
                 </td>
-                <td>{{ demande.createdAt | date: 'dd/MM/yyyy' }}</td>
                 <td>
-                    @if(demande.statutDemande === 'EN_ATTENTE' && demande.validationState === 'VALIDATION'){
-                    <p-message severity="success" text="Demande de Crédit déjà validée"></p-message>
-                    }@else {
+                    <span class="font-medium">{{ demande.numeroMembre }}</span>
+                </td>
+                <td>
+                    <div class="flex flex-column gap-1">
+                        <span class="font-bold text-primary">
+                            {{ (demande.montantDemande || demande.montant) | currency:'GNF':'symbol':'1.0-0' }}
+                        </span>
+                        @if(demande.echeance) {
+                        <small class="text-gray-500">
+                            Échéance: {{ demande.echeance | currency:'GNF':'symbol':'1.0-0' }}
+                        </small>
+                        }
+                    </div>
+                </td>
+                <td>
+                    <div class="flex flex-column gap-1">
+                        <span>{{ demande.typeActivite || demande.activite }}</span>
+                        @if(demande.sousActivite) {
+                        <small class="text-gray-500">{{ demande.sousActivite }}</small>
+                        }
+                        @if(demande.descriptionActivite) {
+                        <small class="text-gray-500" [pTooltip]="demande.descriptionActivite">
+                            <i class="pi pi-info-circle mr-1"></i>Description
+                        </small>
+                        }
+                    </div>
+                </td>
+                <td class="text-center">
+                    @if(demande.garanties && demande.garanties.length > 0) {
+                    <div class="flex flex-column align-items-center gap-1">
+                        <p-badge [value]="demande.garanties.length.toString()" severity="info"
+                            [pTooltip]="getGarantiesTooltip(demande.garanties)">
+                        </p-badge>
+                        <small class="text-gray-500">
+                            {{ getTotalGaranties(demande.garanties) | currency:'GNF':'symbol':'1.0-0' }}
+                        </small>
+                    </div>
+                    } @else {
+                    <p-badge value="0" severity="secondary"></p-badge>
+                    }
+                </td>
+                <td class="text-center">
+                    @if(demande.dureeDemande) {
+                    <div class="flex flex-column align-items-center gap-1">
+                        <span class="font-semibold">{{ demande.dureeDemande }} mois</span>
+                        @if(demande.periodiciteRemboursement) {
+                        <small class="text-gray-500">
+                            {{ formatPeriodicite(demande.periodiciteRemboursement) }}
+                        </small>
+                        }
+                    </div>
+                    } @else {
+                    <span>-</span>
+                    }
+                </td>
+                <td>
+                    <div class="flex flex-column gap-1">
+                        <p-tag [value]="getStatusLabel(demande.statutDemande, demande.validationState)"
+                            [severity]="getStatusSeverity(demande.statutDemande, demande.validationState)">
+                        </p-tag>
+                        @if(demande.statutCredit) {
+                        <small>
+                            <p-tag [value]="demande.statutCredit" severity="secondary" styleClass="text-xs">
+                            </p-tag>
+                        </small>
+                        }
+                    </div>
+                </td>
+                <td>
+                    <div class="flex flex-column gap-1">
+                        <span>{{ demande.createdAt | date: 'dd/MM/yyyy' }}</span>
+                        <small class="text-gray-500">
+                            {{ demande.createdAt | date: 'HH:mm' }}
+                        </small>
+                    </div>
+                </td>
+                <td>
                     <div class="flex gap-2 justify-center">
                         <button pButton icon="pi pi-eye" class="p-button-rounded p-button-text p-button-sm"
-                            (click)="viewDetailDemandeAttente(demande.demandeindividuel_id)"></button>
+                            pTooltip="Voir détails complets"
+                            (click)="viewDetailDemandeAttente(demande.demandeIndividuelId || demande.demandeindividuel_id)">
+                        </button>
+                        @if(demande.garanties && demande.garanties.length > 0) {
+                        <button pButton icon="pi pi-shield"
+                            class="p-button-rounded p-button-text p-button-sm p-button-success"
+                            [pTooltip]="'Voir ' + demande.garanties.length + ' garantie(s)'"
+                            (click)="viewDetailDemandeAttente(demande.demandeIndividuelId || demande.demandeindividuel_id)">
+                        </button>
+                        }
                     </div>
-                    }
                 </td>
             </tr>
         </ng-template>
+
         <ng-template pTemplate="emptymessage">
             <tr>
-                <td colspan="8" class="text-center p-4">Aucune demande en attente trouvée.</td>
+                <td colspan="10" class="text-center p-4">
+                    <div class="flex flex-column align-items-center gap-3">
+                        <i class="pi pi-inbox text-5xl text-gray-400"></i>
+                        <h3 class="text-xl font-semibold text-gray-600">Aucune demande en attente</h3>
+                        <p class="text-gray-500">Les nouvelles demandes apparaîtront ici</p>
+                    </div>
+                </td>
             </tr>
+        </ng-template>
+
+        <!-- Loading -->
+        @if(state().loading) {
+        <ng-template pTemplate="loading">
+            <tr>
+                <td colspan="10" class="text-center p-4">
+                    <p-progressBar mode="indeterminate" [style]="{'height': '6px'}"></p-progressBar>
+                    <p class="mt-2">Chargement des demandes...</p>
+                </td>
+            </tr>
+        </ng-template>
+        }
+
+        <!-- Summary Footer -->
+        <ng-template pTemplate="summary">
+            <div class="flex align-items-center justify-between p-3 border-top-1 surface-border">
+                <div class="flex gap-4">
+                    <span class="text-gray-600">
+                        <strong>Total demandes:</strong> {{ state().demandeAttentes?.length || 0 }}
+                    </span>
+                    @if(state().demandeAttentes && state().demandeAttentes!.length > 0) {
+                    <span class="text-gray-600">
+                        <strong>Montant total:</strong>
+                        {{ calculateTotalMontant() | currency:'GNF':'symbol':'1.0-0' }}
+                    </span>
+                    <span class="text-gray-600">
+                        <strong>Total garanties:</strong>
+                        {{ calculateTotalAllGaranties() | currency:'GNF':'symbol':'1.0-0' }}
+                    </span>
+                    }
+                </div>
+                @if(state().userInfo) {
+                <div class="text-gray-600">
+                    <i class="pi pi-user mr-2"></i>
+                    <span>{{ getUserName() }}</span>
+                    @if(getUserAgenceName() !== 'N/A') {
+                    <span class="ml-2">| {{ getUserAgenceName() }}</span>
+                    }
+                </div>
+                }
+            </div>
         </ng-template>
     </p-table>
 </div>

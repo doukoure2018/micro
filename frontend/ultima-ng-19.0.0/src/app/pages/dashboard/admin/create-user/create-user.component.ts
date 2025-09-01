@@ -22,6 +22,7 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { RippleModule } from 'primeng/ripple';
 import { TextareaModule } from 'primeng/textarea';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
+
 @Component({
     selector: 'app-create-user',
     imports: [CommonModule, InputText, TextareaModule, FileUploadModule, FormsModule, ButtonModule, InputGroupModule, RippleModule, MessageModule, ProgressSpinnerModule, PasswordModule, DropdownModule],
@@ -288,8 +289,14 @@ export class CreateUserComponent {
         return true;
     }
 
-    // Check if role requires location fields
+    // Check if role requires location fields (delegation at minimum)
     shouldShowLocationFields(roleName: string): boolean {
+        return roleName === 'AGENT_CREDIT' || roleName === 'DA' || roleName === 'DR';
+    }
+
+    // Check if role requires agence field
+    shouldShowAgenceField(roleName: string): boolean {
+        // DR only needs delegation, not agence
         return roleName === 'AGENT_CREDIT' || roleName === 'DA';
     }
 
@@ -334,7 +341,10 @@ export class CreateUserComponent {
             selectedAgenceId: undefined
         }));
 
-        this.loadAgencesByDelegation(delegationId);
+        // Only load agences if the role requires it (not for DR)
+        if (this.state().selectedRole && this.shouldShowAgenceField(this.state().selectedRole?.name!)) {
+            this.loadAgencesByDelegation(delegationId);
+        }
     }
 
     // Load agences by delegation

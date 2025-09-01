@@ -1,6 +1,7 @@
 package io.digiservices.ecreditservice.resource;
 
 import io.digiservices.clients.UserClient;
+import io.digiservices.clients.domain.User;
 import io.digiservices.ecreditservice.domain.Response;
 import io.digiservices.ecreditservice.dto.Selection;
 import io.digiservices.ecreditservice.service.DemandeIndService;
@@ -42,9 +43,9 @@ public class SelectionResource {
     private final DemandeIndService demandeIndService;
     private final UserClient userClient;
 
-    @PostMapping(value = "/image/{demandeindividuel_id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/image/{demandeindividuelId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Response> addSelectionInd(@NotNull Authentication authentication,
-                                                    @PathVariable(name = "demandeindividuel_id") Long demandeindividuel_id,
+                                                    @PathVariable(name = "demandeindividuelId") Long demandeindividuelId,
                                                     @RequestParam("image") MultipartFile image,
                                                     HttpServletRequest request) {
 
@@ -54,10 +55,10 @@ public class SelectionResource {
         log.info("   📊 File size: {} bytes", image.getSize());
         log.info("   📋 Content type: {}", image.getContentType());
         log.info("   👤 User ID: {}", userClient.getUserByUuid(authentication.getName()).getUserId());
-        log.info("   📄 Demande ID: {}", demandeindividuel_id);
+        log.info("   📄 Demande ID: {}", demandeindividuelId);
 
         try {
-            List<Selection> result = selectionService.addSelection(userClient.getUserByUuid(authentication.getName()).getUserId(), demandeindividuel_id, image);
+            List<Selection> result = selectionService.addSelection(userClient.getUserByUuid(authentication.getName()).getUserId(), demandeindividuelId, image);
 
             // Log the result
             log.info("✅ Controller: Service returned {} selections", result.size());
@@ -66,7 +67,7 @@ public class SelectionResource {
             }
 
             return created(getUri()).body(getResponse(request,
-                    Map.of("documents", result, "demandeIndividuel", demandeIndService.getDetailDemandeIndividuel(demandeindividuel_id)),
+                    Map.of("documents", result, "demandeIndividuel", demandeIndService.getDetailDemandeIndividuel(demandeindividuelId)),
                     "Fiche de Selection Importée avec Success", CREATED));
 
         } catch (Exception e) {
@@ -75,10 +76,12 @@ public class SelectionResource {
         }
     }
 
-    @GetMapping(value = "/images/{demandeindividuel_id}")
+    @GetMapping(value = "/images/{demandeindividuelId}")
     public ResponseEntity<Response> getAllImages(@NotNull Authentication authentication,
-                                                    @PathVariable(name = "demandeindividuel_id") Long demandeindividuel_id,HttpServletRequest request) {
-        return created(getUri()).body(getResponse(request,Map.of("documents", selectionService.getAllImages(demandeindividuel_id),"demandeIndividuel",demandeIndService.getDetailDemandeIndividuel(demandeindividuel_id)), "Liste des fiches de selection", CREATED));
+                                                    @PathVariable(name = "demandeindividuelId") Long demandeindividuelId,HttpServletRequest request)
+    {
+        User user = userClient.getUserByUuid(authentication.getName());
+        return created(getUri()).body(getResponse(request,Map.of("documents", selectionService.getAllImages(demandeindividuelId),"demandeIndividuel",demandeIndService.getDetailDemandeIndividuel(demandeindividuelId),"user",user), "Liste des fiches de selection", CREATED));
     }
 
     @GetMapping(value = "/docs/{fileName}")

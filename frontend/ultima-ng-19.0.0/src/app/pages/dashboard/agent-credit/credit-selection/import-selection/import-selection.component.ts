@@ -5,7 +5,7 @@ import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, ParamMap, Router } from '@angular/router';
+import { ActivatedRoute, ParamMap, Router, RouterLink } from '@angular/router';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -20,253 +20,12 @@ import { ToastModule } from 'primeng/toast';
 import { catchError, EMPTY, forkJoin, Observer, of, switchMap, tap } from 'rxjs';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { TooltipModule } from 'primeng/tooltip';
+import { IUser } from '@/interface/user';
 @Component({
     selector: 'app-import-selection',
-    imports: [CommonModule, ToastModule, CardModule, ProgressSpinnerModule, MessageModule, FileUploadModule, ButtonModule, ImageModule, TableModule, ConfirmDialogModule, DialogModule, TooltipModule],
+    imports: [CommonModule, ToastModule, CardModule, ProgressSpinnerModule, MessageModule, FileUploadModule, ButtonModule, ImageModule, TableModule, ConfirmDialogModule, DialogModule, TooltipModule, RouterLink],
     templateUrl: './import-selection.component.html',
-    styles: `
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        /* Styles pour la classe card de PrimeNG */
-        .card {
-            background: var(--surface-card);
-            padding: 2rem;
-            border-radius: 10px;
-            margin-bottom: 1rem;
-            box-shadow:
-                0 2px 1px -1px rgba(0, 0, 0, 0.2),
-                0 1px 1px 0 rgba(0, 0, 0, 0.14),
-                0 1px 3px 0 rgba(0, 0, 0, 0.12);
-        }
-
-        /* Custom file upload button */
-        .custom-file-upload .p-button {
-            background: linear-gradient(to right, var(--primary-500), var(--primary-600));
-            border: none;
-            padding: 0.75rem 1.5rem;
-            font-weight: 600;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-        }
-
-        .custom-file-upload .p-button:hover {
-            background: linear-gradient(to right, var(--primary-600), var(--primary-700));
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-        }
-
-        /* Preview dialog styles */
-        .preview-dialog .p-dialog-content {
-            padding: 1.5rem;
-        }
-
-        .preview-dialog .p-dialog-header {
-            padding: 1.5rem 1.5rem 1rem 1.5rem;
-        }
-
-        /* Loading Animation */
-        @keyframes shimmer {
-            0% {
-                background-position: -200px 0;
-            }
-            100% {
-                background-position: calc(200px + 100%) 0;
-            }
-        }
-
-        .loading-shimmer {
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-            background-size: 200px 100%;
-            animation: shimmer 1.5s infinite;
-        }
-
-        /* Smooth Animations */
-        .fade-in {
-            animation: fadeIn 0.3s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Card hover effects */
-        .shadow:hover {
-            box-shadow:
-                0 20px 25px -5px rgba(0, 0, 0, 0.1),
-                0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        }
-
-        /* Grid responsiveness */
-        @media (max-width: 640px) {
-            .container {
-                padding-left: 1rem;
-                padding-right: 1rem;
-            }
-
-            .grid.grid-cols-12 .col-span-12 {
-                grid-column: span 12 / span 12;
-            }
-
-            .grid.grid-cols-12 .md\\:col-span-6 {
-                grid-column: span 12 / span 12;
-            }
-
-            .grid.grid-cols-12 .lg\\:col-span-4 {
-                grid-column: span 12 / span 12;
-            }
-        }
-
-        @media (min-width: 641px) and (max-width: 1024px) {
-            .grid.grid-cols-12 .md\\:col-span-6 {
-                grid-column: span 6 / span 6;
-            }
-
-            .grid.grid-cols-12 .lg\\:col-span-4 {
-                grid-column: span 6 / span 6;
-            }
-        }
-
-        @media (min-width: 1025px) {
-            .grid.grid-cols-12 .lg\\:col-span-4 {
-                grid-column: span 4 / span 4;
-            }
-        }
-
-        /* Dark mode adjustments */
-        @media (prefers-color-scheme: dark) {
-            .card {
-                background: var(--surface-900);
-                color: var(--text-color);
-            }
-        }
-
-        .pdf-preview-dialog .p-dialog-content {
-            padding: 1rem;
-            height: calc(80vh - 120px);
-            overflow: hidden;
-        }
-
-        .pdf-preview-dialog .p-dialog-header {
-            background: linear-gradient(to right, #dc2626, #ef4444);
-            color: white;
-        }
-
-        .pdf-preview-dialog .p-dialog-header .p-dialog-title {
-            color: white;
-            font-weight: 600;
-        }
-
-        .pdf-preview-dialog .p-dialog-header .p-dialog-header-icons button {
-            color: white;
-        }
-
-        .pdf-preview-dialog .p-dialog-header .p-dialog-header-icons button:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        /* Styles pour les différents types de fichiers */
-        .file-type-pdf {
-            background: linear-gradient(135deg, #fee2e2, #fecaca);
-            border: 1px solid #fca5a5;
-        }
-
-        .file-type-word {
-            background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-            border: 1px solid #93c5fd;
-        }
-
-        .file-type-excel {
-            background: linear-gradient(135deg, #dcfce7, #bbf7d0);
-            border: 1px solid #86efac;
-        }
-
-        .file-type-image {
-            background: linear-gradient(135deg, #f3e8ff, #e9d5ff);
-            border: 1px solid #c4b5fd;
-        }
-
-        /* Animation pour le chargement PDF */
-        .pdf-loading {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 200px;
-            background: #f8fafc;
-            border-radius: 8px;
-        }
-
-        .pdf-loading::after {
-            content: '';
-            width: 40px;
-            height: 40px;
-            border: 4px solid #e2e8f0;
-            border-top: 4px solid #dc2626;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* Responsive pour mobile */
-        @media (max-width: 768px) {
-            .pdf-preview-dialog {
-                width: 95vw !important;
-                height: 90vh !important;
-            }
-
-            .pdf-preview-dialog .p-dialog-content {
-                height: calc(90vh - 120px);
-            }
-        }
-
-        /* Styles pour les badges de type de fichier */
-        .file-badge {
-            transition: all 0.2s ease;
-        }
-
-        .file-badge:hover {
-            transform: scale(1.05);
-        }
-
-        /* Amélioration du contraste pour le mode sombre */
-        @media (prefers-color-scheme: dark) {
-            .file-type-pdf {
-                background: linear-gradient(135deg, #7f1d1d, #991b1b);
-                border-color: #dc2626;
-            }
-
-            .file-type-word {
-                background: linear-gradient(135deg, #1e3a8a, #1d4ed8);
-                border-color: #3b82f6;
-            }
-
-            .file-type-excel {
-                background: linear-gradient(135deg, #14532d, #166534);
-                border-color: #22c55e;
-            }
-
-            .file-type-image {
-                background: linear-gradient(135deg, #581c87, #6b21a8);
-                border-color: #a855f7;
-            }
-        }
-    `,
+    styleUrl: './import-selection.component.scss',
     providers: [MessageService, ConfirmationService]
 })
 export class ImportSelectionComponent {
@@ -282,6 +41,7 @@ export class ImportSelectionComponent {
 
     // Remplacez complètement votre state signal par celui-ci :
     state = signal<{
+        user?: IUser;
         loading: boolean;
         error: string | null;
         selectedFiles: File[];
@@ -289,7 +49,7 @@ export class ImportSelectionComponent {
         document: Selection | null;
         documents: Selection[] | null;
         demandeIndividuel: DemandeIndividuel | null;
-        demandeindividuel_id: number | null;
+        demandeIndividuelId: number | null;
         userId: number | null;
         showPreviewDialog: boolean;
         selectedDocumentForPreview: Selection | null;
@@ -305,7 +65,7 @@ export class ImportSelectionComponent {
         document: null,
         documents: null,
         demandeIndividuel: null,
-        demandeindividuel_id: null,
+        demandeIndividuelId: null,
         userId: null,
         showPreviewDialog: false,
         selectedDocumentForPreview: null,
@@ -324,19 +84,19 @@ export class ImportSelectionComponent {
         this.activatedRoute.paramMap
             .pipe(
                 switchMap((params: ParamMap) => {
-                    const demandeId = params.get('demandeindividuel_id');
-                    console.log('Route parameter demandeindividuel_id:', demandeId);
+                    const demandeId = params.get('demandeIndividuelId');
+                    console.log('Route parameter demandeIndividuelId:', demandeId);
 
                     if (demandeId) {
                         this.state.update((s) => ({
                             ...s,
-                            demandeindividuel_id: Number(demandeId),
+                            demandeIndividuelId: Number(demandeId),
                             loading: true,
                             error: null
                         }));
                         return this.userService.getAllDocuments$(+demandeId);
                     } else {
-                        console.error('No demandeindividuel_id found in route parameters');
+                        console.error('No demandeIndividuelId found in route parameters');
                         this.state.update((state) => ({
                             ...state,
                             loading: false,
@@ -353,6 +113,7 @@ export class ImportSelectionComponent {
                     this.state.update((s) => ({
                         ...s,
                         documents: response.data.documents!,
+                        user: response.data.user,
                         demandeIndividuel: response.data.demandeIndividuel,
                         loading: false
                     }));
@@ -372,7 +133,7 @@ export class ImportSelectionComponent {
      * Version améliorée de deleteDocument avec feedback visuel
      */
     deleteDocument(document: Selection): void {
-        if (!document || !document.selectionId || !this.state().demandeindividuel_id) {
+        if (!document || !document.selectionId || !this.state().demandeIndividuelId) {
             this.messageService.add({
                 severity: 'error',
                 summary: 'Erreur',
@@ -384,7 +145,7 @@ export class ImportSelectionComponent {
         this.state.update((s) => ({ ...s, loading: true }));
 
         this.userService
-            .deleteDocument$(document.selectionId!, this.state().demandeindividuel_id!)
+            .deleteDocument$(document.selectionId!, this.state().demandeIndividuelId!)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (response: IResponse) => {
@@ -418,7 +179,7 @@ export class ImportSelectionComponent {
     }
 
     approvedDemande(demandeIndividuel: DemandeIndividuel): void {
-        if (!demandeIndividuel.demandeindividuel_id || !demandeIndividuel?.codUsuarios) {
+        if (!demandeIndividuel.demandeIndividuelId || !demandeIndividuel?.codUsuarios) {
             this.messageService.add({
                 severity: 'error',
                 summary: 'Error',
@@ -435,7 +196,7 @@ export class ImportSelectionComponent {
                 this.state.update((s) => ({ ...s, loading: true }));
 
                 this.userService
-                    .updateDemandeIndividuel$('APPROVED', demandeIndividuel?.codUsuarios, demandeIndividuel.demandeindividuel_id!)
+                    .updateDemandeIndividuel$('APPROVED', demandeIndividuel?.codUsuarios!, demandeIndividuel.demandeIndividuelId!)
                     .pipe(takeUntilDestroyed(this.destroyRef))
                     .subscribe({
                         next: (response: IResponse) => {
@@ -576,9 +337,9 @@ export class ImportSelectionComponent {
      * Méthode d'upload corrigée et simplifiée
      */
     uploadDocuments(): void {
-        const { selectedFiles, demandeindividuel_id } = this.state();
+        const { selectedFiles, demandeIndividuelId } = this.state();
 
-        if (selectedFiles.length === 0 || !demandeindividuel_id) {
+        if (selectedFiles.length === 0 || !demandeIndividuelId) {
             this.messageService.add({
                 severity: 'error',
                 summary: 'Erreur',
@@ -598,7 +359,7 @@ export class ImportSelectionComponent {
             const formData = new FormData();
             formData.append('image', file);
 
-            return this.userService.addDocuments$(demandeindividuel_id, formData).pipe(
+            return this.userService.addDocuments$(demandeIndividuelId, formData).pipe(
                 takeUntilDestroyed(this.destroyRef),
                 catchError((error) => {
                     this.messageService.add({
@@ -1171,4 +932,6 @@ export class ImportSelectionComponent {
                 });
         }
     }
+
+    public goBack(): void {}
 }

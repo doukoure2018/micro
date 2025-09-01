@@ -44,6 +44,7 @@
 
                         <ng-template pTemplate="header">
                             <tr>
+                                <th>Réference</th>
                                 <th>Client</th>
                                 <th>Numéro Membre</th>
                                 <th>Montant</th>
@@ -56,24 +57,25 @@
 
                         <ng-template pTemplate="body" let-demande>
                             <tr>
+                                <td>{{ demande.demandeIndividuelId }}</td>
                                 <td>{{ demande.prenom }} {{ demande.nom }}</td>
                                 <td>{{ demande.numeroMembre }}</td>
-                                <td>{{ demande.montant | currency:'GNF ' }}</td>
-                                <td>{{ demande.activite }}</td>
+                                <td>{{ demande.montantDemande | currency:'GNF ' }}</td>
+                                <td>{{ demande.descriptionActivite }}</td>
                                 <td>
                                     <p-tag [value]="getStatusLabel(demande.statutDemande, demande.validationState)"
                                         [severity]="getStatusSeverity(demande.statutDemande, demande.validationState)">
                                     </p-tag>
                                 </td>
-                                <td>{{ demande.createdAt | date: 'HH:mm' }}</td>
+                                <td>{{ demande.createdAt | date: 'short' }}</td>
                                 <td>
                                     @if(demande.statutDemande === 'EN_ATTENTE' && demande.validationState ===
                                     'APPROVED') {
                                     <span class="text-muted">En cours de validation</span>
                                     } @else {
                                     <p-button
-                                        [routerLink]="['/dashboards/agent-credit/selection', demande.demandeindividuel_id]"
-                                        icon="pi pi-file" severity="help" rounded pTooltip="Gérer la sélection">
+                                        [routerLink]="['/dashboards/credit/individuel/attente/detail', demande.demandeIndividuelId]"
+                                        icon="pi pi-eye" severity="help" rounded pTooltip="Gérer la sélection">
                                     </p-button>
                                     }
                                 </td>
