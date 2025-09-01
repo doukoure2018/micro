@@ -6,10 +6,11 @@ import { AdminComponent } from '../admin/admin.component';
 import { AgentCreditComponent } from '../agent-credit/agent-credit.component';
 import { RespAgentComponent } from '../resp-agent/resp-agent.component';
 import { ManagerComponent } from '../manager/manager.component';
+import { ListStockComponent } from '../agent-credit/list-stock/list-stock.component';
 
 @Component({
     selector: 'app-home',
-    imports: [AdminComponent, AgentCreditComponent, RespAgentComponent, ManagerComponent],
+    imports: [AdminComponent, AgentCreditComponent, RespAgentComponent, ManagerComponent, ListStockComponent],
     templateUrl: './home.component.html'
 })
 export class HomeComponent {

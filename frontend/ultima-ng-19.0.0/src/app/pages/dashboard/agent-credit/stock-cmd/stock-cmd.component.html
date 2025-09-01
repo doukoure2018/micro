@@ -1,0 +1,264 @@
+<div class="grid">
+    <div class="col-12">
+        <p-toast></p-toast>
+        <p-confirmDialog></p-confirmDialog>
+
+        <!-- Formulaire de création -->
+        <p-card header="Nouveau Bon de Commande" [style]="{ 'margin-bottom': '2rem' }">
+            <form [formGroup]="stockForm" (ngSubmit)="onSubmit()">
+                <div class="grid">
+                    <!-- Service -->
+                    <div class="col-12 md:col-6">
+                        <div class="field">
+                            <label for="service" class="block mb-2">
+                                Service <span class="text-red-500">*</span>
+                            </label>
+                            <p-dropdown id="service" formControlName="service" [options]="services" optionLabel="label"
+                                optionValue="value" placeholder="Sélectionner un service" styleClass="w-full"
+                                [showClear]="true"></p-dropdown>
+                            <small class="p-error"
+                                *ngIf="stockForm.get('service')?.invalid && stockForm.get('service')?.touched">
+                                Le service est obligatoire
+                            </small>
+                        </div>
+                    </div>
+                    <!-- Délégation -->
+                    <div class="col-12 md:col-4">
+                        <div class="field">
+                            <label for="delegation" class="block mb-2">Délégation</label>
+                            <p-dropdown id="delegation" formControlName="delegationId" [options]="delegations()"
+                                optionLabel="libele" optionValue="id" placeholder="Sélectionner une délégation"
+                                styleClass="w-full" [showClear]="true"></p-dropdown>
+                        </div>
+                    </div>
+
+                    <!-- Agence -->
+                    <div class="col-12 md:col-4">
+                        <div class="field">
+                            <label for="agence" class="block mb-2">Agence</label>
+                            <p-dropdown id="agence" formControlName="agenceId" [options]="agences()"
+                                optionLabel="libele" optionValue="id" placeholder="Sélectionner une agence"
+                                styleClass="w-full" [showClear]="true"></p-dropdown>
+                        </div>
+                    </div>
+
+                    <!-- Point de vente -->
+                    <div class="col-12 md:col-4">
+                        <div class="field">
+                            <label for="pointvente" class="block mb-2">Point de vente</label>
+                            <p-dropdown id="pointvente" formControlName="pointventeId" [options]="pointsVente()"
+                                optionLabel="libele" optionValue="id" placeholder="Sélectionner un point de vente"
+                                styleClass="w-full" [showClear]="true"></p-dropdown>
+                        </div>
+                    </div>
+                    <!-- Catégorie -->
+                    <div class="col-12 md:col-6">
+                        <div class="field">
+                            <label for="categorie" class="block mb-2">
+                                Catégorie <span class="text-red-500">*</span>
+                            </label>
+                            <p-dropdown id="categorie" formControlName="categorieId" [options]="listCategorieStock()"
+                                optionLabel="libele" optionValue="id" placeholder="Sélectionner une catégorie"
+                                styleClass="w-full" [showClear]="true"></p-dropdown>
+                            <small class="p-error"
+                                *ngIf="stockForm.get('categorieId')?.invalid && stockForm.get('categorieId')?.touched">
+                                La catégorie est obligatoire
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- Description standard -->
+                    <div class="col-12">
+                        <div class="field">
+                            <label for="detail" class="block mb-2">Description générale</label>
+                            <textarea pTextarea id="detail" formControlName="detailBonCommande" rows="3" class="w-full"
+                                placeholder="Description détaillée de la demande..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Observations -->
+                    <div class="col-12">
+                        <div class="field">
+                            <label for="observations" class="block mb-2">Observations</label>
+                            <textarea pTextarea id="observations" formControlName="observations" rows="2" class="w-full"
+                                placeholder="Observations ou remarques additionnelles..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Boutons -->
+                    <div class="col-12">
+                        <div class="flex justify-content-end gap-2">
+                            <button pButton type="button" label="Réinitialiser" icon="pi pi-refresh"
+                                class="p-button-secondary" (click)="resetForm()"></button>
+                            <button pButton type="submit" label="Créer le bon de commande" icon="pi pi-save"
+                                [loading]="state().submitting" [disabled]="stockForm.invalid"></button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </p-card>
+
+        <!-- Tableau des stocks -->
+        <p-card header="Mes Bons de Commande">
+            <!-- Barre d'outils -->
+            <div class="flex justify-content-between align-items-center mb-3">
+                <div class="flex gap-2">
+                    <span class="p-input-icon-left">
+                        <i class="pi pi-search"></i>
+                        <input pInputText type="text" placeholder="Rechercher..." (input)="onSearch($event)"
+                            class="w-20rem" />
+                    </span>
+                </div>
+                <div class="flex gap-2">
+                    <button pButton icon="pi pi-refresh" class="p-button-rounded p-button-text" pTooltip="Actualiser"
+                        tooltipPosition="top" (click)="loadUserStocks()"></button>
+                    <button pButton icon="pi pi-file-excel" class="p-button-rounded p-button-success p-button-text"
+                        pTooltip="Exporter Excel" tooltipPosition="top" (click)="exportToExcel()"></button>
+                </div>
+            </div>
+
+            <!-- Loading skeleton -->
+            <div *ngIf="state().loading" class="grid">
+                <div class="col-12" *ngFor="let i of [1,2,3,4,5]">
+                    <p-skeleton height="3rem" styleClass="mb-2"></p-skeleton>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <p-table *ngIf="!state().loading" [value]="filteredStocks()" [paginator]="true" [rows]="pageSize()"
+                [totalRecords]="totalRecords()" [lazy]="false" [rowsPerPageOptions]="[5, 10, 20, 50]"
+                [showCurrentPageReport]="true"
+                currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} entrées"
+                [globalFilterFields]="['numeroCommande', 'service', 'categorieLibele', 'status']"
+                responsiveLayout="scroll" styleClass="p-datatable-striped">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th pSortableColumn="numeroCommande">
+                            N° Commande <p-sortIcon field="numeroCommande"></p-sortIcon>
+                        </th>
+                        <th pSortableColumn="dateCreation">
+                            Date <p-sortIcon field="dateCreation"></p-sortIcon>
+                        </th>
+                        <th pSortableColumn="service">
+                            Service <p-sortIcon field="service"></p-sortIcon>
+                        </th>
+                        <th>Catégorie</th>
+                        <th>Organisation</th>
+                        <th pSortableColumn="status">
+                            Statut <p-sortIcon field="status"></p-sortIcon>
+                        </th>
+                        <th style="width: 10rem">Actions</th>
+                    </tr>
+                </ng-template>
+
+                <ng-template pTemplate="body" let-stock>
+                    <tr>
+                        <td>
+                            <span class="font-bold">{{ stock.numeroCommande }}</span>
+                        </td>
+                        <td>
+                            {{ stock.dateCreation | date:'dd/MM/yyyy HH:mm' }}
+                        </td>
+                        <td>{{ stock.service }}</td>
+                        <td>
+                            <span class="badge badge-info">
+                                {{ stock.categorieLibele || 'Non définie' }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="text-sm">
+                                <div *ngIf="stock.delegationLibele">
+                                    <i class="pi pi-building mr-1"></i>{{ stock.delegationLibele }}
+                                </div>
+                                <div *ngIf="stock.agenceLibele" class="text-500">
+                                    <i class="pi pi-home mr-1"></i>{{ stock.agenceLibele }}
+                                </div>
+                                <div *ngIf="stock.pointventeLibele" class="text-400">
+                                    <i class="pi pi-map-marker mr-1"></i>{{ stock.pointventeLibele }}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <p-tag [value]="getStatusLabel(stock.status)"
+                                [severity]="getStatusSeverity(stock.status)"></p-tag>
+                        </td>
+                        <td>
+                            <div class="flex gap-1">
+                                <button pButton icon="pi pi-eye" class="p-button-rounded p-button-text p-button-sm"
+                                    pTooltip="Voir détails" tooltipPosition="top" (click)="viewStock(stock)"></button>
+
+                                <button *ngIf="stock.status === 'ENCOURS'" pButton icon="pi pi-pencil"
+                                    class="p-button-rounded p-button-text p-button-warning p-button-sm"
+                                    pTooltip="Modifier" tooltipPosition="top" (click)="editStock(stock)"></button>
+
+                                <button *ngIf="stock.status === 'ENCOURS'" pButton icon="pi pi-trash"
+                                    class="p-button-rounded p-button-text p-button-danger p-button-sm"
+                                    pTooltip="Supprimer" tooltipPosition="top" (click)="deleteStock(stock)"></button>
+                            </div>
+                        </td>
+                    </tr>
+                </ng-template>
+
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="7" class="text-center p-4">
+                            <i class="pi pi-inbox text-4xl text-300"></i>
+                            <p class="mt-3 text-600">Aucun bon de commande trouvé</p>
+                        </td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </p-card>
+
+        <!-- Dialog de détails -->
+        <p-dialog [(visible)]="displayDialog" [modal]="true" [style]="{width: '50vw'}"
+            [breakpoints]="{'960px': '75vw', '640px': '100vw'}" header="Détails du Bon de Commande">
+            <div *ngIf="selectedStock()">
+                <div class="grid">
+                    <div class="col-12 md:col-6">
+                        <p class="text-500 mb-1">Numéro de commande</p>
+                        <p class="font-bold">{{ selectedStock()!.numeroCommande }}</p>
+                    </div>
+                    <div class="col-12 md:col-6">
+                        <p class="text-500 mb-1">Statut</p>
+                        <p-tag [value]="getStatusLabel(selectedStock()!.status)"
+                            [severity]="getStatusSeverity(selectedStock()!.status)"></p-tag>
+                    </div>
+                    <div class="col-12 md:col-6">
+                        <p class="text-500 mb-1">Service demandeur</p>
+                        <p class="font-bold">{{ selectedStock()!.service }}</p>
+                    </div>
+                    <div class="col-12 md:col-6">
+                        <p class="text-500 mb-1">Catégorie</p>
+                        <p class="font-bold">{{ selectedStock()!.categorieLibele || 'Non définie' }}</p>
+                    </div>
+                    <div class="col-12 md:col-6">
+                        <p class="text-500 mb-1">Date de création</p>
+                        <p class="font-bold">{{ selectedStock()!.dateCreation | date:'dd/MM/yyyy HH:mm' }}</p>
+                    </div>
+                    <div class="col-12 md:col-6" *ngIf="selectedStock()!.dateTraitement">
+                        <p class="text-500 mb-1">Date de traitement</p>
+                        <p class="font-bold">{{ selectedStock()!.dateTraitement | date:'dd/MM/yyyy HH:mm' }}</p>
+                    </div>
+                    <div class="col-12">
+                        <p class="text-500 mb-1">Description</p>
+                        <p class="font-bold">{{ selectedStock()!.detailBonCommande }}</p>
+                    </div>
+                    <div class="col-12" *ngIf="selectedStock()!.observations">
+                        <p class="text-500 mb-1">Observations</p>
+                        <p class="font-bold">{{ selectedStock()!.observations }}</p>
+                    </div>
+                    <div class="col-12" *ngIf="selectedStock()!.motif">
+                        <p class="text-500 mb-1">Motif</p>
+                        <p class="font-bold text-red-500">{{ selectedStock()!.motif }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <ng-template pTemplate="footer">
+                <button pButton label="Fermer" icon="pi pi-times" (click)="displayDialog.set(false)"
+                    class="p-button-text"></button>
+            </ng-template>
+        </p-dialog>
+    </div>
+</div>

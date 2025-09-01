@@ -47,11 +47,16 @@ public class DemandeCreditResource {
 
     @PostMapping("/submitCompleteDemande")
     public ResponseEntity<Response> submitCompleteDemande(
+            @NotNull Authentication authentication,
             @Valid @RequestBody DemandeCreditCompleteDTO demande,
-            HttpServletRequest request) {
+            HttpServletRequest request)
+    {
 
         try {
+            User user= userClient.getUserByUuid(authentication.getName());
+            demande.setUserId(user.getUserId());
             Map<String, Object> result = demandeCreditService.traiterDemandeComplete(demande);
+            // get demande information
             boolean success = result.containsKey("success") && Boolean.TRUE.equals(result.get("success"));
 
             if (success) {
@@ -131,8 +136,6 @@ public class DemandeCreditResource {
         infoAdministrative.setPointVenteDto(pointVenteDto);
         return ok(getResponse(request, Map.of("infoAdministrative",infoAdministrative), "Information sur localisation", OK));
     }
-
-
 
 
     @GetMapping("/seachCreditos/{codCliente}")
@@ -226,7 +229,8 @@ public class DemandeCreditResource {
     public ResponseEntity<Response> obtenirAnalyseComplete(
             @NotNull Authentication authentication,
             @PathVariable(name = "demandeCreditId") Integer demandeCreditId,
-            HttpServletRequest request) {
+            HttpServletRequest request)
+    {
 
         Map<String, Object> analyseComplete = demandeCreditService.obtenirAnalyseComplete(demandeCreditId);
 
@@ -236,12 +240,6 @@ public class DemandeCreditResource {
                 "Resume Retrieved Successfully",
                 OK));
     }
-
-
-    /**
-     * Analyse de credit
-     * @return
-     */
 
     private URI getUri() {
         return URI.create("/credit/demandeCreditId");

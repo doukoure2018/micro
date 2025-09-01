@@ -52,15 +52,56 @@ public class DemandeIndQuery {
 
    // public static final String SELECT_ALL_DEMANDE_ATTENTE = "SELECT * FROM demandeindividuel WHERE pos = :pointventeId  AND statut_demande='EN_ATTENTE' OR validation_state ='APPROVED'";
    public static final String SELECT_ALL_DEMANDE_ATTENTE =
-               """
-                  SELECT * FROM demandeindividuel
-                  WHERE (
-                      (CAST(:agenceId AS BIGINT) IS NOT NULL AND CAST(:pointventeId AS BIGINT) IS NULL AND agence = CAST(:agenceId AS BIGINT)) OR
-                      (CAST(:pointventeId AS BIGINT) IS NOT NULL AND pos = CAST(:pointventeId AS BIGINT))
-                  )
-                  AND (statut_demande = 'EN_ATTENTE' OR validation_state = 'APPROVED')
-               """;
-
+           """
+           SELECT
+               demandeindividuel_id as "demandeIndividuelId",
+               nom, prenom, telephone,
+               numero_membre as "numeroMembre",
+               delegation, agence, pos,
+               type_piece as "typePiece",
+               numId as "numId",
+               date_naissance as "dateNaissance",
+               lieux_naissance as "lieuxNaissance",
+               genre,
+               situation_matrimoniale as "situationMatrimoniale",
+               nombre_personne_en_charge as "nombrePersonneEnCharge",
+               nombre_personne_scolarise as "nombrePersonneScolarise",
+               addresse_domicile_contact as "addresseDomicileContact",
+               type_propriete as "typePropriete",
+               nombre_annee_habitation as "nombreAnneeHabitation",
+               type_activite as "typeActivite",
+               sous_activite as "sousActivite",
+               sous_sous_activite as "sousSousActivite",
+               description_activite as "descriptionActivite",
+               nombre_annee_activite as "nombreAnneeActivite",
+               adresse_lieu_activite as "adresseLieuActivite",
+               autre_activite as "autreActivite",
+               lieu_activite as "lieuActivite",
+               montant_demande as "montantDemande",
+               duree_demande as "dureeDemande",
+               periodicite_remboursement as "periodiciteRemboursement",
+               taux_interet as "tauxInteret",
+               periode_differe as "periodeDiffere",
+               nombre_echeance as "nombreEcheance",
+               echeance,
+               object_credit as "objectCredit",
+               detail_object_credit as "detailObjectCredit",
+               statut_credit as "statutCredit",
+               rang_credit as "rangCredit",
+               tip_credito as "tipCredito",
+               cod_usuarios as "codUsuarios",
+               statut_demande as "statutDemande",
+               validation_state as "validationState",
+               current_activite as "currentActivite",
+               statut_selection as "statutSelection",
+               createdAt as "createdAt"
+           FROM demandeindividuel
+           WHERE (
+               (CAST(:agenceId AS BIGINT) IS NOT NULL AND CAST(:pointventeId AS BIGINT) IS NULL AND agence = CAST(:agenceId AS BIGINT)) OR
+               (CAST(:pointventeId AS BIGINT) IS NOT NULL AND pos = CAST(:pointventeId AS BIGINT))
+           )
+           AND (statut_demande = 'EN_ATTENTE' OR validation_state = 'APPROVED')
+           """;
     public static final String SELECT_ALL_DEMANDE_ATTENTE_NOTIFICATION_QUERY =
             """
                 SELECT * FROM demandeindividuel
@@ -70,11 +111,59 @@ public class DemandeIndQuery {
                       )
                       AND (statut_demande = 'EN_ATTENTE' OR validation_state = 'APPROVED')
             """;
-    public static final String SELECT_DEMANDE_INDIVIDUEL_QUERY = "SELECT * FROM demandeindividuel WHERE demandeIndividuel_id = :demandeIndividuelId";
 
     public static final String UPDATE_STATUT_DEMANDE =  "UPDATE demandeIndividuel SET validation_state = :statut, cod_usuarios = :codUsuarios WHERE demandeIndividuel_id = :demandeindividuel_id";
 
-    public static final String SELECT_ALL_DEMANDE_ATTENTE_BY_DATE_QUERY ="SELECT *  FROM demandeindividuel WHERE pos = :pointventeId AND statut_demande='EN_ATTENTE' AND validation_state IN ('SELECTION','APPROVED') ORDER BY DATE(createdAt) DESC";
+    public static final String SELECT_ALL_DEMANDE_ATTENTE_BY_DATE_QUERY =
+                    """
+                             SELECT
+                            		    demandeindividuel_id as "demandeIndividuelId",
+                                           nom, prenom, telephone,
+                                           numero_membre as "numeroMembre",
+                                           delegation, agence, pos,
+                                           type_piece as "typePiece",
+                                           numId as "numId",
+                                           date_naissance as "dateNaissance",
+                                           lieux_naissance as "lieuxNaissance",
+                                           genre,
+                                           situation_matrimoniale as "situationMatrimoniale",
+                                           nombre_personne_en_charge as "nombrePersonneEnCharge",
+                                           nombre_personne_scolarise as "nombrePersonneScolarise",
+                                           addresse_domicile_contact as "addresseDomicileContact",
+                                           type_propriete as "typePropriete",
+                                           nombre_annee_habitation as "nombreAnneeHabitation",
+                                           type_activite as "typeActivite",
+                                           sous_activite as "sousActivite",
+                                           sous_sous_activite as "sousSousActivite",
+                                           description_activite as "descriptionActivite",
+                                           nombre_annee_activite as "nombreAnneeActivite",
+                                           adresse_lieu_activite as "adresseLieuActivite",
+                                           autre_activite as "autreActivite",
+                                           lieu_activite as "lieuActivite",
+                                           montant_demande as "montantDemande",
+                                           duree_demande as "dureeDemande",
+                                           periodicite_remboursement as "periodiciteRemboursement",
+                                           taux_interet as "tauxInteret",
+                                           periode_differe as "periodeDiffere",
+                                           nombre_echeance as "nombreEcheance",
+                                           echeance,
+                                           object_credit as "objectCredit",
+                                           detail_object_credit as "detailObjectCredit",
+                                           statut_credit as "statutCredit",
+                                           rang_credit as "rangCredit",
+                                           tip_credito as "tipCredito",
+                                           cod_usuarios as "codUsuarios",
+                                           statut_demande as "statutDemande",
+                                           validation_state as "validationState",
+                                           current_activite as "currentActivite",
+                                           statut_selection as "statutSelection",
+                                           createdAt as "createdAt"
+                            		  
+                            		   FROM demandeindividuel WHERE pos = :pointventeId
+                            		   AND statut_demande='EN_ATTENTE'
+                            		   AND validation_state IN ('SELECTION','APPROVED') ORDER BY DATE(createdAt) DESC
+                    """;
+
     public static final String EXIST_NUMERO_MEMBRE ="SELECT *  FROM individuel WHERE numero_membre = :numeroMembre";
     public static final String GET_LAST_DEMANDE_INDIDIVIDUEL_BY_NUMBERO_MEMBRE_QUERY ="SELECT * FROM demandeIndividuel WHERE numero_membre = :numeroMembre ORDER BY createdAt DESC LIMIT 1";
 
@@ -239,5 +328,137 @@ public class DemandeIndQuery {
     public static final String SELECT_CREDIT_INFO_BY_REFERENCE_CREDIT = "SELECT * FROM credit WHERE reference_credit=:referenceCredit AND status='ACCEPTED' ORDER BY create_at DESC LIMIT 1";
     public static final String SELECT_CREDIT_BY_REFERENCE_CREDIT = "SELECT * FROM credit WHERE reference_credit=:referenceCredit";
     public static final String SELECT_DEMANDE_CREDIT_BY_USER_ID_QUERY = "SELECT * FROM demande_credit WHERE statut='VUE'";
+
+
+
+
+    /**
+     * Appel de la procédure stockée pour insérer une demande avec ses garanties
+     */
+    public static final String CALL_INSERT_DEMANDE_WITH_GARANTIES_PROC =
+            """
+            SELECT * FROM insert_demande_with_garanties(
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?::garantie_input[]
+            )
+            """;
+
+
+   public static final String CALL_INSERT_DEMANDE_WITH_GARANTIES_PROC_V2 =
+           """
+           SELECT * FROM insert_demande_with_garanties(
+               ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+               ?, ?, ?, ?, ?, ?, ?, ?,
+               ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+               ?, ?, ?, ?, ?, ?, ?::garantie_input[]
+           )
+           """;
+
+    /**
+     * Appel de la fonction pour récupérer une demande avec ses garanties
+     */
+    public static final String CALL_GET_DEMANDE_WITH_GARANTIES_FUNC =
+            "SELECT * FROM get_demande_with_garanties(?)";
+
+    // Ajout de la requête INSERT modifiée pour la nouvelle structure
+    public static final String INSERT_NEW_DEMANDE_IND_COMPLETE_QUERY =
+            """
+            INSERT INTO demandeIndividuel (
+                nom, prenom, telephone, numero_membre,
+                delegation, agence, pos,
+                type_piece, numId, date_naissance, lieux_naissance,
+                genre, situation_matrimoniale,
+                nombre_personne_en_charge, nombre_personne_scolarise,
+                addresse_domicile_contact, type_propriete, nombre_annee_habitation,
+                type_activite, sous_activite, sous_sous_activite,
+                description_activite, nombre_annee_activite,
+                adresse_lieu_activite, autre_activite, lieu_activite,
+                montant_demande, duree_demande, periodicite_remboursement,
+                taux_interet, periode_differe, nombre_echeance, echeance,
+                object_credit, detail_object_credit,
+                statut_credit, rang_credit,
+                tip_credito, cod_usuarios,
+                statut_demande, validation_state, current_activite,
+                createdAt
+            ) VALUES (
+                :nom, :prenom, :telephone, :numero_membre,
+                :delegation, :agence, :pos,
+                :type_piece, :numId, :date_naissance, :lieux_naissance,
+                :genre, :situation_matrimoniale,
+                :nombre_personne_en_charge, :nombre_personne_scolarise,
+                :addresse_domicile_contact, :type_propriete, :nombre_annee_habitation,
+                :type_activite, :sous_activite, :sous_sous_activite,
+                :description_activite, :nombre_annee_activite,
+                :adresse_lieu_activite, :autre_activite, :lieu_activite,
+                :montant_demande, :duree_demande, :periodicite_remboursement,
+                :taux_interet, :periode_differe, :nombre_echeance, :echeance,
+                :object_credit, :detail_object_credit,
+                :statut_credit, :rang_credit,
+                :tip_credito, :cod_usuarios,
+                :statut_demande, :validation_state, :current_activite,
+                CURRENT_TIMESTAMP
+            )
+            """;
+
+
+    public static final String CALL_GET_ALL_DEMANDES_WITH_GARANTIES_FUNC =
+            "SELECT * FROM get_all_demandes_with_garanties(?, ?)";
+
+
+    public static final String GET_INSTANCE_DEMANDE_INDIVIDUEL_BY_ID_QUERY =
+                    """
+                       SELECT
+                               demandeindividuel_id as "demandeIndividuelId",
+                                      nom, prenom, telephone,
+                                      numero_membre as "numeroMembre",
+                                      delegation, agence, pos,
+                                      type_piece as "typePiece",
+                                      numId as "numId",
+                                      date_naissance as "dateNaissance",
+                                      lieux_naissance as "lieuxNaissance",
+                                      genre,
+                                      situation_matrimoniale as "situationMatrimoniale",
+                                      nombre_personne_en_charge as "nombrePersonneEnCharge",
+                                      nombre_personne_scolarise as "nombrePersonneScolarise",
+                                      addresse_domicile_contact as "addresseDomicileContact",
+                                      type_propriete as "typePropriete",
+                                      nombre_annee_habitation as "nombreAnneeHabitation",
+                                      type_activite as "typeActivite",
+                                      sous_activite as "sousActivite",
+                                      sous_sous_activite as "sousSousActivite",
+                                      description_activite as "descriptionActivite",
+                                      nombre_annee_activite as "nombreAnneeActivite",
+                                      adresse_lieu_activite as "adresseLieuActivite",
+                                      autre_activite as "autreActivite",
+                                      lieu_activite as "lieuActivite",
+                                      montant_demande as "montantDemande",
+                                      duree_demande as "dureeDemande",
+                                      periodicite_remboursement as "periodiciteRemboursement",
+                                      taux_interet as "tauxInteret",
+                                      periode_differe as "periodeDiffere",
+                                      nombre_echeance as "nombreEcheance",
+                                      echeance,
+                                      object_credit as "objectCredit",
+                                      detail_object_credit as "detailObjectCredit",
+                                      statut_credit as "statutCredit",
+                                      rang_credit as "rangCredit",
+                                      tip_credito as "tipCredito",
+                                      cod_usuarios as "codUsuarios",
+                                      statut_demande as "statutDemande",
+                                      validation_state as "validationState",
+                                      current_activite as "currentActivite",
+                                      statut_selection as "statutSelection",
+                                      createdAt as "createdAt"
+                               FROM demandeIndividuel WHERE demandeindividuel_id = :demandeIndividuelId
+                    """;
+
+
+   public static final String CHECK_DEMANDE_EXIST =
+           """
+               SELECT COUNT(*) > 0
+               FROM demandeindividuel WHERE demandeindividuel_id = :demandeindividuelId
+         """;
 
 }

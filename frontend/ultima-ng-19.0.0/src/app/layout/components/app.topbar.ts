@@ -117,7 +117,7 @@ import { PointVente } from '@/interface/point.vente';
                                                 >Vous avez <b>{{ state().demandeAttentes!.length }}</b> nouvelle(s) demandes</span
                                             >
                                         </li>
-                                        @for (demande of state().demandeAttentes; track demande.demandeindividuel_id) {
+                                        @for (demande of state().demandeAttentes; track demande.demandeIndividuelId) {
                                             <li class="p-4">
                                                 <div class="flex items-center">
                                                     <div class="flex flex-col ml-4 flex-1">
@@ -125,7 +125,6 @@ import { PointVente } from '@/interface/point.vente';
                                                             <span class="font-bold">{{ demande.nom }} {{ demande.prenom }}</span>
                                                             <small>{{ demande.createdAt | date: 'short' }}</small>
                                                         </div>
-                                                        <span class="text-sm leading-normal">{{ demande.activite || 'No activity' }} - {{ demande.montant | currency: 'GNF ' }}</span>
                                                     </div>
                                                 </div>
                                             </li>
@@ -303,7 +302,7 @@ export class AppTopbar {
                         ...state,
                         demandeAttentes: response.data.demandeAttentes,
                         agence: response.data.agence,
-                        pointVente: response.data.pointVente || null, // Handle null pointVente
+                        pointVente: response.data.pointVente || null,
                         loading: false
                     }));
                 },

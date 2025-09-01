@@ -1,0 +1,1 @@
+CREATE SEQUENCE IF NOT EXISTS numero_commande_seq START 1;

@@ -1,11 +1,13 @@
 package io.digiservices.ecreditservice.service.impl;
 
 import io.digiservices.ecreditservice.dto.*;
+import io.digiservices.ecreditservice.exception.ApiException;
 import io.digiservices.ecreditservice.repository.DemandeIndRepository;
 import io.digiservices.ecreditservice.service.DemandeIndService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -158,6 +160,67 @@ public class DemandeIndServiceImpl implements DemandeIndService {
     @Override
     public List<DemandeCredit> listDemandeAnalyseCreditByUserId() {
         return demandeIndRepository.listDemandeAnalyseCreditByUserId();
+    }
+
+    @Override
+    @Transactional
+    public DemandeResponse addDemandeIndWithGaranties(DemandeIndividuel demandeIndividuel) {
+        log.info("Création d'une nouvelle demande avec {} garanties",
+                demandeIndividuel.getGaranties() != null ? demandeIndividuel.getGaranties().size() : 0);
+
+        // Validation des données
+        validateDemandeData(demandeIndividuel);
+        // Calcul automatique de l'échéance si nécessaire
+        if (demandeIndividuel.getEcheance() == null) {
+            calculateEcheance(demandeIndividuel);
+        }
+        // Appel au repository
+        return demandeIndRepository.addNewDemandeIndWithGaranties(demandeIndividuel);
+    }
+    @Override
+    public DemandeIndividuel getDemandeWithGaranties(Long demandeId) {
+        return demandeIndRepository.getDemandeWithGaranties(demandeId);
+    }
+
+    @Override
+    public List<DemandeIndividuel> getAllDemandesWithGaranties(Long agenceId, Long pointVenteId) {
+        // Validation des paramètres
+        if (agenceId == null && pointVenteId == null) {
+            throw new ApiException("Au moins un des paramètres (agenceId ou pointVenteId) doit être fourni");
+        }
+
+        if (agenceId != null && pointVenteId != null) {
+            throw new ApiException("Veuillez fournir soit agenceId, soit pointVenteId, mais pas les deux");
+        }
+
+        log.info("Récupération des demandes pour agence: {}, point de vente: {}", agenceId, pointVenteId);
+
+        return demandeIndRepository.getAllDemandesWithGaranties(agenceId, pointVenteId);
+    }
+
+
+    private void validateDemandeData(DemandeIndividuel demande) {
+        // Validation métier
+        if (demande.getMontantDemande() == null || demande.getMontantDemande().doubleValue() <= 0) {
+            throw new IllegalArgumentException("Le montant demandé doit être supérieur à 0");
+        }
+
+        if (demande.getDureeDemande() == null || demande.getDureeDemande() <= 0) {
+            throw new IllegalArgumentException("La durée du prêt doit être supérieure à 0");
+        }
+
+        // Autres validations...
+    }
+
+    private void calculateEcheance(DemandeIndividuel demande) {
+        // Calcul de l'échéance mensuelle
+        // Formule simplifiée - à adapter selon vos besoins
+        double montant = demande.getMontantDemande().doubleValue();
+        double tauxMensuel = demande.getTauxInteret().doubleValue() / 100 / 12;
+        int nbEcheances = demande.getNombreEcheance() != null ? demande.getNombreEcheance() : demande.getDureeDemande();
+
+        double echeance = (montant * tauxMensuel) / (1 - Math.pow(1 + tauxMensuel, -nbEcheances));
+        demande.setEcheance(BigDecimal.valueOf(echeance));
     }
 
 

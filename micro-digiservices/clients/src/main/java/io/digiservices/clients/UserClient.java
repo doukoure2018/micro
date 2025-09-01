@@ -51,6 +51,4 @@ public interface UserClient {
      User getUserByUuid(@PathVariable("userUuid") String userUuid);
 
 
-
-
 }

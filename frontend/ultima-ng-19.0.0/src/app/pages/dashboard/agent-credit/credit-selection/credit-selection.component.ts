@@ -88,7 +88,7 @@ export class CreditSelectionComponent {
         const groupedMap = new Map<string, DemandeIndividuel[]>();
 
         for (const demande of demandes) {
-            const date = new Date(demande.createdAt);
+            const date = new Date(demande.createdAt!);
             const dateString = date.toISOString().split('T')[0];
 
             if (!groupedMap.has(dateString)) {

@@ -506,11 +506,8 @@ export class ResumeCreditComponent {
     // ========================================
 
     retourListe(): void {
-        if (this.userId) {
-            this.router.navigate([`/dashboards`]);
-        } else {
-            this.router.navigate(['/dashboards/credit']);
-        }
+        console.log('go back: ', this.state().resumeCredit?.demande_credit!);
+        this.router.navigate(['/dashboards/credit/individuel/attente/detail/', this.state().resumeCredit?.demande_credit?.demandeIndividuelId]);
     }
 
     viewCompleteAnalyse(): void {

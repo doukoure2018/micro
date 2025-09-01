@@ -2,8 +2,10 @@ import { Actividad } from './actividad.model';
 import { Agence } from './agence';
 import { AnalyseComplete } from './analyseComplete';
 import { Appreciation } from './appreciation';
+import { Avis } from './avis';
 import { BilanEntreprise } from './bilan.entreprise';
 import { BilanPersonnel } from './bilan.personnel';
+import { CategorieStockDto } from './CategorieStockDto';
 import { ChargeInd } from './ChargeInd';
 import { ClientesDto } from './clientes-dto.model';
 import { CompteExploitation } from './compte.exploitation';
@@ -14,6 +16,7 @@ import { CreditResponse } from './creditResponse';
 import { Delegation } from './delegation';
 import { DemandeIndividuel } from './demande-individuel.interface';
 import { DemandeCredit } from './demande.credit';
+import { DossierCreditRequest } from './dossierCreditRequest';
 import { Entreprise } from './entreprise';
 import { Garantiepersonnecaution } from './Garantiepersonnecaution';
 import { Individuel } from './individuel';
@@ -29,6 +32,22 @@ import { OriginFond } from './originFonds';
 import { Personnecaution } from './personnecaution';
 import { PlanPagos } from './plan.pagos';
 import { PointVente } from './point.vente';
+import {
+    AnalyseCreditDto,
+    CapaciteRemboursementDto,
+    CategorieDto,
+    ClientDto,
+    DashboardStatsDto,
+    DossierCreditDto,
+    ImportResultDto,
+    LigneDecaissementDto,
+    LigneEncaissementDto,
+    PrevisionTresorerieDto,
+    RatiosFinanciersDto,
+    RemboursementDto,
+    StatsMensuelsDto,
+    TopClientDto
+} from './prevision-tresorerie-dto';
 import { ProcessCreditInd } from './process.credit.ind';
 import { ProductInd } from './ProductInd';
 import { Promoteur } from './promoteur';
@@ -40,6 +59,7 @@ import { Selection } from './selection';
 import { SG_USUARIOS } from './sg_usuarios';
 import { SousActivite } from './sous-activite.model';
 import { SousSousActivite } from './sous-sous-activite.model';
+import { StockResponseDto } from './StockResponseDto';
 import { TipoPlazo } from './tipo-plazo.model';
 import { TypeCreditDto } from './typeCredit.model';
 import { IUser } from './user';
@@ -47,7 +67,7 @@ export interface IResponse {
     time: Date | string;
     code: number;
     statut?: string;
-    httpStatus?: string; // Ajout de cette propriété qui apparaît dans votre JSON
+    httpStatus?: string;
     message: string;
     path: string;
     exception?: string;
@@ -67,6 +87,7 @@ export interface IResponse {
         demandeIndividuel: DemandeIndividuel;
         demandeAttentes: DemandeIndividuel[];
         delegations: Delegation[];
+        delegation: Delegation;
         agences: Agence[];
         agence: Agence;
         pointVentes: PointVente[];
@@ -109,7 +130,6 @@ export interface IResponse {
         creditResponse?: CreditResponse;
 
         demandeAnalyseCredits?: DemandeCredit[];
-        // Information analyse de Credit
         promoteur?: Promoteur;
         entreprise?: Entreprise;
         bilan_entreprise?: BilanEntreprise;
@@ -131,5 +151,58 @@ export interface IResponse {
         // AJOUT : Propriétés manquantes pour l'analyse complète
         analyseComplete?: AnalyseComplete;
         success?: boolean; // Pour les réponses de mise à jour
+
+        stocks?: StockResponseDto[];
+        stock?: StockResponseDto;
+        listCategorieStock?: CategorieStockDto[];
+
+        // NOUVELLES PROPRIÉTÉS POUR PRÉVISIONS TRÉSORERIE
+        // Clients
+        client?: ClientDto;
+        clients?: any; // Page<ClientDto>
+
+        // Dossiers
+        dossier?: DossierCreditDto;
+        dossiers?: any; // Page<DossierCreditDto> ou List<DossierCreditDto>
+
+        // Prévisions de trésorerie
+        prevision?: PrevisionTresorerieDto;
+        previsions?: PrevisionTresorerieDto[];
+        previsionsTresorerie?: PrevisionTresorerieDto[];
+
+        // Lignes encaissement/décaissement
+        encaissements?: LigneEncaissementDto[];
+        encaissement?: LigneEncaissementDto;
+        decaissements?: LigneDecaissementDto[];
+        decaissement?: LigneDecaissementDto;
+
+        // Analyse
+        analyse?: AnalyseCreditDto;
+        ratios?: RatiosFinanciersDto;
+        capaciteRemboursement?: CapaciteRemboursementDto;
+
+        // Remboursements
+        remboursement?: RemboursementDto;
+        remboursements?: RemboursementDto[];
+
+        // Catégories
+        categoriesEncaissement?: CategorieDto[];
+        categoriesDecaissement?: CategorieDto[];
+
+        // Import/Export
+        importResult?: ImportResultDto;
+
+        // Dashboard
+        dashboardStats?: DashboardStatsDto;
+        statsMensuels?: StatsMensuelsDto[];
+        topClients?: TopClientDto[];
+
+        demandeId?: number;
+        count?: number;
+        hasDemandeCredit?: boolean;
+        hasDossierCredit?: boolean;
+        dossierCredit?: DossierCreditRequest;
+        avis?: Avis;
+        avisList?: Avis[];
     };
 }

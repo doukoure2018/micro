@@ -1,0 +1,573 @@
+<!-- analyse-flux-tresorerie.component.html -->
+<div class="analyse-flux-container">
+    <p-confirmDialog></p-confirmDialog>
+    <p-toast></p-toast>
+
+    <!-- NOUVELLE SECTION : Présentation du client et de la demande -->
+    <p-card class="mb-3" *ngIf="demandeIndividuel()">
+        <ng-template pTemplate="header">
+            <div class="flex justify-content-between align-items-center p-3">
+                <h2>
+                    <i class="pi pi-user mr-2"></i>
+                    Informations du Demandeur
+                </h2>
+                <p-tag [value]="'Demande N°' + demandeIndividuelId" severity="info"></p-tag>
+            </div>
+        </ng-template>
+
+        <div class="grid">
+            <!-- Informations personnelles -->
+            <div class="col-12 md:col-6 lg:col-4">
+                <div class="info-group">
+                    <label class="text-sm text-gray-600">Nom complet</label>
+                    <div class="font-semibold text-lg">
+                        {{ demandeIndividuel().prenom }} {{ demandeIndividuel().nom }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 md:col-6 lg:col-4">
+                <div class="info-group">
+                    <label class="text-sm text-gray-600">Date de naissance</label>
+                    <div class="font-semibold">
+                        {{ formatDateFromArray(demandeIndividuel().dateNaissance) }}
+                        <span class="text-sm text-gray-500 ml-2">
+                            ({{ calculateAge(demandeIndividuel().dateNaissance) }} ans)
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 md:col-6 lg:col-4">
+                <div class="info-group">
+                    <label class="text-sm text-gray-600">Téléphone</label>
+                    <div class="font-semibold">
+                        <i class="pi pi-phone mr-1"></i>
+                        {{ demandeIndividuel().telephone }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informations du crédit -->
+            <div class="col-12">
+                <p-divider></p-divider>
+            </div>
+
+            <div class="col-12 md:col-6 lg:col-3">
+                <div class="info-group">
+                    <label class="text-sm text-gray-600">Montant demandé</label>
+                    <div class="font-semibold text-primary text-xl">
+                        {{ formatMontant(demandeIndividuel().montantDemande) }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 md:col-6 lg:col-3">
+                <div class="info-group">
+                    <label class="text-sm text-gray-600">Durée du prêt</label>
+                    <div class="font-semibold">
+                        {{ demandeIndividuel().dureeDemande }} mois
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 md:col-6 lg:col-3">
+                <div class="info-group">
+                    <label class="text-sm text-gray-600">Taux d'intérêt</label>
+                    <div class="font-semibold">
+                        {{ demandeIndividuel().tauxInteret }}% annuel
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 md:col-6 lg:col-3">
+                <div class="info-group">
+                    <label class="text-sm text-gray-600">Échéance mensuelle</label>
+                    <div class="font-semibold">
+                        {{ formatMontant(demandeIndividuel().echeance) }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activité -->
+            <div class="col-12">
+                <p-divider></p-divider>
+            </div>
+
+            <div class="col-12">
+                <div class="info-group">
+                    <label class="text-sm text-gray-600">Description de l'activité</label>
+                    <div class="font-semibold">
+                        {{ demandeIndividuel().descriptionActivite }}
+                    </div>
+                    <small class="text-gray-500">
+                        Ancienneté: {{ demandeIndividuel().nombreAnneeActivite }} ans |
+                        Lieu: {{ demandeIndividuel().adresseLieuActivite }}
+                    </small>
+                </div>
+            </div>
+
+            <!-- Garanties -->
+            <div class="col-12" *ngIf="garanties().length > 0">
+                <p-divider></p-divider>
+                <h4 class="mb-3">
+                    <i class="pi pi-shield mr-2"></i>
+                    Garanties proposées
+                </h4>
+
+                <p-table [value]="garanties()" [responsive]="true" styleClass="p-datatable-sm">
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th>Valeur garantie</th>
+                            <th>Valeur empruntée</th>
+                            <th>Ratio</th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-garantie>
+                        <tr>
+                            <td>{{ garantie.typeGarantie }}</td>
+                            <td>{{ garantie.descriptionGarantie }}</td>
+                            <td class="text-right">{{ formatMontant(garantie.valeurGarantie) }}</td>
+                            <td class="text-right">{{ formatMontant(garantie.valeurEmprunte) }}</td>
+                            <td class="text-center">
+                                <p-tag
+                                    [value]="((garantie.valeurGarantie / garantie.valeurEmprunte) * 100).toFixed(0) + '%'"
+                                    [severity]="garantie.valeurGarantie >= garantie.valeurEmprunte * 1.5 ? 'success' : 'warn'">
+                                </p-tag>
+                            </td>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="summary">
+                        <div class="flex align-items-center justify-content-between">
+                            <span class="font-semibold">Total des garanties:</span>
+                            <span class="text-xl font-bold text-primary">
+                                {{ formatMontant(getTotalGaranties()) }}
+                            </span>
+                            <span class="ml-3">
+                                Couverture:
+                                <p-tag [value]="getCouvertureGaranties().toFixed(0) + '%'"
+                                    [severity]="getCouvertureGaranties() >= 150 ? 'success' : getCouvertureGaranties() >= 100 ? 'warn' : 'danger'">
+                                </p-tag>
+                            </span>
+                        </div>
+                    </ng-template>
+                </p-table>
+            </div>
+        </div>
+    </p-card>
+
+    <p-card>
+        <ng-template pTemplate="header">
+            <div class="flex justify-content-between align-items-center p-3">
+                <h2>Prévision de Trésorerie</h2>
+                <div class="flex gap-2">
+                    <!-- <button pButton type="button" icon="pi pi-calculator" label="Appliquer remboursements suggérés"
+                        class="p-button-help" (click)="applySuggestedRepayments()"
+                        pTooltip="Appliquer les mensualités calculées aux mois 1-12">
+                    </button> -->
+
+                    <button pButton type="button"
+                        [icon]="state().viewMode === 'saisie' ? 'pi pi-table' : 'pi pi-pencil'"
+                        [label]="state().viewMode === 'saisie' ? 'Vue d\'ensemble' : 'Mode saisie'"
+                        (click)="toggleView()">
+                    </button>
+                </div>
+            </div>
+        </ng-template>
+        <!-- Section des paramètres du crédit (modifiée) -->
+        <div class="credit-params-form mb-4" *ngIf="!demandeIndividuel()">
+            <p-fieldset legend="Paramètres du crédit" [toggleable]="true" [collapsed]="false">
+                <!-- Formulaire existant pour les cas sans demandeIndividuel -->
+                <!-- ... code existant ... -->
+            </p-fieldset>
+        </div>
+        <!-- Affichage simplifié si demandeIndividuel existe -->
+        <div class="credit-params-display mb-4" *ngIf="demandeIndividuel()">
+            <p-fieldset legend="Paramètres du crédit appliqués" [toggleable]="true" [collapsed]="true">
+                <div class="grid surface-100 border-round p-3">
+                    <div class="col-12 md:col-3">
+                        <label class="block text-sm text-gray-600 mb-1">Client</label>
+                        <div class="font-semibold text-lg">
+                            {{ demandeIndividuel().prenom }} {{ demandeIndividuel().nom }}
+                        </div>
+                    </div>
+                    <div class="col-12 md:col-3">
+                        <label class="block text-sm text-gray-600 mb-1">Montant du crédit</label>
+                        <div class="font-semibold text-lg text-primary">
+                            {{ formatMontant(creditParams().montantCredit) }}
+                        </div>
+                    </div>
+                    <div class="col-12 md:col-3">
+                        <label class="block text-sm text-gray-600 mb-1">Mensualité</label>
+                        <div class="font-semibold text-lg">
+                            {{ formatMontant(mensualite().total) }}
+                        </div>
+                    </div>
+                    <div class="col-12 md:col-3">
+                        <label class="block text-sm text-gray-600 mb-1">Durée</label>
+                        <div class="font-semibold text-lg">
+                            {{ creditParams().duree }} mois à {{ creditParams().tauxInteret }}%
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-content-end mt-3">
+                    <button pButton type="button" label="Créer/Mettre à jour le dossier" icon="pi pi-check"
+                        [disabled]="creditParams().dossierId > 0" (click)="createDossierCredit()">
+                    </button>
+                </div>
+            </p-fieldset>
+        </div>
+
+        <!-- Mode Saisie -->
+        <div *ngIf="state().viewMode === 'saisie'" class="saisie-mode">
+            <!-- Indicateur de progression -->
+            <div class="progress-indicator">
+                <div class="progress-header">
+                    <h4>
+                        <i class="pi pi-chart-line"></i>
+                        Progression de la saisie
+                    </h4>
+                    <span class="text-primary font-semibold">
+                        {{ getFormSummary().pourcentageComplete }}% complété
+                    </span>
+                </div>
+
+                <div class="grid">
+                    <div class="col-12 md:col-6">
+                        <div class="flex justify-content-between align-items-center mb-2">
+                            <span class="font-medium">Mois renseignés</span>
+                            <span class="text-primary font-bold">
+                                {{ getFormSummary().moisRenseignes }} / 13
+                            </span>
+                        </div>
+                        <p-progressBar [value]="getFormSummary().pourcentageComplete" [showValue]="true"
+                            [style]="{'height': '2rem'}">
+                        </p-progressBar>
+                    </div>
+                    <div class="col-12 md:col-6">
+                        <div class="flex justify-content-between align-items-center mb-2">
+                            <span class="font-medium">Mois sauvegardés</span>
+                            <span class="text-green-600 font-bold">
+                                {{ getFormSummary().moisSauvegardes }} / 13
+                            </span>
+                        </div>
+                        <p-progressBar [value]="getFormSummary().pourcentageSauvegarde" [showValue]="true"
+                            styleClass="progress-saved" [style]="{'height': '2rem'}">
+                        </p-progressBar>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs pour naviguer entre les mois -->
+            <div class="month-tabs">
+                <!-- Mois 0 -->
+                <button pButton [label]="getMoisLabel(0)" [class.p-button-outlined]="getMoisStatus(0) === 'empty'"
+                    [class.p-button-warning]="getMoisStatus(0) === 'filled'"
+                    [class.p-button-success]="getMoisStatus(0) === 'saved'"
+                    [class.p-button-primary]="currentMonth() === 0" class="month-tab-button" (click)="goToMonth(0)"
+                    [pTooltip]="'Phase de démarrage - Solde initial et prêt reçu'" tooltipPosition="bottom">
+                    <span *ngIf="currentMonth() !== 0 && getMoisStatus(0) !== 'empty'" class="status-badge"
+                        [class.badge-warning]="getMoisStatus(0) === 'filled'"
+                        [class.badge-success]="getMoisStatus(0) === 'saved'">
+                        <i [class]="getMoisStatus(0) === 'filled' ? 'pi pi-exclamation' : 'pi pi-check'"></i>
+                    </span>
+                </button>
+
+                <!-- Séparateur visuel -->
+                <span class="month-separator">|</span>
+
+                <!-- Mois 1 à 12 -->
+                <button *ngFor="let m of [1,2,3,4,5,6,7,8,9,10,11,12]" pButton [label]="'Mois ' + m"
+                    [class.p-button-outlined]="getMoisStatus(m) === 'empty'"
+                    [class.p-button-warning]="getMoisStatus(m) === 'filled'"
+                    [class.p-button-success]="getMoisStatus(m) === 'saved'"
+                    [class.p-button-primary]="currentMonth() === m" class="month-tab-button" (click)="goToMonth(m)"
+                    [pTooltip]="getMoisStatus(m) === 'saved' ? 'Mois sauvegardé' : 
+                                   getMoisStatus(m) === 'filled' ? 'Mois renseigné (non sauvegardé)' : 
+                                   'Mois à renseigner'" tooltipPosition="top">
+                    <span *ngIf="getMoisStatus(m) === 'saved'" class="status-badge badge-success">
+                        <i class="pi pi-check"></i>
+                    </span>
+                    <span *ngIf="getMoisStatus(m) === 'filled'" class="status-badge badge-warning">
+                        <i class="pi pi-exclamation"></i>
+                    </span>
+                </button>
+            </div>
+
+            <!-- Message d'information pour le Mois 0 -->
+            <p-message *ngIf="currentMonth() === 0" severity="info" [closable]="false" styleClass="mb-3">
+                <div class="flex align-items-center">
+                    <i class="pi pi-info-circle mr-2"></i>
+                    <span>Le Mois 0 représente le démarrage de l'activité. Saisissez le solde initial et le montant
+                        du prêt reçu. Les ventes commencent au Mois 1.</span>
+                </div>
+            </p-message>
+
+            <!-- Formulaire du mois courant -->
+            <form [formGroup]="tresorerieForm" *ngIf="tresorerieForm">
+                <div [formGroupName]="'mois' + currentMonth()" class="month-form" [attr.data-month]="currentMonth()">
+
+                    <!-- En-tête avec actions -->
+                    <div class="month-form-header">
+                        <h3>
+                            {{ getMoisLabel(currentMonth()) }}
+                            <p-tag *ngIf="getMoisStatus(currentMonth()) === 'saved'" severity="success"
+                                value="Sauvegardé" icon="pi pi-check-circle">
+                            </p-tag>
+                            <p-tag *ngIf="getMoisStatus(currentMonth()) === 'filled'" severity="warn"
+                                value="Non sauvegardé" icon="pi pi-exclamation-triangle">
+                            </p-tag>
+                            <p-tag *ngIf="getMoisStatus(currentMonth()) === 'empty'" severity="info"
+                                value="À renseigner" icon="pi pi-info-circle">
+                            </p-tag>
+                        </h3>
+                        <div class="flex gap-2">
+                            <button pButton type="button" icon="pi pi-save" label="Sauvegarder ce mois"
+                                class="p-button-success" [loading]="state().saving"
+                                [disabled]="!creditParams().dossierId || getMoisStatus(currentMonth()) === 'empty'"
+                                (click)="saveCurrentMonth()">
+                            </button>
+
+                            <button pButton type="button" icon="pi pi-refresh" label="Réinitialiser"
+                                class="p-button-text p-button-sm" *ngIf="getMoisStatus(currentMonth()) !== 'empty'"
+                                (click)="resetMonth(currentMonth())">
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Solde de début -->
+                    <div class="field-group">
+                        <label class="field-label">
+                            <i class="pi pi-wallet mr-2"></i>
+                            Solde Début de période
+                        </label>
+                        <div class="field-input">
+                            <p-inputNumber formControlName="soldeDebut" mode="currency" currency="GNF" locale="fr-FR"
+                                [showButtons]="currentMonth() === 0"
+                                [placeholder]="currentMonth() === 0 ? 'Solde initial' : 'Calculé automatiquement'">
+                            </p-inputNumber>
+                        </div>
+                    </div>
+
+                    <!-- Section Encaissements -->
+                    <h4 class="section-title">
+                        <i class="pi pi-download mr-2"></i>
+                        Encaissements
+                    </h4>
+
+                    <!-- Ventes -->
+                    <div class="field-group">
+                        <label class="field-label">
+                            Ventes
+                            <small *ngIf="currentMonth() === 0" class="text-orange-500 block">
+                                (Commence au Mois 1)
+                            </small>
+                        </label>
+                        <div class="field-input">
+                            <p-inputNumber formControlName="ventes" mode="currency" currency="GNF" locale="fr-FR"
+                                [showButtons]="true"
+                                [placeholder]="currentMonth() === 0 ? 'Pas de ventes au Mois 0' : 'Montant des ventes'">
+                            </p-inputNumber>
+                        </div>
+                    </div>
+
+                    <!-- Autres revenus -->
+                    <div class="field-group">
+                        <label class="field-label">
+                            Autres revenus
+                            <small *ngIf="currentMonth() === 0" class="text-orange-500 block">
+                                (Commence au Mois 1)
+                            </small>
+                        </label>
+                        <div class="field-input">
+                            <p-inputNumber formControlName="autresRevenus" mode="currency" currency="GNF" locale="fr-FR"
+                                [showButtons]="true" placeholder="Autres revenus">
+                            </p-inputNumber>
+                        </div>
+                    </div>
+
+                    <!-- Prêt reçu -->
+                    <div class="field-group">
+                        <label class="field-label">
+                            Prêt reçu
+                            <small *ngIf="currentMonth() === 0" class="text-green-500 block">
+                                (Montant du crédit)
+                            </small>
+                        </label>
+                        <div class="field-input">
+                            <p-inputNumber formControlName="pret" mode="currency" currency="GNF" locale="fr-FR"
+                                [showButtons]="true"
+                                [placeholder]="currentMonth() === 0 ? 'Montant du prêt à recevoir' : 'Montant du prêt (si applicable)'">
+                            </p-inputNumber>
+                        </div>
+                    </div>
+
+                    <!-- Section Décaissements -->
+                    <h4 class="section-title">
+                        <i class="pi pi-upload mr-2"></i>
+                        Décaissements
+                    </h4>
+
+                    <!-- Champs de décaissement -->
+                    <div class="field-group" *ngFor="let field of [
+                        {key: 'achatmarchandises', label: 'Achat marchandises'},
+                        {key: 'mainoeuvre', label: 'Coût de main d\'œuvre'},
+                        {key: 'investissement', label: 'Investissement'},
+                        {key: 'impotstaxes', label: 'Impôts et taxes'},
+                        {key: 'loyer', label: 'Loyers'},
+                        {key: 'utilities', label: 'Eau, Électricité, téléphone'},
+                        {key: 'transport', label: 'Transport'},
+                        {key: 'salaires', label: 'Salaire personnel'},
+                        {key: 'fraistelephone', label: 'Frais de téléphone'},
+                        {key: 'chargesfinancieres', label: 'Charges Financières'},
+                        {key: 'entretien', label: 'Entretien et réparation'},
+                        {key: 'autresdepenses', label: 'Autres dépenses'}
+                    ]">
+                        <label class="field-label">{{ field.label }}</label>
+                        <div class="field-input">
+                            <p-inputNumber [formControlName]="field.key" mode="currency" currency="GNF" locale="fr-FR"
+                                [showButtons]="true" [placeholder]="field.label">
+                            </p-inputNumber>
+                        </div>
+                    </div>
+
+                    <!-- Section Remboursements (Seulement pour mois > 0) -->
+                    <ng-container *ngIf="currentMonth() > 0">
+                        <h4 class="section-title text-orange-600">
+                            <i class="pi pi-money-bill mr-2"></i>
+                            Remboursements du crédit
+                        </h4>
+
+                        <div class="field-group">
+                            <label class="field-label">
+                                Intérêts à verser
+                                <small class="text-gray-500 block">
+                                    Suggéré: {{ mensualite().interet | number:'1.0-0' }} GNF
+                                </small>
+                            </label>
+                            <div class="field-input">
+                                <p-inputNumber formControlName="interetsAVerser" mode="currency" currency="GNF"
+                                    locale="fr-FR" [showButtons]="true" placeholder="Montant des intérêts">
+                                </p-inputNumber>
+                            </div>
+                        </div>
+
+                        <div class="field-group">
+                            <label class="field-label">
+                                Remboursement capital
+                                <small class="text-gray-500 block">
+                                    Suggéré: {{ mensualite().capital | number:'1.0-0' }} GNF
+                                </small>
+                            </label>
+                            <div class="field-input">
+                                <p-inputNumber formControlName="remboursementCapital" mode="currency" currency="GNF"
+                                    locale="fr-FR" [showButtons]="true" placeholder="Montant du capital à rembourser">
+                                </p-inputNumber>
+                            </div>
+                        </div>
+                    </ng-container>
+
+                    <!-- Section des totaux calculés -->
+                    <div class="totals-section">
+                        <h4>
+                            <i class="pi pi-calculator mr-2"></i>
+                            Résultats du {{ getMoisLabel(currentMonth()) }}
+                        </h4>
+                        <div class="totals-grid">
+                            <div class="total-item">
+                                <span class="total-label">Total Encaissements:</span>
+                                <span class="total-value text-green-600">
+                                    {{ getMoisFormGroup(currentMonth()).get('totalEncaissements')?.value |
+                                    number:'1.0-0' }} GNF
+                                </span>
+                            </div>
+                            <div class="total-item">
+                                <span class="total-label">Total Décaissements:</span>
+                                <span class="total-value text-red-600">
+                                    {{ getMoisFormGroup(currentMonth()).get('totalDecaissements')?.value |
+                                    number:'1.0-0' }} GNF
+                                </span>
+                            </div>
+                            <div class="total-item">
+                                <span class="total-label">Disponible en caisse:</span>
+                                <span class="total-value">
+                                    {{ getMoisFormGroup(currentMonth()).get('disponibleEnCaisse')?.value |
+                                    number:'1.0-0' }} GNF
+                                </span>
+                            </div>
+                            <div class="total-item">
+                                <span class="total-label">Excédent (Déficit):</span>
+                                <span class="total-value"
+                                    [class.text-green-600]="getMoisFormGroup(currentMonth()).get('excedentDeficit')?.value > 0"
+                                    [class.text-red-600]="getMoisFormGroup(currentMonth()).get('excedentDeficit')?.value < 0">
+                                    {{ getMoisFormGroup(currentMonth()).get('excedentDeficit')?.value | number:'1.0-0'
+                                    }} GNF
+                                </span>
+                            </div>
+                            <div class="total-item" *ngIf="currentMonth() > 0">
+                                <span class="total-label">Total Remboursements:</span>
+                                <span class="total-value text-orange-600">
+                                    {{ ((getMoisFormGroup(currentMonth()).get('interetsAVerser')?.value || 0) +
+                                    (getMoisFormGroup(currentMonth()).get('remboursementCapital')?.value || 0)) |
+                                    number:'1.0-0' }} GNF
+                                </span>
+                            </div>
+                            <div class="total-item total-item-final">
+                                <span class="total-label font-bold">Solde Fin de Période:</span>
+                                <span class="total-value text-xl"
+                                    [class.text-green-600]="getMoisFormGroup(currentMonth()).get('soldeFin')?.value > 0"
+                                    [class.text-red-600]="getMoisFormGroup(currentMonth()).get('soldeFin')?.value < 0">
+                                    {{ getMoisFormGroup(currentMonth()).get('soldeFin')?.value | number:'1.0-0' }} GNF
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Vue d'ensemble -->
+        <app-mode-vue-tresorerie *ngIf="state().viewMode === 'vue-ensemble'" [tresorerieForm]="tresorerieForm"
+            [creditParams]="creditParams()">
+        </app-mode-vue-tresorerie>
+
+        <!-- Boutons d'action en bas de page -->
+        <div class="actions-footer">
+            <div class="status-indicator">
+                <i class="pi pi-info-circle text-primary mr-2"></i>
+                <span class="text-sm">
+                    <span *ngIf="getFormSummary().moisRenseignes === 0" class="text-orange-500">
+                        Commencez par saisir les données d'au moins un mois
+                    </span>
+                    <span *ngIf="getFormSummary().moisRenseignes > 0 && tresorerieState.hasUnsavedChanges()"
+                        class="text-warning">
+                        {{ getFormSummary().moisRenseignes }} mois renseignés - Modifications non sauvegardées
+                    </span>
+                    <span *ngIf="!tresorerieState.hasUnsavedChanges() && getFormSummary().moisRenseignes > 0"
+                        class="text-green-500">
+                        <i class="pi pi-check-circle mr-1"></i>
+                        Tous les changements sont sauvegardés
+                    </span>
+                </span>
+            </div>
+
+            <div class="flex gap-2">
+                <button pButton type="button" label="Retour" class="p-button-outlined" icon="pi pi-arrow-left"
+                    [routerLink]="['/dashboards/credit/individuel/attente/detail', demandeIndividuelId]">
+                </button>
+
+                <button pButton type="button" label="Sauvegarder tout" icon="pi pi-save" class="p-button-primary"
+                    [loading]="state().saving" [disabled]="!canSave()" (click)="savePrevisions()">
+                </button>
+
+                <!-- <button pButton type="button" label="Valider et Analyser" icon="pi pi-chart-line"
+                    class="p-button-success" [loading]="state().saving"
+                    [disabled]="getFormSummary().moisSauvegardes < 3" (click)="validateAndProceed()">
+                </button> -->
+            </div>
+        </div>
+    </p-card>
+</div>

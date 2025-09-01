@@ -23,4 +23,6 @@ public interface DemandeCreditService {
     Map<String, Object> obtenirAnalyseComplete(Integer demandeCreditId);
 
     Boolean mettreAJourDemande(DemandeUpdateRequest request, String cautionsJson);
+
+    DemandeCredit getDemandeCreditByDemandeInd(Long demandeIndividuelId);
 }

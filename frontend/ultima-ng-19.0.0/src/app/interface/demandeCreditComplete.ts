@@ -1,6 +1,7 @@
 import { Personnecaution } from './personnecaution';
 
 export interface DemandeCreditCompleteDTO {
+    demandeIndividuelId?: number;
     // Données du promoteur
     nomPromoteur: string;
     prenomPromoteur: string;
@@ -75,5 +76,5 @@ export interface DemandeCreditCompleteDTO {
     delegationId?: number;
     agenceId?: number;
     pointVenteId?: number;
-    userId: number; // This should NOT be optional
+    userId?: number; // This should NOT be optional
 }

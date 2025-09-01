@@ -28,7 +28,7 @@ import java.util.Map;
 
 import static io.digiservices.userservice.constant.Constants.PHOTO_DIRECTORY;
 import static io.digiservices.userservice.utils.RequestUtils.getResponse;
-import static java.time.LocalTime.now;
+
 import static java.util.Collections.emptyMap;
 import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.ResponseEntity.*;
@@ -407,7 +407,6 @@ public class UserResource {
      * @param idPs
      * @return
      */
-
     @GetMapping("/client/pointvente/{idPs}")
     public ResponseEntity<PointVenteDto> getPointVenteClient(@PathVariable(name = "idPs") Long idPs)
     {

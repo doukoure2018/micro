@@ -115,6 +115,11 @@ public class DemandeCreditServiceImpl implements DemandeCreditService {
         }
     }
 
+    @Override
+    public DemandeCredit getDemandeCreditByDemandeInd(Long demandeIndividuelId) {
+        return demandeCreditRepository.getDemandeCreditByDemandeInd(demandeIndividuelId);
+    }
+
     // Méthode de validation (optionnelle)
     private void validateDemande(DemandeCreditCompleteDTO demande) {
         if (demande == null) {

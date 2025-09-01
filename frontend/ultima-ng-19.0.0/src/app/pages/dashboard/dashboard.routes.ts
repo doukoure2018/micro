@@ -1,3 +1,4 @@
+import { PrevisionTresorerieResolver } from '@/service/prevision-tresorerie.resolver';
 import { Routes } from '@angular/router';
 
 export default [
@@ -15,6 +16,11 @@ export default [
         path: 'admin',
         data: { breadcrumb: 'Administrateur ' },
         loadComponent: () => import('./admin/admin.component').then((c) => c.AdminComponent)
+    },
+    {
+        path: 'stock',
+        data: { breadcrumb: 'Gestion de Stock' },
+        loadComponent: () => import('./agent-credit/stock-cmd/stock-cmd.component').then((c) => c.StockCmdComponent)
     },
     {
         path: 'agent-credit/verification/:numeroMembre',
@@ -62,7 +68,7 @@ export default [
         loadComponent: () => import('./agent-credit/credit-selection/credit-selection.component').then((c) => c.CreditSelectionComponent)
     },
     {
-        path: 'agent-credit/selection/:demandeindividuel_id',
+        path: 'agent-credit/selection/:demandeIndividuelId',
         data: { breadcrumb: 'Televerser la fiche de Selection' },
         loadComponent: () => import('./agent-credit/credit-selection/import-selection/import-selection.component').then((c) => c.ImportSelectionComponent)
     },
@@ -109,11 +115,20 @@ export default [
         loadComponent: () => import('./credit/individuel/attente/attente.component').then((c) => c.AttenteComponent)
     },
     {
-        path: 'credit/individuel/attente/detail/:demandeindividuel_id',
+        path: 'credit/individuel/attente/detail/:demandeindividuelId',
         data: { breadcrumb: 'Detail Credit Individuel' },
         loadComponent: () => import('./credit/individuel/attente/detail/detail.component').then((c) => c.DetailComponent)
     },
-
+    {
+        path: 'credit/individuel/detail/analyse-bilan-activite/:demandeindividuelId',
+        data: { breadcrumb: 'Analyse Bilan Activité' },
+        loadComponent: () => import('./credit/individuel/attente/detail/analyse-bilan-activite/analyse-bilan-activite.component').then((c) => c.AnalyseBilanActiviteComponent)
+    },
+    {
+        path: 'credit/individuel/detail/analyse-flux-tresorerie/:demandeindividuelId',
+        data: { breadcrumb: 'Analyse Flux de Tresorerie' },
+        loadComponent: () => import('./credit/individuel/attente/detail/analyse-flux-tresorerie/analyse-flux-tresorerie.component').then((c) => c.AnalyseFluxTresorerieComponent)
+    },
     {
         path: 'config',
         data: { breadcrumb: 'Configuration des Points de vente' },

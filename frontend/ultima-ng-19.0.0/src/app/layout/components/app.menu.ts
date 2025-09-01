@@ -89,6 +89,16 @@ export class AppMenu {
                                           routerLink: ['/membre/liaison']
                                       }
                                   ]
+                              },
+                              {
+                                  label: 'Gestion stock',
+                                  icon: 'pi pi-fw pi-hourglass',
+                                  routerLink: ['/dashboards/stock']
+                              },
+                              {
+                                  label: 'Flux de Trésorerie',
+                                  icon: 'pi pi-fw pi-hourglass',
+                                  routerLink: ['/dashboards/prevision-tresorerie']
                               }
                           ]
                         : this.user?.role === 'DA'

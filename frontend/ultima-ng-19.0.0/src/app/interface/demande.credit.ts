@@ -16,4 +16,5 @@ export interface DemandeCredit {
     agence_id?: number;
     point_vente_id?: number;
     user_id?: number;
+    demandeIndividuelId?: number;
 }

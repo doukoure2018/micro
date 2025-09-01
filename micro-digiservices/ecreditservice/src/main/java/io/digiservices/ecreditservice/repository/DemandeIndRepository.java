@@ -64,4 +64,11 @@ public interface DemandeIndRepository {
     CreditDto getCreditByReference(String referenceCredit);
 
     List<DemandeCredit> listDemandeAnalyseCreditByUserId();
+
+    DemandeResponse addNewDemandeIndWithGaranties(DemandeIndividuel demandeIndividuel);
+    DemandeIndividuel getDemandeWithGaranties(Long demandeId);
+
+    List<DemandeIndividuel> getAllDemandesWithGaranties(Long agenceId, Long pointVenteId);
+
+    boolean checkDemandeExists(Long demandeindividuelId);
 }

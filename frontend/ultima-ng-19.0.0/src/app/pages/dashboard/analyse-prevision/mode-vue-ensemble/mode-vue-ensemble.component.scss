@@ -1,0 +1,263 @@
+// mode-vue-ensemble.component.scss
+.vue-ensemble-container {
+    padding: 1rem;
+
+    .table-container {
+        overflow: auto;
+        max-height: 70vh;
+
+        ::ng-deep .p-datatable {
+            font-size: 0.875rem;
+
+            .p-datatable-thead > tr > th {
+                position: sticky;
+                top: 0;
+                background: white;
+                z-index: 2;
+                font-weight: 600;
+                border-bottom: 2px solid var(--surface-border);
+
+                &.month-header {
+                    background: var(--primary-50);
+                    color: var(--primary-700);
+                    min-width: 100px;
+                }
+
+                &.cumul-header {
+                    background: var(--surface-200);
+                    color: var(--surface-900);
+                    min-width: 120px;
+                }
+            }
+
+            .sticky-column {
+                position: sticky;
+                left: 0;
+                background: white;
+                z-index: 1;
+                min-width: 200px;
+                font-weight: 500;
+                box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+
+                i {
+                    color: var(--primary-500);
+                }
+            }
+
+            .section-header {
+                td {
+                    font-weight: 700;
+                    font-size: 0.95rem;
+                    padding: 0.75rem;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+
+                    i {
+                        font-size: 1rem;
+                    }
+                }
+
+                &.bg-green-50 td {
+                    background: var(--green-50);
+                    color: var(--green-800);
+                    border-top: 2px solid var(--green-200);
+                    border-bottom: 1px solid var(--green-200);
+                }
+
+                &.bg-red-50 td {
+                    background: var(--red-50);
+                    color: var(--red-800);
+                    border-top: 2px solid var(--red-200);
+                    border-bottom: 1px solid var(--red-200);
+                }
+
+                &.bg-blue-50 td {
+                    background: var(--blue-50);
+                    color: var(--blue-800);
+                    border-top: 2px solid var(--blue-200);
+                    border-bottom: 1px solid var(--blue-200);
+                }
+            }
+
+            .total-row {
+                td {
+                    font-weight: 600;
+                    font-size: 0.9rem;
+                    border-top: 1px solid var(--surface-300);
+                    border-bottom: 1px solid var(--surface-300);
+                }
+
+                &.bg-green-100 td {
+                    background: var(--green-100);
+                    color: var(--green-900);
+                }
+
+                &.bg-red-100 td {
+                    background: var(--red-100);
+                    color: var(--red-900);
+                }
+            }
+
+            .final-row {
+                td {
+                    font-weight: 700;
+                    font-size: 1rem;
+                    padding: 1rem 0.5rem;
+                    border-top: 2px solid var(--primary-300);
+                    border-bottom: 2px solid var(--primary-300);
+                    background: var(--primary-50);
+
+                    &.text-primary {
+                        color: var(--primary-700);
+                    }
+                }
+            }
+
+            tbody tr {
+                &:hover {
+                    background: var(--surface-50);
+
+                    .sticky-column {
+                        background: var(--surface-50);
+                    }
+                }
+
+                td {
+                    padding: 0.5rem;
+                    border-right: 1px solid var(--surface-100);
+
+                    &:last-child {
+                        border-right: none;
+                        font-weight: 600;
+                    }
+                }
+            }
+        }
+    }
+
+    // Summary section
+    .summary-section {
+        border: 1px solid var(--surface-200);
+
+        h4 {
+            color: var(--primary-700);
+            font-weight: 600;
+            border-bottom: 1px solid var(--surface-200);
+            padding-bottom: 0.5rem;
+
+            i {
+                color: var(--primary-500);
+            }
+        }
+
+        .summary-card {
+            text-align: center;
+            border: 1px solid;
+            transition: all 0.3s ease;
+
+            &:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            }
+
+            &.bg-green-50 {
+                border-color: var(--green-200);
+            }
+
+            &.bg-red-50 {
+                border-color: var(--red-200);
+            }
+
+            &.bg-blue-50 {
+                border-color: var(--blue-200);
+            }
+
+            &.bg-orange-50 {
+                border-color: var(--orange-200);
+            }
+
+            label {
+                display: block;
+                margin-bottom: 0.5rem;
+                font-weight: 500;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                font-size: 0.75rem;
+            }
+        }
+    }
+
+    // Color classes
+    .text-green-600 {
+        color: var(--green-600) !important;
+    }
+
+    .text-green-700 {
+        color: var(--green-700) !important;
+    }
+
+    .text-green-800 {
+        color: var(--green-800) !important;
+    }
+
+    .text-red-600 {
+        color: var(--red-600) !important;
+    }
+
+    .text-red-700 {
+        color: var(--red-700) !important;
+    }
+
+    .text-red-800 {
+        color: var(--red-800) !important;
+    }
+
+    .text-orange-600 {
+        color: var(--orange-600) !important;
+    }
+
+    .text-orange-700 {
+        color: var(--orange-700) !important;
+    }
+
+    .text-orange-800 {
+        color: var(--orange-800) !important;
+    }
+
+    .text-blue-700 {
+        color: var(--blue-700) !important;
+    }
+
+    .text-blue-800 {
+        color: var(--blue-800) !important;
+    }
+
+    .text-primary {
+        color: var(--primary-color) !important;
+    }
+
+    // Responsive
+    @media (max-width: 768px) {
+        .table-container {
+            ::ng-deep .p-datatable {
+                font-size: 0.75rem;
+
+                .sticky-column {
+                    min-width: 150px;
+                }
+
+                .p-datatable-thead > tr > th {
+                    &.month-header {
+                        min-width: 80px;
+                    }
+                }
+            }
+        }
+
+        .summary-section {
+            .summary-card {
+                margin-bottom: 1rem;
+            }
+        }
+    }
+}

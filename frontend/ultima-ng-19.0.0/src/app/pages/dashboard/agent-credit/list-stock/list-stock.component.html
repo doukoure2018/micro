@@ -1,0 +1,350 @@
+<div class="grid">
+    <div class="col-12">
+        <p-toast></p-toast>
+        <p-confirmDialog></p-confirmDialog>
+
+        <p-card header="Bons de Commande">
+            <div class="mb-3" *ngIf="user">
+                <span class="ml-3 text-500">Délégation : </span>
+                <span class="font-bold">{{ delegation()?.libele | uppercase}}</span>
+                <span class="ml-4 text-500">Rôle : </span>
+                <span class="font-bold badge"
+                    [ngClass]="{'badge-dr': user.role === 'DR', 'badge-user': user.role !== 'DR'}">
+                    {{ user.role }}
+                </span>
+            </div>
+
+            <div *ngIf="loading()" class="flex justify-content-center p-4">
+                <p-progressSpinner></p-progressSpinner>
+            </div>
+
+            <p-table *ngIf="!loading()" [value]="stocks()" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+                currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} entrées"
+                responsiveLayout="scroll" dataKey="idCmd">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th style="width: 3rem"></th>
+                        <th>N° Commande</th>
+                        <th>Service</th>
+                        <th>Catégorie</th>
+                        <th>Statut</th>
+                        <th>Validation</th>
+                        <th>Date Création</th>
+                    </tr>
+                </ng-template>
+
+                <ng-template pTemplate="body" let-stock let-expanded="expanded">
+                    <tr [ngClass]="{'row-urgent': isUrgent(stock)}">
+                        <td>
+                            <button type="button" pButton
+                                [pTooltip]="isExpanded(stock) ? 'Masquer les détails' : 'Afficher les détails'"
+                                (click)="toggleRow(stock)" class="p-button-text p-button-rounded p-button-plain"
+                                [icon]="isExpanded(stock) ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"></button>
+                        </td>
+                        <td class="font-bold">{{ stock.numeroCommande }}</td>
+                        <td>{{ stock.service }}</td>
+                        <td>
+                            <span class="badge badge-info">{{ stock.categorieLibele || '-' }}</span>
+                        </td>
+                        <td>
+                            <p-tag [value]="stock.status" [severity]="getStatusSeverity(stock.status)"></p-tag>
+                        </td>
+                        <td>
+                            <p-tag [value]="getStateValidationLabel(stock.stateValidation || 'EN_ATTENTE')"
+                                [severity]="getValidationSeverity(stock.stateValidation || 'EN_ATTENTE')"></p-tag>
+                        </td>
+                        <td>{{ formatDate(stock.dateCreation) }}</td>
+                    </tr>
+                    <tr *ngIf="isExpanded(stock)" [@rowExpand]="isExpanded(stock) ? 'expanded' : 'collapsed'">
+                        <td colspan="8">
+                            <div class="detail-container">
+                                <div class="grid">
+                                    <div class="col-12 lg:col-6">
+                                        <div class="detail-card">
+                                            <div class="detail-header">
+                                                <i class="pi pi-info-circle"></i>
+                                                <span>Informations Générales</span>
+                                            </div>
+                                            <table class="detail-table">
+                                                <tbody>
+                                                    <tr>
+                                                        <td class="label-cell">
+                                                            <i class="pi pi-hashtag mini-icon"></i>
+                                                            ID Commande
+                                                        </td>
+                                                        <td class="value-cell">{{ stock.idCmd }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="label-cell">
+                                                            <i class="pi pi-user mini-icon"></i>
+                                                            Demandeur
+                                                        </td>
+                                                        <td class="value-cell">{{ stock.userFullName || stock.username
+                                                            }}</td>
+                                                    </tr>
+                                                    <tr *ngIf="stock.dateTraitement">
+                                                        <td class="label-cell">
+                                                            <i class="pi pi-calendar mini-icon"></i>
+                                                            Date de traitement
+                                                        </td>
+                                                        <td class="value-cell">{{ formatDate(stock.dateTraitement) }}
+                                                        </td>
+                                                    </tr>
+                                                    <tr *ngIf="stock.traitePar">
+                                                        <td class="label-cell">
+                                                            <i class="pi pi-user-edit mini-icon"></i>
+                                                            Traité par
+                                                        </td>
+                                                        <td class="value-cell">ID: {{ stock.traitePar }}</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!-- Section Organisation -->
+                                    <div class="col-12 lg:col-6">
+                                        <div class="detail-card">
+                                            <div class="detail-header">
+                                                <i class="pi pi-building"></i>
+                                                <span>Organisation</span>
+                                            </div>
+                                            <table class="detail-table">
+                                                <tbody>
+                                                    <tr>
+                                                        <td class="label-cell">
+                                                            <i class="pi pi-map-marker mini-icon"></i>
+                                                            Délégation
+                                                        </td>
+                                                        <td class="value-cell">{{ stock.delegationLibele || '-' }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="label-cell">
+                                                            <i class="pi pi-home mini-icon"></i>
+                                                            Agence
+                                                        </td>
+                                                        <td class="value-cell">{{ stock.agenceLibele || '-' }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="label-cell">
+                                                            <i class="pi pi-shopping-cart mini-icon"></i>
+                                                            Point de vente
+                                                        </td>
+                                                        <td class="value-cell">{{ stock.pointventeLibele || '-' }}</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!-- Section Description -->
+                                    <div class="col-12">
+                                        <div class="detail-card">
+                                            <div class="detail-header">
+                                                <i class="pi pi-file-text"></i>
+                                                <span>Description</span>
+                                            </div>
+                                            <div class="description-content">
+                                                <div *ngIf="parseDetails(stock.detailBonCommande) as details">
+                                                    <div class="description-box">
+                                                        <p *ngIf="details.detailStandard" class="description-text">
+                                                            {{ details.detailStandard }}
+                                                        </p>
+                                                        <div *ngIf="!details.detailStandard" class="description-items">
+                                                            <div *ngFor="let key of Object.keys(details)"
+                                                                class="description-item">
+                                                                <span class="item-key">{{ key }}:</span>
+                                                                <span class="item-value">{{ details[key] }}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Section Observations et Motifs -->
+                                    <div class="col-12" *ngIf="stock.observations || stock.motif">
+                                        <div class="detail-card">
+                                            <div class="detail-header">
+                                                <i class="pi pi-comments"></i>
+                                                <span>Observations & Motifs</span>
+                                            </div>
+                                            <div class="observations-content">
+                                                <div class="observation-box" *ngIf="stock.observations">
+                                                    <div class="observation-label">
+                                                        <i class="pi pi-eye mini-icon"></i>
+                                                        Observations
+                                                    </div>
+                                                    <div class="observation-text">
+                                                        {{ stock.observations }}
+                                                    </div>
+                                                </div>
+                                                <div class="motif-box" *ngIf="stock.motif">
+                                                    <div class="motif-label">
+                                                        <i class="pi pi-exclamation-triangle"></i>
+                                                        Motif de refus/rejet
+                                                    </div>
+                                                    <div class="motif-text">
+                                                        {{ stock.motif }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Section Boutons d'action mise à jour -->
+                                    <div class="col-12">
+                                        <div class="action-buttons-container">
+                                            <div class="action-status-info" *ngIf="stock.dateTraitement">
+                                                <i class="pi pi-info-circle"></i>
+                                                <span>Traité le {{ formatDate(stock.dateTraitement) }}
+                                                    <span *ngIf="stock.traitePar">par l'utilisateur #{{ stock.traitePar
+                                                        }}</span>
+                                                </span>
+                                            </div>
+                                            <div class="action-buttons">
+                                                <button pButton type="button" label="Rejeter" icon="pi pi-times"
+                                                    class="p-button-danger p-button-raised"
+                                                    [disabled]="isRejectDisabled(stock) || processingAction()"
+                                                    (click)="openRejectDialog(stock)"
+                                                    [pTooltip]="getRejectTooltip(stock)">
+                                                </button>
+                                                <button pButton type="button" label="Valider" icon="pi pi-check"
+                                                    class="p-button-success p-button-raised"
+                                                    [disabled]="isValidateDisabled(stock) || processingAction()"
+                                                    (click)="openValidateDialog(stock)"
+                                                    [pTooltip]="getValidateTooltip(stock)">
+                                                </button>
+                                            </div>
+                                            <div class="action-info">
+                                                <i class="pi pi-info-circle"></i>
+                                                <span *ngIf="stock.status === 'ENCOURS' && !stock.stateValidation">
+                                                    Actions disponibles pour cette commande en cours
+                                                </span>
+                                                <span *ngIf="stock.stateValidation === 'VALIDE'">
+                                                    Cette commande a été validée par un DR
+                                                </span>
+                                                <span *ngIf="stock.stateValidation === 'ACCEPTE'">
+                                                    Cette commande a été acceptée
+                                                </span>
+                                                <span *ngIf="stock.stateValidation === 'REFUSE'">
+                                                    Cette commande a été refusée
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </ng-template>
+
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="8" class="text-center p-4">
+                            <i class="pi pi-inbox text-4xl text-300"></i>
+                            <p class="mt-3">Aucun bon de commande trouvé</p>
+                        </td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </p-card>
+    </div>
+</div>
+
+<!-- Dialogue de validation -->
+<p-dialog [(visible)]="showValidateDialog" [modal]="true" [draggable]="false" [resizable]="false"
+    [style]="{width: '450px'}" header="Validation de la commande" [closable]="!processingAction()">
+
+    <div class="dialog-content" *ngIf="selectedStock()">
+        <div class="info-section mb-3">
+            <p class="mb-2">
+                <strong>Commande :</strong> {{ selectedStock().numeroCommande }}
+            </p>
+            <p class="mb-2">
+                <strong>Service :</strong> {{ selectedStock().service }}
+            </p>
+            <p class="mb-2">
+                <strong>Demandeur :</strong> {{ selectedStock().userFullName || selectedStock().username }}
+            </p>
+        </div>
+
+        <div class="alert alert-info mb-3">
+            <i class="pi pi-info-circle mr-2"></i>
+            <span *ngIf="user?.role === 'DR'">
+                En tant que DR, cette commande sera marquée comme <strong>VALIDÉE</strong>.
+            </span>
+            <span *ngIf="user?.role !== 'DR'">
+                Cette commande sera marquée comme <strong>ACCEPTÉE</strong>.
+            </span>
+        </div>
+
+        <div class="field">
+            <label for="validate-observations">Observations (optionnel)</label>
+            <textarea pTextarea id="validate-observations" pInputTextarea [(ngModel)]="validateObservations" rows="3"
+                class="w-full" [disabled]="processingAction()" placeholder="Ajoutez des observations si nécessaire...">
+            </textarea>
+        </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+        <button pButton label="Annuler" icon="pi pi-times" class="p-button-text" (click)="closeDialogs()"
+            [disabled]="processingAction()">
+        </button>
+        <button pButton label="Confirmer la validation" icon="pi pi-check" class="p-button-success"
+            (click)="validateCommand()" [disabled]="processingAction()" [loading]="processingAction()">
+        </button>
+    </ng-template>
+</p-dialog>
+
+<!-- Dialogue de rejet -->
+<p-dialog [(visible)]="showRejectDialog" [modal]="true" [draggable]="false" [resizable]="false"
+    [style]="{width: '450px'}" header="Rejet de la commande" [closable]="!processingAction()">
+
+    <div class="dialog-content" *ngIf="selectedStock()">
+        <div class="info-section mb-3">
+            <p class="mb-2">
+                <strong>Commande :</strong> {{ selectedStock().numeroCommande }}
+            </p>
+            <p class="mb-2">
+                <strong>Service :</strong> {{ selectedStock().service }}
+            </p>
+            <p class="mb-2">
+                <strong>Demandeur :</strong> {{ selectedStock().userFullName || selectedStock().username }}
+            </p>
+        </div>
+
+        <div class="alert alert-warning mb-3">
+            <i class="pi pi-exclamation-triangle mr-2"></i>
+            Cette action est irréversible. La commande sera marquée comme <strong>REFUSÉE</strong>.
+        </div>
+
+        <div class="field mb-3">
+            <label for="reject-motif" class="required">Motif de rejet *</label>
+            <textarea pTextarea id="reject-motif" pInputTextarea [(ngModel)]="rejectMotif" rows="3" class="w-full"
+                [disabled]="processingAction()" placeholder="Indiquez le motif de rejet (obligatoire)..."
+                [ngClass]="{'ng-invalid': !rejectMotif() && showRejectDialog()}">
+            </textarea>
+            <small class="p-error" *ngIf="!rejectMotif() && showRejectDialog()">
+                Le motif de rejet est obligatoire
+            </small>
+        </div>
+
+        <div class="field">
+            <label for="reject-observations">Observations complémentaires (optionnel)</label>
+            <textarea id="reject-observations" pInputTextarea [(ngModel)]="rejectObservations" rows="2" class="w-full"
+                [disabled]="processingAction()" placeholder="Observations supplémentaires...">
+            </textarea>
+        </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+        <button pButton label="Annuler" icon="pi pi-times" class="p-button-text" (click)="closeDialogs()"
+            [disabled]="processingAction()">
+        </button>
+        <button pButton label="Confirmer le rejet" icon="pi pi-ban" class="p-button-danger" (click)="rejectCommand()"
+            [disabled]="processingAction() || !rejectMotif()" [loading]="processingAction()">
+        </button>
+    </ng-template>
+</p-dialog>

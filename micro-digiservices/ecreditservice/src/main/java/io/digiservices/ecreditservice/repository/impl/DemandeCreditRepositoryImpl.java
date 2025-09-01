@@ -29,6 +29,7 @@ import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static io.digiservices.ecreditservice.query.CreditQuery.*;
 import static io.digiservices.ecreditservice.query.EntrepriseQuery.*;
@@ -70,7 +71,6 @@ public class DemandeCreditRepositoryImpl implements DemandeCreditRepository {
     @Override
     public Map<String, Object> traiterDemandeComplete(DemandeCreditCompleteDTO demande) {
         try {
-            // Validation préalable (optionnelle)
             if (demande == null) {
                 return createErrorResult("Demande de crédit ne peut pas être nulle");
             }
@@ -97,6 +97,7 @@ public class DemandeCreditRepositoryImpl implements DemandeCreditRepository {
             // Utiliser Boolean.class pour récupérer directement le résultat booléen
             Boolean success = jdbcClient.sql(ANALYSE_COMPLETE_CREDIT)
                     // Promoteur (7 parameters)
+                    .param("p_demandeindividuel_id", demande.getDemandeIndividuelId(), Types.BIGINT)
                     .param("p_nom_promoteur", demande.getNomPromoteur(), Types.VARCHAR)
                     .param("p_prenom_promoteur", demande.getPrenomPromoteur(), Types.VARCHAR)
                     .param("p_date_naissance_promoteur", demande.getDateNaissancePromoteur(), Types.DATE)
@@ -497,6 +498,22 @@ public class DemandeCreditRepositoryImpl implements DemandeCreditRepository {
             log.error("❌ Erreur générale lors de la mise à jour de la demande {}: {}",
                     request.getDemandeCreditId(), e.getMessage(), e);
             return false;
+        }
+    }
+
+    @Override
+    public DemandeCredit getDemandeCreditByDemandeInd(Long demandeIndividuelId) {
+        try {
+            return jdbcClient.sql(GET_DEMANDE_CREDIT_INDIVIDUEL_QUERY)
+                    .param("demandeIndividuelId", demandeIndividuelId)
+                    .query(DemandeCredit.class)
+                    .single();
+        } catch (EmptyResultDataAccessException exception) {
+            log.info("Aucune demande de crédit trouvée pour demandeIndividuelId: {}", demandeIndividuelId);
+            return null; // Retourne null au lieu de lancer une exception
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération de la demande de crédit: {}", e.getMessage(), e);
+            throw new ApiException("An error occurred please try again");
         }
     }
 
