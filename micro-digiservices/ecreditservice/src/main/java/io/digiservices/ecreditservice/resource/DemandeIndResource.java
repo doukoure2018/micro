@@ -550,6 +550,7 @@ public class DemandeIndResource {
 
     /**
      * Récupérer toutes les demandes avec garanties (sans pagination)
+     * To activate Database migration
      */
     @GetMapping("/all-with-garanties")
     public ResponseEntity<Response> getAllDemandesWithGaranties(
