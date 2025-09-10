@@ -72,6 +72,10 @@
                                     @if(demande.statutDemande === 'EN_ATTENTE' && demande.validationState ===
                                     'APPROVED') {
                                     <span class="text-muted">En cours de validation</span>
+                                    <p-button
+                                        [routerLink]="['/dashboards/credit/individuel/attente/detail', demande.demandeIndividuelId]"
+                                        icon="pi pi-eye" severity="help" rounded pTooltip="Gérer la sélection">
+                                    </p-button>
                                     } @else {
                                     <p-button
                                         [routerLink]="['/dashboards/credit/individuel/attente/detail', demande.demandeIndividuelId]"

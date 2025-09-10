@@ -594,6 +594,17 @@ export class UserService {
         return this.http.delete<IResponse>(`${this.server}/ecredit/avis/${avisId}`).pipe(catchError(this.handleError));
     }
 
+    /**
+     * Effectuer le rapprochement de caisse
+     */
+    checkReconciliation$(dateDebut: string, dateFin: string): Observable<IResponse> {
+        const params = {
+            dateDebut: dateDebut,
+            dateFin: dateFin
+        };
+        return this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/check`, { params }).pipe(catchError(this.handleError));
+    }
+
     handleError = (httpErrorResponse: HttpErrorResponse): Observable<never> => {
         console.log(httpErrorResponse);
         let error: string = 'An error occurred. Please try again.';

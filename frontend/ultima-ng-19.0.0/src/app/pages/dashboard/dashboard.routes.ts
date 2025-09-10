@@ -1,4 +1,3 @@
-import { PrevisionTresorerieResolver } from '@/service/prevision-tresorerie.resolver';
 import { Routes } from '@angular/router';
 
 export default [
@@ -21,6 +20,11 @@ export default [
         path: 'stock',
         data: { breadcrumb: 'Gestion de Stock' },
         loadComponent: () => import('./agent-credit/stock-cmd/stock-cmd.component').then((c) => c.StockCmdComponent)
+    },
+    {
+        path: 'rapprochement-caisse',
+        data: { breadcrumb: 'Rapprochement Caisse' },
+        loadComponent: () => import('./agent-credit/rapprochement-caisse/rapprochement-caisse.component').then((c) => c.RapprochementCaisseComponent)
     },
     {
         path: 'agent-credit/verification/:numeroMembre',

@@ -51,6 +51,7 @@ import {
 import { ProcessCreditInd } from './process.credit.ind';
 import { ProductInd } from './ProductInd';
 import { Promoteur } from './promoteur';
+import { ReconciliationResultDTO } from './ReconciliationResultDTO';
 import { RequisitoRequest } from './requisitoRequest';
 import { ResultNote } from './result.note';
 import { ResumeCredit } from './resumeCredit.model';
@@ -204,5 +205,6 @@ export interface IResponse {
         dossierCredit?: DossierCreditRequest;
         avis?: Avis;
         avisList?: Avis[];
+        reconciliationResultDTO?: ReconciliationResultDTO;
     };
 }

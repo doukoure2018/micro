@@ -1,0 +1,1183 @@
+<div class="rapprochement-container">
+    <p-toast></p-toast>
+
+    <!-- Header Card -->
+    <p-card>
+        <ng-template pTemplate="header">
+            <div class="card-header-custom">
+                <i class="pi pi-calculator"></i>
+                <h3>Rapprochement de Caisse</h3>
+            </div>
+        </ng-template>
+
+        <form [formGroup]="reconciliationForm" class="date-form">
+            <div class="form-row">
+                <div class="field">
+                    <label for="dateDebut">Date de début</label>
+                    <p-datepicker id="dateDebut" formControlName="dateDebut" dateFormat="dd/mm/yy" [showIcon]="true"
+                        appendTo="body" [readonlyInput]="false" inputId="dateDebut">
+                    </p-datepicker>
+                </div>
+
+                <div class="field">
+                    <label for="dateFin">Date de fin</label>
+                    <p-datepicker id="dateFin" formControlName="dateFin" dateFormat="dd/mm/yy" [showIcon]="true"
+                        appendTo="body" [readonlyInput]="false" inputId="dateFin">
+                    </p-datepicker>
+                </div>
+
+                <div class="field-button">
+                    <p-button label="Analyser" icon="pi pi-search" [loading]="state().loading"
+                        [disabled]="reconciliationForm.invalid || state().loading" (onClick)="performReconciliation()">
+                    </p-button>
+
+                    <p-button icon="pi pi-refresh" severity="secondary" [text]="true" pTooltip="Réinitialiser"
+                        tooltipPosition="top" [disabled]="state().loading" (onClick)="resetForm()">
+                    </p-button>
+                </div>
+            </div>
+        </form>
+
+        <p-progressBar *ngIf="state().loading" mode="indeterminate" [style]="{'height': '4px'}">
+        </p-progressBar>
+    </p-card>
+
+    <!-- Résultats -->
+    <div *ngIf="state().reconciliationResult" class="results-section">
+
+        <!-- Vue d'ensemble -->
+        <p-card>
+            <ng-template pTemplate="header">
+                <div class="overview-header">
+                    <h4>Vue d'ensemble</h4>
+                    <p-tag [value]="state().reconciliationResult?.statut || ''"
+                        [severity]="getStatusSeverity(state().reconciliationResult?.statut || '')">
+                    </p-tag>
+                </div>
+            </ng-template>
+
+            <!-- Métriques générales -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-icon">
+                        <i class="pi pi-calendar"></i>
+                    </div>
+                    <div class="metric-content">
+                        <div class="metric-value">{{ state().reconciliationResult?.nombreJours }}</div>
+                        <div class="metric-label">Jours analysés</div>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-icon primary">
+                        <i class="pi pi-database"></i>
+                    </div>
+                    <div class="metric-content">
+                        <div class="metric-value">{{ state().reconciliationResult?.totalMiddleware }}</div>
+                        <div class="metric-label">Total Middleware</div>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-icon info">
+                        <i class="pi pi-server"></i>
+                    </div>
+                    <div class="metric-content">
+                        <div class="metric-value">{{ state().reconciliationResult?.totalProduction }}</div>
+                        <div class="metric-label">Total Production</div>
+                    </div>
+                </div>
+
+                <div class="metric-card" [class.has-error]="hasEcart()">
+                    <div class="metric-icon" [class.warning]="hasEcart()">
+                        <i [class]="hasEcart() ? 'pi pi-exclamation-triangle' : 'pi pi-check-circle'"></i>
+                    </div>
+                    <div class="metric-content">
+                        <div class="metric-value">
+                            {{ state().reconciliationResult?.transactionsManquantes?.length || 0 }}
+                        </div>
+                        <div class="metric-label">Transactions manquantes</div>
+                    </div>
+                </div>
+            </div>
+
+            <p-divider></p-divider>
+
+            <!-- Montants globaux -->
+            <div class="amounts-grid">
+                <div class="amount-card">
+                    <div class="amount-label">Total Middleware</div>
+                    <div class="amount-value text-primary">
+                        {{ formatMontant(state().reconciliationResult?.montantTotalMiddleware || 0) }}
+                    </div>
+                </div>
+
+                <div class="amount-card">
+                    <div class="amount-label">Total Production</div>
+                    <div class="amount-value text-info">
+                        {{ formatMontant(state().reconciliationResult?.montantTotalProduction || 0) }}
+                    </div>
+                </div>
+
+                <div class="amount-card" [class.has-ecart]="hasEcart()">
+                    <div class="amount-label">Écart</div>
+                    <div class="amount-value" [class.text-danger]="hasEcart()">
+                        {{ montantEcartFormatted() }}
+                        <p-chip *ngIf="hasEcart()" [label]="(pourcentageEcart() | number:'1.2-2') + '%'"
+                            styleClass="ml-2">
+                        </p-chip>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Barre de progression -->
+            <div class="sync-progress">
+                <div class="progress-label">
+                    Taux de synchronisation: {{ progressValue() }}%
+                </div>
+                <p-progressBar [value]="progressValue()" [showValue]="false">
+                </p-progressBar>
+            </div>
+        </p-card>
+
+        <!-- Statistiques détaillées -->
+        <p-card class="mt-4">
+            <ng-template pTemplate="header">
+                <div class="overview-header">
+                    <h4>Statistiques détaillées</h4>
+                </div>
+            </ng-template>
+
+            <!-- Opérations Clients -->
+            <div class="stats-section">
+                <h5 class="stats-title">
+                    <i class="pi pi-users"></i>
+                    Opérations Clients
+                </h5>
+
+                <div class="stats-grid">
+                    <div class="stat-card depot">
+                        <div class="stat-header">
+                            <i class="pi pi-arrow-down"></i>
+                            <span>Dépôts Clients</span>
+                        </div>
+                        <div class="stat-body">
+                            <div class="stat-row">
+                                <span class="stat-label">Middleware:</span>
+                                <span class="stat-value">
+                                    {{ state().reconciliationResult?.totalDepotsMiddleware || 0 }} ops
+                                </span>
+                                <span class="stat-amount">
+                                    {{ formatMontant(state().reconciliationResult?.montantTotalDepotsMiddleware || 0) }}
+                                </span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Production:</span>
+                                <span class="stat-value">
+                                    {{ state().reconciliationResult?.totalDepotsProduction || 0 }} ops
+                                </span>
+                                <span class="stat-amount">
+                                    {{ formatMontant(state().reconciliationResult?.montantTotalDepotsProduction || 0) }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card retrait">
+                        <div class="stat-header">
+                            <i class="pi pi-arrow-up"></i>
+                            <span>Retraits Clients</span>
+                        </div>
+                        <div class="stat-body">
+                            <div class="stat-row">
+                                <span class="stat-label">Middleware:</span>
+                                <span class="stat-value">
+                                    {{ state().reconciliationResult?.totalRetraitsMiddleware || 0 }} ops
+                                </span>
+                                <span class="stat-amount">
+                                    {{ formatMontant(state().reconciliationResult?.montantTotalRetraitsMiddleware || 0)
+                                    }}
+                                </span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Production:</span>
+                                <span class="stat-value">
+                                    {{ state().reconciliationResult?.totalRetraitsProduction || 0 }} ops
+                                </span>
+                                <span class="stat-amount">
+                                    {{ formatMontant(state().reconciliationResult?.montantTotalRetraitsProduction || 0)
+                                    }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <p-divider></p-divider>
+
+            <!-- Opérations Réserve -->
+            <div class="stats-section">
+                <h5 class="stats-title">
+                    <i class="pi pi-shield"></i>
+                    Opérations Réserve
+                </h5>
+
+                <div class="stats-grid">
+                    <div class="stat-card reserve-depot">
+                        <div class="stat-header">
+                            <i class="pi pi-download"></i>
+                            <span>Dépôts Réserve</span>
+                        </div>
+                        <div class="stat-body">
+                            <div class="stat-row">
+                                <span class="stat-label">Nombre:</span>
+                                <span class="stat-value">
+                                    {{ state().reconciliationResult?.totalDepotsReserve || 0 }} ops
+                                </span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Montant total:</span>
+                                <span class="stat-amount primary">
+                                    {{ formatMontant(state().reconciliationResult?.montantTotalDepotsReserve || 0) }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card reserve-retrait">
+                        <div class="stat-header">
+                            <i class="pi pi-upload"></i>
+                            <span>Retraits Réserve</span>
+                        </div>
+                        <div class="stat-body">
+                            <div class="stat-row">
+                                <span class="stat-label">Nombre:</span>
+                                <span class="stat-value">
+                                    {{ state().reconciliationResult?.totalRetraitsReserve || 0 }} ops
+                                </span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Montant total:</span>
+                                <span class="stat-amount warning">
+                                    {{ formatMontant(state().reconciliationResult?.montantTotalRetraitsReserve || 0) }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card reserve-total">
+                        <div class="stat-header">
+                            <i class="pi pi-calculator"></i>
+                            <span>Total Réserve</span>
+                        </div>
+                        <div class="stat-body">
+                            <div class="stat-row">
+                                <span class="stat-label">Total opérations:</span>
+                                <span class="stat-value">
+                                    {{ state().reconciliationResult?.totalOperationsReserve || 0 }}
+                                </span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Montant total:</span>
+                                <span class="stat-amount info">
+                                    {{ formatMontant(state().reconciliationResult?.montantTotalReserve || 0) }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Résumé consolidé -->
+            <p-divider></p-divider>
+            <div class="summary-section">
+                <h5 class="stats-title">
+                    <i class="pi pi-chart-bar"></i>
+                    Résumé consolidé
+                </h5>
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <span class="summary-label">Total opérations clients:</span>
+                        <span class="summary-value">
+                            {{ (state().reconciliationResult?.totalDepotsMiddleware || 0) +
+                            (state().reconciliationResult?.totalRetraitsMiddleware || 0) }}
+                        </span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Montant total clients:</span>
+                        <span class="summary-value">
+                            {{ formatMontant((state().reconciliationResult?.montantTotalDepotsMiddleware || 0) +
+                            (state().reconciliationResult?.montantTotalRetraitsMiddleware || 0)) }}
+                        </span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Total opérations réserve:</span>
+                        <span class="summary-value">
+                            {{ state().reconciliationResult?.totalOperationsReserve || 0 }}
+                        </span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Montant total réserve:</span>
+                        <span class="summary-value">
+                            {{ formatMontant(state().reconciliationResult?.montantTotalReserve || 0) }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </p-card>
+
+        <!-- Tabs pour les détails avec le nouveau composant p-tabs -->
+        <p-divider></p-divider>
+        <div class="summary-section">
+            <p-card class="mt-4">
+                <p-tabView [(activeIndex)]="activeTabIndex">
+
+                    <!-- Résumé journalier -->
+                    <p-tabPanel>
+                        <ng-template pTemplate="header">
+                            <span class="tab-header">
+                                <i class="pi pi-calendar-times"></i>
+                                <span>Résumé journalier</span>
+                                <p-badge [value]="state().reconciliationResult?.dailySummaries?.length || 0"
+                                    styleClass="ml-2">
+                                </p-badge>
+                            </span>
+                        </ng-template>
+
+                        <div class="table-container">
+                            <table class="custom-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Nb. Middleware</th>
+                                        <th>Nb. Production</th>
+                                        <th>Montant Middleware</th>
+                                        <th>Montant Production</th>
+                                        <th>Écart</th>
+                                        <th>Statut</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let summary of state().reconciliationResult?.dailySummaries">
+                                        <td>{{ formatDate(summary.date) }}</td>
+                                        <td class="text-center">{{ summary.nombreMiddleware }}</td>
+                                        <td class="text-center">{{ summary.nombreProduction }}</td>
+                                        <td class="text-right">{{ formatMontant(summary.montantMiddleware) }}</td>
+                                        <td class="text-right">{{ formatMontant(summary.montantProduction) }}</td>
+                                        <td class="text-right" [class.text-danger]="summary.ecart !== 0">
+                                            {{ formatMontant(summary.ecart) }}
+                                        </td>
+                                        <td class="text-center">
+                                            <p-tag [value]="summary.statut"
+                                                [severity]="getStatusSeverity(summary.statut)">
+                                            </p-tag>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </p-tabPanel>
+
+                    <!-- Dépôts Middleware -->
+                    <p-tabPanel>
+                        <ng-template pTemplate="header">
+                            <span class="tab-header">
+                                <i class="pi pi-arrow-down"></i>
+                                <span>Dépôts MW</span>
+                                <p-badge [value]="state().reconciliationResult?.totalDepotsMiddleware || 0"
+                                    severity="success" styleClass="ml-2">
+                                </p-badge>
+                            </span>
+                        </ng-template>
+
+                        <div class="table-toolbar">
+                            <div class="toolbar-left">
+                                <div class="summary-info">
+                                    <span>Total: {{
+                                        formatMontant(state().reconciliationResult?.montantTotalDepotsMiddleware || 0)
+                                        }}</span>
+                                </div>
+                            </div>
+                            <div class="toolbar-right">
+                                <p-iconField iconPosition="left">
+                                    <p-inputIcon styleClass="pi pi-search"></p-inputIcon>
+                                    <input pInputText type="text" [(ngModel)]="globalFilters.depositsMiddleware"
+                                        (input)="applyGlobalFilter(dtDepositsMiddleware, $event, 'depositsMiddleware')"
+                                        placeholder="Recherche globale..." />
+                                </p-iconField>
+                                <p-button icon="pi pi-filter-slash" severity="secondary" [text]="true"
+                                    pTooltip="Effacer les filtres"
+                                    (onClick)="clearFilter(dtDepositsMiddleware, 'depositsMiddleware')">
+                                </p-button>
+                                <p-button icon="pi pi-download" severity="info" [text]="true"
+                                    pTooltip="Exporter les données filtrées"
+                                    (onClick)="exportFilteredData(dtDepositsMiddleware, 'deposits_middleware')">
+                                </p-button>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <p-table #dtDepositsMiddleware
+                                [value]="state().reconciliationResult?.depositsMiddleware || []" [paginator]="true"
+                                [rows]="10" [rowsPerPageOptions]="[10, 25, 50, 100]" styleClass="p-datatable-sm"
+                                [tableStyle]="{'min-width': '60rem'}"
+                                [globalFilterFields]="['numTransaction', 'codeClient', 'motifs', 'faitPar', 'numCompte']"
+                                dataKey="numTransaction">
+
+                                <ng-template pTemplate="header">
+                                    <tr>
+                                        <th pSortableColumn="numTransaction">
+                                            N° Trans
+                                            <p-sortIcon field="numTransaction"></p-sortIcon>
+                                            <p-columnFilter type="text" field="numTransaction"
+                                                display="menu"></p-columnFilter>
+                                        </th>
+                                        <th pSortableColumn="dateOperation">
+                                            Date/Heure
+                                            <p-sortIcon field="dateOperation"></p-sortIcon>
+                                            <p-columnFilter type="date" field="dateOperation"
+                                                display="menu"></p-columnFilter>
+                                        </th>
+                                        <th pSortableColumn="numCompte">
+                                            Compte
+                                            <p-sortIcon field="numCompte"></p-sortIcon>
+                                            <p-columnFilter type="text" field="numCompte"
+                                                display="menu"></p-columnFilter>
+                                        </th>
+                                        <th pSortableColumn="codeClient">
+                                            Client
+                                            <p-sortIcon field="codeClient"></p-sortIcon>
+                                            <p-columnFilter type="text" field="codeClient"
+                                                display="menu"></p-columnFilter>
+                                        </th>
+                                        <th pSortableColumn="montant">
+                                            Montant
+                                            <p-sortIcon field="montant"></p-sortIcon>
+                                            <p-columnFilter type="numeric" field="montant"
+                                                display="menu"></p-columnFilter>
+                                        </th>
+                                        <th>
+                                            Motifs
+                                            <p-columnFilter type="text" field="motifs" display="menu"></p-columnFilter>
+                                        </th>
+                                        <th pSortableColumn="faitPar">
+                                            Opérateur
+                                            <p-sortIcon field="faitPar"></p-sortIcon>
+                                            <p-columnFilter type="text" field="faitPar" display="menu"></p-columnFilter>
+                                        </th>
+                                        <th>
+                                            État
+                                            <p-columnFilter field="etatSaf" matchMode="equals" display="menu">
+                                                <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                                    <p-dropdown [ngModel]="value" [options]="etatOptions"
+                                                        (onChange)="filter($event.value)" placeholder="Tous"
+                                                        [showClear]="true">
+                                                    </p-dropdown>
+                                                </ng-template>
+                                            </p-columnFilter>
+                                        </th>
+                                    </tr>
+                                </ng-template>
+
+                                <ng-template pTemplate="body" let-deposit>
+                                    <tr>
+                                        <td><code>{{ deposit.numTransaction }}</code></td>
+                                        <td>{{ formatDateTime(deposit.dateOperation) }}</td>
+                                        <td><small>{{ deposit.numCompte }}</small></td>
+                                        <td>{{ deposit.codeClient }}</td>
+                                        <td class="text-right font-bold">{{ formatMontant(deposit.montant) }}</td>
+                                        <td><small>{{ deposit.motifs }}</small></td>
+                                        <td>{{ deposit.faitPar }}</td>
+                                        <td>
+                                            <p-tag [value]="deposit.etatSaf" severity="success"></p-tag>
+                                        </td>
+                                    </tr>
+                                </ng-template>
+
+                                <ng-template pTemplate="emptymessage">
+                                    <tr>
+                                        <td colspan="8" class="text-center">Aucune donnée trouvée</td>
+                                    </tr>
+                                </ng-template>
+                            </p-table>
+                        </div>
+                    </p-tabPanel>
+
+
+                    <!-- Retraits Middleware -->
+                    <p-tabPanel>
+                        <ng-template pTemplate="header">
+                            <span class="tab-header">
+                                <i class="pi pi-arrow-up"></i>
+                                <span>Retraits MW</span>
+                                <p-badge [value]="state().reconciliationResult?.totalRetraitsMiddleware || 0"
+                                    severity="danger" styleClass="ml-2">
+                                </p-badge>
+                            </span>
+                        </ng-template>
+
+                        <div class="table-toolbar">
+                            <div class="toolbar-left">
+                                <div class="summary-info">
+                                    <span>Total: {{
+                                        formatMontant(state().reconciliationResult?.montantTotalRetraitsMiddleware || 0)
+                                        }}</span>
+                                </div>
+                            </div>
+                            <div class="toolbar-right">
+                                <p-iconField iconPosition="left">
+                                    <p-inputIcon styleClass="pi pi-search"></p-inputIcon>
+                                    <input pInputText type="text" [(ngModel)]="globalFilters.withdrawalsMiddleware"
+                                        (input)="applyGlobalFilter(dtWithdrawalsMiddleware, $event, 'withdrawalsMiddleware')"
+                                        placeholder="Recherche globale..." />
+                                </p-iconField>
+                                <p-button icon="pi pi-filter-slash" severity="secondary" [text]="true"
+                                    pTooltip="Effacer les filtres"
+                                    (onClick)="clearFilter(dtWithdrawalsMiddleware, 'withdrawalsMiddleware')">
+                                </p-button>
+                                <p-button icon="pi pi-download" severity="info" [text]="true"
+                                    pTooltip="Exporter les données filtrées"
+                                    (onClick)="exportFilteredData(dtWithdrawalsMiddleware, 'withdrawals_middleware')">
+                                </p-button>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <p-table #dtWithdrawalsMiddleware
+                                [value]="state().reconciliationResult?.withdrawalsMiddleware || []" [paginator]="true"
+                                [rows]="10" [rowsPerPageOptions]="[10, 25, 50, 100]" styleClass="p-datatable-sm"
+                                [tableStyle]="{'min-width': '60rem'}"
+                                [globalFilterFields]="['numTransaction', 'codeClient', 'motifs', 'faitPar', 'numCompte']"
+                                dataKey="numTransaction">
+
+                                <ng-template pTemplate="header">
+                                    <tr>
+                                        <th pSortableColumn="numTransaction">
+                                            N° Trans
+                                            <p-sortIcon field="numTransaction"></p-sortIcon>
+                                            <p-columnFilter type="text" field="numTransaction"
+                                                display="menu"></p-columnFilter>
+                                        </th>
+                                        <th pSortableColumn="dateOperation">
+                                            Date/Heure
+                                            <p-sortIcon field="dateOperation"></p-sortIcon>
+                                            <p-columnFilter type="date" field="dateOperation"
+                                                display="menu"></p-columnFilter>
+                                        </th>
+                                        <th pSortableColumn="numCompte">
+                                            Compte
+                                            <p-sortIcon field="numCompte"></p-sortIcon>
+                                            <p-columnFilter type="text" field="numCompte"
+                                                display="menu"></p-columnFilter>
+                                        </th>
+                                        <th pSortableColumn="codeClient">
+                                            Client
+                                            <p-sortIcon field="codeClient"></p-sortIcon>
+                                            <p-columnFilter type="text" field="codeClient"
+                                                display="menu"></p-columnFilter>
+                                        </th>
+                                        <th pSortableColumn="montant">
+                                            Montant
+                                            <p-sortIcon field="montant"></p-sortIcon>
+                                            <p-columnFilter type="numeric" field="montant"
+                                                display="menu"></p-columnFilter>
+                                        </th>
+                                        <th>
+                                            Motifs
+                                            <p-columnFilter type="text" field="motifs" display="menu"></p-columnFilter>
+                                        </th>
+                                        <th pSortableColumn="faitPar">
+                                            Opérateur
+                                            <p-sortIcon field="faitPar"></p-sortIcon>
+                                            <p-columnFilter type="text" field="faitPar" display="menu"></p-columnFilter>
+                                        </th>
+                                        <th>État</th>
+                                    </tr>
+                                </ng-template>
+
+                                <ng-template pTemplate="body" let-withdrawal>
+                                    <tr>
+                                        <td><code>{{ withdrawal.numTransaction }}</code></td>
+                                        <td>{{ formatDateTime(withdrawal.dateOperation) }}</td>
+                                        <td><small>{{ withdrawal.numCompte }}</small></td>
+                                        <td>{{ withdrawal.codeClient }}</td>
+                                        <td class="text-right font-bold">{{ formatMontant(withdrawal.montant) }}</td>
+                                        <td><small>{{ withdrawal.motifs }}</small></td>
+                                        <td>{{ withdrawal.faitPar }}</td>
+                                        <td>
+                                            <p-tag [value]="withdrawal.etatSaf" severity="success"></p-tag>
+                                        </td>
+                                    </tr>
+                                </ng-template>
+                            </p-table>
+                        </div>
+                    </p-tabPanel>
+
+                    <!-- Opérations Réserve -->
+                    <p-tabPanel>
+                        <ng-template pTemplate="header">
+                            <span class="tab-header">
+                                <i class="pi pi-shield"></i>
+                                <span>Opérations Réserve</span>
+                                <p-badge [value]="state().reconciliationResult?.totalOperationsReserve || 0"
+                                    severity="warn" styleClass="ml-2">
+                                </p-badge>
+                            </span>
+                        </ng-template>
+
+                        <div class="reserve-summary">
+                            <div class="reserve-stat">
+                                <i class="pi pi-download"></i>
+                                <span>Dépôts: {{ state().reconciliationResult?.totalDepotsReserve || 0 }}</span>
+                                <strong>{{ formatMontant(state().reconciliationResult?.montantTotalDepotsReserve || 0)
+                                    }}</strong>
+                            </div>
+                            <div class="reserve-stat">
+                                <i class="pi pi-upload"></i>
+                                <span>Retraits: {{ state().reconciliationResult?.totalRetraitsReserve || 0 }}</span>
+                                <strong>{{ formatMontant(state().reconciliationResult?.montantTotalRetraitsReserve || 0)
+                                    }}</strong>
+                            </div>
+                        </div>
+
+                        <div class="table-toolbar">
+                            <div class="toolbar-right">
+                                <p-iconField iconPosition="left">
+                                    <p-inputIcon styleClass="pi pi-search"></p-inputIcon>
+                                    <input pInputText type="text" [(ngModel)]="globalFilters.operationsReserve"
+                                        (input)="applyGlobalFilter(dtOperationsReserve, $event, 'operationsReserve')"
+                                        placeholder="Recherche globale..." />
+                                </p-iconField>
+                                <p-button icon="pi pi-filter-slash" severity="secondary" [text]="true"
+                                    pTooltip="Effacer les filtres"
+                                    (onClick)="clearFilter(dtOperationsReserve, 'operationsReserve')">
+                                </p-button>
+                                <p-button icon="pi pi-download" severity="info" [text]="true"
+                                    pTooltip="Exporter les données filtrées"
+                                    (onClick)="exportFilteredData(dtOperationsReserve, 'operations_reserve')">
+                                </p-button>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <p-table #dtOperationsReserve
+                                [value]="state().reconciliationResult?.operationsReserve || []"
+                                styleClass="p-datatable-sm" [tableStyle]="{'min-width': '60rem'}" [paginator]="true"
+                                [rows]="10" [rowsPerPageOptions]="[10, 25, 50]"
+                                [globalFilterFields]="['numero', 'codeUser', 'validerPar', 'compteReserve']">
+
+                                <ng-template pTemplate="header">
+                                    <tr>
+                                        <th pSortableColumn="numero">
+                                            N° Opération
+                                            <p-sortIcon field="numero"></p-sortIcon>
+                                            <p-columnFilter type="text" field="numero" display="menu"></p-columnFilter>
+                                        </th>
+                                        <th>
+                                            Type
+                                            <p-columnFilter field="transactionOp" matchMode="equals" display="menu">
+                                                <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                                    <p-dropdown [ngModel]="value"
+                                                        [options]="[{label: 'Dépôt', value: 0}, {label: 'Retrait', value: 1}]"
+                                                        (onChange)="filter($event.value)" placeholder="Tous"
+                                                        [showClear]="true">
+                                                    </p-dropdown>
+                                                </ng-template>
+                                            </p-columnFilter>
+                                        </th>
+                                        <th pSortableColumn="dateOperation">
+                                            Date/Heure
+                                            <p-sortIcon field="dateOperation"></p-sortIcon>
+                                        </th>
+                                        <th pSortableColumn="montant">
+                                            Montant
+                                            <p-sortIcon field="montant"></p-sortIcon>
+                                            <p-columnFilter type="numeric" field="montant"
+                                                display="menu"></p-columnFilter>
+                                        </th>
+                                        <th>
+                                            Opérateur
+                                            <p-columnFilter type="text" field="codeUser"
+                                                display="menu"></p-columnFilter>
+                                        </th>
+                                        <th>
+                                            Validé par
+                                            <p-columnFilter type="text" field="validerPar"
+                                                display="menu"></p-columnFilter>
+                                        </th>
+                                        <th>Compte Réserve</th>
+                                        <th>État</th>
+                                    </tr>
+                                </ng-template>
+
+                                <ng-template pTemplate="body" let-op>
+                                    <tr>
+                                        <td><code>{{ op.numero }}</code></td>
+                                        <td>
+                                            <p-tag [value]="op.transactionOp === 1 ? 'Retrait' : 'Dépôt'"
+                                                [severity]="op.transactionOp === 1 ? 'danger' : 'success'">
+                                            </p-tag>
+                                        </td>
+                                        <td>{{ formatDateTime(op.dateOperation) }}</td>
+                                        <td class="text-right font-bold">{{ formatMontant(op.montant) }}</td>
+                                        <td>{{ op.codeUser }}</td>
+                                        <td>{{ op.validerPar }}</td>
+                                        <td><small>{{ op.compteReserve }}</small></td>
+                                        <td>
+                                            <p-tag [value]="op.etatOp" severity="success"></p-tag>
+                                        </td>
+                                    </tr>
+                                </ng-template>
+                            </p-table>
+                        </div>
+                    </p-tabPanel>
+                    <!-- Dépôts Production -->
+                    <p-tabPanel>
+                        <ng-template pTemplate="header">
+                            <span class="tab-header">
+                                <i class="pi pi-arrow-down"></i>
+                                <span>Dépôts Prod</span>
+                                <p-badge [value]="state().reconciliationResult?.totalDepotsProduction || 0"
+                                    severity="info" styleClass="ml-2">
+                                </p-badge>
+                            </span>
+                        </ng-template>
+
+                        <div class="table-toolbar">
+                            <div class="toolbar-left">
+                                <div class="summary-info">
+                                    <span>Total: {{
+                                        formatMontant(state().reconciliationResult?.montantTotalDepotsProduction || 0)
+                                        }}</span>
+                                </div>
+                            </div>
+                            <div class="toolbar-right">
+                                <p-iconField iconPosition="left">
+                                    <p-inputIcon styleClass="pi pi-search"></p-inputIcon>
+                                    <input pInputText type="text" [(ngModel)]="globalFilters.depositsProduction"
+                                        (input)="applyGlobalFilter(dtDepositsProduction, $event, 'depositsProduction')"
+                                        placeholder="Recherche globale..." />
+                                </p-iconField>
+                                <p-button icon="pi pi-filter-slash" severity="secondary" [text]="true"
+                                    pTooltip="Effacer les filtres"
+                                    (onClick)="clearFilter(dtDepositsProduction, 'depositsProduction')">
+                                </p-button>
+                                <p-button icon="pi pi-download" severity="info" [text]="true"
+                                    pTooltip="Exporter les données filtrées"
+                                    (onClick)="exportFilteredData(dtDepositsProduction, 'deposits_production')">
+                                </p-button>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <p-table #dtDepositsProduction
+                                [value]="state().reconciliationResult?.depositsProduction || []" [paginator]="true"
+                                [rows]="10" [rowsPerPageOptions]="[10, 25, 50, 100]" styleClass="p-datatable-sm"
+                                [tableStyle]="{'min-width': '60rem'}"
+                                [globalFilterFields]="['NUM_SECUENCIA_DOC', 'COD_CLIENTE', 'NUM_MOV_ENTE', 'COD_CAJERO', 'TIP_TRANSACCION']"
+                                dataKey="NUM_SECUENCIA_DOC">
+
+                                <ng-template pTemplate="header">
+                                    <tr>
+                                        <th pSortableColumn="NUM_SECUENCIA_DOC">
+                                            N° Séquence
+                                            <p-sortIcon field="NUM_SECUENCIA_DOC"></p-sortIcon>
+                                            <p-columnFilter type="text" field="NUM_SECUENCIA_DOC" display="menu"
+                                                placeholder="Rechercher..."></p-columnFilter>
+                                        </th>
+                                        <th pSortableColumn="FEC_TRANSACCION">
+                                            Date/Heure
+                                            <p-sortIcon field="FEC_TRANSACCION"></p-sortIcon>
+
+                                        </th>
+                                        <th pSortableColumn="NUM_MOV_ENTE">
+                                            Compte
+                                            <p-sortIcon field="NUM_MOV_ENTE"></p-sortIcon>
+                                            <p-columnFilter type="text" field="NUM_MOV_ENTE" display="menu"
+                                                placeholder="N° compte..."></p-columnFilter>
+                                        </th>
+                                        <th pSortableColumn="COD_CLIENTE">
+                                            Client
+                                            <p-sortIcon field="COD_CLIENTE"></p-sortIcon>
+                                            <p-columnFilter type="text" field="COD_CLIENTE" display="menu"
+                                                placeholder="Code client..."></p-columnFilter>
+                                        </th>
+                                        <th pSortableColumn="MTO_MOVIMIENTO">
+                                            Montant
+                                            <p-sortIcon field="MTO_MOVIMIENTO"></p-sortIcon>
+                                            <p-columnFilter type="numeric" field="MTO_MOVIMIENTO" display="menu"
+                                                currency="GNF">
+                                                <ng-template pTemplate="filter" let-filter="filterCallback">
+
+                                                </ng-template>
+                                            </p-columnFilter>
+                                        </th>
+                                        <th pSortableColumn="COD_CAJERO">
+                                            Opérateur
+                                            <p-sortIcon field="COD_CAJERO"></p-sortIcon>
+                                            <p-columnFilter type="text" field="COD_CAJERO" display="menu"
+                                                placeholder="Code opérateur..."></p-columnFilter>
+                                        </th>
+                                        <th pSortableColumn="TIP_TRANSACCION">
+                                            Type
+                                            <p-sortIcon field="TIP_TRANSACCION"></p-sortIcon>
+                                            <p-columnFilter field="TIP_TRANSACCION" matchMode="equals" display="menu">
+                                                <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                                    <p-dropdown [ngModel]="value" [options]="[
+                                        {label: 'DEPOSITO', value: 'DEPOSITO'},
+                                        {label: 'TRANSFERENCIA', value: 'TRANSFERENCIA'},
+                                        {label: 'CREDITO', value: 'CREDITO'}
+                                    ]" (onChange)="filter($event.value)" placeholder="Sélectionner..."
+                                                        [showClear]="true">
+                                                    </p-dropdown>
+                                                </ng-template>
+                                            </p-columnFilter>
+                                        </th>
+                                        <th>
+                                            État
+                                            <p-columnFilter field="IND_ESTADO" matchMode="equals" display="menu">
+                                                <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                                    <p-dropdown [ngModel]="value" [options]="[
+                                        {label: 'Actif', value: 'A'},
+                                        {label: 'Inactif', value: 'I'},
+                                        {label: 'En attente', value: 'P'}
+                                    ]" (onChange)="filter($event.value)" placeholder="Tous" [showClear]="true">
+                                                    </p-dropdown>
+                                                </ng-template>
+                                            </p-columnFilter>
+                                        </th>
+                                    </tr>
+                                </ng-template>
+
+                                <ng-template pTemplate="body" let-deposit>
+                                    <tr>
+                                        <td><code>{{ deposit.NUM_SECUENCIA_DOC }}</code></td>
+                                        <td>{{ formatDateTime(deposit.FEC_TRANSACCION) }}</td>
+                                        <td><small>{{ deposit.NUM_MOV_ENTE }}</small></td>
+                                        <td>{{ deposit.COD_CLIENTE }}</td>
+                                        <td class="text-right font-bold">{{ formatMontant(deposit.MTO_MOVIMIENTO) }}
+                                        </td>
+                                        <td>{{ deposit.COD_CAJERO }}</td>
+                                        <td>
+                                            <p-tag [value]="deposit.TIP_TRANSACCION" severity="info"></p-tag>
+                                        </td>
+                                        <td>
+                                            <p-tag [value]="deposit.IND_ESTADO"
+                                                [severity]="getStatusSeverity(deposit.IND_ESTADO)">
+                                            </p-tag>
+                                        </td>
+                                    </tr>
+                                </ng-template>
+
+                                <ng-template pTemplate="emptymessage">
+                                    <tr>
+                                        <td colspan="8" class="text-center">Aucun dépôt production trouvé</td>
+                                    </tr>
+                                </ng-template>
+
+                                <ng-template pTemplate="summary">
+                                    <div class="p-d-flex p-ai-center p-jc-between">
+                                        Affichage de {{dtDepositsProduction.totalRecords}} enregistrement(s)
+                                    </div>
+                                </ng-template>
+                            </p-table>
+                        </div>
+                    </p-tabPanel>
+
+                    <!-- Retraits Production -->
+                    <p-tabPanel>
+                        <ng-template pTemplate="header">
+                            <span class="tab-header">
+                                <i class="pi pi-arrow-up"></i>
+                                <span>Retraits Prod</span>
+                                <p-badge [value]="state().reconciliationResult?.totalRetraitsProduction || 0"
+                                    severity="secondary" styleClass="ml-2">
+                                </p-badge>
+                            </span>
+                        </ng-template>
+
+                        <div class="table-toolbar">
+                            <div class="toolbar-left">
+                                <div class="summary-info">
+                                    <span>Total: {{
+                                        formatMontant(state().reconciliationResult?.montantTotalRetraitsProduction || 0)
+                                        }}</span>
+                                </div>
+                            </div>
+                            <div class="toolbar-right">
+                                <p-iconField iconPosition="left">
+                                    <p-inputIcon styleClass="pi pi-search"></p-inputIcon>
+                                    <input pInputText type="text" [(ngModel)]="globalFilters.withdrawalsProduction"
+                                        (input)="applyGlobalFilter(dtWithdrawalsProduction, $event, 'withdrawalsProduction')"
+                                        placeholder="Recherche globale..." />
+                                </p-iconField>
+                                <p-button icon="pi pi-filter-slash" severity="secondary" [text]="true"
+                                    pTooltip="Effacer les filtres"
+                                    (onClick)="clearFilter(dtWithdrawalsProduction, 'withdrawalsProduction')">
+                                </p-button>
+                                <p-button icon="pi pi-download" severity="info" [text]="true"
+                                    pTooltip="Exporter les données filtrées"
+                                    (onClick)="exportFilteredData(dtWithdrawalsProduction, 'withdrawals_production')">
+                                </p-button>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <p-table #dtWithdrawalsProduction
+                                [value]="state().reconciliationResult?.withdrawalsProduction || []" [paginator]="true"
+                                [rows]="10" [rowsPerPageOptions]="[10, 25, 50, 100]" styleClass="p-datatable-sm"
+                                [tableStyle]="{'min-width': '60rem'}"
+                                [globalFilterFields]="['NUM_SECUENCIA_DOC', 'COD_CLIENTE', 'NUM_MOV_ENTE', 'COD_CAJERO', 'TIP_TRANSACCION']"
+                                dataKey="NUM_SECUENCIA_DOC">
+
+                                <ng-template pTemplate="header">
+                                    <tr>
+                                        <th pSortableColumn="NUM_SECUENCIA_DOC">
+                                            N° Séquence
+                                            <p-sortIcon field="NUM_SECUENCIA_DOC"></p-sortIcon>
+                                            <p-columnFilter type="text" field="NUM_SECUENCIA_DOC" display="menu"
+                                                placeholder="Rechercher..."></p-columnFilter>
+                                        </th>
+                                        <th pSortableColumn="FEC_TRANSACCION">
+                                            Date/Heure
+                                            <p-sortIcon field="FEC_TRANSACCION"></p-sortIcon>
+
+                                        </th>
+                                        <th pSortableColumn="NUM_MOV_ENTE">
+                                            Compte
+                                            <p-sortIcon field="NUM_MOV_ENTE"></p-sortIcon>
+                                            <p-columnFilter type="text" field="NUM_MOV_ENTE" display="menu"
+                                                placeholder="N° compte..."></p-columnFilter>
+                                        </th>
+                                        <th pSortableColumn="COD_CLIENTE">
+                                            Client
+                                            <p-sortIcon field="COD_CLIENTE"></p-sortIcon>
+                                            <p-columnFilter type="text" field="COD_CLIENTE" display="menu"
+                                                placeholder="Code client..."></p-columnFilter>
+                                        </th>
+                                        <th pSortableColumn="MTO_MOVIMIENTO">
+                                            Montant
+                                            <p-sortIcon field="MTO_MOVIMIENTO"></p-sortIcon>
+                                            <p-columnFilter type="numeric" field="MTO_MOVIMIENTO" display="menu"
+                                                currency="GNF">
+
+                                            </p-columnFilter>
+                                        </th>
+                                        <th pSortableColumn="COD_CAJERO">
+                                            Opérateur
+                                            <p-sortIcon field="COD_CAJERO"></p-sortIcon>
+                                            <p-columnFilter type="text" field="COD_CAJERO" display="menu"
+                                                placeholder="Code opérateur..."></p-columnFilter>
+                                        </th>
+                                        <th pSortableColumn="TIP_TRANSACCION">
+                                            Type
+                                            <p-sortIcon field="TIP_TRANSACCION"></p-sortIcon>
+                                            <p-columnFilter field="TIP_TRANSACCION" matchMode="equals" display="menu">
+                                                <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                                    <p-dropdown [ngModel]="value" [options]="[
+                                        {label: 'RETIRO', value: 'RETIRO'},
+                                        {label: 'TRANSFERENCIA', value: 'TRANSFERENCIA'},
+                                        {label: 'DEBITO', value: 'DEBITO'}
+                                    ]" (onChange)="filter($event.value)" placeholder="Sélectionner..."
+                                                        [showClear]="true">
+                                                    </p-dropdown>
+                                                </ng-template>
+                                            </p-columnFilter>
+                                        </th>
+                                        <th>
+                                            État
+                                            <p-columnFilter field="IND_ESTADO" matchMode="equals" display="menu">
+                                                <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                                    <p-dropdown [ngModel]="value" [options]="[
+                                        {label: 'Actif', value: 'A'},
+                                        {label: 'Inactif', value: 'I'},
+                                        {label: 'En attente', value: 'P'}
+                                    ]" (onChange)="filter($event.value)" placeholder="Tous" [showClear]="true">
+                                                    </p-dropdown>
+                                                </ng-template>
+                                            </p-columnFilter>
+                                        </th>
+                                    </tr>
+                                </ng-template>
+
+                                <ng-template pTemplate="body" let-withdrawal>
+                                    <tr>
+                                        <td><code>{{ withdrawal.NUM_SECUENCIA_DOC }}</code></td>
+                                        <td>{{ formatDateTime(withdrawal.FEC_TRANSACCION) }}</td>
+                                        <td><small>{{ withdrawal.NUM_MOV_ENTE }}</small></td>
+                                        <td>{{ withdrawal.COD_CLIENTE }}</td>
+                                        <td class="text-right font-bold text-danger">{{
+                                            formatMontant(withdrawal.MTO_MOVIMIENTO) }}</td>
+                                        <td>{{ withdrawal.COD_CAJERO }}</td>
+                                        <td>
+                                            <p-tag [value]="withdrawal.TIP_TRANSACCION" severity="secondary"></p-tag>
+                                        </td>
+                                        <td>
+                                            <p-tag [value]="withdrawal.IND_ESTADO"
+                                                [severity]="getStatusSeverity(withdrawal.IND_ESTADO)">
+                                            </p-tag>
+                                        </td>
+                                    </tr>
+                                </ng-template>
+
+                                <ng-template pTemplate="emptymessage">
+                                    <tr>
+                                        <td colspan="8" class="text-center">Aucun retrait production trouvé</td>
+                                    </tr>
+                                </ng-template>
+
+                                <ng-template pTemplate="summary">
+                                    <div class="p-d-flex p-ai-center p-jc-between">
+                                        Affichage de {{dtWithdrawalsProduction.totalRecords}} enregistrement(s)
+                                    </div>
+                                </ng-template>
+                            </p-table>
+                        </div>
+                    </p-tabPanel>
+
+                    <!-- Transactions manquantes -->
+                    <p-tabPanel *ngIf="state().reconciliationResult?.transactionsManquantes?.length">
+                        <ng-template pTemplate="header">
+                            <span class="tab-header">
+                                <i class="pi pi-exclamation-triangle"></i>
+                                <span>Manquantes</span>
+                                <p-badge [value]="state().reconciliationResult?.transactionsManquantes?.length || 0"
+                                    severity="warn" styleClass="ml-2">
+                                </p-badge>
+                            </span>
+                        </ng-template>
+
+                        <div class="table-toolbar">
+                            <div class="toolbar-left">
+                                <p-button label="Export Excel" icon="pi pi-file-excel" severity="success"
+                                    (onClick)="exportExcel()">
+                                </p-button>
+                                <p-button label="Options d'export" icon="pi pi-cog" severity="info" styleClass="ml-2"
+                                    (onClick)="openExportDialog()">
+                                </p-button>
+                            </div>
+                            <div class="toolbar-right">
+                                <p-iconField iconPosition="left">
+                                    <p-inputIcon styleClass="pi pi-search"></p-inputIcon>
+                                    <input pInputText type="text" [(ngModel)]="globalFilters.transactionsManquantes"
+                                        (input)="applyGlobalFilter(dtTransactionsManquantes, $event, 'transactionsManquantes')"
+                                        placeholder="Recherche globale..." />
+                                </p-iconField>
+                                <p-button icon="pi pi-filter-slash" severity="secondary" [text]="true"
+                                    pTooltip="Effacer les filtres"
+                                    (onClick)="clearFilter(dtTransactionsManquantes, 'transactionsManquantes')">
+                                </p-button>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <p-table #dtTransactionsManquantes
+                                [value]="state().reconciliationResult?.transactionsManquantes || []"
+                                styleClass="p-datatable-sm" [tableStyle]="{'min-width': '60rem'}" [paginator]="true"
+                                [rows]="10" [rowsPerPageOptions]="[10, 25, 50, 100]"
+                                [globalFilterFields]="['numTransaction', 'codeClient', 'motifs', 'numCompte', 'typeOperation']"
+                                dataKey="numTransaction">
+
+                                <ng-template pTemplate="header">
+                                    <tr>
+                                        <th pSortableColumn="numTransaction">
+                                            N° Transaction
+                                            <p-sortIcon field="numTransaction"></p-sortIcon>
+                                            <p-columnFilter type="text" field="numTransaction"
+                                                display="menu"></p-columnFilter>
+                                        </th>
+                                        <th pSortableColumn="dateOperation">
+                                            Date/Heure
+                                            <p-sortIcon field="dateOperation"></p-sortIcon>
+                                        </th>
+                                        <th>
+                                            Type
+                                            <p-columnFilter field="typeOperation" matchMode="equals" display="menu">
+                                                <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                                    <p-dropdown [ngModel]="value" [options]="typeOperationOptions"
+                                                        (onChange)="filter($event.value)" placeholder="Tous"
+                                                        [showClear]="true">
+                                                    </p-dropdown>
+                                                </ng-template>
+                                            </p-columnFilter>
+                                        </th>
+                                        <th>
+                                            Compte
+                                            <p-columnFilter type="text" field="numCompte"
+                                                display="menu"></p-columnFilter>
+                                        </th>
+                                        <th pSortableColumn="montant">
+                                            Montant
+                                            <p-sortIcon field="montant"></p-sortIcon>
+                                            <p-columnFilter type="numeric" field="montant"
+                                                display="menu"></p-columnFilter>
+                                        </th>
+                                        <th>
+                                            Motifs
+                                            <p-columnFilter type="text" field="motifs" display="menu"></p-columnFilter>
+                                        </th>
+                                        <th>État</th>
+                                    </tr>
+                                </ng-template>
+
+                                <ng-template pTemplate="body" let-trans>
+                                    <tr>
+                                        <td><code>{{ trans.numTransaction }}</code></td>
+                                        <td>{{ formatDateTime(trans.dateOperation) }}</td>
+                                        <td>
+                                            <p-tag [value]="trans.typeOperation"
+                                                [severity]="trans.typeOperation === 'Depot' ? 'success' : 'danger'">
+                                            </p-tag>
+                                        </td>
+                                        <td><small>{{ trans.numCompte }}</small></td>
+                                        <td class="text-right font-bold">{{ formatMontant(trans.montant) }}</td>
+                                        <td><small>{{ trans.motifs }}</small></td>
+                                        <td>
+                                            <p-tag [value]="trans.etatSaf" severity="warn"></p-tag>
+                                        </td>
+                                    </tr>
+                                </ng-template>
+
+                                <ng-template pTemplate="emptymessage">
+                                    <tr>
+                                        <td colspan="7" class="text-center">Aucune transaction manquante trouvée</td>
+                                    </tr>
+                                </ng-template>
+                            </p-table>
+                        </div>
+                    </p-tabPanel>
+
+                </p-tabView>
+            </p-card>
+        </div>
+
+        <!-- Rapport détaillé (déplacé en dehors des tabs) -->
+        <p-divider></p-divider>
+
+        <p-card class="mt-4">
+            <ng-template pTemplate="header">
+                <div class="overview-header">
+                    <h4>
+                        <i class="pi pi-info-circle mr-2"></i>
+                        Rapport détaillé
+                    </h4>
+                </div>
+            </ng-template>
+
+            <div class="details-wrapper">
+                <div class="details-content">
+                    <pre class="report-text">{{ state().reconciliationResult?.details }}</pre>
+
+                    <div class="report-actions">
+                        <p-button label="Exporter PDF" icon="pi pi-file-pdf" severity="danger" (onClick)="exportPDF()">
+                        </p-button>
+                        <p-button label="Exporter Excel" icon="pi pi-file-excel" severity="success" styleClass="ml-2"
+                            (onClick)="exportExcel()">
+                        </p-button>
+                    </div>
+                </div>
+            </div>
+        </p-card>
+    </div>
+</div>

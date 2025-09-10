@@ -23,6 +23,10 @@ import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
 import { MotifAnalyseComponent } from './motif-analyse/motif-analyse.component';
 import { IUser } from '@/interface/user';
+import { PrintOptions, PrintService } from '@/service/PrintService';
+import { SplitButtonModule } from 'primeng/splitbutton';
+import { TresoreriePrintService } from '@/service/TresoreriePrintService';
+import { ResumeCreditPrintService, ResumePrintOptions } from '@/service/ResumeCreditPrintService';
 
 type PrimeSeverity = 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast';
 interface IndicateurCle {
@@ -44,7 +48,24 @@ interface TableDataItem {
 
 @Component({
     selector: 'app-resume-credit',
-    imports: [CommonModule, CardModule, PanelModule, TableModule, TagModule, ButtonModule, ProgressSpinnerModule, ToastModule, BadgeModule, DividerModule, SkeletonModule, ProgressBarModule, TooltipModule, AccordionModule, MotifAnalyseComponent],
+    imports: [
+        CommonModule,
+        CardModule,
+        PanelModule,
+        TableModule,
+        TagModule,
+        ButtonModule,
+        ProgressSpinnerModule,
+        ToastModule,
+        BadgeModule,
+        DividerModule,
+        SkeletonModule,
+        ProgressBarModule,
+        TooltipModule,
+        AccordionModule,
+        MotifAnalyseComponent,
+        SplitButtonModule
+    ],
     templateUrl: './resume-credit.component.html',
     styleUrl: './resume-credit.component.scss',
     providers: [MessageService]
@@ -73,6 +94,10 @@ export class ResumeCreditComponent {
     private messageService = inject(MessageService);
     private destroyRef = inject(DestroyRef);
     private analyseCreditService = inject(UserService);
+
+    private printService = inject(PrintService);
+
+    private resumePrintService = inject(ResumeCreditPrintService);
 
     // Paramètres de route
     userId: number | null = null;
@@ -1905,5 +1930,682 @@ export class ResumeCreditComponent {
 
         // CORRECTION : Utilise les vraies propriétés
         return `${info.delegationDto.libele} > ${info.agenceDto.libele} > ${info.pointVenteDto.libele} (${info.pointVenteDto.code})`;
+    }
+
+    /**
+     * Prépare et lance l'impression du bilan de crédit
+     */
+    imprimerBilan(options: PrintOptions = {}): void {
+        if (!this.state().resumeCredit) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Attention',
+                detail: "Aucune donnée disponible pour l'impression"
+            });
+            return;
+        }
+
+        try {
+            const donneesImpression = this.preparerDonneesImpression();
+
+            // Options par défaut
+            const optionsImpression: PrintOptions = {
+                includeIndicateurs: true,
+                includeSignature: false,
+                title: "Résumé d'Analyse de Crédit",
+                ...options
+            };
+
+            this.printService.imprimerBilan(donneesImpression, optionsImpression);
+
+            this.messageService.add({
+                severity: 'success',
+                summary: 'Impression',
+                detail: "Fenêtre d'impression ouverte"
+            });
+        } catch (error) {
+            console.error("Erreur lors de l'impression:", error);
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Erreur',
+                detail: "Impossible de générer le document d'impression"
+            });
+        }
+    }
+
+    /**
+     * Prépare toutes les données nécessaires pour l'impression
+     */
+    private preparerDonneesImpression(): any {
+        const resume = this.state().resumeCredit;
+        const infoAdmin = this.state().infoAdministrative;
+
+        return {
+            // Informations générales
+            dateImpression: new Date().toISOString(),
+            montantDemande: this.formatCurrency(this.getMontantCredit()),
+            evaluationGlobale: this.getEvaluationGlobale(),
+            scoreRisque: this.getScoreRisque(),
+            seuilsRespetes: this.getNbSeuilsRespetes(),
+
+            // Ratios détaillés pour les indicateurs
+            ratios: [
+                {
+                    nom: 'R1 - Capacité de remboursement',
+                    valeur: this.calculerR1Capacite(),
+                    statut: this.getStatutR1(),
+                    formule: '(Cash Flow + Autres revenus) / Traite revenus'
+                },
+                {
+                    nom: 'R2 - Ratio de solvabilité',
+                    valeur: this.calculerR2Solvabilite(),
+                    statut: this.getStatutR2(),
+                    formule: 'Capitaux propres / Total Actif'
+                },
+                {
+                    nom: 'R3 - Ratio de liquidité',
+                    valeur: this.calculerR3Liquidite(),
+                    statut: this.getStatutR3(),
+                    formule: '(Créances + Trésorerie) / Dettes court terme'
+                },
+                {
+                    nom: "R4 - Ratio d'endettement",
+                    valeur: this.calculerR4Endettement(),
+                    statut: this.getStatutR4(),
+                    formule: '(Dettes totales + Crédit) / (Total Actif + Crédit)'
+                },
+                {
+                    nom: 'R5 - Ratio de dépendance',
+                    valeur: this.calculerR5Dependance(),
+                    statut: this.getStatutR5(),
+                    formule: 'Autres revenus / Revenus totaux'
+                },
+                {
+                    nom: 'R6 - Ratio de couverture',
+                    valeur: this.calculerR6Couverture(),
+                    statut: this.getStatutR6(),
+                    formule: 'Valeur de la garantie / Crédit'
+                }
+            ],
+
+            // Informations détaillées
+            promoteur: this.getPromoteurData(),
+            entreprise: this.getEntrepriseData(),
+            bilanEntreprise: this.getBilanEntrepriseData(),
+            bilanPersonnel: this.getBilanPersonnelData(),
+            exploitationActuelle: this.getExploitationActuelleData(),
+            exploitationPrevisionnelle: this.getExploitationPrevisionnelleData(),
+            chargesActuelles: this.getChargesData('actuelle'),
+            chargesPrevisionnelles: this.getChargesData('previsionnelle'),
+            demandeCredit: this.getDemandeCreditData().slice(0, 7), // Exclure les IDs techniques
+            infoAdministratives: this.getDemandeCreditInfosComplementaires(),
+
+            // Personnes caution
+            personnesCaution: resume?.personnes_caution || [],
+            personnesCautionData: this.getPersonnesCautionData(),
+            analyseGarantie: this.getAnalyseGarantiePersonnelle(),
+
+            // Analyse et recommandations
+            recommandations: this.getRecommandations(),
+            conseilsAmelioration: this.getConseilsAmelioration(),
+            analyseRisque: this.getAnalyseRisque(),
+            decisionRecommandee: this.getRecommandationDecision(),
+
+            // Métadonnées
+            utilisateur: this.state().user,
+            informationsAdministratives: infoAdmin
+                ? {
+                      delegation: infoAdmin.delegationDto.libele,
+                      agence: infoAdmin.agenceDto.libele,
+                      pointVente: `${infoAdmin.pointVenteDto.libele} (${infoAdmin.pointVenteDto.code})`,
+                      utilisateurTraitant: `${infoAdmin.user.firstName} ${infoAdmin.user.lastName} - ${infoAdmin.user.role}`
+                  }
+                : null
+        };
+    }
+
+    /**
+     * Impression simplifiée (sans ratios détaillés)
+     */
+    imprimerSimple(): void {
+        this.imprimerBilan({
+            includeIndicateurs: false,
+            includeSignature: false
+        });
+    }
+
+    /**
+     * Export PDF via impression (workaround)
+     */
+    exporterPDF(): void {
+        // Note: Cette méthode utilise la fonctionnalité d'impression du navigateur
+        // L'utilisateur devra choisir "Enregistrer au format PDF" dans la boîte de dialogue
+        this.messageService.add({
+            severity: 'info',
+            summary: 'Export PDF',
+            detail: 'Utilisez l\'option "Enregistrer au format PDF" dans la fenêtre d\'impression'
+        });
+
+        this.imprimerBilan({
+            includeSignature: false,
+            includeIndicateurs: true
+        });
+    }
+
+    /**
+     * Génère le HTML pour la prévisualisation
+     */
+    private genererHTMLPreview(data: any): string {
+        return `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>Prévisualisation - Résumé d'Analyse de Crédit</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 20px; }
+                    .preview-header { background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+                    .preview-actions { text-align: center; margin-bottom: 20px; }
+                    .print-btn { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 0 10px; }
+                    .close-btn { background: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 0 10px; }
+                    .content { border: 1px solid #dee2e6; padding: 20px; border-radius: 5px; }
+                </style>
+            </head>
+            <body>
+                <div class="preview-header">
+                    <h2>Prévisualisation du Résumé d'Analyse de Crédit</h2>
+                    <p>Vérifiez le contenu avant impression. Cette prévisualisation montre le document tel qu'il sera imprimé.</p>
+                </div>
+                
+                <div class="preview-actions">
+                    <button class="print-btn" onclick="window.print()">Imprimer</button>
+                    <button class="close-btn" onclick="window.close()">Fermer</button>
+                </div>
+                
+                <div class="content">
+                    <h1>RÉSUMÉ D'ANALYSE DE CRÉDIT</h1>
+                    <p><strong>Montant demandé:</strong> ${data.montantDemande}</p>
+                    <p><strong>Évaluation:</strong> ${data.evaluationGlobale}</p>
+                    <p><strong>Score de risque:</strong> ${data.scoreRisque}/100</p>
+                    
+                    <h2>PROMOTEUR</h2>
+                    ${this.genererTableauPreview(data.promoteur)}
+                    
+                    <h2>ENTREPRISE</h2>
+                    ${this.genererTableauPreview(data.entreprise)}
+                    
+                    <h2>RECOMMANDATIONS</h2>
+                    <ul>
+                        ${data.recommandations.map((rec: string) => `<li>${rec}</li>`).join('')}
+                    </ul>
+                    
+                    <p style="margin-top: 30px; text-align: center; color: #6c757d; font-size: 12px;">
+                        Document généré le ${new Date().toLocaleDateString('fr-FR')}
+                    </p>
+                </div>
+            </body>
+            </html>
+        `;
+    }
+
+    /**
+     * Génère un tableau HTML simple pour la prévisualisation
+     */
+    private genererTableauPreview(data: any[]): string {
+        if (!data || data.length === 0) return '<p>Aucune donnée disponible</p>';
+
+        return `
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                ${data
+                    .map(
+                        (item) => `
+                    <tr>
+                        <td style="border: 1px solid #ddd; padding: 8px; background: #f8f9fa; font-weight: bold; width: 40%;">${item.label}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${item.value}</td>
+                    </tr>
+                `
+                    )
+                    .join('')}
+            </table>
+        `;
+    }
+
+    /**
+     * Méthode utilitaire pour vérifier si l'impression est possible
+     */
+    peutImprimer(): boolean {
+        return !!(this.state().resumeCredit && !this.state().loading);
+    }
+
+    /**
+     * Obtient un résumé des données pour l'impression
+     */
+    getResumeImpression(): string {
+        if (!this.peutImprimer()) return 'Aucune donnée disponible';
+
+        const evaluation = this.getEvaluationGlobale();
+        const montant = this.formatCurrency(this.getMontantCredit());
+        const promoteur = this.state().resumeCredit?.promoteur;
+
+        return `${promoteur?.prenom} ${promoteur?.nom} - ${montant} - ${evaluation}`;
+    }
+
+    printMenuModel = [
+        {
+            label: 'Prévisualiser',
+            icon: 'pi pi-eye',
+            command: () => this.previsualiserImpression()
+        },
+        {
+            label: 'Imprimer avec signature',
+            icon: 'pi pi-file-edit',
+            command: () => this.imprimerAvecSignature()
+        },
+        {
+            label: 'Version simplifiée',
+            icon: 'pi pi-file',
+            command: () => this.imprimerSimple()
+        },
+        {
+            separator: true
+        },
+        {
+            label: 'Exporter en PDF',
+            icon: 'pi pi-file-pdf',
+            command: () => this.exporterPDF()
+        }
+    ];
+
+    /**
+     * Prépare et lance l'impression du résumé de crédit
+     */
+    imprimerResumeCredit(options: ResumePrintOptions = {}): void {
+        if (!this.state().resumeCredit) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Attention',
+                detail: "Aucune donnée disponible pour l'impression"
+            });
+            return;
+        }
+
+        try {
+            const donneesImpression = this.preparerDonneesImpressionResume();
+
+            // Options par défaut
+            const optionsImpression: ResumePrintOptions = {
+                includeEvaluation: true,
+                includeRatios: this.state().user?.role === 'MANAGER' || this.state().user?.role === 'DA',
+                includeRecommandations: true,
+                includeSignature: false,
+                title: "Résumé d'Analyse de Crédit",
+                ...options
+            };
+
+            this.resumePrintService.imprimerResumeCredit(donneesImpression, optionsImpression);
+
+            this.messageService.add({
+                severity: 'success',
+                summary: 'Impression',
+                detail: "Fenêtre d'impression ouverte"
+            });
+        } catch (error) {
+            console.error("Erreur lors de l'impression:", error);
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Erreur',
+                detail: "Impossible de générer le document d'impression"
+            });
+        }
+    }
+
+    /**
+     * Prépare toutes les données nécessaires pour l'impression du résumé
+     */
+    private preparerDonneesImpressionResume(): any {
+        const resume = this.state().resumeCredit;
+        const infoAdmin = this.state().infoAdministrative;
+
+        return {
+            // Informations générales
+            dateImpression: new Date().toISOString(),
+            montantDemande: this.getMontantCredit(),
+            evaluation: this.getEvaluationGlobale(),
+            scoreRisque: this.getScoreRisque(),
+            seuilsRespetes: this.getNbSeuilsRespetes(),
+
+            // Ratios détaillés (seulement si rôle approprié)
+            ratios:
+                this.state().user?.role === 'MANAGER' || this.state().user?.role === 'DA'
+                    ? {
+                          R1: {
+                              nom: 'R1 - Capacité de remboursement',
+                              valeur: this.calculerR1Capacite(),
+                              statut: this.getStatutR1(),
+                              formule: '(Cash Flow + Autres revenus) / Traite revenus'
+                          },
+                          R2: {
+                              nom: 'R2 - Ratio de solvabilité',
+                              valeur: this.calculerR2Solvabilite(),
+                              statut: this.getStatutR2(),
+                              formule: 'Capitaux propres / Total Actif'
+                          },
+                          R3: {
+                              nom: 'R3 - Ratio de liquidité',
+                              valeur: this.calculerR3Liquidite(),
+                              statut: this.getStatutR3(),
+                              formule: '(Créances + Trésorerie) / Dettes court terme'
+                          },
+                          R4: {
+                              nom: "R4 - Ratio d'endettement",
+                              valeur: this.calculerR4Endettement(),
+                              statut: this.getStatutR4(),
+                              formule: '(Dettes totales + Crédit) / (Total Actif + Crédit)'
+                          },
+                          R5: {
+                              nom: 'R5 - Ratio de dépendance',
+                              valeur: this.calculerR5Dependance(),
+                              statut: this.getStatutR5(),
+                              formule: 'Autres revenus / Revenus totaux'
+                          },
+                          R6: {
+                              nom: 'R6 - Ratio de couverture',
+                              valeur: this.calculerR6Couverture(),
+                              statut: this.getStatutR6(),
+                              formule: 'Valeur de la garantie / Crédit'
+                          }
+                      }
+                    : null,
+
+            // Informations détaillées
+            promoteur: this.getPromoteurData(),
+            entreprise: this.getEntrepriseData(),
+            bilanEntreprise: this.getBilanEntrepriseData(),
+            bilanPersonnel: this.getBilanPersonnelData(),
+            exploitationActuelle: this.getExploitationActuelleData(),
+            exploitationPrevisionnelle: this.getExploitationPrevisionnelleData(),
+            chargesActuelles: this.getChargesData('actuelle'),
+            chargesPrevisionnelles: this.getChargesData('previsionnelle'),
+            demandeCredit: this.getDemandeCreditData().slice(0, 7), // Exclure les IDs techniques
+            infoAdministratives: this.getDemandeCreditInfosComplementaires(),
+
+            // Personnes caution
+            personnesCaution: resume?.personnes_caution || [],
+            personnesCautionData: this.getPersonnesCautionData(),
+            analyseGarantie: this.getAnalyseGarantiePersonnelle(),
+
+            // Analyse et recommandations
+            recommandations: this.getRecommandations(),
+            conseilsAmelioration: this.getConseilsAmelioration(),
+            analyseRisque: this.getAnalyseRisque(),
+            decisionRecommandee: this.getRecommandationDecision(),
+
+            // Métadonnées
+            utilisateur: this.state().user,
+            informationsAdministratives: infoAdmin
+                ? {
+                      delegation: infoAdmin.delegationDto?.libele,
+                      agence: infoAdmin.agenceDto?.libele,
+                      pointVente: `${infoAdmin.pointVenteDto?.libele} (${infoAdmin.pointVenteDto?.code})`,
+                      utilisateurTraitant: `${infoAdmin.user?.firstName} ${infoAdmin.user?.lastName} - ${infoAdmin.user?.role}`
+                  }
+                : null
+        };
+    }
+
+    /**
+     * Impression avec signature (pour validation officielle)
+     */
+    imprimerAvecSignature(): void {
+        this.imprimerResumeCredit({
+            includeSignature: true,
+            includeEvaluation: true,
+            includeRatios: true,
+            includeRecommandations: true
+        });
+    }
+
+    /**
+     * Impression simplifiée (sans ratios détaillés)
+     */
+    imprimerResumeSimple(): void {
+        this.imprimerResumeCredit({
+            includeEvaluation: true,
+            includeRatios: false,
+            includeRecommandations: true,
+            includeSignature: false
+        });
+    }
+
+    /**
+     * Impression des ratios seulement (pour managers/DA)
+     */
+    imprimerRatiosDetailles(): void {
+        if (this.state().user?.role !== 'MANAGER' && this.state().user?.role !== 'DA') {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Accès restreint',
+                detail: 'Seuls les managers et DA peuvent imprimer les ratios détaillés'
+            });
+            return;
+        }
+
+        this.imprimerResumeCredit({
+            includeEvaluation: true,
+            includeRatios: true,
+            includeRecommandations: false,
+            includeSignature: false
+        });
+    }
+
+    /**
+     * Export PDF via impression (workaround)
+     */
+    exporterResumePDF(): void {
+        this.messageService.add({
+            severity: 'info',
+            summary: 'Export PDF',
+            detail: 'Utilisez l\'option "Enregistrer au format PDF" dans la fenêtre d\'impression'
+        });
+
+        // Délai pour que l'utilisateur voie le message
+        setTimeout(() => {
+            this.imprimerResumeCredit({
+                includeSignature: false,
+                includeEvaluation: true,
+                includeRatios: true,
+                includeRecommandations: true
+            });
+        }, 1000);
+    }
+
+    /**
+     * Prévisualisation avant impression
+     */
+    previsualiserImpression(): void {
+        if (!this.state().resumeCredit) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Attention',
+                detail: 'Aucune donnée disponible pour la prévisualisation'
+            });
+            return;
+        }
+
+        // Pour la prévisualisation, on ouvre simplement l'impression
+        // Le navigateur proposera automatiquement l'aperçu
+        this.imprimerResumeCredit();
+    }
+
+    /**
+     * Vérifie si l'impression est possible
+     */
+    peutImprimerResume(): boolean {
+        return !!(this.state().resumeCredit && !this.state().loading);
+    }
+
+    /**
+     * Obtient un résumé des données pour l'impression
+     */
+    getResumeImpressionPourAffichage(): string {
+        if (!this.peutImprimerResume()) return 'Aucune donnée disponible';
+
+        const evaluation = this.getEvaluationGlobale();
+        const montant = this.formatCurrency(this.getMontantCredit());
+        const promoteur = this.state().resumeCredit?.promoteur;
+
+        return `${promoteur?.prenom} ${promoteur?.nom} - ${montant} - ${evaluation}`;
+    }
+
+    /**
+     * Obtient le statut d'impression avec détails
+     */
+    getStatutImpression(): {
+        disponible: boolean;
+        message: string;
+        details?: any;
+    } {
+        if (!this.state().resumeCredit) {
+            return {
+                disponible: false,
+                message: 'Aucune donnée de résumé disponible'
+            };
+        }
+
+        if (this.state().loading) {
+            return {
+                disponible: false,
+                message: 'Chargement en cours...'
+            };
+        }
+
+        const resume = this.state().resumeCredit;
+        const evaluation = this.getEvaluationGlobale();
+        const scoreRisque = this.getScoreRisque();
+
+        return {
+            disponible: true,
+            message: 'Prêt pour impression',
+            details: {
+                promoteur: `${resume?.promoteur?.prenom} ${resume?.promoteur?.nom}`,
+                entreprise: resume?.entreprise?.nom,
+                montantDemande: this.formatCurrency(this.getMontantCredit()),
+                evaluation: evaluation,
+                scoreRisque: `${scoreRisque}/100`,
+                nbPersonnesCaution: this.getNombrePersonnesCaution(),
+                hasInfoAdmin: this.hasInfoAdministrative(),
+                canViewRatios: this.state().user?.role === 'MANAGER' || this.state().user?.role === 'DA'
+            }
+        };
+    }
+
+    /**
+     * Impression avec options personnalisées via dialog
+     */
+    ouvrirDialogOptionsImpression(): void {
+        if (!this.peutImprimerResume()) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Attention',
+                detail: "Aucune donnée disponible pour l'impression"
+            });
+            return;
+        }
+
+        // Vous pouvez implémenter un dialog ici pour permettre à l'utilisateur
+        // de choisir les options d'impression
+        this.messageService.add({
+            severity: 'info',
+            summary: "Options d'impression",
+            detail: "Fonctionnalité à développer: dialog d'options d'impression"
+        });
+    }
+
+    /**
+     * Validation des données avant impression
+     */
+    private validerDonneesAvantImpression(): boolean {
+        if (!this.state().resumeCredit) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Données manquantes',
+                detail: 'Aucun résumé de crédit disponible'
+            });
+            return false;
+        }
+
+        if (!this.state().resumeCredit?.promoteur) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Données incomplètes',
+                detail: 'Informations du promoteur manquantes'
+            });
+            return false;
+        }
+
+        if (!this.getMontantCredit() || this.getMontantCredit() === 0) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Données incomplètes',
+                detail: 'Montant du crédit non défini'
+            });
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Impression avec validation complète
+     */
+    imprimerAvecValidation(options: ResumePrintOptions = {}): void {
+        if (!this.validerDonneesAvantImpression()) {
+            return;
+        }
+
+        this.imprimerResumeCredit(options);
+    }
+
+    /**
+     * Obtient les options d'impression disponibles selon le rôle
+     */
+    getOptionsImpressionDisponibles(): any[] {
+        const baseOptions = [
+            {
+                label: 'Impression standard',
+                icon: 'pi pi-print',
+                command: () => this.imprimerResumeCredit()
+            },
+            {
+                label: 'Version simplifiée',
+                icon: 'pi pi-file',
+                command: () => this.imprimerResumeSimple()
+            },
+            {
+                separator: true
+            },
+            {
+                label: 'Exporter en PDF',
+                icon: 'pi pi-file-pdf',
+                command: () => this.exporterResumePDF()
+            }
+        ];
+
+        // Ajouter les options spécifiques aux managers/DA
+        if (this.state().user?.role === 'MANAGER' || this.state().user?.role === 'DA') {
+            baseOptions.splice(-2, 0, {
+                label: 'Avec signature',
+                icon: 'pi pi-file-edit',
+                command: () => this.imprimerAvecSignature()
+            });
+
+            baseOptions.splice(-2, 0, {
+                label: 'Ratios détaillés',
+                icon: 'pi pi-chart-bar',
+                command: () => this.imprimerRatiosDetailles()
+            });
+        }
+
+        return baseOptions;
     }
 }
