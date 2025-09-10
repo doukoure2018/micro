@@ -1,33 +1,56 @@
 spring:
   application:
     name: EBANKING
+
+  # Configuration DataSource Production (existante)
   datasource:
-    url: jdbc:sqlserver://localhost:1433;databaseName=BDCRG;trustServerCertificate=true;encrypt=true
+#    url: jdbc:sqlserver://10.220.220.8;databaseName=BDCRG;trustServerCertificate=true;encrypt=true
+#    username: DIGI
+#    password: "@Digi2711@!"
+    url: jdbc:sqlserver://10.110.15.2:1433;databaseName=BDCRG;trustServerCertificate=true;encrypt=true
     username: sa
-    password: doukoure93
-#    url: jdbc:sqlserver://10.110.15.2;databaseName=BDCRG;trustServerCertificate=true;encrypt=true
-#    username: sa
-#    password: 1234567
+    password: 1234567
     driverClassName: com.microsoft.sqlserver.jdbc.SQLServerDriver
     initialize: true
+    hikari:
+      pool-name: ProductionPool
+      maximum-pool-size: 5
+      minimum-idle: 2
+      connection-timeout: 10000
+      idle-timeout: 300000
+      max-lifetime: 600000
+
+  # Configuration DataSource Middleware (nouvelle)
+  middleware:
+    datasource:
+      url: jdbc:sqlserver://10.220.220.11;databaseName=BD_MIDDLEWARE;trustServerCertificate=true;encrypt=true
+      username: sa
+      password: 1234
+
   jpa:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.SQLServerDialect
     hibernate:
       ddl-auto: none
+
   cloud:
     config:
       enabled: false
+
   profiles:
     active: default
+
+# Configuration Application
 application:
   title: DIGICRG-MICROSERVICE
   version: v02
 
+# Configuration Serveur
 server:
   port: 8081
 
+# Configuration Eureka
 eureka:
   instance:
     prefer-ip-address: true
@@ -35,14 +58,14 @@ eureka:
     service-url:
       defaultZone: http://admin:admin2711@localhost:5002/eureka/
 
-
+# Configuration JWKS (IMPORTANT - Cette ligne manquait!)
 jwks:
   uri: http://localhost:8080/oauth2/jwks
 
-
-# Add this logging configuration
+# Configuration Logging
 logging:
   level:
+    io.digiservices.ebanking: DEBUG
     org:
       hibernate:
         SQL: DEBUG
@@ -54,6 +77,7 @@ logging:
         jdbc:
           core: DEBUG
 
+# Configuration Feign
 feign:
   client:
     config:
