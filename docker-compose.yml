@@ -166,7 +166,7 @@ services:
       retries: 3
       start_period: 60s
 
-  # Business Services
+   # Business Services
   authorizationserver:
     image: doukoure93/authorizationserver:latest
     container_name: authorizationserver
@@ -409,7 +409,7 @@ services:
       retries: 3
       start_period: 60s
 
-  # Frontend Application
+#  # Frontend Application
   digicrg-app:
     container_name: digicrg-app
     image: doukoure93/digicrg-app
