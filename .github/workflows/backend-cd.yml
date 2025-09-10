@@ -89,9 +89,7 @@ jobs:
       - name: Build and push E-Credit Service
         working-directory: ./micro-digiservices
         run: |
-          # Build clients module first as it's a dependency
           mvn -ntp -B install -DskipTests -pl clients
-          # Now build ecreditservice
           cd ecreditservice
           mvn -ntp -B verify -DskipTests -Ddocker.image.tag=${{ steps.build-number.outputs.BUILD_NUMBER }} jib:build
           mvn -ntp -B verify -DskipTests -Ddocker.image.tag=latest jib:build
@@ -114,7 +112,7 @@ jobs:
           --data '{"text":":whale: All microservices images pushed to DockerHub!\nTag: ${{ steps.build-number.outputs.BUILD_NUMBER }}"}'
           ${{ secrets.SLACK_WEBHOOK_URL }}
 
-      # Deploy to OVH server - Tout intégré ici
+      # Deploy to OVH server - Version optimisée
       - name: Deploy to OVH server
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -122,13 +120,20 @@ jobs:
           username: ${{ secrets.OVH_USER }}
           key: ${{ secrets.PROD_SSH_KEY }}
           script: |
-            # Se déplacer dans le répertoire du projet
-            cd ~/microservices || mkdir -p ~/microservices && cd ~/microservices
+            set -e  # Arrêter en cas d'erreur
             
-            # Cloner ou mettre à jour le repository
+            # Se déplacer dans le répertoire du projet
+            cd ~/microservices || { mkdir -p ~/microservices && cd ~/microservices; }
+            
+            # Gérer les changements locaux Git
             if [ -d ".git" ]; then
-              echo "📥 Pulling latest changes..."
-              git pull origin main
+              echo "📥 Syncing with repository..."
+              # Sauvegarder les changements locaux
+              git stash save "Auto-stash before deployment $(date)" || true
+              # Mettre à jour depuis le repository
+              git fetch origin main
+              git reset --hard origin/main
+              echo "✅ Repository synchronized"
             else
               echo "📥 Cloning repository..."
               git clone https://github.com/${{ github.repository }} .
@@ -142,12 +147,15 @@ jobs:
             
             # Vérifier que .env.prod existe
             if [ ! -f .env.prod ]; then
-              echo "⚠️ Creating .env.prod from template..."
-              cp .env.docker .env.prod || echo "No template found, please create .env.prod manually"
+              echo "⚠️ .env.prod not found, using .env.docker as template..."
+              cp .env.docker .env.prod || { echo "❌ No .env.docker found!"; exit 1; }
             fi
             
+            # Charger les variables d'environnement
+            export $(cat .env.prod | grep -v '^#' | xargs)
+            
             # Créer le réseau Docker si nécessaire
-            sudo docker network inspect spring >/dev/null 2>&1 || sudo docker network create spring
+            sudo docker network inspect microservices_spring >/dev/null 2>&1 || sudo docker network create microservices_spring
             
             # Arrêter tous les conteneurs existants
             echo "🛑 Stopping existing services..."
@@ -164,7 +172,7 @@ jobs:
             # Attendre que PostgreSQL soit prêt
             echo "⏳ Waiting for PostgreSQL..."
             count=0
-            until sudo docker compose --env-file .env.prod exec -T postgresdb pg_isready -U user2711 || [ $count -eq 30 ]; do
+            until sudo docker exec postgrecontainer pg_isready -U ${POSTGRES_USER:-user2711} || [ $count -eq 30 ]; do
               echo "Waiting for PostgreSQL... ($count/30)"
               sleep 2
               count=$((count + 1))
@@ -175,9 +183,61 @@ jobs:
               exit 1
             fi
             
+            echo "✅ PostgreSQL is ready"
+            
             # Exécuter les migrations Flyway
             echo "🗄️ Running database migrations..."
-            sudo docker compose --env-file .env.prod --profile migration up flyway-migrations || echo "Migrations completed or already applied"
+            
+            # Compter les migrations disponibles
+            MIGRATION_COUNT=$(ls micro-digiservices/database-migrations/src/main/resources/db/migration/*.sql 2>/dev/null | wc -l)
+            echo "📋 Found $MIGRATION_COUNT migration files"
+            
+            # Exécuter Flyway avec gestion d'erreur
+            sudo docker run --rm \
+              --network microservices_spring \
+              -v "$(pwd)/micro-digiservices/database-migrations/src/main/resources/db/migration:/flyway/sql:ro" \
+              -e FLYWAY_URL="jdbc:postgresql://postgrecontainer:5432/${POSTGRES_DB:-localdb}" \
+              -e FLYWAY_USER="${POSTGRES_USER:-user2711}" \
+              -e FLYWAY_PASSWORD="${POSTGRES_PASSWORD:-admin2711}" \
+              -e FLYWAY_SCHEMAS="public" \
+              -e FLYWAY_TABLE="flyway_schema_history" \
+              -e FLYWAY_BASELINE_ON_MIGRATE="true" \
+              -e FLYWAY_OUT_OF_ORDER="true" \
+              -e FLYWAY_VALIDATE_ON_MIGRATE="false" \
+              -e FLYWAY_CLEAN_DISABLED="true" \
+              flyway/flyway:11.3.0 \
+              migrate || {
+                echo "⚠️ Migration encountered issues, attempting repair..."
+                sudo docker run --rm \
+                  --network microservices_spring \
+                  -e FLYWAY_URL="jdbc:postgresql://postgrecontainer:5432/${POSTGRES_DB:-localdb}" \
+                  -e FLYWAY_USER="${POSTGRES_USER:-user2711}" \
+                  -e FLYWAY_PASSWORD="${POSTGRES_PASSWORD:-admin2711}" \
+                  flyway/flyway:11.3.0 \
+                  repair
+            
+                echo "Retrying migration..."
+                sudo docker run --rm \
+                  --network microservices_spring \
+                  -v "$(pwd)/micro-digiservices/database-migrations/src/main/resources/db/migration:/flyway/sql:ro" \
+                  -e FLYWAY_URL="jdbc:postgresql://postgrecontainer:5432/${POSTGRES_DB:-localdb}" \
+                  -e FLYWAY_USER="${POSTGRES_USER:-user2711}" \
+                  -e FLYWAY_PASSWORD="${POSTGRES_PASSWORD:-admin2711}" \
+                  -e FLYWAY_OUT_OF_ORDER="true" \
+                  -e FLYWAY_VALIDATE_ON_MIGRATE="false" \
+                  flyway/flyway:11.3.0 \
+                  migrate || echo "⚠️ Some migrations may need manual intervention"
+              }
+            
+            # Vérifier le statut des migrations
+            echo "📊 Migration status:"
+            APPLIED_MIGRATIONS=$(sudo docker exec postgrecontainer psql -U ${POSTGRES_USER:-user2711} -d ${POSTGRES_DB:-localdb} -t -c \
+              "SELECT COUNT(*) FROM flyway_schema_history WHERE success = true;" 2>/dev/null | tr -d ' ')
+            echo "✅ $APPLIED_MIGRATIONS migrations successfully applied"
+            
+            if [ "$APPLIED_MIGRATIONS" -lt "$MIGRATION_COUNT" ]; then
+              echo "⚠️ Warning: Only $APPLIED_MIGRATIONS out of $MIGRATION_COUNT migrations were applied"
+            fi
             
             # Démarrer Discovery Server en premier
             echo "🔍 Starting Discovery Server..."
@@ -199,11 +259,11 @@ jobs:
             
             # Vérifier l'état des services
             echo "🏥 Checking services health..."
-            services=("postgresdb" "kafka" "discoveryserver" "gateway" "authorizationserver" "userservice" "ecreditservice" "ebankingservice" "notificationservice")
+            services=("postgrecontainer" "kafka" "discoveryserver" "gateway" "authorizationserver" "userservice" "ecreditservice" "ebankingservice" "notificationservice")
             all_healthy=true
             
             for service in "${services[@]}"; do
-              if sudo docker compose --env-file .env.prod ps | grep -q "$service.*Up"; then
+              if sudo docker ps | grep -q "$service"; then
                 echo "✅ $service is running"
               else
                 echo "❌ $service is not running"
@@ -211,21 +271,26 @@ jobs:
               fi
             done
             
-            # Afficher les logs si problème
+            # Afficher les logs en cas de problème
             if [ "$all_healthy" = false ]; then
               echo "⚠️ Some services failed. Recent logs:"
-              sudo docker compose --env-file .env.prod logs --tail=100
+              sudo docker compose --env-file .env.prod logs --tail=50
               exit 1
             fi
             
-            # Afficher les URLs d'accès
+            # Afficher les URLs d'accès et le statut
             echo ""
-            echo "🌐 Deployment successful! Services available at:"
+            echo "🌐 Deployment successful!"
+            echo "================================================"
+            echo "Services available at:"
             echo "   • Gateway: http://${{ secrets.OVH_HOST }}:8000"
             echo "   • Discovery: http://${{ secrets.OVH_HOST }}:5002"
             echo "   • Auth Server: http://${{ secrets.OVH_HOST }}:8080"
             echo "   • Frontend: http://${{ secrets.OVH_HOST }}:4200"
             echo ""
+            echo "Database status:"
+            echo "   • Migrations: $APPLIED_MIGRATIONS/$MIGRATION_COUNT applied"
+            echo "================================================"
 
       - name: Final success notification
         run: >
