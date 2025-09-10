@@ -20,7 +20,7 @@ public class DiscoveryServiceApplication {
     @Bean
     public CommandLineRunner startup(BCryptPasswordEncoder encoder) {
         return args -> {
-            var password = encoder.encode("admin2711");
+            var password = encoder.encode("Doukoure2711@!");
             System.out.println(password);
         };
     }
