@@ -322,9 +322,9 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
       # SQL Server connection (different from other services)
-      - SPRING_DATASOURCE_URL=jdbc:sqlserver://10.110.15.2;databaseName=BDCRG;trustServerCertificate=true;encrypt=true
-      - SPRING_DATASOURCE_USERNAME=sa
-      - SPRING_DATASOURCE_PASSWORD=1234567
+      - SPRING_DATASOURCE_URL=jdbc:sqlserver://10.220.220.8;databaseName=BDCRG;trustServerCertificate=true;encrypt=true
+      - SPRING_DATASOURCE_USERNAME=DIGI
+      - SPRING_DATASOURCE_PASSWORD= "@Digi2711@!"
       # Application URLs
       - UI_APP_URL=${UI_APP_URL}
       - BACKEND_APP_URL=${BACKEND_APP_URL}
