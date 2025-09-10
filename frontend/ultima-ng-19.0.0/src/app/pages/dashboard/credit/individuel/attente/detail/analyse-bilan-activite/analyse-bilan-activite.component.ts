@@ -273,8 +273,8 @@ export class AnalyseBilanActiviteComponent {
         }
 
         // Disable location fields
-        this.demandeCreditForm.get('montantDemande')?.disable();
-        this.demandeCreditForm.get('dureeMois')?.disable();
+        // this.demandeCreditForm.get('montantDemande')?.disable();
+        // this.demandeCreditForm.get('dureeMois')?.disable();
         this.demandeCreditForm.get('objetFinancement')?.disable();
         this.demandeCreditForm.get('delegation')?.disable();
         this.demandeCreditForm.get('agence')?.disable();

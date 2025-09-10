@@ -22,7 +22,7 @@ import { DropdownModule } from 'primeng/dropdown';
 import { FileUploadModule } from 'primeng/fileupload';
 import { InputGroupModule } from 'primeng/inputgroup';
 import { InputNumberModule } from 'primeng/inputnumber';
-import { InputText, InputTextModule } from 'primeng/inputtext';
+import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
 import { PanelModule } from 'primeng/panel';
 import { PasswordModule } from 'primeng/password';
@@ -99,6 +99,7 @@ export class DemandeIndComponent implements OnInit {
         typePropriete: '',
         nombreAnneeHabitation: 0,
         natureClient: 'Individuel',
+        nomPersonneMorale: '', // NOUVEAU CHAMP
         delegation: 0,
         agence: 0,
         pos: 0,
@@ -252,21 +253,26 @@ export class DemandeIndComponent implements OnInit {
     onNatureClientChange(event: any): void {
         const natureClient = event.value;
 
+        // Réinitialiser le champ nom_personne_morale si on passe à Individuel
+        if (natureClient === 'Individuel') {
+            this.formData.nomPersonneMorale = '';
+        }
+
         // Adapter certains champs en fonction de la nature du client
         if (natureClient === 'PME') {
             // Pour les PME, on pourrait adapter certains libellés ou validations
             this.messageService.add({
                 severity: 'info',
                 summary: 'Information',
-                detail: 'Formulaire adapté pour les PME',
-                life: 3000
+                detail: "Formulaire adapté pour les PME. Veuillez renseigner le nom de l'entreprise.",
+                life: 5000
             });
         } else if (natureClient === 'Groupe Solidaire') {
             // Pour les groupes solidaires, informer l'utilisateur
             this.messageService.add({
                 severity: 'info',
                 summary: 'Information',
-                detail: 'Pour un groupe solidaire, veuillez renseigner le représentant du groupe',
+                detail: 'Pour un groupe solidaire, veuillez renseigner le nom du groupe et les informations du représentant.',
                 life: 5000
             });
         }
@@ -652,7 +658,9 @@ export class DemandeIndComponent implements OnInit {
             pos: form.value.pos?.id || this.formData.pos,
 
             // Nature du client
-            natureClient: this.formData.natureClient || 'Individuel', // NOUVEAU
+            // Nature du client et nom personne morale
+            natureClient: this.formData.natureClient || 'Individuel',
+            nomPersonneMorale: this.formData.nomPersonneMorale || '', // NOUVEAU
 
             // Activités
             typeActivite: this.selectedActivite ? this.selectedActivite.code.toString() : this.formData.typeActivite,
@@ -797,6 +805,7 @@ export class DemandeIndComponent implements OnInit {
             typePropriete: '',
             nombreAnneeHabitation: 0,
             natureClient: 'Individuel',
+            nomPersonneMorale: '', // NOUVEAU
             delegation: 0,
             agence: 0,
             pos: 0,

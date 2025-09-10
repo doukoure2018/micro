@@ -162,12 +162,32 @@
         <ng-template pTemplate="header">
             <div class="flex justify-content-between align-items-center p-3">
                 <h2>Prévision de Trésorerie</h2>
-                <div class="flex gap-2">
-                    <!-- <button pButton type="button" icon="pi pi-calculator" label="Appliquer remboursements suggérés"
-                        class="p-button-help" (click)="applySuggestedRepayments()"
-                        pTooltip="Appliquer les mensualités calculées aux mois 1-12">
-                    </button> -->
+                <div class="flex gap-2 align-items-center">
+                    <!-- Groupe de boutons d'impression -->
+                    @if (peutImprimer()) {
+                    <div class="print-buttons-group flex gap-2 mr-3">
+                        <!-- Bouton d'impression principal -->
+                        <p-button label="Imprimer tableau" icon="pi pi-print"
+                            [style]="{'background': '#28a745', 'border-color': '#28a745'}" size="small"
+                            (onClick)="imprimerTableauTresorerie()"
+                            pTooltip="Imprimer le tableau de prévision de trésorerie" tooltipPosition="bottom">
+                        </p-button>
 
+                        <!-- Menu déroulant pour options d'impression -->
+                        <p-splitButton label="Options" icon="pi pi-download" size="small" severity="secondary"
+                            (onClick)="previsualiserTableauTresorerie()" [model]="splitButtonOptions">
+                        </p-splitButton>
+                    </div>
+                    } @else {
+                    <div class="print-disabled-info mr-3">
+                        <p-button label="Impression non disponible" icon="pi pi-print" disabled severity="secondary"
+                            size="small" pTooltip="Saisissez au moins un mois de données pour pouvoir imprimer"
+                            tooltipPosition="bottom">
+                        </p-button>
+                    </div>
+                    }
+
+                    <!-- Boutons existants -->
                     <button pButton type="button"
                         [icon]="state().viewMode === 'saisie' ? 'pi pi-table' : 'pi pi-pencil'"
                         [label]="state().viewMode === 'saisie' ? 'Vue d\'ensemble' : 'Mode saisie'"
@@ -176,6 +196,25 @@
                 </div>
             </div>
         </ng-template>
+        @if (peutImprimer()) {
+        <div class="print-info-banner p-2 bg-blue-50 border-round border-1 border-blue-200 mb-3">
+            <div class="flex align-items-center justify-content-between text-sm">
+                <div class="flex align-items-center gap-2">
+                    <i class="pi pi-info-circle text-blue-600"></i>
+                    <span class="text-blue-800">
+                        Tableau prêt pour impression - {{ getApercuImpression() }}
+                    </span>
+                </div>
+                <div class="flex gap-2">
+                    <p-button label="Aperçu" icon="pi pi-eye" size="small" outlined
+                        (onClick)="previsualiserTableauTresorerie()">
+                    </p-button>
+                    <p-button label="Imprimer" icon="pi pi-print" size="small" (onClick)="imprimerTableauTresorerie()">
+                    </p-button>
+                </div>
+            </div>
+        </div>
+        }
         <!-- Section des paramètres du crédit (modifiée) -->
         <div class="credit-params-form mb-4" *ngIf="!demandeIndividuel()">
             <p-fieldset legend="Paramètres du crédit" [toggleable]="true" [collapsed]="false">
@@ -532,6 +571,13 @@
         <!-- Vue d'ensemble -->
         <app-mode-vue-tresorerie *ngIf="state().viewMode === 'vue-ensemble'" [tresorerieForm]="tresorerieForm"
             [creditParams]="creditParams()">
+            <ng-template #printActions>
+                <div class="print-actions-in-table" *ngIf="peutImprimer()">
+                    <p-button label="Imprimer ce tableau" icon="pi pi-print" size="small" class="p-button-success"
+                        (onClick)="imprimerTableauTresorerie()">
+                    </p-button>
+                </div>
+            </ng-template>
         </app-mode-vue-tresorerie>
 
         <!-- Boutons d'action en bas de page -->
@@ -558,7 +604,13 @@
                 <button pButton type="button" label="Retour" class="p-button-outlined" icon="pi pi-arrow-left"
                     [routerLink]="['/dashboards/credit/individuel/attente/detail', demandeIndividuelId]">
                 </button>
-
+                @if (peutImprimer()) {
+                <div class="print-footer-actions flex gap-2">
+                    <p-button label="Imprimer tableau" icon="pi pi-print" size="small" class="p-button-success"
+                        (onClick)="imprimerTableauTresorerie()">
+                    </p-button>
+                </div>
+                }
                 <button pButton type="button" label="Sauvegarder tout" icon="pi pi-save" class="p-button-primary"
                     [loading]="state().saving" [disabled]="!canSave()" (click)="savePrevisions()">
                 </button>

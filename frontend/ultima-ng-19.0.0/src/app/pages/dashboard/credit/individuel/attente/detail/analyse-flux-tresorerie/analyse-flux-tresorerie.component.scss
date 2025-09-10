@@ -431,4 +431,102 @@
         background: white !important;
         border: 2px solid #000 !important;
     }
+
+    .print-buttons-group .p-button {
+        white-space: nowrap;
+    }
+
+    .print-info-banner {
+        animation: slideInDown 0.3s ease-out;
+    }
+
+    @keyframes slideInDown {
+        from {
+            transform: translateY(-10px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .print-disabled-info .p-button {
+        opacity: 0.6;
+    }
+
+    .print-footer-actions,
+    .print-actions-in-table {
+        white-space: nowrap;
+    }
+
+    .print-summary-card {
+        border-left: 4px solid #28a745;
+    }
+
+    .resume-impression {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+    }
+
+    .action-impression {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        height: 100%;
+    }
+
+    /* Responsive design pour les boutons d'impression */
+    @media (max-width: 768px) {
+        .print-buttons-group {
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .print-buttons-group .p-button {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .print-info-banner .flex {
+            flex-direction: column;
+            gap: 10px;
+            text-align: center;
+        }
+
+        .actions-footer {
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .actions-footer .flex {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    /* Styles pour cacher certains éléments lors de l'impression */
+    @media print {
+        .print-buttons-group,
+        .print-info-banner,
+        .print-footer-actions,
+        .print-summary-card,
+        .actions-footer,
+        .p-card-header,
+        .pi,
+        .p-button {
+            display: none !important;
+        }
+    }
+
+    /* Styles pour améliorer la lisibilité en mode vue */
+    .month-tabs {
+        margin-bottom: 20px;
+    }
+
+    .status-indicator {
+        flex: 1;
+    }
 }

@@ -27,6 +27,8 @@ import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { ModeVueTresorerieComponent } from './mode-vue-tresorerie/mode-vue-tresorerie.component';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TresorerieStateService } from '@/service/tresorerie-state.service';
+import { TresoreriePrintService } from '@/service/TresoreriePrintService';
+import { SplitButtonModule } from 'primeng/splitbutton';
 
 @Component({
     selector: 'app-analyse-flux-tresorerie',
@@ -52,7 +54,8 @@ import { TresorerieStateService } from '@/service/tresorerie-state.service';
         ProgressBarModule,
         TooltipModule,
         BadgeModule,
-        ModeVueTresorerieComponent
+        ModeVueTresorerieComponent,
+        SplitButtonModule
     ],
     templateUrl: './analyse-flux-tresorerie.component.html',
     styleUrl: './analyse-flux-tresorerie.component.scss',
@@ -68,6 +71,8 @@ export class AnalyseFluxTresorerieComponent {
     private cdr = inject(ChangeDetectorRef);
     private destroyRef = inject(DestroyRef);
     public tresorerieState = inject(TresorerieStateService);
+
+    private tresoreriePrintService = inject(TresoreriePrintService);
 
     // Données de la demande individuelle
     demandeIndividuelId: number | null = null;
@@ -2755,4 +2760,218 @@ export class AnalyseFluxTresorerieComponent {
         }
         return cumuls;
     }
+
+    /**
+     * Méthode pour imprimer le tableau de trésorerie
+     */
+    imprimerTableauTresorerie(): void {
+        if (!this.tresorerieForm) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Attention',
+                detail: "Aucune donnée de trésorerie disponible pour l'impression"
+            });
+            return;
+        }
+
+        // Vérifier s'il y a des données à imprimer
+        const hasSomeData = this.getFormSummary().moisRenseignes > 0;
+
+        if (!hasSomeData) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Attention',
+                detail: "Veuillez saisir au moins un mois de données avant d'imprimer"
+            });
+            return;
+        }
+
+        try {
+            // Utiliser le service d'impression
+            this.tresoreriePrintService.imprimerTableauTresorerie(this.tresorerieForm, this.creditParams(), this.demandeIndividuel());
+
+            this.messageService.add({
+                severity: 'success',
+                summary: 'Impression',
+                detail: "Fenêtre d'impression ouverte"
+            });
+        } catch (error) {
+            console.error("Erreur lors de l'impression:", error);
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Erreur',
+                detail: "Impossible de générer le document d'impression"
+            });
+        }
+    }
+
+    /**
+     * Vérifie si l'impression est possible
+     */
+    peutImprimer(): boolean {
+        return !!(this.tresorerieForm && this.getFormSummary().moisRenseignes > 0);
+    }
+
+    /**
+     * Obtient un aperçu des données pour l'impression
+     */
+    getApercuImpression(): string {
+        if (!this.peutImprimer()) return 'Aucune donnée disponible';
+
+        const summary = this.getFormSummary();
+        const creditParams = this.creditParams();
+        const demandeur = this.demandeIndividuel();
+
+        const nomClient = demandeur ? `${demandeur.prenom} ${demandeur.nom}` : creditParams.clientNom || 'Client non défini';
+
+        const montant = this.formatMontant(creditParams.montantCredit);
+
+        return `${nomClient} - ${montant} - ${summary.moisRenseignes} mois renseignés`;
+    }
+
+    /**
+     * Prévisualisation avant impression
+     */
+    previsualiserTableauTresorerie(): void {
+        if (!this.peutImprimer()) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Attention',
+                detail: 'Aucune donnée disponible pour la prévisualisation'
+            });
+            return;
+        }
+
+        // Simplement ouvrir l'impression - le navigateur proposera la prévisualisation
+        this.imprimerTableauTresorerie();
+    }
+
+    /**
+     * Export en PDF (via impression navigateur)
+     */
+    exporterTableauPDF(): void {
+        if (!this.peutImprimer()) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Attention',
+                detail: "Aucune donnée disponible pour l'export"
+            });
+            return;
+        }
+
+        this.messageService.add({
+            severity: 'info',
+            summary: 'Export PDF',
+            detail: 'Dans la fenêtre d\'impression, choisissez "Enregistrer au format PDF"'
+        });
+
+        // Délai pour que l'utilisateur voie le message
+        setTimeout(() => {
+            this.imprimerTableauTresorerie();
+        }, 1000);
+    }
+
+    /**
+     * Validation avant impression
+     */
+    private validerDonneesAvantImpression(): boolean {
+        const summary = this.getFormSummary();
+
+        if (summary.moisRenseignes === 0) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Données insuffisantes',
+                detail: 'Veuillez saisir au moins un mois de données'
+            });
+            return false;
+        }
+
+        if (!this.creditParams().montantCredit || this.creditParams().montantCredit === 0) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Paramètres incomplets',
+                detail: "Le montant du crédit n'est pas défini"
+            });
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Impression avec options avancées
+     */
+    imprimerAvecOptions(
+        options: {
+            inclureAnalyse?: boolean;
+            inclureSignature?: boolean;
+            titre?: string;
+        } = {}
+    ): void {
+        if (!this.validerDonneesAvantImpression()) {
+            return;
+        }
+
+        try {
+            this.tresoreriePrintService.imprimerTableauTresorerie(this.tresorerieForm, this.creditParams(), this.demandeIndividuel());
+
+            this.messageService.add({
+                severity: 'success',
+                summary: 'Impression',
+                detail: 'Document généré avec les options demandées'
+            });
+        } catch (error) {
+            console.error('Erreur impression avec options:', error);
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Erreur',
+                detail: 'Impossible de générer le document avec ces options'
+            });
+        }
+    }
+
+    /**
+     * Obtient un résumé des données pour affichage dans l'interface
+     */
+    getResumeImpressionPourAffichage(): any {
+        if (!this.peutImprimer()) {
+            return {
+                status: 'unavailable',
+                message: 'Données insuffisantes',
+                details: 'Veuillez saisir au moins un mois de prévisions'
+            };
+        }
+
+        const summary = this.getFormSummary();
+        const creditParams = this.creditParams();
+
+        return {
+            status: 'ready',
+            message: 'Prêt pour impression',
+            details: {
+                moisRenseignes: summary.moisRenseignes,
+                moisSauvegardes: summary.moisSauvegardes,
+                client: this.demandeIndividuel() ? `${this.demandeIndividuel().prenom} ${this.demandeIndividuel().nom}` : creditParams.clientNom,
+                montantCredit: this.formatMontant(creditParams.montantCredit),
+                duree: `${creditParams.duree} mois`,
+                tauxInteret: `${creditParams.tauxInteret}%`
+            }
+        };
+    }
+
+    public splitButtonOptions = [
+        {
+            label: 'Prévisualiser',
+            icon: 'pi pi-eye',
+            command: () => this.previsualiserTableauTresorerie()
+        },
+        {
+            separator: true
+        },
+        {
+            label: 'Exporter en PDF',
+            icon: 'pi pi-file-pdf',
+            command: () => this.exporterTableauPDF()
+        }
+    ];
 }

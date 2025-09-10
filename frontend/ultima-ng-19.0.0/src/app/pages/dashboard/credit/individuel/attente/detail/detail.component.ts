@@ -986,4 +986,612 @@ export class DetailComponent {
             }
         });
     }
+
+    /**
+     * Imprimer le dossier complet de la demande
+     */
+    imprimerDossierComplet(): void {
+        const demande = this.state().demandeIndividuel;
+        if (!demande) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Erreur',
+                detail: 'Aucune demande à imprimer'
+            });
+            return;
+        }
+
+        const printWindow = window.open('', '_blank', 'width=1200,height=800');
+        if (!printWindow) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Erreur',
+                detail: "Impossible d'ouvrir la fenêtre d'impression"
+            });
+            return;
+        }
+
+        const htmlContent = this.genererHTMLDossierComplet();
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+
+        // Attendre le chargement puis imprimer
+        printWindow.onload = () => {
+            setTimeout(() => {
+                printWindow.print();
+            }, 500);
+        };
+    }
+
+    /**
+     * Prévisualiser le dossier avant impression
+     */
+    previsualiserDossier(): void {
+        const previewWindow = window.open('', '_blank', 'width=1200,height=800');
+        if (!previewWindow) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Erreur',
+                detail: "Impossible d'ouvrir la fenêtre de prévisualisation"
+            });
+            return;
+        }
+
+        const htmlContent = this.genererHTMLDossierComplet(true);
+        previewWindow.document.write(htmlContent);
+        previewWindow.document.close();
+    }
+
+    /**
+     * Exporter le dossier en PDF
+     */
+    exporterPDF(): void {
+        this.messageService.add({
+            severity: 'info',
+            summary: 'Export PDF',
+            detail: 'Choisissez "Enregistrer en PDF" dans la fenêtre d\'impression'
+        });
+
+        setTimeout(() => {
+            this.imprimerDossierComplet();
+        }, 1000);
+    }
+
+    /**
+     * Générer le HTML complet du dossier
+     */
+    private genererHTMLDossierComplet(isPreview: boolean = false): string {
+        const demande = this.state().demandeIndividuel;
+        const dateImpression = new Date().toLocaleDateString('fr-FR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        return `
+        <!DOCTYPE html>
+        <html lang="fr">
+        <head>
+            <meta charset="utf-8">
+            <title>Demande de Crédit - ${demande?.nom} ${demande?.prenom}</title>
+            <style>
+                ${this.getStylesImpression()}
+            </style>
+        </head>
+        <body>
+            <div class="print-container">
+                ${isPreview ? this.genererBoutonsPreview() : ''}
+                
+                <!-- En-tête du document -->
+                <div class="header">
+                    <h1>DEMANDE DE CRÉDIT - GROS DOSSIER</h1>
+                    <div class="header-info">
+                        <div>
+                            <strong>N° Dossier:</strong> ${demande?.demandeIndividuelId}<br>
+                            <strong>Date de demande:</strong> ${this.formatDateForPrint(demande?.createdAt)}<br>
+                            <strong>Date d'impression:</strong> ${dateImpression}
+                        </div>
+                        <div>
+                            <strong>Agence:</strong> ${this.state().pointVente?.libele || 'Non assigné'}<br>
+                            <strong>Statut:</strong> ${demande?.statutDemande}<br>
+                            <strong>État de validation:</strong> ${demande?.validationState}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 1: Informations sur le membre/client -->
+                <div class="section">
+                    <h2>1. INFORMATIONS SUR LE MEMBRE/CLIENT</h2>
+                    <table class="info-table">
+                        <tr>
+                            <td class="label">Nom et Prénoms:</td>
+                            <td class="value">${demande?.nom} ${demande?.prenom}</td>
+                            <td class="label">Numéro membre:</td>
+                            <td class="value">${demande?.numeroMembre}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Type de pièce:</td>
+                            <td class="value">${demande?.typePiece}</td>
+                            <td class="label">Référence:</td>
+                            <td class="value">${demande?.numId}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Date de naissance:</td>
+                            <td class="value">${this.formatDateForPrint(demande?.dateNaissance)}</td>
+                            <td class="label">Lieu de naissance:</td>
+                            <td class="value">${demande?.lieuxNaissance}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Genre:</td>
+                            <td class="value">${demande?.genre}</td>
+                            <td class="label">Situation matrimoniale:</td>
+                            <td class="value">${demande?.situationMatrimoniale}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Personnes à charge:</td>
+                            <td class="value">${demande?.nombrePersonneEnCharge}</td>
+                            <td class="label">Enfants scolarisés:</td>
+                            <td class="value">${demande?.nombrePersonneScolarise}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Adresse:</td>
+                            <td class="value" colspan="3">${demande?.addresseDomicileContact}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Années à l'adresse:</td>
+                            <td class="value">${demande?.nombreAnneeHabitation} ans</td>
+                            <td class="label">Type de propriété:</td>
+                            <td class="value">${demande?.typePropriete}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Section 2: Activités -->
+                <div class="section">
+                    <h2>2. ACTIVITÉS</h2>
+                    <table class="info-table">
+                        <tr>
+                            <td class="label">Type d'activité:</td>
+                            <td class="value">${demande?.currentActivite}</td>
+                            <td class="label">Sous-activité:</td>
+                            <td class="value">${demande?.descriptionActivite}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Description:</td>
+                            <td class="value" colspan="3">${demande?.descriptionActivite}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Années d'activité:</td>
+                            <td class="value">${demande?.nombreAnneeActivite} ans</td>
+                            <td class="label">Adresse du lieu:</td>
+                            <td class="value">${demande?.adresseLieuActivite}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Autres activités:</td>
+                            <td class="value">${demande?.autreActivite || 'Aucune'}</td>
+                            <td class="label">Lieu d'activité:</td>
+                            <td class="value">${demande?.lieuActivite || 'N/A'}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Section 3: Modalités de la demande -->
+                <div class="section">
+                    <h2>3. MODALITÉS DE LA DEMANDE</h2>
+                    <table class="info-table">
+                        <tr>
+                            <td class="label">Montant demandé:</td>
+                            <td class="value highlight">${this.formatCurrency(demande?.montantDemande)}</td>
+                            <td class="label">Durée:</td>
+                            <td class="value">${demande?.dureeDemande} Mois</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Périodicité:</td>
+                            <td class="value">${demande?.periodiciteRemboursement}</td>
+                            <td class="label">Taux d'intérêt:</td>
+                            <td class="value">${demande?.tauxInteret}%</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Période de différé:</td>
+                            <td class="value">${demande?.periodeDiffere} Mois</td>
+                            <td class="label">Nombre d'échéances:</td>
+                            <td class="value">${demande?.nombreEcheance}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Échéance:</td>
+                            <td class="value highlight">${this.formatCurrency(demande?.echeance)}</td>
+                            <td class="label">Objet du crédit:</td>
+                            <td class="value">${demande?.objectCredit}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Détail de l'objet:</td>
+                            <td class="value" colspan="3">${demande?.detailObjectCredit}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Type de crédit:</td>
+                            <td class="value">${demande?.statutCredit}</td>
+                            <td class="label">Rang de crédit:</td>
+                            <td class="value">${demande?.rangCredit}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Section 4: Garanties -->
+                <div class="section">
+                    <h2>4. GARANTIES PROPOSÉES</h2>
+                    <table class="garanties-table">
+                        <thead>
+                            <tr>
+                                <th>Type de Garantie</th>
+                                <th>Nature/Description</th>
+                                <th>Valeur de la garantie</th>
+                                <th>Valeur d'emprunt</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${this.genererLignesGaranties()}
+                        </tbody>
+                        <tfoot>
+                            <tr class="total-row">
+                                <td colspan="2">TOTAL</td>
+                                <td>${this.formatCurrency(this.getTotalGaranties())}</td>
+                                <td>${this.formatCurrency(this.getTotalEmprunte())}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <!-- Section 5: Avis (si disponibles) -->
+                ${this.genererSectionAvis()}
+
+                <!-- Pied de page -->
+                <div class="footer">
+                    <div class="signatures">
+                        <div class="signature-box">
+                            <p>Signature du demandeur</p>
+                            <div class="signature-line"></div>
+                        </div>
+                        <div class="signature-box">
+                            <p>Signature de l'agent</p>
+                            <div class="signature-line"></div>
+                        </div>
+                        <div class="signature-box">
+                            <p>Signature du responsable</p>
+                            <div class="signature-line"></div>
+                        </div>
+                    </div>
+                    <div class="footer-info">
+                        <p>Document généré le ${dateImpression}</p>
+                        <p>Page <span class="page-number"></span></p>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+    }
+
+    /**
+     * Générer les lignes de garanties pour l'impression
+     */
+    private genererLignesGaranties(): string {
+        const garanties = this.state().demandeIndividuel?.garanties || [];
+
+        if (garanties.length === 0) {
+            return '<tr><td colspan="4" class="text-center">Aucune garantie proposée</td></tr>';
+        }
+
+        return garanties
+            .map(
+                (g) => `
+        <tr>
+            <td>${g.typeGarantie}</td>
+            <td>${g.descriptionGarantie}</td>
+            <td class="text-right">${this.formatCurrency(g.valeurGarantie)}</td>
+            <td class="text-right">${this.formatCurrency(g.valeurEmprunte)}</td>
+        </tr>
+    `
+            )
+            .join('');
+    }
+
+    /**
+     * Générer la section des avis pour l'impression
+     */
+    private genererSectionAvis(): string {
+        const avisList = this.state().avisList || [];
+
+        if (avisList.length === 0) {
+            return '';
+        }
+
+        return `
+        <div class="section">
+            <h2>5. AVIS ET RECOMMANDATIONS</h2>
+            ${avisList
+                .map(
+                    (avis) => `
+                <div class="avis-item">
+                    <div class="avis-header">
+                        <strong>${avis.userFullName || 'Utilisateur'}</strong>
+                        <span>${this.formatDate(avis.dateCreation)}</span>
+                    </div>
+                    <div class="avis-content">
+                        ${avis.libele}
+                    </div>
+                </div>
+            `
+                )
+                .join('')}
+        </div>
+    `;
+    }
+
+    /**
+     * Générer les boutons de prévisualisation
+     */
+    private genererBoutonsPreview(): string {
+        return `
+        <div class="preview-controls">
+            <button onclick="window.print()" class="btn-print">
+                Imprimer
+            </button>
+            <button onclick="window.close()" class="btn-close">
+                Fermer
+            </button>
+        </div>
+    `;
+    }
+
+    /**
+     * Formater la date pour l'impression
+     */
+    private formatDateForPrint(date: Date | string | undefined): string {
+        if (!date) return 'N/A';
+
+        const d = new Date(date);
+        if (isNaN(d.getTime())) return 'N/A';
+
+        return d.toLocaleDateString('fr-FR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+    }
+
+    /**
+     * Formater la monnaie pour l'impression
+     */
+    private formatCurrency(amount: number | undefined): string {
+        if (!amount) return '0 GNF';
+
+        return new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: 'GNF',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(amount);
+    }
+
+    /**
+     * Obtenir les styles CSS pour l'impression
+     */
+    private getStylesImpression(): string {
+        return `
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.5;
+            color: #333;
+        }
+
+        .print-container {
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 10mm;
+        }
+
+        .preview-controls {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #333;
+            padding: 10px;
+            text-align: center;
+            z-index: 1000;
+
+            @media print {
+                display: none;
+            }
+        }
+
+        .preview-controls button {
+            margin: 0 10px;
+            padding: 8px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+        }
+
+        .btn-print {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-close {
+            background: #6c757d;
+            color: white;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #333;
+        }
+
+        .header h1 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        .header-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            font-size: 11px;
+        }
+
+        .section {
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+        }
+
+        .section h2 {
+            background: #f0f0f0;
+            padding: 8px;
+            font-size: 14px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+        }
+
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .info-table td {
+            padding: 6px;
+            border: 1px solid #ddd;
+        }
+
+        .info-table .label {
+            background: #f8f9fa;
+            font-weight: bold;
+            width: 25%;
+        }
+
+        .info-table .value {
+            width: 25%;
+        }
+
+        .info-table .highlight {
+            background: #fff3cd;
+            font-weight: bold;
+        }
+
+        .garanties-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .garanties-table th {
+            background: #333;
+            color: white;
+            padding: 8px;
+            text-align: left;
+            border: 1px solid #333;
+        }
+
+        .garanties-table td {
+            padding: 6px;
+            border: 1px solid #ddd;
+        }
+
+        .garanties-table .total-row {
+            background: #f0f0f0;
+            font-weight: bold;
+        }
+
+        .garanties-table .text-right {
+            text-align: right;
+        }
+
+        .garanties-table .text-center {
+            text-align: center;
+        }
+
+        .avis-item {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+
+        .avis-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .avis-content {
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #333;
+        }
+
+        .signatures {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+
+        .signature-box {
+            width: 30%;
+            text-align: center;
+        }
+
+        .signature-line {
+            margin-top: 50px;
+            border-bottom: 1px solid #333;
+        }
+
+        .footer-info {
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+        }
+
+        @media print {
+            body {
+                margin: 0;
+            }
+
+            .print-container {
+                padding: 5mm;
+            }
+
+            .section {
+                page-break-inside: avoid;
+            }
+
+            @page {
+                margin: 10mm;
+                size: A4;
+            }
+
+            .page-number:after {
+                content: counter(page);
+            }
+        }
+    `;
+    }
 }

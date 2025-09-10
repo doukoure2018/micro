@@ -95,10 +95,11 @@ export class AppMenu {
                                   icon: 'pi pi-fw pi-hourglass',
                                   routerLink: ['/dashboards/stock']
                               },
+
                               {
-                                  label: 'Flux de Trésorerie',
+                                  label: 'Rapprochement Caisse',
                                   icon: 'pi pi-fw pi-hourglass',
-                                  routerLink: ['/dashboards/prevision-tresorerie']
+                                  routerLink: ['/dashboards/rapprochement-caisse']
                               }
                           ]
                         : this.user?.role === 'DA'

@@ -46,6 +46,42 @@
             </div>
         </div>
 
+        <!-- Section Impression du Dossier Complet -->
+        <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
+            <div class="bg-green-600 text-white px-4 py-3">
+                <h2 class="font-bold flex items-center gap-2">
+                    <i class="pi pi-print"></i>
+                    IMPRESSION DU DOSSIER
+                </h2>
+            </div>
+
+            <div class="p-6 bg-green-50">
+                <div class="text-center">
+                    <p class="text-gray-700 mb-4">
+                        <i class="pi pi-info-circle text-blue-600 mr-2"></i>
+                        Générer et imprimer le dossier complet de demande de crédit
+                    </p>
+
+                    <div class="flex justify-center gap-3 flex-wrap">
+                        <button pButton type="button" (click)="imprimerDossierComplet()"
+                            class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-bold shadow-lg"
+                            icon="pi pi-print" label="Imprimer le Dossier Complet">
+                        </button>
+
+                        <button pButton type="button" (click)="previsualiserDossier()"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold shadow-lg"
+                            icon="pi pi-eye" label="Prévisualiser">
+                        </button>
+
+                        <button pButton type="button" (click)="exporterPDF()"
+                            class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold shadow-lg"
+                            icon="pi pi-file-pdf" label="Exporter en PDF">
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Section 1: INFORMATIONS SUR LE MEMBRE/CLIENT -->
         <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
             <div class="bg-gray-700 text-white px-4 py-2">
@@ -307,6 +343,8 @@
                 </div>
             </div>
         </div>
+
+
 
         <!-- Section 4: GARANTIES PROPOSÉES -->
         <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">

@@ -23,6 +23,7 @@ export interface DemandeIndividuel {
     pos: number;
 
     natureClient?: string;
+    nomPersonneMorale?: string; // Nouveau champ pour le nom de la personne morale si applicable
     // Nouveaux champs - Informations personnelles
     typePiece: "Carte nationale d'identite" | "Carte d'identite Biometrique" | "Possession d'état" | "Carte d'identite personnelle" | 'Passeport';
     numId: string;

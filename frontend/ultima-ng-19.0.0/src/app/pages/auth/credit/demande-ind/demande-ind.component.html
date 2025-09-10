@@ -45,7 +45,88 @@
         <!-- SECTION 1: INFORMATIONS SUR LE MEMBRE/CLIENT -->
         <p-panel header="1. INFORMATIONS SUR LE MEMBRE/CLIENT" [toggleable]="true" class="mb-3">
             <div class="grid">
+                <div class="col-12 md:col-6 lg:col-4">
+                    <label for="natureClient" class="block mb-2">Nature du client *</label>
+                    <p-dropdown [(ngModel)]="formData.natureClient" name="natureClient" [options]="natureClientOptions"
+                        optionLabel="label" optionValue="value" placeholder="Sélectionner la nature du client" required
+                        [disabled]="state().submitting" styleClass="w-full" (onChange)="onNatureClientChange($event)">
+                        <ng-template pTemplate="selectedItem" let-option>
+                            <div class="flex align-items-center" *ngIf="option">
+                                <i [class]="option.icon + ' mr-2'"></i>
+                                <span>{{ option.label }}</span>
+                            </div>
+                        </ng-template>
+                        <ng-template pTemplate="item" let-option>
+                            <div class="flex align-items-center">
+                                <i [class]="option.icon + ' mr-2'"></i>
+                                <span>{{ option.label }}</span>
+                            </div>
+                        </ng-template>
+                    </p-dropdown>
+                </div>
+                <div class="col-12 md:col-6 lg:col-8">
+                    <!-- Message d'information selon la nature sélectionnée -->
+                    @if(formData.natureClient === 'PME' || formData.natureClient === 'Groupe Solidaire') {
+                    <div class="col-12 md:col-6 lg:col-4">
+                        <label for="nomPersonneMorale" class="block mb-2">
+                            @if(formData.natureClient === 'PME') {
+                            <span>Nom de l'entreprise *</span>
+                            }
+                            @if(formData.natureClient === 'Groupe Solidaire') {
+                            <span>Nom du groupe solidaire *</span>
+                            }
+                        </label>
+                        <div class="p-inputgroup">
+                            @if(formData.natureClient === 'PME') {
+                            <span class="p-inputgroup-addon">
+                                <i class="pi pi-building"></i>
+                            </span>
+                            }
+                            @if(formData.natureClient === 'Groupe Solidaire') {
+                            <span class="p-inputgroup-addon">
+                                <i class="pi pi-users"></i>
+                            </span>
+                            }
+                            <input pInputText [(ngModel)]="formData.nomPersonneMorale" name="nomPersonneMorale"
+                                id="nomPersonneMorale"
+                                [required]="formData.natureClient === 'PME' || formData.natureClient === 'Groupe Solidaire'"
+                                [disabled]="state().submitting" class="w-full"
+                                [placeholder]="formData.natureClient === 'PME' ? 'Ex: Entreprise ABC SARL' : 'Ex: Groupe Solidaire Les Entrepreneurs'">
+                        </div>
+                    </div>
+                    }
+                </div>
 
+                <div class="col-12 md:col-6 lg:col-4">
+                    <!-- Messages d'information selon la nature sélectionnée -->
+                    @if(formData.natureClient === 'PME') {
+                    <p-message severity="info"
+                        text="Renseignez le nom de l'entreprise et les informations du représentant légal ci-dessus.">
+                    </p-message>
+                    }
+                    @if(formData.natureClient === 'Groupe Solidaire') {
+                    <p-message severity="info"
+                        text="Renseignez le nom du groupe et les informations du chef de groupe ci-dessus.">
+                    </p-message>
+                    }
+                    @if(formData.natureClient === 'Autre') {
+                    <p-message severity="warn" text="Veuillez préciser la nature dans la description de l'activité.">
+                    </p-message>
+                    }
+                    @if(formData.natureClient === 'Individuel') {
+                    <p-message severity="success"
+                        text="Demande de crédit individuel - Remplissez vos informations personnelles.">
+                    </p-message>
+                    }
+                </div>
+                @if((formData.natureClient === 'PME' || formData.natureClient === 'Groupe Solidaire') &&
+                !formData.nomPersonneMorale && demandeForm.submitted) {
+                <div class="col-12">
+                    <p-message severity="error"
+                        text="Le nom de la personne morale est obligatoire pour ce type de client.">
+                    </p-message>
+                </div>
+                }
                 <!-- Row 1 -->
                 <div class="col-12 md:col-6 lg:col-3">
                     <label for="nom" class="block mb-2">Nom et Prénoms *</label>
@@ -170,42 +251,13 @@
                         <div class="px-2">Nature du Client</div>
                     </p-divider>
                 </div>
-                <div class="col-12 md:col-6 lg:col-4">
-                    <label for="natureClient" class="block mb-2">Nature du client *</label>
-                    <p-dropdown [(ngModel)]="formData.natureClient" name="natureClient" [options]="natureClientOptions"
-                        optionLabel="label" optionValue="value" placeholder="Sélectionner la nature du client" required
-                        [disabled]="state().submitting" styleClass="w-full" (onChange)="onNatureClientChange($event)">
-                        <ng-template pTemplate="selectedItem" let-option>
-                            <div class="flex align-items-center" *ngIf="option">
-                                <i [class]="option.icon + ' mr-2'"></i>
-                                <span>{{ option.label }}</span>
-                            </div>
-                        </ng-template>
-                        <ng-template pTemplate="item" let-option>
-                            <div class="flex align-items-center">
-                                <i [class]="option.icon + ' mr-2'"></i>
-                                <span>{{ option.label }}</span>
-                            </div>
-                        </ng-template>
-                    </p-dropdown>
+                <div class="col-12">
+                    <p-divider align="left">
+                        <div class="px-2">Nature du Client</div>
+                    </p-divider>
                 </div>
-                <div class="col-12 md:col-6 lg:col-8">
-                    <!-- Message d'information selon la nature sélectionnée -->
-                    @if(formData.natureClient === 'PME') {
-                    <p-message severity="info"
-                        text="Pour une PME, veuillez renseigner les informations du représentant légal de l'entreprise.">
-                    </p-message>
-                    }
-                    @if(formData.natureClient === 'Groupe Solidaire') {
-                    <p-message severity="info"
-                        text="Pour un groupe solidaire, veuillez renseigner les informations du chef de groupe.">
-                    </p-message>
-                    }
-                    @if(formData.natureClient === 'Autre') {
-                    <p-message severity="warn" text="Veuillez préciser la nature dans la description de l'activité.">
-                    </p-message>
-                    }
-                </div>
+
+
 
                 <!-- Row 5: Localisation administrative -->
                 <div class="col-12">
