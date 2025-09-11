@@ -601,6 +601,13 @@ public class DemandeIndResource {
                 "This is the endpoint test now", OK));
     }
 
+    @GetMapping("/test2")
+    public ResponseEntity<Response> test2(HttpServletRequest request)
+    {
+        return created(getUri()).body(getResponse(request, emptyMap(),
+                "This is the endpoint test now 222", OK));
+    }
+
     private URI getUri() {
         return URI.create("/demandeInd");
     }
