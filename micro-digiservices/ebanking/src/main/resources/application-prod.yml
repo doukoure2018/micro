@@ -7,6 +7,19 @@ spring:
     password: "@Digi2711@!"
     driverClassName: com.microsoft.sqlserver.jdbc.SQLServerDriver
     initialize: true
+    hikari:
+      pool-name: ProductionPool
+      maximum-pool-size: 5
+      minimum-idle: 2
+      connection-timeout: 10000
+      idle-timeout: 300000
+      max-lifetime: 600000
+
+  middleware:
+    datasource:
+      url: jdbc:sqlserver://10.220.220.11;databaseName=BD_MIDDLEWARE;trustServerCertificate=true;encrypt=true
+      username: sa
+      password: 1234
   jpa:
     properties:
       hibernate:

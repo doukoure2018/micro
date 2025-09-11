@@ -4,9 +4,6 @@ spring:
 
   # Configuration DataSource Production (existante)
   datasource:
-#    url: jdbc:sqlserver://10.220.220.8;databaseName=BDCRG;trustServerCertificate=true;encrypt=true
-#    username: DIGI
-#    password: "@Digi2711@!"
     url: jdbc:sqlserver://10.110.15.2:1433;databaseName=BDCRG;trustServerCertificate=true;encrypt=true
     username: sa
     password: 1234567
