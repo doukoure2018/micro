@@ -2,7 +2,7 @@ spring:
   application:
     name: EBANKING
   datasource:
-    url: jdbc:sqlserver://10.220.220.8;databaseName=BDCRG;trustServerCertificate=true;encrypt=true
+    url: jdbc:sqlserver://10.220.220.8:1433;databaseName=BDCRG;trustServerCertificate=true;encrypt=true
     username: DIGI
     password: "@Digi2711@!"
     driverClassName: com.microsoft.sqlserver.jdbc.SQLServerDriver

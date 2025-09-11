@@ -605,7 +605,7 @@ public class DemandeIndResource {
     public ResponseEntity<Response> test2(HttpServletRequest request)
     {
         return created(getUri()).body(getResponse(request, emptyMap(),
-                "This is the endpoint test now 222", OK));
+                "", OK));
     }
 
     private URI getUri() {
