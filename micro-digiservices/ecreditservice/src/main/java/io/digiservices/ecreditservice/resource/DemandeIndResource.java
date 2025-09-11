@@ -608,6 +608,14 @@ public class DemandeIndResource {
                 "", OK));
     }
 
+
+    @GetMapping("/doukoure")
+    public ResponseEntity<Response> doukTest(HttpServletRequest request)
+    {
+        return created(getUri()).body(getResponse(request, emptyMap(),
+                "this is the test for doukoure", OK));
+    }
+
     private URI getUri() {
         return URI.create("/demandeInd");
     }
