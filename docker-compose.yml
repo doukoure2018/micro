@@ -309,7 +309,7 @@ services:
       - "8081:8081"
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
-      SPRING_DATASOURCE_URL: "jdbc:sqlserver://10.220.220.8:1433:;databaseName=BDCRG;trustServerCertificate=true;encrypt=true"
+      SPRING_DATASOURCE_URL: "jdbc:sqlserver://10.220.220.8:1433;databaseName=BDCRG;trustServerCertificate=true;encrypt=true"
       SPRING_DATASOURCE_USERNAME: "DIGI"
       SPRING_DATASOURCE_PASSWORD: "@Digi2711@!"
       UI_APP_URL: ${UI_APP_URL}
