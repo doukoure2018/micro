@@ -613,7 +613,7 @@ public class DemandeIndResource {
     public ResponseEntity<Response> doukTest(HttpServletRequest request)
     {
         return created(getUri()).body(getResponse(request, emptyMap(),
-                "this is the test for doukoure", OK));
+                "this is the test for doukoure for now", OK));
     }
 
     private URI getUri() {
