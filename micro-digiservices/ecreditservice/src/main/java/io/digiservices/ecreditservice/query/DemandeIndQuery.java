@@ -346,15 +346,15 @@ public class DemandeIndQuery {
             """;
 
 
-   public static final String CALL_INSERT_DEMANDE_WITH_GARANTIES_PROC_V2 =
-           """
-           SELECT * FROM insert_demande_with_garanties(
-               ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-               ?, ?, ?, ?, ?, ?, ?, ?,
-               ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-               ?, ?, ?, ?, ?, ?, ?::garantie_input[]
-           )
-           """;
+    public static final String CALL_INSERT_DEMANDE_WITH_GARANTIES_PROC_V2 =
+            """
+            SELECT * FROM insert_demande_with_garanties(
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?::garantie_input[]
+            )
+            """;
 
     /**
      * Appel de la fonction pour récupérer une demande avec ses garanties

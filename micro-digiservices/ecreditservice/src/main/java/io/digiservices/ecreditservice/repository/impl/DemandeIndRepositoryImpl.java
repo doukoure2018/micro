@@ -692,6 +692,8 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
             statement.setString(paramIndex++, demande.getNatureClient() != null ?
                     demande.getNatureClient() : "Individuel");
 
+            statement.setString(paramIndex++, demande.getNomPersonneMorale());
+
             // Garanties - Paramètre 44
             if (demande.getGaranties() != null && !demande.getGaranties().isEmpty()) {
                 Array garantiesArray = createGarantiesArray(connection, demande.getGaranties());

@@ -49,6 +49,7 @@ public class DemandeIndividuel {
     private String lieuActivite;
 
     private String natureClient = "Individuel"; // Valeur par défaut
+    private String nomPersonneMorale;
     // Modalités de crédit
     private BigDecimal montantDemande;
     private Integer dureeDemande;
@@ -72,6 +73,7 @@ public class DemandeIndividuel {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss.SSSSSS")
     private LocalDateTime createdAt;
     private Integer age;
+
 
     // Liste des garanties
     private List<GarantiePropose> garanties;
