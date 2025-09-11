@@ -594,12 +594,11 @@ public class DemandeIndResource {
         }
     }
 
-
     @GetMapping("/test")
     public ResponseEntity<Response> test(HttpServletRequest request)
     {
         return created(getUri()).body(getResponse(request, emptyMap(),
-                "This is the endpoint test", OK));
+                "This is the endpoint test now", OK));
     }
 
     private URI getUri() {
