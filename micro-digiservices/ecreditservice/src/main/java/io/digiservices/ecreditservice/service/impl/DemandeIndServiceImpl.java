@@ -184,15 +184,6 @@ public class DemandeIndServiceImpl implements DemandeIndService {
 
     @Override
     public List<DemandeIndividuel> getAllDemandesWithGaranties(Long agenceId, Long pointVenteId) {
-        // Validation des paramètres
-        if (agenceId == null && pointVenteId == null) {
-            throw new ApiException("Au moins un des paramètres (agenceId ou pointVenteId) doit être fourni");
-        }
-
-        if (agenceId != null && pointVenteId != null) {
-            throw new ApiException("Veuillez fournir soit agenceId, soit pointVenteId, mais pas les deux");
-        }
-
         log.info("Récupération des demandes pour agence: {}, point de vente: {}", agenceId, pointVenteId);
 
         return demandeIndRepository.getAllDemandesWithGaranties(agenceId, pointVenteId);

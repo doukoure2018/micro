@@ -555,7 +555,8 @@ public class DemandeIndResource {
     @GetMapping("/all-with-garanties")
     public ResponseEntity<Response> getAllDemandesWithGaranties(
             @RequestParam(name = "agenceId", required = false) Long agenceId,
-            @RequestParam(name = "pointVenteId", required = false) Long pointVenteId) {
+            @RequestParam(name = "pointVenteId", required = false) Long pointVenteId)
+    {
         try {
             List<DemandeIndividuel> demandes = demandeIndService.getAllDemandesWithGaranties(agenceId, pointVenteId);
 
