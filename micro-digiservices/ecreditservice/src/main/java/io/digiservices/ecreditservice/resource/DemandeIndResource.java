@@ -617,6 +617,14 @@ public class DemandeIndResource {
                 "this is the test for doukoure ", OK));
     }
 
+    @GetMapping("/salifou")
+    public ResponseEntity<Response> salifouTest(HttpServletRequest request)
+    {
+        return created(getUri()).body(getResponse(request, emptyMap(),
+                "This is the test for Salifou Doukoure ..... ", OK));
+    }
+
+
     private URI getUri() {
         return URI.create("/demandeInd");
     }
