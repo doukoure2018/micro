@@ -121,16 +121,14 @@ jobs:
           key: ${{ secrets.PROD_SSH_KEY }}
           script: |
             set -e  # Arrêter en cas d'erreur
-            
+
             # Se déplacer dans le répertoire du projet
             cd ~/microservices || { mkdir -p ~/microservices && cd ~/microservices; }
-            
+
             # Gérer les changements locaux Git
             if [ -d ".git" ]; then
               echo "📥 Syncing with repository..."
-              # Sauvegarder les changements locaux
               git stash save "Auto-stash before deployment $(date)" || true
-              # Mettre à jour depuis le repository
               git fetch origin main
               git reset --hard origin/main
               echo "✅ Repository synchronized"
@@ -139,36 +137,40 @@ jobs:
               git clone https://github.com/${{ github.repository }} .
               git checkout main
             fi
-            
+
             # Créer les répertoires nécessaires
             echo "📁 Creating required directories..."
             mkdir -p logs/{discoveryserver,gateway,authorizationserver,userservice,ecreditservice,ebankingservice,notificationservice,frontend}
             mkdir -p keys
-            
+
             # Vérifier que .env.prod existe
             if [ ! -f .env.prod ]; then
               echo "⚠️ .env.prod not found, using .env.docker as template..."
               cp .env.docker .env.prod || { echo "❌ No .env.docker found!"; exit 1; }
             fi
-            
+
             # Charger les variables d'environnement
             export $(cat .env.prod | grep -v '^#' | xargs)
-            
+
             # Créer le réseau Docker si nécessaire
             sudo docker network inspect microservices_spring >/dev/null 2>&1 || sudo docker network create microservices_spring
-            
+
             # Arrêter tous les conteneurs existants
             echo "🛑 Stopping existing services..."
             sudo docker compose --env-file .env.prod down || true
-            
-            # Nettoyer
-            echo "🧹 Cleaning up..."
-            sudo docker system prune -f
-            
+
+            # AJOUT IMPORTANT: Forcer le pull de toutes les nouvelles images AVANT de démarrer
+            echo "📥 Pulling all latest images..."
+            sudo docker compose --env-file .env.prod pull
+
+            # Nettoyer les anciennes images
+            echo "🧹 Cleaning up old images..."
+            sudo docker image prune -f
+
             # Démarrer PostgreSQL et Kafka en premier
             echo "🏗️ Starting infrastructure services..."
             sudo docker compose --env-file .env.prod up -d postgresdb zookeeper kafka
-            
+
             # Attendre que PostgreSQL soit prêt
             echo "⏳ Waiting for PostgreSQL..."
             count=0
@@ -177,22 +179,20 @@ jobs:
               sleep 2
               count=$((count + 1))
             done
-            
+
             if [ $count -eq 30 ]; then
               echo "❌ PostgreSQL failed to start!"
               exit 1
             fi
-            
+
             echo "✅ PostgreSQL is ready"
-            
+
             # Exécuter les migrations Flyway
             echo "🗄️ Running database migrations..."
-            
-            # Compter les migrations disponibles
+
             MIGRATION_COUNT=$(ls micro-digiservices/database-migrations/src/main/resources/db/migration/*.sql 2>/dev/null | wc -l)
             echo "📋 Found $MIGRATION_COUNT migration files"
-            
-            # Exécuter Flyway avec gestion d'erreur
+
             sudo docker run --rm \
               --network microservices_spring \
               -v "$(pwd)/micro-digiservices/database-migrations/src/main/resources/db/migration:/flyway/sql:ro" \
@@ -215,7 +215,7 @@ jobs:
                   -e FLYWAY_PASSWORD="${POSTGRES_PASSWORD:-admin2711}" \
                   flyway/flyway:11.3.0 \
                   repair
-            
+
                 echo "Retrying migration..."
                 sudo docker run --rm \
                   --network microservices_spring \
@@ -228,40 +228,40 @@ jobs:
                   flyway/flyway:11.3.0 \
                   migrate || echo "⚠️ Some migrations may need manual intervention"
               }
-            
+
             # Vérifier le statut des migrations
             echo "📊 Migration status:"
             APPLIED_MIGRATIONS=$(sudo docker exec postgrecontainer psql -U ${POSTGRES_USER:-user2711} -d ${POSTGRES_DB:-localdb} -t -c \
               "SELECT COUNT(*) FROM flyway_schema_history WHERE success = true;" 2>/dev/null | tr -d ' ')
             echo "✅ $APPLIED_MIGRATIONS migrations successfully applied"
-            
+
             if [ "$APPLIED_MIGRATIONS" -lt "$MIGRATION_COUNT" ]; then
               echo "⚠️ Warning: Only $APPLIED_MIGRATIONS out of $MIGRATION_COUNT migrations were applied"
             fi
-            
+
             # Démarrer Discovery Server en premier
             echo "🔍 Starting Discovery Server..."
             sudo docker compose --env-file .env.prod up -d discoveryserver
             sleep 30
-            
+
             # Démarrer Gateway et Authorization Server
             echo "🔐 Starting Gateway and Authorization Server..."
             sudo docker compose --env-file .env.prod up -d gateway authorizationserver
             sleep 20
-            
+
             # Démarrer tous les autres microservices
             echo "🚀 Starting all microservices..."
             sudo docker compose --env-file .env.prod up -d
-            
+
             # Attendre le démarrage complet
             echo "⏳ Waiting for all services to start..."
             sleep 60
-            
+
             # Vérifier l'état des services
             echo "🏥 Checking services health..."
             services=("postgrecontainer" "kafka" "discoveryserver" "gateway" "authorizationserver" "userservice" "ecreditservice" "ebankingservice" "notificationservice")
             all_healthy=true
-            
+
             for service in "${services[@]}"; do
               if sudo docker ps | grep -q "$service"; then
                 echo "✅ $service is running"
@@ -270,14 +270,14 @@ jobs:
                 all_healthy=false
               fi
             done
-            
+
             # Afficher les logs en cas de problème
             if [ "$all_healthy" = false ]; then
               echo "⚠️ Some services failed. Recent logs:"
               sudo docker compose --env-file .env.prod logs --tail=50
               exit 1
             fi
-            
+
             # Afficher les URLs d'accès et le statut
             echo ""
             echo "🌐 Deployment successful!"
