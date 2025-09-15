@@ -135,10 +135,10 @@ public class AuthorizationServerConfig {
         http.formLogin(login -> login
                 .loginPage("/login")
                 .successHandler(new MfaAuthenticationHandler("/mfa", "MFA_REQUIRED"))
-                .failureHandler(new SimpleUrlAuthenticationFailureHandler("/login")));
+                .failureHandler(new SimpleUrlAuthenticationFailureHandler("/auth/login")));
 
         http.logout(logout -> logout
-                .logoutSuccessUrl(uiAppUrl)
+                .logoutSuccessUrl("https://digi-creditrural-io.com")
                 .addLogoutHandler(new CookieClearingLogoutHandler("JSESSIONID")));
 
         return http.build();
