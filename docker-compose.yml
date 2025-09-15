@@ -182,7 +182,7 @@ services:
       OAUTH2_SCOPE: ${OAUTH2_SCOPE:-openid}
       OAUTH2_RESPONSE_TYPE: ${OAUTH2_RESPONSE_TYPE:-code}
       OAUTH2_CODE_CHALLENGE_METHOD: ${OAUTH2_CODE_CHALLENGE_METHOD:-S256}
-      SERVER_SERVLET_SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+      SERVER_SERVLET_SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-true}  # Changed to true for HTTPS
       SERVER_SERVLET_SESSION_COOKIE_HTTP_ONLY: "true"
       SERVER_SERVLET_SESSION_COOKIE_SAME_SITE: "strict"
       SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_SECOND_LEVEL_CACHE: "false"
@@ -388,6 +388,36 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+
+  # NGINX Reverse Proxy for SSL termination
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/sites-enabled:/etc/nginx/sites-enabled:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - ./certbot/www:/var/www/certbot:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+    depends_on:
+      - gateway
+      - authorizationserver
+      - digicrg-app
+    networks:
+      - spring
+    restart: unless-stopped
+
+  # Certbot for SSL certificates
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - ./certbot/www:/var/www/certbot:rw
+      - ./certbot/conf:/etc/letsencrypt:rw
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
 
   # Frontend Application
   digicrg-app:

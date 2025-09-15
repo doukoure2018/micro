@@ -227,7 +227,11 @@ public class AuthorizationServerConfig {
         corsConfiguration.setAllowCredentials(true);
         corsConfiguration.setAllowedOrigins(List.of(
                 "http://localhost:4200",
-                "http://51.91.254.218:4200"
+                "http://51.91.254.218:4200",
+                "http://digi-creditrural-io.com",
+                "https://digi-creditrural-io.com",
+                "http://www.digi-creditrural-io.com",
+                "https://www.digi-creditrural-io.com"
         ));
         corsConfiguration.setAllowedHeaders(Arrays.asList(
                 ORIGIN, ACCESS_CONTROL_ALLOW_ORIGIN, CONTENT_TYPE,
