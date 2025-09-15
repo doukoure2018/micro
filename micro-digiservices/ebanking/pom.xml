@@ -34,7 +34,7 @@
                         <version>3.4.4</version>
                         <configuration>
                             <from>
-                                <image>public.ecr.aws/amazoncorretto/amazoncorretto:21.0.5-alpine</image>
+                                <image>public.ecr.aws/amazoncorretto/amazoncorretto:21</image>
                             </from>
                             <to>
                                 <image>doukoure93/ebanking</image>
