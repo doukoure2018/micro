@@ -133,7 +133,7 @@ public class AuthorizationServerConfig {
                         .anyRequest().authenticated());
 
         http.formLogin(login -> login
-                .loginPage("/login")
+                .loginPage("/auth/login")
                 .successHandler(new MfaAuthenticationHandler("/mfa", "MFA_REQUIRED"))
                 .failureHandler(new SimpleUrlAuthenticationFailureHandler("/auth/login")));
 
