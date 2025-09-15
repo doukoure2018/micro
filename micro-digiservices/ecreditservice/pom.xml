@@ -32,7 +32,7 @@
                         <version>3.4.4</version>
                         <configuration>
                             <from>
-                                <image>public.ecr.aws/amazoncorretto/amazoncorretto:21</image>
+                                <image>ghcr.io/graalvm/jdk-community:21</image>
                             </from>
                             <to>
                                 <image>doukoure93/ecreditservice</image>
