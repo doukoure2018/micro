@@ -564,7 +564,6 @@ export class UserService {
     // =============================================
     // 2. Service Avis (dans user.service.ts - ajouter ces méthodes)
     // =============================================
-    // Ajouter ces méthodes dans votre UserService existant:
 
     /**
      * Créer un nouvel avis
