@@ -71,4 +71,6 @@ public interface DemandeIndRepository {
     List<DemandeIndividuel> getAllDemandesWithGaranties(Long agenceId, Long pointVenteId);
 
     boolean checkDemandeExists(Long demandeindividuelId);
+
+    void rejetDemandeInd(Long demandeindividuelId);
 }

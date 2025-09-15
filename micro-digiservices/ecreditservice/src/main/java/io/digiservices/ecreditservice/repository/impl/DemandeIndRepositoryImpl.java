@@ -834,6 +834,19 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
                 .single();
     }
 
+    @Override
+    public void rejetDemandeInd(Long demandeindividuelId) {
+        try {
+            jdbcClient.sql(UPDATE_STATUT_REJET_DEMANDE_QUERY).param("demandeindividuel_id",demandeindividuelId).update();
+        } catch (EmptyResultDataAccessException exception) {
+            log.error(exception.getMessage());
+            throw new ApiException("No demandeInd found by id");
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new ApiException("An error occurred please try again");
+        }
+    }
+
     private DemandeIndividuel parseDemandeFromJson(String demandeJson, String garantiesJson) {
         try {
             // Configurer ObjectMapper pour gérer les différents formats de noms

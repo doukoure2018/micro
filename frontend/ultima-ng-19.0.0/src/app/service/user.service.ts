@@ -605,6 +605,10 @@ export class UserService {
         return this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/check`, { params }).pipe(catchError(this.handleError));
     }
 
+    // Méthode pour rejeter une demande (spécifique au DA)
+    rejectDemandeIndividuel$ = (demandeIndividuelId: number) =>
+        <Observable<IResponse>>this.http.patch<IResponse>(`${this.server}/ecredit/update/${demandeIndividuelId}`, {}, { withCredentials: true }).pipe(tap(console.log), catchError(this.handleError));
+
     handleError = (httpErrorResponse: HttpErrorResponse): Observable<never> => {
         console.log(httpErrorResponse);
         let error: string = 'An error occurred. Please try again.';

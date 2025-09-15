@@ -66,7 +66,7 @@
     </div>
     }
 
-
+    @if(state().user?.role === 'MANAGER' || state().user?.role === 'DA'){
     <div class="grid mb-4">
         <div class="col-12">
             <p-card>
@@ -160,7 +160,9 @@
             </p-card>
         </div>
     </div>
+    }@else{
 
+    }
     <!-- Section Indicateurs Clés avec Formules et Séparateurs -->
     @if(state().user?.role === 'MANAGER' || state().user?.role === 'DA'){
     <div class="grid mb-4">
@@ -548,7 +550,7 @@
                 </p-table>
             </p-card>
         </div>
-
+        <p-divider></p-divider>
         <!-- Entreprise -->
         <div class="col-12 lg:col-6">
             <p-card>
@@ -622,6 +624,7 @@
                         </p-table>
                     </div>
 
+                    @if(state().user?.role === 'MANAGER' || state().user?.role === 'DA'){
                     <!-- Analyse de la garantie personnelle -->
                     <div class="col-12 lg:col-4">
                         <div class="garantie-analysis-card">
@@ -684,6 +687,8 @@
                             </div>
                         </div>
                     </div>
+                    }
+
                 </div>
                 }
             </p-card>
@@ -782,6 +787,7 @@
             </p-card>
         </div>
 
+        <p-divider> </p-divider>
         <!-- Exploitation Prévisionnelle -->
         <div class="col-12 lg:col-6">
             <p-card>
@@ -1058,13 +1064,13 @@
         </div>
     </div>
 
-    <div class="grid mb-4">
+    <!-- <div class="grid mb-4">
         <div class="col-12">
             <app-motif-analyse [motifs_analyses]="state().resumeCredit?.motifs_analyses!" [demandeCreditId]="demandeId"
                 [user]="state().user!">
             </app-motif-analyse>
         </div>
-    </div>
+    </div> -->
 
     <!-- Actions Footer -->
     <div class="grid">

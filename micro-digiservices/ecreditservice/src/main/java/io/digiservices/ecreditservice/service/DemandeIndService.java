@@ -16,6 +16,8 @@ public interface DemandeIndService {
 
     void updateStatutDemandeInd(Long demandeindividuel_id, String statut, String codUsuarios);
 
+    void rejetDemandeInd(Long demandeindividuel_id);
+
     DemandeIndividuel getDetailDemandeIndividuel(Long demandeIndividuelId);
 
     List<DemandeIndividuel> getListDemandeCreditByDate(Long pointventeId);

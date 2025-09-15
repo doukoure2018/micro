@@ -39,6 +39,11 @@ public class DemandeIndServiceImpl implements DemandeIndService {
     }
 
     @Override
+    public void rejetDemandeInd(Long demandeindividuel_id) {
+        demandeIndRepository.rejetDemandeInd(demandeindividuel_id);
+    }
+
+    @Override
     public DemandeIndividuel getDetailDemandeIndividuel(Long demandeIndividuelId) {
         return demandeIndRepository.getDetailDemandeIndividuel(demandeIndividuelId);
     }

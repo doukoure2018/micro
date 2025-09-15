@@ -157,7 +157,7 @@
             </div>
         </div>
     </p-card>
-
+    <p-divider></p-divider>
     <p-card>
         <ng-template pTemplate="header">
             <div class="flex justify-content-between align-items-center p-3">
@@ -364,11 +364,11 @@
                             </p-tag>
                         </h3>
                         <div class="flex gap-2">
-                            <button pButton type="button" icon="pi pi-save" label="Sauvegarder ce mois"
+                            <!-- <button pButton type="button" icon="pi pi-save" label="Sauvegarder ce mois"
                                 class="p-button-success" [loading]="state().saving"
                                 [disabled]="!creditParams().dossierId || getMoisStatus(currentMonth()) === 'empty'"
                                 (click)="saveCurrentMonth()">
-                            </button>
+                            </button> -->
 
                             <button pButton type="button" icon="pi pi-refresh" label="Réinitialiser"
                                 class="p-button-text p-button-sm" *ngIf="getMoisStatus(currentMonth()) !== 'empty'"

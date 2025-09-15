@@ -102,31 +102,15 @@ export class AppMenu {
                                   routerLink: ['/dashboards/rapprochement-caisse']
                               }
                           ]
-                        : this.user?.role === 'DA'
+                        : this.user?.role === 'SUPER_ADMIN'
                           ? [
                                 {
-                                    label: 'Analyse de Credit',
-                                    icon: 'pi pi-fw pi-hourglass',
-                                    routerLink: ['/dashboards/credit', this.user?.userId]
+                                    label: 'Configuration Reseau',
+                                    icon: 'pi pi-fw pi-cog',
+                                    routerLink: ['/dashboards/config']
                                 }
                             ]
-                          : this.user?.role === 'MANAGER'
-                            ? [
-                                  {
-                                      label: 'Analyse de Credit',
-                                      icon: 'pi pi-fw pi-hourglass',
-                                      routerLink: ['/dashboards/credit', this.user?.userId]
-                                  }
-                              ]
-                            : this.user?.role === 'SUPER_ADMIN'
-                              ? [
-                                    {
-                                        label: 'Configuration Reseau',
-                                        icon: 'pi pi-fw pi-cog',
-                                        routerLink: ['/dashboards/config']
-                                    }
-                                ]
-                              : [])
+                          : [])
 
                     // {
                     //     label: 'Sales Dashboard',
