@@ -130,7 +130,7 @@ services:
           memory: 256M
           cpus: '0.25'
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://admin:admin2711@localhost:5002/eureka/apps || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:5002/actuator/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
