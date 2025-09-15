@@ -29,16 +29,17 @@
 						<groupId>com.google.cloud.tools</groupId>
 						<artifactId>jib-maven-plugin</artifactId>
 						<version>3.4.4</version>
-<!--						<configuration>-->
-<!--							<extraDirectories>-->
-<!--								<paths>-->
-<!--									<path>-->
-<!--										<from>src/main/resources/keys</from>-->
-<!--										<into>/app/keys</into>-->
-<!--									</path>-->
-<!--								</paths>-->
-<!--							</extraDirectories>-->
-<!--						</configuration>-->
+						<configuration>
+							<from>
+								<image>public.ecr.aws/amazoncorretto/amazoncorretto:21-alpine</image>
+							</from>
+							<to>
+								<image>doukoure93/authorizationserver</image>
+								<tags>
+									<tag>${docker.image.tag}</tag>
+								</tags>
+							</to>
+						</configuration>
 					</plugin>
 				</plugins>
 			</build>
