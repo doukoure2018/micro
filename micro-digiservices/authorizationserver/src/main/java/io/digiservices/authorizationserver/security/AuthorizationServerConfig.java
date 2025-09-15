@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -67,6 +68,9 @@ public class AuthorizationServerConfig {
     private static final String AUTHORITY_KEY = "authorities";
     private final JwtConfiguration jwtConfiguration;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Value("${UI_APP_URL:https://digi-creditrural-io.com}")
+    private String uiAppUrl;
 
     @Bean
     @Order(1)
@@ -134,7 +138,7 @@ public class AuthorizationServerConfig {
                 .failureHandler(new SimpleUrlAuthenticationFailureHandler("/login")));
 
         http.logout(logout -> logout
-                .logoutSuccessUrl("http://51.91.254.218:4200")
+                .logoutSuccessUrl(uiAppUrl)
                 .addLogoutHandler(new CookieClearingLogoutHandler("JSESSIONID")));
 
         return http.build();
