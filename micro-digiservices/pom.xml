@@ -89,7 +89,7 @@
 					<version>3.4.4</version>
 					<configuration>
 						<from>
-							<image>eclipse-temurin:21.0.5_11-jdk-ubi9-minimal@sha256:63be2e952c201fcd74f8651664984945bbede1e8978ef15995d79ae29c95e281</image>
+							<image>public.ecr.aws/amazoncorretto/amazoncorretto:21-alpine</image>
 							<platforms>
 								<platform>
 									<architecture>arm64</architecture>
@@ -106,7 +106,6 @@
 								<tag>latest</tag>
 							</tags>
 						</to>
-
 					</configuration>
 					<executions>
 						<execution>
