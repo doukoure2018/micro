@@ -52,6 +52,11 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
+       # ADD THIS NEW STEP HERE
+      - name: Configure Maven with Docker credentials
+        run: |
+          mkdir -p ~/.docker
+          echo '{"auths":{"registry-1.docker.io":{"auth":"'$(echo -n "${{ secrets.DOCKERHUB_USERNAME }}:${{ secrets.DOCKERHUB_ACCESS_TOKEN }}" | base64)'"}}}' > ~/.docker/config.json
 
       - name: Generate build tag
         id: build-number
