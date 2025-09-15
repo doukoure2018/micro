@@ -23,35 +23,26 @@
 
                         <div class="col-12 md:col-6 lg:col-4">
                             <div class="field">
-                                <label for="nomPromoteur" class="font-medium block mb-2">Nom *</label>
+                                <label for="nomPromoteur" class="font-medium block mb-2">Nom</label>
                                 <input id="nomPromoteur" type="text" pInputText formControlName="nomPromoteur"
                                     class="w-full" />
-                                <small
-                                    *ngIf="infoBaseForm.get('nomPromoteur')?.invalid && infoBaseForm.get('nomPromoteur')?.touched"
-                                    class="p-error block mt-1">
-                                    Le nom est requis
-                                </small>
                             </div>
                         </div>
 
                         <div class="col-12 md:col-6 lg:col-4">
                             <div class="field">
-                                <label for="prenomPromoteur" class="font-medium block mb-2">Prénom *</label>
+                                <label for="prenomPromoteur" class="font-medium block mb-2">Prénom</label>
                                 <input id="prenomPromoteur" type="text" pInputText formControlName="prenomPromoteur"
                                     class="w-full" />
-                                <small
-                                    *ngIf="infoBaseForm.get('prenomPromoteur')?.invalid && infoBaseForm.get('prenomPromoteur')?.touched"
-                                    class="p-error block mt-1">
-                                    Le prénom est requis
-                                </small>
                             </div>
                         </div>
 
                         <div class="col-12 md:col-6 lg:col-4">
                             <div class="field">
                                 <label for="dateNaissance" class="font-medium block mb-2">Date de naissance</label>
-                                <p-calendar id="dateNaissance" formControlName="dateNaissance" [showIcon]="true"
-                                    dateFormat="dd/mm/yy" class="w-full"></p-calendar>
+                                <!-- Changed from p-calendar to p-datepicker -->
+                                <p-datepicker id="dateNaissance" formControlName="dateNaissance" [showIcon]="true"
+                                    dateFormat="dd/mm/yy" class="w-full"></p-datepicker>
                             </div>
                         </div>
 
@@ -75,30 +66,25 @@
                             <div class="field">
                                 <label for="emailPromoteur" class="font-medium block mb-2">Email</label>
                                 <input id="emailPromoteur" type="email" pInputText formControlName="emailPromoteur"
-                                    class="w-full" />
-                                <small
-                                    *ngIf="infoBaseForm.get('emailPromoteur')?.invalid && infoBaseForm.get('emailPromoteur')?.touched"
-                                    class="p-error block mt-1">
-                                    L'email n'est pas valide
-                                </small>
+                                    class="w-full" placeholder="Optionnel" />
                             </div>
                         </div>
 
                         <div class="col-12">
                             <div class="field">
                                 <label for="adressePromoteur" class="font-medium block mb-2">Adresse</label>
-                                <input id="adressePromoteur" pTextarea formControlName="adressePromoteur" rows="2"
-                                    class="w-full" [autoResize]="true" fluid />
+                                <textarea id="adressePromoteur" pTextarea formControlName="adressePromoteur" rows="2"
+                                    class="w-full" [autoResize]="true"></textarea>
                             </div>
                         </div>
 
-                        <!-- Section Entreprise -->
-                        <div class="col-12 mt-5">
+                        <!-- Section Entreprise - Only shown if natureClient is 'Entreprise' -->
+                        <div class="col-12 mt-5" *ngIf="isEnterpriseSection()">
                             <h2 class="text-xl font-bold border-bottom-1 surface-border pb-2 mb-3">Informations de
                                 l'entreprise</h2>
                         </div>
 
-                        <div class="col-12 md:col-8">
+                        <div class="col-12 md:col-8" *ngIf="isEnterpriseSection()">
                             <div class="field">
                                 <label for="nomEntreprise" class="font-medium block mb-2">Nom de l'entreprise *</label>
                                 <input id="nomEntreprise" type="text" pInputText formControlName="nomEntreprise"
@@ -111,19 +97,21 @@
                             </div>
                         </div>
 
-                        <div class="col-12 md:col-6 lg:col-4">
+                        <div class="col-12 md:col-6 lg:col-4" *ngIf="isEnterpriseSection()">
                             <div class="field">
                                 <label for="dateCreation" class="font-medium block mb-2">Date de création</label>
-                                <p-calendar id="dateCreation" formControlName="dateCreation" [showIcon]="true"
-                                    dateFormat="dd/mm/yy" class="w-full"></p-calendar>
+                                <!-- Changed from p-calendar to p-datepicker -->
+                                <p-datepicker id="dateCreation" formControlName="dateCreation" [showIcon]="true"
+                                    dateFormat="dd/mm/yy" class="w-full"></p-datepicker>
                             </div>
                         </div>
 
-                        <div class="col-12 md:col-6 lg:col-4">
+                        <div class="col-12 md:col-6 lg:col-4" *ngIf="isEnterpriseSection()">
                             <div class="field">
                                 <label for="formeJuridique" class="font-medium block mb-2">Forme juridique</label>
-                                <p-dropdown id="formeJuridique" formControlName="formeJuridique"
-                                    [options]="formeJuridiques" optionLabel="label" class="w-full"></p-dropdown>
+                                <!-- Changed from p-dropdown to p-select -->
+                                <p-select id="formeJuridique" formControlName="formeJuridique"
+                                    [options]="formeJuridiques" optionLabel="label" class="w-full"></p-select>
                             </div>
                         </div>
 
@@ -135,7 +123,7 @@
                             </div>
                         </div>
 
-                        <div class="col-12 md:col-6 lg:col-4">
+                        <div class="col-12 md:col-6 lg:col-4" *ngIf="isEnterpriseSection()">
                             <div class="field">
                                 <label for="numeroRegistre" class="font-medium block mb-2">Numéro de registre</label>
                                 <input id="numeroRegistre" type="text" pInputText formControlName="numeroRegistre"
@@ -143,7 +131,7 @@
                             </div>
                         </div>
 
-                        <div class="col-12 md:col-6">
+                        <div class="col-12 md:col-6" *ngIf="isEnterpriseSection()">
                             <div class="field">
                                 <label for="telephoneEntreprise" class="font-medium block mb-2">Téléphone</label>
                                 <input id="telephoneEntreprise" type="text" pInputText
@@ -151,24 +139,28 @@
                             </div>
                         </div>
 
-                        <div class="col-12 md:col-6">
+                        <div class="col-12 md:col-6" *ngIf="isEnterpriseSection()">
                             <div class="field">
                                 <label for="emailEntreprise" class="font-medium block mb-2">Email</label>
                                 <input id="emailEntreprise" type="email" pInputText formControlName="emailEntreprise"
-                                    class="w-full" />
-                                <small
-                                    *ngIf="infoBaseForm.get('emailEntreprise')?.invalid && infoBaseForm.get('emailEntreprise')?.touched"
-                                    class="p-error block mt-1">
-                                    L'email n'est pas valide
-                                </small>
+                                    class="w-full" placeholder="Optionnel" />
                             </div>
                         </div>
 
-                        <div class="col-12">
+                        <div class="col-12" *ngIf="isEnterpriseSection()">
                             <div class="field">
                                 <label for="adresseEntreprise" class="font-medium block mb-2">Adresse</label>
-                                <input id="adresseEntreprise" pTextarea formControlName="adresseEntreprise" rows="2"
-                                    class="w-full" [autoResize]="true" fluid />
+                                <textarea id="adresseEntreprise" pTextarea formControlName="adresseEntreprise" rows="2"
+                                    class="w-full" [autoResize]="true"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Display info message if client is Individual -->
+                        <div class="col-12 mt-3" *ngIf="!isEnterpriseSection()">
+                            <div class="p-3 bg-blue-50 border-round border-1 border-blue-200">
+                                <i class="pi pi-info-circle mr-2"></i>
+                                <span>Type de client: <strong>Individuel</strong> - Les informations de l'entreprise ne
+                                    sont pas requises.</span>
                             </div>
                         </div>
                     </div>
@@ -585,11 +577,6 @@
                                 <label for="montantDemande" class="block font-medium mb-2">Montant demandé *</label>
                                 <p-inputNumber id="montantDemande" formControlName="montantDemande" mode="currency"
                                     currency="GNF" locale="fr-FR" class="w-full"></p-inputNumber>
-                                <small
-                                    *ngIf="demandeCreditForm.get('montantDemande')?.invalid && demandeCreditForm.get('montantDemande')?.touched"
-                                    class="p-error block mt-1">
-                                    <i class="pi pi-exclamation-circle mr-1"></i>Montant requis (min 1 GNF)
-                                </small>
                             </div>
                         </div>
 
@@ -598,50 +585,42 @@
                                 <label for="dureeMois" class="block font-medium mb-2">Durée (mois) *</label>
                                 <p-inputNumber id="dureeMois" formControlName="dureeMois" [showButtons]="true" [min]="1"
                                     [max]="120" class="w-full" suffix=" mois"></p-inputNumber>
-                                <small
-                                    *ngIf="demandeCreditForm.get('dureeMois')?.invalid && demandeCreditForm.get('dureeMois')?.touched"
-                                    class="p-error block mt-1">
-                                    <i class="pi pi-exclamation-circle mr-1"></i>Durée entre 1 et 120 mois
-                                </small>
                             </div>
                         </div>
 
-
-
-                        <!-- NEW FIELDS: Delegation/Agence/Point de vente -->
+                        <!-- Location fields with p-select -->
                         <div class="col-12 mt-4">
                             <h3 class="text-lg font-bold mb-3 border-bottom-1 surface-border pb-2">Localisation du
-                                crédit
-                            </h3>
+                                crédit</h3>
                         </div>
 
                         <div class="col-12 md:col-4">
                             <div class="field">
                                 <label for="delegation" class="block font-medium mb-2">Délégation</label>
-                                <p-dropdown id="delegation" formControlName="delegation"
+                                <p-select id="delegation" formControlName="delegation"
                                     [options]="state().allDelegations" optionLabel="libele"
                                     placeholder="Sélectionner..." class="w-full"
-                                    (onChange)="onDelegationChange($event)"></p-dropdown>
+                                    (onChange)="onDelegationChange($event)"></p-select>
                             </div>
                         </div>
 
                         <div class="col-12 md:col-4">
                             <div class="field">
                                 <label for="agence" class="block font-medium mb-2">Agence</label>
-                                <p-dropdown id="agence" formControlName="agence" [options]="state().filteredAgences"
+                                <p-select id="agence" formControlName="agence" [options]="state().filteredAgences"
                                     optionLabel="libele" placeholder="Sélectionner d'abord une délégation..."
                                     class="w-full" [disabled]="state().filteredAgences.length === 0"
-                                    (onChange)="onAgenceChange($event)"></p-dropdown>
+                                    (onChange)="onAgenceChange($event)"></p-select>
                             </div>
                         </div>
 
                         <div class="col-12 md:col-4">
                             <div class="field">
                                 <label for="pointVente" class="block font-medium mb-2">Point de vente</label>
-                                <p-dropdown id="pointVente" formControlName="pointVente"
+                                <p-select id="pointVente" formControlName="pointVente"
                                     [options]="state().filteredPointsVente" optionLabel="libele"
                                     placeholder="Sélectionner d'abord une agence..." class="w-full"
-                                    [disabled]="state().filteredPointsVente.length === 0"></p-dropdown>
+                                    [disabled]="state().filteredPointsVente.length === 0"></p-select>
                             </div>
                         </div>
 
@@ -649,14 +628,8 @@
                             <div class="field">
                                 <label for="objetFinancement" class="block font-medium mb-2">Objet du financement
                                     *</label>
-                                <input id="objetFinancement" pTextarea formControlName="objetFinancement" rows="4"
-                                    class="w-full" [autoResize]="true" />
-
-                                <small
-                                    *ngIf="demandeCreditForm.get('objetFinancement')?.invalid && demandeCreditForm.get('objetFinancement')?.touched"
-                                    class="p-error block mt-1">
-                                    <i class="pi pi-exclamation-circle mr-1"></i>Veuillez décrire l'objet du financement
-                                </small>
+                                <textarea id="objetFinancement" pTextarea formControlName="objetFinancement" rows="4"
+                                    class="w-full" [autoResize]="true"></textarea>
                             </div>
                         </div>
                     </div>

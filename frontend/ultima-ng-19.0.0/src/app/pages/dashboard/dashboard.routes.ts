@@ -88,7 +88,7 @@ export default [
         loadComponent: () => import('./admin/create-user/create-user.component').then((c) => c.CreateUserComponent)
     },
     {
-        path: 'credit/:userId',
+        path: 'credit/analyse-credit',
         data: { breadcrumb: 'Analyse Credit' },
         loadComponent: () => import('./analyse-credit/analyse-credit.component').then((c) => c.AnalyseCreditComponent)
     },
@@ -107,7 +107,6 @@ export default [
         data: { breadcrumb: 'Nouvelle analyse de Credit' },
         loadComponent: () => import('./analyse-credit/resume-credit/resume-credit.component').then((c) => c.ResumeCreditComponent)
     },
-
     {
         path: 'credit/detail/:numberCredit',
         data: { breadcrumb: 'Details Credit' },

@@ -100,7 +100,8 @@ public class DemandeIndResource {
         }
     }
 
-    private void validateNatureClient(DemandeIndividuel demande) {
+    private void validateNatureClient(DemandeIndividuel demande)
+    {
         List<String> validNatures = Arrays.asList("Individuel", "PME", "Groupe Solidaire", "Autre");
 
         if (demande.getNatureClient() == null || demande.getNatureClient().isEmpty()) {
@@ -112,7 +113,8 @@ public class DemandeIndResource {
         }
     }
 
-    private void validateGaranties(List<GarantiePropose> garanties) {
+    private void validateGaranties(List<GarantiePropose> garanties)
+    {
         if (garanties == null || garanties.isEmpty()) {
             List<ErrorMessage> errors = new ArrayList<>();
             errors.add(new ErrorMessage("Au moins une garantie est requise"));
@@ -595,33 +597,12 @@ public class DemandeIndResource {
         }
     }
 
-    @GetMapping("/test")
-    public ResponseEntity<Response> test(HttpServletRequest request)
-    {
-        return created(getUri()).body(getResponse(request, emptyMap(),
-                "This is the endpoint test now", OK));
-    }
-
-    @GetMapping("/test22")
-    public ResponseEntity<Response> test2(HttpServletRequest request)
-    {
-        return created(getUri()).body(getResponse(request, emptyMap(),
-                "", OK));
-    }
-
-
-    @GetMapping("/doukoure")
-    public ResponseEntity<Response> doukTest(HttpServletRequest request)
-    {
-        return created(getUri()).body(getResponse(request, emptyMap(),
-                "this is the test for doukoure ", OK));
-    }
-
-    @GetMapping("/salifou")
-    public ResponseEntity<Response> salifouTest(HttpServletRequest request)
-    {
-        return created(getUri()).body(getResponse(request, emptyMap(),
-                "This is the test for Salifou Doukoure ..... ", OK));
+    @PatchMapping("/update/{demandeindividuel_id}")
+    public ResponseEntity<Response> rejetDemandeCredit(@NotNull Authentication authentication,
+                                                     @PathVariable(name = "demandeindividuel_id") Long demandeindividuel_id,
+                                                     HttpServletRequest request) {
+        demandeIndService.rejetDemandeInd(demandeindividuel_id);
+        return created(getUri()).body(getResponse(request, emptyMap(), "Mise à jour effectué avec Success", OK));
     }
 
 

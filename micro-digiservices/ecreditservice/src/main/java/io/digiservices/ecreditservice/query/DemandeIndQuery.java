@@ -461,4 +461,6 @@ public class DemandeIndQuery {
                FROM demandeindividuel WHERE demandeindividuel_id = :demandeindividuelId
          """;
 
+   public static final String UPDATE_STATUT_REJET_DEMANDE_QUERY =  "UPDATE demandeIndividuel SET statut_demande = 'REJET', createdat = NOW() WHERE demandeIndividuel_id = :demandeindividuel_id";
+
 }

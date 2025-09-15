@@ -48,24 +48,7 @@ interface TableDataItem {
 
 @Component({
     selector: 'app-resume-credit',
-    imports: [
-        CommonModule,
-        CardModule,
-        PanelModule,
-        TableModule,
-        TagModule,
-        ButtonModule,
-        ProgressSpinnerModule,
-        ToastModule,
-        BadgeModule,
-        DividerModule,
-        SkeletonModule,
-        ProgressBarModule,
-        TooltipModule,
-        AccordionModule,
-        MotifAnalyseComponent,
-        SplitButtonModule
-    ],
+    imports: [CommonModule, CardModule, PanelModule, TableModule, TagModule, ButtonModule, ProgressSpinnerModule, ToastModule, BadgeModule, DividerModule, SkeletonModule, ProgressBarModule, TooltipModule, AccordionModule, SplitButtonModule],
     templateUrl: './resume-credit.component.html',
     styleUrl: './resume-credit.component.scss',
     providers: [MessageService]

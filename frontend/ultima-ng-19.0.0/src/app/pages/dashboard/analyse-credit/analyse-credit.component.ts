@@ -58,61 +58,7 @@ export class AnalyseCreditComponent implements OnInit {
     private router = inject(Router);
     private activatedRouter = inject(ActivatedRoute);
 
-    ngOnInit(): void {
-        this.loadAnalyseEnours();
-    }
-
-    private loadAnalyseEnours(): void {
-        this.activatedRouter.paramMap
-            .pipe(
-                switchMap((params: ParamMap) => {
-                    const userId = params.get('userId');
-                    const statut = 'EN_ATTENTE';
-                    if (userId) {
-                        this.state.update((state) => ({
-                            ...state,
-                            loading: true,
-                            message: undefined,
-                            error: undefined
-                        }));
-                        return this.userService.listAnalyseCreditsEncours$(statut, +userId);
-                    }
-                    return EMPTY;
-                }),
-                takeUntilDestroyed(this.destroyRef)
-            )
-            .subscribe({
-                next: (response: IResponse) => {
-                    let demandeAnalyseCredits: DemandeCredit[] = [];
-
-                    if (response.data) {
-                        if (response.data.demandeAnalyseCredits) {
-                            demandeAnalyseCredits = response.data.demandeAnalyseCredits;
-                        } else if (response.data.demandeAnalyseCredits) {
-                            demandeAnalyseCredits = [response.data.demandeAnalyseCredits];
-                        }
-                    }
-
-                    this.state.update((state) => ({
-                        ...state,
-                        demandeAnalyseCredits,
-                        loading: false,
-                        user: response.data?.user,
-                        message: response.message,
-                        error: undefined
-                    }));
-                },
-                error: (error) => {
-                    this.state.update((state) => ({
-                        ...state,
-                        demandeAnalyseCredits: [],
-                        loading: false,
-                        message: undefined,
-                        error
-                    }));
-                }
-            });
-    }
+    ngOnInit(): void {}
 
     searchCredits(): void {
         if (!this.searchQuery || this.searchQuery.trim() === '') {

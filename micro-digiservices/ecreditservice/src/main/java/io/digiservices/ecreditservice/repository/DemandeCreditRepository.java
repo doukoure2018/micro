@@ -25,6 +25,8 @@ public interface DemandeCreditRepository {
 
     DemandeCredit getDemandeCreditByDemandeInd(Long demandeIndividuelId);
 
+    String getNatureClientFromDemandeIndividuel(Long demandeIndividuelId);
+
 
     // analyse de credit
 

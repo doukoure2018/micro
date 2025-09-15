@@ -32,11 +32,21 @@ public class DemandeCreditServiceImpl implements DemandeCreditService {
 
     @Override
     public Map<String, Object> traiterDemandeComplete(DemandeCreditCompleteDTO demande) {
-        log.info("Traitement d'une demande de crédit complète pour l'entreprise: {}",
-                demande.getNomEntreprise());
+        // Get nature client for logging purposes
+        String natureClient = demande != null && demande.getDemandeIndividuelId() != null
+                ? getNatureClientFromDemandeIndividuel(demande.getDemandeIndividuelId())
+                : "Unknown";
+
+        // Adjust logging based on client type
+        String clientIdentifier = "Entreprise".equals(natureClient) && demande.getNomEntreprise() != null
+                ? demande.getNomEntreprise()
+                : String.format("%s %s", demande.getPrenomPromoteur(), demande.getNomPromoteur());
+
+        log.info("Traitement d'une demande de crédit complète pour le client ({}): {}",
+                natureClient, clientIdentifier);
 
         try {
-            // Validation des données d'entrée (optionnelle)
+            // Validation des données d'entrée (adaptée selon le type de client)
             validateDemande(demande);
 
             // Traitement via le repository
@@ -44,22 +54,22 @@ public class DemandeCreditServiceImpl implements DemandeCreditService {
 
             // Logging en fonction du résultat
             if (Boolean.TRUE.equals(result.get("success"))) {
-                log.info("Demande de crédit pour '{}' traitée avec succès",
-                        demande.getNomEntreprise());
+                log.info("Demande de crédit pour '{}' (type: {}) traitée avec succès",
+                        clientIdentifier, natureClient);
             } else {
-                log.warn("Échec du traitement de la demande de crédit pour '{}': {}",
-                        demande.getNomEntreprise(), result.get("error"));
+                log.warn("Échec du traitement de la demande de crédit pour '{}' (type: {}): {}",
+                        clientIdentifier, natureClient, result.get("error"));
             }
 
             return result;
 
         } catch (IllegalArgumentException e) {
-            log.error("Validation échouée pour la demande de '{}': {}",
-                    demande.getNomEntreprise(), e.getMessage());
+            log.error("Validation échouée pour la demande de '{}' (type: {}): {}",
+                    clientIdentifier, natureClient, e.getMessage());
             return createValidationErrorResult(e.getMessage());
         } catch (Exception e) {
-            log.error("Erreur inattendue lors du traitement de la demande pour '{}': {}",
-                    demande.getNomEntreprise(), e.getMessage(), e);
+            log.error("Erreur inattendue lors du traitement de la demande pour '{}' (type: {}): {}",
+                    clientIdentifier, natureClient, e.getMessage(), e);
             return createTechnicalErrorResult("Erreur technique lors du traitement");
         }
     }
@@ -120,20 +130,33 @@ public class DemandeCreditServiceImpl implements DemandeCreditService {
         return demandeCreditRepository.getDemandeCreditByDemandeInd(demandeIndividuelId);
     }
 
+    @Override
+    public String getNatureClientFromDemandeIndividuel(Long demandeIndividuelId) {
+        return demandeCreditRepository.getNatureClientFromDemandeIndividuel(demandeIndividuelId);
+    }
+
     // Méthode de validation (optionnelle)
     private void validateDemande(DemandeCreditCompleteDTO demande) {
         if (demande == null) {
             throw new IllegalArgumentException("La demande ne peut pas être nulle");
         }
 
-        // Validation des champs obligatoires
+        // Get the nature of the client from demande_individuel
+        String natureClient = getNatureClientFromDemandeIndividuel(demande.getDemandeIndividuelId());
+        log.debug("Nature du client: {}", natureClient);
+
+        // Validation des champs obligatoires pour tous les clients
         if (isBlank(demande.getNomPromoteur())) {
             throw new IllegalArgumentException("Le nom du promoteur est obligatoire");
         }
 
-        if (isBlank(demande.getNomEntreprise())) {
-            throw new IllegalArgumentException("Le nom de l'entreprise est obligatoire");
+        // Validation conditionnelle pour les entreprises seulement
+        if ("Entreprise".equals(natureClient)) {
+            if (isBlank(demande.getNomEntreprise())) {
+                throw new IllegalArgumentException("Le nom de l'entreprise est obligatoire pour un client de type Entreprise");
+            }
         }
+        // For Individual clients, nomEntreprise can be null or empty
 
         if ((demande.getMontantDemande() == null) || (demande.getMontantDemande().compareTo(BigDecimal.ZERO) <= 0)) {
             throw new IllegalArgumentException("Le montant demandé doit être positif");

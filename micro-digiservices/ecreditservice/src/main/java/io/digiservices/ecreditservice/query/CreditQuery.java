@@ -136,4 +136,10 @@ public class CreditQuery {
                 WHERE demandeindividuel_id = :demandeIndividuelId
             """;
 
+
+    public static final String GET_NATURE_DEMANDE_INDIVIDUEL =
+                    """
+                       SELECT nature_client FROM demandeindividuel WHERE demandeindividuel_id = :demandeIndividuelId
+                    """;
+
 }

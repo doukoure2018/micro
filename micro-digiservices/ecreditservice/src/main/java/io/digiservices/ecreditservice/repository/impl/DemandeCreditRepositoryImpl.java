@@ -517,6 +517,20 @@ public class DemandeCreditRepositoryImpl implements DemandeCreditRepository {
         }
     }
 
+    @Override
+    public String getNatureClientFromDemandeIndividuel(Long demandeIndividuelId) {
+        try {
+            return jdbcClient.sql(GET_NATURE_DEMANDE_INDIVIDUEL)
+                    .param("demandeIndividuelId", demandeIndividuelId)
+                    .query(String.class)
+                    .single();
+        } catch (Exception e) {
+            log.error("Error fetching natureClient for demandeIndividuelId {}: {}", demandeIndividuelId, e.getMessage());
+            // Default to Individuel if there's an error
+            return "Individuel";
+        }
+    }
+
 
     private boolean validateRequiredFields(DemandeUpdateRequest request) {
         if (request.getDemandeCreditId() == null) {

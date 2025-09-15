@@ -25,4 +25,6 @@ public interface DemandeCreditService {
     Boolean mettreAJourDemande(DemandeUpdateRequest request, String cautionsJson);
 
     DemandeCredit getDemandeCreditByDemandeInd(Long demandeIndividuelId);
+
+    String getNatureClientFromDemandeIndividuel(Long demandeIndividuelId);
 }

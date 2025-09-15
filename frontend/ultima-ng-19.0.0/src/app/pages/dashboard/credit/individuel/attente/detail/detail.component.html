@@ -344,8 +344,6 @@
             </div>
         </div>
 
-
-
         <!-- Section 4: GARANTIES PROPOSÉES -->
         <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
             <div class="bg-gray-700 text-white px-4 py-2">
@@ -385,6 +383,62 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- Section de rejet pour le DA uniquement -->
+        <div *ngIf="state().user?.role === 'DA' && state().demandeIndividuel?.validationState !== 'REJECTED' 
+               && !state().hasDemandeCredit && !state().hasDossierCredit"
+            class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
+            <div class="bg-red-600 text-white px-4 py-3">
+                <h2 class="font-bold flex items-center gap-2">
+                    <i class="pi pi-ban"></i>
+                    ACTION DE REJET - DIRECTEUR D'AGENCE
+                </h2>
+            </div>
+
+            <div class="p-6 bg-red-50">
+                <div class="bg-white p-4 rounded border-2 border-red-300 mb-4">
+                    <p class="text-gray-700 font-medium mb-3">
+                        <i class="pi pi-info-circle text-red-600 mr-2"></i>
+                        En tant que Directeur d'Agence, vous avez le pouvoir de rejeter cette demande si elle ne répond
+                        pas aux critères d'acceptation.
+                    </p>
+
+                    <div class="bg-yellow-50 border border-yellow-300 rounded p-3 mb-4">
+                        <p class="text-sm text-yellow-800">
+                            <strong>⚠️ Attention :</strong> Le rejet d'une demande est une action définitive.
+                            Assurez-vous d'avoir examiné tous les éléments du dossier avant de prendre cette décision.
+                        </p>
+                    </div>
+
+                    <div class="space-y-2 text-sm text-gray-600 mb-4">
+                        <p><strong>Critères de rejet possibles :</strong></p>
+                        <ul class="list-disc list-inside ml-4 space-y-1">
+                            <li>Demande de crédit Incohérente </li>
+                            <li>Garanties insuffisantes ou inappropriées</li>
+                            <li>Capacité de remboursement douteuse</li>
+                            <li>Documents manquants ou falsifiés</li>
+                            <li>Historique de crédit défavorable</li>
+                            <li>Activité non viable ou à haut risque</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="flex justify-center gap-4">
+                    <!-- Bouton Rejeter -->
+                    <button pButton type="button" (click)="rejectDemande()" [disabled]="state().loading"
+                        class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300"
+                        icon="pi pi-times-circle" label="REJETER CETTE DEMANDE">
+                    </button>
+
+                    <!-- Bouton Voir l'Analyse - Ouvre dans un nouvel onglet -->
+                    <button pButton type="button" (click)="openInNewTab('/dashboards/credit/analyse-credit')"
+                        [disabled]="state().loading"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300"
+                        icon="pi pi-chart-line" label="ANALYSER SON ANCIEN CRÉDIT">
+                    </button>
+                </div>
             </div>
         </div>
 

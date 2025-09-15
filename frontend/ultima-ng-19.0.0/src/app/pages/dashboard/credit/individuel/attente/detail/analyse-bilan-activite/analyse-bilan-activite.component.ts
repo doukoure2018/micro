@@ -5,12 +5,10 @@ import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
-import { DropdownModule } from 'primeng/dropdown';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
 import { StepsModule } from 'primeng/steps';
 import { ToastModule } from 'primeng/toast';
-import { CalendarModule } from 'primeng/calendar';
 import { IResponse } from '@/interface/response';
 import { TextareaModule } from 'primeng/textarea';
 import { InputGroupModule } from 'primeng/inputgroup';
@@ -28,8 +26,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { UserService } from '@/service/user.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin } from 'rxjs';
+import { DatePickerModule } from 'primeng/datepicker';
+import { SelectModule } from 'primeng/select';
 
-type PrimeSeverity = 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast';
 interface ComponentState {
     loading: boolean;
     allDelegations: Delegation[];
@@ -39,6 +38,7 @@ interface ComponentState {
     filteredPointsVente: PointVente[];
     demandeIndividuel: any;
     userId: number | null;
+    natureClient: 'Individuel' | 'Entreprise';
 }
 
 @Component({
@@ -52,8 +52,6 @@ interface ComponentState {
         ButtonModule,
         InputTextModule,
         InputNumberModule,
-        CalendarModule,
-        DropdownModule,
         StepsModule,
         CardModule,
         ToastModule,
@@ -63,7 +61,9 @@ interface ComponentState {
         AccordionModule,
         CurrencyPipe,
         TableModule,
-        PanelModule
+        PanelModule,
+        DatePickerModule,
+        SelectModule
     ],
     templateUrl: './analyse-bilan-activite.component.html',
     styleUrl: './analyse-bilan-activite.component.scss',
@@ -85,14 +85,15 @@ export class AnalyseBilanActiviteComponent {
         filteredAgences: [],
         filteredPointsVente: [],
         demandeIndividuel: null,
-        userId: null
+        userId: null,
+        natureClient: 'Individuel' // Default value
     });
 
     activeIndex = signal<number>(0);
     items = signal<MenuItem[]>([]);
     loading = signal<boolean>(false);
 
-    // Formulaires pour chaque étape
+    // Forms for each step
     infoBaseForm!: FormGroup;
     bilanEntrepriseForm!: FormGroup;
     bilanPersonnelForm!: FormGroup;
@@ -116,6 +117,10 @@ export class AnalyseBilanActiviteComponent {
     demandeIndividuelId: number | null = null;
 
     ngOnInit() {
+        // Initialize forms FIRST - before any data loading
+        this.initForms();
+        this.initStepItems();
+
         // Extract demandeIndividuelId from route
         this.route.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
             this.demandeIndividuelId = params['demandeindividuelId'] ? parseInt(params['demandeindividuelId'], 10) : null;
@@ -133,9 +138,6 @@ export class AnalyseBilanActiviteComponent {
 
             this.loadAllData();
         });
-
-        this.initStepItems();
-        this.initForms();
     }
 
     private loadAllData(): void {
@@ -165,13 +167,18 @@ export class AnalyseBilanActiviteComponent {
                     if (responses.demandeData?.data) {
                         const demandeIndividuel = responses.demandeData.data.demandeIndividuel;
                         const userId = responses.demandeData.data.user?.userId!;
+                        const natureClient: 'Individuel' | 'Entreprise' = demandeIndividuel.natureClient === 'Entreprise' ? 'Entreprise' : 'Individuel';
 
                         this.state.update((state) => ({
                             ...state,
                             demandeIndividuel,
                             userId,
+                            natureClient,
                             loading: false
                         }));
+
+                        // Update form validators based on nature client
+                        this.updateFormValidators(natureClient);
 
                         // Prefill forms with demande data
                         this.prefillFormsWithDemande(demandeIndividuel);
@@ -190,8 +197,43 @@ export class AnalyseBilanActiviteComponent {
             });
     }
 
+    private updateFormValidators(natureClient: string): void {
+        if (natureClient === 'Individuel') {
+            // Remove validators for enterprise fields
+            this.infoBaseForm.get('nomEntreprise')?.clearValidators();
+            this.infoBaseForm.get('nomEntreprise')?.updateValueAndValidity();
+
+            // Disable enterprise fields
+            this.infoBaseForm.get('nomEntreprise')?.disable();
+            this.infoBaseForm.get('formeJuridique')?.disable();
+            this.infoBaseForm.get('dateCreation')?.disable();
+            this.infoBaseForm.get('numeroRegistre')?.disable();
+            this.infoBaseForm.get('adresseEntreprise')?.disable();
+            this.infoBaseForm.get('telephoneEntreprise')?.disable();
+            this.infoBaseForm.get('emailEntreprise')?.disable();
+        } else {
+            // Enable enterprise fields for 'Entreprise' type
+            this.infoBaseForm.get('nomEntreprise')?.setValidators([Validators.required]);
+            this.infoBaseForm.get('nomEntreprise')?.updateValueAndValidity();
+
+            this.infoBaseForm.get('nomEntreprise')?.enable();
+            this.infoBaseForm.get('formeJuridique')?.enable();
+            this.infoBaseForm.get('dateCreation')?.enable();
+            this.infoBaseForm.get('numeroRegistre')?.enable();
+            this.infoBaseForm.get('adresseEntreprise')?.enable();
+            this.infoBaseForm.get('telephoneEntreprise')?.enable();
+            this.infoBaseForm.get('emailEntreprise')?.enable();
+        }
+    }
+
     private prefillFormsWithDemande(demande: any): void {
         if (!demande) return;
+
+        // Add safety check for forms
+        if (!this.infoBaseForm || !this.bilanPersonnelForm || !this.demandeCreditForm) {
+            console.error('Forms not initialized');
+            return;
+        }
 
         // Convert date array to Date object
         const convertDateArray = (dateArray: number[]): Date | null => {
@@ -273,8 +315,6 @@ export class AnalyseBilanActiviteComponent {
         }
 
         // Disable location fields
-        // this.demandeCreditForm.get('montantDemande')?.disable();
-        // this.demandeCreditForm.get('dureeMois')?.disable();
         this.demandeCreditForm.get('objetFinancement')?.disable();
         this.demandeCreditForm.get('delegation')?.disable();
         this.demandeCreditForm.get('agence')?.disable();
@@ -297,7 +337,7 @@ export class AnalyseBilanActiviteComponent {
     }
 
     initForms() {
-        // Info base form - removed required validators for prefilled fields
+        // Info base form - email not required anymore
         this.infoBaseForm = this.fb.group({
             nomPromoteur: [''],
             prenomPromoteur: [''],
@@ -305,18 +345,18 @@ export class AnalyseBilanActiviteComponent {
             numeroIdentite: [''],
             adressePromoteur: [''],
             telephonePromoteur: [''],
-            emailPromoteur: ['', Validators.email],
-            nomEntreprise: ['', Validators.required],
+            emailPromoteur: [''], // No email validation required
+            nomEntreprise: ['', Validators.required], // Will be updated based on natureClient
             formeJuridique: [''],
-            secteurActivite: [''], // Changed to text field
+            secteurActivite: [''],
             dateCreation: [null],
             numeroRegistre: [''],
             adresseEntreprise: [''],
             telephoneEntreprise: [''],
-            emailEntreprise: ['', Validators.email]
+            emailEntreprise: [''] // No email validation required
         });
 
-        // Bilan entreprise - removed required validators
+        // Bilan entreprise
         this.bilanEntrepriseForm = this.fb.group({
             liquidites: [0],
             creancesClients: [0],
@@ -327,7 +367,7 @@ export class AnalyseBilanActiviteComponent {
             capitalPropre: [0]
         });
 
-        // Bilan personnel - removed required validators
+        // Bilan personnel
         this.bilanPersonnelForm = this.fb.group({
             epargnes: [0],
             valeurBiensDurables: [0],
@@ -335,21 +375,21 @@ export class AnalyseBilanActiviteComponent {
             montantGarantie: [0]
         });
 
-        // Résultats actuels - removed required validators
+        // Résultats actuels
         this.resultatActuelForm = this.fb.group({
             chiffreAffaires: [0],
             autresRevenus: [0],
             coutMarchandises: [0]
         });
 
-        // Résultats prévisionnels - removed required validators
+        // Résultats prévisionnels
         this.resultatPrevisionnelForm = this.fb.group({
             chiffreAffaires: [0],
             autresRevenus: [0],
             coutMarchandises: [0]
         });
 
-        // Charges actuelles - removed required validators
+        // Charges actuelles
         this.chargesActuellesForm = this.fb.group({
             coutTransportProduction: [0],
             fraisTransportPersonnel: [0],
@@ -360,7 +400,7 @@ export class AnalyseBilanActiviteComponent {
             loyers: [0]
         });
 
-        // Charges prévisionnelles - removed required validators
+        // Charges prévisionnelles
         this.chargesPrevisionellesForm = this.fb.group({
             coutTransportProduction: [0],
             fraisTransportPersonnel: [0],
@@ -371,7 +411,7 @@ export class AnalyseBilanActiviteComponent {
             loyers: [0]
         });
 
-        // Demande credit form - removed validators for prefilled fields
+        // Demande credit form
         this.demandeCreditForm = this.fb.group({
             montantDemande: [0],
             dureeMois: [12],
@@ -381,7 +421,7 @@ export class AnalyseBilanActiviteComponent {
             pointVente: [null]
         });
 
-        // Personne caution form - all fields optional
+        // Personne caution form
         this.personnecautionForm = this.fb.group({
             nom: [''],
             prenom: [''],
@@ -428,11 +468,12 @@ export class AnalyseBilanActiviteComponent {
 
     validateCurrentForm(): boolean {
         const currentIndex = this.activeIndex();
+        const natureClient = this.state().natureClient;
 
-        // Simplified validation - only check truly required fields
         switch (currentIndex) {
-            case 0: // Info base - only check entreprise name
-                if (this.infoBaseForm.get('nomEntreprise')?.invalid) {
+            case 0: // Info base
+                // Only validate enterprise name if natureClient is 'Entreprise'
+                if (natureClient === 'Entreprise' && this.infoBaseForm.get('nomEntreprise')?.invalid) {
                     this.messageService.add({
                         severity: 'error',
                         summary: 'Erreur',
@@ -553,7 +594,6 @@ export class AnalyseBilanActiviteComponent {
         });
     }
 
-    // Save methods remain similar but handle disabled fields
     saveInfoBaseToResume() {
         const getValue = (controlName: string) => {
             const control = this.infoBaseForm.get(controlName);
@@ -570,18 +610,24 @@ export class AnalyseBilanActiviteComponent {
             email: getValue('emailPromoteur') || ''
         };
 
-        this.resumeData.entreprise = {
-            nom: getValue('nomEntreprise') || '',
-            forme_juridique: this.getFormeJuridiqueValue() || '',
-            secteur_activite: getValue('secteurActivite') || '',
-            date_creation: this.formatDate(getValue('dateCreation')),
-            numero_registre: getValue('numeroRegistre') || '',
-            adresse: getValue('adresseEntreprise') || '',
-            telephone: getValue('telephoneEntreprise') || '',
-            email: getValue('emailEntreprise') || ''
-        };
+        // Only save enterprise data if natureClient is 'Entreprise'
+        if (this.state().natureClient === 'Entreprise') {
+            this.resumeData.entreprise = {
+                nom: getValue('nomEntreprise') || '',
+                forme_juridique: this.getFormeJuridiqueValue() || '',
+                secteur_activite: getValue('secteurActivite') || '',
+                date_creation: this.formatDate(getValue('dateCreation')),
+                numero_registre: getValue('numeroRegistre') || '',
+                adresse: getValue('adresseEntreprise') || '',
+                telephone: getValue('telephoneEntreprise') || '',
+                email: getValue('emailEntreprise') || ''
+            };
+        } else {
+            this.resumeData.entreprise = null;
+        }
     }
 
+    // Rest of the save methods remain the same...
     saveBilanEntrepriseToResume() {
         this.resumeData.bilanEntreprise = {
             liquidites: this.bilanEntrepriseForm.get('liquidites')?.value || 0,
@@ -696,33 +742,52 @@ export class AnalyseBilanActiviteComponent {
             return `${year}-${month}-${day}`;
         };
 
-        // Helper to get value from disabled fields
         const getFormValue = (form: FormGroup, field: string, defaultValue: any = '') => {
             const control = form.get(field);
             return control?.disabled ? control.value : control?.value || defaultValue;
         };
 
+        const natureClient = this.state().natureClient;
+
+        // Créer un nom d'entreprise par défaut pour les clients individuels
+        let nomEntreprise: string;
+        let formeJuridique: string;
+
+        const prenomPromoteur = getFormValue(this.infoBaseForm, 'prenomPromoteur', '');
+        const nomPromoteur = getFormValue(this.infoBaseForm, 'nomPromoteur', '');
+
+        if (natureClient === 'Individuel') {
+            nomEntreprise = `Entreprise de ${prenomPromoteur} ${nomPromoteur}`.trim();
+            if (nomEntreprise === 'Entreprise de ') {
+                nomEntreprise = 'Entreprise Individuelle';
+            }
+            formeJuridique = 'EI';
+        } else {
+            nomEntreprise = getFormValue(this.infoBaseForm, 'nomEntreprise', 'Entreprise');
+            formeJuridique = this.getFormeJuridiqueValue() || 'EI';
+        }
+
         const demandeComplete: DemandeCreditCompleteDTO = {
             demandeIndividuelId: this.demandeIndividuelId,
 
-            // Promoteur - get values from disabled fields
-            nomPromoteur: getFormValue(this.infoBaseForm, 'nomPromoteur', 'Non spécifié'),
-            prenomPromoteur: getFormValue(this.infoBaseForm, 'prenomPromoteur', 'Non spécifié'),
+            // Promoteur
+            nomPromoteur: nomPromoteur || 'Non spécifié',
+            prenomPromoteur: prenomPromoteur || 'Non spécifié',
             dateNaissancePromoteur: this.formatDate(getFormValue(this.infoBaseForm, 'dateNaissance')) || formatDateSafe(new Date(1980, 0, 1)),
-            numeroIdentitePromoteur: getFormValue(this.infoBaseForm, 'numeroIdentite'),
-            adressePromoteur: getFormValue(this.infoBaseForm, 'adressePromoteur'),
-            telephonePromoteur: getFormValue(this.infoBaseForm, 'telephonePromoteur'),
-            emailPromoteur: getFormValue(this.infoBaseForm, 'emailPromoteur'),
+            numeroIdentitePromoteur: getFormValue(this.infoBaseForm, 'numeroIdentite', ''),
+            adressePromoteur: getFormValue(this.infoBaseForm, 'adressePromoteur', ''),
+            telephonePromoteur: getFormValue(this.infoBaseForm, 'telephonePromoteur', ''),
+            emailPromoteur: getFormValue(this.infoBaseForm, 'emailPromoteur', '') || null,
 
-            // Entreprise
-            nomEntreprise: getFormValue(this.infoBaseForm, 'nomEntreprise', 'Non spécifié'),
-            formeJuridique: this.getFormeJuridiqueValue() || 'EI',
+            // Entreprise - JAMAIS null ou undefined
+            nomEntreprise: nomEntreprise,
+            formeJuridique: formeJuridique,
             secteurActivite: getFormValue(this.infoBaseForm, 'secteurActivite', 'Commerce'),
-            dateCreationEntreprise: this.formatDate(getFormValue(this.infoBaseForm, 'dateCreation')) || formatDateSafe(new Date(currentYear - 2, 0, 1)),
-            numeroRegistre: getFormValue(this.infoBaseForm, 'numeroRegistre'),
-            adresseEntreprise: getFormValue(this.infoBaseForm, 'adresseEntreprise'),
-            telephoneEntreprise: getFormValue(this.infoBaseForm, 'telephoneEntreprise'),
-            emailEntreprise: getFormValue(this.infoBaseForm, 'emailEntreprise'),
+            dateCreationEntreprise: this.formatDate(getFormValue(this.infoBaseForm, 'dateCreation')) || '',
+            numeroRegistre: getFormValue(this.infoBaseForm, 'numeroRegistre', '') || null,
+            adresseEntreprise: getFormValue(this.infoBaseForm, 'adresseEntreprise', '') || getFormValue(this.infoBaseForm, 'adressePromoteur', '') || null,
+            telephoneEntreprise: getFormValue(this.infoBaseForm, 'telephoneEntreprise', '') || null,
+            emailEntreprise: getFormValue(this.infoBaseForm, 'emailEntreprise', '') || null,
 
             // Bilan entreprise
             liquidites: this.bilanEntrepriseForm.get('liquidites')?.value || 0,
@@ -769,49 +834,92 @@ export class AnalyseBilanActiviteComponent {
             impotsPrevisionnel: this.chargesPrevisionellesForm.get('impots')?.value || 0,
             loyersPrevisionnel: this.chargesPrevisionellesForm.get('loyers')?.value || 0,
 
-            // Demande crédit - get values from disabled fields
-            montantDemande: getFormValue(this.demandeCreditForm, 'montantDemande', 1000000),
+            // Demande crédit
+            montantDemande: getFormValue(this.demandeCreditForm, 'montantDemande', 60000000),
             dureeMois: getFormValue(this.demandeCreditForm, 'dureeMois', 12),
-            objetFinancement: getFormValue(this.demandeCreditForm, 'objetFinancement', 'Financement activité'),
+            objetFinancement: getFormValue(this.demandeCreditForm, 'objetFinancement', 'Fond commerce'),
 
             // Personnecautions
             personnecautions: this.personnecautions || [],
 
-            // Location IDs - get from disabled fields
-            delegationId: getFormValue(this.demandeCreditForm, 'delegation')?.id ? Number(getFormValue(this.demandeCreditForm, 'delegation').id) : undefined,
-            agenceId: getFormValue(this.demandeCreditForm, 'agence')?.id ? Number(getFormValue(this.demandeCreditForm, 'agence').id) : undefined,
-            pointVenteId: getFormValue(this.demandeCreditForm, 'pointVente')?.id ? Number(getFormValue(this.demandeCreditForm, 'pointVente').id) : undefined,
-
-            userId: this.state().userId || undefined
+            // Location IDs - Correction importante ici
+            delegationId: 1, // Forcer les valeurs pour le test
+            agenceId: 1,
+            pointVenteId: 1,
+            userId: this.state().userId || 3
         };
 
-        console.log('Final demande object:', demandeComplete);
+        // Debug complet
+        console.log('=== DONNÉES ENVOYÉES ===');
+        console.log('Nature client:', natureClient);
+        console.log('Nom entreprise:', demandeComplete.nomEntreprise);
+        console.log('Forme juridique:', demandeComplete.formeJuridique);
+        console.log('Personnecautions:', JSON.stringify(demandeComplete.personnecautions));
+        console.log('Demande complète:', JSON.stringify(demandeComplete, null, 2));
 
         this.analyseCreditService
             .submitCompleteDemande$(demandeComplete)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
-                next: (response: IResponse) => {
+                next: (response: any) => {
                     this.loading.set(false);
-                    if (response) {
+
+                    // Debug de la réponse
+                    console.log('=== RÉPONSE REÇUE ===');
+                    console.log('Response complète:', response);
+                    console.log('Response.data:', response?.data);
+                    console.log('Response.data.demande:', response?.data?.demande);
+                    console.log('Response.data.demande.success:', response?.data?.demande?.success);
+
+                    // Vérifier la bonne structure de réponse
+                    const isSuccess = response?.data?.demande?.success === true || response?.success === true || response?.data?.success === true || response?.code === 0 || response?.statusCode === 200;
+
+                    if (isSuccess) {
                         this.messageService.add({
                             severity: 'success',
                             summary: 'Succès',
-                            detail: 'Votre demande de crédit a été soumise avec succès!'
+                            detail: response?.data?.demande?.message || 'Votre demande de crédit a été soumise avec succès!',
+                            life: 3000
                         });
+
+                        // Redirection après 2 secondes
+                        console.log('Redirection vers /dashboards dans 2 secondes...');
                         setTimeout(() => {
-                            this.router.navigate(['/dashboards']);
+                            console.log('Redirection en cours...');
+                            this.router.navigate(['/dashboards']).then(
+                                (success) => console.log('Navigation réussie:', success),
+                                (error) => console.error('Erreur de navigation:', error)
+                            );
                         }, 2000);
+                    } else {
+                        // Gestion de l'échec
+                        console.log('Réponse non-succès:', response);
+                        const errorMessage = response?.data?.demande?.message || response?.data?.error || response?.message || 'La demande a été traitée mais nécessite une vérification';
+
+                        this.messageService.add({
+                            severity: 'warn',
+                            summary: 'Attention',
+                            detail: errorMessage,
+                            life: 5000
+                        });
                     }
                 },
-                error: (error) => {
+                error: (error: any) => {
                     this.loading.set(false);
+
+                    console.error('=== ERREUR ===');
+                    console.error('Erreur complète:', error);
+                    console.error('Error.error:', error?.error);
+                    console.error('Error.message:', error?.message);
+
+                    const errorMessage = error?.error?.message || error?.error?.data?.error || error?.message || 'Erreur lors de la soumission de la demande';
+
                     this.messageService.add({
                         severity: 'error',
                         summary: 'Erreur',
-                        detail: 'Erreur lors de la soumission de la demande complète.'
+                        detail: errorMessage,
+                        life: 5000
                     });
-                    console.error('Erreur:', error);
                 }
             });
     }
@@ -938,5 +1046,10 @@ export class AnalyseBilanActiviteComponent {
         const month = String(dateObj.getMonth() + 1).padStart(2, '0');
         const day = String(dateObj.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
+    }
+
+    // Helper method to check if enterprise section should be shown
+    isEnterpriseSection(): boolean {
+        return this.state().natureClient === 'Entreprise';
     }
 }

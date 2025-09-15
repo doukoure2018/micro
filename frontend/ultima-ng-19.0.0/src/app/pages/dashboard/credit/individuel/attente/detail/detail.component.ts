@@ -988,6 +988,69 @@ export class DetailComponent {
     }
 
     /**
+     * Rejeter la demande (réservé au DA)
+     */
+    rejectDemande(): void {
+        const demandeId = this.state().demandeIndividuel?.demandeIndividuelId;
+
+        if (!demandeId) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Erreur',
+                detail: 'ID de la demande non trouvé'
+            });
+            return;
+        }
+
+        this.confirmationService.confirm({
+            message: 'Êtes-vous sûr de vouloir rejeter cette demande ? Cette action est définitive.',
+            header: 'Confirmation de rejet',
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Rejeter',
+            rejectLabel: 'Annuler',
+            acceptButtonStyleClass: 'p-button-danger',
+            accept: () => {
+                this.state.update((s) => ({ ...s, loading: true }));
+
+                this.userService
+                    .rejectDemandeIndividuel$(demandeId)
+                    .pipe(takeUntilDestroyed(this.destroyRef))
+                    .subscribe({
+                        next: (response: IResponse) => {
+                            this.state.update((s) => ({ ...s, loading: false }));
+
+                            this.messageService.add({
+                                severity: 'success',
+                                summary: 'Succès',
+                                detail: 'La demande a été rejetée avec succès',
+                                life: 3000
+                            });
+
+                            // Redirection après 2 secondes
+                            setTimeout(() => {
+                                this.router.navigate(['/dashboards/home']);
+                            }, 2000);
+                        },
+                        error: (error) => {
+                            this.state.update((s) => ({
+                                ...s,
+                                loading: false,
+                                error: error.error?.message || 'Erreur lors du rejet de la demande'
+                            }));
+
+                            this.messageService.add({
+                                severity: 'error',
+                                summary: 'Erreur',
+                                detail: error.error?.message || 'Impossible de rejeter la demande',
+                                life: 5000
+                            });
+                        }
+                    });
+            }
+        });
+    }
+
+    /**
      * Imprimer le dossier complet de la demande
      */
     imprimerDossierComplet(): void {
@@ -1593,5 +1656,12 @@ export class DetailComponent {
             }
         }
     `;
+    }
+
+    /**
+     * Ouvrir une route dans un nouvel onglet
+     */
+    openInNewTab(route: string): void {
+        window.open(route, '_blank');
     }
 }
