@@ -43,8 +43,8 @@ jobs:
           docker build \
             -t doukoure93/digicrg-app:${{ steps.build-number.outputs.BUILD_NUMBER }} \
             -t doukoure93/digicrg-app:latest \
-            --build-arg API_BASE_URL=http://${{ secrets.OVH_HOST }}:8000 \
-            --build-arg AUTH_SERVER_URL=http://${{ secrets.OVH_HOST }}:8080 \
+            --build-arg API_BASE_URL=https://digi-creditrural-io.com/api \
+            --build-arg AUTH_SERVER_URL=https://digi-creditrural-io.com/auth \
             --file Dockerfile \
             .
           
