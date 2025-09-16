@@ -62,5 +62,38 @@
     </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                try {
+                    const response = await fetch('/auth/api/login', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            username: document.getElementById('username').value,
+                            password: document.getElementById('password').value
+                        })
+                    });
+
+                    if (response.ok) {
+                        // Redirection après succès
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const redirectUri = urlParams.get('redirect_uri');
+                        window.location.href = redirectUri || 'https://digi-creditrural-io.com';
+                    } else {
+                        // Afficher l'erreur
+                        document.getElementById('alert').style.display = 'flex';
+                    }
+                } catch (error) {
+                    console.error('Erreur de connexion:', error);
+                }
+            });
+        }
+    });
+</script>
 </body>
 </html>
