@@ -133,9 +133,10 @@ public class AuthorizationServerConfig {
                         .anyRequest().authenticated());
 
         http.formLogin(login -> login
-                .loginPage("/auth/login")
+                .loginPage("/login")           // La page de login est à /login
+                .loginProcessingUrl("/login")   // Le POST du formulaire va à /login
                 .successHandler(new MfaAuthenticationHandler("/mfa", "MFA_REQUIRED"))
-                .failureHandler(new SimpleUrlAuthenticationFailureHandler("/auth/login")));
+                .failureHandler(new SimpleUrlAuthenticationFailureHandler("/login?error")));
 
         http.logout(logout -> logout
                 .logoutSuccessUrl("https://digi-creditrural-io.com")
