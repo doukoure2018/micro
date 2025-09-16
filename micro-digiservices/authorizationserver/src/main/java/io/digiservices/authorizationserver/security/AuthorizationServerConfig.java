@@ -133,8 +133,8 @@ public class AuthorizationServerConfig {
                         .anyRequest().authenticated());
 
         http.formLogin(login -> login
-                .loginPage("/login")           // La page de login est à /login
-                .loginProcessingUrl("/login")   // Le POST du formulaire va à /login
+                .loginPage("/login")
+                .loginProcessingUrl("/login")
                 .successHandler(new MfaAuthenticationHandler("/mfa", "MFA_REQUIRED"))
                 .failureHandler(new SimpleUrlAuthenticationFailureHandler("/login?error")));
 
