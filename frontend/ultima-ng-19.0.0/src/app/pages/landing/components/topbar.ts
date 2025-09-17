@@ -42,9 +42,9 @@ import { environment } from 'src/environments/environment';
                     </li>
 
                     <li>
-                        <button type="button" (click)="goToLogin()" pButton pRipple class="!bg-surface-900 !border-surface-900 m-0 mt-4 md:mt-0 md:ml-8 rounded-md px-3 py-2">
+                        <a [href]="getLoginUrl()" pButton pRipple class="!bg-surface-900 !border-surface-900 m-0 mt-4 md:mt-0 md:ml-8 rounded-md px-3 py-2">
                             <span pButtonLabel class="font-medium text-surface-0">Login</span>
-                        </button>
+                        </a>
                     </li>
                 </ul>
             </div>
@@ -54,6 +54,8 @@ import { environment } from 'src/environments/environment';
 export class Topbar {
     private authServer = environment.authServer;
     private redirectUri = environment.redirectUri;
+
+    // Fixed code challenge for this example
     private codeChallenge = 'HK02sitqCRpUlfLEX2xl4JGqaVQhNDsfTWH-oQzJHGw';
 
     handleScroll(id: string) {
@@ -65,14 +67,7 @@ export class Topbar {
         }
     }
 
-    // REMPLACEZ getLoginUrl() par cette méthode
-    goToLogin(): void {
-        const loginUrl = `${this.authServer}/oauth2/authorize?response_type=code&client_id=client&scope=openid&redirect_uri=${encodeURIComponent(this.redirectUri)}&code_challenge_method=S256&code_challenge=${this.codeChallenge}`;
-
-        // Log pour debug
-        console.log('Redirecting to OAuth2:', loginUrl);
-
-        // CRITICAL: Force browser navigation, not Angular routing
-        window.location.href = loginUrl;
+    getLoginUrl(): string {
+        return `${this.authServer}/oauth2/authorize?response_type=code&client_id=client&scope=openid&redirect_uri=${this.redirectUri}&code_challenge_method=S256&code_challenge=${this.codeChallenge}`;
     }
 }
