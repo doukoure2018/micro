@@ -238,7 +238,8 @@ public class AuthorizationServerConfig {
     }
 
     @Bean
-    public AuthorizationServerSettings authorizationServerSettings() {
+    public AuthorizationServerSettings authorizationServerSettings()
+    {
         return AuthorizationServerSettings.builder()
                 .issuer("https://digi-creditrural-io.com/auth")  // Ajouter l'issuer explicite
                 .build();

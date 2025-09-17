@@ -47,6 +47,24 @@ public class RapprochementResource {
         return created(getUri()).body(getResponse(request, Map.of("reconciliationResultDTO", reconciliationResultDTO), "Rapprochement effectué avec success", CREATED));
     }
 
+
+    @GetMapping("/reconciliationcompte/check")
+    public ResponseEntity<Response> checkReconciliationCompte(
+            @NotNull Authentication authentication,
+            @RequestParam(value = "dateDebut") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateDebut,
+            @RequestParam(value = "dateFin") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFin,
+            HttpServletRequest request)
+    {
+        // get the instance user
+        User user = userClient.getUserByUuid(authentication.getName());
+        // get point de service info
+        PointVenteDto pointVenteDto = userClient.getPointVenteClient(user.getPointventeId());
+        ReconciliationResultDTO reconciliationResultDTO = ebankingClient.checkReconciliationCompte(
+                pointVenteDto.getCode(),dateDebut,dateFin
+        );
+        return created(getUri()).body(getResponse(request, Map.of("reconciliationResultDTO", reconciliationResultDTO), "Rapprochement effectué avec success", CREATED));
+    }
+
     private URI getUri() {
         return URI.create("/ecredit/rapprochement-caisse");
     }

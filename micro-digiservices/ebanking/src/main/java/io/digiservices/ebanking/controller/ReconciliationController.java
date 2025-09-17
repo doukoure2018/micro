@@ -1,16 +1,13 @@
 package io.digiservices.ebanking.controller;
 
 import io.digiservices.ebanking.dto.ReconciliationResultDTO;
+import io.digiservices.ebanking.service.ReconciliationCompteService;
 import io.digiservices.ebanking.service.ReconciliationService;
-import jakarta.validation.constraints.NotNull;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -26,6 +23,8 @@ public class ReconciliationController {
 
     private final ReconciliationService reconciliationService;
 
+    private final ReconciliationCompteService reconciliationCompteService;
+
     @Qualifier("middlewareJdbcTemplate")
     private final JdbcTemplate middlewareJdbcTemplate;
 
@@ -35,8 +34,10 @@ public class ReconciliationController {
     // Constructeur avec injection correcte
     public ReconciliationController(
             ReconciliationService reconciliationService,
+            ReconciliationCompteService reconciliationCompteService,
             @Qualifier("middlewareJdbcTemplate") JdbcTemplate middlewareJdbcTemplate,
             @Qualifier("jdbcTemplate") JdbcTemplate productionJdbcTemplate) {
+        this.reconciliationCompteService = reconciliationCompteService;
         this.reconciliationService = reconciliationService;
         this.middlewareJdbcTemplate = middlewareJdbcTemplate;
         this.productionJdbcTemplate = productionJdbcTemplate;
@@ -88,6 +89,29 @@ public class ReconciliationController {
         }
 
         ReconciliationResultDTO result = reconciliationService.performReconciliationPeriod(
+                codeAgence, dateDebut, dateFin
+        );
+
+        return ResponseEntity.ok(result);
+    }
+
+
+    @PostMapping("/reconciliationcompte/check")
+    public ResponseEntity<ReconciliationResultDTO> checkReconciliationCompte(
+            @RequestParam(value = "codeAgence") String codeAgence,
+            @RequestParam(value = "dateDebut") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateDebut,
+            @RequestParam(value = "dateFin") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFin) {
+
+        log.info("Paramètres - Agence: {}, Période: {} au {}", codeAgence, dateDebut, dateFin);
+
+        // Validation des dates
+        if (dateDebut.isAfter(dateFin)) {
+            return ResponseEntity.badRequest().body(
+                    ReconciliationResultDTO.error("La date de début doit être antérieure à la date de fin")
+            );
+        }
+
+        ReconciliationResultDTO result = reconciliationCompteService.performReconciliationPeriod(
                 codeAgence, dateDebut, dateFin
         );
 
@@ -151,7 +175,6 @@ public class ReconciliationController {
             return ResponseEntity.internalServerError().body("Erreur: " + e.getMessage());
         }
     }
-
 
     /**
      * Endpoint pour effectuer le rapprochement du jour

@@ -775,53 +775,111 @@
                                 [value]="state().reconciliationResult?.depositsProduction || []" [paginator]="true"
                                 [rows]="10" [rowsPerPageOptions]="[10, 25, 50, 100]" styleClass="p-datatable-sm"
                                 [tableStyle]="{'min-width': '60rem'}"
-                                [globalFilterFields]="['NUM_MOVIMIENTO', 'NUM_CUENTA', 'DES_REFERENCIA', 'COD_USUARIO', 'TIP_TRANSACCION']"
-                                dataKey="NUM_MOVIMIENTO">
+                                [globalFilterFields]="['NUM_SECUENCIA_DOC', 'COD_CLIENTE', 'NUM_MOV_ENTE', 'COD_CAJERO', 'TIP_TRANSACCION']"
+                                dataKey="NUM_SECUENCIA_DOC">
 
                                 <ng-template pTemplate="header">
                                     <tr>
-                                        <th pSortableColumn="NUM_MOVIMIENTO">
-                                            N° Mouvement
-                                            <p-sortIcon field="NUM_MOVIMIENTO"></p-sortIcon>
+                                        <th pSortableColumn="NUM_SECUENCIA_DOC">
+                                            N° Séquence
+                                            <p-sortIcon field="NUM_SECUENCIA_DOC"></p-sortIcon>
+                                            <p-columnFilter type="text" field="NUM_SECUENCIA_DOC" display="menu"
+                                                placeholder="Rechercher..."></p-columnFilter>
                                         </th>
-                                        <th pSortableColumn="FEC_MOVIMIENTO">
+                                        <th pSortableColumn="FEC_TRANSACCION">
                                             Date/Heure
-                                            <p-sortIcon field="FEC_MOVIMIENTO"></p-sortIcon>
+                                            <p-sortIcon field="FEC_TRANSACCION"></p-sortIcon>
+
                                         </th>
-                                        <th pSortableColumn="NUM_CUENTA">
+                                        <th pSortableColumn="NUM_MOV_ENTE">
                                             Compte
-                                            <p-sortIcon field="NUM_CUENTA"></p-sortIcon>
+                                            <p-sortIcon field="NUM_MOV_ENTE"></p-sortIcon>
+                                            <p-columnFilter type="text" field="NUM_MOV_ENTE" display="menu"
+                                                placeholder="N° compte..."></p-columnFilter>
                                         </th>
-                                        <th>Référence</th>
-                                        <th pSortableColumn="MON_MOVIMIENTO">
+                                        <th pSortableColumn="COD_CLIENTE">
+                                            Client
+                                            <p-sortIcon field="COD_CLIENTE"></p-sortIcon>
+                                            <p-columnFilter type="text" field="COD_CLIENTE" display="menu"
+                                                placeholder="Code client..."></p-columnFilter>
+                                        </th>
+                                        <th pSortableColumn="MTO_MOVIMIENTO">
                                             Montant
-                                            <p-sortIcon field="MON_MOVIMIENTO"></p-sortIcon>
+                                            <p-sortIcon field="MTO_MOVIMIENTO"></p-sortIcon>
+                                            <p-columnFilter type="numeric" field="MTO_MOVIMIENTO" display="menu"
+                                                currency="GNF">
+                                                <ng-template pTemplate="filter" let-filter="filterCallback">
+
+                                                </ng-template>
+                                            </p-columnFilter>
                                         </th>
-                                        <th>Description</th>
-                                        <th pSortableColumn="COD_USUARIO">
+                                        <th pSortableColumn="COD_CAJERO">
                                             Opérateur
-                                            <p-sortIcon field="COD_USUARIO"></p-sortIcon>
+                                            <p-sortIcon field="COD_CAJERO"></p-sortIcon>
+                                            <p-columnFilter type="text" field="COD_CAJERO" display="menu"
+                                                placeholder="Code opérateur..."></p-columnFilter>
                                         </th>
-                                        <th>État</th>
+                                        <th pSortableColumn="TIP_TRANSACCION">
+                                            Type
+                                            <p-sortIcon field="TIP_TRANSACCION"></p-sortIcon>
+                                            <p-columnFilter field="TIP_TRANSACCION" matchMode="equals" display="menu">
+                                                <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                                    <p-dropdown [ngModel]="value" [options]="[
+                                        {label: 'DEPOSITO', value: 'DEPOSITO'},
+                                        {label: 'TRANSFERENCIA', value: 'TRANSFERENCIA'},
+                                        {label: 'CREDITO', value: 'CREDITO'}
+                                    ]" (onChange)="filter($event.value)" placeholder="Sélectionner..."
+                                                        [showClear]="true">
+                                                    </p-dropdown>
+                                                </ng-template>
+                                            </p-columnFilter>
+                                        </th>
+                                        <th>
+                                            État
+                                            <p-columnFilter field="IND_ESTADO" matchMode="equals" display="menu">
+                                                <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                                    <p-dropdown [ngModel]="value" [options]="[
+                                        {label: 'Actif', value: 'A'},
+                                        {label: 'Inactif', value: 'I'},
+                                        {label: 'En attente', value: 'P'}
+                                    ]" (onChange)="filter($event.value)" placeholder="Tous" [showClear]="true">
+                                                    </p-dropdown>
+                                                </ng-template>
+                                            </p-columnFilter>
+                                        </th>
                                     </tr>
                                 </ng-template>
 
                                 <ng-template pTemplate="body" let-deposit>
                                     <tr>
-                                        <td><code>{{ deposit.NUM_MOVIMIENTO }}</code></td>
-                                        <td>{{ formatDateTime(deposit.FEC_MOVIMIENTO) }}</td>
-                                        <td><small>{{ deposit.NUM_CUENTA }}</small></td>
-                                        <td><small>{{ deposit.DES_REFERENCIA || '-' }}</small></td>
-                                        <td class="text-right font-bold">{{ formatMontant(deposit.MON_MOVIMIENTO) }}
+                                        <td><code>{{ deposit.NUM_SECUENCIA_DOC }}</code></td>
+                                        <td>{{ formatDateTime(deposit.FEC_TRANSACCION) }}</td>
+                                        <td><small>{{ deposit.NUM_MOV_ENTE }}</small></td>
+                                        <td>{{ deposit.COD_CLIENTE }}</td>
+                                        <td class="text-right font-bold">{{ formatMontant(deposit.MTO_MOVIMIENTO) }}
                                         </td>
-                                        <td><small>{{ deposit.DES_MOVIMIENTO }}</small></td>
-                                        <td>{{ deposit.COD_USUARIO }}</td>
+                                        <td>{{ deposit.COD_CAJERO }}</td>
                                         <td>
-                                            <p-tag
-                                                [value]="deposit.EST_MOVIMIENTO === 'C' ? 'Confirmé' : deposit.EST_MOVIMIENTO"
-                                                severity="success"></p-tag>
+                                            <p-tag [value]="deposit.TIP_TRANSACCION" severity="info"></p-tag>
+                                        </td>
+                                        <td>
+                                            <p-tag [value]="deposit.IND_ESTADO"
+                                                [severity]="getStatusSeverity(deposit.IND_ESTADO)">
+                                            </p-tag>
                                         </td>
                                     </tr>
+                                </ng-template>
+
+                                <ng-template pTemplate="emptymessage">
+                                    <tr>
+                                        <td colspan="8" class="text-center">Aucun dépôt production trouvé</td>
+                                    </tr>
+                                </ng-template>
+
+                                <ng-template pTemplate="summary">
+                                    <div class="p-d-flex p-ai-center p-jc-between">
+                                        Affichage de {{dtDepositsProduction.totalRecords}} enregistrement(s)
+                                    </div>
                                 </ng-template>
                             </p-table>
                         </div>
@@ -870,27 +928,109 @@
                                 [value]="state().reconciliationResult?.withdrawalsProduction || []" [paginator]="true"
                                 [rows]="10" [rowsPerPageOptions]="[10, 25, 50, 100]" styleClass="p-datatable-sm"
                                 [tableStyle]="{'min-width': '60rem'}"
-                                [globalFilterFields]="['NUM_MOVIMIENTO', 'NUM_CUENTA', 'DES_REFERENCIA', 'COD_USUARIO', 'TIP_TRANSACCION']"
-                                dataKey="NUM_MOVIMIENTO">
+                                [globalFilterFields]="['NUM_SECUENCIA_DOC', 'COD_CLIENTE', 'NUM_MOV_ENTE', 'COD_CAJERO', 'TIP_TRANSACCION']"
+                                dataKey="NUM_SECUENCIA_DOC">
 
-                                <!-- Même structure que dépôts mais pour withdrawals -->
+                                <ng-template pTemplate="header">
+                                    <tr>
+                                        <th pSortableColumn="NUM_SECUENCIA_DOC">
+                                            N° Séquence
+                                            <p-sortIcon field="NUM_SECUENCIA_DOC"></p-sortIcon>
+                                            <p-columnFilter type="text" field="NUM_SECUENCIA_DOC" display="menu"
+                                                placeholder="Rechercher..."></p-columnFilter>
+                                        </th>
+                                        <th pSortableColumn="FEC_TRANSACCION">
+                                            Date/Heure
+                                            <p-sortIcon field="FEC_TRANSACCION"></p-sortIcon>
+
+                                        </th>
+                                        <th pSortableColumn="NUM_MOV_ENTE">
+                                            Compte
+                                            <p-sortIcon field="NUM_MOV_ENTE"></p-sortIcon>
+                                            <p-columnFilter type="text" field="NUM_MOV_ENTE" display="menu"
+                                                placeholder="N° compte..."></p-columnFilter>
+                                        </th>
+                                        <th pSortableColumn="COD_CLIENTE">
+                                            Client
+                                            <p-sortIcon field="COD_CLIENTE"></p-sortIcon>
+                                            <p-columnFilter type="text" field="COD_CLIENTE" display="menu"
+                                                placeholder="Code client..."></p-columnFilter>
+                                        </th>
+                                        <th pSortableColumn="MTO_MOVIMIENTO">
+                                            Montant
+                                            <p-sortIcon field="MTO_MOVIMIENTO"></p-sortIcon>
+                                            <p-columnFilter type="numeric" field="MTO_MOVIMIENTO" display="menu"
+                                                currency="GNF">
+
+                                            </p-columnFilter>
+                                        </th>
+                                        <th pSortableColumn="COD_CAJERO">
+                                            Opérateur
+                                            <p-sortIcon field="COD_CAJERO"></p-sortIcon>
+                                            <p-columnFilter type="text" field="COD_CAJERO" display="menu"
+                                                placeholder="Code opérateur..."></p-columnFilter>
+                                        </th>
+                                        <th pSortableColumn="TIP_TRANSACCION">
+                                            Type
+                                            <p-sortIcon field="TIP_TRANSACCION"></p-sortIcon>
+                                            <p-columnFilter field="TIP_TRANSACCION" matchMode="equals" display="menu">
+                                                <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                                    <p-dropdown [ngModel]="value" [options]="[
+                                        {label: 'RETIRO', value: 'RETIRO'},
+                                        {label: 'TRANSFERENCIA', value: 'TRANSFERENCIA'},
+                                        {label: 'DEBITO', value: 'DEBITO'}
+                                    ]" (onChange)="filter($event.value)" placeholder="Sélectionner..."
+                                                        [showClear]="true">
+                                                    </p-dropdown>
+                                                </ng-template>
+                                            </p-columnFilter>
+                                        </th>
+                                        <th>
+                                            État
+                                            <p-columnFilter field="IND_ESTADO" matchMode="equals" display="menu">
+                                                <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                                    <p-dropdown [ngModel]="value" [options]="[
+                                        {label: 'Actif', value: 'A'},
+                                        {label: 'Inactif', value: 'I'},
+                                        {label: 'En attente', value: 'P'}
+                                    ]" (onChange)="filter($event.value)" placeholder="Tous" [showClear]="true">
+                                                    </p-dropdown>
+                                                </ng-template>
+                                            </p-columnFilter>
+                                        </th>
+                                    </tr>
+                                </ng-template>
+
                                 <ng-template pTemplate="body" let-withdrawal>
                                     <tr>
-                                        <td><code>{{ withdrawal.NUM_MOVIMIENTO }}</code></td>
-                                        <td>{{ formatDateTime(withdrawal.FEC_MOVIMIENTO) }}</td>
-                                        <td><small>{{ withdrawal.NUM_CUENTA }}</small></td>
-                                        <td><small>{{ withdrawal.DES_REFERENCIA || '-' }}</small></td>
-                                        <td class="text-right font-bold text-danger">
-                                            {{ formatMontant(withdrawal.MON_MOVIMIENTO) }}
-                                        </td>
-                                        <td><small>{{ withdrawal.DES_MOVIMIENTO }}</small></td>
-                                        <td>{{ withdrawal.COD_USUARIO }}</td>
+                                        <td><code>{{ withdrawal.NUM_SECUENCIA_DOC }}</code></td>
+                                        <td>{{ formatDateTime(withdrawal.FEC_TRANSACCION) }}</td>
+                                        <td><small>{{ withdrawal.NUM_MOV_ENTE }}</small></td>
+                                        <td>{{ withdrawal.COD_CLIENTE }}</td>
+                                        <td class="text-right font-bold text-danger">{{
+                                            formatMontant(withdrawal.MTO_MOVIMIENTO) }}</td>
+                                        <td>{{ withdrawal.COD_CAJERO }}</td>
                                         <td>
-                                            <p-tag
-                                                [value]="withdrawal.EST_MOVIMIENTO === 'C' ? 'Confirmé' : withdrawal.EST_MOVIMIENTO"
-                                                severity="secondary"></p-tag>
+                                            <p-tag [value]="withdrawal.TIP_TRANSACCION" severity="secondary"></p-tag>
+                                        </td>
+                                        <td>
+                                            <p-tag [value]="withdrawal.IND_ESTADO"
+                                                [severity]="getStatusSeverity(withdrawal.IND_ESTADO)">
+                                            </p-tag>
                                         </td>
                                     </tr>
+                                </ng-template>
+
+                                <ng-template pTemplate="emptymessage">
+                                    <tr>
+                                        <td colspan="8" class="text-center">Aucun retrait production trouvé</td>
+                                    </tr>
+                                </ng-template>
+
+                                <ng-template pTemplate="summary">
+                                    <div class="p-d-flex p-ai-center p-jc-between">
+                                        Affichage de {{dtWithdrawalsProduction.totalRecords}} enregistrement(s)
+                                    </div>
                                 </ng-template>
                             </p-table>
                         </div>

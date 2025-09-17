@@ -108,6 +108,14 @@ public interface EbankingClient {
 
 
 
+    @PostMapping(path ="/ebanking/reconciliationcompte/check")
+    ReconciliationResultDTO checkReconciliationCompte(
+            @RequestParam(value = "codeAgence") String codeAgence,
+            @RequestParam(value = "dateDebut") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateDebut,
+            @RequestParam(value = "dateFin") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFin);
+
+
+
 
 
 
