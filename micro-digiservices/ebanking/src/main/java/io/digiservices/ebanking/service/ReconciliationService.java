@@ -101,7 +101,7 @@ public class ReconciliationService {
     }
 
     /**
-     * Rapprochement intelligent basé sur NUMCOMPTE → NUM_MOV_ENTE
+     * Rapprochement intelligent basé sur NUM_CUENTA et autres critères
      */
     private RapprochementResult performIntelligentMatching(
             List<TransactionSafDTO> middlewareTransactions,
@@ -120,7 +120,7 @@ public class ReconciliationService {
         for (TransactionSafDTO mwTrans : middlewareTransactions) {
             boolean matched = false;
 
-            // Recherche par NUMCOMPTE → NUM_MOV_ENTE uniquement
+            // Recherche par NUM_CUENTA et autres critères
             for (int i = 0; i < productionTransactions.size(); i++) {
                 if (usedProductionIndices.contains(i)) continue;
 
@@ -202,113 +202,105 @@ public class ReconciliationService {
     }
 
     /**
-     * Match transaction client par NUM_MOV_ENTE (compte) + montant + client
-     * CRITÈRES SIMPLIFIÉS DE RAPPROCHEMENT
+     * Match transaction client par NUM_CUENTA + montant
+     * CONTRAINTE PRINCIPALE: NUMCOMPTE → NUM_CUENTA et MONTANT → MON_MOVIMIENTO
+     * IGNORE les types 32 et 33
      */
     private boolean matchClientTransactionByAccount(
             TransactionSafDTO mwTrans,
             Map<String, Object> prodTrans) {
 
+        // IGNORER les transactions de type 32 et 33
+        String tipTransaccion = String.valueOf(prodTrans.get("TIP_TRANSACCION"));
+        if ("32".equals(tipTransaccion) || "33".equals(tipTransaccion)) {
+            return false; // Ignorer ces types
+        }
+
         // 1. VÉRIFIER LE NUMÉRO DE COMPTE (CRITÈRE PRINCIPAL)
-        String prodNumMovEnte = (String) prodTrans.get("NUM_MOV_ENTE");
+        String prodNumCuenta = (String) prodTrans.get("NUM_CUENTA");
         String mwNumCompte = mwTrans.getNumCompte();
 
-        if (prodNumMovEnte == null || mwNumCompte == null) {
+        if (prodNumCuenta == null || mwNumCompte == null) {
             return false;
         }
 
         // Normaliser les numéros de compte (enlever espaces, tirets)
-        String prodCompteNorm = prodNumMovEnte.trim().replaceAll("[\\s-]", "");
+        String prodCompteNorm = prodNumCuenta.trim().replaceAll("[\\s-]", "");
         String mwCompteNorm = mwNumCompte.trim().replaceAll("[\\s-]", "");
 
         if (!prodCompteNorm.equals(mwCompteNorm)) {
             return false;
         }
 
-        // 2. VÉRIFIER LE MONTANT (CRITÈRE OBLIGATOIRE)
+        // 2. VÉRIFIER LE MONTANT (CRITÈRE PRINCIPAL)
         BigDecimal mwMontant = mwTrans.getMontant();
-        BigDecimal prodMontant = getBigDecimalValue(prodTrans.get("MTO_MOVIMIENTO"));
+        BigDecimal prodMontant = getBigDecimalValue(prodTrans.get("MON_MOVIMIENTO"));
 
         if (mwMontant == null || prodMontant == null ||
                 mwMontant.compareTo(prodMontant) != 0) {
             return false;
         }
 
-        // 3. VÉRIFIER LE CODE CLIENT (CRITÈRE OBLIGATOIRE)
-        String mwClient = mwTrans.getCodeClient();
-        String prodClient = (String) prodTrans.get("COD_CLIENTE");
+        // 3. ANALYSER LE TYPE DE TRANSACTION
+        long mwTypeTransaction = mwTrans.getTypeTransaction();
 
-        if (mwClient == null || prodClient == null || !mwClient.equals(prodClient)) {
-            return false;
-        }
+        // LOG pour diagnostic
+        log.info("🔍 MATCH POTENTIEL TROUVÉ: MW Type:{} vs PROD TIP_TRANSACCION:'{}' | Compte:{} | Montant:{}",
+                mwTypeTransaction, tipTransaccion, mwNumCompte, mwMontant);
 
-        // 4. VÉRIFIER LE TYPE DE TRANSACTION (5=Dépôt, 6=Retrait)
-        String tipTransaccion = String.valueOf(prodTrans.get("TIP_TRANSACCION"));
+        String typeDetecte = mwTypeTransaction == 16 ? "DÉPÔT" :
+                mwTypeTransaction == 44 ? "RETRAIT" : "AUTRE";
 
-        if ("Depot".equalsIgnoreCase(mwTrans.getTypeOperation()) ||
-                mwTrans.getTypeTransaction() == 16) {
-            if (!"5".equals(tipTransaccion)) {
-                return false;
-            }
-        } else if ("Retrait".equalsIgnoreCase(mwTrans.getTypeOperation()) ||
-                mwTrans.getTypeTransaction() == 44) {
-            if (!"6".equals(tipTransaccion)) {
-                return false;
-            }
-        } else {
-            // Type non reconnu
-            return false;
-        }
+        // Logging détaillé
+        String prodUsuario = (String) prodTrans.get("COD_USUARIO");
+        String mwCajero = mwTrans.getFaitPar();
 
-        // Tous les critères correspondent
-        log.debug("Match confirmé: Compte={}, Montant={}, Client={}, Type={}",
-                mwNumCompte, mwMontant, mwClient, mwTrans.getTypeOperation());
+        log.info("✓ Match accepté: Compte={}, Montant={} GNF, MW Type:{} vs PROD TIP:'{}' | MW Cajero:{} vs PROD User:{}",
+                mwNumCompte, mwMontant, mwTypeTransaction, tipTransaccion, mwCajero, prodUsuario);
 
         return true;
     }
 
     /**
-     * Match opération réserve (TIP_TRANSACCION = 3)
+     * Match opération réserve - Basé sur MONTANT + UTILISATEUR
+     * Pour les opérations réserve, on utilise le montant et le code utilisateur
      */
     private boolean matchReserveOperation(
             OperationReserveDTO resOp,
             Map<String, Object> prodTrans) {
 
-        // 1. Vérifier que c'est une opération de type 3
-        String tipTransaccion = String.valueOf(prodTrans.get("TIP_TRANSACCION"));
-        if (!"3".equals(tipTransaccion)) {
-            return false;
-        }
-
-        // 2. Vérifier le montant
+        // 1. VÉRIFIER LE MONTANT (CRITÈRE PRINCIPAL)
         BigDecimal resMontant = resOp.getMontant();
-        BigDecimal prodMontant = getBigDecimalValue(prodTrans.get("MTO_MOVIMIENTO"));
+        BigDecimal prodMontant = getBigDecimalValue(prodTrans.get("MON_MOVIMIENTO"));
 
         if (resMontant == null || prodMontant == null ||
                 resMontant.compareTo(prodMontant) != 0) {
             return false;
         }
 
-        // 3. Vérifier le cajero
+        // 2. VÉRIFIER L'UTILISATEUR/CAJERO (CRITÈRE PRINCIPAL pour les réserves)
         String resCajero = resOp.getCodeUser();
-        String prodCajero = (String) prodTrans.get("COD_CAJERO");
+        String prodUsuario = (String) prodTrans.get("COD_USUARIO");
 
-        if (!Objects.equals(resCajero, prodCajero)) {
+        if (!Objects.equals(resCajero, prodUsuario)) {
             return false;
         }
 
-        // 4. Vérifier le sens de l'opération
-        String numMovEnte = (String) prodTrans.get("NUM_MOV_ENTE");
+        // LES DEUX CRITÈRES PRINCIPAUX CORRESPONDENT
+        // Vérifications supplémentaires pour cohérence et logging
+
+        // Vérifier si c'est bien une opération de réserve via la description
+        String description = (String) prodTrans.get("DES_MOVIMIENTO");
+        boolean estReserve = (description != null && description.toLowerCase().contains("reserv"));
+
+        // Information sur le type de transaction
+        String tipTransaccion = String.valueOf(prodTrans.get("TIP_TRANSACCION"));
         long transactionOp = resOp.getTransactionOp();
 
-        // TRANSACTIONOP: 1 = Retrait → NUM_MOV_ENTE = 'D'
-        // TRANSACTIONOP: 2 = Dépôt → NUM_MOV_ENTE = 'A'
-        if (transactionOp == 1 && !"D".equals(numMovEnte)) {
-            return false;
-        }
-        if (transactionOp == 2 && !"A".equals(numMovEnte)) {
-            return false;
-        }
+        log.debug("✓ Match réserve confirmé sur MONTANT + USER: Montant={} GNF | User:{} | TransactionOp:{} | TIP_TRANSACCION:{} | Desc:{}",
+                resMontant, resCajero,
+                transactionOp == 1 ? "Retrait réserve" : "Dépôt réserve",
+                tipTransaccion, description);
 
         return true;
     }
@@ -368,8 +360,7 @@ public class ReconciliationService {
      * Récupère les opérations réserve
      */
     private List<OperationReserveDTO> getReserveOperationsPeriod(
-            String codeAgence, LocalDateTime dateDebut, LocalDateTime dateFin)
-    {
+            String codeAgence, LocalDateTime dateDebut, LocalDateTime dateFin) {
 
         String sql = """
             SELECT NUMERO, DATEOPERATION, CODEAGENCE, CODEUSER, MONTANT,
@@ -410,25 +401,54 @@ public class ReconciliationService {
     }
 
     /**
-     * Récupère les transactions Production
+     * Récupère les transactions Production depuis CC_MOVIMTO_MENSUAL
      */
     private List<Map<String, Object>> getProductionTransactionsPeriod(
             String codeAgence, LocalDateTime dateDebut, LocalDateTime dateFin) {
 
-        String sql = """
-            SELECT COD_EMPRESA, COD_AGENCIA, NUM_SECUENCIA_DOC, COD_CLIENTE,
-                   COD_SISTEMA, TIP_TRANSACCION, SUB_TIP_TRANSAC,
-                   FEC_TRANSACCION, IND_ESTADO, MTO_MOVIMIENTO, MTO_EFECTIVO,
-                   COD_CAJERO, NUM_MOV_ENTE, OBSERVACIONES,
-                   MON_SALDO_ANTERIOR, MON_SALDO_DISPONIBLE,
-                   ASIENTO_CONTABLE, TIP_ENTE, COD_ENTE
-            FROM CJ.CJ_TRAN_MENSUAL_ENCA 
-            WHERE COD_AGENCIA = ? 
-            AND FEC_TRANSACCION >= ? 
-            AND FEC_TRANSACCION <= ?
-            AND IND_ESTADO = 'A'
-            ORDER BY FEC_TRANSACCION, NUM_SECUENCIA_DOC
+        // D'abord, vérifier s'il y a des données dans la table
+        String countSql = "SELECT COUNT(*) FROM CC.CC_MOVIMTO_MENSUAL WHERE COD_AGENCIA = ?";
+        Integer totalCount = productionJdbcTemplate.queryForObject(countSql, Integer.class, codeAgence);
+        log.info("📊 Nombre total de transactions pour l'agence {} dans Production: {}", codeAgence, totalCount);
+
+        // Vérifier les dates disponibles
+        String dateSql = """
+            SELECT MIN(FEC_MOVIMIENTO) as MIN_DATE, MAX(FEC_MOVIMIENTO) as MAX_DATE 
+            FROM CC.CC_MOVIMTO_MENSUAL 
+            WHERE COD_AGENCIA = ?
         """;
+        Map<String, Object> dateRange = productionJdbcTemplate.queryForMap(dateSql, codeAgence);
+        log.info("📅 Plage de dates disponibles dans Production: {} à {}",
+                dateRange.get("MIN_DATE"), dateRange.get("MAX_DATE"));
+
+        // Vérifier les statuts disponibles
+        String statusSql = """
+            SELECT EST_MOVIMIENTO, COUNT(*) as NOMBRE 
+            FROM CC.CC_MOVIMTO_MENSUAL 
+            WHERE COD_AGENCIA = ? 
+            GROUP BY EST_MOVIMIENTO
+        """;
+        List<Map<String, Object>> statuts = productionJdbcTemplate.queryForList(statusSql, codeAgence);
+        log.info("📊 Distribution des statuts (EST_MOVIMIENTO): {}", statuts);
+
+        // UTILISER LE STATUT 'C' QUI EST LE STATUT MAJORITAIRE
+        String sql = """
+            SELECT COD_EMPRESA, NUM_MOVIMIENTO, NUM_CUENTA, COD_PRODUCTO,
+                   TIP_TRANSACCION, SUBTIP_TRANSAC, COD_SISTEMA,
+                   FEC_MOVIMIENTO, NUM_DOCUMENTO, EST_MOVIMIENTO,
+                   IND_APL_CARGO, MON_MOVIMIENTO, DES_MOVIMIENTO,
+                   SISTEMA_FUENTE, NUM_MOV_FUENTE, COD_AGENCIA,
+                   COD_USUARIO, DES_REFERENCIA
+            FROM CC.CC_MOVIMTO_MENSUAL 
+            WHERE COD_AGENCIA = ? 
+            AND FEC_MOVIMIENTO >= ? 
+            AND FEC_MOVIMIENTO <= ?
+            AND EST_MOVIMIENTO = 'C'
+            ORDER BY FEC_MOVIMIENTO, NUM_MOVIMIENTO
+        """;
+
+        log.info("🔍 Recherche Production - Agence: {}, Période: {} à {}, Statut: 'C' (Confirmé)",
+                codeAgence, dateDebut, dateFin);
 
         List<Map<String, Object>> transactions = productionJdbcTemplate.queryForList(sql,
                 codeAgence,
@@ -436,24 +456,76 @@ public class ReconciliationService {
                 Timestamp.valueOf(dateFin)
         );
 
-        log.info("Transactions Production récupérées: {}", transactions.size());
+        log.info("✅ Transactions Production récupérées avec EST_MOVIMIENTO='C': {}", transactions.size());
 
-        // Analyser les types de transactions
+        // Si aucune transaction, essayer avec une période élargie
+        if (transactions.isEmpty() && totalCount > 0) {
+            log.warn("⚠️ Aucune transaction trouvée dans la période. Tentative avec TOP 100 sans filtre de date...");
+
+            String sqlTop100 = """
+                SELECT TOP 100 
+                       COD_EMPRESA, NUM_MOVIMIENTO, NUM_CUENTA, COD_PRODUCTO,
+                       TIP_TRANSACCION, SUBTIP_TRANSAC, COD_SISTEMA,
+                       FEC_MOVIMIENTO, NUM_DOCUMENTO, EST_MOVIMIENTO,
+                       IND_APL_CARGO, MON_MOVIMIENTO, DES_MOVIMIENTO,
+                       SISTEMA_FUENTE, NUM_MOV_FUENTE, COD_AGENCIA,
+                       COD_USUARIO, DES_REFERENCIA
+                FROM CC.CC_MOVIMTO_MENSUAL 
+                WHERE COD_AGENCIA = ? 
+                AND EST_MOVIMIENTO = 'C'
+                ORDER BY FEC_MOVIMIENTO DESC
+            """;
+
+            transactions = productionJdbcTemplate.queryForList(sqlTop100, codeAgence);
+
+            log.info("✅ TOP 100 transactions Production récupérées (les plus récentes): {}", transactions.size());
+        }
+
+        // Analyser les types de transactions et afficher des exemples
         if (!transactions.isEmpty()) {
+            // Afficher quelques exemples pour diagnostic
+            log.info("=== ÉCHANTILLON DE TRANSACTIONS PRODUCTION ===");
+            int count = 0;
+            for (Map<String, Object> trans : transactions) {
+                if (count++ < 5) { // Afficher les 5 premières
+                    log.info("Exemple PROD #{}: TIP_TRANSACCION='{}', NUM_CUENTA='{}', MON_MOVIMIENTO={}, IND_APL_CARGO='{}', EST_MOVIMIENTO='{}', COD_USUARIO='{}', FEC_MOVIMIENTO={}",
+                            trans.get("NUM_MOVIMIENTO"),
+                            trans.get("TIP_TRANSACCION"),
+                            trans.get("NUM_CUENTA"),
+                            trans.get("MON_MOVIMIENTO"),
+                            trans.get("IND_APL_CARGO"),
+                            trans.get("EST_MOVIMIENTO"),
+                            trans.get("COD_USUARIO"),
+                            trans.get("FEC_MOVIMIENTO"));
+                } else {
+                    break;
+                }
+            }
+
+            // Analyser la distribution des types
             Map<String, Long> typeCount = transactions.stream()
                     .collect(Collectors.groupingBy(
                             t -> {
-                                String type = String.valueOf(t.get("TIP_TRANSACCION"));
-                                switch(type) {
-                                    case "3": return "Opérations réserve";
-                                    case "5": return "Dépôts clients";
-                                    case "6": return "Retraits clients";
-                                    default: return "Type " + type;
-                                }
+                                Object tip = t.get("TIP_TRANSACCION");
+                                return tip != null ? tip.toString() : "NULL";
                             },
                             Collectors.counting()
                     ));
-            log.info("Répartition Production: {}", typeCount);
+            log.info("📊 Distribution des TIP_TRANSACCION: {}", typeCount);
+
+            // Analyser aussi IND_APL_CARGO pour comprendre la structure
+            Map<String, Long> indCount = transactions.stream()
+                    .collect(Collectors.groupingBy(
+                            t -> {
+                                Object ind = t.get("IND_APL_CARGO");
+                                return ind != null ? ind.toString() : "NULL";
+                            },
+                            Collectors.counting()
+                    ));
+            log.info("📊 Distribution des IND_APL_CARGO: {}", indCount);
+        } else {
+            log.error("❌ AUCUNE transaction Production trouvée pour l'agence {} entre {} et {}",
+                    codeAgence, dateDebut, dateFin);
         }
 
         return transactions;
@@ -466,47 +538,102 @@ public class ReconciliationService {
             ReconciliationResultDTO result,
             List<TransactionSafDTO> middlewareTransactions,
             List<OperationReserveDTO> reserveOperations,
-            List<Map<String, Object>> productionTransactions,
+            List<Map<String, Object>> allProductionTransactions,
             RapprochementResult rapprochement) {
 
-        // Séparer par type
+        // Séparer par type pour Middleware
         separateMiddlewareTransactionsByType(middlewareTransactions, result);
         separateReserveOperationsByType(reserveOperations, result);
 
         // Récupérer uniquement les transactions Production rapprochées
         List<Map<String, Object>> matchedProduction = new ArrayList<>();
         for (Integer index : rapprochement.getMatchedProductionIndices()) {
-            if (index < productionTransactions.size()) {
-                matchedProduction.add(productionTransactions.get(index));
+            if (index < allProductionTransactions.size()) {
+                matchedProduction.add(allProductionTransactions.get(index));
             }
         }
 
-        separateProductionTransactionsByType(matchedProduction, result);
+        // Filtrer les transactions de type 32 et 33
+        List<Map<String, Object>> filteredMatchedProduction = matchedProduction.stream()
+                .filter(trans -> {
+                    String tip = String.valueOf(trans.get("TIP_TRANSACCION"));
+                    return !"32".equals(tip) && !"33".equals(tip);
+                })
+                .collect(Collectors.toList());
+
+        log.info("=== VÉRIFICATION DES TRANSACTIONS PRODUCTION RAPPROCHÉES ===");
+        log.info("Nombre de transactions Production rapprochées (total): {}", matchedProduction.size());
+        log.info("Nombre après exclusion des types 32/33: {}", filteredMatchedProduction.size());
+
+        // Debug: afficher quelques transactions pour vérifier le contenu
+        if (!filteredMatchedProduction.isEmpty()) {
+            Map<String, Object> sample = filteredMatchedProduction.get(0);
+            log.info("Exemple de transaction rapprochée - TIP_TRANSACCION: {}, MON_MOVIMIENTO: {}, NUM_CUENTA: {}",
+                    sample.get("TIP_TRANSACCION"), sample.get("MON_MOVIMIENTO"), sample.get("NUM_CUENTA"));
+        }
+
+        // Séparer les transactions Production rapprochées par type (excluant 32/33)
+        separateProductionTransactionsByType(filteredMatchedProduction, result);
 
         // Calculer les totaux
         BigDecimal totalMiddleware = result.getMontantTotalDepotsMiddleware()
                 .add(result.getMontantTotalRetraitsMiddleware())
                 .add(result.getMontantTotalReserve());
 
-        BigDecimal totalProductionRapproche = calculateTotalProduction(matchedProduction);
+        // Calculer le total Production uniquement pour types 16 et 44
+        BigDecimal totalProductionRapproche = result.getMontantTotalDepotsProduction()
+                .add(result.getMontantTotalRetraitsProduction());
 
-        // Définir les résultats
+        // Définir les résultats (utiliser filteredMatchedProduction.size())
         result.setTotalMiddleware(middlewareTransactions.size() + reserveOperations.size());
-        result.setTotalProduction(matchedProduction.size());
-        result.setTransactionsCorrespondantes(rapprochement.getNombreRapprochements());
+        result.setTotalProduction(filteredMatchedProduction.size());
+
+        // IMPORTANT: Calculer les transactions manquantes correctement
+        int transactionsRapprochees = filteredMatchedProduction.size() +
+                (reserveOperations.size() - rapprochement.getOperationsReserveNonRapprochees().size());
+        int transactionsManquantes = (middlewareTransactions.size() + reserveOperations.size()) - transactionsRapprochees;
+
+        result.setTransactionsCorrespondantes(transactionsRapprochees);
         result.setMontantTotalMiddleware(totalMiddleware);
         result.setMontantTotalProduction(totalProductionRapproche);
         result.setMontantEcart(totalMiddleware.subtract(totalProductionRapproche));
 
-        // Ajouter les transactions manquantes
-        result.setTransactionsManquantes(rapprochement.getTransactionsNonRapprochees());
+        // Ajouter les transactions manquantes du middleware
+        List<TransactionSafDTO> allTransactionsManquantes = new ArrayList<>(rapprochement.getTransactionsNonRapprochees());
+
+        // Convertir les opérations réserve manquantes en TransactionSafDTO pour l'uniformité
+        for (OperationReserveDTO resOp : rapprochement.getOperationsReserveNonRapprochees()) {
+            TransactionSafDTO dto = new TransactionSafDTO();
+            dto.setNumTransaction(resOp.getNumero());
+            dto.setDateOperation(resOp.getDateOperation());
+            dto.setMontant(resOp.getMontant());
+            dto.setTypeOperation(resOp.getTransactionOp() == 1 ? "Retrait Réserve" : "Dépôt Réserve");
+            dto.setFaitPar(resOp.getCodeUser());
+            dto.setCodeAgence(resOp.getCodeAgence());
+            allTransactionsManquantes.add(dto);
+        }
+
+        result.setTransactionsManquantes(allTransactionsManquantes);
 
         // Déterminer le statut
-        boolean hasEcart = !result.getTransactionsManquantes().isEmpty() ||
-                !rapprochement.getOperationsReserveNonRapprochees().isEmpty() ||
+        boolean hasEcart = !allTransactionsManquantes.isEmpty() ||
                 Math.abs(result.getMontantEcart().doubleValue()) > 1000;
 
         result.setStatut(hasEcart ? "ECART_DETECTE" : "SYNCHRONISE");
+
+        log.info("=== RÉSUMÉ COMPILATION ===");
+        log.info("Total MW: {} transactions (dont {} réserve), {} GNF",
+                result.getTotalMiddleware(), reserveOperations.size(), result.getMontantTotalMiddleware());
+        log.info("Total PROD rapproché (types 16/44 uniquement): {} transactions, {} GNF",
+                result.getTotalProduction(), result.getMontantTotalProduction());
+        log.info("Transactions manquantes: {} (dont {} clients et {} réserve)",
+                transactionsManquantes,
+                rapprochement.getTransactionsNonRapprochees().size(),
+                rapprochement.getOperationsReserveNonRapprochees().size());
+        log.info("Écart montant: {} GNF", result.getMontantEcart());
+        log.info("Dépôts PROD: {} (montant: {}), Retraits PROD: {} (montant: {})",
+                result.getTotalDepotsProduction(), result.getMontantTotalDepotsProduction(),
+                result.getTotalRetraitsProduction(), result.getMontantTotalRetraitsProduction());
     }
 
     /**
@@ -603,18 +730,23 @@ public class ReconciliationService {
         BigDecimal totalWithdrawals = BigDecimal.ZERO;
 
         for (TransactionSafDTO trans : transactions) {
-            if ("Depot".equalsIgnoreCase(trans.getTypeOperation()) ||
-                    trans.getTypeTransaction() == 16) {
+            // Utiliser TYPETRANSACTION: 16 = Dépôt, 44 = Retrait
+            if (trans.getTypeTransaction() == 16) {
+                // DÉPÔT
                 deposits.add(trans);
                 if (trans.getMontant() != null) {
                     totalDeposits = totalDeposits.add(trans.getMontant());
                 }
-            } else if ("Retrait".equalsIgnoreCase(trans.getTypeOperation()) ||
-                    trans.getTypeTransaction() == 44) {
+            } else if (trans.getTypeTransaction() == 44) {
+                // RETRAIT
                 withdrawals.add(trans);
                 if (trans.getMontant() != null) {
                     totalWithdrawals = totalWithdrawals.add(trans.getMontant());
                 }
+            } else {
+                // Autre type de transaction - logger pour investigation
+                log.warn("Transaction avec TYPETRANSACTION non reconnu: {} pour transaction #{}",
+                        trans.getTypeTransaction(), trans.getNumTransaction());
             }
         }
 
@@ -624,6 +756,11 @@ public class ReconciliationService {
         result.setTotalRetraitsMiddleware(withdrawals.size());
         result.setMontantTotalDepotsMiddleware(totalDeposits);
         result.setMontantTotalRetraitsMiddleware(totalWithdrawals);
+
+        log.info("Middleware - Dépôts (Type 16): {} transactions, Total: {} GNF",
+                deposits.size(), totalDeposits);
+        log.info("Middleware - Retraits (Type 44): {} transactions, Total: {} GNF",
+                withdrawals.size(), totalWithdrawals);
     }
 
     private void separateReserveOperationsByType(
@@ -665,22 +802,37 @@ public class ReconciliationService {
         BigDecimal totalDeposits = BigDecimal.ZERO;
         BigDecimal totalWithdrawals = BigDecimal.ZERO;
 
-        for (Map<String, Object> trans : transactions) {
-            String tipTransaccion = String.valueOf(trans.get("TIP_TRANSACCION"));
-            BigDecimal montant = getBigDecimalValue(trans.get("MTO_MOVIMIENTO"));
+        int ignoredCount = 0;
 
-            if ("5".equals(tipTransaccion)) { // Dépôt
+        log.debug("=== Séparation des {} transactions Production par type ===", transactions.size());
+
+        for (Map<String, Object> trans : transactions) {
+            Object tipTransaccionObj = trans.get("TIP_TRANSACCION");
+            String tipTransaccion = tipTransaccionObj != null ? String.valueOf(tipTransaccionObj) : "null";
+            BigDecimal montant = getBigDecimalValue(trans.get("MON_MOVIMIENTO"));
+
+            // IGNORER les types 32 et 33
+            if ("32".equals(tipTransaccion) || "33".equals(tipTransaccion)) {
+                ignoredCount++;
+                log.debug("Transaction IGNORÉE - Type: {}, NUM_MOVIMIENTO: {}, Montant: {}",
+                        tipTransaccion, trans.get("NUM_MOVIMIENTO"), montant);
+                continue;
+            }
+
+            log.debug("Transaction PROD - NUM_MOVIMIENTO: {}, TIP_TRANSACCION: {}, MON_MOVIMIENTO: {}",
+                    trans.get("NUM_MOVIMIENTO"), tipTransaccion, montant);
+
+            if ("16".equals(tipTransaccion)) { // Dépôt
                 deposits.add(trans);
                 if (montant != null) {
                     totalDeposits = totalDeposits.add(montant);
                 }
-            } else if ("6".equals(tipTransaccion)) { // Retrait
+            } else if ("44".equals(tipTransaccion)) { // Retrait
                 withdrawals.add(trans);
                 if (montant != null) {
                     totalWithdrawals = totalWithdrawals.add(montant);
                 }
             }
-            // Type 3 (réserve) est traité séparément
         }
 
         result.setDepositsProduction(deposits);
@@ -689,11 +841,21 @@ public class ReconciliationService {
         result.setTotalRetraitsProduction(withdrawals.size());
         result.setMontantTotalDepotsProduction(totalDeposits);
         result.setMontantTotalRetraitsProduction(totalWithdrawals);
+
+        log.info("Production rapprochée - Dépôts (Type 16): {} transactions, Total: {} GNF",
+                deposits.size(), totalDeposits);
+        log.info("Production rapprochée - Retraits (Type 44): {} transactions, Total: {} GNF",
+                withdrawals.size(), totalWithdrawals);
+
+        if (ignoredCount > 0) {
+            log.info("📊 Transactions IGNORÉES (Types 32, 33): {} transactions",
+                    ignoredCount);
+        }
     }
 
     private BigDecimal calculateTotalProduction(List<Map<String, Object>> transactions) {
         return transactions.stream()
-                .map(t -> getBigDecimalValue(t.get("MTO_MOVIMIENTO")))
+                .map(t -> getBigDecimalValue(t.get("MON_MOVIMIENTO")))
                 .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }

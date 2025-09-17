@@ -13,16 +13,26 @@ spring:
       pool-name: ProductionPool
       maximum-pool-size: 5
       minimum-idle: 2
-      connection-timeout: 10000
+      connection-timeout: 60000
+      initialization-fail-timeout: 60000
       idle-timeout: 300000
       max-lifetime: 600000
 
   # Configuration DataSource Middleware (nouvelle)
   middleware:
     datasource:
-      url: jdbc:sqlserver://10.220.220.11;databaseName=BD_MIDDLEWARE;trustServerCertificate=true;encrypt=true
+      url: jdbc:sqlserver://10.220.220.11:1433;databaseName=BD_MIDDLEWARE;trustServerCertificate=true;encrypt=true
       username: sa
       password: 1234
+      # Add Hikari configuration for middleware too
+      hikari:
+        pool-name: MiddlewarePool
+        maximum-pool-size: 5
+        minimum-idle: 2
+        connection-timeout: 60000
+        initialization-fail-timeout: 60000
+        idle-timeout: 300000
+        max-lifetime: 600000
 
   jpa:
     properties:

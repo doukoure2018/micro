@@ -64,7 +64,7 @@ eureka:
 # Application URLs configuration
 ui:
   app:
-    url: ${UI_APP_URL:http://51.91.254.218:4200}
+    url: ${UI_APP_URL:https://digi-creditrural-io.com}
 
 backend:
   app:
@@ -103,7 +103,7 @@ server:
       cookie:
         secure: true
         http-only: true
-        same-site: strict
+        same-site: lax
 
 # Logging configuration for production
 logging:
