@@ -2,6 +2,8 @@ package io.digiservices.authorizationserver.security;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,6 +37,7 @@ import org.springframework.security.web.authentication.SavedRequestAwareAuthenti
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.CookieClearingLogoutHandler;
+import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
@@ -135,11 +138,38 @@ public class AuthorizationServerConfig {
         http.formLogin(login -> login
                 .loginPage("/login")
                 .loginProcessingUrl("/login")
-                .successHandler(new MfaAuthenticationHandler("/mfa", "MFA_REQUIRED"))
+                .successHandler(new SavedRequestAwareAuthenticationSuccessHandler() {
+                    @Override
+                    public void onAuthenticationSuccess(HttpServletRequest request,
+                                                        HttpServletResponse response, Authentication authentication)
+                            throws IOException, ServletException {
+
+                        // Vérifier s'il y a une redirection OAuth2 en attente
+                        HttpSession session = request.getSession(false);
+                        if (session != null) {
+                            SavedRequest savedRequest = (SavedRequest) session.getAttribute("SPRING_SECURITY_SAVED_REQUEST");
+                            if (savedRequest != null && savedRequest.getRedirectUrl().contains("/oauth2/authorize")) {
+                                // Continuer le flow OAuth2
+                                getRedirectStrategy().sendRedirect(request, response, savedRequest.getRedirectUrl());
+                                return;
+                            }
+                        }
+
+                        // Vérifier MFA
+                        if (authentication.getAuthorities().stream()
+                                .anyMatch(a -> a.getAuthority().equals("MFA_REQUIRED"))) {
+                            getRedirectStrategy().sendRedirect(request, response, "/mfa");
+                            return;
+                        }
+
+                        // Redirection par défaut
+                        getRedirectStrategy().sendRedirect(request, response, uiAppUrl);
+                    }
+                })
                 .failureHandler(new SimpleUrlAuthenticationFailureHandler("/login?error")));
 
         http.logout(logout -> logout
-                .logoutSuccessUrl("https://digi-creditrural-io.com")
+                .logoutSuccessUrl(uiAppUrl)  // Utiliser la variable uiAppUrl
                 .addLogoutHandler(new CookieClearingLogoutHandler("JSESSIONID")));
 
         return http.build();
@@ -209,7 +239,9 @@ public class AuthorizationServerConfig {
 
     @Bean
     public AuthorizationServerSettings authorizationServerSettings() {
-        return AuthorizationServerSettings.builder().build();
+        return AuthorizationServerSettings.builder()
+                .issuer("https://digi-creditrural-io.com/auth")  // Ajouter l'issuer explicite
+                .build();
     }
 
     @Bean

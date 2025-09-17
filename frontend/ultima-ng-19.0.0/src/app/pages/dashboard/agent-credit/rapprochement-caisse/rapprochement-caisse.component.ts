@@ -372,7 +372,7 @@ export class RapprochementCaisseComponent implements OnDestroy {
                 return [item.numTransaction, this.formatDateTime(item.dateOperation), item.numCompte || '-', item.codeClient, item.montant, item.motifs || '-', item.faitPar, item.etatSaf];
             case 'deposits_production':
             case 'withdrawals_production':
-                return [item.NUM_SECUENCIA_DOC, this.formatDateTime(item.FEC_TRANSACCION), item.NUM_MOV_ENTE || '-', item.COD_CLIENTE, item.MTO_MOVIMIENTO, item.COD_CAJERO, item.TIP_TRANSACCION, item.IND_ESTADO];
+                return [item.NUM_MOVIMIENTO, this.formatDateTime(item.FEC_MOVIMIENTO), item.NUM_CUENTA || '-', item.DES_REFERENCIA || '-', item.MON_MOVIMIENTO, item.COD_USUARIO, item.TIP_TRANSACCION, item.EST_MOVIMIENTO];
             case 'operations_reserve':
                 return [item.numero, item.transactionOp === 1 ? 'Retrait' : 'Dépôt', this.formatDateTime(item.dateOperation), item.montant, item.codeUser, item.validerPar || '-', item.compteReserve || '-', item.etatOp];
             case 'transactions_manquantes':
@@ -396,12 +396,15 @@ export class RapprochementCaisseComponent implements OnDestroy {
         return `${year}-${month}-${day}`;
     }
 
-    formatMontant(montant: number): string {
+    formatMontant(montant: number | string): string {
+        // Gérer la notation scientifique (ex: 2.0E7)
+        const value = typeof montant === 'string' ? parseFloat(montant) : montant;
+
         return new Intl.NumberFormat('fr-FR', {
             style: 'currency',
             currency: 'GNF',
             minimumFractionDigits: 0
-        }).format(montant);
+        }).format(value);
     }
 
     formatDate(date: number[] | string): string {
@@ -413,7 +416,18 @@ export class RapprochementCaisseComponent implements OnDestroy {
     }
 
     formatDateTime(date: number[] | string): string {
-        if (typeof date === 'string') return date;
+        // Si c'est une chaîne ISO
+        if (typeof date === 'string' && date.includes('T')) {
+            const dateObj = new Date(date);
+            const day = dateObj.getDate().toString().padStart(2, '0');
+            const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+            const year = dateObj.getFullYear();
+            const hours = dateObj.getHours().toString().padStart(2, '0');
+            const minutes = dateObj.getMinutes().toString().padStart(2, '0');
+            return `${day}/${month}/${year} ${hours}:${minutes}`;
+        }
+
+        // Format existant pour les tableaux
         if (Array.isArray(date) && date.length >= 5) {
             return `${date[2].toString().padStart(2, '0')}/${date[1].toString().padStart(2, '0')}/${date[0]} ${date[3].toString().padStart(2, '0')}:${date[4].toString().padStart(2, '0')}`;
         }
@@ -425,12 +439,16 @@ export class RapprochementCaisseComponent implements OnDestroy {
             case 'OK':
             case 'SUCCESS':
             case 'SYNCHRONISE':
+            case 'A': // Actif
+            case 'C': // Confirmé
                 return 'success';
             case 'WARNING':
             case 'ECART':
+            case 'P': // En attente
                 return 'warn';
             case 'ERROR':
             case 'FAILED':
+            case 'I': // Inactif
                 return 'danger';
             case 'INFO':
                 return 'info';
