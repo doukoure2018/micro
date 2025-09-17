@@ -104,6 +104,9 @@ server:
         secure: true
         http-only: true
         same-site: lax
+        path: /
+    context-path: /auth
+  forward-headers-strategy: native
 
 # Logging configuration for production
 logging:
