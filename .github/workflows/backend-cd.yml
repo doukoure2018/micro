@@ -195,7 +195,7 @@ jobs:
 
             # Complete cleanup
             echo "🛑 Complete Docker cleanup..."
-            sudo docker compose --env-file .env.prod down --volumes --remove-orphans || true
+            sudo docker compose --env-file .env.prod down --remove-orphans || true
             sudo docker ps -aq | xargs -r sudo docker rm -f 2>/dev/null || true
             sudo docker network prune -f
 
