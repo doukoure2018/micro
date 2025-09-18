@@ -140,7 +140,8 @@ export class HomeComponent {
 
                                 // Navigate and keep loading true until navigation completes
                                 this.router
-                                    .navigateByUrl(currentUrlWithoutParams)
+                                    //.navigateByUrl(currentUrlWithoutParams)
+                                    .navigate(['/dashboards'])
                                     .then(() => {
                                         console.log('Navigation complete after authentication');
                                         // Navigation successful - component should be destroyed

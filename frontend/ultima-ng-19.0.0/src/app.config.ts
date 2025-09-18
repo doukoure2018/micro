@@ -40,7 +40,7 @@ export const appConfig: ApplicationConfig = {
             withEnabledBlockingInitialNavigation()
         ),
         provideHttpClient(withFetch(), withInterceptors([TokenInterceptor, CacheInterceptor])),
-        provideHttpClient(withFetch()),
+        //provideHttpClient(withFetch()),
         provideAnimationsAsync(),
         providePrimeNG({
             ripple: true,
