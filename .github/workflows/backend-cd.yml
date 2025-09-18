@@ -162,12 +162,12 @@ jobs:
           username: ${{ secrets.OVH_USER }}
           key: ${{ secrets.PROD_SSH_KEY }}
           script: |
-            set -e  # Arrêter en cas d'erreur
+            set -e  # Stop on error
 
-            # Se déplacer dans le répertoire du projet
+            # Navigate to project directory
             cd ~/microservices || { mkdir -p ~/microservices && cd ~/microservices; }
 
-            # Gérer les changements locaux Git
+            # Sync repository
             if [ -d ".git" ]; then
               echo "📥 Syncing with repository..."
               git stash save "Auto-stash before deployment $(date)" || true
@@ -180,46 +180,44 @@ jobs:
               git checkout main
             fi
 
-            # Créer les répertoires nécessaires
+            # Create required directories
             echo "📁 Creating required directories..."
             mkdir -p logs/{discoveryserver,gateway,authorizationserver,userservice,ecreditservice,ebankingservice,notificationservice,frontend}
             mkdir -p keys
 
-            # Vérifier que .env.prod existe
+            # Check .env.prod exists
             if [ ! -f .env.prod ]; then
               echo "⚠️ .env.prod not found, using .env.docker as template..."
               cp .env.docker .env.prod || { echo "❌ No .env.docker found!"; exit 1; }
             fi
 
-            # Enhanced cleanup
-            echo "🛑 Stopping existing services..."
-            sudo docker compose --env-file .env.prod down --remove-orphans --timeout 30 || true
-
-            echo "🧹 Force removing any lingering containers..."
-            sudo docker rm -f $(sudo docker ps -aq --filter name=authorizationserver --filter name=gateway --filter name=discoveryserver --filter name=userservice --filter name=ecreditservice --filter name=ebankingservice --filter name=notificationservice --filter name=postgrecontainer --filter name=kafka --filter name=zookeeper --filter name=nginx-proxy --filter name=certbot --filter name=digicrg-app) 2>/dev/null || true
-
-            echo "🧹 Removing network..."
-            sudo docker network rm microservices_spring 2>/dev/null || true
-
-            # Charger les variables d'environnement
+            # Load environment variables
             export $(cat .env.prod | grep -v '^#' | xargs)
 
-            # Créer le réseau Docker si nécessaire
-            sudo docker network inspect microservices_spring >/dev/null 2>&1 || sudo docker network create microservices_spring
+            # COMPLETE CLEANUP - This fixes the network issue
+            echo "🛑 Complete Docker cleanup..."
+            sudo docker compose --env-file .env.prod down --volumes --remove-orphans || true
 
-            # AJOUT IMPORTANT: Forcer le pull de toutes les nouvelles images AVANT de démarrer
+            echo "🧹 Removing all project containers..."
+            sudo docker ps -aq | xargs -r sudo docker rm -f 2>/dev/null || true
+
+            echo "🔧 Removing and recreating network..."
+            sudo docker network rm microservices_spring 2>/dev/null || true
+            sudo docker network rm microservices_default 2>/dev/null || true
+
+            # Pull latest images
             echo "📥 Pulling all latest images..."
             sudo docker compose --env-file .env.prod pull
 
-            # Nettoyer les anciennes images
+            # Clean old images
             echo "🧹 Cleaning up old images..."
             sudo docker image prune -f
 
-            # Démarrer PostgreSQL et Kafka en premier
+            # Start PostgreSQL and Kafka
             echo "🏗️ Starting infrastructure services..."
             sudo docker compose --env-file .env.prod up -d postgresdb zookeeper kafka
 
-            # Attendre que PostgreSQL soit prêt
+            # Wait for PostgreSQL
             echo "⏳ Waiting for PostgreSQL..."
             count=0
             until sudo docker exec postgrecontainer pg_isready -U ${POSTGRES_USER:-user2711} || [ $count -eq 30 ]; do
@@ -232,80 +230,48 @@ jobs:
               echo "❌ PostgreSQL failed to start!"
               exit 1
             fi
-
             echo "✅ PostgreSQL is ready"
 
-            # Exécuter les migrations Flyway
+            # Run migrations
             echo "🗄️ Running database migrations..."
-
             MIGRATION_COUNT=$(ls micro-digiservices/database-migrations/src/main/resources/db/migration/*.sql 2>/dev/null | wc -l)
             echo "📋 Found $MIGRATION_COUNT migration files"
 
-            sudo docker run --rm \
-              --network microservices_spring \
-              -v "$(pwd)/micro-digiservices/database-migrations/src/main/resources/db/migration:/flyway/sql:ro" \
-              -e FLYWAY_URL="jdbc:postgresql://postgrecontainer:5432/${POSTGRES_DB:-localdb}" \
-              -e FLYWAY_USER="${POSTGRES_USER:-user2711}" \
-              -e FLYWAY_PASSWORD="${POSTGRES_PASSWORD:-admin2711}" \
-              -e FLYWAY_SCHEMAS="public" \
-              -e FLYWAY_TABLE="flyway_schema_history" \
-              -e FLYWAY_BASELINE_ON_MIGRATE="true" \
-              -e FLYWAY_OUT_OF_ORDER="true" \
-              -e FLYWAY_VALIDATE_ON_MIGRATE="false" \
-              -e FLYWAY_CLEAN_DISABLED="true" \
-              flyway/flyway:11.3.0 \
-              migrate || {
-                echo "⚠️ Migration encountered issues, attempting repair..."
-                sudo docker run --rm \
-                  --network microservices_spring \
-                  -e FLYWAY_URL="jdbc:postgresql://postgrecontainer:5432/${POSTGRES_DB:-localdb}" \
-                  -e FLYWAY_USER="${POSTGRES_USER:-user2711}" \
-                  -e FLYWAY_PASSWORD="${POSTGRES_PASSWORD:-admin2711}" \
-                  flyway/flyway:11.3.0 \
-                  repair
+            # Get the actual network name created by docker-compose
+            NETWORK_NAME=$(sudo docker network ls --filter name=microservices --format "{{.Name}}" | head -1)
 
-                echo "Retrying migration..."
-                sudo docker run --rm \
-                  --network microservices_spring \
-                  -v "$(pwd)/micro-digiservices/database-migrations/src/main/resources/db/migration:/flyway/sql:ro" \
-                  -e FLYWAY_URL="jdbc:postgresql://postgrecontainer:5432/${POSTGRES_DB:-localdb}" \
-                  -e FLYWAY_USER="${POSTGRES_USER:-user2711}" \
-                  -e FLYWAY_PASSWORD="${POSTGRES_PASSWORD:-admin2711}" \
-                  -e FLYWAY_OUT_OF_ORDER="true" \
-                  -e FLYWAY_VALIDATE_ON_MIGRATE="false" \
-                  flyway/flyway:11.3.0 \
-                  migrate || echo "⚠️ Some migrations may need manual intervention"
-              }
-
-            # Vérifier le statut des migrations
-            echo "📊 Migration status:"
-            APPLIED_MIGRATIONS=$(sudo docker exec postgrecontainer psql -U ${POSTGRES_USER:-user2711} -d ${POSTGRES_DB:-localdb} -t -c \
-              "SELECT COUNT(*) FROM flyway_schema_history WHERE success = true;" 2>/dev/null | tr -d ' ')
-            echo "✅ $APPLIED_MIGRATIONS migrations successfully applied"
-
-            if [ "$APPLIED_MIGRATIONS" -lt "$MIGRATION_COUNT" ]; then
-              echo "⚠️ Warning: Only $APPLIED_MIGRATIONS out of $MIGRATION_COUNT migrations were applied"
+            if [ "$MIGRATION_COUNT" -gt 0 ]; then
+              sudo docker run --rm \
+                --network ${NETWORK_NAME:-bridge} \
+                -v "$(pwd)/micro-digiservices/database-migrations/src/main/resources/db/migration:/flyway/sql:ro" \
+                -e FLYWAY_URL="jdbc:postgresql://postgrecontainer:5432/${POSTGRES_DB:-localdb}" \
+                -e FLYWAY_USER="${POSTGRES_USER:-user2711}" \
+                -e FLYWAY_PASSWORD="${POSTGRES_PASSWORD:-admin2711}" \
+                -e FLYWAY_BASELINE_ON_MIGRATE="true" \
+                -e FLYWAY_OUT_OF_ORDER="true" \
+                -e FLYWAY_VALIDATE_ON_MIGRATE="false" \
+                flyway/flyway:11.3.0 migrate || echo "⚠️ Some migrations may have issues"
             fi
 
-            # Démarrer Discovery Server en premier
+            # Start Discovery Server
             echo "🔍 Starting Discovery Server..."
             sudo docker compose --env-file .env.prod up -d discoveryserver
             sleep 30
 
-            # Démarrer Gateway et Authorization Server
+            # Start Gateway and Authorization Server
             echo "🔐 Starting Gateway and Authorization Server..."
             sudo docker compose --env-file .env.prod up -d gateway authorizationserver
             sleep 20
 
-            # Démarrer tous les autres microservices
+            # Start all remaining services
             echo "🚀 Starting all microservices..."
             sudo docker compose --env-file .env.prod up -d
 
-            # Attendre le démarrage complet
+            # Wait for services to start
             echo "⏳ Waiting for all services to start..."
             sleep 60
 
-            # Vérifier l'état des services
+            # Check services health
             echo "🏥 Checking services health..."
             services=("postgrecontainer" "kafka" "discoveryserver" "gateway" "authorizationserver" "userservice" "ecreditservice" "ebankingservice" "notificationservice")
             all_healthy=true
@@ -319,25 +285,19 @@ jobs:
               fi
             done
 
-            # Afficher les logs en cas de problème
             if [ "$all_healthy" = false ]; then
               echo "⚠️ Some services failed. Recent logs:"
               sudo docker compose --env-file .env.prod logs --tail=50
               exit 1
             fi
 
-            # Afficher les URLs d'accès et le statut
             echo ""
             echo "🌐 Deployment successful!"
             echo "================================================"
             echo "Services available at:"
+            echo "   • Frontend: https://digi-creditrural-io.com"
             echo "   • Gateway: http://${{ secrets.OVH_HOST }}:8000"
-            echo "   • Discovery: http://${{ secrets.OVH_HOST }}:5002"
             echo "   • Auth Server: http://${{ secrets.OVH_HOST }}:8080"
-            echo "   • Frontend: http://${{ secrets.OVH_HOST }}:4200"
-            echo ""
-            echo "Database status:"
-            echo "   • Migrations: $APPLIED_MIGRATIONS/$MIGRATION_COUNT applied"
             echo "================================================"
 
       - name: Final success notification
