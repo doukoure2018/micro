@@ -191,15 +191,21 @@ jobs:
               cp .env.docker .env.prod || { echo "❌ No .env.docker found!"; exit 1; }
             fi
 
+            # Enhanced cleanup
+            echo "🛑 Stopping existing services..."
+            sudo docker compose --env-file .env.prod down --remove-orphans --timeout 30 || true
+
+            echo "🧹 Force removing any lingering containers..."
+            sudo docker rm -f $(sudo docker ps -aq --filter name=authorizationserver --filter name=gateway --filter name=discoveryserver --filter name=userservice --filter name=ecreditservice --filter name=ebankingservice --filter name=notificationservice --filter name=postgrecontainer --filter name=kafka --filter name=zookeeper --filter name=nginx-proxy --filter name=certbot --filter name=digicrg-app) 2>/dev/null || true
+
+            echo "🧹 Removing network..."
+            sudo docker network rm microservices_spring 2>/dev/null || true
+
             # Charger les variables d'environnement
             export $(cat .env.prod | grep -v '^#' | xargs)
 
             # Créer le réseau Docker si nécessaire
             sudo docker network inspect microservices_spring >/dev/null 2>&1 || sudo docker network create microservices_spring
-
-            # Arrêter tous les conteneurs existants
-            echo "🛑 Stopping existing services..."
-            sudo docker compose --env-file .env.prod down || true
 
             # AJOUT IMPORTANT: Forcer le pull de toutes les nouvelles images AVANT de démarrer
             echo "📥 Pulling all latest images..."
