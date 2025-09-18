@@ -162,9 +162,8 @@ jobs:
           username: ${{ secrets.OVH_USER }}
           key: ${{ secrets.PROD_SSH_KEY }}
           script: |
-            set -e  # Stop on error
+            set -e
 
-            # Navigate to project directory
             cd ~/microservices || { mkdir -p ~/microservices && cd ~/microservices; }
 
             # Sync repository
@@ -180,67 +179,79 @@ jobs:
               git checkout main
             fi
 
-            # Create required directories
+            # Create directories
             echo "📁 Creating required directories..."
             mkdir -p logs/{discoveryserver,gateway,authorizationserver,userservice,ecreditservice,ebankingservice,notificationservice,frontend}
             mkdir -p keys
 
-            # Check .env.prod exists
+            # Check .env.prod
             if [ ! -f .env.prod ]; then
               echo "⚠️ .env.prod not found, using .env.docker as template..."
               cp .env.docker .env.prod || { echo "❌ No .env.docker found!"; exit 1; }
             fi
 
-            # Load environment variables
+            # Load environment
             export $(cat .env.prod | grep -v '^#' | xargs)
 
-            # COMPLETE CLEANUP - This fixes the network issue
+            # Complete cleanup
             echo "🛑 Complete Docker cleanup..."
             sudo docker compose --env-file .env.prod down --volumes --remove-orphans || true
-
-            echo "🧹 Removing all project containers..."
             sudo docker ps -aq | xargs -r sudo docker rm -f 2>/dev/null || true
+            sudo docker network prune -f
 
-            echo "🔧 Removing and recreating network..."
-            sudo docker network rm microservices_spring 2>/dev/null || true
-            sudo docker network rm microservices_default 2>/dev/null || true
-
-            # Pull latest images
+            # Pull images
             echo "📥 Pulling all latest images..."
             sudo docker compose --env-file .env.prod pull
 
             # Clean old images
-            echo "🧹 Cleaning up old images..."
             sudo docker image prune -f
 
-            # Start PostgreSQL and Kafka
-            echo "🏗️ Starting infrastructure services..."
-            sudo docker compose --env-file .env.prod up -d postgresdb zookeeper kafka
+            # Start PostgreSQL with better error handling
+            echo "🏗️ Starting PostgreSQL..."
+            sudo docker compose --env-file .env.prod up -d postgresdb
 
-            # Wait for PostgreSQL
-            echo "⏳ Waiting for PostgreSQL..."
+            # Give PostgreSQL more time to initialize
+            echo "⏳ Waiting for PostgreSQL to initialize (10 seconds)..."
+            sleep 10
+
+            # Check if PostgreSQL container is running
+            if ! sudo docker ps | grep -q postgrecontainer; then
+              echo "❌ PostgreSQL container failed to start. Checking logs..."
+              sudo docker logs postgrecontainer --tail=20
+              echo "Attempting to restart PostgreSQL..."
+              sudo docker compose --env-file .env.prod restart postgresdb
+              sleep 10
+            fi
+
+            # Wait for PostgreSQL with better error handling
+            echo "⏳ Waiting for PostgreSQL to be ready..."
             count=0
-            until sudo docker exec postgrecontainer pg_isready -U ${POSTGRES_USER:-user2711} || [ $count -eq 30 ]; do
-              echo "Waiting for PostgreSQL... ($count/30)"
-              sleep 2
+            until sudo docker exec postgrecontainer pg_isready -U ${POSTGRES_USER:-user2711} 2>/dev/null; do
+              if [ $count -eq 40 ]; then
+                echo "❌ PostgreSQL failed to become ready!"
+                echo "Container status:"
+                sudo docker ps -a | grep postgres
+                echo "Last logs:"
+                sudo docker logs postgrecontainer --tail=30
+                exit 1
+              fi
+              echo "Waiting for PostgreSQL... ($count/40)"
+              sleep 3
               count=$((count + 1))
             done
-
-            if [ $count -eq 30 ]; then
-              echo "❌ PostgreSQL failed to start!"
-              exit 1
-            fi
             echo "✅ PostgreSQL is ready"
+
+            # Start Kafka and Zookeeper
+            echo "🏗️ Starting Kafka and Zookeeper..."
+            sudo docker compose --env-file .env.prod up -d zookeeper kafka
+            sleep 10
 
             # Run migrations
             echo "🗄️ Running database migrations..."
             MIGRATION_COUNT=$(ls micro-digiservices/database-migrations/src/main/resources/db/migration/*.sql 2>/dev/null | wc -l)
-            echo "📋 Found $MIGRATION_COUNT migration files"
-
-            # Get the actual network name created by docker-compose
-            NETWORK_NAME=$(sudo docker network ls --filter name=microservices --format "{{.Name}}" | head -1)
 
             if [ "$MIGRATION_COUNT" -gt 0 ]; then
+              NETWORK_NAME=$(sudo docker network ls --filter name=microservices --format "{{.Name}}" | head -1)
               sudo docker run --rm \
                 --network ${NETWORK_NAME:-bridge} \
                 -v "$(pwd)/micro-digiservices/database-migrations/src/main/resources/db/migration:/flyway/sql:ro" \
@@ -249,29 +260,25 @@ jobs:
                 -e FLYWAY_PASSWORD="${POSTGRES_PASSWORD:-admin2711}" \
                 -e FLYWAY_BASELINE_ON_MIGRATE="true" \
                 -e FLYWAY_OUT_OF_ORDER="true" \
-                -e FLYWAY_VALIDATE_ON_MIGRATE="false" \
-                flyway/flyway:11.3.0 migrate || echo "⚠️ Some migrations may have issues"
+                flyway/flyway:11.3.0 migrate || echo "⚠️ Migration warnings"
             fi
 
-            # Start Discovery Server
+            # Start services in order
             echo "🔍 Starting Discovery Server..."
             sudo docker compose --env-file .env.prod up -d discoveryserver
             sleep 30
 
-            # Start Gateway and Authorization Server
             echo "🔐 Starting Gateway and Authorization Server..."
             sudo docker compose --env-file .env.prod up -d gateway authorizationserver
             sleep 20
 
-            # Start all remaining services
-            echo "🚀 Starting all microservices..."
+            echo "🚀 Starting all remaining services..."
             sudo docker compose --env-file .env.prod up -d
 
-            # Wait for services to start
-            echo "⏳ Waiting for all services to start..."
+            echo "⏳ Waiting for services to stabilize..."
             sleep 60
 
-            # Check services health
+            # Check services
             echo "🏥 Checking services health..."
             services=("postgrecontainer" "kafka" "discoveryserver" "gateway" "authorizationserver" "userservice" "ecreditservice" "ebankingservice" "notificationservice")
             all_healthy=true
@@ -286,8 +293,13 @@ jobs:
             done
 
             if [ "$all_healthy" = false ]; then
-              echo "⚠️ Some services failed. Recent logs:"
-              sudo docker compose --env-file .env.prod logs --tail=50
+              echo "⚠️ Some services failed. Checking logs..."
+              for service in "${services[@]}"; do
+                if ! sudo docker ps | grep -q "$service"; then
+                  echo "Logs for $service:"
+                  sudo docker logs "$service" --tail=10 2>&1 || echo "No logs available"
+                fi
+              done
               exit 1
             fi
 
@@ -296,8 +308,6 @@ jobs:
             echo "================================================"
             echo "Services available at:"
             echo "   • Frontend: https://digi-creditrural-io.com"
-            echo "   • Gateway: http://${{ secrets.OVH_HOST }}:8000"
-            echo "   • Auth Server: http://${{ secrets.OVH_HOST }}:8080"
             echo "================================================"
 
       - name: Final success notification
