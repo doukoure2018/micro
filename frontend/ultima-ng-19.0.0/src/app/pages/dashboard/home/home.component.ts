@@ -25,6 +25,8 @@ export class HomeComponent {
     ngOnInit(): void {
         this.loadUserProfile();
     }
+
+    // this load user informations
     private loadUserProfile(): void {
         this.state.update((state) => ({ ...state, loading: true, message: undefined, error: undefined }));
         this.userService
