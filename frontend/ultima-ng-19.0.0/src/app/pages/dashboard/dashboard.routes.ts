@@ -3,13 +3,13 @@ import { Routes } from '@angular/router';
 export default [
     {
         path: '',
-        redirectTo: 'home',
-        pathMatch: 'full'
+        data: { breadcrumb: 'Home' },
+        loadComponent: () => import('./home/home.component').then((c) => c.HomeComponent)
     },
     {
         path: 'home',
-        data: { breadcrumb: 'Home' },
-        loadComponent: () => import('./home/home.component').then((c) => c.HomeComponent)
+        redirectTo: '',
+        pathMatch: 'full'
     },
     {
         path: 'admin',

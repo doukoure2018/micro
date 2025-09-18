@@ -23,7 +23,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 120s
 
   # Database Migration Service
   flyway-migrations:
@@ -134,7 +134,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 1
-      start_period: 60s
+      start_period: 120s
 
   gateway:
     image: doukoure93/gateway:latest
@@ -163,7 +163,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 120s
 
   # Business Services
   authorizationserver:
@@ -213,7 +213,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 120s
 
   userservice:
     image: doukoure93/userservice:latest
@@ -258,7 +258,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 120s
 
   ecreditservice:
     image: doukoure93/ecreditservice:latest
@@ -301,7 +301,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 120s
 
   ebankingservice:
     image: doukoure93/ebanking:latest
@@ -344,7 +344,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 120s
 
   notificationservice:
     image: doukoure93/notificationservice:latest
@@ -388,7 +388,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 120s
 
   # NGINX Reverse Proxy for SSL termination
   nginx:
@@ -448,7 +448,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 1536M
           cpus: '0.5'
         reservations:
           memory: 256M
@@ -458,7 +458,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 60s
+      start_period: 120s
 
 volumes:
   postgresvolume:
