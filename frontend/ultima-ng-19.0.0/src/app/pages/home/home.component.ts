@@ -89,10 +89,15 @@ export class HomeComponent {
             .subscribe({
                 next: (response: IAuthentication) => {
                     console.log('Authentication successful:', response);
+                    // CRITIQUE : Sauvegarder d'abord le token
                     this.saveToken(response);
-                    this.isAuthenticatedAndRedirecting.set(true);
-                    const redirectUrl = this.storage.getRedirectUrl() || '/dashboards';
-                    this.router.navigate([redirectUrl]);
+
+                    // Petit délai pour s'assurer que le token est bien sauvegardé
+                    setTimeout(() => {
+                        this.isAuthenticatedAndRedirecting.set(true);
+                        const redirectUrl = this.storage.getRedirectUrl() || '/dashboards';
+                        this.router.navigate([redirectUrl]);
+                    }, 100);
                 },
                 error: (error) => {
                     console.error('Authentication error:', error);
@@ -118,10 +123,17 @@ export class HomeComponent {
         });
 
     private saveToken = (response: IAuthentication) => {
+        console.log('💾 Sauvegarde des tokens:');
+        console.log('Access Token:', response.access_token?.substring(0, 50) + '...');
+        console.log('Refresh Token:', response.refresh_token?.substring(0, 50) + '...');
+
         this.storage.set(Key.TOKEN, response.access_token);
         this.storage.set(Key.REFRESH_TOKEN, response.refresh_token || response.access_token);
-    };
 
+        // Vérification immédiate
+        const savedToken = this.storage.get(Key.TOKEN);
+        console.log('✅ Token sauvegardé et vérifié:', savedToken ? 'Oui' : 'Non');
+    };
     // Ajoutez les autres méthodes si elles sont utilisées dans le template
     demandesItems: MenuItem[] = [
         {
