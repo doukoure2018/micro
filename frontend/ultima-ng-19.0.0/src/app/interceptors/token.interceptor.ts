@@ -18,7 +18,7 @@ export const TokenInterceptor: HttpInterceptorFn = (request: HttpRequest<unknown
     // Get token from storage service
     const token = storage.get(Key.TOKEN);
 
-    // Add token to request
+    // Add token to request ONLY if token exists and is valid
     const authRequest = addAuthorizationTokenHeader(request, token);
 
     return next(authRequest).pipe(
@@ -42,10 +42,15 @@ function handleAuthFailure(storage: StorageService, router: Router): void {
     // Clear tokens and redirect to login
     storage.remove(Key.TOKEN);
     storage.remove(Key.REFRESH_TOKEN);
-    router.navigate(['/login']);
+    router.navigate(['/']); // Redirection vers la page d'accueil
 }
 
-function addAuthorizationTokenHeader(request: HttpRequest<unknown>, token: string): HttpRequest<unknown> {
+function addAuthorizationTokenHeader(request: HttpRequest<unknown>, token: any): HttpRequest<unknown> {
+    // CORRECTION : Vérifier si le token existe ET n'est pas vide
+    if (!token || token === '' || token === 'null' || token === 'undefined') {
+        return request; // Retourner la requête sans modification
+    }
+
     return request.clone({
         setHeaders: { Authorization: `Bearer ${token}` }
     });
