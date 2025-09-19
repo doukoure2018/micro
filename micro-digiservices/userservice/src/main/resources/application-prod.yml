@@ -112,7 +112,7 @@ server:
     min-response-size: 2048
 
 jwks:
-  uri: http://authorizationserver:8080/oauth2/jwks
+  uri: http://authorizationserver:8080/auth/oauth2/jwks
 
 # Logging configuration for production
 logging:
