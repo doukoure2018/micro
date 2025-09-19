@@ -55,7 +55,7 @@ export class Topbar {
     private authServer = environment.authServer;
     private redirectUri = environment.redirectUri;
 
-    // Fixed code challenge for this example
+    // Fixed code challenge
     private codeChallenge = 'HK02sitqCRpUlfLEX2xl4JGqaVQhNDsfTWH-oQzJHGw';
 
     handleScroll(id: string) {

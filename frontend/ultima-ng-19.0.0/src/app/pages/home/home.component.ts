@@ -7,7 +7,7 @@ import { UserService } from '@/service/user.service';
 import { getFormData } from '@/utils/fileutils';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Router, ActivatedRoute, RouterModule } from '@angular/router';
+import { Router, ActivatedRoute, RouterModule, ParamMap } from '@angular/router';
 import { MenuItem, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DropdownModule } from 'primeng/dropdown';
@@ -16,7 +16,7 @@ import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
 import { MenuModule } from 'primeng/menu';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
-import { catchError, delay, take, tap, throwError } from 'rxjs';
+import { catchError, delay, EMPTY, switchMap, take, tap, throwError } from 'rxjs';
 import { environment } from 'src/environments/environment';
 
 @Component({
@@ -47,124 +47,60 @@ import { environment } from 'src/environments/environment';
     providers: [MessageService]
 })
 export class HomeComponent {
-    private readonly redirectBaseUrl: string = environment.redirectUri;
     loading = signal<boolean>(true);
-    private router = inject(Router);
+    isAuthenticatedAndRedirecting = signal<boolean>(false); // Ajoutez cette ligne
+
     private destroyRef = inject(DestroyRef);
+    private router = inject(Router);
     private storage = inject(StorageService);
     private userService = inject(UserService);
     private activatedRoute = inject(ActivatedRoute);
     private messageService = inject(MessageService);
 
-    // Add a signal to track if user is authenticated and redirecting
-    isAuthenticatedAndRedirecting = signal<boolean>(false);
+    private readonly redirectBaseUrl: string = environment.redirectUri;
 
     ngOnInit(): void {
-        // Keep loading true until we explicitly set it to false
-        this.loading.set(true);
-
-        // First check if user is already authenticated
+        // Si déjà authentifié
         if (this.userService.isAuthenticated() && !this.userService.isTokenExpired()) {
-            console.log('User already authenticated, redirecting...');
+            this.isAuthenticatedAndRedirecting.set(true); // Ajoutez cette ligne
             const redirectUrl = this.storage.getRedirectUrl() || '/dashboards';
-
-            // Mark as authenticated and redirecting
-            this.isAuthenticatedAndRedirecting.set(true);
-
-            // Keep loading true during navigation
-            this.router
-                .navigate([redirectUrl])
-                .then(() => {
-                    console.log('Navigation complete for authenticated user');
-                })
-                .catch((error) => {
-                    console.error('Navigation error:', error);
-                    // Only set loading to false if navigation fails
-                    this.loading.set(false);
-                    this.isAuthenticatedAndRedirecting.set(false);
-                });
-
-            return; // Exit early - don't process OAuth codes for already authenticated users
+            this.router.navigate([redirectUrl]);
+            return;
         }
 
-        console.log('Checking for OAuth code in DashboardAnalytics');
+        // Gérer OAuth callback
         this.activatedRoute.queryParamMap
             .pipe(
-                take(1), // Only take first emission to prevent multiple subscriptions
+                switchMap((params: ParamMap) => {
+                    const code = params.get('code');
+                    if (code) {
+                        this.loading.set(true);
+                        return this.userService.validateCode$(this.formData(code));
+                    } else {
+                        this.loading.set(false);
+                        return EMPTY;
+                    }
+                }),
+                delay(1000),
                 takeUntilDestroyed(this.destroyRef)
             )
-            .subscribe((params) => {
-                // Get code from either route params or window location
-                const code = params.get('code');
-                console.log('OAuth code from ActivatedRoute:', code);
-
-                const urlParams = new URLSearchParams(window.location.search);
-                const urlCode = urlParams.get('code');
-                console.log('OAuth code from window.location:', urlCode);
-
-                const authCode = code || urlCode;
-
-                if (authCode) {
-                    console.log('Processing authentication with code:', authCode);
-
-                    // Ensure loading is true during validation
-                    this.loading.set(true);
-
-                    this.userService
-                        .validateCode$(this.formData(authCode))
-                        .pipe(
-                            delay(3 * 1000),
-                            takeUntilDestroyed(this.destroyRef),
-                            // Ensure loading stays true during this operation
-                            tap(() => this.loading.set(true)),
-                            catchError((err) => {
-                                console.error('Authentication error:', err);
-                                this.loading.set(false);
-                                this.messageService.add({
-                                    severity: 'error',
-                                    summary: 'Verification Account',
-                                    detail: typeof err === 'string' ? err : 'Authentication failed'
-                                });
-                                return throwError(() => err);
-                            })
-                        )
-                        .subscribe({
-                            next: (response: IAuthentication) => {
-                                this.saveToken(response);
-                                console.log('Authentication successful, tokens saved');
-
-                                // Mark as authenticated and redirecting
-                                this.isAuthenticatedAndRedirecting.set(true);
-
-                                const currentUrlWithoutParams = this.router.url.split('?')[0];
-
-                                // Navigate and keep loading true until navigation completes
-                                this.router
-                                    //.navigateByUrl(currentUrlWithoutParams)
-                                    .navigate(['/dashboards'])
-                                    .then(() => {
-                                        console.log('Navigation complete after authentication');
-                                        // Navigation successful - component should be destroyed
-                                    })
-                                    .catch((error) => {
-                                        console.error('Navigation error after authentication:', error);
-                                        // Only set loading to false if navigation fails
-                                        this.loading.set(false);
-                                        this.isAuthenticatedAndRedirecting.set(false);
-                                    });
-                            },
-                            error: () => {
-                                // Error handling moved to catchError operator
-                                this.isAuthenticatedAndRedirecting.set(false);
-                            }
-                        });
-                } else {
-                    console.log('No OAuth code found, continuing normal initialization');
-                    // Add a small delay before showing content to prevent flicker
-                    setTimeout(() => {
-                        this.loading.set(false);
-                    }, 100);
-                }
+            .subscribe({
+                next: (response: IAuthentication) => {
+                    this.saveToken(response);
+                    this.isAuthenticatedAndRedirecting.set(true); // Ajoutez cette ligne
+                    const redirectUrl = this.storage.getRedirectUrl() || '/dashboards';
+                    this.router.navigate([redirectUrl]);
+                },
+                error: (error) => {
+                    this.loading.set(false);
+                    this.isAuthenticatedAndRedirecting.set(false); // Ajoutez cette ligne
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Authentication Failed',
+                        detail: typeof error === 'string' ? error : 'Please try again'
+                    });
+                },
+                complete: () => console.log('Authentication complete')
             });
     }
 
@@ -178,11 +114,11 @@ export class HomeComponent {
         });
 
     private saveToken = (response: IAuthentication) => {
-        console.log('Saving auth tokens');
         this.storage.set(Key.TOKEN, response.access_token);
         this.storage.set(Key.REFRESH_TOKEN, response.refresh_token || response.access_token);
     };
 
+    // Ajoutez les autres méthodes si elles sont utilisées dans le template
     demandesItems: MenuItem[] = [
         {
             label: 'Demande de Crédit Individuel',

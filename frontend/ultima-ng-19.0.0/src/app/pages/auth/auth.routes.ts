@@ -5,7 +5,7 @@ export default [
         path: '',
         loadComponent: () => import('./auth.component').then((c) => c.AuthComponent),
         children: [
-            //{ path: '', loadComponent: () => import('../home/home.component').then((c) => c.HomeComponent) },
+            { path: '', loadComponent: () => import('../home/home.component').then((c) => c.HomeComponent) },
             { path: 'credit', loadComponent: () => import('./credit/credit.component').then((c) => c.CreditComponent) },
             { path: 'credit/demandeInd/:codeClient', loadComponent: () => import('./credit/demande-ind/demande-ind.component').then((c) => c.DemandeIndComponent) },
             { path: 'error', loadComponent: () => import('./error').then((c) => c.Error) },
