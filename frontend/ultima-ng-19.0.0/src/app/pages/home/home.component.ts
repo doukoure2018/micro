@@ -62,7 +62,8 @@ export class HomeComponent {
     ngOnInit(): void {
         // Si déjà authentifié
         if (this.userService.isAuthenticated() && !this.userService.isTokenExpired()) {
-            this.isAuthenticatedAndRedirecting.set(true); // Ajoutez cette ligne
+            this.isAuthenticatedAndRedirecting.set(true);
+            console.log('User is authenticated and redirecting...');
             const redirectUrl = this.storage.getRedirectUrl() || '/dashboards';
             this.router.navigate([redirectUrl]);
             return;
@@ -73,6 +74,7 @@ export class HomeComponent {
             .pipe(
                 switchMap((params: ParamMap) => {
                     const code = params.get('code');
+                    console.log('OAuth callback received with code:', code);
                     if (code) {
                         this.loading.set(true);
                         return this.userService.validateCode$(this.formData(code));
@@ -86,14 +88,16 @@ export class HomeComponent {
             )
             .subscribe({
                 next: (response: IAuthentication) => {
+                    console.log('Authentication successful:', response);
                     this.saveToken(response);
-                    this.isAuthenticatedAndRedirecting.set(true); // Ajoutez cette ligne
+                    this.isAuthenticatedAndRedirecting.set(true);
                     const redirectUrl = this.storage.getRedirectUrl() || '/dashboards';
                     this.router.navigate([redirectUrl]);
                 },
                 error: (error) => {
+                    console.error('Authentication error:', error);
                     this.loading.set(false);
-                    this.isAuthenticatedAndRedirecting.set(false); // Ajoutez cette ligne
+                    this.isAuthenticatedAndRedirecting.set(false);
                     this.messageService.add({
                         severity: 'error',
                         summary: 'Authentication Failed',
