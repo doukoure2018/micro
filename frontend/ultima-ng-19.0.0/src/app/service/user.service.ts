@@ -606,7 +606,7 @@ export class UserService {
         <Observable<IResponse>>this.http.patch<IResponse>(`${this.server}/ecredit/update/${demandeIndividuelId}`, {}, { withCredentials: true }).pipe(tap(console.log), catchError(this.handleError));
 
     // Add these methods to your existing UserService
-
+    // Correction annomalie
     getFicheSignaletique$ = (codCliente: string) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/fiche-signaletique/${codCliente}`).pipe(tap(console.log), catchError(this.handleError));
 
     addPersonnePhysique$ = (personnePhysique: PersonnePhysique) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/addPersonnePhysique`, personnePhysique).pipe(tap(console.log), catchError(this.handleError));
