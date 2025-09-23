@@ -57,7 +57,7 @@ function handleAuthFailure(storage: StorageService, router: Router): void {
 }
 
 function addAuthorizationTokenHeader(request: HttpRequest<unknown>, token: any): HttpRequest<unknown> {
-    console.log('🏗️ addAuthorizationTokenHeader appelée avec token:', token ? 'PRÉSENT' : 'ABSENT');
+    console.log('🏗️ addAuthorizationTokenHeader appelée avec token ...:', token ? 'PRÉSENT' : 'ABSENT');
 
     // CORRECTION : Vérifier si le token existe ET n'est pas vide
     if (!token || token === '' || token === 'null' || token === 'undefined') {
