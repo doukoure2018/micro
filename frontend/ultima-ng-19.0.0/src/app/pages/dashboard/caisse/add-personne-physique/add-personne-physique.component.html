@@ -1,0 +1,331 @@
+<div class="add-personne-physique">
+    <p-toast></p-toast>
+
+    <form [formGroup]="personneForm" (ngSubmit)="onSubmit()">
+        <!-- Section: Identification -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="m-0">Identification</h5>
+            </div>
+            <div class="card-body">
+                <div class="grid">
+                    <div class="col-12 md:col-4">
+                        <label for="codCliente">Code Client *</label>
+                        <input id="codCliente" type="text" pInputText formControlName="codCliente"
+                            [readonly]="ficheData" class="w-full" />
+                        <small class="p-error" *ngIf="f['codCliente'].touched && f['codCliente'].errors?.['required']">
+                            Code client requis
+                        </small>
+                        <small class="p-error" *ngIf="f['codCliente'].touched && f['codCliente'].errors?.['pattern']">
+                            Le code doit contenir 9 à 11 chiffres
+                        </small>
+                    </div>
+
+                    <div class="col-12 md:col-4">
+                        <label for="typePiece">Type de Pièce *</label>
+                        <p-dropdown id="typePiece" [options]="typePieceOptions" formControlName="typePiece"
+                            placeholder="Sélectionner" [filter]="true" filterPlaceholder="Rechercher..."
+                            styleClass="w-full">
+                        </p-dropdown>
+                        <small class="p-error" *ngIf="f['typePiece'].touched && f['typePiece'].errors?.['required']">
+                            Type de pièce requis
+                        </small>
+                    </div>
+
+                    <div class="col-12 md:col-4">
+                        <label for="numId">Numéro Pièce *</label>
+                        <input id="numId" type="text" pInputText formControlName="numId" class="w-full" />
+                        <small class="p-error" *ngIf="f['numId'].touched && f['numId'].errors?.['required']">
+                            Numéro de pièce requis
+                        </small>
+                    </div>
+                </div>
+
+                <div class="grid mt-3">
+                    <div class="col-12 md:col-4">
+                        <label for="fecVencim">Date Expiration Pièce</label>
+                        <p-calendar id="fecVencim" formControlName="fecVencim" dateFormat="dd/mm/yy" [showIcon]="true"
+                            styleClass="w-full">
+                        </p-calendar>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Informations Personnelles -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="m-0">Informations Personnelles</h5>
+            </div>
+            <div class="card-body">
+                <div class="grid">
+                    <div class="col-12 md:col-4">
+                        <label for="nomClient">Nom *</label>
+                        <input id="nomClient" type="text" pInputText formControlName="nomClient" class="w-full" />
+                        <small class="p-error" *ngIf="f['nomClient'].touched && f['nomClient'].errors?.['required']">
+                            Nom requis
+                        </small>
+                    </div>
+
+                    <div class="col-12 md:col-4">
+                        <label for="prenomClient">Prénom *</label>
+                        <input id="prenomClient" type="text" pInputText formControlName="prenomClient" class="w-full" />
+                        <small class="p-error"
+                            *ngIf="f['prenomClient'].touched && f['prenomClient'].errors?.['required']">
+                            Prénom requis
+                        </small>
+                    </div>
+
+                    <div class="col-12 md:col-4">
+                        <label for="nomCliente">Nom Complet *</label>
+                        <input id="nomCliente" type="text" pInputText formControlName="nomCliente" class="w-full" />
+                        <small class="p-error" *ngIf="f['nomCliente'].touched && f['nomCliente'].errors?.['required']">
+                            Nom complet requis
+                        </small>
+                    </div>
+                </div>
+
+                <div class="grid mt-3">
+                    <div class="col-12 md:col-3">
+                        <label for="indSexo">Sexe *</label>
+                        <p-dropdown id="indSexo" [options]="sexeOptions" formControlName="indSexo"
+                            placeholder="Sélectionner" styleClass="w-full">
+                        </p-dropdown>
+                        <small class="p-error" *ngIf="f['indSexo'].touched && f['indSexo'].errors?.['required']">
+                            Sexe requis
+                        </small>
+                    </div>
+
+                    <div class="col-12 md:col-3">
+                        <label for="estCivil">État Civil</label>
+                        <p-dropdown id="estCivil" [options]="etatCivilOptions" formControlName="estCivil"
+                            placeholder="Sélectionner" styleClass="w-full">
+                        </p-dropdown>
+                    </div>
+
+                    <div class="col-12 md:col-3">
+                        <label for="fechNacimiento">Date Naissance *</label>
+                        <p-calendar id="fechNacimiento" formControlName="fechNacimiento" dateFormat="dd/mm/yy"
+                            [showIcon]="true" [yearNavigator]="true" [yearRange]="'1920:2020'" styleClass="w-full">
+                        </p-calendar>
+                        <small class="p-error"
+                            *ngIf="f['fechNacimiento'].touched && f['fechNacimiento'].errors?.['required']">
+                            Date de naissance requise
+                        </small>
+                    </div>
+
+                    <div class="col-12 md:col-3">
+                        <label for="nbrEnfant">Nombre d'Enfants</label>
+                        <p-inputNumber id="nbrEnfant" formControlName="nbrEnfant" [showButtons]="true" [min]="0"
+                            [max]="99" styleClass="w-full">
+                        </p-inputNumber>
+                    </div>
+                </div>
+
+                <div class="grid mt-3">
+                    <div class="col-12 md:col-4">
+                        <label for="lieuxNaiss">Lieu de Naissance *</label>
+                        <input id="lieuxNaiss" type="text" pInputText formControlName="lieuxNaiss" class="w-full" />
+                        <small class="p-error" *ngIf="f['lieuxNaiss'].touched && f['lieuxNaiss'].errors?.['required']">
+                            Lieu de naissance requis
+                        </small>
+                    </div>
+
+                    <div class="col-12 md:col-4">
+                        <label for="nationalite">Nationalité *</label>
+                        <input id="nationalite" type="text" pInputText formControlName="nationalite" class="w-full" />
+                        <small class="p-error"
+                            *ngIf="f['nationalite'].touched && f['nationalite'].errors?.['required']">
+                            Nationalité requise
+                        </small>
+                    </div>
+
+                    <div class="col-12 md:col-4">
+                        <label for="conjoint">Conjoint</label>
+                        <input id="conjoint" type="text" pInputText formControlName="conjoint" class="w-full" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Contact -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="m-0">Contact</h5>
+            </div>
+            <div class="card-body">
+                <div class="grid">
+                    <div class="col-12 md:col-6">
+                        <label for="telPrincipal">Téléphone Principal *</label>
+                        <input id="telPrincipal" type="text" pInputText formControlName="telPrincipal" class="w-full" />
+                        <small class="p-error"
+                            *ngIf="f['telPrincipal'].touched && f['telPrincipal'].errors?.['required']">
+                            Téléphone requis
+                        </small>
+                        <small class="p-error"
+                            *ngIf="f['telPrincipal'].touched && f['telPrincipal'].errors?.['pattern']">
+                            Format invalide (9-10 chiffres)
+                        </small>
+                    </div>
+
+                    <div class="col-12 md:col-6">
+                        <label for="telOtro">Autre Téléphone</label>
+                        <input id="telOtro" type="text" pInputText formControlName="telOtro" class="w-full" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Adresse -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="m-0">Adresse</h5>
+            </div>
+            <div class="card-body">
+                <div class="grid">
+                    <div class="col-12 md:col-3">
+                        <label for="pays">Pays *</label>
+                        <input id="pays" type="text" pInputText formControlName="pays" [readonly]="true"
+                            class="w-full" />
+                    </div>
+
+                    <div class="col-12 md:col-3">
+                        <label for="codProvincia">Province</label>
+                        <p-dropdown id="codProvincia" [options]="provinceOptions" formControlName="codProvincia"
+                            placeholder="Sélectionner" [filter]="true" filterPlaceholder="Rechercher..."
+                            styleClass="w-full">
+                        </p-dropdown>
+                    </div>
+
+                    <div class="col-12 md:col-3">
+                        <label for="district">District</label>
+                        <p-dropdown id="district" [options]="districtOptions" formControlName="district"
+                            placeholder="Sélectionner d'abord une province" [disabled]="!districtOptions.length"
+                            [filter]="true" filterPlaceholder="Rechercher..." styleClass="w-full">
+                        </p-dropdown>
+                    </div>
+
+                    <div class="col-12 md:col-3">
+                        <label for="codeAgence">Code Agence</label>
+                        <input id="codeAgence" type="text" pInputText formControlName="codeAgence" class="w-full" />
+                    </div>
+                </div>
+
+                <div class="grid mt-3">
+                    <div class="col-12">
+                        <label for="detDireccion">Adresse Complète</label>
+                        <textarea id="detDireccion" pInputTextarea formControlName="detDireccion" rows="3"
+                            class="w-full">
+                    </textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Profession -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="m-0">Profession</h5>
+            </div>
+            <div class="card-body">
+                <div class="grid">
+                    <div class="col-12 md:col-3">
+                        <label for="codSector">Secteur</label>
+                        <p-dropdown id="codSector" [options]="sectorOptions" formControlName="codSector"
+                            placeholder="Sélectionner" styleClass="w-full">
+                        </p-dropdown>
+                    </div>
+
+                    <div class="col-12 md:col-3">
+                        <label for="codActividad">Activité</label>
+                        <p-dropdown id="codActividad" [options]="activityOptions" formControlName="codActividad"
+                            placeholder="Sélectionner" [filter]="true" filterPlaceholder="Rechercher..."
+                            styleClass="w-full">
+                        </p-dropdown>
+                    </div>
+
+                    <div class="col-12 md:col-3">
+                        <label for="codProfesion">Profession</label>
+                        <p-dropdown id="codProfesion" [options]="professionOptions" formControlName="codProfesion"
+                            placeholder="Sélectionner" [filter]="true" filterPlaceholder="Rechercher..."
+                            styleClass="w-full">
+                        </p-dropdown>
+                    </div>
+
+                    <div class="col-12 md:col-3">
+                        <label for="typeEntre">Type Entreprise</label>
+                        <p-dropdown id="typeEntre" [options]="typeEntreOptions" formControlName="typeEntre"
+                            placeholder="Sélectionner" styleClass="w-full">
+                        </p-dropdown>
+                    </div>
+                </div>
+
+                <div class="grid mt-3">
+                    <div class="col-12 md:col-6">
+                        <label for="nbrAnnee2">Années d'Expérience</label>
+                        <p-inputNumber id="nbrAnnee2" formControlName="nbrAnnee2" [showButtons]="true" [min]="0"
+                            [max]="99" styleClass="w-full">
+                        </p-inputNumber>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Logement -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="m-0">Logement</h5>
+            </div>
+            <div class="card-body">
+                <div class="grid">
+                    <div class="col-12 md:col-6">
+                        <label for="typeHabit">Type d'Habitation</label>
+                        <p-dropdown id="typeHabit" [options]="typeHabitOptions" formControlName="typeHabit"
+                            placeholder="Sélectionner" styleClass="w-full">
+                        </p-dropdown>
+                    </div>
+
+                    <div class="col-12 md:col-6">
+                        <label for="nbrAnnee">Années de Résidence</label>
+                        <p-inputNumber id="nbrAnnee" formControlName="nbrAnnee" [showButtons]="true" [min]="0"
+                            [max]="99" styleClass="w-full">
+                        </p-inputNumber>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Bénéficiaire -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="m-0">Bénéficiaire</h5>
+            </div>
+            <div class="card-body">
+                <div class="grid">
+                    <div class="col-12 md:col-6">
+                        <label for="nomBeneficiario">Nom du Bénéficiaire</label>
+                        <input id="nomBeneficiario" type="text" pInputText formControlName="nomBeneficiario"
+                            class="w-full" />
+                    </div>
+
+                    <div class="col-12 md:col-6">
+                        <label for="relacBeneficiario">Relation avec Bénéficiaire</label>
+                        <input id="relacBeneficiario" type="text" pInputText formControlName="relacBeneficiario"
+                            class="w-full" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex justify-content-end gap-2 mt-4">
+            <p-button label="Annuler" severity="secondary" (click)="cancel()" [disabled]="loading()">
+            </p-button>
+            <p-button label="Enregistrer" type="submit" [loading]="loading()"
+                [disabled]="personneForm.invalid || loading()">
+            </p-button>
+        </div>
+    </form>
+
+    <p-toast></p-toast>
+</div>

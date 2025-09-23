@@ -8,4 +8,7 @@
 <app-manager [user]="state().user"></app-manager>
 }@else if(state().user?.role ==='DR') {
 <app-list-stock [user]="state().user"></app-list-stock>
-}@else {}
+}@else if(state().user?.role ==='CAISSE') {
+<app-agent-caisse [user]="state().user"></app-agent-caisse>
+}
+@else {}

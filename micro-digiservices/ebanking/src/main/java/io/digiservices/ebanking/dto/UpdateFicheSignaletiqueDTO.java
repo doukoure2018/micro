@@ -17,7 +17,7 @@ public class UpdateFicheSignaletiqueDTO {
     private String telPrincipal;
 
     @Size(max = 15, message = "Le code client ne doit pas dépasser 15 caractères")
-    private String codClientes;
+    private String codCliente;
 
     @Size(max = 15, message = "L'autre téléphone ne doit pas dépasser 15 caractères")
     private String telOtro;

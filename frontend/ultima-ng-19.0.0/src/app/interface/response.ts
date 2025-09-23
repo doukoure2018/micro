@@ -30,6 +30,7 @@ import { NoteGarantie } from './note-garantie.model';
 import { NoteProfile } from './note-profile.model';
 import { OriginFond } from './originFonds';
 import { Personnecaution } from './personnecaution';
+import { FicheSignaletique, PersonnePhysique } from './PersonnePhysique';
 import { PlanPagos } from './plan.pagos';
 import { PointVente } from './point.vente';
 import {
@@ -206,5 +207,7 @@ export interface IResponse {
         avis?: Avis;
         avisList?: Avis[];
         reconciliationResultDTO?: ReconciliationResultDTO;
+        data?: FicheSignaletique;
+        personnePhysique?: PersonnePhysique;
     };
 }

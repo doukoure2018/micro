@@ -26,9 +26,10 @@ public class FicheSignaletiqueController {
 
     @PutMapping("/fiche-signaletique")
     public ResponseEntity<Map<String, Object>> updateFicheSignaletique(
-            @Valid @RequestBody UpdateFicheSignaletiqueDTO dto) {
+            @Valid @RequestBody UpdateFicheSignaletiqueDTO dto)
+    {
 
-        log.info("Demande de mise à jour fiche signalétique - Client: {}", dto.getCodClientes());
+        log.info("Demande de mise à jour fiche signalétique - Client: {}", dto.getCodCliente());
 
         try {
             // Log des données reçues pour debug
@@ -36,17 +37,17 @@ public class FicheSignaletiqueController {
 
             Map<String, Object> result = ficheSignaletiqueService.updateFicheSignaletique(dto);
 
-            log.info("Mise à jour réussie - Client: {}", dto.getCodClientes());
+            log.info("Mise à jour réussie - Client: {}", dto.getCodCliente());
 
             return ResponseEntity.ok(result);
 
         } catch (Exception e) {
-            log.error("Erreur lors de la mise à jour - Client: {}", dto.getCodClientes(), e);
+            log.error("Erreur lors de la mise à jour - Client: {}", dto.getCodCliente(), e);
 
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("code", -1);
             errorResponse.put("message", "Erreur lors de la mise à jour: " + e.getMessage());
-            errorResponse.put("client", dto.getCodClientes());
+            errorResponse.put("client", dto.getCodCliente());
 
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
         }
@@ -55,8 +56,8 @@ public class FicheSignaletiqueController {
     private void logReceivedData(UpdateFicheSignaletiqueDTO dto) {
         log.debug("Données reçues:");
         log.debug("  - Code client: {} (longueur: {})",
-                dto.getCodClientes(),
-                dto.getCodClientes() != null ? dto.getCodClientes().length() : 0);
+                dto.getCodCliente(),
+                dto.getCodCliente() != null ? dto.getCodCliente().length() : 0);
         log.debug("  - Nom client: {} (longueur: {})",
                 dto.getNomCliente(),
                 dto.getNomCliente() != null ? dto.getNomCliente().length() : 0);

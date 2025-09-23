@@ -179,7 +179,8 @@ export class CreateUserComponent {
 
     // Check if username validation is needed (only for AGENT_CREDIT)
     public shouldValidateUsername(): boolean {
-        return this.state().selectedRole?.name === 'AGENT_CREDIT';
+        const roleName = this.state().selectedRole?.name;
+        return roleName === 'AGENT_CREDIT';
     }
 
     // Validate username against SAF backend
@@ -276,6 +277,20 @@ export class CreateUserComponent {
             });
     }
 
+    // Validate email format
+    validateEmail(email: string): boolean {
+        if (!email) return false;
+
+        // Regex pattern that accepts both professional emails (xxx.xxx@domain.com) and standard emails
+        // This pattern allows:
+        // - Dots in the local part (before @)
+        // - Alphanumeric characters, dots, hyphens, and underscores
+        // - Various domain extensions
+        const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+        return emailPattern.test(email);
+    }
+
     // Check if form can be submitted
     canSubmitForm(): boolean {
         const validation = this.state().usernameValidation;
@@ -285,24 +300,26 @@ export class CreateUserComponent {
             return !!validation?.checked && !!validation?.isActive;
         }
 
-        // For other roles, no username validation needed
+        // For other roles (including CAISSE), no username validation needed
         return true;
     }
 
     // Check if role requires location fields (delegation at minimum)
     shouldShowLocationFields(roleName: string): boolean {
-        return roleName === 'AGENT_CREDIT' || roleName === 'DA' || roleName === 'DR';
+        return roleName === 'AGENT_CREDIT' || roleName === 'CAISSE' || roleName === 'DA' || roleName === 'DR';
     }
 
     // Check if role requires agence field
     shouldShowAgenceField(roleName: string): boolean {
         // DR only needs delegation, not agence
-        return roleName === 'AGENT_CREDIT' || roleName === 'DA';
+        // AGENT_CREDIT and CAISSE need all three levels
+        return roleName === 'AGENT_CREDIT' || roleName === 'CAISSE' || roleName === 'DA';
     }
 
     // Check if role requires point vente field
     shouldShowPointVenteField(roleName: string): boolean {
-        return roleName === 'AGENT_CREDIT';
+        // Both AGENT_CREDIT and CAISSE need point de vente
+        return roleName === 'AGENT_CREDIT' || roleName === 'CAISSE';
     }
 
     // Load delegations
@@ -381,7 +398,7 @@ export class CreateUserComponent {
             pointVentes: undefined
         }));
 
-        // Only load point ventes for AGENT_CREDIT role
+        // Load point ventes for AGENT_CREDIT and CAISSE roles
         if (this.state().selectedRole && this.shouldShowPointVenteField(this.state().selectedRole?.name!)) {
             this.loadPointVentesByAgence(agenceId);
         }
@@ -424,7 +441,18 @@ export class CreateUserComponent {
             return;
         }
 
-        // Check username validation for AGENT_CREDIT
+        // Validate email format
+        if (form.value.email && !this.validateEmail(form.value.email)) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Email invalide',
+                detail: 'Veuillez entrer une adresse email valide (ex: nom.prenom@creditruralgn.com ou nom@gmail.com)',
+                life: 5000
+            });
+            return;
+        }
+
+        // Check username validation for AGENT_CREDIT only
         if (!this.canSubmitForm()) {
             this.messageService.add({
                 severity: 'error',

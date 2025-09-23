@@ -17,6 +17,7 @@ import { DemandeUpdateRequest } from '@/interface/DemandeUpdateRequest';
 import { CreateStockDto } from '@/interface/CreateStockDto';
 import { DemandeIndividuel } from '@/interface/demande-individuel.interface';
 import { Avis } from '@/interface/avis';
+import { PersonnePhysique } from '@/interface/PersonnePhysique';
 
 @Injectable()
 export class UserService {
@@ -561,10 +562,6 @@ export class UserService {
         );
     };
 
-    // =============================================
-    // 2. Service Avis (dans user.service.ts - ajouter ces méthodes)
-    // =============================================
-
     /**
      * Créer un nouvel avis
      */
@@ -607,6 +604,12 @@ export class UserService {
     // Méthode pour rejeter une demande (spécifique au DA)
     rejectDemandeIndividuel$ = (demandeIndividuelId: number) =>
         <Observable<IResponse>>this.http.patch<IResponse>(`${this.server}/ecredit/update/${demandeIndividuelId}`, {}, { withCredentials: true }).pipe(tap(console.log), catchError(this.handleError));
+
+    // Add these methods to your existing UserService
+
+    getFicheSignaletique$ = (codCliente: string) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/fiche-signaletique/${codCliente}`).pipe(tap(console.log), catchError(this.handleError));
+
+    addPersonnePhysique$ = (personnePhysique: PersonnePhysique) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/addPersonnePhysique`, personnePhysique).pipe(tap(console.log), catchError(this.handleError));
 
     handleError = (httpErrorResponse: HttpErrorResponse): Observable<never> => {
         console.log(httpErrorResponse);

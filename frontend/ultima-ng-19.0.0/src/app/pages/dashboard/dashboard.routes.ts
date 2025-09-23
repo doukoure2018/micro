@@ -1,11 +1,11 @@
 import { Routes } from '@angular/router';
 
 export default [
-    {
-        path: '',
-        data: { breadcrumb: 'Home' },
-        loadComponent: () => import('./home/home.component').then((c) => c.HomeComponent)
-    },
+    // {
+    //     path: '',
+    //     data: { breadcrumb: 'Home' },
+    //     loadComponent: () => import('./home/home.component').then((c) => c.HomeComponent)
+    // },
     {
         path: 'home',
         redirectTo: '',
@@ -25,6 +25,11 @@ export default [
         path: 'rapprochement-caisse',
         data: { breadcrumb: 'Rapprochement Caisse' },
         loadComponent: () => import('./agent-credit/rapprochement-caisse/rapprochement-caisse.component').then((c) => c.RapprochementCaisseComponent)
+    },
+    {
+        path: 'correction-en-attente',
+        data: { breadcrumb: 'Correction En attente' },
+        loadComponent: () => import('./agent-credit/correction-en-attente/correction-en-attente.component').then((c) => c.CorrectionEnAttenteComponent)
     },
     {
         path: 'agent-credit/verification/:numeroMembre',

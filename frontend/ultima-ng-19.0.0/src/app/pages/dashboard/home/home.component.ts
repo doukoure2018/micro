@@ -7,10 +7,11 @@ import { AgentCreditComponent } from '../agent-credit/agent-credit.component';
 import { RespAgentComponent } from '../resp-agent/resp-agent.component';
 import { ManagerComponent } from '../manager/manager.component';
 import { ListStockComponent } from '../agent-credit/list-stock/list-stock.component';
+import { AgentCaisseComponent } from '../caisse/agent-caisse/agent-caisse.component';
 
 @Component({
     selector: 'app-home',
-    imports: [AdminComponent, AgentCreditComponent, RespAgentComponent, ManagerComponent, ListStockComponent],
+    imports: [AdminComponent, AgentCreditComponent, RespAgentComponent, ManagerComponent, ListStockComponent, AgentCaisseComponent],
     templateUrl: './home.component.html'
 })
 export class HomeComponent {
