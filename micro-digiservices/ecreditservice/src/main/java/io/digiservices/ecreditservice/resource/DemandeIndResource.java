@@ -204,11 +204,18 @@ public class DemandeIndResource {
 
     @GetMapping("/attente")
     public ResponseEntity<Response> listDemandAttente(@NotNull Authentication authentication,
-                                                      HttpServletRequest request) {
+                                                      HttpServletRequest request)
+    {
+        log.info("🔍 Endpoint /attente appelé avec authentication: {}", authentication.getName());
 
         User user = userClient.getUserByUuid(authentication.getName());
 
+        // AJOUT : Log de debug
+        log.info("✅ User récupéré: {} avec rôle: {}", user != null ? user.getUsername() : "NULL",
+                user != null ? user.getRole() : "NULL");
+
         if (user == null) {
+            log.error("❌ User not found pour UUID: {}", authentication.getName());
             throw new ApiException("User not found");
         }
 
