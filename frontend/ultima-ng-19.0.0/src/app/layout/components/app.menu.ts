@@ -100,6 +100,12 @@ export class AppMenu {
                                   label: 'Rapprochement Caisse',
                                   icon: 'pi pi-fw pi-hourglass',
                                   routerLink: ['/dashboards/rapprochement-caisse']
+                              },
+
+                              {
+                                  label: 'Correction En attente',
+                                  icon: 'pi pi-fw pi-hourglass',
+                                  routerLink: ['/dashboards/correction-en-attente']
                               }
                           ]
                         : this.user?.role === 'SUPER_ADMIN'
@@ -110,7 +116,15 @@ export class AppMenu {
                                     routerLink: ['/dashboards/config']
                                 }
                             ]
-                          : [])
+                          : this.user?.role === 'CAISSE'
+                            ? [
+                                  //   {
+                                  //       label: 'Configuration Reseau',
+                                  //       icon: 'pi pi-fw pi-cog',
+                                  //       routerLink: ['/dashboards/config']
+                                  //   }
+                              ]
+                            : [])
 
                     // {
                     //     label: 'Sales Dashboard',

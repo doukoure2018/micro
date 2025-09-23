@@ -1,0 +1,33 @@
+.add-personne-physique {
+    .section {
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background: var(--surface-50);
+        border-radius: 6px;
+
+        .section-title {
+            color: var(--primary-color);
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+    }
+
+    .field {
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-color-secondary);
+
+            &::after {
+                content: '';
+            }
+        }
+
+        .p-error {
+            display: block;
+            margin-top: 0.25rem;
+        }
+    }
+}

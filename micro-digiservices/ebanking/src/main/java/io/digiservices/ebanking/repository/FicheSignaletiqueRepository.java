@@ -2,14 +2,19 @@ package io.digiservices.ebanking.repository;
 
 import io.digiservices.ebanking.dto.FicheSignaletiqueResponseDTO;
 import io.digiservices.ebanking.dto.UpdateFicheSignaletiqueDTO;
+import io.digiservices.ebanking.exception.ApiException;
 import jakarta.persistence.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.sql.Date;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -62,8 +67,8 @@ public class FicheSignaletiqueRepository {
             log.warn("TEL_PRINCIPAL trop long: {} caractères (max 15)", dto.getTelPrincipal().length());
         }
 
-        if (dto.getCodClientes() != null && dto.getCodClientes().length() > 15) {
-            log.warn("COD_CLIENTE trop long: {} caractères (max 15)", dto.getCodClientes().length());
+        if (dto.getCodCliente() != null && dto.getCodCliente().length() > 15) {
+            log.warn("COD_CLIENTE trop long: {} caractères (max 15)", dto.getCodCliente().length());
         }
     }
 
@@ -117,7 +122,7 @@ public class FicheSignaletiqueRepository {
         // Définir les valeurs avec troncation selon les limites exactes de la BD
         storedProcedure.setParameter("p_cod_empresa", truncate("00000", 5));
         storedProcedure.setParameter("p_tel_principal", truncate(dto.getTelPrincipal(), 15));
-        storedProcedure.setParameter("p_cod_cliente", truncate(dto.getCodClientes(), 15));
+        storedProcedure.setParameter("p_cod_cliente", truncate(dto.getCodCliente(), 15));
         storedProcedure.setParameter("p_tel_otro", truncate(dto.getTelOtro(), 15));
         storedProcedure.setParameter("p_nom_cliente", truncate(dto.getNomCliente(), 80));
         storedProcedure.setParameter("p_nom_client", truncate(dto.getNomClient(), 20));
@@ -173,41 +178,135 @@ public class FicheSignaletiqueRepository {
     /**
      * Afficher la liste complete de la fiche signaletique
      */
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, timeout = 60) // Add timeout to transaction
     public FicheSignaletiqueResponseDTO getFicheSignaletique(String codEmpresa, String codCliente) {
         log.debug("Récupération fiche signalétique - Entreprise: {}, Client: {}", codEmpresa, codCliente);
 
+        // Start timing for monitoring
+        long startTime = System.currentTimeMillis();
+
         try {
-            // Créer la requête native pour appeler la procédure stockée
+            // Create native query with timeout hints
             Query query = entityManager.createNativeQuery(
                     "EXEC [CL].[SP_GET_FICHE_SIGNALETIQUE_CLIENT] :p_cod_empresa, :p_cod_cliente"
             );
 
-            // Définir les paramètres
+            // Set parameters
             query.setParameter("p_cod_empresa", codEmpresa != null ? codEmpresa : "00000");
             query.setParameter("p_cod_cliente", codCliente);
 
-            // Exécuter et récupérer les résultats
-            List<Object[]> results = query.getResultList();
+            // CRITICAL: Add timeout settings
+            query.setHint("javax.persistence.query.timeout", 60000); // 60 seconds in milliseconds
+            query.setHint("org.hibernate.timeout", 60); // 60 seconds
+            query.setHint("org.hibernate.readOnly", true); // Optimize for read-only
+            query.setHint("org.hibernate.fetchSize", 50); // Optimize fetch size
+            query.setHint("org.hibernate.comment", "FicheSignaletique-" + codCliente); // For monitoring
 
-            if (results == null || results.isEmpty()) {
-                log.info("Aucun client trouvé pour le code: {}", codCliente);
-                return null;
+            // Execute with timeout protection
+            List<Object[]> results;
+            try {
+                results = query.getResultList();
+            } catch (QueryTimeoutException e) {
+                log.error("Timeout après {} ms pour client: {}",
+                        System.currentTimeMillis() - startTime, codCliente);
+                throw new ApiException("La requête a pris trop de temps (>60s). Veuillez réessayer.");
+            } catch (PersistenceException e) {
+                if (e.getCause() instanceof SQLException) {
+                    SQLException sqlEx = (SQLException) e.getCause();
+                    if ("HYT00".equals(sqlEx.getSQLState()) || // SQL Server timeout
+                            "HY008".equals(sqlEx.getSQLState()) || // Operation cancelled
+                            sqlEx.getMessage().contains("timeout") ||
+                            sqlEx.getMessage().contains("timed out")) {
+                        log.error("SQL Timeout après {} ms pour client: {}",
+                                System.currentTimeMillis() - startTime, codCliente);
+                        throw new ApiException("Timeout base de données. Veuillez réessayer dans quelques instants.");
+                    }
+                }
+                throw e; // Re-throw if not timeout related
             }
 
-            // Mapper le premier (et normalement unique) résultat
+            // Check results
+            if (results == null || results.isEmpty()) {
+                log.info("Aucun client trouvé pour le code: {} (durée: {} ms)",
+                        codCliente, System.currentTimeMillis() - startTime);
+
+                // Return empty DTO instead of null for better handling
+                FicheSignaletiqueResponseDTO emptyDto = new FicheSignaletiqueResponseDTO();
+                emptyDto.setCodCliente(codCliente);
+                emptyDto.setClientExists(false);
+                return emptyDto;
+            }
+
+            // Map first result
             Object[] row = results.get(0);
+
+            // Check if client exists flag is false (assuming it's the last column)
+            if (row.length > 0 && row[row.length - 1] != null) {
+                Boolean clientExists = convertToBoolean(row[row.length - 1]);
+                if (!clientExists) {
+                    log.info("Client marqué comme inexistant: {} (durée: {} ms)",
+                            codCliente, System.currentTimeMillis() - startTime);
+                    FicheSignaletiqueResponseDTO emptyDto = new FicheSignaletiqueResponseDTO();
+                    emptyDto.setCodCliente(codCliente);
+                    emptyDto.setClientExists(false);
+                    return emptyDto;
+                }
+            }
+
+            // Map to DTO
             FicheSignaletiqueResponseDTO dto = mapResultToDTO(row);
 
-            log.debug("Fiche signalétique récupérée avec succès pour le client: {}", codCliente);
+            long duration = System.currentTimeMillis() - startTime;
+            log.debug("Fiche signalétique récupérée avec succès pour le client: {} (durée: {} ms)",
+                    codCliente, duration);
+
+            // Log warning if query was slow
+            if (duration > 30000) { // More than 30 seconds
+                log.warn("⚠️ Requête lente détectée - Client: {}, Durée: {} ms", codCliente, duration);
+            }
+
             return dto;
 
+        } catch (ApiException e) {
+            // Re-throw API exceptions as-is
+            throw e;
+        } catch (DataAccessResourceFailureException e) {
+            log.error("Erreur de connexion à la base de données après {} ms",
+                    System.currentTimeMillis() - startTime, e);
+            throw new ApiException("Impossible de se connecter à la base de données. Veuillez réessayer.");
+        } catch (DataAccessException e) {
+            log.error("Erreur JPA/Data Access après {} ms pour client: {}",
+                    System.currentTimeMillis() - startTime, codCliente, e);
+
+            // Check for connection issues
+            if (e.getCause() instanceof SQLException) {
+                SQLException sqlEx = (SQLException) e.getCause();
+                if (sqlEx.getSQLState() != null && sqlEx.getSQLState().startsWith("08")) {
+                    throw new ApiException("Connexion à la base de données perdue. Veuillez réessayer.");
+                }
+            }
+
+            throw new ApiException("Erreur technique lors de la récupération des données. Code: " + codCliente);
         } catch (Exception e) {
-            log.error("Erreur lors de la récupération de la fiche signalétique", e);
-            throw new RuntimeException("Erreur lors de la récupération de la fiche signalétique: " + e.getMessage(), e);
+            log.error("Erreur inattendue après {} ms lors de la récupération de la fiche signalétique",
+                    System.currentTimeMillis() - startTime, e);
+            throw new ApiException("Erreur inattendue lors de la récupération de la fiche signalétique");
         }
     }
 
+    /**
+     * Helper method to convert various types to Boolean
+     */
+    private Boolean convertToBoolean(Object value) {
+        if (value == null) return false;
+        if (value instanceof Boolean) return (Boolean) value;
+        if (value instanceof Number) return ((Number) value).intValue() != 0;
+        if (value instanceof String) {
+            String str = ((String) value).trim().toLowerCase();
+            return "true".equals(str) || "1".equals(str) || "yes".equals(str);
+        }
+        return false;
+    }
     private FicheSignaletiqueResponseDTO mapResultToDTO(Object[] row) {
         FicheSignaletiqueResponseDTO dto = new FicheSignaletiqueResponseDTO();
 

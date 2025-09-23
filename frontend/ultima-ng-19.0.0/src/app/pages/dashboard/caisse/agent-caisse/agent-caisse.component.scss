@@ -1,0 +1,47 @@
+.agent-caisse-container {
+    padding: 1rem;
+    max-width: 1400px;
+    margin: 0 auto;
+
+    .field-group {
+        margin-bottom: 1rem;
+
+        label {
+            font-weight: 600;
+            color: var(--text-color-secondary);
+            display: inline-block;
+            margin-bottom: 0.25rem;
+            margin-right: 0.5rem;
+
+            &::after {
+                content: ':';
+            }
+        }
+
+        span {
+            color: var(--text-color);
+        }
+    }
+
+    .section {
+        h4 {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+    }
+
+    .fiche-signaletique {
+        animation: fadeIn 0.3s ease-in;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+}

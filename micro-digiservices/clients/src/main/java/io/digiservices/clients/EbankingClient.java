@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import static org.springframework.http.HttpStatus.CREATED;
 
@@ -113,6 +114,12 @@ public interface EbankingClient {
             @RequestParam(value = "codeAgence") String codeAgence,
             @RequestParam(value = "dateDebut") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateDebut,
             @RequestParam(value = "dateFin") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFin);
+
+    @GetMapping(path = "/ebanking/fiche-signaletique/{codCliente}")
+    Map<String, Object> getFicheSignaletique(@PathVariable("codCliente") String codCliente);
+
+    @PutMapping(path = "/ebanking/fiche-signaletique")
+    Map<String, Object> updateFicheSignaletique(@RequestBody UpdateFicheSignaletiqueDTO dto);
 
 
 
