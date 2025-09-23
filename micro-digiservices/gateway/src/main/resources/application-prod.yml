@@ -50,4 +50,4 @@ server:
   port: 8000
 
 jwks:
-  uri: http://authorizationserver:8080/oauth2/jwks
+  uri: http://authorizationserver:8080/auth/oauth2/jwks

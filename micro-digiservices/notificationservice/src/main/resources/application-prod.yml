@@ -103,4 +103,4 @@ server:
     min-spare-threads: 10
 
 jwks:
-  uri: http://authorizationserver:8080/oauth2/jwks
+  uri: http://authorizationserver:8080/auth/oauth2/jwks
