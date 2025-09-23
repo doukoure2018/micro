@@ -18,6 +18,7 @@ import { DemandeIndividuel } from './demande-individuel.interface';
 import { DemandeCredit } from './demande.credit';
 import { DossierCreditRequest } from './dossierCreditRequest';
 import { Entreprise } from './entreprise';
+import { FicheSignaletique } from './ficheSignaletique';
 import { Garantiepersonnecaution } from './Garantiepersonnecaution';
 import { Individuel } from './individuel';
 import { InfoAdministrative } from './infoAdministrative';
@@ -30,7 +31,8 @@ import { NoteGarantie } from './note-garantie.model';
 import { NoteProfile } from './note-profile.model';
 import { OriginFond } from './originFonds';
 import { Personnecaution } from './personnecaution';
-import { FicheSignaletique, PersonnePhysique } from './PersonnePhysique';
+import { PersonnePhysique } from './personnePhysique';
+
 import { PlanPagos } from './plan.pagos';
 import { PointVente } from './point.vente';
 import {

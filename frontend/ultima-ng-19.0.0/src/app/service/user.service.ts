@@ -17,7 +17,7 @@ import { DemandeUpdateRequest } from '@/interface/DemandeUpdateRequest';
 import { CreateStockDto } from '@/interface/CreateStockDto';
 import { DemandeIndividuel } from '@/interface/demande-individuel.interface';
 import { Avis } from '@/interface/avis';
-import { PersonnePhysique } from '@/interface/PersonnePhysique';
+import { PersonnePhysique } from '@/interface/personnePhysique';
 
 @Injectable()
 export class UserService {
