@@ -39,8 +39,10 @@ export const appConfig: ApplicationConfig = {
             }),
             withEnabledBlockingInitialNavigation()
         ),
+        // CORRECTION CRITIQUE : Une seule configuration HttpClient avec les intercepteurs
         provideHttpClient(withFetch(), withInterceptors([TokenInterceptor, CacheInterceptor])),
-        provideHttpClient(withFetch()),
+        // SUPPRIMÉ : provideHttpClient(withFetch()), // ← Cette ligne supprimée !
+
         provideAnimationsAsync(),
         providePrimeNG({
             ripple: true,
