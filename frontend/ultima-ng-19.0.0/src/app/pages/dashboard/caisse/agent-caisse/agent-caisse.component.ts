@@ -14,7 +14,7 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { DividerModule } from 'primeng/divider';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AddPersonnePhysiqueComponent } from '../add-personne-physique/add-personne-physique.component';
-import { FicheSignaletique } from '@/interface/PersonnePhysique';
+import { FicheSignaletique } from '@/interface/ficheSignaletique';
 
 @Component({
     selector: 'app-agent-caisse',
