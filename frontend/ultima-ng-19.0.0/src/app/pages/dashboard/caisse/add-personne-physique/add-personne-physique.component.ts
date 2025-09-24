@@ -11,7 +11,6 @@ import { MessageService } from 'primeng/api';
 import { UserService } from '@/service/user.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DestroyRef } from '@angular/core';
-
 import { ReferenceData } from '@/interface/reference-data.interface';
 import { FicheSignaletique } from '@/interface/ficheSignaletique';
 import { PersonnePhysique } from '@/interface/personnePhysique';

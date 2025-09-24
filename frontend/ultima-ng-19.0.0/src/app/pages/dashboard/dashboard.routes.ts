@@ -1,11 +1,11 @@
 import { Routes } from '@angular/router';
 
 export default [
-    // {
-    //     path: '',
-    //     data: { breadcrumb: 'Home' },
-    //     loadComponent: () => import('./home/home.component').then((c) => c.HomeComponent)
-    // },
+    {
+        path: '',
+        data: { breadcrumb: 'Home' },
+        loadComponent: () => import('./home/home.component').then((c) => c.HomeComponent)
+    },
     {
         path: 'home',
         redirectTo: '',
