@@ -8,10 +8,11 @@ import { RespAgentComponent } from '../resp-agent/resp-agent.component';
 import { ManagerComponent } from '../manager/manager.component';
 import { ListStockComponent } from '../agent-credit/list-stock/list-stock.component';
 import { AgentCaisseComponent } from '../caisse/agent-caisse/agent-caisse.component';
+import { RapprochementCaisseComponent } from '../agent-credit/rapprochement-caisse/rapprochement-caisse.component';
 
 @Component({
     selector: 'app-home',
-    imports: [AdminComponent, AgentCreditComponent, RespAgentComponent, ManagerComponent, ListStockComponent, AgentCaisseComponent],
+    imports: [AdminComponent, AgentCreditComponent, RespAgentComponent, ManagerComponent, ListStockComponent, AgentCaisseComponent, RapprochementCaisseComponent],
     templateUrl: './home.component.html'
 })
 export class HomeComponent {

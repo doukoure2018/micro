@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnDestroy } from '@angular/core';
+import { Component, inject, signal, computed, OnDestroy, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subject, Subscription } from 'rxjs';
@@ -31,6 +31,7 @@ import { InputIconModule } from 'primeng/inputicon';
 import { UserService } from '@/service/user.service';
 import { ReconciliationResultDTO } from '@/interface/ReconciliationResultDTO';
 import { ExcelExportService } from '@/service/TransactionManquante';
+import { IUser } from '@/interface/user';
 
 @Component({
     selector: 'app-rapprochement-caisse',
@@ -66,6 +67,7 @@ import { ExcelExportService } from '@/service/TransactionManquante';
     styleUrl: './rapprochement-caisse.component.scss'
 })
 export class RapprochementCaisseComponent implements OnDestroy {
+    @Input() user?: IUser;
     private userService = inject(UserService);
     private fb = inject(FormBuilder);
     private messageService = inject(MessageService);
