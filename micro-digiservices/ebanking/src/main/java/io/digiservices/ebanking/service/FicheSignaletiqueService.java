@@ -1,6 +1,7 @@
 package io.digiservices.ebanking.service;
 
 import io.digiservices.ebanking.dto.FicheSignaletiqueResponseDTO;
+import io.digiservices.ebanking.dto.FicheSignaletiqueResponseSoldeDTO;
 import io.digiservices.ebanking.dto.UpdateFicheSignaletiqueDTO;
 
 import java.util.Map;
@@ -16,4 +17,6 @@ public interface FicheSignaletiqueService {
       * @return La fiche signalétique ou null si le client n'existe pas
       */
      FicheSignaletiqueResponseDTO getFicheSignaletique(String codEmpresa, String codCliente);
+
+     FicheSignaletiqueResponseSoldeDTO getFicheSignaletiqueWithSolde(String codCliente);
 }

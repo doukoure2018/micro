@@ -1,6 +1,7 @@
 package io.digiservices.ebanking.controller;
 
 import io.digiservices.ebanking.dto.FicheSignaletiqueResponseDTO;
+import io.digiservices.ebanking.dto.FicheSignaletiqueResponseSoldeDTO;
 import io.digiservices.ebanking.dto.UpdateFicheSignaletiqueDTO;
 import io.digiservices.ebanking.exception.ApiException;
 import io.digiservices.ebanking.exception.ResourceNotFoundException;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/ebanking")
@@ -107,6 +109,88 @@ public class FicheSignaletiqueController {
     }
 
 
+    /**
+     * Récupère la fiche signalétique d'un client par son code
+     * avec les soldes disponibles
+     * @param codCliente Le code du client
+     * @return La fiche signalétique complète avec soldes
+     */
+    @GetMapping("/fiche-signaletique-solde/{codCliente}")
+    public ResponseEntity<?> getFicheSignaletiqueWithSolde(@PathVariable(name = "codCliente") String codCliente) {
+        log.info("Demande de récupération fiche signalétique avec soldes - Client: {}", codCliente);
+
+        try {
+            FicheSignaletiqueResponseSoldeDTO result = ficheSignaletiqueService.getFicheSignaletiqueWithSolde(codCliente);
+
+            return ResponseEntity.ok(createSuccessResponseWithSolde(result));
+
+        } catch (ResourceNotFoundException e) {
+            log.warn("Client non trouvé: {}", codCliente);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(createErrorResponse("NOT_FOUND", e.getMessage(), codCliente));
+
+        } catch (ApiException e) {
+            log.error("Erreur API lors de la récupération avec soldes - Client: {}", codCliente, e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(createErrorResponse("BAD_REQUEST", e.getMessage(), codCliente));
+
+        } catch (Exception e) {
+            log.error("Erreur inattendue lors de la récupération avec soldes - Client: {}", codCliente, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(createErrorResponse("INTERNAL_ERROR",
+                            "Une erreur inattendue s'est produite", codCliente));
+        }
+    }
+
+    /**
+     * Creates a success response for fiche with soldes
+     * @param data The fiche signalétique with soldes data
+     * @return Formatted response map
+     */
+    private Map<String, Object> createSuccessResponseWithSolde(FicheSignaletiqueResponseSoldeDTO data) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "SUCCESS");
+        response.put("code", 0);
+        response.put("data", data);
+
+        // Ajouter des métadonnées enrichies
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("clientExists", data.getClientExists());
+        metadata.put("nomComplet", data.getNombreComplet());
+        metadata.put("typePersonne", data.getIndPersona());
+        metadata.put("statut", data.getStatutClientLibelle());
+
+        // Métadonnées spécifiques aux soldes
+        metadata.put("totalComptes", data.getTotalComptes());
+        metadata.put("comptesActifs", data.getComptesActifs());
+        metadata.put("comptesInactifs", data.getComptesInactifs());
+        metadata.put("nombreComptes", data.getComptes() != null ? data.getComptes().size() : 0);
+
+        // Résumé des soldes
+        Map<String, Object> soldeSummary = new HashMap<>();
+        soldeSummary.put("totalDisponible", data.getTotalSoldeDisponible());
+        soldeSummary.put("totalMoyen", data.getTotalSoldeMoyen());
+        soldeSummary.put("totalCongelado", data.getTotalSoldeCongelado());
+        soldeSummary.put("totalTransit", data.getTotalSoldeTransit());
+        soldeSummary.put("totalReserve", data.getTotalSoldeReserve());
+
+        metadata.put("soldeSummary", soldeSummary);
+
+        // Statistiques par catégorie si nécessaire
+        if (data.getComptes() != null && !data.getComptes().isEmpty()) {
+            Map<String, Long> comptesParCategorie = data.getComptes().stream()
+                    .collect(Collectors.groupingBy(
+                            c -> c.getCodCategoria() != null ? c.getCodCategoria() : "UNKNOWN",
+                            Collectors.counting()
+                    ));
+            metadata.put("comptesParCategorie", comptesParCategorie);
+        }
+
+        response.put("metadata", metadata);
+
+        return response;
+    }
+
     private Map<String, Object> createSuccessResponse(FicheSignaletiqueResponseDTO data) {
         Map<String, Object> response = new HashMap<>();
         response.put("status", "SUCCESS");
@@ -135,4 +219,48 @@ public class FicheSignaletiqueController {
 
         return response;
     }
+
+    // Optional: Add a method to get soldes only (without full fiche)
+    @GetMapping("/soldes/{codCliente}")
+    public ResponseEntity<?> getSoldesClient(@PathVariable(name = "codCliente") String codCliente) {
+        log.info("Demande de récupération des soldes uniquement - Client: {}", codCliente);
+
+        try {
+            FicheSignaletiqueResponseSoldeDTO result = ficheSignaletiqueService.getFicheSignaletiqueWithSolde(codCliente);
+
+            // Extract only solde information
+            Map<String, Object> soldeData = new HashMap<>();
+            soldeData.put("codCliente", codCliente);
+            soldeData.put("nomClient", result.getNombreComplet());
+            soldeData.put("comptes", result.getComptes());
+            soldeData.put("totalComptes", result.getTotalComptes());
+            soldeData.put("comptesActifs", result.getComptesActifs());
+            soldeData.put("totalSoldeDisponible", result.getTotalSoldeDisponible());
+            soldeData.put("totalSoldeMoyen", result.getTotalSoldeMoyen());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "SUCCESS");
+            response.put("code", 0);
+            response.put("data", soldeData);
+
+            return ResponseEntity.ok(response);
+
+        } catch (ResourceNotFoundException e) {
+            log.warn("Client non trouvé pour soldes: {}", codCliente);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(createErrorResponse("NOT_FOUND", e.getMessage(), codCliente));
+
+        } catch (ApiException e) {
+            log.error("Erreur API lors de la récupération des soldes - Client: {}", codCliente, e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(createErrorResponse("BAD_REQUEST", e.getMessage(), codCliente));
+
+        } catch (Exception e) {
+            log.error("Erreur inattendue lors de la récupération des soldes - Client: {}", codCliente, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(createErrorResponse("INTERNAL_ERROR",
+                            "Une erreur inattendue s'est produite", codCliente));
+        }
+    }
+
 }

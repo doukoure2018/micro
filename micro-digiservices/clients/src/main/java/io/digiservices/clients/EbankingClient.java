@@ -121,6 +121,9 @@ public interface EbankingClient {
     @PutMapping(path = "/ebanking/fiche-signaletique")
     Map<String, Object> updateFicheSignaletique(@RequestBody UpdateFicheSignaletiqueDTO dto);
 
+    @GetMapping(path = "/ebanking/fiche-signaletique-solde/{codCliente}")
+    ResponseEntity<?> getFicheSignaletiqueWithSolde(@PathVariable(name = "codCliente") String codCliente);
+
 
 
 

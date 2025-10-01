@@ -611,6 +611,43 @@ export class UserService {
 
     addPersonnePhysique$ = (personnePhysique: PersonnePhysique) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/addPersonnePhysique`, personnePhysique).pipe(tap(console.log), catchError(this.handleError));
 
+    getListPPAttente$ = (): Observable<IResponse> => this.http.get<IResponse>(`${this.server}/ecredit/listPPAttente`).pipe(tap(console.log), catchError(this.handleError));
+
+    /**
+     * Récupère la personne physique depuis PostgreSQL (Correction APRES)
+     */
+    getPersonnePhysique$ = (codCliente: string): Observable<IResponse> => this.http.get<IResponse>(`${this.server}/ecredit/personnePhysique/${codCliente}`).pipe(tap(console.log), catchError(this.handleError));
+
+    /**
+     * Rejeter une correction avec motif
+     */
+    rejetCorrection$ = (motifCorrection: any): Observable<IResponse> => this.http.post<IResponse>(`${this.server}/ecredit/rejetCorrection`, motifCorrection).pipe(tap(console.log), catchError(this.handleError));
+
+    /**
+     * Ajouter un motif de correction
+     */
+    addMotifCorrection$ = (motifCorrection: any): Observable<IResponse> => this.http.post<IResponse>(`${this.server}/ecredit/addMotifCorrection`, motifCorrection).pipe(tap(console.log), catchError(this.handleError));
+
+    /**
+     * Update fiche signalétique in SAF SQL Server from PostgreSQL data
+     */
+    updateFicheSignaletique$ = (updateData: any): Observable<IResponse> => this.http.put<IResponse>(`${this.server}/ecredit/update/fiche-signaletique`, updateData).pipe(tap(console.log), catchError(this.handleError));
+
+    /**
+     * Récupère la fiche signalétique d'un client avec les soldes
+     * @param codCliente Code du client
+     * @returns Observable<IResponse> contenant la fiche signalétique avec soldes
+     */
+    getFicheSignaletiqueWithSolde$ = (codCliente: string): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/fiche-signaletique-with-solde/${codCliente}`).pipe(
+            tap((response) => {
+                console.log('Fiche signalétique avec soldes récupérée:', response);
+                if (response.data?.metadata) {
+                    console.log('Métadonnées:', response.data.metadata);
+                }
+            }),
+            catchError(this.handleError)
+        );
     handleError = (httpErrorResponse: HttpErrorResponse): Observable<never> => {
         console.log(httpErrorResponse);
         let error: string = 'An error occurred. Please try again.';

@@ -124,7 +124,15 @@ export class AppMenu {
                                   //       routerLink: ['/dashboards/config']
                                   //   }
                               ]
-                            : [])
+                            : this.user?.role === 'MANAGER'
+                              ? [
+                                    {
+                                        label: 'Verification client',
+                                        icon: 'pi pi-fw pi-hourglass',
+                                        routerLink: ['/dashboards/verification-client']
+                                    }
+                                ]
+                              : [])
 
                     // {
                     //     label: 'Sales Dashboard',

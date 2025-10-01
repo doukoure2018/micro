@@ -210,6 +210,9 @@ export interface IResponse {
         avisList?: Avis[];
         reconciliationResultDTO?: ReconciliationResultDTO;
         data?: FicheSignaletique;
+        listePPAttente?: FicheSignaletique;
         personnePhysique?: PersonnePhysique;
+
+        metadata?: any;
     };
 }

@@ -14,7 +14,7 @@ public class UpdateFicheSignaletiqueDTO {
 
     private String telPrincipal;
 
-    private String codClientes;
+    private String codCliente;
 
     private String telOtro;
 

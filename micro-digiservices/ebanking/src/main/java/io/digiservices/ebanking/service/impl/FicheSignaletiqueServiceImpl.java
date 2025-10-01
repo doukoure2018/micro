@@ -1,6 +1,8 @@
 package io.digiservices.ebanking.service.impl;
 
+import io.digiservices.ebanking.dto.CompteDTO;
 import io.digiservices.ebanking.dto.FicheSignaletiqueResponseDTO;
+import io.digiservices.ebanking.dto.FicheSignaletiqueResponseSoldeDTO;
 import io.digiservices.ebanking.dto.UpdateFicheSignaletiqueDTO;
 import io.digiservices.ebanking.exception.ApiException;
 import io.digiservices.ebanking.exception.ResourceNotFoundException;
@@ -16,7 +18,10 @@ import org.springframework.dao.QueryTimeoutException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
@@ -367,4 +372,231 @@ public class FicheSignaletiqueServiceImpl implements FicheSignaletiqueService {
             Thread.currentThread().interrupt();
         }
     }
+
+
+    @Override
+    @Transactional(readOnly = true, timeout = 60)
+    public FicheSignaletiqueResponseSoldeDTO getFicheSignaletiqueWithSolde(String codCliente) {
+        return getFicheSignaletiqueWithSolde(DEFAULT_COD_EMPRESA, codCliente);
+    }
+
+    @Transactional(readOnly = true, timeout = 60)
+    public FicheSignaletiqueResponseSoldeDTO getFicheSignaletiqueWithSolde(String codEmpresa, String codCliente) {
+        log.info("Récupération de la fiche signalétique avec soldes - Entreprise: {}, Client: {}",
+                codEmpresa != null ? codEmpresa : DEFAULT_COD_EMPRESA, codCliente);
+
+        long startTime = System.currentTimeMillis();
+
+        try {
+            // Validation des paramètres
+            validateParameters(codCliente);
+
+            // Utiliser l'entreprise par défaut si non fournie
+            String empresa = codEmpresa != null && !codEmpresa.trim().isEmpty()
+                    ? codEmpresa.trim()
+                    : DEFAULT_COD_EMPRESA;
+
+            // Execute with timeout using CompletableFuture
+            CompletableFuture<FicheSignaletiqueResponseSoldeDTO> future = CompletableFuture.supplyAsync(
+                    () -> {
+                        try {
+                            // 1. Récupérer la fiche signalétique de base
+                            FicheSignaletiqueResponseDTO basicFiche = repository.getFicheSignaletique(empresa, codCliente.trim());
+
+                            // 2. Récupérer les informations de solde
+                            List<CompteDTO> comptes = repository.getComptesSoldes(empresa, codCliente.trim());
+
+                            // 3. Convertir et enrichir les données
+                            return buildFicheWithSolde(basicFiche, comptes);
+
+                        } catch (QueryTimeoutException e) {
+                            log.error("Query timeout pour client: {}", codCliente);
+                            throw new ApiException("La requête a pris trop de temps. Veuillez réessayer.");
+                        }
+                    },
+                    executorService
+            );
+
+            FicheSignaletiqueResponseSoldeDTO result;
+            try {
+                result = future.get(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            } catch (TimeoutException e) {
+                long duration = System.currentTimeMillis() - startTime;
+                log.error("Timeout après {} ms pour client: {}", duration, codCliente);
+                throw new ApiException("La récupération a pris trop de temps (>60s). Veuillez réessayer.");
+
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.error("Thread interrompu lors de la récupération", e);
+                throw new ApiException("Opération interrompue");
+
+            } catch (ExecutionException e) {
+                Throwable cause = e.getCause();
+                if (cause instanceof ApiException) {
+                    throw (ApiException) cause;
+                }
+                log.error("Erreur lors de l'exécution asynchrone", e);
+                throw new ApiException("Erreur lors de la récupération: " + cause.getMessage());
+            }
+
+            // Vérifier si le client existe
+            if (result == null || (result.getClientExists() != null && !result.getClientExists())) {
+                log.warn("Client non trouvé - Entreprise: {}, Client: {}", empresa, codCliente);
+                throw new ApiException(String.format("Client non trouvé avec le code: %s", codCliente));
+            }
+
+            long duration = System.currentTimeMillis() - startTime;
+            log.info("Fiche signalétique avec soldes récupérée avec succès - Client: {} (durée: {} ms)",
+                    codCliente, duration);
+
+            // Log warning for slow queries
+            if (duration > WARNING_THRESHOLD_MS) {
+                log.warn("⚠️ Requête lente détectée - Client: {}, Durée: {} ms", codCliente, duration);
+            }
+
+            return result;
+
+        } catch (ResourceNotFoundException | ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            long duration = System.currentTimeMillis() - startTime;
+            log.error("Erreur inattendue après {} ms lors de la récupération de la fiche avec soldes",
+                    duration, e);
+            throw new ApiException(
+                    "Erreur lors de la récupération de la fiche signalétique avec soldes: " + e.getMessage()
+            );
+        }
+    }
+
+    private FicheSignaletiqueResponseSoldeDTO buildFicheWithSolde(
+            FicheSignaletiqueResponseDTO basicFiche,
+            List<CompteDTO> comptes) {
+
+        // Créer le DTO avec soldes
+        FicheSignaletiqueResponseSoldeDTO dto = FicheSignaletiqueResponseSoldeDTO.builder()
+                // Copy all basic fields
+                .codEmpresa(basicFiche.getCodEmpresa())
+                .codCliente(basicFiche.getCodCliente())
+                .catCliente(basicFiche.getCatCliente())
+                .nomCliente(basicFiche.getNomCliente())
+                .indPersona(basicFiche.getIndPersona())
+                .fecIngreso(basicFiche.getFecIngreso())
+                .telPrincipal(basicFiche.getTelPrincipal())
+                .telSecundario(basicFiche.getTelSecundario())
+                .telOtro(basicFiche.getTelOtro())
+                .indRelacion(basicFiche.getIndRelacion())
+                .fecReactivacion(basicFiche.getFecReactivacion())
+                .codAgencia(basicFiche.getCodAgencia())
+                .codcteAsoCom(basicFiche.getCodcteAsoCom())
+                .codcteGrpSol(basicFiche.getCodcteGrpSol())
+                .provServDestino(basicFiche.getProvServDestino())
+                // Personne physique
+                .codProfesion(basicFiche.getCodProfesion())
+                .codActividad(basicFiche.getCodActividad())
+                .codSector(basicFiche.getCodSector())
+                .primerNombre(basicFiche.getPrimerNombre())
+                .segundoNombre(basicFiche.getSegundoNombre())
+                .primerApellido(basicFiche.getPrimerApellido())
+                .segundoApellido(basicFiche.getSegundoApellido())
+                .estCivil(basicFiche.getEstCivil())
+                .indSexo(basicFiche.getIndSexo())
+                .nomConyugue(basicFiche.getNomConyugue())
+                .nacionalidad(basicFiche.getNacionalidad())
+                .lugarNacimiento(basicFiche.getLugarNacimiento())
+                .numHijos(basicFiche.getNumHijos())
+                .tenenciaVivienda(basicFiche.getTenenciaVivienda())
+                .antiguedadResidencia(basicFiche.getAntiguedadResidencia())
+                .codCteConyugue(basicFiche.getCodCteConyugue())
+                .tenenciaPuesto(basicFiche.getTenenciaPuesto())
+                .antiguedadPuesto(basicFiche.getAntiguedadPuesto())
+                // Identification
+                .codTipoId(basicFiche.getCodTipoId())
+                .numId(basicFiche.getNumId())
+                .fecVencim(basicFiche.getFecVencim())
+                // Associé
+                .indEstado(basicFiche.getIndEstado())
+                .fechIngresoAsociado(basicFiche.getFechIngresoAsociado())
+                .fechInactivacion(basicFiche.getFechInactivacion())
+                .fechRenuncia(basicFiche.getFechRenuncia())
+                .codMotRenuncia(basicFiche.getCodMotRenuncia())
+                .codPlanilla(basicFiche.getCodPlanilla())
+                .tipAsociado(basicFiche.getTipAsociado())
+                .lugarTrabajo(basicFiche.getLugarTrabajo())
+                .tipTrabajo(basicFiche.getTipTrabajo())
+                .salario(basicFiche.getSalario())
+                .cantDependientes(basicFiche.getCantDependientes())
+                .dirTrabajo(basicFiche.getDirTrabajo())
+                .nomBeneficiario(basicFiche.getNomBeneficiario())
+                .relacBeneficiario(basicFiche.getRelacBeneficiario())
+                .fechNacimiento(basicFiche.getFechNacimiento())
+                .numSesion(basicFiche.getNumSesion())
+                .numArticulo(basicFiche.getNumArticulo())
+                .tipoUnion(basicFiche.getTipoUnion())
+                .tipoPlanilla(basicFiche.getTipoPlanilla())
+                .puesto(basicFiche.getPuesto())
+                // Adresse
+                .codDireccion(basicFiche.getCodDireccion())
+                .codPais(basicFiche.getCodPais())
+                .codProvincia(basicFiche.getCodProvincia())
+                .codCanton(basicFiche.getCodCanton())
+                .codDistrito(basicFiche.getCodDistrito())
+                .tipDireccion(basicFiche.getTipDireccion())
+                .apdoPostal(basicFiche.getApdoPostal())
+                .codPostal(basicFiche.getCodPostal())
+                .detDireccion(basicFiche.getDetDireccion())
+                .clientExists(basicFiche.getClientExists())
+                // Add compte information
+                .comptes(comptes)
+                .build();
+
+        // Calculate totals
+        if (comptes != null && !comptes.isEmpty()) {
+            dto.setTotalComptes(comptes.size());
+            dto.setComptesActifs((int) comptes.stream()
+                    .filter(c -> "A".equals(c.getIndEstado()))
+                    .count());
+            dto.setComptesInactifs((int) comptes.stream()
+                    .filter(c -> !"A".equals(c.getIndEstado()))
+                    .count());
+
+            // Sum soldes
+            dto.setTotalSoldeDisponible(comptes.stream()
+                    .map(CompteDTO::getSalDisponible)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add));
+
+            dto.setTotalSoldeMoyen(comptes.stream()
+                    .map(CompteDTO::getSalPromedio)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add));
+
+            dto.setTotalSoldeCongelado(comptes.stream()
+                    .map(CompteDTO::getSalCongelado)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add));
+
+            dto.setTotalSoldeTransit(comptes.stream()
+                    .map(CompteDTO::getSalTransito)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add));
+
+            dto.setTotalSoldeReserve(comptes.stream()
+                    .map(CompteDTO::getSalReserva)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add));
+        } else {
+            dto.setTotalComptes(0);
+            dto.setComptesActifs(0);
+            dto.setComptesInactifs(0);
+            dto.setTotalSoldeDisponible(BigDecimal.ZERO);
+            dto.setTotalSoldeMoyen(BigDecimal.ZERO);
+            dto.setTotalSoldeCongelado(BigDecimal.ZERO);
+            dto.setTotalSoldeTransit(BigDecimal.ZERO);
+            dto.setTotalSoldeReserve(BigDecimal.ZERO);
+        }
+
+        return dto;
+    }
+
+
 }

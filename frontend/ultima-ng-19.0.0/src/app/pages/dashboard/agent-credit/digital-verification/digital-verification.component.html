@@ -1,0 +1,400 @@
+<div class="digital-verification-container p-4">
+    <p-toast></p-toast>
+
+    <!-- Search Section -->
+    <div class="search-section mb-4">
+        <p-card header="Recherche Client">
+            <form [formGroup]="searchForm" class="p-fluid">
+                <div class="grid">
+                    <div class="col-12 md:col-8">
+                        <div class="p-field">
+                            <label for="codCliente">Code Client</label>
+                            <input pInputText id="codCliente" formControlName="codCliente"
+                                placeholder="Entrez le code client (min 11 caractères)" class="w-full" />
+                        </div>
+                    </div>
+                    <div class="col-12 md:col-4">
+                        <div class="p-field mt-4">
+                            <button pButton type="button" label="Rechercher" icon="pi pi-search"
+                                [loading]="state().searching" [disabled]="searchForm.invalid || state().searching"
+                                (click)="searchClient()" class="w-full">
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </p-card>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div *ngIf="state().searching" class="flex justify-content-center my-4">
+        <p-progressSpinner></p-progressSpinner>
+    </div>
+
+    <!-- Error Message -->
+    <div *ngIf="state().error" class="error-message mb-4">
+        <div class="p-message p-message-error">
+            <i class="pi pi-times-circle mr-2"></i>
+            {{ state().error }}
+        </div>
+    </div>
+
+    <!-- Client Information & Balances -->
+    <div *ngIf="state().ficheSignaletique && !state().searching">
+
+        <!-- Summary Cards - Fixed with proper PrimeNG classes -->
+        <div class="grid mb-4">
+            <div class="col-12 md:col-6 lg:col-3">
+                <div class="surface-card shadow-2 p-3 border-round">
+                    <div class="flex justify-content-between mb-3">
+                        <div>
+                            <span class="block text-500 font-medium mb-3">Nombre de comptes</span>
+                            <div class="text-900 font-medium text-xl">{{ getComptes().length }}</div>
+                        </div>
+                        <div class="flex align-items-center justify-content-center bg-blue-100 border-round"
+                            style="width:2.5rem;height:2.5rem">
+                            <i class="pi pi-wallet text-blue-500 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 md:col-6 lg:col-3">
+                <div class="surface-card shadow-2 p-3 border-round">
+                    <div class="flex justify-content-between mb-3">
+                        <div>
+                            <span class="block text-500 font-medium mb-3">Comptes actifs</span>
+                            <div class="text-900 font-medium text-xl">{{ state().ficheSignaletique?.comptesActifs || 0
+                                }}</div>
+                        </div>
+                        <div class="flex align-items-center justify-content-center bg-green-100 border-round"
+                            style="width:2.5rem;height:2.5rem">
+                            <i class="pi pi-check-circle text-green-500 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 md:col-6 lg:col-3">
+                <div class="surface-card shadow-2 p-3 border-round">
+                    <div class="flex justify-content-between mb-3">
+                        <div>
+                            <span class="block text-500 font-medium mb-3">Solde disponible</span>
+                            <div class="text-900 font-medium text-xl">{{ formatCurrency(getTotalSoldeDisponible()) }}
+                            </div>
+                        </div>
+                        <div class="flex align-items-center justify-content-center bg-orange-100 border-round"
+                            style="width:2.5rem;height:2.5rem">
+                            <i class="pi pi-money-bill text-orange-500 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 md:col-6 lg:col-3">
+                <div class="surface-card shadow-2 p-3 border-round">
+                    <div class="flex justify-content-between mb-3">
+                        <div>
+                            <span class="block text-500 font-medium mb-3">Solde moyen</span>
+                            <div class="text-900 font-medium text-xl">{{ formatCurrency(getTotalSoldeMoyen()) }}</div>
+                        </div>
+                        <div class="flex align-items-center justify-content-center bg-purple-100 border-round"
+                            style="width:2.5rem;height:2.5rem">
+                            <i class="pi pi-chart-line text-purple-500 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs for Information -->
+        <p-tabView>
+            <!-- Client Information Tab - Improved Layout -->
+            <p-tabPanel header="Informations Client" leftIcon="pi pi-user">
+                <!-- Client Header with Key Info -->
+                <div class="client-header surface-card shadow-2 border-round p-4 mb-4">
+                    <div class="flex flex-wrap align-items-center justify-content-between gap-3">
+                        <div class="flex align-items-center gap-3">
+                            <div class="flex align-items-center justify-content-center bg-blue-100 border-round"
+                                style="width: 4rem; height: 4rem;">
+                                <i class="pi pi-user text-blue-600 text-3xl"></i>
+                            </div>
+                            <div>
+                                <h2 class="m-0 text-2xl font-bold text-900">
+                                    {{ state().ficheSignaletique?.nombreComplet || state().ficheSignaletique?.nomCliente
+                                    }}
+                                </h2>
+                                <div class="flex align-items-center gap-2 mt-2">
+                                    <span class="text-600">Code Client:</span>
+                                    <span class="font-semibold text-primary">{{ state().ficheSignaletique?.codCliente
+                                        }}</span>
+                                    <p-tag [value]="state().ficheSignaletique?.statutClientLibelle || 'N/A'"
+                                        [severity]="getStatutSeverity(state().ficheSignaletique?.indRelacion || '')"
+                                        class="ml-2">
+                                    </p-tag>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-column align-items-end gap-1">
+                            <div class="text-600 text-sm">Membre depuis</div>
+                            <div class="text-900 font-semibold">{{ formatDate(state().ficheSignaletique?.fecIngreso) }}
+                            </div>
+                            <div class="text-600 text-sm">Agence: <span class="text-900">{{
+                                    state().ficheSignaletique?.codAgencia }}</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid">
+                    <!-- Left Column -->
+                    <div class="col-12 lg:col-6">
+                        <!-- Personal Information Card - Redesigned -->
+                        <div class="info-card surface-card shadow-2 border-round p-4 mb-3">
+                            <div class="card-header flex align-items-center mb-4">
+                                <div class="flex align-items-center justify-content-center bg-blue-50 border-round mr-3"
+                                    style="width: 2.5rem; height: 2.5rem;">
+                                    <i class="pi pi-user text-blue-600"></i>
+                                </div>
+                                <h3 class="m-0 text-lg font-semibold text-900">Informations Personnelles</h3>
+                            </div>
+
+                            <div class="info-grid">
+                                <div class="info-item mb-3">
+                                    <label class="text-600 text-sm block mb-1">Sexe</label>
+                                    <div class="text-900 font-medium">{{ state().ficheSignaletique?.sexeLibelle || '-'
+                                        }}</div>
+                                </div>
+
+                                <div class="info-item mb-3">
+                                    <label class="text-600 text-sm block mb-1">État Civil</label>
+                                    <div class="text-900 font-medium">{{ state().ficheSignaletique?.estatCivilLibelle ||
+                                        '-' }}</div>
+                                </div>
+
+                                <div class="info-item mb-3">
+                                    <label class="text-600 text-sm block mb-1">Date de naissance</label>
+                                    <div class="text-900 font-medium">{{
+                                        formatDate(state().ficheSignaletique?.fechNacimiento) }}</div>
+                                </div>
+
+                                <div class="info-item mb-3">
+                                    <label class="text-600 text-sm block mb-1">Lieu de naissance</label>
+                                    <div class="text-900 font-medium">{{ state().ficheSignaletique?.lugarNacimiento ||
+                                        '-' }}</div>
+                                </div>
+
+                                <div class="info-item mb-3">
+                                    <label class="text-600 text-sm block mb-1">Nationalité</label>
+                                    <div class="text-900 font-medium">{{ state().ficheSignaletique?.nacionalidad || '-'
+                                        }}</div>
+                                </div>
+
+                                <div class="info-item mb-3">
+                                    <label class="text-600 text-sm block mb-1">Nombre d'enfants</label>
+                                    <div class="text-900 font-medium">{{ state().ficheSignaletique?.numHijos || 0 }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contact Information Card - Redesigned -->
+                        <div class="info-card surface-card shadow-2 border-round p-4">
+                            <div class="card-header flex align-items-center mb-4">
+                                <div class="flex align-items-center justify-content-center bg-green-50 border-round mr-3"
+                                    style="width: 2.5rem; height: 2.5rem;">
+                                    <i class="pi pi-phone text-green-600"></i>
+                                </div>
+                                <h3 class="m-0 text-lg font-semibold text-900">Contacts</h3>
+                            </div>
+
+                            <div class="contact-list">
+                                <div class="contact-item flex align-items-center justify-content-between p-3 border-round mb-2"
+                                    style="background-color: var(--surface-50);">
+                                    <div class="flex align-items-center gap-2">
+                                        <i class="pi pi-phone text-primary"></i>
+                                        <span class="text-600">Principal</span>
+                                    </div>
+                                    <span class="text-900 font-semibold">{{ state().ficheSignaletique?.telPrincipal ||
+                                        '-' }}</span>
+                                </div>
+
+                                <div class="contact-item flex align-items-center justify-content-between p-3 border-round mb-2"
+                                    style="background-color: var(--surface-50);">
+                                    <div class="flex align-items-center gap-2">
+                                        <i class="pi pi-mobile text-primary"></i>
+                                        <span class="text-600">Secondaire</span>
+                                    </div>
+                                    <span class="text-900 font-semibold">{{ state().ficheSignaletique?.telSecundario ||
+                                        '-' }}</span>
+                                </div>
+
+                                <div class="contact-item flex align-items-center justify-content-between p-3 border-round"
+                                    style="background-color: var(--surface-50);">
+                                    <div class="flex align-items-center gap-2">
+                                        <i class="pi pi-phone text-primary"></i>
+                                        <span class="text-600">Autre</span>
+                                    </div>
+                                    <span class="text-900 font-semibold">{{ state().ficheSignaletique?.telOtro || '-'
+                                        }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column -->
+                    <div class="col-12 lg:col-6">
+                        <!-- Address Card - Redesigned -->
+                        <div class="info-card surface-card shadow-2 border-round p-4 mb-3">
+                            <div class="card-header flex align-items-center mb-4">
+                                <div class="flex align-items-center justify-content-center bg-orange-50 border-round mr-3"
+                                    style="width: 2.5rem; height: 2.5rem;">
+                                    <i class="pi pi-map-marker text-orange-600"></i>
+                                </div>
+                                <h3 class="m-0 text-lg font-semibold text-900">Adresse</h3>
+                            </div>
+
+                            <div class="address-info">
+                                <div class="address-main mb-3 p-3 border-round"
+                                    style="background-color: var(--surface-50);">
+                                    <label class="text-600 text-sm block mb-2">Adresse complète</label>
+                                    <div class="text-900 font-medium">{{ state().ficheSignaletique?.detDireccion || '-'
+                                        }}</div>
+                                </div>
+
+                                <div class="grid">
+                                    <div class="col-6">
+                                        <label class="text-600 text-sm block mb-1">Province</label>
+                                        <div class="text-900 font-medium">{{ state().ficheSignaletique?.codProvincia ||
+                                            '-' }}</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="text-600 text-sm block mb-1">District</label>
+                                        <div class="text-900 font-medium">{{ state().ficheSignaletique?.codDistrito ||
+                                            '-' }}</div>
+                                    </div>
+                                    <div class="col-6 mt-3">
+                                        <label class="text-600 text-sm block mb-1">Pays</label>
+                                        <div class="text-900 font-medium">{{ state().ficheSignaletique?.codPais || '-'
+                                            }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Identification Card - Redesigned -->
+                        <div class="info-card surface-card shadow-2 border-round p-4 mb-3">
+                            <div class="card-header flex align-items-center mb-4">
+                                <div class="flex align-items-center justify-content-center bg-purple-50 border-round mr-3"
+                                    style="width: 2.5rem; height: 2.5rem;">
+                                    <i class="pi pi-id-card text-purple-600"></i>
+                                </div>
+                                <h3 class="m-0 text-lg font-semibold text-900">Identification</h3>
+                            </div>
+
+                            <div class="id-info p-3 border-round" style="background-color: var(--surface-50);">
+                                <div class="flex align-items-center justify-content-between mb-2">
+                                    <span class="text-600">Type</span>
+                                    <span class="text-900 font-semibold">{{ state().ficheSignaletique?.codTipoId || '-'
+                                        }}</span>
+                                </div>
+                                <div class="flex align-items-center justify-content-between mb-2">
+                                    <span class="text-600">Numéro</span>
+                                    <span class="text-900 font-semibold">{{ state().ficheSignaletique?.numId || '-'
+                                        }}</span>
+                                </div>
+                                <div class="flex align-items-center justify-content-between">
+                                    <span class="text-600">Expiration</span>
+                                    <span class="text-900 font-semibold">{{
+                                        formatDate(state().ficheSignaletique?.fecVencim) }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Beneficiary Card - Redesigned -->
+                        <div class="info-card surface-card shadow-2 border-round p-4">
+                            <div class="card-header flex align-items-center mb-4">
+                                <div class="flex align-items-center justify-content-center bg-cyan-50 border-round mr-3"
+                                    style="width: 2.5rem; height: 2.5rem;">
+                                    <i class="pi pi-users text-cyan-600"></i>
+                                </div>
+                                <h3 class="m-0 text-lg font-semibold text-900">Bénéficiaire</h3>
+                            </div>
+
+                            <div class="beneficiary-info">
+                                <div class="mb-3">
+                                    <label class="text-600 text-sm block mb-1">Nom du bénéficiaire</label>
+                                    <div class="text-900 font-medium">{{ state().ficheSignaletique?.nomBeneficiario ||
+                                        '-' }}</div>
+                                </div>
+                                <div>
+                                    <label class="text-600 text-sm block mb-1">Relation</label>
+                                    <div class="text-900 font-medium">{{ state().ficheSignaletique?.relacBeneficiario ||
+                                        '-' }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </p-tabPanel>
+            <!-- Accounts Tab -->
+            <p-tabPanel header="Comptes & Soldes" leftIcon="pi pi-wallet">
+                <div class="accounts-section">
+                    <p-table [value]="getComptes()" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+                        currentPageReportTemplate="Affichage {first} à {last} sur {totalRecords} comptes"
+                        styleClass="p-datatable-striped">
+
+                        <ng-template pTemplate="header">
+                            <tr>
+                                <th>Numéro de Compte</th>
+                                <th>Catégorie</th>
+                                <th>Agence</th>
+                                <th>Statut</th>
+                                <th>Solde Disponible</th>
+                                <th>Solde Moyen</th>
+                                <th>Dernière Opération</th>
+                                <th>Jours Sans Mouvement</th>
+                            </tr>
+                        </ng-template>
+
+                        <ng-template pTemplate="body" let-compte>
+                            <tr>
+                                <td>{{ compte.numCuenta }}</td>
+                                <td>{{ compte.categorieLibelle || compte.codCategoria }}</td>
+                                <td>{{ compte.codAgencia }}</td>
+                                <td>
+                                    <p-tag [value]="compte.statutCompte || compte.indEstado || 'N/A'"
+                                        [severity]="getStatutSeverity(compte.indEstado || '')">
+                                    </p-tag>
+                                </td>
+                                <td class="text-right">{{ formatCurrency(compte.salDisponible) }}</td>
+                                <td class="text-right">{{ formatCurrency(compte.salPromedio) }}</td>
+                                <td>{{ formatDate(compte.fecUltMovimiento) }}</td>
+                                <td class="text-center">
+                                    <p-tag [value]="compte.joursSansMouvement || '0'" [severity]="compte.joursSansMouvement > 90 ? 'danger' : 
+                                    compte.joursSansMouvement > 30 ? 'warn' : 'success'">
+                                    </p-tag>
+                                </td>
+                            </tr>
+                        </ng-template>
+
+                        <ng-template pTemplate="summary">
+                            <div class="flex align-items-center justify-content-between">
+                                <span class="font-bold">Totaux:</span>
+                                <span class="font-bold">
+                                    Disponible: {{ formatCurrency(getTotalSoldeDisponible()) }} |
+                                    Moyen: {{ formatCurrency(getTotalSoldeMoyen()) }}
+                                </span>
+                            </div>
+                        </ng-template>
+
+                        <ng-template pTemplate="emptymessage">
+                            <tr>
+                                <td colspan="8" class="text-center">Aucun compte trouvé</td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+                </div>
+            </p-tabPanel>
+        </p-tabView>
+    </div>
+</div>
