@@ -14,7 +14,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgresvolume:/var/lib/postgresql/data
+      - microservices_postgresvolume_new:/var/lib/postgresql/data
       - ./micro-digiservices/schema.sql:/docker-entrypoint-initdb.d/schema.sql
     networks:
       - spring
@@ -461,7 +461,7 @@ services:
       start_period: 120s
 
 volumes:
-  postgresvolume:
+  microservices_postgresvolume_new:
   pgadminvolume:
 
 networks:
