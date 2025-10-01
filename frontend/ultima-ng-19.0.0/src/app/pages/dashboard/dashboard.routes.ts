@@ -32,6 +32,16 @@ export default [
         loadComponent: () => import('./agent-credit/correction-en-attente/correction-en-attente.component').then((c) => c.CorrectionEnAttenteComponent)
     },
     {
+        path: 'correction-en-attente/detail/:codCliente',
+        data: { breadcrumb: 'Verification Avant et Apres et Mise à jour' },
+        loadComponent: () => import('./agent-credit/correction-en-attente/update-correction-personne-physique/update-correction-personne-physique.component').then((c) => c.UpdateCorrectionPersonnePhysiqueComponent)
+    },
+    {
+        path: 'verification-client',
+        data: { breadcrumb: 'Verification Client' },
+        loadComponent: () => import('./agent-credit/digital-verification/digital-verification.component').then((c) => c.DigitalVerificationComponent)
+    },
+    {
         path: 'agent-credit/verification/:numeroMembre',
         data: { breadcrumb: 'Verfication du Statut de Client' },
         loadComponent: () => import('./agent-credit/mise-en-place-credit/mise-en-place-credit.component').then((c) => c.MiseEnPlaceCreditComponent)

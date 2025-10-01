@@ -1,6 +1,7 @@
 package io.digiservices.ecreditservice.repository.impl;
 
 import io.digiservices.clients.domain.PointVenteDto;
+import io.digiservices.ecreditservice.dto.MotifCorrection;
 import io.digiservices.ecreditservice.dto.PersonnePhysique;
 import io.digiservices.ecreditservice.repository.CorrectionRepository;
 import lombok.RequiredArgsConstructor;
@@ -77,6 +78,7 @@ public class CorrectionRepositoryImpl implements CorrectionRepository {
             pp.setNbrAnnee(rs.getObject("nbr_annee", Integer.class));
             pp.setStatutClt(rs.getString("statut_clt"));
             pp.setNature(rs.getString("nature"));
+            pp.setCorrectionStatut(rs.getString("correction_statut"));
             pp.setProvServDestino(rs.getString("prov_serv_destino"));
             pp.setIdUser(rs.getObject("id_user", Integer.class));
             pp.setIdManagerAgent(rs.getObject("id_manager_agent", Integer.class));
@@ -253,7 +255,8 @@ public class CorrectionRepositoryImpl implements CorrectionRepository {
     }
 
     @Override
-    public List<PersonnePhysique> getListePPAttente(String codAgencia) {
+    public List<PersonnePhysique> getListePPAttente(String codAgencia)
+    {
         log.debug("Recherche code agencia - Code agencia: {}", codAgencia);
         try {
              return jdbcClient.sql(GET_ALL_DEMANDE_CORRECTION_ATTENTE_BY_COD_AGENCIA)
@@ -263,6 +266,221 @@ public class CorrectionRepositoryImpl implements CorrectionRepository {
         } catch (EmptyResultDataAccessException e) {
             log.debug("Agence non trouvée - Code agencia: {}", codAgencia);
             return Collections.emptyList();
+        }
+    }
+
+
+    // Add these methods to your existing CorrectionRepositoryImpl class
+
+    // RowMapper for MotifCorrection
+    private static final RowMapper<MotifCorrection> MOTIF_CORRECTION_ROW_MAPPER = new RowMapper<MotifCorrection>() {
+        @Override
+        public MotifCorrection mapRow(ResultSet rs, int rowNum) throws SQLException {
+            MotifCorrection motif = new MotifCorrection();
+            motif.setId(rs.getLong("id"));
+            motif.setUserId(rs.getLong("user_id"));
+            motif.setLibele(rs.getString("libele"));
+            motif.setCodCliente(rs.getString("cod_cliente"));
+            motif.setCodAgence(rs.getString("cod_agence"));
+            motif.setStatut(rs.getString("statut"));
+
+            Timestamp dateAnnulation = rs.getTimestamp("date_annulation");
+            if (dateAnnulation != null) {
+                motif.setDateAnnulation(dateAnnulation.toLocalDateTime());
+            }
+
+            Long personnePhysiqueId = rs.getObject("personne_physique_id", Long.class);
+            if (personnePhysiqueId != null) {
+                motif.setPersonnePhysiqueId(personnePhysiqueId);
+            }
+
+            Timestamp createdAt = rs.getTimestamp("created_at");
+            if (createdAt != null) {
+                motif.setCreatedAt(createdAt.toLocalDateTime());
+            }
+
+            Timestamp updatedAt = rs.getTimestamp("updated_at");
+            if (updatedAt != null) {
+                motif.setUpdatedAt(updatedAt.toLocalDateTime());
+            }
+
+            return motif;
+        }
+    };
+
+    @Override
+    @Transactional
+    public MotifCorrection addMotifCorrection(MotifCorrection motifCorrection) {
+        log.info("Ajout d'un nouveau motif de correction - Client: {}", motifCorrection.getCodCliente());
+
+        try {
+            MotifCorrection result = jdbcClient.sql(CREATE_MOTIF_CORRECTION_QUERY)
+                    .param("userId", motifCorrection.getUserId())
+                    .param("libele", motifCorrection.getLibele())
+                    .param("codCliente", motifCorrection.getCodCliente())
+                    .param("codAgence", motifCorrection.getCodAgence())
+                    .param("statut", motifCorrection.getStatut())
+                    .param("dateAnnulation", motifCorrection.getDateAnnulation())
+                    .param("personnePhysiqueId", motifCorrection.getPersonnePhysiqueId())
+                    .query(MOTIF_CORRECTION_ROW_MAPPER)
+                    .single();
+
+            log.info("Motif de correction créé avec succès - ID: {}", result.getId());
+            return result;
+
+        } catch (DataAccessException e) {
+            log.error("Erreur lors de la création du motif de correction", e);
+            throw new RuntimeException("Erreur lors de la création du motif de correction", e);
+        }
+    }
+
+    @Override
+    public Optional<MotifCorrection> findMotifCorrectionById(Long id) {
+        log.debug("Recherche motif de correction - ID: {}", id);
+
+        try {
+            MotifCorrection result = jdbcClient.sql(FIND_MOTIF_BY_ID)
+                    .param("id", id)
+                    .query(MOTIF_CORRECTION_ROW_MAPPER)
+                    .single();
+            return Optional.of(result);
+        } catch (EmptyResultDataAccessException e) {
+            log.debug("Motif de correction non trouvé - ID: {}", id);
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public List<MotifCorrection> findMotifsCorrectionByClient(String codCliente) {
+        log.debug("Recherche motifs de correction - Code Client: {}", codCliente);
+
+        try {
+            return jdbcClient.sql(FIND_MOTIFS_BY_CLIENT)
+                    .param("codCliente", codCliente)
+                    .query(MOTIF_CORRECTION_ROW_MAPPER)
+                    .list();
+        } catch (EmptyResultDataAccessException e) {
+            log.debug("Aucun motif trouvé pour le client: {}", codCliente);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    public List<MotifCorrection> findMotifsCorrectionByPersonne(Long personnePhysiqueId) {
+        log.debug("Recherche motifs de correction - Personne Physique ID: {}", personnePhysiqueId);
+
+        try {
+            return jdbcClient.sql(FIND_MOTIFS_BY_PERSONNE)
+                    .param("personnePhysiqueId", personnePhysiqueId)
+                    .query(MOTIF_CORRECTION_ROW_MAPPER)
+                    .list();
+        } catch (EmptyResultDataAccessException e) {
+            log.debug("Aucun motif trouvé pour la personne physique: {}", personnePhysiqueId);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    public List<MotifCorrection> findMotifsCorrectionByAgence(String codAgence) {
+        log.debug("Recherche motifs de correction - Code Agence: {}", codAgence);
+
+        try {
+            return jdbcClient.sql(FIND_MOTIFS_BY_AGENCE)
+                    .param("codAgence", codAgence)
+                    .query(MOTIF_CORRECTION_ROW_MAPPER)
+                    .list();
+        } catch (EmptyResultDataAccessException e) {
+            log.debug("Aucun motif trouvé pour l'agence: {}", codAgence);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    @Transactional
+    public MotifCorrection updateMotifCorrection(MotifCorrection motifCorrection) {
+        log.info("Mise à jour motif de correction - ID: {}", motifCorrection.getId());
+
+        try {
+            MotifCorrection result = jdbcClient.sql(UPDATE_MOTIF_CORRECTION)
+                    .param("id", motifCorrection.getId())
+                    .param("userId", motifCorrection.getUserId())
+                    .param("libele", motifCorrection.getLibele())
+                    .param("codCliente", motifCorrection.getCodCliente())
+                    .param("codAgence", motifCorrection.getCodAgence())
+                    .param("statut", motifCorrection.getStatut())
+                    .param("dateAnnulation", motifCorrection.getDateAnnulation())
+                    .param("personnePhysiqueId", motifCorrection.getPersonnePhysiqueId())
+                    .query(MOTIF_CORRECTION_ROW_MAPPER)
+                    .single();
+
+            log.info("Motif de correction mis à jour avec succès - ID: {}", result.getId());
+            return result;
+
+        } catch (DataAccessException e) {
+            log.error("Erreur lors de la mise à jour du motif - ID: {}", motifCorrection.getId(), e);
+            throw new RuntimeException("Erreur lors de la mise à jour du motif de correction", e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public boolean deleteMotifCorrection(Long id) {
+        log.info("Suppression motif de correction - ID: {}", id);
+
+        try {
+            int rowsAffected = jdbcClient.sql(DELETE_MOTIF_CORRECTION)
+                    .param("id", id)
+                    .update();
+
+            boolean deleted = rowsAffected > 0;
+            if (deleted) {
+                log.info("Motif de correction supprimé - ID: {}", id);
+            } else {
+                log.warn("Aucun motif de correction trouvé pour suppression - ID: {}", id);
+            }
+            return deleted;
+
+        } catch (DataAccessException e) {
+            log.error("Erreur lors de la suppression du motif - ID: {}", id, e);
+            throw new RuntimeException("Erreur lors de la suppression du motif de correction", e);
+        }
+    }
+
+    @Override
+    public Optional<PersonnePhysique> findById(Long id) {
+        log.debug("Recherche personne physique par ID: {}", id);
+
+        try {
+            PersonnePhysique result = jdbcClient.sql(FIND_BY_ID)
+                    .param("id", id)
+                    .query(PERSONNE_PHYSIQUE_ROW_MAPPER)
+                    .single();
+            return Optional.of(result);
+        } catch (EmptyResultDataAccessException e) {
+            log.debug("Personne physique non trouvée - ID: {}", id);
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    @Transactional
+    public void updateCorrectionStatut(Long idPersonnePhysique, String statut) {
+        log.info("Mise à jour du statut de correction - ID: {}, Statut: {}", idPersonnePhysique, statut);
+
+        try {
+            int rowsAffected = jdbcClient.sql(UPDATE_CORRECTION_STATUT)
+                    .param("id", idPersonnePhysique)
+                    .param("correctionStatut", statut)
+                    .update();
+
+            if (rowsAffected == 0) {
+                throw new RuntimeException("Aucune ligne mise à jour pour l'ID: " + idPersonnePhysique);
+            }
+
+            log.info("Statut de correction mis à jour avec succès");
+        } catch (DataAccessException e) {
+            log.error("Erreur lors de la mise à jour du statut de correction", e);
+            throw new RuntimeException("Erreur lors de la mise à jour du statut", e);
         }
     }
 }

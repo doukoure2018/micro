@@ -1,0 +1,370 @@
+.correction-detail-container {
+    padding: 1.5rem;
+
+    .header-card {
+        margin-bottom: 1.5rem;
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+
+            .title-section {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+
+                h2 {
+                    margin: 0;
+                    font-size: 1.5rem;
+                    font-weight: 600;
+                    color: var(--text-color);
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+
+                    i {
+                        color: var(--primary-color);
+                        font-size: 1.3rem;
+                    }
+                }
+            }
+
+            .action-buttons {
+                display: flex;
+                gap: 0.75rem;
+                flex-wrap: wrap;
+            }
+        }
+    }
+
+    .content-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+
+        @media (max-width: 1024px) {
+            grid-template-columns: 1fr;
+        }
+
+        .panel-content {
+            padding: 1rem;
+            min-height: 300px;
+
+            .loading-state,
+            .error-state,
+            .no-data {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 250px;
+                gap: 1rem;
+
+                i {
+                    font-size: 3rem;
+                    color: var(--text-color-secondary);
+
+                    &.pi-exclamation-triangle {
+                        color: var(--orange-500);
+                    }
+                }
+
+                p {
+                    color: var(--text-color-secondary);
+                    margin: 0;
+                    font-size: 1rem;
+                }
+            }
+
+            .data-display {
+                .info-grid {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.75rem;
+
+                    .info-item {
+                        display: grid;
+                        grid-template-columns: 140px 1fr;
+                        gap: 1rem;
+                        padding: 0.5rem;
+                        border-bottom: 1px solid var(--surface-border);
+
+                        &:last-child {
+                            border-bottom: none;
+                        }
+
+                        label {
+                            font-weight: 600;
+                            color: var(--text-color-secondary);
+                            font-size: 0.875rem;
+                        }
+
+                        .value {
+                            color: var(--text-color);
+                            word-break: break-word;
+
+                            &.highlight-difference {
+                                color: var(--orange-600);
+                                font-weight: 600;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    .comparison-card {
+        ::ng-deep .p-card-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--surface-border);
+        }
+
+        .comparison-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            h3 {
+                margin: 0;
+                font-size: 1.25rem;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+
+                i {
+                    color: var(--primary-color);
+                }
+            }
+        }
+
+        .row-different {
+            background-color: var(--orange-50) !important;
+
+            @media (prefers-color-scheme: dark) {
+                background-color: rgba(251, 146, 60, 0.1) !important;
+            }
+        }
+
+        .value-display {
+            font-size: 0.95rem;
+
+            &.text-warning {
+                color: var(--orange-600);
+                font-weight: 600;
+            }
+        }
+
+        .comparison-summary {
+            display: flex;
+            gap: 2rem;
+            padding: 1rem 0;
+
+            .summary-item {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                color: var(--text-color-secondary);
+
+                i {
+                    font-size: 1rem;
+
+                    &.text-success {
+                        color: var(--green-500);
+                    }
+
+                    &.text-warning {
+                        color: var(--orange-500);
+                    }
+                }
+
+                strong {
+                    color: var(--text-color);
+                    font-weight: 600;
+                }
+            }
+        }
+    }
+
+    // Custom chip styles
+    ::ng-deep {
+        .custom-chip-info {
+            background-color: var(--blue-100);
+            color: var(--blue-700);
+
+            .p-chip-text {
+                font-weight: 600;
+                font-size: 0.875rem;
+            }
+        }
+
+        .custom-chip-success {
+            background-color: var(--green-100);
+            color: var(--green-700);
+
+            .p-chip-text {
+                font-weight: 600;
+                font-size: 0.875rem;
+            }
+        }
+
+        .custom-chip-warning {
+            background-color: var(--orange-100);
+            color: var(--orange-700);
+
+            .p-chip-text {
+                font-weight: 600;
+                font-size: 0.875rem;
+            }
+        }
+    }
+}
+
+// Dark mode adjustments
+@media (prefers-color-scheme: dark) {
+    .correction-detail-container {
+        ::ng-deep {
+            .custom-chip-info {
+                background-color: rgba(59, 130, 246, 0.2);
+                color: var(--blue-300);
+            }
+
+            .custom-chip-success {
+                background-color: rgba(34, 197, 94, 0.2);
+                color: var(--green-300);
+            }
+
+            .custom-chip-warning {
+                background-color: rgba(251, 146, 60, 0.2);
+                color: var(--orange-300);
+            }
+        }
+    }
+}
+
+// Mobile responsiveness
+@media (max-width: 768px) {
+    .correction-detail-container {
+        padding: 1rem;
+
+        .header-card {
+            .header-content {
+                .title-section {
+                    h2 {
+                        font-size: 1.2rem;
+                    }
+                }
+
+                .action-buttons {
+                    width: 100%;
+                    justify-content: stretch;
+
+                    button {
+                        flex: 1;
+                    }
+                }
+            }
+        }
+
+        .content-grid {
+            gap: 1rem;
+
+            .panel-content {
+                .data-display {
+                    .info-grid {
+                        .info-item {
+                            grid-template-columns: 1fr;
+
+                            label {
+                                margin-bottom: 0.25rem;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        .comparison-card {
+            .comparison-summary {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+    }
+}
+
+// Print styles
+@media print {
+    .correction-detail-container {
+        .action-buttons {
+            display: none;
+        }
+
+        .content-grid {
+            grid-template-columns: 1fr;
+
+            ::ng-deep .p-panel-icons {
+                display: none;
+            }
+        }
+    }
+}
+
+// Add these styles to your existing SCSS file
+
+.rejection-status-message {
+    margin: 1rem 0;
+
+    ::ng-deep .p-messages {
+        margin: 0;
+
+        .p-message {
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            color: var(--text-color);
+
+            .p-message-wrapper {
+                padding: 1rem 1.25rem;
+
+                .flex {
+                    display: flex;
+
+                    i {
+                        color: var(--orange-600);
+                        font-size: 1.5rem;
+                        margin-right: 1rem;
+                    }
+
+                    strong {
+                        display: block;
+                        font-size: 1.1rem;
+                        margin-bottom: 0.25rem;
+                    }
+
+                    p {
+                        color: var(--text-color-secondary);
+                        font-size: 0.95rem;
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Also update the comparison card to show rejection status
+.comparison-card {
+    &.rejected {
+        ::ng-deep .p-card {
+            border: 2px solid var(--orange-400);
+
+            .p-card-header {
+                background-color: rgba(251, 191, 36, 0.05);
+            }
+        }
+    }
+}

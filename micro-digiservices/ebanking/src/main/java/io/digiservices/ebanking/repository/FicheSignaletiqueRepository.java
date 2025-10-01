@@ -1,5 +1,6 @@
 package io.digiservices.ebanking.repository;
 
+import io.digiservices.ebanking.dto.CompteDTO;
 import io.digiservices.ebanking.dto.FicheSignaletiqueResponseDTO;
 import io.digiservices.ebanking.dto.UpdateFicheSignaletiqueDTO;
 import io.digiservices.ebanking.exception.ApiException;
@@ -17,6 +18,8 @@ import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -471,5 +474,177 @@ public class FicheSignaletiqueRepository {
             return "true".equals(str) || "1".equals(str) || "yes".equals(str) || "y".equals(str);
         }
         return false;
+    }
+
+    @Transactional(readOnly = true, timeout = 60)
+    public List<CompteDTO> getComptesSoldes(String codEmpresa, String codCliente) {
+        log.debug("Récupération des soldes - Entreprise: {}, Client: {}", codEmpresa, codCliente);
+
+        long startTime = System.currentTimeMillis();
+
+        try {
+            // Using the SIMPLER stored procedure we created: SP_GET_SOLDES_CLIENT
+            // This returns only the account/balance information
+            Query query = entityManager.createNativeQuery(
+                    "SELECT ce.COD_AGENCIA, ce.NUM_CUENTA, ce.COD_CATEGORIA, ce.COD_SISTEMA, " +
+                            "ce.COD_PRODUCTO, ce.COD_CLIENTE, ce.COD_USUARIO, ce.FEC_ULT_MOVIMIENTO, " +
+                            "ce.SAL_DISPONIBLE, ce.SAL_PROMEDIO, ce.SAL_CONGELADO, ce.SAL_TRANSITO, " +
+                            "ce.SAL_RESERVA, ce.IND_ESTADO, ce.FEC_APERTURA " +
+                            "FROM [CC].[CC_CUENTA_EFECTIVO] ce " +
+                            "WHERE ce.COD_EMPRESA = :codEmpresa AND ce.COD_CLIENTE = :codCliente " +
+                            "ORDER BY ce.FEC_ULT_MOVIMIENTO DESC"
+            );
+
+            // Set parameters
+            query.setParameter("codEmpresa", codEmpresa != null ? codEmpresa : "00000");
+            query.setParameter("codCliente", codCliente);
+
+            // Add timeout settings
+            query.setHint("javax.persistence.query.timeout", 60000); // 60 seconds
+            query.setHint("org.hibernate.timeout", 60);
+            query.setHint("org.hibernate.readOnly", true);
+            query.setHint("org.hibernate.fetchSize", 50);
+
+            // Execute query
+            List<Object[]> results;
+            try {
+                results = query.getResultList();
+            } catch (QueryTimeoutException e) {
+                log.error("Timeout après {} ms pour client: {}",
+                        System.currentTimeMillis() - startTime, codCliente);
+                throw new ApiException("La requête des soldes a pris trop de temps (>60s).");
+            }
+
+            // Map results to DTOs
+            List<CompteDTO> comptes = new ArrayList<>();
+
+            if (results != null && !results.isEmpty()) {
+                for (Object[] row : results) {
+                    CompteDTO compte = mapRowToCompteDTO(row);
+                    comptes.add(compte);
+                }
+            }
+
+            long duration = System.currentTimeMillis() - startTime;
+            log.debug("Soldes récupérés avec succès pour le client: {} ({} comptes, durée: {} ms)",
+                    codCliente, comptes.size(), duration);
+
+            if (duration > 30000) { // More than 30 seconds
+                log.warn("⚠️ Requête lente détectée pour soldes - Client: {}, Durée: {} ms",
+                        codCliente, duration);
+            }
+
+            return comptes;
+
+        } catch (ApiException e) {
+            throw e;
+        } catch (DataAccessException e) {
+            log.error("Erreur JPA/Data Access après {} ms pour client: {}",
+                    System.currentTimeMillis() - startTime, codCliente, e);
+            throw new ApiException("Erreur technique lors de la récupération des soldes. Code: " + codCliente);
+        } catch (Exception e) {
+            log.error("Erreur inattendue après {} ms lors de la récupération des soldes",
+                    System.currentTimeMillis() - startTime, e);
+            throw new ApiException("Erreur inattendue lors de la récupération des soldes");
+        }
+    }
+
+    private CompteDTO mapRowToCompteDTO(Object[] row) {
+        CompteDTO dto = new CompteDTO();
+
+        try {
+            int index = 0;
+
+            // Map columns from CC_CUENTA_EFECTIVO table
+            dto.setCodAgencia(getString(row[index++]));          // COD_AGENCIA
+            dto.setNumCuenta(getString(row[index++]));           // NUM_CUENTA
+            dto.setCodCategoria(getString(row[index++]));        // COD_CATEGORIA
+            dto.setCodSistema(getString(row[index++]));          // COD_SISTEMA
+            dto.setCodProducto(getString(row[index++]));         // COD_PRODUCTO
+            // Skip COD_CLIENTE as it's redundant
+            index++;                                              // COD_CLIENTE
+            dto.setCodUsuario(getString(row[index++]));          // COD_USUARIO
+            dto.setFecUltMovimiento(toLocalDateTime(row[index++])); // FEC_ULT_MOVIMIENTO
+            dto.setSalDisponible(toBigDecimal(row[index++]));    // SAL_DISPONIBLE
+            dto.setSalPromedio(toBigDecimal(row[index++]));      // SAL_PROMEDIO
+            dto.setSalCongelado(toBigDecimal(row[index++]));     // SAL_CONGELADO
+            dto.setSalTransito(toBigDecimal(row[index++]));      // SAL_TRANSITO
+            dto.setSalReserva(toBigDecimal(row[index++]));       // SAL_RESERVA
+            dto.setIndEstado(getString(row[index++]));           // IND_ESTADO
+            dto.setFecApertura(toLocalDateTime(row[index++]));   // FEC_APERTURA
+
+            // Set category label
+            if (dto.getCodCategoria() != null) {
+                switch (dto.getCodCategoria()) {
+                    case "DEPVU":
+                        dto.setCategorieLibelle("DEPOT A VUE");
+                        break;
+                    case "EPTON":
+                        dto.setCategorieLibelle("EPARGNE TON");
+                        break;
+                    case "DAT":
+                        dto.setCategorieLibelle("DEPOT A TERME");
+                        break;
+                    case "PLEPA":
+                        dto.setCategorieLibelle("PLAN EPARGNE");
+                        break;
+                    default:
+                        dto.setCategorieLibelle(dto.getCodCategoria());
+                }
+            }
+
+            // Set status label
+            if (dto.getIndEstado() != null) {
+                switch (dto.getIndEstado()) {
+                    case "A":
+                        dto.setStatutCompte("ACTIF");
+                        break;
+                    case "I":
+                        dto.setStatutCompte("INACTIF");
+                        break;
+                    case "B":
+                        dto.setStatutCompte("BLOQUE");
+                        break;
+                    case "C":
+                        dto.setStatutCompte("CLOTURE");
+                        break;
+                    case "T":
+                        dto.setStatutCompte("TRANSITOIRE");
+                        break;
+                    case "R":
+                        dto.setStatutCompte("RESERVE");
+                        break;
+                    default:
+                        dto.setStatutCompte(dto.getIndEstado());
+                }
+            }
+
+            // Calculate days without movement
+            if (dto.getFecUltMovimiento() != null) {
+                long daysDiff = java.time.temporal.ChronoUnit.DAYS.between(
+                        dto.getFecUltMovimiento().toLocalDate(),
+                        LocalDate.now()
+                );
+                dto.setJoursSansMouvement((int) daysDiff);
+            }
+
+        } catch (Exception e) {
+            log.error("Erreur lors du mapping des résultats de compte", e);
+            throw new RuntimeException("Erreur lors du mapping des résultats de compte", e);
+        }
+
+        return dto;
+    }
+
+    // Helper method for LocalDateTime conversion
+    private LocalDateTime toLocalDateTime(Object value) {
+        if (value == null) return null;
+        if (value instanceof LocalDateTime) return (LocalDateTime) value;
+        if (value instanceof Timestamp) return ((Timestamp) value).toLocalDateTime();
+        if (value instanceof Date) return ((Date) value).toLocalDate().atStartOfDay();
+        if (value instanceof java.util.Date) {
+            return new Timestamp(((java.util.Date) value).getTime()).toLocalDateTime();
+        }
+        return null;
     }
 }

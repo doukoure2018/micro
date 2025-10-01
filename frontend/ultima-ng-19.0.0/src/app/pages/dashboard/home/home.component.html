@@ -10,7 +10,6 @@
 <app-list-stock [user]="state().user"></app-list-stock>
 }@else if(state().user?.role ==='CAISSE') {
 <app-rapprochement-caisse [user]="state().user"></app-rapprochement-caisse>
-}
-@else {
+}@else if(state().user?.role ==='SOCIETARIAT') {
 <app-agent-caisse [user]="state().user"></app-agent-caisse>
 }

@@ -1,6 +1,7 @@
 package io.digiservices.ecreditservice.service;
 
 import io.digiservices.clients.domain.PointVenteDto;
+import io.digiservices.ecreditservice.dto.MotifCorrection;
 import io.digiservices.ecreditservice.dto.PersonnePhysique;
 
 import java.util.List;
@@ -13,4 +14,15 @@ public interface CorrectionService {
      boolean deletePersonnePhysique(String codClientes);
 
     List<PersonnePhysique> getListePPAttente(String codAgencia);
+
+    // New MotifCorrection methods
+    MotifCorrection addMotifCorrection(MotifCorrection motifCorrection);
+    List<MotifCorrection> getMotifsCorrectionByClient(String codCliente);
+    List<MotifCorrection> getMotifsCorrectionByPersonne(Long personnePhysiqueId);
+    List<MotifCorrection> getMotifsCorrectionByAgence(String codAgence);
+    MotifCorrection updateMotifStatut(Long id, String statut);
+    Optional<MotifCorrection> findMotifCorrectionById(Long id);
+
+    void updateStatutPersonnePhysique(Long idPersonnePhysique, String statut);
+
 }
