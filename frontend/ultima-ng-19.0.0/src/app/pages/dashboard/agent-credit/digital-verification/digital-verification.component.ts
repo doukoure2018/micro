@@ -94,7 +94,7 @@ export class DigitalVerificationComponent implements OnInit {
             .get('codCliente')
             ?.valueChanges.pipe(debounceTime(500), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
             .subscribe((value) => {
-                if (value && value.length >= 5) {
+                if (value && value.length >= 11) {
                     this.searchClient();
                 }
             });

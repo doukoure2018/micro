@@ -32,6 +32,7 @@ import { UserService } from '@/service/user.service';
 import { ReconciliationResultDTO } from '@/interface/ReconciliationResultDTO';
 import { ExcelExportService } from '@/service/TransactionManquante';
 import { IUser } from '@/interface/user';
+import { PdfExportService } from '@/service/PdfExportService';
 
 @Component({
     selector: 'app-rapprochement-caisse',
@@ -75,6 +76,7 @@ export class RapprochementCaisseComponent implements OnDestroy {
 
     private destroy$ = new Subject<void>();
     private currentSubscription?: Subscription;
+    private pdfExportService = inject(PdfExportService);
 
     // Dialog pour les options d'export
     showExportDialog = false;
@@ -608,15 +610,45 @@ export class RapprochementCaisseComponent implements OnDestroy {
     }
 
     /**
-     * Export PDF (placeholder)
+     * Export PDF du rapport détaillé uniquement
      */
     exportPDF(): void {
-        this.messageService.add({
-            severity: 'info',
-            summary: 'Export PDF',
-            detail: 'Fonctionnalité en cours de développement',
-            life: 3000
-        });
+        const result = this.state().reconciliationResult;
+
+        if (!result || !result.details) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Attention',
+                detail: 'Aucun rapport détaillé à exporter',
+                life: 3000
+            });
+            return;
+        }
+
+        try {
+            // Générer un nom de fichier avec la date
+            const dateDebut = this.formatDateForAPI(this.reconciliationForm.value.dateDebut);
+            const dateFin = this.formatDateForAPI(this.reconciliationForm.value.dateFin);
+            const filename = `rapport_rapprochement_${dateDebut}_${dateFin}.pdf`;
+
+            // Exporter le contenu du rapport détaillé en PDF
+            this.pdfExportService.exportReportToPdf(result.details, filename);
+
+            this.messageService.add({
+                severity: 'success',
+                summary: 'Export PDF',
+                detail: "Le rapport détaillé est en cours de génération. Utilisez la fonction d'impression pour sauvegarder en PDF.",
+                life: 4000
+            });
+        } catch (error) {
+            console.error("Erreur lors de l'export PDF:", error);
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Erreur',
+                detail: "Une erreur est survenue lors de l'export PDF",
+                life: 3000
+            });
+        }
     }
 
     resetForm(): void {
@@ -657,5 +689,266 @@ export class RapprochementCaisseComponent implements OnDestroy {
         if (this.currentSubscription) {
             this.currentSubscription.unsubscribe();
         }
+    }
+
+    /**
+     * Méthode alternative : Export PDF avec options avancées
+     * Utilise jsPDF si disponible
+     */
+    async exportPDFAdvanced(): Promise<void> {
+        const result = this.state().reconciliationResult;
+
+        if (!result || !result.details) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Attention',
+                detail: 'Aucun rapport détaillé à exporter',
+                life: 3000
+            });
+            return;
+        }
+
+        try {
+            // Afficher un message de chargement
+            this.messageService.add({
+                severity: 'info',
+                summary: 'Export en cours',
+                detail: 'Génération du PDF en cours...',
+                life: 2000
+            });
+
+            const dateDebut = this.formatDateForAPI(this.reconciliationForm.value.dateDebut);
+            const dateFin = this.formatDateForAPI(this.reconciliationForm.value.dateFin);
+            const filename = `rapport_rapprochement_${dateDebut}_${dateFin}.pdf`;
+
+            // Tenter d'utiliser jsPDF si disponible
+            await this.pdfExportService.exportToPdfWithJsPDF(result.details, filename);
+
+            this.messageService.add({
+                severity: 'success',
+                summary: 'Export PDF réussi',
+                detail: 'Le rapport a été exporté avec succès',
+                life: 3000
+            });
+        } catch (error) {
+            console.error("Erreur lors de l'export PDF avancé:", error);
+            // Fallback vers la méthode standard
+            this.exportPDF();
+        }
+    }
+
+    /**
+     * Méthode pour obtenir uniquement le contenu texte du rapport
+     * (utile pour d'autres exports)
+     */
+    private getReportContent(): string | null {
+        const result = this.state().reconciliationResult;
+        return result?.details || null;
+    }
+
+    /**
+     * Export PDF avec aperçu avant impression
+     */
+    exportPDFWithPreview(): void {
+        const result = this.state().reconciliationResult;
+
+        if (!result || !result.details) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Attention',
+                detail: 'Aucun rapport détaillé à exporter',
+                life: 3000
+            });
+            return;
+        }
+
+        // Créer une fenêtre de prévisualisation
+        const previewWindow = window.open('', '_blank', 'width=900,height=700,menubar=yes,toolbar=yes');
+
+        if (!previewWindow) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Erreur',
+                detail: "Impossible d'ouvrir la fenêtre de prévisualisation",
+                life: 3000
+            });
+            return;
+        }
+
+        const dateDebut = this.formatDateForAPI(this.reconciliationForm.value.dateDebut);
+        const dateFin = this.formatDateForAPI(this.reconciliationForm.value.dateFin);
+
+        // Créer le contenu HTML avec styles
+        const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Rapport de Rapprochement - ${dateDebut} au ${dateFin}</title>
+            <style>
+                @page {
+                    size: A4;
+                    margin: 20mm;
+                }
+                
+                body {
+                    font-family: 'Courier New', monospace;
+                    font-size: 12px;
+                    line-height: 1.6;
+                    color: #333;
+                    max-width: 800px;
+                    margin: 0 auto;
+                    padding: 20px;
+                    background-color: #fff;
+                }
+                
+                .controls {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    background: #f5f5f5;
+                    padding: 10px;
+                    border-bottom: 2px solid #ddd;
+                    text-align: center;
+                    z-index: 1000;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }
+                
+                .controls button {
+                    margin: 0 5px;
+                    padding: 8px 16px;
+                    background: #007bff;
+                    color: white;
+                    border: none;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 14px;
+                }
+                
+                .controls button:hover {
+                    background: #0056b3;
+                }
+                
+                .controls button.secondary {
+                    background: #6c757d;
+                }
+                
+                .controls button.secondary:hover {
+                    background: #545b62;
+                }
+                
+                .document {
+                    margin-top: 60px;
+                }
+                
+                .header {
+                    text-align: center;
+                    margin-bottom: 30px;
+                    padding-bottom: 15px;
+                    border-bottom: 3px solid #333;
+                }
+                
+                .header h1 {
+                    margin: 0;
+                    font-size: 20px;
+                    font-weight: bold;
+                    color: #222;
+                }
+                
+                .header .subtitle {
+                    margin-top: 10px;
+                    font-size: 12px;
+                    color: #666;
+                }
+                
+                .header .period {
+                    margin-top: 5px;
+                    font-size: 14px;
+                    font-weight: bold;
+                    color: #444;
+                }
+                
+                .content {
+                    white-space: pre-wrap;
+                    word-wrap: break-word;
+                    background-color: #f9f9f9;
+                    padding: 20px;
+                    border: 1px solid #ddd;
+                    border-radius: 4px;
+                    margin: 20px 0;
+                }
+                
+                .footer {
+                    margin-top: 40px;
+                    padding-top: 15px;
+                    border-top: 2px solid #ddd;
+                    text-align: center;
+                    font-size: 11px;
+                    color: #666;
+                }
+                
+                @media print {
+                    .controls {
+                        display: none !important;
+                    }
+                    
+                    .document {
+                        margin-top: 0;
+                    }
+                    
+                    body {
+                        padding: 0;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="controls no-print">
+                <button onclick="window.print()">📄 Imprimer / Sauvegarder en PDF</button>
+                <button class="secondary" onclick="window.close()">❌ Fermer</button>
+            </div>
+            
+            <div class="document">
+                <div class="header">
+                    <h1>RAPPORT DE RAPPROCHEMENT DE CAISSE</h1>
+                    <div class="period">Période : ${dateDebut} au ${dateFin}</div>
+                    <div class="subtitle">Généré le : ${new Date().toLocaleString('fr-FR')}</div>
+                </div>
+                
+                <div class="content">${this.escapeHtml(result.details)}</div>
+                
+                <div class="footer">
+                    <p>© ${new Date().getFullYear()} - Système de Rapprochement de Caisse</p>
+                    <p>Document généré automatiquement - Ne pas modifier</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+
+        previewWindow.document.write(htmlContent);
+        previewWindow.document.close();
+
+        this.messageService.add({
+            severity: 'info',
+            summary: 'Aperçu ouvert',
+            detail: 'Utilisez le bouton "Imprimer" pour sauvegarder en PDF',
+            life: 4000
+        });
+    }
+
+    /**
+     * Méthode utilitaire pour échapper le HTML
+     */
+    private escapeHtml(text: string): string {
+        const map: { [key: string]: string } = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.replace(/[&<>"']/g, (m) => map[m]);
     }
 }
