@@ -512,13 +512,16 @@ public class ReconciliationService {
     /**
      * Génère le rapport détaillé
      */
+    /**
+     * Génère le rapport détaillé
+     */
     private String generateDetailedReport(
             ReconciliationResultDTO result,
             RapprochementResult rapprochement) {
 
         StringBuilder sb = new StringBuilder();
         sb.append("╔════════════════════════════════════════════════════════╗\n");
-        sb.append("║         RAPPORT DE RAPPROCHEMENT BANCAIRE              ║\n");
+        sb.append("║     RAPPORT DE RAPPROCHEMENT MIDDLEWARE / SAF 2000     ║\n");
         sb.append("╚════════════════════════════════════════════════════════╝\n\n");
 
         sb.append(String.format("📅 Période: %s au %s (%d jours)\n",
@@ -537,16 +540,16 @@ public class ReconciliationService {
         sb.append(String.format("🔄 Retraits réserve : %4d ops = %,15.2f GNF\n",
                 result.getTotalRetraitsReserve(), result.getMontantTotalRetraitsReserve()));
         sb.append(String.format("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"));
-        sb.append(String.format("📊 TOTAL MW          : %4d ops = %,15.2f GNF\n\n",
+        sb.append(String.format("📊 TOTAL MIDDLEWARE  : %4d ops = %,15.2f GNF\n\n",
                 result.getTotalMiddleware(), result.getMontantTotalMiddleware()));
 
-        sb.append("═══ PRODUCTION (Rapprochées) ═══\n");
+        sb.append("═══ OPERATIONS (Rapprochées) ═══\n");
         sb.append(String.format("📥 Dépôts            : %4d ops = %,15.2f GNF\n",
                 result.getTotalDepotsProduction(), result.getMontantTotalDepotsProduction()));
         sb.append(String.format("📤 Retraits          : %4d ops = %,15.2f GNF\n",
                 result.getTotalRetraitsProduction(), result.getMontantTotalRetraitsProduction()));
         sb.append(String.format("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"));
-        sb.append(String.format("📊 TOTAL PROD        : %4d ops = %,15.2f GNF\n\n",
+        sb.append(String.format("📊 TOTAL OPERATIONS  : %4d ops = %,15.2f GNF\n\n",
                 result.getTotalProduction(), result.getMontantTotalProduction()));
 
         sb.append("═══ RÉSULTAT RAPPROCHEMENT ═══\n");
@@ -559,13 +562,15 @@ public class ReconciliationService {
         sb.append(String.format("💰 ÉCART MONTANT     : %,15.2f GNF\n", result.getMontantEcart()));
         sb.append(String.format("📌 STATUT            : %s\n\n", result.getStatut()));
 
-        // Détail des transactions manquantes
+        // Détail des transactions manquantes avec numérotation
         if (!rapprochement.getTransactionsNonRapprochees().isEmpty()) {
             sb.append("⚠️ TRANSACTIONS CLIENTS MANQUANTES:\n");
             sb.append("─────────────────────────────────\n");
 
+            int numeroTransaction = 1;
             for (TransactionSafDTO t : rapprochement.getTransactionsNonRapprochees()) {
-                sb.append(String.format("• #%d | %s | %,12.2f GNF | %s | Compte: %s\n",
+                sb.append(String.format("%2d. #%d | %s | %,12.2f GNF | %s | Compte: %s\n",
+                        numeroTransaction++,
                         t.getNumTransaction(),
                         t.getDateOperation().format(DateTimeFormatter.ofPattern("dd/MM HH:mm")),
                         t.getMontant(),
@@ -579,8 +584,10 @@ public class ReconciliationService {
             sb.append("⚠️ OPÉRATIONS RÉSERVE MANQUANTES:\n");
             sb.append("─────────────────────────────────\n");
 
+            int numeroOperation = 1;
             for (OperationReserveDTO op : rapprochement.getOperationsReserveNonRapprochees()) {
-                sb.append(String.format("• #%d | %s | %,12.2f GNF | %s\n",
+                sb.append(String.format("%2d. #%d | %s | %,12.2f GNF | %s\n",
+                        numeroOperation++,
                         op.getNumero(),
                         op.getDateOperation().format(DateTimeFormatter.ofPattern("dd/MM HH:mm")),
                         op.getMontant(),

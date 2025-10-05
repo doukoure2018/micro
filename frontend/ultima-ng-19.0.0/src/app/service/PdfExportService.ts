@@ -5,28 +5,24 @@ import { Injectable } from '@angular/core';
 })
 export class PdfExportService {
     /**
-     * Exporte le contenu du rapport détaillé en PDF
-     * @param content Le contenu texte à exporter
-     * @param filename Le nom du fichier PDF (optionnel)
+     * Exporte le contenu du rapport détaillé en PDF avec mise en forme améliorée
      */
     exportReportToPdf(content: string, filename: string = 'rapport_rapprochement.pdf'): void {
-        // Méthode 1: Utilisation de l'API d'impression du navigateur (simple et efficace)
         this.printToPdfUsingBrowser(content, filename);
     }
 
     /**
-     * Utilise l'API d'impression du navigateur pour générer un PDF
+     * Utilise l'API d'impression du navigateur avec styles améliorés
      */
     private printToPdfUsingBrowser(content: string, filename: string): void {
-        // Créer une nouvelle fenêtre pour l'impression
-        const printWindow = window.open('', '_blank', 'width=800,height=600');
+        const printWindow = window.open('', '_blank', 'width=900,height=700');
 
         if (!printWindow) {
             console.error("Impossible d'ouvrir la fenêtre d'impression");
             return;
         }
 
-        // Créer le contenu HTML avec styles pour l'impression
+        // HTML avec styles améliorés pour le texte en gras
         const htmlContent = `
             <!DOCTYPE html>
             <html>
@@ -36,58 +32,93 @@ export class PdfExportService {
                 <style>
                     @page {
                         size: A4;
-                        margin: 20mm;
+                        margin: 15mm;
                     }
                     
                     body {
-                        font-family: 'Courier New', monospace;
-                        font-size: 12px;
-                        line-height: 1.5;
-                        color: #333;
+                        font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+                        font-size: 11px;
+                        font-weight: 600; /* Texte en semi-bold */
+                        line-height: 1.6;
+                        color: #000000; /* Noir pur pour meilleure impression */
                         margin: 0;
                         padding: 20px;
+                        background-color: white;
                     }
                     
                     .header {
                         text-align: center;
                         margin-bottom: 30px;
-                        padding-bottom: 10px;
-                        border-bottom: 2px solid #333;
+                        padding-bottom: 15px;
+                        border-bottom: 3px solid #000;
                     }
                     
                     .header h1 {
                         margin: 0;
-                        font-size: 18px;
+                        font-size: 20px;
                         font-weight: bold;
+                        color: #000;
+                        text-transform: uppercase;
+                        letter-spacing: 1px;
                     }
                     
                     .header .date {
-                        margin-top: 5px;
+                        margin-top: 10px;
                         font-size: 12px;
-                        color: #666;
+                        font-weight: normal;
+                        color: #333;
+                    }
+                    
+                    .header .subtitle {
+                        margin-top: 5px;
+                        font-size: 14px;
+                        font-weight: bold;
+                        color: #222;
                     }
                     
                     .content {
                         white-space: pre-wrap;
                         word-wrap: break-word;
-                        background-color: #f9f9f9;
-                        padding: 15px;
-                        border: 1px solid #ddd;
-                        border-radius: 4px;
+                        background-color: #fafafa;
+                        padding: 20px;
+                        border: 2px solid #333;
+                        border-radius: 5px;
+                        font-weight: bold; /* Contenu en gras */
+                        font-size: 12px; /* Taille augmentée pour meilleure lisibilité */
+                        letter-spacing: 0.2px;
+                        line-height: 1.8;
+                    }
+                    
+                    /* Styles pour améliorer la lisibilité des montants */
+                    .content strong {
+                        font-weight: 900;
+                        text-decoration: underline;
                     }
                     
                     .footer {
                         margin-top: 30px;
-                        padding-top: 10px;
-                        border-top: 1px solid #ccc;
+                        padding-top: 15px;
+                        border-top: 2px solid #333;
                         text-align: center;
                         font-size: 10px;
-                        color: #666;
+                        font-weight: normal;
+                        color: #555;
+                    }
+                    
+                    .page-break {
+                        page-break-after: always;
                     }
                     
                     @media print {
                         body {
                             padding: 0;
+                            font-weight: 700; /* Plus gras pour l'impression */
+                        }
+                        
+                        .content {
+                            background-color: white;
+                            border: 2px solid #000;
+                            font-weight: 700;
                         }
                         
                         .no-print {
@@ -102,26 +133,22 @@ export class PdfExportService {
                     <div class="date">Généré le : ${new Date().toLocaleString('fr-FR')}</div>
                 </div>
                 
-                <div class="content">${this.escapeHtml(content)}</div>
+                <div class="content">${this.formatContentForPdf(content)}</div>
                 
                 <div class="footer">
-                    Page <span class="page-number"></span>
-                    <br>
-                    © ${new Date().getFullYear()} - Système de Rapprochement
+                    <div>© ${new Date().getFullYear()} - Système de Rapprochement</div>
+                    <div>Document généré automatiquement</div>
                 </div>
             </body>
             </html>
         `;
 
-        // Écrire le contenu dans la nouvelle fenêtre
         printWindow.document.write(htmlContent);
         printWindow.document.close();
 
-        // Attendre que le contenu soit chargé puis lancer l'impression
         printWindow.onload = () => {
             setTimeout(() => {
                 printWindow.print();
-                // Fermer la fenêtre après un délai
                 setTimeout(() => {
                     printWindow.close();
                 }, 100);
@@ -130,12 +157,10 @@ export class PdfExportService {
     }
 
     /**
-     * Méthode alternative utilisant jsPDF (nécessite l'installation de jspdf)
-     * npm install jspdf @types/jspdf
+     * Méthode améliorée avec jsPDF pour texte en gras
      */
     async exportToPdfWithJsPDF(content: string, filename: string = 'rapport_rapprochement.pdf'): Promise<void> {
         try {
-            // Dynamically import jsPDF
             const jsPDFModule = await import('jspdf');
             const jsPDF = jsPDFModule.default;
 
@@ -149,60 +174,65 @@ export class PdfExportService {
             const pageHeight = doc.internal.pageSize.height;
             const pageWidth = doc.internal.pageSize.width;
             const margins = {
-                top: 25,
-                bottom: 25,
-                left: 20,
-                right: 20
+                top: 20,
+                bottom: 20,
+                left: 15,
+                right: 15
             };
-            const lineHeight = 5;
-            const fontSize = 10;
+            const lineHeight = 5.5;
+            const fontSize = 11;
 
-            // Ajouter l'en-tête
-            doc.setFontSize(16);
+            // En-tête avec style amélioré
+            doc.setFontSize(18);
             doc.setFont('helvetica', 'bold');
             doc.text('RAPPORT DE RAPPROCHEMENT DE CAISSE', pageWidth / 2, margins.top, { align: 'center' });
 
-            doc.setFontSize(10);
+            doc.setFontSize(11);
             doc.setFont('helvetica', 'normal');
-            doc.text(`Généré le : ${new Date().toLocaleString('fr-FR')}`, pageWidth / 2, margins.top + 8, { align: 'center' });
+            doc.text(`Généré le : ${new Date().toLocaleString('fr-FR')}`, pageWidth / 2, margins.top + 10, { align: 'center' });
 
-            // Ligne de séparation
-            doc.line(margins.left, margins.top + 12, pageWidth - margins.right, margins.top + 12);
+            // Ligne de séparation épaisse
+            doc.setLineWidth(0.5);
+            doc.line(margins.left, margins.top + 15, pageWidth - margins.right, margins.top + 15);
 
-            // Configurer la police pour le contenu
+            // Contenu en gras
             doc.setFontSize(fontSize);
-            doc.setFont('courier', 'normal');
+            doc.setFont('courier', 'bold'); // Police Courier en gras
 
-            // Diviser le contenu en lignes
             const lines = content.split('\n');
-            let y = margins.top + 20;
+            let y = margins.top + 25;
             let pageNumber = 1;
 
             for (const line of lines) {
-                // Vérifier si nous devons passer à la page suivante
                 if (y + lineHeight > pageHeight - margins.bottom) {
-                    // Ajouter le numéro de page
-                    doc.setFontSize(8);
+                    // Numéro de page
+                    doc.setFontSize(9);
+                    doc.setFont('helvetica', 'normal');
                     doc.text(`Page ${pageNumber}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
 
-                    // Nouvelle page
                     doc.addPage();
                     pageNumber++;
                     y = margins.top;
+
+                    // Retour au style gras pour le contenu
                     doc.setFontSize(fontSize);
+                    doc.setFont('courier', 'bold');
                 }
 
-                // Gérer les lignes trop longues
                 const wrappedText = doc.splitTextToSize(line || ' ', pageWidth - margins.left - margins.right);
 
                 for (const wrappedLine of wrappedText) {
                     if (y + lineHeight > pageHeight - margins.bottom) {
-                        doc.setFontSize(8);
+                        doc.setFontSize(9);
+                        doc.setFont('helvetica', 'normal');
                         doc.text(`Page ${pageNumber}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+
                         doc.addPage();
                         pageNumber++;
                         y = margins.top;
+
                         doc.setFontSize(fontSize);
+                        doc.setFont('courier', 'bold');
                     }
 
                     doc.text(wrappedLine, margins.left, y);
@@ -210,24 +240,22 @@ export class PdfExportService {
                 }
             }
 
-            // Ajouter le numéro de la dernière page
-            doc.setFontSize(8);
+            // Dernière page
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
             doc.text(`Page ${pageNumber}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
 
-            // Sauvegarder le PDF
             doc.save(filename);
         } catch (error) {
             console.error('Erreur lors de la génération du PDF avec jsPDF:', error);
-            // Fallback vers la méthode d'impression du navigateur
             this.printToPdfUsingBrowser(content, filename);
         }
     }
 
     /**
-     * Méthode utilisant Blob et iframe (sans dépendances externes)
+     * Export avec iframe et styles améliorés
      */
     exportToPdfUsingBlob(content: string, filename: string = 'rapport_rapprochement.pdf'): void {
-        // Créer un iframe caché pour l'impression
         const iframe = document.createElement('iframe');
         iframe.style.position = 'absolute';
         iframe.style.top = '-9999px';
@@ -241,7 +269,6 @@ export class PdfExportService {
             return;
         }
 
-        // Créer le contenu HTML
         const htmlContent = `
             <!DOCTYPE html>
             <html>
@@ -255,43 +282,54 @@ export class PdfExportService {
                     }
                     
                     body {
-                        font-family: 'Courier New', monospace;
-                        font-size: 11px;
-                        line-height: 1.4;
+                        font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+                        font-size: 12px;
+                        font-weight: bold;
+                        line-height: 1.7;
                         margin: 0;
                         padding: 0;
+                        color: #000;
                     }
                     
                     .header {
                         text-align: center;
-                        margin-bottom: 20px;
-                        padding-bottom: 10px;
-                        border-bottom: 2px solid #000;
+                        margin-bottom: 25px;
+                        padding-bottom: 15px;
+                        border-bottom: 3px solid #000;
                     }
                     
                     .header h1 {
-                        margin: 0 0 5px 0;
-                        font-size: 16px;
+                        margin: 0 0 10px 0;
+                        font-size: 18px;
+                        font-weight: bold;
+                        text-transform: uppercase;
                     }
                     
                     .header .subtitle {
-                        font-size: 11px;
-                        color: #555;
+                        font-size: 12px;
+                        font-weight: normal;
+                        color: #333;
                     }
                     
                     .content {
                         white-space: pre-wrap;
                         word-wrap: break-word;
-                        font-size: 10px;
-                    }
-                    
-                    .page-break {
-                        page-break-after: always;
+                        font-size: 11px;
+                        font-weight: 700;
+                        letter-spacing: 0.3px;
+                        line-height: 1.8;
+                        padding: 15px;
+                        border: 1px solid #000;
+                        background-color: #fafafa;
                     }
                     
                     @media print {
-                        .no-print {
-                            display: none !important;
+                        body {
+                            font-weight: 700;
+                        }
+                        .content {
+                            background-color: white;
+                            font-weight: 700;
                         }
                     }
                 </style>
@@ -310,11 +348,9 @@ export class PdfExportService {
         iframeDoc.write(htmlContent);
         iframeDoc.close();
 
-        // Attendre le chargement puis imprimer
         iframe.onload = () => {
             setTimeout(() => {
                 iframe.contentWindow?.print();
-                // Retirer l'iframe après impression
                 setTimeout(() => {
                     document.body.removeChild(iframe);
                 }, 100);
@@ -323,7 +359,22 @@ export class PdfExportService {
     }
 
     /**
-     * Échappe les caractères HTML pour éviter l'injection
+     * Formate le contenu pour améliorer la lisibilité dans le PDF
+     */
+    private formatContentForPdf(content: string): string {
+        // Échappe le HTML et préserve les espaces
+        let formatted = this.escapeHtml(content);
+
+        // Remplace les lignes de séparation par des versions plus visibles
+        formatted = formatted.replace(/[-=]{3,}/g, (match) => {
+            return match.replace(/-/g, '━').replace(/=/g, '═');
+        });
+
+        return formatted;
+    }
+
+    /**
+     * Échappe les caractères HTML
      */
     private escapeHtml(text: string): string {
         const map: { [key: string]: string } = {

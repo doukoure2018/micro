@@ -33,6 +33,7 @@ import { ReconciliationResultDTO } from '@/interface/ReconciliationResultDTO';
 import { ExcelExportService } from '@/service/TransactionManquante';
 import { IUser } from '@/interface/user';
 import { PdfExportService } from '@/service/PdfExportService';
+import { FormatReportPipe } from '@/pipes/FormatReportPipe';
 
 @Component({
     selector: 'app-rapprochement-caisse',
@@ -61,7 +62,8 @@ import { PdfExportService } from '@/service/PdfExportService';
         DropdownModule,
         IconFieldModule,
         InputIconModule,
-        CalendarModule // Ajout du CalendarModule pour les filtres de date
+        CalendarModule,
+        FormatReportPipe
     ],
     providers: [MessageService, ExcelExportService],
     templateUrl: './rapprochement-caisse.component.html',
@@ -113,7 +115,7 @@ export class RapprochementCaisseComponent implements OnDestroy {
 
     // Initialiser le formulaire directement
     reconciliationForm: FormGroup = this.fb.group({
-        dateDebut: [new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), Validators.required],
+        dateDebut: [new Date(), Validators.required],
         dateFin: [new Date(), Validators.required]
     });
 
@@ -166,6 +168,17 @@ export class RapprochementCaisseComponent implements OnDestroy {
         const result = this.state().reconciliationResult;
         return result && result.transactionsManquantes && result.transactionsManquantes.length > 0;
     });
+
+    /**
+     * Calcule le montant total des transactions manquantes
+     */
+    getTotalMontantManquant(): number {
+        const result = this.state().reconciliationResult;
+        if (!result || !result.transactionsManquantes) {
+            return 0;
+        }
+        return result.transactionsManquantes.reduce((total, trans) => total + (trans.montant || 0), 0);
+    }
 
     constructor() {
         // Le formulaire est déjà initialisé en tant que propriété
