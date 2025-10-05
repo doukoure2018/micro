@@ -615,29 +615,90 @@
     // Correction pour le débordement du rapport
     .details-wrapper {
         width: 100%;
-        max-width: 100%;
         overflow: hidden;
 
         .details-content {
             width: 100%;
+            .report-text.bold-report {
+                // Effet de surbrillance pour les montants
+                ::selection {
+                    background-color: #ffd700;
+                    color: #000;
+                }
+
+                // Animation subtile au scroll
+                transition: box-shadow 0.3s ease;
+
+                &:hover {
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+                }
+
+                // Style pour les sections importantes
+                // Si votre rapport contient des marqueurs spéciaux
+                &::first-line {
+                    font-size: 1rem;
+                    color: #0056b3;
+                }
+            }
+
+            // Boutons d'export avec meilleur style
+            .report-actions {
+                margin-top: 1.5rem;
+                display: flex;
+                gap: 1rem;
+                justify-content: flex-end;
+                padding: 1rem;
+                background: #f8f9fa;
+                border-radius: 8px;
+
+                .p-button {
+                    font-weight: 600;
+                }
+            }
 
             .report-text {
-                background: #f8f9fa;
-                padding: 1rem;
-                border-radius: 4px;
-                font-size: 0.875rem;
-                color: #495057;
+                background: #ffffff; // Fond blanc pour meilleur contraste
+                padding: 1.5rem;
+                border-radius: 8px;
+                font-size: 0.95rem; // Taille augmentée
+                color: #212529; // Couleur plus foncée
                 margin: 0;
-                font-family: 'Courier New', monospace;
+                font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
                 white-space: pre-wrap;
                 word-wrap: break-word;
                 overflow-wrap: break-word;
-                max-height: 600px;
+                max-height: 700px; // Hauteur augmentée
                 overflow-y: auto;
                 overflow-x: hidden;
-                display: block;
                 width: 100%;
                 box-sizing: border-box;
+                border: 2px solid #dee2e6; // Bordure pour délimiter
+                line-height: 1.8; // Meilleur espacement des lignes
+
+                // Styles pour le rapport en gras
+                &.bold-report {
+                    font-weight: 600; // Semi-bold pour meilleure lisibilité
+                    letter-spacing: 0.3px; // Espacement léger entre caractères
+
+                    // Style de la scrollbar
+                    &::-webkit-scrollbar {
+                        width: 10px;
+                    }
+
+                    &::-webkit-scrollbar-track {
+                        background: #f1f1f1;
+                        border-radius: 5px;
+                    }
+
+                    &::-webkit-scrollbar-thumb {
+                        background: #888;
+                        border-radius: 5px;
+
+                        &:hover {
+                            background: #555;
+                        }
+                    }
+                }
             }
         }
     }
@@ -1256,5 +1317,42 @@
             align-items: center;
             justify-content: center;
         }
+    }
+
+    /* Styles pour le rapport détaillé en gras */
+    .report-text.bold-text {
+        font-weight: bold;
+        font-size: 13px;
+        color: #212529;
+        line-height: 1.6;
+    }
+
+    /* Styles pour le résumé du tableau des transactions manquantes */
+    .table-summary {
+        background-color: #f8f9fa;
+        padding: 12px 16px;
+        border-top: 2px solid #dee2e6;
+        margin-top: 10px;
+    }
+
+    .table-summary .summary-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: bold;
+        color: #495057;
+    }
+
+    /* Style pour la colonne de numérotation */
+    .text-center {
+        text-align: center;
+    }
+
+    .font-bold {
+        font-weight: bold;
+    }
+
+    .ml-4 {
+        margin-left: 1rem;
     }
 }

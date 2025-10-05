@@ -1167,7 +1167,8 @@
 
             <div class="details-wrapper">
                 <div class="details-content">
-                    <pre class="report-text">{{ state().reconciliationResult?.details }}</pre>
+                    <pre
+                        class="report-text bold-report">{{ state().reconciliationResult?.details | formatReport }}</pre>
 
                     <div class="report-actions">
                         <p-button label="Exporter PDF" icon="pi pi-file-pdf" severity="danger" (onClick)="exportPDF()">
