@@ -224,4 +224,276 @@ public class UserQuery {
                        SELECT role_id,name,authority FROM roles;
                     """;
 
+
+    // Activer une rotation (appel de fonction PostgreSQL)
+    public static final String ACTIVATE_ROTATION_QUERY =
+            """
+            WITH activation_result AS (
+                SELECT id_rotation, message
+                FROM activer_rotation(:userId, :pointVenteId)
+            )
+                SELECT 
+                    r.id_rotation AS idRotation,
+                    r.id_user AS userId,
+                    u.username,
+                    u.first_name AS firstName,
+                    u.last_name AS lastName,
+                    r.ps,
+                    pv.libele AS nomPointVente,
+                    r.statut,
+                    r.date_rotation AS dateRotation,
+                    ar.message
+                FROM activation_result ar
+                JOIN rotation r ON r.id_rotation = ar.id_rotation
+                JOIN users u ON r.id_user = u.user_id
+                JOIN pointvente pv ON r.ps = pv.id
+                WHERE ar.id_rotation IS NOT NULL
+            """;
+
+
+    public static final String GET_ACTIVE_ROTATION_QUERY =
+            """
+            SELECT
+                r.id_rotation AS idRotation,
+                r.id_user AS userId,
+                u.username,
+                u.first_name AS firstName,
+                u.last_name AS lastName,
+                r.ps,
+                pv.libele AS nomPointVente,
+                r.statut,
+                r.date_rotation AS dateRotation
+            FROM rotation r
+            JOIN users u ON r.id_user = u.user_id
+            JOIN pointvente pv ON r.ps = pv.id
+            WHERE r.id_user = :userId 
+              AND r.statut = true
+            ORDER BY r.date_rotation DESC
+            LIMIT 1
+            """;
+
+    // Récupérer une rotation par son ID
+    public static final String GET_ROTATION_BY_ID_QUERY =
+            """
+                SELECT
+                    r.id_rotation AS idRotation,
+                    r.id_user AS userId,
+                    u.username,
+                    u.first_name AS firstName,
+                    u.last_name AS lastName,
+                    r.ps,
+                    pv.libele AS nomPointVente,
+                    r.statut,
+                    r.date_rotation AS dateRotation
+                FROM rotation r
+                JOIN users u ON r.id_user = u.user_id
+                JOIN pointvente pv ON r.ps = pv.id
+                WHERE r.id_rotation = :rotationId
+            """;
+
+    // Désactiver les rotations (appel de fonction PostgreSQL)
+    public static final String DEACTIVATE_ROTATION_QUERY =
+            """
+            SELECT nb_rotations_desactivees FROM desactiver_rotation(:userId)
+            """;
+    // Sélectionner toutes les rotations (vue)
+    public static final String SELECT_ALL_ROTATIONS_QUERY =
+            """
+            SELECT 
+                id_rotation AS idRotation,
+                id_user AS userId,
+                username,
+                first_name AS firstName,
+                last_name AS lastName,
+                nom_complet AS nomComplet,
+                ps,
+                nom_point_vente AS nomPointVente,
+                code_point_vente AS codePointVente,
+                date_rotation AS dateRotation,
+                statut,
+                statut_libelle AS statutLibelle,
+                duree_active AS dureeActive
+            FROM v_historique_rotations
+            WHERE (:userId::BIGINT IS NULL OR id_user = :userId)
+              AND (:pointVenteId::BIGINT IS NULL OR ps = :pointVenteId)
+            ORDER BY date_rotation DESC
+            """;
+
+    // Sélectionner uniquement les rotations actives (vue)
+    public static final String SELECT_ACTIVE_ROTATIONS_QUERY =
+            """
+            SELECT 
+                id_rotation AS idRotation,
+                id_user AS userId,
+                username,
+                first_name AS firstName,
+                last_name AS lastName,
+                ps,
+                nom_point_vente AS nomPointVente,
+                code_point_vente AS codePointVente,
+                date_rotation AS dateRotation,
+                statut
+            FROM v_rotations_actives
+            WHERE (:userId::BIGINT IS NULL OR id_user = :userId)
+              AND (:pointVenteId::BIGINT IS NULL OR ps = :pointVenteId)
+            ORDER BY date_rotation DESC
+            """;
+
+    // Rotations actives filtrées par utilisateur
+    public static final String SELECT_ACTIVE_ROTATIONS_BY_USER_QUERY =
+            """
+            SELECT 
+                id_rotation AS idRotation,
+                id_user AS userId,
+                username,
+                first_name AS firstName,
+                last_name AS lastName,
+                ps,
+                nom_point_vente AS nomPointVente,
+                code_point_vente AS codePointVente,
+                date_rotation AS dateRotation,
+                statut
+            FROM v_rotations_actives
+            WHERE id_user = :userId
+            ORDER BY date_rotation DESC
+            """;
+
+    // Toutes les rotations actives (sans filtre)
+    public static final String SELECT_ALL_ACTIVE_ROTATIONS_QUERY =
+            """
+                SELECT
+                    id_rotation AS idRotation,
+                    id_user AS userId,
+                    username,
+                    first_name AS firstName,
+                    last_name AS lastName,
+                    ps,
+                    nom_point_vente AS nomPointVente,
+                    code_point_vente AS codePointVente,
+                    date_rotation AS dateRotation,
+                    statut
+                FROM v_rotations_actives
+                ORDER BY date_rotation DESC
+            """;
+
+    // Rotations actives filtrées par point de vente
+    public static final String SELECT_ACTIVE_ROTATIONS_BY_PS_QUERY =
+            """
+            SELECT
+                id_rotation AS idRotation,
+                id_user AS userId,
+                username,
+                first_name AS firstName,
+                last_name AS lastName,
+                ps,
+                nom_point_vente AS nomPointVente,
+                code_point_vente AS codePointVente,
+                date_rotation AS dateRotation,
+                statut
+            FROM v_rotations_actives
+            WHERE ps = :pointVenteId
+            ORDER BY date_rotation DESC
+            """;
+
+    public static final String SELECT_ACTIVE_ROTATIONS_WITH_FILTERS_QUERY =
+            """
+            SELECT 
+                id_rotation AS idRotation,
+                id_user AS userId,
+                username,
+                first_name AS firstName,
+                last_name AS lastName,
+                ps,
+                nom_point_vente AS nomPointVente,
+                code_point_vente AS codePointVente,
+                date_rotation AS dateRotation,
+                statut
+            FROM v_rotations_actives
+            WHERE id_user = :userId AND ps = :pointVenteId
+            ORDER BY date_rotation DESC
+            """;
+
+    public static final String SELECT_ROTATIONS_WITH_FILTERS_QUERY =
+            """
+            SELECT 
+                id_rotation AS idRotation,
+                id_user AS userId,
+                username,
+                first_name AS firstName,
+                last_name AS lastName,
+                nom_complet AS nomComplet,
+                ps,
+                nom_point_vente AS nomPointVente,
+                code_point_vente AS codePointVente,
+                date_rotation AS dateRotation,
+                statut,
+                statut_libelle AS statutLibelle,
+                duree_active AS dureeActive
+            FROM v_historique_rotations
+            WHERE id_user = :userId AND ps = :pointVenteId
+            ORDER BY date_rotation DESC
+            """;
+
+    // Rotations filtrées par utilisateur
+    public static final String SELECT_ROTATIONS_BY_USER_QUERY =
+            """
+            SELECT 
+                id_rotation AS idRotation,
+                id_user AS userId,
+                username,
+                first_name AS firstName,
+                last_name AS lastName,
+                nom_complet AS nomComplet,
+                ps,
+                nom_point_vente AS nomPointVente,
+                code_point_vente AS codePointVente,
+                date_rotation AS dateRotation,
+                statut,
+                statut_libelle AS statutLibelle,
+                duree_active AS dureeActive
+            FROM v_historique_rotations
+            WHERE id_user = :userId
+            ORDER BY date_rotation DESC
+            """;
+    // Toutes les rotations (sans filtre)
+    public static final String SELECT_ALL_ROTATIONS_HISTORY_QUERY =
+            """
+                SELECT
+                    id_rotation AS idRotation,
+                    id_user AS userId,
+                    username,
+                    first_name AS firstName,
+                    last_name AS lastName,
+                    nom_complet AS nomComplet,
+                    ps,
+                    nom_point_vente AS nomPointVente,
+                    code_point_vente AS codePointVente,
+                    date_rotation AS dateRotation,
+                    statut,
+                    statut_libelle AS statutLibelle,
+                    duree_active AS dureeActive
+                FROM v_historique_rotations
+                ORDER BY date_rotation DESC
+            """;
+    // Rotations filtrées par point de vente
+    public static final String SELECT_ROTATIONS_BY_PS_QUERY =
+            """
+            SELECT 
+                id_rotation AS idRotation,
+                id_user AS userId,
+                username,
+                first_name AS firstName,
+                last_name AS lastName,
+                nom_complet AS nomComplet,
+                ps,
+                nom_point_vente AS nomPointVente,
+                code_point_vente AS codePointVente,
+                date_rotation AS dateRotation,
+                statut,
+                statut_libelle AS statutLibelle,
+                duree_active AS dureeActive
+            FROM v_historique_rotations
+            WHERE ps = :pointVenteId
+            ORDER BY date_rotation DESC
+            """;
 }

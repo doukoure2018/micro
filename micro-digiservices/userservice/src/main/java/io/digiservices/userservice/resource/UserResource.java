@@ -432,4 +432,139 @@ public class UserResource {
 
 
 
+    /**
+     * Endpoints pour la gestion des rotations
+     */
+
+// Activer une rotation pour un utilisateur
+    @PostMapping("/rotation/activate")
+    public ResponseEntity<Response> activateRotation(
+            @NotNull Authentication authentication,
+            @RequestBody RotationRequest rotationRequest,
+            HttpServletRequest request) {
+        try {
+            // Log qui fait l'action et sur qui
+            log.info("User {} is activating rotation for user {} at point de vente {}",
+                    authentication.getName(),
+                    rotationRequest.getUserId(),
+                    rotationRequest.getPointVenteId());
+
+            // Optionnel : Vérifier les permissions de l'utilisateur connecté
+            if (!hasRotationManagementPermission(authentication)) {
+                return status(FORBIDDEN).body(getResponse(request,
+                        emptyMap(),
+                        "Vous n'avez pas les permissions pour gérer les rotations",
+                        FORBIDDEN));
+            }
+
+            var result = userService.activateRotation(
+                    rotationRequest.getUserId(),
+                    rotationRequest.getPointVenteId()
+            );
+
+            // Log de succès avec détails de qui a fait quoi
+            log.info("Rotation successfully activated by {} for user {}",
+                    authentication.getName(),
+                    rotationRequest.getUserId());
+
+            return ok(getResponse(request,
+                    Map.of("rotation", result,
+                            "activatedBy", authentication.getName()),
+                    "Rotation activée avec succès",
+                    OK));
+        } catch (ApiException e) {
+            log.error("Error activating rotation: {}", e.getMessage());
+            return badRequest().body(getResponse(request,
+                    emptyMap(),
+                    e.getMessage(),
+                    BAD_REQUEST));
+        } catch (Exception e) {
+            log.error("Unexpected error: ", e);
+            return status(INTERNAL_SERVER_ERROR).body(getResponse(request,
+                    emptyMap(),
+                    "Une erreur est survenue lors de l'activation de la rotation",
+                    INTERNAL_SERVER_ERROR));
+        }
+    }
+
+    // Désactiver une rotation pour un utilisateur
+    @PostMapping("/rotation/deactivate/{userId}")
+    public ResponseEntity<Response> deactivateRotation(
+            @NotNull Authentication authentication,
+            @PathVariable("userId") Long userId,
+            HttpServletRequest request) {
+        try {
+            // Log qui fait l'action et sur qui
+            log.info("User {} is deactivating rotation for user {}",
+                    authentication.getName(), userId);
+
+            // Optionnel : Vérifier les permissions de l'utilisateur connecté
+            if (!hasRotationManagementPermission(authentication)) {
+                return status(FORBIDDEN).body(getResponse(request,
+                        emptyMap(),
+                        "Vous n'avez pas les permissions pour gérer les rotations",
+                        FORBIDDEN));
+            }
+
+            var result = userService.deactivateRotation(userId);
+
+            // Log de succès avec détails
+            log.info("Rotation(s) successfully deactivated by {} for user {}: {} rotation(s) affected",
+                    authentication.getName(), userId, result);
+
+            return ok(getResponse(request,
+                    Map.of("deactivated", result,
+                            "deactivatedBy", authentication.getName()),
+                    "Rotation(s) désactivée(s) avec succès",
+                    OK));
+        } catch (ApiException e) {
+            log.error("Error deactivating rotation: {}", e.getMessage());
+            return badRequest().body(getResponse(request,
+                    emptyMap(),
+                    e.getMessage(),
+                    BAD_REQUEST));
+        } catch (Exception e) {
+            log.error("Unexpected error: ", e);
+            return status(INTERNAL_SERVER_ERROR).body(getResponse(request,
+                    emptyMap(),
+                    "Une erreur est survenue lors de la désactivation de la rotation",
+                    INTERNAL_SERVER_ERROR));
+        }
+    }
+
+    // Méthode helper pour vérifier les permissions (à adapter selon votre système de rôles)
+    private boolean hasRotationManagementPermission(Authentication authentication) {
+        // Récupérer les rôles de l'utilisateur connecté
+        return authentication.getAuthorities().stream()
+                .anyMatch(authority ->
+                        authority.getAuthority().equals("SUPER_ADMIN") ||
+                                authority.getAuthority().equals("RA") ||
+                                authority.getAuthority().equals("DR") ||
+                                authority.getAuthority().equals("DA"));
+    }
+
+    // Obtenir l'historique des rotations
+    @GetMapping("/rotation/history")
+    public ResponseEntity<Response> getRotationHistory(
+            @NotNull Authentication authentication,
+            @RequestParam(value = "userId", required = false) Long userId,
+            @RequestParam(value = "pointVenteId", required = false) Long pointVenteId,
+            @RequestParam(value = "activeOnly", defaultValue = "false") boolean activeOnly,
+            HttpServletRequest request) {
+        try {
+            var history = userService.getRotationHistory(userId, pointVenteId, activeOnly);
+            return ok(getResponse(request,
+                    Map.of("rotations", history),
+                    "Historique des rotations récupéré avec succès",
+                    OK));
+        } catch (Exception e) {
+            log.error("Error getting rotation history: ", e);
+            return status(INTERNAL_SERVER_ERROR).body(getResponse(request,
+                    emptyMap(),
+                    "Une erreur est survenue lors de la récupération de l'historique",
+                    INTERNAL_SERVER_ERROR));
+        }
+    }
+
+
 }

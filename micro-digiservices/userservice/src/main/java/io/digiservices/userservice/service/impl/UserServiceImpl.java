@@ -1,5 +1,6 @@
 package io.digiservices.userservice.service.impl;
 
+import io.digiservices.userservice.dto.RotationDto;
 import io.digiservices.userservice.event.Event;
 import io.digiservices.userservice.exception.ApiException;
 import io.digiservices.userservice.model.Credential;
@@ -264,6 +265,25 @@ public class UserServiceImpl  implements UserService {
     @Override
     public User getUserId(Long userId) {
         return userRepository.getUserById(userId);
+    }
+
+    @Override
+    public RotationDto activateRotation(Long userId, Long pointVenteId) {
+        log.info("Activating rotation for user {} at point de vente {}", userId, pointVenteId);
+        return userRepository.activateRotation(userId, pointVenteId);
+    }
+
+    @Override
+    public Integer deactivateRotation(Long userId) {
+        log.info("Deactivating all rotations for user {}", userId);
+        return userRepository.deactivateRotation(userId);
+    }
+
+    @Override
+    public List<RotationDto> getRotationHistory(Long userId, Long pointVenteId, boolean activeOnly) {
+        log.info("Getting rotation history - userId: {}, pointVenteId: {}, activeOnly: {}",
+                userId, pointVenteId, activeOnly);
+        return userRepository.getRotationHistory(userId, pointVenteId, activeOnly);
     }
 
 

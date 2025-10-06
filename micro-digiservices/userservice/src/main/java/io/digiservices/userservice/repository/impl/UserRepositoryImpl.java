@@ -1,6 +1,7 @@
 package io.digiservices.userservice.repository.impl;
 
 
+import io.digiservices.userservice.dto.RotationDto;
 import io.digiservices.userservice.exception.ApiException;
 import io.digiservices.userservice.model.*;
 import io.digiservices.userservice.repository.UserRepository;
@@ -15,8 +16,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
 
 import static io.digiservices.userservice.query.UserQuery.*;
 import static io.digiservices.userservice.utils.UserUtils.*;
@@ -489,6 +488,106 @@ public class UserRepositoryImpl implements UserRepository {
         }catch (Exception e){
             log.error(e.getMessage());
             throw  new ApiException("An error occurred please try again");
+        }
+    }
+
+    @Override
+    public RotationDto activateRotation(Long userId, Long pointVenteId) {
+        try {
+            // Solution corrigée avec la bonne syntaxe JdbcClient
+            // 1. D'abord activer la rotation
+            Map<String, Object> activationResult = jdbcClient
+                    .sql("SELECT * FROM activer_rotation(:userId, :pointVenteId)")
+                    .params(Map.of("userId", userId, "pointVenteId", pointVenteId))
+                    .query()
+                    .singleRow();  // ou .listOfRows().get(0) si singleRow() ne fonctionne pas
+
+            // Vérifier le résultat
+            if (activationResult.get("id_rotation") == null) {
+                String message = (String) activationResult.get("message");
+                throw new ApiException(message != null ? message : "Échec de l'activation de la rotation");
+            }
+
+            // 2. Puis récupérer les détails de la rotation active
+            return jdbcClient
+                    .sql(GET_ACTIVE_ROTATION_QUERY)
+                    .param("userId", userId)
+                    .query(RotationDto.class)
+                    .single();
+
+        } catch (EmptyResultDataAccessException exception) {
+            log.error("Empty result: {}", exception.getMessage());
+            throw new ApiException("Impossible d'activer la rotation. Vérifiez l'utilisateur et le point de vente");
+        } catch (ApiException apiEx) {
+            throw apiEx; // Re-lancer les ApiException
+        } catch (Exception e) {
+            log.error("Error: {}", e.getMessage());
+            throw new ApiException("Une erreur est survenue lors de l'activation de la rotation");
+        }
+    }
+
+    @Override
+    public Integer deactivateRotation(Long userId) {
+        try {
+            return jdbcClient.sql(DEACTIVATE_ROTATION_QUERY)
+                    .param("userId", userId)
+                    .query(Integer.class)
+                    .single();
+        } catch (EmptyResultDataAccessException exception) {
+            log.error(exception.getMessage());
+            return 0; // Aucune rotation active trouvée
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new ApiException("Une erreur est survenue lors de la désactivation de la rotation");
+        }
+    }
+
+    @Override
+    public List<RotationDto> getRotationHistory(Long userId, Long pointVenteId, boolean activeOnly) {
+        try {
+            String query;
+            MapSqlParameterSource params = new MapSqlParameterSource();
+
+            if (activeOnly) {
+                // Pour les rotations actives seulement
+                if (userId != null && pointVenteId != null) {
+                    query = SELECT_ACTIVE_ROTATIONS_WITH_FILTERS_QUERY;
+                    params.addValue("userId", userId, BIGINT);
+                    params.addValue("pointVenteId", pointVenteId, BIGINT);
+                } else if (userId != null) {
+                    query = SELECT_ACTIVE_ROTATIONS_BY_USER_QUERY;
+                    params.addValue("userId", userId, BIGINT);
+                } else if (pointVenteId != null) {
+                    query = SELECT_ACTIVE_ROTATIONS_BY_PS_QUERY;
+                    params.addValue("pointVenteId", pointVenteId, BIGINT);
+                } else {
+                    query = SELECT_ALL_ACTIVE_ROTATIONS_QUERY;
+                }
+            } else {
+                // Pour tout l'historique
+                if (userId != null && pointVenteId != null) {
+                    query = SELECT_ROTATIONS_WITH_FILTERS_QUERY;
+                    params.addValue("userId", userId, BIGINT);
+                    params.addValue("pointVenteId", pointVenteId, BIGINT);
+                } else if (userId != null) {
+                    query = SELECT_ROTATIONS_BY_USER_QUERY;
+                    params.addValue("userId", userId, BIGINT);
+                } else if (pointVenteId != null) {
+                    query = SELECT_ROTATIONS_BY_PS_QUERY;
+                    params.addValue("pointVenteId", pointVenteId, BIGINT);
+                } else {
+                    query = SELECT_ALL_ROTATIONS_HISTORY_QUERY;
+                }
+            }
+
+            return jdbcClient.sql(query)
+                    .paramSource(params)
+                    .query(RotationDto.class)
+                    .list();
+
+        } catch (Exception e) {
+            log.error("Error fetching rotation history: {}", e.getMessage());
+            throw new ApiException("Une erreur est survenue lors de la récupération de l'historique");
         }
     }
 

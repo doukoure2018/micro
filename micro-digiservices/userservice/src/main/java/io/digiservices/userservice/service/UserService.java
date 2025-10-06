@@ -1,5 +1,6 @@
 package io.digiservices.userservice.service;
 
+import io.digiservices.userservice.dto.RotationDto;
 import io.digiservices.userservice.model.Credential;
 import io.digiservices.userservice.model.Device;
 import io.digiservices.userservice.model.Role;
@@ -39,4 +40,8 @@ public interface UserService {
     List<Device> getDevices(String userUuid);
 
     User getUserId(Long userId);
+
+    RotationDto activateRotation(Long userId, Long pointVenteId);
+    Integer deactivateRotation(Long userId);
+    List<RotationDto> getRotationHistory(Long userId, Long pointVenteId, boolean activeOnly);
 }

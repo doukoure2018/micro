@@ -5,7 +5,8 @@
 }@else if(state().user?.role ==='DA') {
 <app-resp-agent [user]="state().user"></app-resp-agent>
 }@else if(state().user?.role ==='MANAGER') {
-<app-manager [user]="state().user"></app-manager>
+<!-- <app-manager [user]="state().user"></app-manager> -->
+<app-digital-verification [user]="state().user"></app-digital-verification>
 }@else if(state().user?.role ==='DR') {
 <app-list-stock [user]="state().user"></app-list-stock>
 }@else if(state().user?.role ==='CAISSE') {

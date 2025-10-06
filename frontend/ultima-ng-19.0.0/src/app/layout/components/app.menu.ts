@@ -126,11 +126,11 @@ export class AppMenu {
                               ]
                             : this.user?.role === 'MANAGER'
                               ? [
-                                    {
-                                        label: 'Verification client',
-                                        icon: 'pi pi-fw pi-hourglass',
-                                        routerLink: ['/dashboards/verification-client']
-                                    }
+                                    // {
+                                    //     label: 'Verification client',
+                                    //     icon: 'pi pi-fw pi-hourglass',
+                                    //     routerLink: ['/dashboards/verification-client']
+                                    // }
                                 ]
                               : [])
 
