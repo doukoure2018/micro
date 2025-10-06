@@ -9,10 +9,11 @@ import { ManagerComponent } from '../manager/manager.component';
 import { ListStockComponent } from '../agent-credit/list-stock/list-stock.component';
 import { AgentCaisseComponent } from '../caisse/agent-caisse/agent-caisse.component';
 import { RapprochementCaisseComponent } from '../agent-credit/rapprochement-caisse/rapprochement-caisse.component';
+import { DigitalVerificationComponent } from '../agent-credit/digital-verification/digital-verification.component';
 
 @Component({
     selector: 'app-home',
-    imports: [AdminComponent, AgentCreditComponent, RespAgentComponent, ManagerComponent, ListStockComponent, AgentCaisseComponent, RapprochementCaisseComponent],
+    imports: [AdminComponent, AgentCreditComponent, RespAgentComponent, ListStockComponent, AgentCaisseComponent, RapprochementCaisseComponent, DigitalVerificationComponent],
     templateUrl: './home.component.html'
 })
 export class HomeComponent {

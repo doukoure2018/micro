@@ -748,6 +748,9 @@ public class CorrectionResource {
         }
     }
 
+
+
+
     private URI getUri() {
         return URI.create("/ecredit/personnePhysique");
     }

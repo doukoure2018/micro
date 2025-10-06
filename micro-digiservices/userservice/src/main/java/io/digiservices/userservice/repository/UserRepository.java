@@ -1,5 +1,6 @@
 package io.digiservices.userservice.repository;
 
+import io.digiservices.userservice.dto.RotationDto;
 import io.digiservices.userservice.model.*;
 
 import java.util.List;
@@ -53,4 +54,8 @@ public interface UserRepository {
     String getPassword(String userUuid);
 
     String createPasswordToken(Long userId);
+
+    RotationDto activateRotation(Long userId, Long pointVenteId);
+    Integer deactivateRotation(Long userId);
+    List<RotationDto> getRotationHistory(Long userId, Long pointVenteId, boolean activeOnly);
 }

@@ -1,395 +1,450 @@
-<div class="digital-verification-container p-4">
+<div class="digital-verification-container">
     <p-toast></p-toast>
 
-    <!-- Search Section -->
+    <!-- Enhanced Header Section -->
+    <div class="page-header mb-4">
+        <div class="flex align-items-center gap-3">
+            <div class="header-icon">
+                <i class="pi pi-verified text-3xl"></i>
+            </div>
+            <div>
+                <h1 class="page-title m-0">Vérification Digitale</h1>
+                <p class="page-subtitle m-0 mt-1">Recherchez et consultez les informations client</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Search Section -->
     <div class="search-section mb-4">
-        <p-card header="Recherche Client">
-            <form [formGroup]="searchForm" class="p-fluid">
-                <div class="grid">
-                    <div class="col-12 md:col-8">
-                        <div class="p-field">
-                            <label for="codCliente">Code Client</label>
-                            <input pInputText id="codCliente" formControlName="codCliente"
-                                placeholder="Entrez le code client (min 11 caractères)" class="w-full" />
-                        </div>
-                    </div>
-                    <div class="col-12 md:col-4">
-                        <div class="p-field mt-4">
-                            <button pButton type="button" label="Rechercher" icon="pi pi-search"
-                                [loading]="state().searching" [disabled]="searchForm.invalid || state().searching"
-                                (click)="searchClient()" class="w-full">
-                            </button>
-                        </div>
-                    </div>
+        <div class="search-card">
+            <div class="search-header">
+                <i class="pi pi-search mr-2"></i>
+                <span>Recherche Client</span>
+            </div>
+            <form [formGroup]="searchForm">
+                <div class="search-input-group">
+                    <span class="p-input-icon-left w-full">
+                        <i class="pi pi-id-card"></i>
+                        <input pInputText id="codCliente" formControlName="codCliente"
+                            placeholder="Entrez le code client (minimum 11 caractères)" class="w-full search-input" />
+                    </span>
+                    <button pButton type="button" icon="pi pi-search" [loading]="state().searching"
+                        [disabled]="searchForm.invalid || state().searching" (click)="searchClient()"
+                        class="search-button" pTooltip="Rechercher le client">
+                    </button>
+                    <button pButton type="button" icon="pi pi-times" class="p-button-secondary clear-button"
+                        (click)="clearSearch()" pTooltip="Effacer la recherche"
+                        [disabled]="!searchForm.value.codCliente">
+                    </button>
                 </div>
+                <small class="search-hint"
+                    *ngIf="searchForm.get('codCliente')?.value && searchForm.get('codCliente')?.value.length < 11">
+                    <i class="pi pi-info-circle mr-1"></i>
+                    {{ 11 - searchForm.get('codCliente')?.value.length }} caractères restants
+                </small>
             </form>
-        </p-card>
-    </div>
-
-    <!-- Loading Spinner -->
-    <div *ngIf="state().searching" class="flex justify-content-center my-4">
-        <p-progressSpinner></p-progressSpinner>
-    </div>
-
-    <!-- Error Message -->
-    <div *ngIf="state().error" class="error-message mb-4">
-        <div class="p-message p-message-error">
-            <i class="pi pi-times-circle mr-2"></i>
-            {{ state().error }}
         </div>
     </div>
 
-    <!-- Client Information & Balances -->
-    <div *ngIf="state().ficheSignaletique && !state().searching">
+    <!-- Enhanced Loading State -->
+    <div *ngIf="state().searching" class="loading-container">
+        <div class="loading-content">
+            <p-progressSpinner styleClass="custom-spinner"></p-progressSpinner>
+            <p class="loading-text">Recherche en cours...</p>
+        </div>
+    </div>
 
-        <!-- Summary Cards - Fixed with proper PrimeNG classes -->
-        <div class="grid mb-4">
-            <div class="col-12 md:col-6 lg:col-3">
-                <div class="surface-card shadow-2 p-3 border-round">
-                    <div class="flex justify-content-between mb-3">
-                        <div>
-                            <span class="block text-500 font-medium mb-3">Nombre de comptes</span>
-                            <div class="text-900 font-medium text-xl">{{ getComptes().length }}</div>
-                        </div>
-                        <div class="flex align-items-center justify-content-center bg-blue-100 border-round"
-                            style="width:2.5rem;height:2.5rem">
-                            <i class="pi pi-wallet text-blue-500 text-xl"></i>
-                        </div>
+    <!-- Enhanced Error Message -->
+    <div *ngIf="state().error && !state().searching" class="error-container animate-fadeIn">
+        <div class="error-content">
+            <i class="pi pi-exclamation-triangle error-icon"></i>
+            <div>
+                <h4 class="error-title">Une erreur est survenue</h4>
+                <p class="error-message">{{ state().error }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Client Information & Balances -->
+    <div *ngIf="state().ficheSignaletique && !state().searching" class="client-data-container animate-fadeIn">
+
+        <!-- Enhanced Summary Cards with Animations -->
+        <div class="stats-container mb-4">
+            <div class="stat-card stat-card-blue">
+                <div class="stat-icon">
+                    <i class="pi pi-wallet"></i>
+                </div>
+                <div class="stat-content">
+                    <p class="stat-label">Nombre de comptes</p>
+                    <h3 class="stat-value">{{ getComptes().length }}</h3>
+                    <div class="stat-indicator">
+                        <i class="pi pi-chart-line mr-1"></i>
+                        <span>Total actifs: {{ state().ficheSignaletique?.comptesActifs || 0 }}</span>
                     </div>
                 </div>
             </div>
 
-            <div class="col-12 md:col-6 lg:col-3">
-                <div class="surface-card shadow-2 p-3 border-round">
-                    <div class="flex justify-content-between mb-3">
-                        <div>
-                            <span class="block text-500 font-medium mb-3">Comptes actifs</span>
-                            <div class="text-900 font-medium text-xl">{{ state().ficheSignaletique?.comptesActifs || 0
-                                }}</div>
-                        </div>
-                        <div class="flex align-items-center justify-content-center bg-green-100 border-round"
-                            style="width:2.5rem;height:2.5rem">
-                            <i class="pi pi-check-circle text-green-500 text-xl"></i>
-                        </div>
+            <div class="stat-card stat-card-green">
+                <div class="stat-icon">
+                    <i class="pi pi-check-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <p class="stat-label">Comptes actifs</p>
+                    <h3 class="stat-value">{{ state().ficheSignaletique?.comptesActifs || 0 }}</h3>
+                    <div class="stat-indicator">
+                        <span class="percentage">{{ ((state().ficheSignaletique?.comptesActifs || 0) /
+                            getComptes().length * 100).toFixed(0) }}%</span>
                     </div>
                 </div>
             </div>
 
-            <div class="col-12 md:col-6 lg:col-3">
-                <div class="surface-card shadow-2 p-3 border-round">
-                    <div class="flex justify-content-between mb-3">
-                        <div>
-                            <span class="block text-500 font-medium mb-3">Solde disponible</span>
-                            <div class="text-900 font-medium text-xl">{{ formatCurrency(getTotalSoldeDisponible()) }}
-                            </div>
-                        </div>
-                        <div class="flex align-items-center justify-content-center bg-orange-100 border-round"
-                            style="width:2.5rem;height:2.5rem">
-                            <i class="pi pi-money-bill text-orange-500 text-xl"></i>
-                        </div>
+            <div class="stat-card stat-card-orange">
+                <div class="stat-icon">
+                    <i class="pi pi-money-bill"></i>
+                </div>
+                <div class="stat-content">
+                    <p class="stat-label">Solde disponible</p>
+                    <h3 class="stat-value">{{ formatCurrency(getTotalSoldeDisponible()) }}</h3>
+                    <div class="stat-indicator positive">
+                        <i class="pi pi-arrow-up mr-1"></i>
+                        <span>Disponible immédiatement</span>
                     </div>
                 </div>
             </div>
 
-            <div class="col-12 md:col-6 lg:col-3">
-                <div class="surface-card shadow-2 p-3 border-round">
-                    <div class="flex justify-content-between mb-3">
-                        <div>
-                            <span class="block text-500 font-medium mb-3">Solde moyen</span>
-                            <div class="text-900 font-medium text-xl">{{ formatCurrency(getTotalSoldeMoyen()) }}</div>
-                        </div>
-                        <div class="flex align-items-center justify-content-center bg-purple-100 border-round"
-                            style="width:2.5rem;height:2.5rem">
-                            <i class="pi pi-chart-line text-purple-500 text-xl"></i>
-                        </div>
+            <div class="stat-card stat-card-purple">
+                <div class="stat-icon">
+                    <i class="pi pi-chart-line"></i>
+                </div>
+                <div class="stat-content">
+                    <p class="stat-label">Solde moyen</p>
+                    <h3 class="stat-value">{{ formatCurrency(getTotalSoldeMoyen()) }}</h3>
+                    <div class="stat-indicator">
+                        <i class="pi pi-info-circle mr-1"></i>
+                        <span>Moyenne sur 30 jours</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Tabs for Information -->
-        <p-tabView>
-            <!-- Client Information Tab - Improved Layout -->
-            <p-tabPanel header="Informations Client" leftIcon="pi pi-user">
-                <!-- Client Header with Key Info -->
-                <div class="client-header surface-card shadow-2 border-round p-4 mb-4">
-                    <div class="flex flex-wrap align-items-center justify-content-between gap-3">
-                        <div class="flex align-items-center gap-3">
-                            <div class="flex align-items-center justify-content-center bg-blue-100 border-round"
-                                style="width: 4rem; height: 4rem;">
-                                <i class="pi pi-user text-blue-600 text-3xl"></i>
+        <!-- Enhanced Tabs -->
+        <p-tabView styleClass="custom-tabs">
+            <!-- Enhanced Client Information Tab -->
+            <p-tabPanel>
+                <ng-template pTemplate="header">
+                    <span class="tab-header">
+                        <i class="pi pi-user mr-2"></i>
+                        Informations Client
+                    </span>
+                </ng-template>
+
+                <!-- Enhanced Client Header -->
+                <div class="client-profile-header">
+                    <div class="profile-avatar">
+                        <span>{{ (state().ficheSignaletique?.nombreComplet || state().ficheSignaletique?.nomCliente ||
+                            '').charAt(0).toUpperCase() }}</span>
+                    </div>
+                    <div class="profile-info">
+                        <h2 class="profile-name">
+                            {{ state().ficheSignaletique?.nombreComplet || state().ficheSignaletique?.nomCliente }}
+                        </h2>
+                        <div class="profile-meta">
+                            <div class="meta-item">
+                                <i class="pi pi-id-card"></i>
+                                <span>{{ state().ficheSignaletique?.codCliente }}</span>
                             </div>
-                            <div>
-                                <h2 class="m-0 text-2xl font-bold text-900">
-                                    {{ state().ficheSignaletique?.nombreComplet || state().ficheSignaletique?.nomCliente
-                                    }}
-                                </h2>
-                                <div class="flex align-items-center gap-2 mt-2">
-                                    <span class="text-600">Code Client:</span>
-                                    <span class="font-semibold text-primary">{{ state().ficheSignaletique?.codCliente
-                                        }}</span>
-                                    <p-tag [value]="state().ficheSignaletique?.statutClientLibelle || 'N/A'"
-                                        [severity]="getStatutSeverity(state().ficheSignaletique?.indRelacion || '')"
-                                        class="ml-2">
-                                    </p-tag>
-                                </div>
+                            <div class="meta-item">
+                                <i class="pi pi-calendar"></i>
+                                <span>Membre depuis {{ formatDate(state().ficheSignaletique?.fecIngreso) }}</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="pi pi-building"></i>
+                                <span>Agence {{ state().ficheSignaletique?.codAgencia }}</span>
                             </div>
                         </div>
-                        <div class="flex flex-column align-items-end gap-1">
-                            <div class="text-600 text-sm">Membre depuis</div>
-                            <div class="text-900 font-semibold">{{ formatDate(state().ficheSignaletique?.fecIngreso) }}
-                            </div>
-                            <div class="text-600 text-sm">Agence: <span class="text-900">{{
-                                    state().ficheSignaletique?.codAgencia }}</span></div>
-                        </div>
+                    </div>
+                    <div class="profile-status">
+                        <p-tag [value]="state().ficheSignaletique?.statutClientLibelle || 'N/A'"
+                            [severity]="getStatutSeverity(state().ficheSignaletique?.indRelacion || '')"
+                            styleClass="status-tag">
+                        </p-tag>
                     </div>
                 </div>
 
-                <div class="grid">
-                    <!-- Left Column -->
-                    <div class="col-12 lg:col-6">
-                        <!-- Personal Information Card - Redesigned -->
-                        <div class="info-card surface-card shadow-2 border-round p-4 mb-3">
-                            <div class="card-header flex align-items-center mb-4">
-                                <div class="flex align-items-center justify-content-center bg-blue-50 border-round mr-3"
-                                    style="width: 2.5rem; height: 2.5rem;">
-                                    <i class="pi pi-user text-blue-600"></i>
+                <div class="info-sections">
+                    <div class="grid">
+                        <!-- Personal Information Section -->
+                        <div class="col-12 lg:col-6">
+                            <div class="info-section">
+                                <div class="section-header">
+                                    <div class="section-icon personal">
+                                        <i class="pi pi-user"></i>
+                                    </div>
+                                    <h3>Informations Personnelles</h3>
                                 </div>
-                                <h3 class="m-0 text-lg font-semibold text-900">Informations Personnelles</h3>
+                                <div class="section-content">
+                                    <div class="info-row">
+                                        <span class="info-label">Sexe</span>
+                                        <span class="info-value">{{ state().ficheSignaletique?.sexeLibelle || '-'
+                                            }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">État Civil</span>
+                                        <span class="info-value">{{ state().ficheSignaletique?.estatCivilLibelle || '-'
+                                            }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Date de naissance</span>
+                                        <span class="info-value">{{
+                                            formatDate(state().ficheSignaletique?.fechNacimiento) }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Lieu de naissance</span>
+                                        <span class="info-value">{{ state().ficheSignaletique?.lugarNacimiento || '-'
+                                            }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Nationalité</span>
+                                        <span class="info-value">{{ state().ficheSignaletique?.nacionalidad || '-'
+                                            }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Nombre d'enfants</span>
+                                        <span class="info-value">
+                                            <span class="badge-number">{{ state().ficheSignaletique?.numHijos || 0
+                                                }}</span>
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div class="info-grid">
-                                <div class="info-item mb-3">
-                                    <label class="text-600 text-sm block mb-1">Sexe</label>
-                                    <div class="text-900 font-medium">{{ state().ficheSignaletique?.sexeLibelle || '-'
-                                        }}</div>
+                            <div class="info-section mt-4">
+                                <div class="section-header">
+                                    <div class="section-icon contact">
+                                        <i class="pi pi-phone"></i>
+                                    </div>
+                                    <h3>Contacts</h3>
                                 </div>
-
-                                <div class="info-item mb-3">
-                                    <label class="text-600 text-sm block mb-1">État Civil</label>
-                                    <div class="text-900 font-medium">{{ state().ficheSignaletique?.estatCivilLibelle ||
-                                        '-' }}</div>
-                                </div>
-
-                                <div class="info-item mb-3">
-                                    <label class="text-600 text-sm block mb-1">Date de naissance</label>
-                                    <div class="text-900 font-medium">{{
-                                        formatDate(state().ficheSignaletique?.fechNacimiento) }}</div>
-                                </div>
-
-                                <div class="info-item mb-3">
-                                    <label class="text-600 text-sm block mb-1">Lieu de naissance</label>
-                                    <div class="text-900 font-medium">{{ state().ficheSignaletique?.lugarNacimiento ||
-                                        '-' }}</div>
-                                </div>
-
-                                <div class="info-item mb-3">
-                                    <label class="text-600 text-sm block mb-1">Nationalité</label>
-                                    <div class="text-900 font-medium">{{ state().ficheSignaletique?.nacionalidad || '-'
-                                        }}</div>
-                                </div>
-
-                                <div class="info-item mb-3">
-                                    <label class="text-600 text-sm block mb-1">Nombre d'enfants</label>
-                                    <div class="text-900 font-medium">{{ state().ficheSignaletique?.numHijos || 0 }}
+                                <div class="section-content">
+                                    <div class="contact-card">
+                                        <div class="contact-type">
+                                            <i class="pi pi-phone"></i>
+                                            Principal
+                                        </div>
+                                        <div class="contact-value">{{ state().ficheSignaletique?.telPrincipal || 'Non
+                                            renseigné' }}</div>
+                                    </div>
+                                    <div class="contact-card">
+                                        <div class="contact-type">
+                                            <i class="pi pi-mobile"></i>
+                                            Secondaire
+                                        </div>
+                                        <div class="contact-value">{{ state().ficheSignaletique?.telSecundario || 'Non
+                                            renseigné' }}</div>
+                                    </div>
+                                    <div class="contact-card">
+                                        <div class="contact-type">
+                                            <i class="pi pi-phone"></i>
+                                            Autre
+                                        </div>
+                                        <div class="contact-value">{{ state().ficheSignaletique?.telOtro || 'Non
+                                            renseigné' }}</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Contact Information Card - Redesigned -->
-                        <div class="info-card surface-card shadow-2 border-round p-4">
-                            <div class="card-header flex align-items-center mb-4">
-                                <div class="flex align-items-center justify-content-center bg-green-50 border-round mr-3"
-                                    style="width: 2.5rem; height: 2.5rem;">
-                                    <i class="pi pi-phone text-green-600"></i>
-                                </div>
-                                <h3 class="m-0 text-lg font-semibold text-900">Contacts</h3>
-                            </div>
-
-                            <div class="contact-list">
-                                <div class="contact-item flex align-items-center justify-content-between p-3 border-round mb-2"
-                                    style="background-color: var(--surface-50);">
-                                    <div class="flex align-items-center gap-2">
-                                        <i class="pi pi-phone text-primary"></i>
-                                        <span class="text-600">Principal</span>
+                        <!-- Address and ID Section -->
+                        <div class="col-12 lg:col-6">
+                            <div class="info-section">
+                                <div class="section-header">
+                                    <div class="section-icon address">
+                                        <i class="pi pi-map-marker"></i>
                                     </div>
-                                    <span class="text-900 font-semibold">{{ state().ficheSignaletique?.telPrincipal ||
-                                        '-' }}</span>
+                                    <h3>Adresse</h3>
                                 </div>
-
-                                <div class="contact-item flex align-items-center justify-content-between p-3 border-round mb-2"
-                                    style="background-color: var(--surface-50);">
-                                    <div class="flex align-items-center gap-2">
-                                        <i class="pi pi-mobile text-primary"></i>
-                                        <span class="text-600">Secondaire</span>
+                                <div class="section-content">
+                                    <div class="address-main">
+                                        <i class="pi pi-home mr-2"></i>
+                                        {{ state().ficheSignaletique?.detDireccion || 'Adresse non renseignée' }}
                                     </div>
-                                    <span class="text-900 font-semibold">{{ state().ficheSignaletique?.telSecundario ||
-                                        '-' }}</span>
-                                </div>
-
-                                <div class="contact-item flex align-items-center justify-content-between p-3 border-round"
-                                    style="background-color: var(--surface-50);">
-                                    <div class="flex align-items-center gap-2">
-                                        <i class="pi pi-phone text-primary"></i>
-                                        <span class="text-600">Autre</span>
-                                    </div>
-                                    <span class="text-900 font-semibold">{{ state().ficheSignaletique?.telOtro || '-'
-                                        }}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Right Column -->
-                    <div class="col-12 lg:col-6">
-                        <!-- Address Card - Redesigned -->
-                        <div class="info-card surface-card shadow-2 border-round p-4 mb-3">
-                            <div class="card-header flex align-items-center mb-4">
-                                <div class="flex align-items-center justify-content-center bg-orange-50 border-round mr-3"
-                                    style="width: 2.5rem; height: 2.5rem;">
-                                    <i class="pi pi-map-marker text-orange-600"></i>
-                                </div>
-                                <h3 class="m-0 text-lg font-semibold text-900">Adresse</h3>
-                            </div>
-
-                            <div class="address-info">
-                                <div class="address-main mb-3 p-3 border-round"
-                                    style="background-color: var(--surface-50);">
-                                    <label class="text-600 text-sm block mb-2">Adresse complète</label>
-                                    <div class="text-900 font-medium">{{ state().ficheSignaletique?.detDireccion || '-'
-                                        }}</div>
-                                </div>
-
-                                <div class="grid">
-                                    <div class="col-6">
-                                        <label class="text-600 text-sm block mb-1">Province</label>
-                                        <div class="text-900 font-medium">{{ state().ficheSignaletique?.codProvincia ||
-                                            '-' }}</div>
-                                    </div>
-                                    <div class="col-6">
-                                        <label class="text-600 text-sm block mb-1">District</label>
-                                        <div class="text-900 font-medium">{{ state().ficheSignaletique?.codDistrito ||
-                                            '-' }}</div>
-                                    </div>
-                                    <div class="col-6 mt-3">
-                                        <label class="text-600 text-sm block mb-1">Pays</label>
-                                        <div class="text-900 font-medium">{{ state().ficheSignaletique?.codPais || '-'
-                                            }}</div>
+                                    <div class="address-details">
+                                        <div class="detail-item">
+                                            <span class="detail-label">Province</span>
+                                            <span class="detail-value">{{ state().ficheSignaletique?.codProvincia || '-'
+                                                }}</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <span class="detail-label">District</span>
+                                            <span class="detail-value">{{ state().ficheSignaletique?.codDistrito || '-'
+                                                }}</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <span class="detail-label">Pays</span>
+                                            <span class="detail-value">{{ state().ficheSignaletique?.codPais || '-'
+                                                }}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Identification Card - Redesigned -->
-                        <div class="info-card surface-card shadow-2 border-round p-4 mb-3">
-                            <div class="card-header flex align-items-center mb-4">
-                                <div class="flex align-items-center justify-content-center bg-purple-50 border-round mr-3"
-                                    style="width: 2.5rem; height: 2.5rem;">
-                                    <i class="pi pi-id-card text-purple-600"></i>
+                            <div class="info-section mt-4">
+                                <div class="section-header">
+                                    <div class="section-icon id">
+                                        <i class="pi pi-id-card"></i>
+                                    </div>
+                                    <h3>Identification</h3>
                                 </div>
-                                <h3 class="m-0 text-lg font-semibold text-900">Identification</h3>
+                                <div class="section-content">
+                                    <div class="id-card">
+                                        <div class="id-header">
+                                            <i class="pi pi-credit-card"></i>
+                                            <span>Pièce d'identité</span>
+                                        </div>
+                                        <div class="id-details">
+                                            <div class="id-row">
+                                                <span>Type:</span>
+                                                <strong>{{ state().ficheSignaletique?.codTipoId || '-' }}</strong>
+                                            </div>
+                                            <div class="id-row">
+                                                <span>Numéro:</span>
+                                                <strong>{{ state().ficheSignaletique?.numId || '-' }}</strong>
+                                            </div>
+                                            <div class="id-row">
+                                                <span>Expiration:</span>
+                                                <strong>{{ formatDate(state().ficheSignaletique?.fecVencim) }}</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div class="id-info p-3 border-round" style="background-color: var(--surface-50);">
-                                <div class="flex align-items-center justify-content-between mb-2">
-                                    <span class="text-600">Type</span>
-                                    <span class="text-900 font-semibold">{{ state().ficheSignaletique?.codTipoId || '-'
-                                        }}</span>
+                            <div class="info-section mt-4">
+                                <div class="section-header">
+                                    <div class="section-icon beneficiary">
+                                        <i class="pi pi-users"></i>
+                                    </div>
+                                    <h3>Bénéficiaire</h3>
                                 </div>
-                                <div class="flex align-items-center justify-content-between mb-2">
-                                    <span class="text-600">Numéro</span>
-                                    <span class="text-900 font-semibold">{{ state().ficheSignaletique?.numId || '-'
-                                        }}</span>
-                                </div>
-                                <div class="flex align-items-center justify-content-between">
-                                    <span class="text-600">Expiration</span>
-                                    <span class="text-900 font-semibold">{{
-                                        formatDate(state().ficheSignaletique?.fecVencim) }}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Beneficiary Card - Redesigned -->
-                        <div class="info-card surface-card shadow-2 border-round p-4">
-                            <div class="card-header flex align-items-center mb-4">
-                                <div class="flex align-items-center justify-content-center bg-cyan-50 border-round mr-3"
-                                    style="width: 2.5rem; height: 2.5rem;">
-                                    <i class="pi pi-users text-cyan-600"></i>
-                                </div>
-                                <h3 class="m-0 text-lg font-semibold text-900">Bénéficiaire</h3>
-                            </div>
-
-                            <div class="beneficiary-info">
-                                <div class="mb-3">
-                                    <label class="text-600 text-sm block mb-1">Nom du bénéficiaire</label>
-                                    <div class="text-900 font-medium">{{ state().ficheSignaletique?.nomBeneficiario ||
-                                        '-' }}</div>
-                                </div>
-                                <div>
-                                    <label class="text-600 text-sm block mb-1">Relation</label>
-                                    <div class="text-900 font-medium">{{ state().ficheSignaletique?.relacBeneficiario ||
-                                        '-' }}</div>
+                                <div class="section-content">
+                                    <div class="beneficiary-card">
+                                        <div class="beneficiary-avatar">
+                                            <i class="pi pi-user"></i>
+                                        </div>
+                                        <div class="beneficiary-info">
+                                            <p class="beneficiary-name">{{ state().ficheSignaletique?.nomBeneficiario ||
+                                                'Non désigné' }}</p>
+                                            <p class="beneficiary-relation">{{
+                                                state().ficheSignaletique?.relacBeneficiario || '-' }}</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </p-tabPanel>
-            <!-- Accounts Tab -->
-            <p-tabPanel header="Comptes & Soldes" leftIcon="pi pi-wallet">
-                <div class="accounts-section">
+
+            <!-- Enhanced Accounts Tab -->
+            <p-tabPanel>
+                <ng-template pTemplate="header">
+                    <span class="tab-header">
+                        <i class="pi pi-wallet mr-2"></i>
+                        Comptes & Soldes
+                        <span class="tab-badge">{{ getComptes().length }}</span>
+                    </span>
+                </ng-template>
+
+                <div class="accounts-overview mb-4">
+                    <div class="overview-card">
+                        <div class="overview-item">
+                            <span class="overview-label">Total des comptes</span>
+                            <span class="overview-value">{{ getComptes().length }}</span>
+                        </div>
+                        <div class="overview-divider"></div>
+                        <div class="overview-item">
+                            <span class="overview-label">Solde total disponible</span>
+                            <span class="overview-value text-success">{{ formatCurrency(getTotalSoldeDisponible())
+                                }}</span>
+                        </div>
+                        <div class="overview-divider"></div>
+                        <div class="overview-item">
+                            <span class="overview-label">Solde moyen total</span>
+                            <span class="overview-value">{{ formatCurrency(getTotalSoldeMoyen()) }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accounts-table-container">
                     <p-table [value]="getComptes()" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
                         currentPageReportTemplate="Affichage {first} à {last} sur {totalRecords} comptes"
-                        styleClass="p-datatable-striped">
+                        styleClass="custom-table" [tableStyle]="{'min-width': '60rem'}">
 
                         <ng-template pTemplate="header">
                             <tr>
+                                <th class="text-center" style="width: 3rem">#</th>
                                 <th>Numéro de Compte</th>
                                 <th>Catégorie</th>
-                                <th>Agence</th>
-                                <th>Statut</th>
-                                <th>Solde Disponible</th>
-                                <th>Solde Moyen</th>
-                                <th>Dernière Opération</th>
-                                <th>Jours Sans Mouvement</th>
+                                <th class="text-center">Agence</th>
+                                <th class="text-center">Statut</th>
+                                <th class="text-right">Solde Disponible</th>
+                                <th class="text-right">Solde Moyen</th>
+                                <th class="text-center">Dernière Opération</th>
+                                <th class="text-center">Jours Inactifs</th>
                             </tr>
                         </ng-template>
 
-                        <ng-template pTemplate="body" let-compte>
-                            <tr>
-                                <td>{{ compte.numCuenta }}</td>
-                                <td>{{ compte.categorieLibelle || compte.codCategoria }}</td>
-                                <td>{{ compte.codAgencia }}</td>
+                        <ng-template pTemplate="body" let-compte let-rowIndex="rowIndex">
+                            <tr class="table-row">
+                                <td class="text-center font-semibold">{{ rowIndex + 1 }}</td>
                                 <td>
+                                    <div class="account-number">
+                                        <i class="pi pi-credit-card mr-2"></i>
+                                        <span class="font-mono">{{ compte.numCuenta }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="category-badge">{{ compte.categorieLibelle || compte.codCategoria
+                                        }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="agency-code">{{ compte.codAgencia }}</span>
+                                </td>
+                                <td class="text-center">
                                     <p-tag [value]="compte.statutCompte || compte.indEstado || 'N/A'"
-                                        [severity]="getStatutSeverity(compte.indEstado || '')">
+                                        [severity]="getStatutSeverity(compte.indEstado || '')"
+                                        styleClass="status-tag-small">
                                     </p-tag>
                                 </td>
-                                <td class="text-right">{{ formatCurrency(compte.salDisponible) }}</td>
-                                <td class="text-right">{{ formatCurrency(compte.salPromedio) }}</td>
-                                <td>{{ formatDate(compte.fecUltMovimiento) }}</td>
+                                <td class="text-right">
+                                    <span class="amount amount-positive">{{ formatCurrency(compte.salDisponible)
+                                        }}</span>
+                                </td>
+                                <td class="text-right">
+                                    <span class="amount">{{ formatCurrency(compte.salPromedio) }}</span>
+                                </td>
                                 <td class="text-center">
-                                    <p-tag [value]="compte.joursSansMouvement || '0'" [severity]="compte.joursSansMouvement > 90 ? 'danger' : 
-                                    compte.joursSansMouvement > 30 ? 'warn' : 'success'">
-                                    </p-tag>
+                                    <span class="date-text">{{ formatDate(compte.fecUltMovimiento) }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="activity-indicator" [ngClass]="{'inactive-danger': compte.joursSansMouvement > 90,
+                                                    'inactive-warning': compte.joursSansMouvement > 30 && compte.joursSansMouvement <= 90,
+                                                    'active': compte.joursSansMouvement <= 30}">
+                                        <span>{{ compte.joursSansMouvement || 0 }}</span>
+                                        <small>jours</small>
+                                    </div>
                                 </td>
                             </tr>
-                        </ng-template>
-
-                        <ng-template pTemplate="summary">
-                            <div class="flex align-items-center justify-content-between">
-                                <span class="font-bold">Totaux:</span>
-                                <span class="font-bold">
-                                    Disponible: {{ formatCurrency(getTotalSoldeDisponible()) }} |
-                                    Moyen: {{ formatCurrency(getTotalSoldeMoyen()) }}
-                                </span>
-                            </div>
                         </ng-template>
 
                         <ng-template pTemplate="emptymessage">
                             <tr>
-                                <td colspan="8" class="text-center">Aucun compte trouvé</td>
+                                <td colspan="9" class="empty-message">
+                                    <div class="empty-state">
+                                        <i class="pi pi-inbox empty-icon"></i>
+                                        <p>Aucun compte trouvé</p>
+                                    </div>
+                                </td>
                             </tr>
                         </ng-template>
                     </p-table>

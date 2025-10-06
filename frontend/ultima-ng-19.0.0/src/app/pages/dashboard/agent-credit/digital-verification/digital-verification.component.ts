@@ -4,7 +4,7 @@ import { Individuel } from '@/interface/individuel';
 import { IUser } from '@/interface/user';
 import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { Component, DestroyRef, inject, Input, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -28,6 +28,7 @@ import { debounceTime, distinctUntilChanged } from 'rxjs';
     styleUrl: './digital-verification.component.scss'
 })
 export class DigitalVerificationComponent implements OnInit {
+    @Input() user?: IUser;
     state = signal<{
         user?: IUser;
         individuel?: Individuel;
