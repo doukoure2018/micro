@@ -18,6 +18,7 @@ export interface PersonnePhysique {
     relacBeneficiario?: string;
     detDireccion?: string;
     codProvincia?: string;
+    codCanton?: string;
     district?: string;
     agence?: string;
     codeAgence?: string;

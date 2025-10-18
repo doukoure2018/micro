@@ -55,6 +55,7 @@ public class PersonnePhysique {
     private String codActividad;
     private String codProfesion;
     private String codSector;
+    private String codCanton;
     // type entrepise
     private String typeEntre;
     private Integer nbrAnnee2;

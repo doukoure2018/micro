@@ -1,13 +1,13 @@
 package io.digiservices.userservice.service.impl;
 
+import io.digiservices.userservice.dto.AgentCreditDTO;
+import io.digiservices.userservice.dto.AgentDisponibilityDto;
 import io.digiservices.userservice.dto.RotationDto;
 import io.digiservices.userservice.event.Event;
 import io.digiservices.userservice.exception.ApiException;
-import io.digiservices.userservice.model.Credential;
-import io.digiservices.userservice.model.Device;
-import io.digiservices.userservice.model.Role;
-import io.digiservices.userservice.model.User;
+import io.digiservices.userservice.model.*;
 import io.digiservices.userservice.repository.UserRepository;
+import io.digiservices.userservice.service.OrangeSmsService;
 import io.digiservices.userservice.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -40,9 +41,13 @@ public class UserServiceImpl  implements UserService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder encoder;
     private final ApplicationEventPublisher publisher;
+    private final OrangeSmsService orangeSmsService;
 
     @Value("${ui.app.url}")
     private String uiAppUrl;
+
+    @Value("${sms.sender.name}")
+    private String senderName;
 
     @Override
     public User getUserByEmail(String email) {
@@ -99,7 +104,12 @@ public class UserServiceImpl  implements UserService {
                 delegationId, agenceId, pointventeId
         );
 
-        System.out.println(token);
+        //System.out.println(token);
+        // here i would like either send email or sms
+        /**
+         *  if roleName == 'CAISSE' send sms
+         *  or send email
+         */
         publisher.publishEvent(new Event(USER_CREATED, Map.of(
                 "token", token,
                 "name", capitalizeFully(firstName),
@@ -109,6 +119,33 @@ public class UserServiceImpl  implements UserService {
                 "agenceId", agenceId != null ? agenceId.toString() : "N/A",
                 "pointventeId", pointventeId != null ? pointventeId.toString() : "N/A"
         )));
+    }
+
+    private void sendSMS(String recipient, String message) {
+        try {
+            TokenResponse tokenResponse = orangeSmsService.getOAuthToken();
+
+            CompletableFuture.runAsync(() -> {
+                // CORRECTION: Vérifier null avant de comparer
+                if (tokenResponse == null || tokenResponse.getStatus() == null || tokenResponse.getStatus() != 200) {
+                    log.error("Failed to get valid OAuth token - Status: {}",
+                            tokenResponse != null ? tokenResponse.getStatus() : "null");
+                    throw new ApiException("Failed to get OAuth token");
+                }
+
+                try {
+                    orangeSmsService.sendSms(tokenResponse.getToken(), recipient, senderName, message);
+                    log.info("SMS sent successfully to {}", recipient);
+                } catch (Exception e) {
+                    log.error("Failed to send SMS to {}: {}", recipient, e.getMessage(), e);
+                }
+            }).exceptionally(ex -> {
+                log.error("Exception in sendSMS", ex);
+                return null;
+            });
+        } catch (Exception e) {
+            log.error("Error initiating SMS send: {}", e.getMessage(), e);
+        }
     }
 
     // Validation helper method
@@ -284,6 +321,41 @@ public class UserServiceImpl  implements UserService {
         log.info("Getting rotation history - userId: {}, pointVenteId: {}, activeOnly: {}",
                 userId, pointVenteId, activeOnly);
         return userRepository.getRotationHistory(userId, pointVenteId, activeOnly);
+    }
+
+    @Override
+    public List<AgentCreditDTO> getListAgentCredit(Long agenceId) {
+        return userRepository.getListAgentCredit(agenceId);
+    }
+
+    @Override
+    public AgentDisponibilityDto getDisponibilityAgent(Long userId, Long pointVenteId) {
+        log.info("Checking disponibility for user {} on point vente {}", userId, pointVenteId);
+
+        try {
+            AgentDisponibilityDto disponibility = userRepository.checkAgentDisponibility(userId, pointVenteId);
+
+            // Ajouter un message descriptif
+            if (disponibility.getIsActive()) {
+                disponibility.setMessage("Agent actif sur ce point de vente");
+            } else {
+                disponibility.setMessage("Agent non actif sur ce point de vente");
+            }
+
+            log.info("Disponibility result: {}", disponibility);
+            return disponibility;
+
+        } catch (Exception e) {
+            log.error("Error checking agent disponibility: {}", e.getMessage());
+            // Retourner un objet par défaut en cas d'erreur
+            return AgentDisponibilityDto.builder()
+                    .userId(userId)
+                    .pointVenteId(pointVenteId)
+                    .isActive(false)
+                    .message("Erreur lors de la vérification")
+                    .build();
+        }
+
     }
 
 

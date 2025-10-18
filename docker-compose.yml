@@ -26,32 +26,32 @@ services:
       start_period: 120s
 
   # Database Migration Service
-  flyway-migrations:
-    image: flyway/flyway:11.3.0
-    container_name: flyway-migrations
-    environment:
-      FLYWAY_URL: "jdbc:postgresql://postgresdb:5432/${POSTGRES_DB}"
-      FLYWAY_USER: ${POSTGRES_USER}
-      FLYWAY_PASSWORD: ${POSTGRES_PASSWORD}
-      FLYWAY_SCHEMAS: public
-      FLYWAY_TABLE: flyway_schema_history
-      FLYWAY_BASELINE_ON_MIGRATE: "true"
-      FLYWAY_VALIDATE_ON_MIGRATE: "true"
-      FLYWAY_OUT_OF_ORDER: "false"
-      FLYWAY_CLEAN_DISABLED: "true"
-      FLYWAY_BASELINE_VERSION: "7"
-    volumes:
-      - ./micro-digiservices/database-migrations/src/main/resources/db/migration:/flyway/sql
-    command: migrate
-    networks:
-      - spring
-    depends_on:
-      postgresdb:
-        condition: service_healthy
-    restart: "no"
-    profiles:
-      - migration
-      - full
+#  flyway-migrations:
+#    image: flyway/flyway:11.3.0
+#    container_name: flyway-migrations
+#    environment:
+#      FLYWAY_URL: "jdbc:postgresql://postgresdb:5432/${POSTGRES_DB}"
+#      FLYWAY_USER: ${POSTGRES_USER}
+#      FLYWAY_PASSWORD: ${POSTGRES_PASSWORD}
+#      FLYWAY_SCHEMAS: public
+#      FLYWAY_TABLE: flyway_schema_history
+#      FLYWAY_BASELINE_ON_MIGRATE: "true"
+#      FLYWAY_VALIDATE_ON_MIGRATE: "true"
+#      FLYWAY_OUT_OF_ORDER: "false"
+#      FLYWAY_CLEAN_DISABLED: "true"
+#      FLYWAY_BASELINE_VERSION: "7"
+#    volumes:
+#      - ./micro-digiservices/database-migrations/src/main/resources/db/migration:/flyway/sql
+#    command: migrate
+#    networks:
+#      - spring
+#    depends_on:
+#      postgresdb:
+#        condition: service_healthy
+#    restart: "no"
+#    profiles:
+#      - migration
+#      - full
 
   pgadmin:
     container_name: pgadmincontainer
@@ -103,362 +103,362 @@ services:
       - spring
 
   # Discovery and Gateway Services
-  discoveryserver:
-    image: doukoure93/discoveryserver:latest
-    container_name: discoveryserver
-    ports:
-      - "5002:5002"
-    environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
-      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgresdb:5432/localdb"
-      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - ./logs/discoveryserver:/var/log/discoveryserver
-    networks:
-      - spring
-    depends_on:
-      postgresdb:
-        condition: service_healthy
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: '0.5'
-        reservations:
-          memory: 256M
-          cpus: '0.25'
-    healthcheck:
-      test: ["CMD-SHELL", "exit 0"]  # Temporary always-pass health check
-      interval: 10s
-      timeout: 5s
-      retries: 1
-      start_period: 120s
+#  discoveryserver:
+#    image: doukoure93/discoveryserver:latest
+#    container_name: discoveryserver
+#    ports:
+#      - "5002:5002"
+#    environment:
+#      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+#      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgresdb:5432/localdb"
+#      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+#      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+#    volumes:
+#      - ./logs/discoveryserver:/var/log/discoveryserver
+#    networks:
+#      - spring
+#    depends_on:
+#      postgresdb:
+#        condition: service_healthy
+#    restart: unless-stopped
+#    deploy:
+#      resources:
+#        limits:
+#          memory: 512M
+#          cpus: '0.5'
+#        reservations:
+#          memory: 256M
+#          cpus: '0.25'
+#    healthcheck:
+#      test: ["CMD-SHELL", "exit 0"]  # Temporary always-pass health check
+#      interval: 10s
+#      timeout: 5s
+#      retries: 1
+#      start_period: 120s
 
-  gateway:
-    image: doukoure93/gateway:latest
-    container_name: gateway
-    ports:
-      - "8000:8000"
-    environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
-    volumes:
-      - ./logs/gateway:/var/log/gateway
-    networks:
-      - spring
-    depends_on:
-      - discoveryserver
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: '0.5'
-        reservations:
-          memory: 256M
-          cpus: '0.25'
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8000/actuator/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 120s
+#  gateway:
+#    image: doukoure93/gateway:latest
+#    container_name: gateway
+#    ports:
+#      - "8000:8000"
+#    environment:
+#      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+#    volumes:
+#      - ./logs/gateway:/var/log/gateway
+#    networks:
+#      - spring
+#    depends_on:
+#      - discoveryserver
+#    restart: unless-stopped
+#    deploy:
+#      resources:
+#        limits:
+#          memory: 512M
+#          cpus: '0.5'
+#        reservations:
+#          memory: 256M
+#          cpus: '0.25'
+#    healthcheck:
+#      test: ["CMD-SHELL", "curl -f http://localhost:8000/actuator/health || exit 1"]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 3
+#      start_period: 120s
 
   # Business Services
-  authorizationserver:
-    image: doukoure93/authorizationserver:latest
-    container_name: authorizationserver
-    ports:
-      - "8080:8080"
-    environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
-      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgresdb:5432/localdb"
-      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
-      UI_APP_URL: ${UI_APP_URL}
-      BACKEND_APP_URL: ${BACKEND_APP_URL}
-      OAUTH2_CLIENT_ID: ${OAUTH2_CLIENT_ID:-client}
-      OAUTH2_SCOPE: ${OAUTH2_SCOPE:-openid}
-      OAUTH2_RESPONSE_TYPE: ${OAUTH2_RESPONSE_TYPE:-code}
-      OAUTH2_CODE_CHALLENGE_METHOD: ${OAUTH2_CODE_CHALLENGE_METHOD:-S256}
-      SERVER_SERVLET_SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-true}  # Changed to true for HTTPS
-      SERVER_SERVLET_SESSION_COOKIE_HTTP_ONLY: "true"
-      SERVER_SERVLET_SESSION_COOKIE_SAME_SITE: "strict"
-      SERVER_FORWARD_HEADERS_STRATEGY: "NATIVE"  # ADD THIS LINE
-      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_SECOND_LEVEL_CACHE: "false"
-      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_QUERY_CACHE: "false"
-      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_REGION_FACTORY_CLASS: "org.hibernate.cache.internal.NoCachingRegionFactory"
-    volumes:
-      - ./keys:/app/keys
-      - ./logs/authorizationserver:/var/log/authorizationserver
-    networks:
-      - spring
-    depends_on:
-      postgresdb:
-        condition: service_healthy
-      discoveryserver:
-        condition: service_started  # Changed from service_healthy
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 1024M
-          cpus: '1.0'
-        reservations:
-          memory: 512M
-          cpus: '0.5'
-    healthcheck:
-      test: ["CMD-SHELL", "exit 0"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 120s
+#  authorizationserver:
+#    image: doukoure93/authorizationserver:latest
+#    container_name: authorizationserver
+#    ports:
+#      - "8080:8080"
+#    environment:
+#      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+#      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgresdb:5432/localdb"
+#      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+#      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+#      UI_APP_URL: ${UI_APP_URL}
+#      BACKEND_APP_URL: ${BACKEND_APP_URL}
+#      OAUTH2_CLIENT_ID: ${OAUTH2_CLIENT_ID:-client}
+#      OAUTH2_SCOPE: ${OAUTH2_SCOPE:-openid}
+#      OAUTH2_RESPONSE_TYPE: ${OAUTH2_RESPONSE_TYPE:-code}
+#      OAUTH2_CODE_CHALLENGE_METHOD: ${OAUTH2_CODE_CHALLENGE_METHOD:-S256}
+#      SERVER_SERVLET_SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-true}  # Changed to true for HTTPS
+#      SERVER_SERVLET_SESSION_COOKIE_HTTP_ONLY: "true"
+#      SERVER_SERVLET_SESSION_COOKIE_SAME_SITE: "strict"
+#      SERVER_FORWARD_HEADERS_STRATEGY: "NATIVE"  # ADD THIS LINE
+#      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_SECOND_LEVEL_CACHE: "false"
+#      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_QUERY_CACHE: "false"
+#      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_REGION_FACTORY_CLASS: "org.hibernate.cache.internal.NoCachingRegionFactory"
+#    volumes:
+#      - ./keys:/app/keys
+#      - ./logs/authorizationserver:/var/log/authorizationserver
+#    networks:
+#      - spring
+#    depends_on:
+#      postgresdb:
+#        condition: service_healthy
+#      discoveryserver:
+#        condition: service_started  # Changed from service_healthy
+#    restart: unless-stopped
+#    deploy:
+#      resources:
+#        limits:
+#          memory: 1024M
+#          cpus: '1.0'
+#        reservations:
+#          memory: 512M
+#          cpus: '0.5'
+#    healthcheck:
+#      test: ["CMD-SHELL", "exit 0"]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 3
+#      start_period: 120s
 
-  userservice:
-    image: doukoure93/userservice:latest
-    container_name: userservice
-    ports:
-      - "8085:8085"
-    environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
-      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgresdb:5432/localdb"
-      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
-      UI_APP_URL: ${UI_APP_URL}
-      BACKEND_APP_URL: ${BACKEND_APP_URL}
-      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_SECOND_LEVEL_CACHE: "false"
-      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_QUERY_CACHE: "false"
-      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_REGION_FACTORY_CLASS: "org.hibernate.cache.internal.NoCachingRegionFactory"
-    volumes:
-      - ./keys:/app/keys
-      - ./logs/userservice:/var/log/userservice
-    networks:
-      - spring
-    depends_on:
-      postgresdb:
-        condition: service_healthy
-      kafka:
-        condition: service_started
-      discoveryserver:
-        condition: service_started  # Changed from service_healthy
-      authorizationserver:
-        condition: service_started
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 1024M
-          cpus: '1.0'
-        reservations:
-          memory: 512M
-          cpus: '0.5'
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8085/actuator/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 120s
+#  userservice:
+#    image: doukoure93/userservice:latest
+#    container_name: userservice
+#    ports:
+#      - "8085:8085"
+#    environment:
+#      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+#      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgresdb:5432/localdb"
+#      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+#      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+#      UI_APP_URL: ${UI_APP_URL}
+#      BACKEND_APP_URL: ${BACKEND_APP_URL}
+#      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_SECOND_LEVEL_CACHE: "false"
+#      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_QUERY_CACHE: "false"
+#      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_REGION_FACTORY_CLASS: "org.hibernate.cache.internal.NoCachingRegionFactory"
+#    volumes:
+#      - ./keys:/app/keys
+#      - ./logs/userservice:/var/log/userservice
+#    networks:
+#      - spring
+#    depends_on:
+#      postgresdb:
+#        condition: service_healthy
+#      kafka:
+#        condition: service_started
+#      discoveryserver:
+#        condition: service_started  # Changed from service_healthy
+#      authorizationserver:
+#        condition: service_started
+#    restart: unless-stopped
+#    deploy:
+#      resources:
+#        limits:
+#          memory: 1024M
+#          cpus: '1.0'
+#        reservations:
+#          memory: 512M
+#          cpus: '0.5'
+#    healthcheck:
+#      test: ["CMD-SHELL", "curl -f http://localhost:8085/actuator/health || exit 1"]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 3
+#      start_period: 120s
 
-  ecreditservice:
-    image: doukoure93/ecreditservice:latest
-    container_name: ecreditservice
-    ports:
-      - "8087:8087"
-    environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
-      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgresdb:5432/localdb"
-      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
-      UI_APP_URL: ${UI_APP_URL}
-      BACKEND_APP_URL: ${BACKEND_APP_URL}
-      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_SECOND_LEVEL_CACHE: "false"
-      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_QUERY_CACHE: "false"
-      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_REGION_FACTORY_CLASS: "org.hibernate.cache.internal.NoCachingRegionFactory"
-    volumes:
-      - ./keys:/app/keys
-      - ./logs/ecreditservice:/var/log/ecreditservice
-    networks:
-      - spring
-    depends_on:
-      postgresdb:
-        condition: service_healthy
-      discoveryserver:
-        condition: service_started  # Changed from service_healthy
-      authorizationserver:
-        condition: service_started
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 1024M
-          cpus: '1.0'
-        reservations:
-          memory: 512M
-          cpus: '0.5'
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8087/actuator/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 120s
+#  ecreditservice:
+#    image: doukoure93/ecreditservice:latest
+#    container_name: ecreditservice
+#    ports:
+#      - "8087:8087"
+#    environment:
+#      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+#      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgresdb:5432/localdb"
+#      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+#      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+#      UI_APP_URL: ${UI_APP_URL}
+#      BACKEND_APP_URL: ${BACKEND_APP_URL}
+#      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_SECOND_LEVEL_CACHE: "false"
+#      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_QUERY_CACHE: "false"
+#      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_REGION_FACTORY_CLASS: "org.hibernate.cache.internal.NoCachingRegionFactory"
+#    volumes:
+#      - ./keys:/app/keys
+#      - ./logs/ecreditservice:/var/log/ecreditservice
+#    networks:
+#      - spring
+#    depends_on:
+#      postgresdb:
+#        condition: service_healthy
+#      discoveryserver:
+#        condition: service_started  # Changed from service_healthy
+#      authorizationserver:
+#        condition: service_started
+#    restart: unless-stopped
+#    deploy:
+#      resources:
+#        limits:
+#          memory: 1024M
+#          cpus: '1.0'
+#        reservations:
+#          memory: 512M
+#          cpus: '0.5'
+#    healthcheck:
+#      test: ["CMD-SHELL", "curl -f http://localhost:8087/actuator/health || exit 1"]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 3
+#      start_period: 120s
 
-  ebankingservice:
-    image: doukoure93/ebanking:latest
-    container_name: ebankingservice
-    ports:
-      - "8081:8081"
-    environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
-      SPRING_DATASOURCE_URL: "jdbc:sqlserver://10.220.220.8:1433;databaseName=BDCRG;trustServerCertificate=true;encrypt=true"
-      SPRING_DATASOURCE_USERNAME: "DIGI"
-      SPRING_DATASOURCE_PASSWORD: "@Digi2711@!"
-      UI_APP_URL: ${UI_APP_URL}
-      BACKEND_APP_URL: ${BACKEND_APP_URL}
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://admin:admin2711@discoveryserver:5002/eureka/"
-      JWKS_URI: "http://authorizationserver:8080/oauth2/jwks"
-      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_SECOND_LEVEL_CACHE: "false"
-      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_QUERY_CACHE: "false"
-      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_REGION_FACTORY_CLASS: "org.hibernate.cache.internal.NoCachingRegionFactory"
-    volumes:
-      - ./keys:/app/keys
-      - ./logs/ebankingservice:/var/log/ebankingservice
-    networks:
-      - spring
-    depends_on:
-      discoveryserver:
-        condition: service_started  # Changed from service_healthy
-      authorizationserver:
-        condition: service_started
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 1024M
-          cpus: '1.0'
-        reservations:
-          memory: 512M
-          cpus: '0.5'
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8081/actuator/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 120s
+#  ebankingservice:
+#    image: doukoure93/ebanking:latest
+#    container_name: ebankingservice
+#    ports:
+#      - "8081:8081"
+#    environment:
+#      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+#      SPRING_DATASOURCE_URL: "jdbc:sqlserver://10.220.220.8:1433;databaseName=BDCRG;trustServerCertificate=true;encrypt=true"
+#      SPRING_DATASOURCE_USERNAME: "DIGI"
+#      SPRING_DATASOURCE_PASSWORD: "@Digi2711@!"
+#      UI_APP_URL: ${UI_APP_URL}
+#      BACKEND_APP_URL: ${BACKEND_APP_URL}
+#      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://admin:admin2711@discoveryserver:5002/eureka/"
+#      JWKS_URI: "http://authorizationserver:8080/oauth2/jwks"
+#      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_SECOND_LEVEL_CACHE: "false"
+#      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_QUERY_CACHE: "false"
+#      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_REGION_FACTORY_CLASS: "org.hibernate.cache.internal.NoCachingRegionFactory"
+#    volumes:
+#      - ./keys:/app/keys
+#      - ./logs/ebankingservice:/var/log/ebankingservice
+#    networks:
+#      - spring
+#    depends_on:
+#      discoveryserver:
+#        condition: service_started  # Changed from service_healthy
+#      authorizationserver:
+#        condition: service_started
+#    restart: unless-stopped
+#    deploy:
+#      resources:
+#        limits:
+#          memory: 1024M
+#          cpus: '1.0'
+#        reservations:
+#          memory: 512M
+#          cpus: '0.5'
+#    healthcheck:
+#      test: ["CMD-SHELL", "curl -f http://localhost:8081/actuator/health || exit 1"]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 3
+#      start_period: 120s
 
-  notificationservice:
-    image: doukoure93/notificationservice:latest
-    container_name: notificationservice
-    ports:
-      - "8086:8086"
-    environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
-      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgresdb:5432/localdb"
-      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
-      SPRING_MAIL_HOST: ${MAIL_HOST}
-      SPRING_MAIL_PORT: ${MAIL_PORT}
-      SPRING_MAIL_USERNAME: ${MAIL_USERNAME}
-      SPRING_MAIL_PASSWORD: ${MAIL_PASSWORD}
-      UI_APP_URL: ${UI_APP_URL}
-      BACKEND_APP_URL: ${BACKEND_APP_URL}
-    volumes:
-      - ./keys:/app/keys
-      - ./logs/notificationservice:/var/log/notificationservice
-    networks:
-      - spring
-    depends_on:
-      kafka:
-        condition: service_started
-      discoveryserver:
-        condition: service_started
-      authorizationserver:
-        condition: service_started
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: '0.5'
-        reservations:
-          memory: 256M
-          cpus: '0.25'
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8086/actuator/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 120s
+#  notificationservice:
+#    image: doukoure93/notificationservice:latest
+#    container_name: notificationservice
+#    ports:
+#      - "8086:8086"
+#    environment:
+#      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+#      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgresdb:5432/localdb"
+#      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+#      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+#      SPRING_MAIL_HOST: ${MAIL_HOST}
+#      SPRING_MAIL_PORT: ${MAIL_PORT}
+#      SPRING_MAIL_USERNAME: ${MAIL_USERNAME}
+#      SPRING_MAIL_PASSWORD: ${MAIL_PASSWORD}
+#      UI_APP_URL: ${UI_APP_URL}
+#      BACKEND_APP_URL: ${BACKEND_APP_URL}
+#    volumes:
+#      - ./keys:/app/keys
+#      - ./logs/notificationservice:/var/log/notificationservice
+#    networks:
+#      - spring
+#    depends_on:
+#      kafka:
+#        condition: service_started
+#      discoveryserver:
+#        condition: service_started
+#      authorizationserver:
+#        condition: service_started
+#    restart: unless-stopped
+#    deploy:
+#      resources:
+#        limits:
+#          memory: 512M
+#          cpus: '0.5'
+#        reservations:
+#          memory: 256M
+#          cpus: '0.25'
+#    healthcheck:
+#      test: ["CMD-SHELL", "curl -f http://localhost:8086/actuator/health || exit 1"]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 3
+#      start_period: 120s
 
   # NGINX Reverse Proxy for SSL termination
-  nginx:
-    image: nginx:alpine
-    container_name: nginx-proxy
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/sites-enabled:/etc/nginx/sites-enabled:ro
-      - ./ssl:/etc/nginx/ssl:ro
-      - ./certbot/www:/var/www/certbot:ro
-      - ./certbot/conf:/etc/letsencrypt:ro
-    depends_on:
-      - gateway
-      - authorizationserver
-      - digicrg-app
-    networks:
-      - spring
-    restart: unless-stopped
+#  nginx:
+#    image: nginx:alpine
+#    container_name: nginx-proxy
+#    ports:
+#      - "80:80"
+#      - "443:443"
+#    volumes:
+#      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+#      - ./nginx/sites-enabled:/etc/nginx/sites-enabled:ro
+#      - ./ssl:/etc/nginx/ssl:ro
+#      - ./certbot/www:/var/www/certbot:ro
+#      - ./certbot/conf:/etc/letsencrypt:ro
+#    depends_on:
+#      - gateway
+#      - authorizationserver
+#      - digicrg-app
+#    networks:
+#      - spring
+#    restart: unless-stopped
 
   # Certbot for SSL certificates
-  certbot:
-    image: certbot/certbot
-    container_name: certbot
-    volumes:
-      - ./certbot/www:/var/www/certbot:rw
-      - ./certbot/conf:/etc/letsencrypt:rw
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+#  certbot:
+#    image: certbot/certbot
+#    container_name: certbot
+#    volumes:
+#      - ./certbot/www:/var/www/certbot:rw
+#      - ./certbot/conf:/etc/letsencrypt:rw
+#    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
 
   # Frontend Application
-  digicrg-app:
-    container_name: digicrg-app
-    image: doukoure93/digicrg-app
-    ports:
-      - "4200:4200"
-    environment:
-      API_BASE_URL: ${API_BASE_URL}
-      AUTH_SERVER_URL: ${AUTH_SERVER_URL}
-    depends_on:
-      ecreditservice:
-        condition: service_started
-      authorizationserver:
-        condition: service_started
-      notificationservice:
-        condition: service_started
-      userservice:
-        condition: service_started
-      ebankingservice:
-        condition: service_started
-      gateway:
-        condition: service_started
-    networks:
-      - spring
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 1536M
-          cpus: '0.5'
-        reservations:
-          memory: 256M
-          cpus: '0.25'
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:4200 || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 120s
+#  digicrg-app:
+#    container_name: digicrg-app
+#    image: doukoure93/digicrg-app
+#    ports:
+#      - "4200:4200"
+#    environment:
+#      API_BASE_URL: ${API_BASE_URL}
+#      AUTH_SERVER_URL: ${AUTH_SERVER_URL}
+#    depends_on:
+#      ecreditservice:
+#        condition: service_started
+#      authorizationserver:
+#        condition: service_started
+#      notificationservice:
+#        condition: service_started
+#      userservice:
+#        condition: service_started
+#      ebankingservice:
+#        condition: service_started
+#      gateway:
+#        condition: service_started
+#    networks:
+#      - spring
+#    restart: unless-stopped
+#    deploy:
+#      resources:
+#        limits:
+#          memory: 1536M
+#          cpus: '0.5'
+#        reservations:
+#          memory: 256M
+#          cpus: '0.25'
+#    healthcheck:
+#      test: ["CMD-SHELL", "curl -f http://localhost:4200 || exit 1"]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 10
+#      start_period: 120s
 
 volumes:
   microservices_postgresvolume_new:

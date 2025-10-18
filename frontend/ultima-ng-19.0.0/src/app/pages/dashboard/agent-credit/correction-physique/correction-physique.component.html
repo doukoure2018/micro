@@ -1,0 +1,291 @@
+<div class="agent-caisse-container">
+    <p-toast></p-toast>
+
+    <!-- Header Section -->
+    <p-card styleClass="mb-3">
+        <div class="flex justify-content-between align-items-center">
+            <div>
+                <h2 class="m-0">Gestion Personne Physique</h2>
+                @if (state().user) {
+                <p class="text-500 mt-2">
+                    Agent: {{ state().user?.firstName }} {{ state().user?.lastName }}
+                </p>
+                }
+            </div>
+            <p-button label="Ajouter Personne Physique" icon="pi pi-plus" (click)="openAddDialog()"
+                [loading]="isLoading()">
+            </p-button>
+        </div>
+    </p-card>
+
+    <!-- Search Section -->
+    <p-card styleClass="mb-3">
+        <h3>Rechercher un Client</h3>
+        <form [formGroup]="searchForm" (ngSubmit)="searchFicheSignaletique()">
+            <div class="grid">
+                <div class="col-12 md:col-8">
+                    <div class="p-inputgroup">
+                        <span class="p-inputgroup-addon">
+                            <i class="pi pi-search"></i>
+                        </span>
+                        <input pInputText formControlName="codCliente"
+                            placeholder="Entrez le code client (9-11 chiffres)" class="w-full">
+                    </div>
+                    @if (codClienteControl?.invalid && codClienteControl?.touched) {
+                    <small class="p-error block mt-1">
+                        Le code client doit contenir entre 9 et 11 chiffres
+                    </small>
+                    }
+                </div>
+                <div class="col-12 md:col-4">
+                    <div class="flex gap-2">
+                        <p-button label="Rechercher" icon="pi pi-search" type="submit" [loading]="isSearching()"
+                            [disabled]="searchForm.invalid">
+                        </p-button>
+                        <p-button label="Effacer" icon="pi pi-times" severity="secondary" (click)="clearSearch()"
+                            type="button">
+                        </p-button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </p-card>
+
+    <!-- Loading Spinner -->
+    @if (isSearching()) {
+    <div class="flex justify-content-center my-4">
+        <p-progressSpinner></p-progressSpinner>
+    </div>
+    }
+
+    <!-- Fiche Signalétique Display -->
+    @if (ficheData(); as fiche) {
+    <p-card styleClass="fiche-signaletique">
+        <h3 class="mb-3">Fiche Signalétique</h3>
+
+        <!-- Client Status Badge -->
+        <div class="mb-3">
+            <span class="p-badge" [ngClass]="{'p-badge-success': fiche.indEstado === 'A', 
+                                  'p-badge-warning': fiche.indEstado !== 'A'}">
+                {{ fiche.statutClientLibelle || 'Statut inconnu' }}
+            </span>
+        </div>
+
+        <p-divider></p-divider>
+
+        <!-- Informations Personnelles -->
+        <div class="section mb-3">
+            <h4 class="text-primary">Informations Personnelles</h4>
+            <div class="grid">
+                <div class="col-12 md:col-6">
+                    <div class="field-group">
+                        <label>Code Client:</label>
+                        <span>{{ fiche.codCliente }}</span>
+                    </div>
+                    <div class="field-group">
+                        <label>Nom Complet:</label>
+                        <span>{{ fiche.nombreComplet }}</span>
+                    </div>
+                    <div class="field-group">
+                        <label>Prénom:</label>
+                        <span>{{ fiche.primerNombre }}</span>
+                    </div>
+                    <div class="field-group">
+                        <label>Nom:</label>
+                        <span>{{ fiche.primerApellido }}</span>
+                    </div>
+                </div>
+                <div class="col-12 md:col-6">
+                    <div class="field-group">
+                        <label>Date de Naissance:</label>
+                        <span>{{ fiche.fechNacimiento }}</span>
+                    </div>
+                    <div class="field-group">
+                        <label>Lieu de Naissance:</label>
+                        <span>{{ fiche.lugarNacimiento }}</span>
+                    </div>
+                    <div class="field-group">
+                        <label>Nationalité:</label>
+                        <span>{{ fiche.nacionalidad }}</span>
+                    </div>
+                    <div class="field-group">
+                        <label>Sexe:</label>
+                        <span>{{ fiche.sexeLibelle }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <p-divider></p-divider>
+
+        <!-- Informations de Contact -->
+        <div class="section mb-3">
+            <h4 class="text-primary">Informations de Contact</h4>
+            <div class="grid">
+                <div class="col-12 md:col-6">
+                    <div class="field-group">
+                        <label>Téléphone Principal:</label>
+                        <span>{{ fiche.telPrincipal || 'Non renseigné' }}</span>
+                    </div>
+                    <div class="field-group">
+                        <label>Téléphone Secondaire:</label>
+                        <span>{{ fiche.telSecundario || 'Non renseigné' }}</span>
+                    </div>
+                </div>
+                <div class="col-12 md:col-6">
+                    <div class="field-group">
+                        <label>Autre Téléphone:</label>
+                        <span>{{ fiche.telOtro || 'Non renseigné' }}</span>
+                    </div>
+                    <div class="field-group">
+                        <label>Adresse:</label>
+                        <span>{{ fiche.detDireccion || 'Non renseignée' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <p-divider></p-divider>
+
+        <!-- Informations Familiales -->
+        <div class="section mb-3">
+            <h4 class="text-primary">Informations Familiales</h4>
+            <div class="grid">
+                <div class="col-12 md:col-6">
+                    <div class="field-group">
+                        <label>État Civil:</label>
+                        <span>{{ fiche.estatCivilLibelle || 'Non renseigné' }}</span>
+                    </div>
+                    <div class="field-group">
+                        <label>Conjoint(e):</label>
+                        <span>{{ fiche.nomConyugue || fiche.codCteConyugue || 'Non renseigné' }}</span>
+                    </div>
+                    <div class="field-group">
+                        <label>Nombre d'Enfants:</label>
+                        <span>{{ fiche.numHijos || 0 }}</span>
+                    </div>
+                </div>
+                <div class="col-12 md:col-6">
+                    <div class="field-group">
+                        <label>Bénéficiaire:</label>
+                        <span>{{ fiche.nomBeneficiario || 'Non renseigné' }}</span>
+                    </div>
+                    <div class="field-group">
+                        <label>Relation Bénéficiaire:</label>
+                        <span>{{ fiche.relacBeneficiario || 'Non renseignée' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <p-divider></p-divider>
+
+        <!-- Informations Professionnelles -->
+        <div class="section mb-3">
+            <h4 class="text-primary">Informations Professionnelles</h4>
+            <div class="grid">
+                <div class="col-12 md:col-6">
+                    <div class="field-group">
+                        <label>Profession:</label>
+                        <span>{{ getProfessionLabel(fiche.codProfesion!) }}</span>
+                    </div>
+                    <div class="field-group">
+                        <label>Secteur d'Activité:</label>
+                        <span>{{ getSectorLabel(fiche.codSector!) }}</span>
+                    </div>
+                    <div class="field-group">
+                        <label>Type de Travail:</label>
+                        <span>{{ fiche.typeTravailLibelle || 'Non renseigné' }}</span>
+                    </div>
+                </div>
+                <div class="col-12 md:col-6">
+                    <div class="field-group">
+                        <label>Ancienneté Poste:</label>
+                        <span>{{ fiche.antiguedadPuesto ? fiche.antiguedadPuesto + ' ans' : 'Non renseigné' }}</span>
+                    </div>
+                    <div class="field-group">
+                        <label>Lieu de Travail:</label>
+                        <span>{{ fiche.lugarTrabajo || 'Non renseigné' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <p-divider></p-divider>
+
+        <!-- Informations Logement -->
+        <div class="section mb-3">
+            <h4 class="text-primary">Informations Logement</h4>
+            <div class="grid">
+                <div class="col-12 md:col-6">
+                    <div class="field-group">
+                        <label>Type d'Habitation:</label>
+                        <span>{{ fiche.typeHabitationLibelle || 'Non renseigné' }}</span>
+                    </div>
+                    <div class="field-group">
+                        <label>Ancienneté Résidence:</label>
+                        <span>{{ fiche.antiguedadResidencia ? fiche.antiguedadResidencia + ' ans' : 'Non renseigné'
+                            }}</span>
+                    </div>
+                </div>
+                <div class="col-12 md:col-6">
+                    <div class="field-group">
+                        <label>Province:</label>
+                        <span>{{ getProvinceLabel(fiche.codProvincia!) }}</span>
+                    </div>
+                    <div class="field-group">
+                        <label>District:</label>
+                        <span>{{ getDistrictLabel(fiche.codDistrito!, fiche.codProvincia!, fiche.codCanton!) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <p-divider></p-divider>
+
+        <!-- Informations Administratives -->
+        <div class="section">
+            <h4 class="text-primary">Informations Administratives</h4>
+            <div class="grid">
+                <div class="col-12 md:col-6">
+                    <div class="field-group">
+                        <label>Type de Pièce:</label>
+                        <span>{{ getIdTypeLabel(fiche.codTipoId!) }}</span>
+                    </div>
+                    <div class="field-group">
+                        <label>Numéro de Pièce:</label>
+                        <span>{{ fiche.numId || 'Non renseigné' }}</span>
+                    </div>
+                    <div class="field-group">
+                        <label>Date d'Expiration:</label>
+                        <span>{{ fiche.fecVencim || 'Non renseignée' }}</span>
+                    </div>
+                </div>
+                <div class="col-12 md:col-6">
+                    <div class="field-group">
+                        <label>Agence:</label>
+                        <span>{{ fiche.codAgencia || 'Non renseignée' }}</span>
+                    </div>
+                    <div class="field-group">
+                        <label>Date d'Inscription:</label>
+                        <span>{{ fiche.fecIngreso || 'Non renseignée' }}</span>
+                    </div>
+                    <div class="field-group">
+                        <label>Type de Personne:</label>
+                        <span>{{ fiche.indPersona === 'F' ? 'Physique' : 'Morale' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </p-card>
+    }
+
+    <!-- Add Personne Physique Dialog -->
+    <p-dialog [(visible)]="state().showAddDialog" [modal]="true" [style]="{width: '90vw', maxWidth: '1000px'}"
+        [draggable]="false" [resizable]="false" header="Ajouter une Personne Physique">
+
+        <app-add-personne-physique [userId]="state().user?.userId" [ficheData]="state().ficheSignaletique"
+            (onSave)="onPersonnePhysiqueAdded($event)" (onCancel)="closeAddDialog()">
+        </app-add-personne-physique>
+    </p-dialog>
+</div>

@@ -1,39 +1,113 @@
 <div class="card h-full">
+    <p-toast></p-toast>
+
     <div class="p-2 h-full flex flex-col justify-between">
         <div class="flex items-center justify-between mb-4">
             <div class="flex gap-4 flex-col justify-between w-full md:flex-row md:items-center">
                 <div class="flex gap-4 items-center">
                     <div class="text-4xl">👋</div>
                     <div class="flex flex-col gap-1 text-surface-600 dark:text-surface-200">
-                        <span class="text-2xl font-semibold">Bonjour,<span class="text-color"> {{ user?.firstName }} {{
-                                user?.lastName }}!</span></span>
-                        <span> Point de Service <span class="font-bold text-primary">&#64; {{ state().pointVente?.libele
-                                }} : {{ state().pointVente?.code
-                                }} </span></span>
+                        <span class="text-2xl font-semibold">
+                            Bonjour,
+                            <span class="text-color">
+                                {{ state().user?.firstName }} {{ state().user?.lastName }}!
+                            </span>
+                        </span>
+                        <span>
+                            Point de Service
+                            <span class="font-bold text-primary">
+                                &#64; {{ state().pointVente?.libele }} : {{ state().pointVente?.code }}
+                            </span>
+                        </span>
                     </div>
                 </div>
+
                 <div class="flex items-center gap-2">
-                    @if(user?.role ==='AGENT_CREDIT' && state().nombreDemandeInd! > 0){
+                    @if(state().user?.role === 'AGENT_CREDIT' && state().nombreDemandeInd! > 0) {
                     <p-message severity="info">
-                        Nouvelle demande Pour la Selection, Vour pour plus de details.
+                        Nouvelle demande Pour la Selection, Voir pour plus de détails.
                         <a [routerLink]="['/dashboards/agent-credit/list-selection-ind']"
                             class="px-2 py-1 ml-2 font-bold bg-blue-100 text-blue-700 rounded-md border border-blue-300 hover:bg-blue-200">
                             Voir la liste →
                         </a>
                     </p-message>
-                    }@else {
                     }
                 </div>
             </div>
         </div>
     </div>
-    @if(state().demandeAttentes?.length! > 0){
+
+    <!-- Loading Status Check -->
+    @if(state().checkingStatus) {
+    <div class="flex justify-center items-center py-8">
+        <div class="flex flex-col items-center gap-3">
+            <i class="pi pi-spin pi-spinner text-4xl text-blue-500"></i>
+            <p class="text-gray-600">Vérification de votre statut d'activation...</p>
+        </div>
+    </div>
+    }
+
+    <!-- Agent Inactive Warning -->
+    @if(!state().checkingStatus && state().isAgentActive === false) {
+    <div class="card bg-red-50 border-2 border-red-200 p-6 mx-4 my-6">
+        <div class="flex items-start gap-4">
+            <div class="flex-shrink-0">
+                <i class="pi pi-exclamation-triangle text-5xl text-red-600"></i>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-2xl font-bold text-red-800 mb-3">
+                    🚫 Accès Restreint - Agent Non Activé
+                </h3>
+                <div class="space-y-3 text-red-700">
+                    <p class="text-lg font-semibold">
+                        Vous n'êtes pas activé dans ce point de service.
+                    </p>
+                    <p class="text-base">
+                        Pour accéder aux fonctionnalités de gestion des crédits, votre compte doit être activé
+                        par le Responsable d'Agence (RA) pour ce point de service.
+                    </p>
+                    <div class="bg-white rounded-lg p-4 border border-red-300 mt-4">
+                        <h4 class="font-semibold text-red-800 mb-2">📋 Que faire ?</h4>
+                        <ul class="list-disc list-inside space-y-2 text-red-700">
+                            <li>Contactez votre Responsable d'Agence (RA)</li>
+                            <li>Demandez l'activation de votre compte pour ce point de service</li>
+                            <li>Une fois activé, rafraîchissez cette page</li>
+                        </ul>
+                    </div>
+                    @if(state().user) {
+                    <div class="mt-4 p-3 bg-yellow-50 border border-yellow-300 rounded-lg">
+                        <p class="text-yellow-800 text-sm">
+                            <i class="pi pi-info-circle mr-2"></i>
+                            <strong>Note:</strong> Votre point de service actuel est
+                            <strong>{{ state().pointVente?.libele }} ({{ state().pointVente?.code }})</strong>
+                        </p>
+                    </div>
+                    }
+                </div>
+                <div class="mt-6 flex gap-3">
+                    <button pButton pRipple label="Vérifier mon statut" icon="pi pi-refresh" (click)="refresh()"
+                        [loading]="state().checkingStatus" class="p-button-outlined p-button-danger">
+                    </button>
+                    <button pButton pRipple label="Recharger la page" icon="pi pi-replay" (click)="reloadPage()"
+                        class="p-button-outlined">
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    }
+
+    <!-- Content - Only show if agent is active -->
+    @if(state().isAgentActive === true && !state().checkingStatus) {
+    <!-- Demandes en Attente Table -->
+    @if(state().demandeAttentes?.length! > 0) {
     <div class="card">
         <p-table #dt [value]="state().filteredDemandeAttentes!" [paginator]="true" paginatorDropdownAppendTo="body"
             [rows]="10" [showCurrentPageReport]="true" responsiveLayout="scroll"
             currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
             [rowsPerPageOptions]="[10, 25, 50]"
             [globalFilterFields]="['nom', 'prenom', 'numeroMembre', 'activite', 'telephone']">
+
             <ng-template pTemplate="caption">
                 <div class="flex flex-wrap gap-2 items-center justify-between">
                     <p-icon-field class="w-full sm:w-80 order-1 sm:order-none">
@@ -43,32 +117,31 @@
                     </p-icon-field>
                 </div>
             </ng-template>
+
             <ng-template pTemplate="header">
                 <tr>
-                    <th pSortableColumn="createdAt" class="white-space-nowrap" style="width:10%">Date
-                        <p-sortIcon field="createdAt"></p-sortIcon>
+                    <th pSortableColumn="createdAt" class="white-space-nowrap" style="width:10%">
+                        Date <p-sortIcon field="createdAt"></p-sortIcon>
                     </th>
-                    <th pSortableColumn="nom" class="white-space-nowrap" style="width:15%">Nom
-                        <p-sortIcon field="nom"></p-sortIcon>
+                    <th pSortableColumn="nom" class="white-space-nowrap" style="width:15%">
+                        Nom <p-sortIcon field="nom"></p-sortIcon>
                     </th>
-
                     <th pSortableColumn="numeroMembre" class="white-space-nowrap" style="width:15%">
-                        N° Membre <p-sortIcon field="numeroMembre"></p-sortIcon></th>
-                    <th pSortableColumn="montant" class="white-space-nowrap" style="width:10%">Montant
-                        <p-sortIcon field="montant"></p-sortIcon>
+                        N° Membre <p-sortIcon field="numeroMembre"></p-sortIcon>
                     </th>
-                    <th pSortableColumn="activite" class="white-space-nowrap" style="width:15%">Activité
-                        <p-sortIcon field="activite"></p-sortIcon>
+                    <th pSortableColumn="montant" class="white-space-nowrap" style="width:10%">
+                        Montant <p-sortIcon field="montant"></p-sortIcon>
                     </th>
-
+                    <th pSortableColumn="activite" class="white-space-nowrap" style="width:15%">
+                        Activité <p-sortIcon field="activite"></p-sortIcon>
+                    </th>
                     <th pSortableColumn="statutDemande" class="white-space-nowrap" style="width:15%">
-                        Statut Validation
-                        <p-sortIcon field="statutDemande"></p-sortIcon>
+                        Statut Validation <p-sortIcon field="statutDemande"></p-sortIcon>
                     </th>
-
-                    <th class="white-space-nowrap" style="width:10%">Action </th>
+                    <th class="white-space-nowrap" style="width:10%">Action</th>
                 </tr>
             </ng-template>
+
             <ng-template pTemplate="body" let-demande>
                 <tr>
                     <td>{{ demande.createdAt | date: 'dd/MM/yyyy' }}</td>
@@ -88,23 +161,29 @@
                     </td>
                 </tr>
             </ng-template>
+
             <ng-template pTemplate="emptymessage">
                 <tr>
-                    <td colspan="8" class="text-center p-4">Aucune demande avec statut de validation 'VALIDATION'
-                        trouvée.</td>
+                    <td colspan="8" class="text-center p-4">
+                        Aucune demande avec statut de validation 'VALIDATION' trouvée.
+                    </td>
                 </tr>
             </ng-template>
         </p-table>
     </div>
     }
 
-    @if(state().creditDtos?.length! > 0){
+    <!-- Crédits Table -->
+    @if(state().creditDtos?.length! > 0) {
     <div class="card mt-5">
-        <h3 class="text-xl font-medium mb-3">Liste des Crédits Notés par le Directeur D'agence</h3>
+        <h3 class="text-xl font-medium mb-3">
+            Liste des Crédits Notés par le Directeur D'agence
+        </h3>
         <p-table #dtCredits [value]="state().creditDtos!" [paginator]="true" paginatorDropdownAppendTo="body"
             [rows]="10" [showCurrentPageReport]="true" responsiveLayout="scroll"
             currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
             [rowsPerPageOptions]="[10, 25, 50]">
+
             <ng-template pTemplate="caption">
                 <div class="flex flex-wrap gap-2 items-center justify-between">
                     <p-icon-field class="w-full sm:w-80 order-1 sm:order-none">
@@ -114,38 +193,38 @@
                     </p-icon-field>
                 </div>
             </ng-template>
+
             <ng-template pTemplate="header">
                 <tr>
-                    <th pSortableColumn="dateCreation" class="white-space-nowrap" style="width:15%">Date
-                        <p-sortIcon field="dateCreation"></p-sortIcon>
+                    <th pSortableColumn="dateCreation" class="white-space-nowrap" style="width:15%">
+                        Date <p-sortIcon field="dateCreation"></p-sortIcon>
                     </th>
-                    <th pSortableColumn="codeMembre" class="white-space-nowrap" style="width:15%">N° Membre
-                        <p-sortIcon field="codeMembre">
-
-                        </p-sortIcon>
-
-                    <th pSortableColumn="status" class="white-space-nowrap" style="width:15%">Statut Crédit
-                        <p-sortIcon field="status"></p-sortIcon>
+                    <th pSortableColumn="codeMembre" class="white-space-nowrap" style="width:15%">
+                        N° Membre <p-sortIcon field="codeMembre"></p-sortIcon>
+                    </th>
+                    <th pSortableColumn="status" class="white-space-nowrap" style="width:15%">
+                        Statut Crédit <p-sortIcon field="status"></p-sortIcon>
                     </th>
                     <th class="white-space-nowrap" style="width:15%">Action</th>
                 </tr>
             </ng-template>
+
             <ng-template pTemplate="body" let-credit>
                 <tr>
                     <td>{{ credit.createAt | date: 'dd/MM/yyyy' }}</td>
                     <td>{{ credit.codeMembre }}</td>
-
                     <td>
                         <p-tag [value]="credit.status" [severity]="getStatusSeverity(credit.status, '')">
                         </p-tag>
                     </td>
                     <td>
                         <button pButton pRipple label="Détails"
-                            (click)="viewCreditDetails(credit.referenceCredit,credit.codeMembre)" class="ml-auto" text>
+                            (click)="viewCreditDetails(credit.referenceCredit, credit.codeMembre)" class="ml-auto" text>
                         </button>
                     </td>
                 </tr>
             </ng-template>
+
             <ng-template pTemplate="emptymessage">
                 <tr>
                     <td colspan="6" class="text-center p-4">Aucun crédit trouvé.</td>
@@ -153,5 +232,6 @@
             </ng-template>
         </p-table>
     </div>
+    }
     }
 </div>

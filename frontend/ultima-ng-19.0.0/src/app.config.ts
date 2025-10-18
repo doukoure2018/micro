@@ -10,6 +10,7 @@ import { UserService } from '@/service/user.service';
 import { StorageService } from '@/service/storage.service';
 import { TokenInterceptor } from '@/interceptors/token.interceptor';
 import { CacheInterceptor } from '@/interceptors/cache.interceptor';
+import { provideAnimations } from '@angular/platform-browser/animations';
 
 const MyPreset = definePreset(Material, {
     semantic: {
@@ -39,6 +40,7 @@ export const appConfig: ApplicationConfig = {
             }),
             withEnabledBlockingInitialNavigation()
         ),
+        provideAnimations(),
         // CORRECTION CRITIQUE : Une seule configuration HttpClient avec les intercepteurs
         provideHttpClient(withFetch(), withInterceptors([TokenInterceptor, CacheInterceptor])),
         // SUPPRIMÉ : provideHttpClient(withFetch()), // ← Cette ligne supprimée !

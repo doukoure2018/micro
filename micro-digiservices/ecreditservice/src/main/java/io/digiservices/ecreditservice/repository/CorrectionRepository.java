@@ -27,4 +27,8 @@ public interface CorrectionRepository {
 
     Optional<PersonnePhysique> findById(Long id);
     void updateCorrectionStatut(Long idPersonnePhysique, String statut);
+
+    List<PersonnePhysique> listRejet(String codAgencia);
+
+    Optional<MotifCorrection> findMotifsCorrectionByPersonneLast(Long personnePhysiqueId);
 }

@@ -27,9 +27,24 @@ export default [
         loadComponent: () => import('./agent-credit/rapprochement-caisse/rapprochement-caisse.component').then((c) => c.RapprochementCaisseComponent)
     },
     {
+        path: 'correction-physique',
+        data: { breadcrumb: 'Correction Physique' },
+        loadComponent: () => import('./agent-credit/correction-physique/correction-physique.component').then((c) => c.CorrectionPhysiqueComponent)
+    },
+    {
+        path: 'stock',
+        data: { breadcrumb: 'Gestion de Stock' },
+        loadComponent: () => import('./agent-credit/stock-cmd/stock-cmd.component').then((c) => c.StockCmdComponent)
+    },
+    {
         path: 'correction-en-attente',
-        data: { breadcrumb: 'Correction En attente' },
+        data: { breadcrumb: 'Verification Avant et Apres et Mise à jour' },
         loadComponent: () => import('./agent-credit/correction-en-attente/correction-en-attente.component').then((c) => c.CorrectionEnAttenteComponent)
+    },
+    {
+        path: 'update-correction-rejet/:codCliente',
+        data: { breadcrumb: 'Correction Rejet' },
+        loadComponent: () => import('./agent-credit/update-correction-rejet/update-correction-rejet.component').then((c) => c.UpdateCorrectionRejetComponent)
     },
     {
         path: 'correction-en-attente/detail/:codCliente',
@@ -96,7 +111,6 @@ export default [
         data: { breadcrumb: 'Mise en Place de Credit' },
         loadComponent: () => import('./resp-agent/view-instance-credit-ind/view-instance-credit-ind.component').then((c) => c.ViewInstanceCreditIndComponent)
     },
-
     {
         path: 'createUser',
         data: { breadcrumb: 'Creation de Compte ' },

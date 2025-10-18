@@ -24,7 +24,7 @@ public class UserQuery {
                        u.phone,
                        u.address,
                        c.password,
-                       c.updated_at + INTERVAL '90 day' > NOW() AS credentials_non_expired
+                       c.updated_at + INTERVAL '365 day' > NOW() AS credentials_non_expired
                     FROM users u JOIN user_roles ur ON ur.user_id = u.user_id JOIN roles r ON r.role_id = ur.role_id JOIN credentials c ON c.user_id = u.user_id WHERE u.username =:username;
             """;
 
