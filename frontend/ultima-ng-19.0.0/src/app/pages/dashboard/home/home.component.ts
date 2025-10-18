@@ -10,10 +10,13 @@ import { ListStockComponent } from '../agent-credit/list-stock/list-stock.compon
 import { AgentCaisseComponent } from '../caisse/agent-caisse/agent-caisse.component';
 import { RapprochementCaisseComponent } from '../agent-credit/rapprochement-caisse/rapprochement-caisse.component';
 import { DigitalVerificationComponent } from '../agent-credit/digital-verification/digital-verification.component';
+import { CorrectionEnAttenteComponent } from '../agent-credit/correction-en-attente/correction-en-attente.component';
+import { CorrectionRejetPpComponent } from '../agent-credit/correction-rejet-pp/correction-rejet-pp.component';
+import { RotationAgentComponent } from '../agent-credit/rotation-agent/rotation-agent.component';
 
 @Component({
     selector: 'app-home',
-    imports: [AdminComponent, AgentCreditComponent, RespAgentComponent, ListStockComponent, AgentCaisseComponent, RapprochementCaisseComponent, DigitalVerificationComponent],
+    imports: [AdminComponent, AgentCreditComponent, RespAgentComponent, ListStockComponent, RapprochementCaisseComponent, DigitalVerificationComponent, CorrectionRejetPpComponent, RotationAgentComponent],
     templateUrl: './home.component.html'
 })
 export class HomeComponent {

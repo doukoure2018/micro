@@ -82,6 +82,9 @@ export class AddPersonnePhysiqueComponent implements OnInit {
         value: item.code
     }));
 
+    cantonOptions: any[] = [];
+    districtOptions: any[] = [];
+
     sectorOptions = ReferenceData.SECTORS.map((item) => ({
         label: item.label,
         value: item.code
@@ -96,8 +99,6 @@ export class AddPersonnePhysiqueComponent implements OnInit {
         label: item.label,
         value: item.code
     }));
-
-    districtOptions: any[] = [];
 
     private fb = inject(FormBuilder);
     private userService = inject(UserService);
@@ -120,15 +121,47 @@ export class AddPersonnePhysiqueComponent implements OnInit {
         // Watch for province changes
         this.personneForm.get('codProvincia')?.valueChanges.subscribe((provinceCode) => {
             if (provinceCode) {
-                this.loadDistricts(provinceCode);
+                this.loadCantons(provinceCode);
+                // Reset canton and district when province changes
+                this.personneForm.patchValue({
+                    codCanton: '',
+                    district: ''
+                });
+            } else {
+                this.cantonOptions = [];
+                this.districtOptions = [];
+            }
+        });
+
+        // Watch for canton changes
+        this.personneForm.get('codCanton')?.valueChanges.subscribe((cantonCode) => {
+            const provinceCode = this.personneForm.get('codProvincia')?.value;
+            if (provinceCode && cantonCode) {
+                this.loadDistricts(provinceCode, cantonCode);
+                // Reset district when canton changes (unless it's being set from ficheData)
+                if (!this.isPopulatingFromFiche) {
+                    this.personneForm.patchValue({ district: '' });
+                }
+            } else {
+                this.districtOptions = [];
             }
         });
     }
 
-    loadDistricts(provinceCode: string): void {
-        this.districtOptions = ReferenceData.getDistrictsByProvince(provinceCode).map((item) => ({
+    private isPopulatingFromFiche = false;
+
+    loadCantons(provinceCode: string): void {
+        const cantons = ReferenceData.getCantonsByProvince(provinceCode);
+        this.cantonOptions = cantons.map((item) => ({
             label: item.label,
             value: item.code
+        }));
+    }
+
+    loadDistricts(provinceCode: string, cantonCode?: string): void {
+        this.districtOptions = ReferenceData.getDistrictsByProvince(provinceCode, cantonCode).map((item) => ({
+            label: item.label,
+            value: item.codDistrito // Use codDistrito instead of code to be unique
         }));
 
         // Don't reset district if it's being set from ficheData
@@ -171,6 +204,7 @@ export class AddPersonnePhysiqueComponent implements OnInit {
             // Adresse
             detDireccion: [''],
             codProvincia: [''],
+            codCanton: [''], // Nouveau champ
             district: [''],
             agence: [''],
             codeAgence: [''],
@@ -212,6 +246,8 @@ export class AddPersonnePhysiqueComponent implements OnInit {
             return;
         }
 
+        this.isPopulatingFromFiche = true;
+
         console.log('Fiche data to use:', this.ficheData);
 
         // Map the data according to the actual response structure
@@ -244,6 +280,7 @@ export class AddPersonnePhysiqueComponent implements OnInit {
             // Address
             detDireccion: this.ficheData.detDireccion || '',
             codProvincia: this.ficheData.codProvincia || '',
+            codCanton: this.ficheData.codCanton || '', // Nouveau
             district: this.ficheData.codDistrito || '',
             codeAgence: this.ficheData.codAgencia || '',
 
@@ -274,22 +311,43 @@ export class AddPersonnePhysiqueComponent implements OnInit {
 
         console.log('Mapped form data:', formData);
 
-        this.personneForm.patchValue(formData);
-
-        // Load districts if province is set
+        // Load cantons and districts if province is set
         if (formData.codProvincia) {
-            this.loadDistricts(formData.codProvincia);
-            const { district, ...formDataWithoutDistrict } = formData;
-            this.personneForm.patchValue(formDataWithoutDistrict);
-            // Set district after loading options
-            // We use the district value we extracted earlier
-            if (district) {
+            this.loadCantons(formData.codProvincia);
+
+            // Extract canton and district for later setting
+            const { codCanton, district, ...formDataWithoutCantonDistrict } = formData;
+
+            // First patch without canton and district
+            this.personneForm.patchValue(formDataWithoutCantonDistrict);
+
+            // Set canton after options are loaded
+            if (codCanton) {
                 setTimeout(() => {
-                    console.log('Setting district value:', district);
-                    this.personneForm.patchValue({ district: district });
-                    console.log('District set, form value:', this.personneForm.get('district')?.value);
+                    console.log('Setting canton value:', codCanton);
+                    this.personneForm.patchValue({ codCanton: codCanton });
+
+                    // Load districts for the canton
+                    this.loadDistricts(formData.codProvincia, codCanton);
+
+                    // Set district after district options are loaded
+                    if (district) {
+                        setTimeout(() => {
+                            console.log('Setting district value:', district);
+                            this.personneForm.patchValue({ district: district });
+                            console.log('District set, form value:', this.personneForm.get('district')?.value);
+                            this.isPopulatingFromFiche = false;
+                        }, 100);
+                    } else {
+                        this.isPopulatingFromFiche = false;
+                    }
                 }, 100);
+            } else {
+                this.isPopulatingFromFiche = false;
             }
+        } else {
+            this.personneForm.patchValue(formData);
+            this.isPopulatingFromFiche = false;
         }
 
         console.log('Form values after patching:', this.personneForm.value);
@@ -306,7 +364,6 @@ export class AddPersonnePhysiqueComponent implements OnInit {
         return value;
     }
 
-    // Update the options to match what's in the database
     onSubmit(): void {
         if (this.personneForm.invalid) {
             this.personneForm.markAllAsTouched();

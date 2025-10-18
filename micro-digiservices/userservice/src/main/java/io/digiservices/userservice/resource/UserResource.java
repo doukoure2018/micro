@@ -103,7 +103,7 @@ public class UserResource {
     }
 
     private boolean isLocationBasedRole(String roleName) {
-        return "AGENT_CREDIT".equalsIgnoreCase(roleName) || "DA".equalsIgnoreCase(roleName);
+        return "AGENT_CREDIT".equalsIgnoreCase(roleName) || "DA".equalsIgnoreCase(roleName) || "CAISSE".equalsIgnoreCase(roleName) || "AGENT_CORRECTEUR".equalsIgnoreCase(roleName);
     }
     // When user is not logged in
     @GetMapping("/verify/account")
@@ -436,7 +436,21 @@ public class UserResource {
      * Endpoints pour la gestion des rotations
      */
 
-// Activer une rotation pour un utilisateur
+    @GetMapping("/list/agent-credit/{agenceId}")
+    public ResponseEntity<Response> listUserAgentCredit(@NotNull Authentication authentication,
+                                                @PathVariable(name = "agenceId") Long agenceId,
+                                                HttpServletRequest request)
+    {
+        return ok(getResponse(request, Map.of("agentCreditDTO",userService.getListAgentCredit(agenceId)), "Liste des agents de credit pour la rotation", OK));
+    }
+
+    /**
+     * Activer un agent pour pour un point de vente
+     * @param authentication
+     * @param rotationRequest
+     * @param request
+     * @return
+     */
     @PostMapping("/rotation/activate")
     public ResponseEntity<Response> activateRotation(
             @NotNull Authentication authentication,
@@ -564,6 +578,30 @@ public class UserResource {
                     "Une erreur est survenue lors de la récupération de l'historique",
                     INTERNAL_SERVER_ERROR));
         }
+    }
+
+    /**
+     * Vérifier la disponibilité d'un agent sur un point de vente
+     * GET /user/disponibility/{userId}/{ps}
+     */
+    @GetMapping("/disponibility/{userId}/{ps}")
+    public ResponseEntity<Response> disponibilityAgent(
+            @NotNull Authentication authentication,
+            @PathVariable("userId") Long userId,
+            @PathVariable("ps") Long ps,
+            HttpServletRequest request) {
+
+        log.info("User {} checking disponibility for agent {} on PS {}",
+                authentication.getName(), userId, ps);
+
+        AgentDisponibilityDto disponibility = userService.getDisponibilityAgent(userId, ps);
+
+        return ResponseEntity.ok(getResponse(
+                request,
+                Map.of("disponibilityAgent", disponibility),
+                "Disponibilité de l'agent récupérée avec succès",
+                OK
+        ));
     }
 
 

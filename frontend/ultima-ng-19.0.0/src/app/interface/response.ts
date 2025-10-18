@@ -1,5 +1,7 @@
 import { Actividad } from './actividad.model';
 import { Agence } from './agence';
+import { AgentCreditDTO } from './AgentCreditDTO';
+import { AgentDisponibilityDto } from './AgentDisponibilityDto';
 import { AnalyseComplete } from './analyseComplete';
 import { Appreciation } from './appreciation';
 import { Avis } from './avis';
@@ -25,6 +27,7 @@ import { InfoAdministrative } from './infoAdministrative';
 import { InstanceCreditView } from './instance-credit-view';
 import { Inversion } from './inversion.model';
 import { MotifAnalyse } from './motif.analyse';
+import { MotifCorrection } from './MotifCorrection';
 import { NewCredit } from './newCredit';
 import { NoteAnalyse } from './note-analyse.model';
 import { NoteGarantie } from './note-garantie.model';
@@ -212,7 +215,10 @@ export interface IResponse {
         data?: FicheSignaletique;
         listePPAttente?: FicheSignaletique;
         personnePhysique?: PersonnePhysique;
-
         metadata?: any;
+        listRejet?: PersonnePhysique[];
+        motif: MotifCorrection;
+        agentCreditDTO: AgentCreditDTO[];
+        disponibilityAgent?: AgentDisponibilityDto; // AJOUTÉ
     };
 }

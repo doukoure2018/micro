@@ -55,7 +55,7 @@
                             [showClear]="true" required placeholder="Sélectionner une délégation"
                             [disabled]="state().submitting || state().loadingDelegations"
                             [loading]="state().loadingDelegations" styleClass="w-full" dataKey="id" appendTo="body"
-                            (onChange)="onDelegationChange($event.value?.id)">
+                            (onChange)="onDelegationChange($event.value)">
                             <ng-template pTemplate="selectedItem" let-delegation>
                                 <div class="flex items-center">
                                     <span>{{ delegation?.libele }}</span>
@@ -86,7 +86,7 @@
                             placeholder="Sélectionner une agence"
                             [disabled]="state().submitting || state().loadingAgences || !state().selectedDelegationId"
                             [loading]="state().loadingAgences" styleClass="w-full" dataKey="id" appendTo="body"
-                            (onChange)="onAgenceChange($event.value?.id)">
+                            (onChange)="onAgenceChange($event.value)">
                             <ng-template pTemplate="selectedItem" let-agence>
                                 <div class="flex items-center">
                                     <span>{{ agence?.libele }}</span>
@@ -106,17 +106,21 @@
                     </div>
                     }
 
-                    <!-- Point Vente Field (only for AGENT_CREDIT) -->
+                    <!-- Point Vente Field (for AGENT_CREDIT, CAISSE and AGENT_CORRECTEUR) -->
                     @if(shouldShowPointVenteField(state().selectedRole?.name!)) {
                     <div class="mb-6 col-span-12">
                         <label for="pointVente" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
                             Point de Vente *
+                            @if(state().selectedRole?.name === 'AGENT_CORRECTEUR') {
+                            <span class="text-blue-500 text-sm">(Requis pour AGENT_CORRECTEUR)</span>
+                            }
                         </label>
                         <p-dropdown [(ngModel)]="selectedPointVente" name="pointVente"
                             [options]="state().pointVentes || []" optionLabel="libele" [filter]="true" filterBy="libele"
                             [showClear]="true" required placeholder="Sélectionner un point de vente"
                             [disabled]="state().submitting || state().loadingPointVentes || !state().selectedAgenceId"
-                            [loading]="state().loadingPointVentes" styleClass="w-full" dataKey="id" appendTo="body">
+                            [loading]="state().loadingPointVentes" styleClass="w-full" dataKey="id" appendTo="body"
+                            (onChange)="onPointVenteChange($event.value)">
                             <ng-template pTemplate="selectedItem" let-pointVente>
                                 <div class="flex items-center">
                                     <span>{{ pointVente?.libele }}</span>
@@ -265,6 +269,18 @@
                         <p-message severity="warn"
                             text="La validation du nom d'utilisateur SAF est requise avant de pouvoir créer le compte"
                             styleClass="mt-3 w-full"></p-message>
+                        }
+
+                        <!-- Debug info (remove in production) -->
+                        @if(state().selectedRole) {
+                        <div class="mt-4 p-3 bg-gray-100 dark:bg-gray-800 rounded text-xs">
+                            <p><strong>Role sélectionné:</strong> {{ state().selectedRole?.name }}</p>
+                            <p><strong>Délégation ID:</strong> {{ state().selectedDelegationId || 'Non sélectionné' }}
+                            </p>
+                            <p><strong>Agence ID:</strong> {{ state().selectedAgenceId || 'Non sélectionné' }}</p>
+                            <p><strong>Point Vente ID:</strong> {{ state().selectedPointVenteId || 'Non sélectionné' }}
+                            </p>
+                        </div>
                         }
                     </div>
                 </div>

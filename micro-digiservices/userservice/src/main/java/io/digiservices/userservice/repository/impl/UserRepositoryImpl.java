@@ -1,10 +1,13 @@
 package io.digiservices.userservice.repository.impl;
 
 
+import io.digiservices.userservice.dto.AgentCreditDTO;
+import io.digiservices.userservice.dto.AgentDisponibilityDto;
 import io.digiservices.userservice.dto.RotationDto;
 import io.digiservices.userservice.exception.ApiException;
 import io.digiservices.userservice.model.*;
 import io.digiservices.userservice.repository.UserRepository;
+import io.digiservices.userservice.service.OrangeSmsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
@@ -14,6 +17,8 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -21,6 +26,7 @@ import static io.digiservices.userservice.query.UserQuery.*;
 import static io.digiservices.userservice.utils.UserUtils.*;
 import static java.sql.Types.BIGINT;
 import static java.sql.Types.VARCHAR;
+import static org.apache.commons.lang3.function.Failable.getAsLong;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +34,7 @@ import static java.sql.Types.VARCHAR;
 public class UserRepositoryImpl implements UserRepository {
 
     private final JdbcClient jdbcClient;
+    private final OrangeSmsService orangeSmsService;
 
     @Override
     public User getUserByEmail(String email) {
@@ -131,7 +138,7 @@ public class UserRepositoryImpl implements UserRepository {
             log.info("Location parameters: delegationId={}, agenceId={}, pointventeId={}",
                     delegationId, agenceId, pointventeId);
 
-            if(roleName.equalsIgnoreCase("AGENT_CREDIT")){
+            if(roleName.equalsIgnoreCase("AGENT_CREDIT") || roleName.equalsIgnoreCase("CAISSE") || roleName.equalsIgnoreCase("AGENT_CORRECTEUR")){
                 // Validate required parameters for AGENT_CREDIT
                 if(delegationId == null || agenceId == null || pointventeId == null) {
                     throw new ApiException("AGENT_CREDIT role requires delegation, agence, and point vente selection");
@@ -588,6 +595,213 @@ public class UserRepositoryImpl implements UserRepository {
         } catch (Exception e) {
             log.error("Error fetching rotation history: {}", e.getMessage());
             throw new ApiException("Une erreur est survenue lors de la récupération de l'historique");
+        }
+    }
+
+    @Override
+    public List<AgentCreditDTO> getListAgentCredit(Long agenceId) {
+        try {
+            log.info("📥 Fetching agents credit for agence: {}", agenceId);
+
+            // Récupérer les lignes brutes
+            List<Map<String, Object>> rows = jdbcClient
+                    .sql(GET_LIST_AGENT_CREDIT_BY_AGENCE)
+                    .param("agenceId", agenceId)
+                    .query()
+                    .listOfRows();
+
+            if (rows.isEmpty()) {
+                log.warn("⚠️ No agents found for agence: {}", agenceId);
+                return List.of();
+            }
+
+            log.info("📊 Found {} raw rows for agence {}", rows.size(), agenceId);
+
+            // Mapper manuellement chaque ligne
+            List<AgentCreditDTO> agents = rows.stream()
+                    .map(this::mapToAgentCreditDTO)
+                    .toList();
+
+            log.info("✅ Successfully mapped {} agents for agence {}", agents.size(), agenceId);
+
+            // Log un exemple pour vérification
+            if (!agents.isEmpty()) {
+                AgentCreditDTO firstAgent = agents.get(0);
+                log.info("🔍 Premier agent mappé: username={}, userId={}, pointventeId={}",
+                        firstAgent.getUsername(),
+                        firstAgent.getUserId(),
+                        firstAgent.getPointventeId());
+            }
+
+            return agents;
+
+        } catch (EmptyResultDataAccessException exception) {
+            log.warn("⚠️ No agents found (EmptyResult): {}", exception.getMessage());
+            return List.of();
+        } catch (Exception e) {
+            log.error("❌ Error fetching agents credit: {}", e.getMessage(), e);
+            throw new ApiException("Une erreur est survenue lors de la récupération des agents");
+        }
+    }
+
+    /**
+     * Mapper une ligne SQL vers AgentCreditDTO
+     */
+    private AgentCreditDTO mapToAgentCreditDTO(Map<String, Object> row) {
+        try {
+            // Log de la ligne brute pour debugging
+            log.debug("🔍 Mapping row: {}", row);
+
+            // Extraction sécurisée des valeurs
+            Long userId = extractLong(row, "user_id");
+            Long agenceId = extractLong(row, "agence_id");
+            Long pointventeId = extractLong(row, "pointvente_id");
+
+            String firstName = extractString(row, "first_name");
+            String lastName = extractString(row, "last_name");
+            String username = extractString(row, "username");
+            String email = extractString(row, "email");
+            String phone = extractString(row, "phone");
+
+            String delegationLibele = extractString(row, "delegation_libele");
+            String agenceLibele = extractString(row, "agence_libele");
+            String pointventeLibele = extractString(row, "pointvente_libele");
+            String pointventeCode = extractString(row, "pointvente_code");
+            String roleName = extractString(row, "role_name");
+
+            // Calculer fullName
+            String fullName = buildFullName(firstName, lastName);
+
+            // Calculer pointVenteDisplay
+            String pointVenteDisplay = buildPointVenteDisplay(pointventeLibele, pointventeCode);
+
+            // Construire le DTO
+            AgentCreditDTO dto = AgentCreditDTO.builder()
+                    .delegationLibele(delegationLibele)
+                    .agenceId(agenceId)
+                    .agenceLibele(agenceLibele)
+                    .pointventeLibele(pointventeLibele)
+                    .pointventeCode(pointventeCode)
+                    .pointventeId(pointventeId)
+                    .userId(userId)
+                    .username(username)
+                    .firstName(firstName)
+                    .lastName(lastName)
+                    .email(email)
+                    .phone(phone)
+                    .roleName(roleName)
+                    .fullName(fullName)
+                    .pointVenteDisplay(pointVenteDisplay)
+                    .build();
+
+            // Log le DTO mappé pour vérification
+            log.debug("✅ Mapped DTO: userId={}, username={}, pointventeId={}",
+                    dto.getUserId(), dto.getUsername(), dto.getPointventeId());
+
+            return dto;
+
+        } catch (Exception e) {
+            log.error("❌ Error mapping row to AgentCreditDTO: {}", e.getMessage());
+            log.error("Row content: {}", row);
+            throw new RuntimeException("Erreur lors du mapping des données agent", e);
+        }
+    }
+
+    /**
+     * Extraire un Long de manière sûre
+     */
+    private Long extractLong(Map<String, Object> row, String key) {
+        Object value = row.get(key);
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
+        log.warn("⚠️ Unexpected type for {}: {}", key, value.getClass());
+        return null;
+    }
+
+    /**
+     * Extraire un String de manière sûre
+     */
+    private String extractString(Map<String, Object> row, String key) {
+        Object value = row.get(key);
+        if (value == null) {
+            return null;
+        }
+        return value.toString();
+    }
+
+    /**
+     * Construire le nom complet
+     */
+    private String buildFullName(String firstName, String lastName) {
+        if (firstName == null && lastName == null) {
+            return "";
+        }
+        if (firstName == null) {
+            return lastName;
+        }
+        if (lastName == null) {
+            return firstName;
+        }
+        return (firstName + " " + lastName).trim();
+    }
+
+    /**
+     * Construire l'affichage du point de vente
+     */
+    private String buildPointVenteDisplay(String libele, String code) {
+        if (libele == null && code == null) {
+            return "Non assigné";
+        }
+        if (libele != null && code != null) {
+            return libele + " (" + code + ")";
+        }
+        if (libele != null) {
+            return libele;
+        }
+        return "Code: " + code;
+    }
+
+    @Override
+    public AgentDisponibilityDto checkAgentDisponibility(Long userId, Long pointVenteId) {
+        String sql = "SELECT * FROM check_agent_disponibility(:userId, :pointVenteId)";
+
+        try {
+            Map<String, Object> result = jdbcClient.sql(sql)
+                    .param("userId", userId)
+                    .param("pointVenteId", pointVenteId)
+                    .query()
+                    .singleRow();
+
+            Boolean isActive = (Boolean) result.get("is_active");
+            Long currentPs = result.get("current_ps") != null ?
+                    ((Number) result.get("current_ps")).longValue() : null;
+
+            Timestamp timestamp = (Timestamp) result.get("rotation_date");
+            LocalDateTime rotationDate = timestamp != null ? timestamp.toLocalDateTime() : null;
+
+            return AgentDisponibilityDto.builder()
+                    .userId(userId)
+                    .pointVenteId(pointVenteId)
+                    .isActive(isActive != null ? isActive : false)
+                    .currentPs(currentPs)
+                    .rotationDate(rotationDate)
+                    .message(isActive != null && isActive ?
+                            "Agent actif sur ce point de vente" :
+                            "Agent non actif sur ce point de vente")
+                    .build();
+
+        } catch (Exception e) {
+            log.error("Error checking disponibility: {}", e.getMessage(), e);
+            return AgentDisponibilityDto.builder()
+                    .userId(userId)
+                    .pointVenteId(pointVenteId)
+                    .isActive(false)
+                    .message("Erreur lors de la vérification: " + e.getMessage())
+                    .build();
         }
     }
 

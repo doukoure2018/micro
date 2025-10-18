@@ -41,65 +41,59 @@ export class AppMenu {
                     },
                     ...(this.user?.role === 'AGENT_CREDIT'
                         ? [
-                              {
-                                  label: 'Analyse de Credit',
-                                  icon: 'pi pi-fw pi-hourglass',
-                                  routerLink: ['/dashboards/credit', this.user?.userId]
-                              },
-                              {
-                                  label: 'Membre',
-                                  icon: 'pi pi-th-large',
-                                  items: [
-                                      {
-                                          label: 'adhesion',
-                                          icon: 'pi pi-fw pi-user',
-                                          items: [
-                                              {
-                                                  label: 'Personne Physique',
-                                                  icon: 'pi pi-fw pi-user',
-                                                  routerLink: ['/membre/adhesion/pphysique']
-                                              },
-                                              {
-                                                  label: 'Personne Morale',
-                                                  icon: 'pi pi-fw pi-user',
-                                                  routerLink: ['/membre/adhesion/pmorale']
-                                              }
-                                          ]
-                                      },
+                              //   {
+                              //       label: 'Analyse de Credit',
+                              //       icon: 'pi pi-fw pi-hourglass',
+                              //       routerLink: ['/dashboards/credit', this.user?.userId]
+                              //   },
+                              //   {
+                              //       label: 'Membre',
+                              //       icon: 'pi pi-th-large',
+                              //       items: [
+                              //           {
+                              //               label: 'adhesion',
+                              //               icon: 'pi pi-fw pi-user',
+                              //               items: [
+                              //                   {
+                              //                       label: 'Personne Physique',
+                              //                       icon: 'pi pi-fw pi-user',
+                              //                       routerLink: ['/membre/adhesion/pphysique']
+                              //                   },
+                              //                   {
+                              //                       label: 'Personne Morale',
+                              //                       icon: 'pi pi-fw pi-user',
+                              //                       routerLink: ['/membre/adhesion/pmorale']
+                              //                   }
+                              //               ]
+                              //           },
 
-                                      {
-                                          label: 'Compte',
-                                          icon: 'pi pi-fw pi-user',
-                                          items: [
-                                              {
-                                                  label: 'Personne Physique',
-                                                  icon: 'pi pi-fw pi-inbox',
-                                                  routerLink: ['/membre/compte/cphysique']
-                                              },
-                                              {
-                                                  label: 'Personne Morale',
-                                                  icon: 'pi pi-fw pi-user',
-                                                  routerLink: ['/membre/compte/cmorale']
-                                              }
-                                          ]
-                                      },
-                                      {
-                                          label: 'Liaison Compte',
-                                          icon: 'pi pi-fw pi-check-square',
-                                          routerLink: ['/membre/liaison']
-                                      }
-                                  ]
-                              },
+                              //           {
+                              //               label: 'Compte',
+                              //               icon: 'pi pi-fw pi-user',
+                              //               items: [
+                              //                   {
+                              //                       label: 'Personne Physique',
+                              //                       icon: 'pi pi-fw pi-inbox',
+                              //                       routerLink: ['/membre/compte/cphysique']
+                              //                   },
+                              //                   {
+                              //                       label: 'Personne Morale',
+                              //                       icon: 'pi pi-fw pi-user',
+                              //                       routerLink: ['/membre/compte/cmorale']
+                              //                   }
+                              //               ]
+                              //           },
+                              //           {
+                              //               label: 'Liaison Compte',
+                              //               icon: 'pi pi-fw pi-check-square',
+                              //               routerLink: ['/membre/liaison']
+                              //           }
+                              //       ]
+                              //   },
                               {
                                   label: 'Gestion stock',
                                   icon: 'pi pi-fw pi-hourglass',
                                   routerLink: ['/dashboards/stock']
-                              },
-
-                              {
-                                  label: 'Rapprochement Caisse',
-                                  icon: 'pi pi-fw pi-hourglass',
-                                  routerLink: ['/dashboards/rapprochement-caisse']
                               },
 
                               {
@@ -132,7 +126,15 @@ export class AppMenu {
                                     //     routerLink: ['/dashboards/verification-client']
                                     // }
                                 ]
-                              : [])
+                              : this.user?.role === 'AGENT_CORRECTEUR'
+                                ? [
+                                      {
+                                          label: 'Correction P. Physique',
+                                          icon: 'pi pi-fw pi-hourglass',
+                                          routerLink: ['/dashboards/correction-physique']
+                                      }
+                                  ]
+                                : [])
 
                     // {
                     //     label: 'Sales Dashboard',

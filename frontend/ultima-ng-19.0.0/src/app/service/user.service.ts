@@ -633,6 +633,10 @@ export class UserService {
      */
     updateFicheSignaletique$ = (updateData: any): Observable<IResponse> => this.http.put<IResponse>(`${this.server}/ecredit/update/fiche-signaletique`, updateData).pipe(tap(console.log), catchError(this.handleError));
 
+    // Mettre à jour la personne physique
+    updatePersonnePhysique$(personnePhysique: PersonnePhysique): Observable<IResponse> {
+        return this.http.put<IResponse>(`${this.server}/ecredit/updatePersonnePhysique`, personnePhysique).pipe(tap(console.log), catchError(this.handleError));
+    }
     /**
      * Récupère la fiche signalétique d'un client avec les soldes
      * @param codCliente Code du client
@@ -646,6 +650,42 @@ export class UserService {
                     console.log('Métadonnées:', response.data.metadata);
                 }
             }),
+            catchError(this.handleError)
+        );
+
+    /**
+     * Récupérer la liste des agents de crédit par agence
+     */
+    getListAgentCredit$ = (agenceId: number): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/user/list/agent-credit/${agenceId}`).pipe(
+            tap((response) => console.log('Liste agents crédit:', response)),
+            catchError(this.handleError)
+        );
+
+    /**
+     * Activer la rotation pour un agent
+     */
+    activateRotation$ = (rotationRequest: { userId: number; pointVenteId: number }): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/user/rotation/activate`, rotationRequest).pipe(
+            tap((response) => console.log('Rotation activée:', response)),
+            catchError(this.handleError)
+        );
+
+    /**
+     * Désactiver la rotation pour un agent
+     */
+    deactivateRotation$ = (userId: number): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/user/rotation/deactivate/${userId}`, {}).pipe(
+            tap((response) => console.log('Rotation désactivée:', response)),
+            catchError(this.handleError)
+        );
+
+    /**
+     * Vérifier la disponibilité d'un agent sur un point de vente
+     */
+    checkAgentDisponibility$ = (userId: number, pointVenteId: number): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/user/disponibility/${userId}/${pointVenteId}`).pipe(
+            tap((response) => console.log('Disponibilité agent:', response)),
             catchError(this.handleError)
         );
     handleError = (httpErrorResponse: HttpErrorResponse): Observable<never> => {
@@ -665,6 +705,8 @@ export class UserService {
         }
         return throwError(() => error);
     };
+
+    getListPPRejet$ = (): Observable<IResponse> => this.http.get<IResponse>(`${this.server}/ecredit/listRejet`).pipe(tap(console.log), catchError(this.handleError));
 
     /**
      *  Functionnaly for logout

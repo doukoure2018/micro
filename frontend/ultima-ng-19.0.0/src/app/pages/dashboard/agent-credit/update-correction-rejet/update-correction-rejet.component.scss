@@ -1,0 +1,421 @@
+.update-correction-container {
+    padding: 1rem;
+    min-height: 100vh;
+    background: #f8f9fa;
+
+    // Card styles
+    ::ng-deep .p-card {
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+        .p-card-body {
+            padding: 1.5rem;
+        }
+    }
+
+    // Header styles
+    h2 {
+        color: #2c3e50;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        i {
+            color: #667eea;
+        }
+    }
+
+    h3 {
+        color: #495057;
+        font-size: 1.25rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        i {
+            font-size: 1.1rem;
+        }
+    }
+
+    h4 {
+        color: #667eea;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    // Correction data card
+    .correction-data-card {
+        border-left: 4px solid #f59e0b;
+
+        ::ng-deep .p-card-body {
+            background: linear-gradient(to right, rgba(251, 191, 36, 0.05), transparent);
+        }
+    }
+
+    // Motif de rejet card styles - DÉPLACÉ ICI
+    .motif-rejet-card {
+        border-left: 4px solid #f97316 !important;
+        background: linear-gradient(to right, rgba(249, 115, 22, 0.05), transparent) !important;
+
+        ::ng-deep .p-card-body {
+            padding: 1.5rem;
+        }
+
+        .motif-container {
+            .text-orange-500 {
+                color: #f97316;
+            }
+
+            .text-orange-800 {
+                color: #9a3412;
+            }
+
+            .motif-content {
+                background: white;
+                padding: 1.25rem;
+                border-radius: 8px;
+                border: 1px solid #fed7aa;
+
+                p {
+                    color: #1f2937;
+                    line-height: 1.6;
+                }
+            }
+
+            .field-group {
+                margin-bottom: 0.5rem;
+
+                label {
+                    display: block;
+                    font-size: 0.875rem;
+                    color: #6b7280;
+                    margin-bottom: 0.25rem;
+                    font-weight: 500;
+                }
+
+                span {
+                    display: block;
+                    color: #111827;
+                    font-size: 0.95rem;
+                }
+            }
+        }
+    }
+
+    // Field group styles
+    .field-group {
+        margin-bottom: 1rem;
+
+        label {
+            display: block;
+            font-weight: 500;
+            color: #6c757d;
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+        }
+
+        span {
+            display: block;
+            color: #212529;
+            font-size: 1rem;
+
+            &.font-bold {
+                font-weight: 600;
+            }
+        }
+    }
+
+    // Section styles
+    .section {
+        padding: 1rem 0;
+
+        &:not(:last-child) {
+            border-bottom: 1px solid #e9ecef;
+        }
+    }
+
+    // Badge styles
+    .p-badge {
+        font-size: 0.875rem;
+        padding: 0.25rem 0.75rem;
+
+        &.p-badge-success {
+            background-color: #10b981;
+        }
+
+        &.p-badge-warning {
+            background-color: #f59e0b;
+        }
+    }
+
+    // Status tags
+    ::ng-deep .p-tag {
+        font-weight: 500;
+        font-size: 0.875rem;
+        padding: 0.375rem 0.75rem;
+
+        &.p-tag-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        &.p-tag-info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        &.p-tag-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+    }
+
+    // Button styles
+    ::ng-deep .p-button {
+        font-weight: 500;
+
+        &.p-button-secondary {
+            background: #6c757d;
+            border-color: #6c757d;
+
+            &:hover {
+                background: #5a6268;
+                border-color: #545b62;
+            }
+        }
+    }
+
+    // Input group styles
+    .p-inputgroup {
+        .p-inputgroup-addon {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        input[readonly] {
+            background-color: #f3f4f6;
+            cursor: not-allowed;
+        }
+    }
+
+    // Loading spinner
+    .flex.justify-content-center {
+        padding: 2rem;
+    }
+
+    // Divider styles
+    ::ng-deep .p-divider {
+        margin: 1.5rem 0;
+
+        &:before {
+            border-color: #e9ecef;
+        }
+    }
+
+    // Info box
+    .bg-yellow-50 {
+        background-color: #fef3c7;
+        border: 1px solid #fcd34d;
+
+        p {
+            display: flex;
+            align-items: center;
+
+            i {
+                color: #d97706;
+            }
+        }
+    }
+
+    // Fiche signalétique styles
+    .fiche-signaletique {
+        ::ng-deep .p-card-body {
+            padding: 2rem;
+        }
+
+        .grid {
+            margin: 0 -0.5rem;
+
+            > div {
+                padding: 0 0.5rem;
+            }
+        }
+    }
+
+    // Responsive adjustments
+    @media (max-width: 768px) {
+        .flex.justify-content-between {
+            flex-direction: column;
+            gap: 1rem;
+
+            .flex.gap-2 {
+                width: 100%;
+                justify-content: stretch;
+
+                .p-button {
+                    flex: 1;
+                }
+            }
+        }
+
+        h2 {
+            font-size: 1.5rem;
+        }
+
+        h3 {
+            font-size: 1.1rem;
+        }
+
+        .field-group {
+            margin-bottom: 0.75rem;
+        }
+
+        ::ng-deep .p-card .p-card-body {
+            padding: 1rem;
+        }
+
+        // Motif card responsive
+        .motif-rejet-card {
+            .flex.align-items-start {
+                flex-direction: column;
+
+                i.pi-exclamation-triangle {
+                    font-size: 1.5rem;
+                }
+            }
+        }
+    }
+
+    // Dialog styles
+    ::ng-deep .p-dialog {
+        .p-dialog-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+
+            .p-dialog-title {
+                color: white;
+                font-weight: 600;
+            }
+
+            .p-dialog-header-icon {
+                color: white;
+            }
+        }
+
+        .p-dialog-content {
+            padding: 1.5rem;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+    }
+
+    // Error state
+    .p-error {
+        color: #dc2626;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+
+    // Text utilities
+    .text-500 {
+        color: #6b7280;
+    }
+
+    .text-700 {
+        color: #374151;
+    }
+
+    .text-primary {
+        color: #667eea;
+    }
+
+    .text-red-600 {
+        color: #dc2626;
+    }
+
+    .text-orange-500 {
+        color: #f97316;
+    }
+
+    .text-orange-800 {
+        color: #9a3412;
+    }
+
+    .text-lg {
+        font-size: 1.125rem;
+    }
+
+    // Spacing utilities
+    .m-0 {
+        margin: 0;
+    }
+
+    .mt-2 {
+        margin-top: 0.5rem;
+    }
+
+    .mt-3 {
+        margin-top: 1rem;
+    }
+
+    .mb-2 {
+        margin-bottom: 0.5rem;
+    }
+
+    .mb-3 {
+        margin-bottom: 1rem;
+    }
+
+    .mr-2 {
+        margin-right: 0.5rem;
+    }
+
+    .p-3 {
+        padding: 1rem;
+    }
+
+    // Flex utilities
+    .flex-1 {
+        flex: 1;
+    }
+
+    .gap-3 {
+        gap: 0.75rem;
+    }
+
+    .align-items-start {
+        align-items: flex-start;
+    }
+
+    // Font utilities
+    .font-semibold {
+        font-weight: 600;
+    }
+
+    .font-bold {
+        font-weight: 700;
+    }
+
+    // Border utilities
+    .border-round {
+        border-radius: 0.5rem;
+    }
+
+    // Animations
+    @keyframes pulse {
+        0%,
+        100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.5;
+        }
+    }
+
+    .loading {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+}

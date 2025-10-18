@@ -41,6 +41,7 @@ export class CreateUserComponent {
         selectedRole?: IRole;
         selectedDelegationId?: number;
         selectedAgenceId?: number;
+        selectedPointVenteId?: number;
         usuario?: SG_USUARIOS;
         usernameValidation?: {
             isValid: boolean;
@@ -144,6 +145,7 @@ export class CreateUserComponent {
             pointVentes: undefined,
             selectedDelegationId: undefined,
             selectedAgenceId: undefined,
+            selectedPointVenteId: undefined,
             usernameValidation: {
                 isValid: false,
                 isActive: false,
@@ -152,6 +154,11 @@ export class CreateUserComponent {
                 checked: false
             }
         }));
+
+        // Reset form selections
+        this.selectedDelegation = null;
+        this.selectedAgence = null;
+        this.selectedPointVente = null;
 
         // Load delegations if role requires location-based fields
         if (this.shouldShowLocationFields(selectedRole.name!)) {
@@ -300,26 +307,28 @@ export class CreateUserComponent {
             return !!validation?.checked && !!validation?.isActive;
         }
 
-        // For other roles (including CAISSE), no username validation needed
+        // For other roles (including CAISSE and AGENT_CORRECTEUR), no username validation needed
         return true;
     }
 
     // Check if role requires location fields (delegation at minimum)
     shouldShowLocationFields(roleName: string): boolean {
-        return roleName === 'AGENT_CREDIT' || roleName === 'CAISSE' || roleName === 'DA' || roleName === 'DR';
+        return roleName === 'AGENT_CREDIT' || roleName === 'CAISSE' || roleName === 'AGENT_CORRECTEUR' || roleName === 'DA' || roleName === 'DR' || roleName === 'RA';
     }
 
     // Check if role requires agence field
     shouldShowAgenceField(roleName: string): boolean {
         // DR only needs delegation, not agence
-        // AGENT_CREDIT and CAISSE need all three levels
-        return roleName === 'AGENT_CREDIT' || roleName === 'CAISSE' || roleName === 'DA';
+        // AGENT_CREDIT, CAISSE, AGENT_CORRECTEUR, DA and RA need agence
+        return roleName === 'AGENT_CREDIT' || roleName === 'CAISSE' || roleName === 'AGENT_CORRECTEUR' || roleName === 'DA' || roleName === 'RA'; // ✅ AJOUTÉ
     }
 
     // Check if role requires point vente field
     shouldShowPointVenteField(roleName: string): boolean {
-        // Both AGENT_CREDIT and CAISSE need point de vente
-        return roleName === 'AGENT_CREDIT' || roleName === 'CAISSE';
+        // AGENT_CREDIT, CAISSE and AGENT_CORRECTEUR need point de vente
+        // DA and RA do NOT need point de vente
+        return roleName === 'AGENT_CREDIT' || roleName === 'CAISSE' || roleName === 'AGENT_CORRECTEUR';
+        // RA n'est PAS ajouté ici (comme DA)
     }
 
     // Load delegations
@@ -349,18 +358,42 @@ export class CreateUserComponent {
     }
 
     // Handle delegation selection
-    onDelegationChange(delegationId: number): void {
+    onDelegationChange(delegation: Delegation): void {
+        if (!delegation) {
+            this.state.update((state) => ({
+                ...state,
+                selectedDelegationId: undefined,
+                agences: undefined,
+                pointVentes: undefined,
+                selectedAgenceId: undefined,
+                selectedPointVenteId: undefined
+            }));
+            this.selectedAgence = null;
+            this.selectedPointVente = null;
+            return;
+        }
+
+        const delegationId = delegation.id;
+
         this.state.update((state) => ({
             ...state,
             selectedDelegationId: delegationId,
             agences: undefined,
             pointVentes: undefined,
-            selectedAgenceId: undefined
+            selectedAgenceId: undefined,
+            selectedPointVenteId: undefined
         }));
+
+        // Reset dependent selections
+        this.selectedAgence = null;
+        this.selectedPointVente = null;
+
+        console.log('Selected Delegation:', delegation);
+        console.log('Delegation ID:', delegationId);
 
         // Only load agences if the role requires it (not for DR)
         if (this.state().selectedRole && this.shouldShowAgenceField(this.state().selectedRole?.name!)) {
-            this.loadAgencesByDelegation(delegationId);
+            this.loadAgencesByDelegation(delegationId!);
         }
     }
 
@@ -391,17 +424,58 @@ export class CreateUserComponent {
     }
 
     // Handle agence selection
-    onAgenceChange(agenceId: number): void {
+    onAgenceChange(agence: Agence): void {
+        if (!agence) {
+            this.state.update((state) => ({
+                ...state,
+                selectedAgenceId: undefined,
+                pointVentes: undefined,
+                selectedPointVenteId: undefined
+            }));
+            this.selectedPointVente = null;
+            return;
+        }
+
+        const agenceId = agence.id;
+
         this.state.update((state) => ({
             ...state,
             selectedAgenceId: agenceId,
-            pointVentes: undefined
+            pointVentes: undefined,
+            selectedPointVenteId: undefined
         }));
 
-        // Load point ventes for AGENT_CREDIT and CAISSE roles
+        // Reset point vente selection
+        this.selectedPointVente = null;
+
+        console.log('Selected Agence:', agence);
+        console.log('Agence ID:', agenceId);
+
+        // Load point ventes for AGENT_CREDIT, CAISSE and AGENT_CORRECTEUR roles
         if (this.state().selectedRole && this.shouldShowPointVenteField(this.state().selectedRole?.name!)) {
-            this.loadPointVentesByAgence(agenceId);
+            this.loadPointVentesByAgence(agenceId!);
         }
+    }
+
+    // Handle point vente selection
+    onPointVenteChange(pointVente: PointVente): void {
+        if (!pointVente) {
+            this.state.update((state) => ({
+                ...state,
+                selectedPointVenteId: undefined
+            }));
+            return;
+        }
+
+        const pointVenteId = pointVente.id;
+
+        this.state.update((state) => ({
+            ...state,
+            selectedPointVenteId: pointVenteId
+        }));
+
+        console.log('Selected Point Vente:', pointVente);
+        console.log('Point Vente ID:', pointVenteId);
     }
 
     // Load point ventes by agence
@@ -478,18 +552,74 @@ export class CreateUserComponent {
             return;
         }
 
-        // Create the user data object
+        // Get IDs from the state or form values
+        const delegationId = this.state().selectedDelegationId || this.selectedDelegation?.id || null;
+        const agenceId = this.state().selectedAgenceId || this.selectedAgence?.id || null;
+        const pointventeId = this.state().selectedPointVenteId || this.selectedPointVente?.id || null;
+
+        // Log the IDs for debugging
+        console.log('Creating user with location IDs:', {
+            delegationId,
+            agenceId,
+            pointventeId,
+            role: selectedRole.name
+        });
+
+        // Validate required location fields based on role
+        const roleName = selectedRole.name;
+        if (this.shouldShowLocationFields(roleName)) {
+            if (!delegationId) {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Délégation is required for this role',
+                    life: 3000
+                });
+                this.state.update((state) => ({ ...state, submitting: false }));
+                return;
+            }
+
+            if (this.shouldShowAgenceField(roleName) && !agenceId) {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Agence is required for this role',
+                    life: 3000
+                });
+                this.state.update((state) => ({ ...state, submitting: false }));
+                return;
+            }
+
+            if (this.shouldShowPointVenteField(roleName) && !pointventeId) {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Point de vente is required for this role',
+                    life: 3000
+                });
+                this.state.update((state) => ({ ...state, submitting: false }));
+                return;
+            }
+        }
+
+        // Create the user data object with proper IDs
         const userData = {
-            ...form.value,
-            role: undefined,
+            username: form.value.username,
+            firstName: form.value.firstName,
+            lastName: form.value.lastName,
+            email: form.value.email,
+            phone: form.value.phone,
+            password: form.value.password,
+            bio: form.value.bio,
             roleName: selectedRole.name,
-            // Add location-based fields if applicable
-            delegationId: form.value.delegation?.id || null,
-            agenceId: form.value.agence?.id || null,
-            pointventeId: form.value.pointVente?.id || null
+            roleId: selectedRole.role_id,
+            // Add location-based IDs
+            delegationId: delegationId,
+            agenceId: agenceId,
+            pointventeId: pointventeId
         };
 
-        console.log('Final user data:', userData);
+        console.log('Final user data to submit:', userData);
 
         this.userService
             .createAccount$(userData)
@@ -504,6 +634,10 @@ export class CreateUserComponent {
                     });
                     this.state.update((state) => ({ ...state, submitting: false }));
                     form.resetForm();
+                    // Reset selections
+                    this.selectedDelegation = null;
+                    this.selectedAgence = null;
+                    this.selectedPointVente = null;
                     this.router.navigate(['/dashboards']);
                 },
                 error: (error) => {

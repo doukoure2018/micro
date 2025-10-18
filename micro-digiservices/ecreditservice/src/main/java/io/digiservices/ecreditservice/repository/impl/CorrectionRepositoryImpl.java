@@ -62,6 +62,7 @@ public class CorrectionRepositoryImpl implements CorrectionRepository {
             pp.setRelacBeneficiario(rs.getString("relac_beneficiario"));
             pp.setDetDireccion(rs.getString("det_direccion"));
             pp.setCodProvincia(rs.getString("cod_provincia"));
+            pp.setCodCanton(rs.getString("cod_canton"));
             pp.setDistrict(rs.getString("district"));
             pp.setAgence(rs.getString("agence"));
             pp.setCodeAgence(rs.getString("code_agence"));
@@ -122,6 +123,7 @@ public class CorrectionRepositoryImpl implements CorrectionRepository {
                     .param("relacBeneficiario", personnePhysique.getRelacBeneficiario())
                     .param("detDireccion", personnePhysique.getDetDireccion())
                     .param("codProvincia", personnePhysique.getCodProvincia())
+                    .param("codCanton", personnePhysique.getCodCanton())
                     .param("district", personnePhysique.getDistrict())
                     .param("agence", personnePhysique.getAgence())
                     .param("codeAgence", personnePhysique.getCodeAgence())
@@ -214,8 +216,7 @@ public class CorrectionRepositoryImpl implements CorrectionRepository {
                     .param("statutClt", personnePhysique.getStatutClt())
                     .param("nature", personnePhysique.getNature())
                     .param("provServDestino", personnePhysique.getProvServDestino())
-                    .param("idUser", personnePhysique.getIdUser())
-                    .param("idManagerAgent", personnePhysique.getIdManagerAgent())
+                    .param("correctionStatut", personnePhysique.getCorrectionStatut())
                     .query(PERSONNE_PHYSIQUE_ROW_MAPPER)
                     .single();
 
@@ -481,6 +482,36 @@ public class CorrectionRepositoryImpl implements CorrectionRepository {
         } catch (DataAccessException e) {
             log.error("Erreur lors de la mise à jour du statut de correction", e);
             throw new RuntimeException("Erreur lors de la mise à jour du statut", e);
+        }
+    }
+
+    @Override
+    public List<PersonnePhysique> listRejet(String codAgencia) {
+        log.debug("Recherche code agencia - Code agencia: {}", codAgencia);
+        try {
+            return jdbcClient.sql(GET_ALL_DEMANDE_CORRECTION_ATTENTE_BY_COD_AGENCIA_REJET)
+                    .param("codAgencia", codAgencia)
+                    .query(PERSONNE_PHYSIQUE_ROW_MAPPER)
+                    .list();
+        } catch (EmptyResultDataAccessException e) {
+            log.debug("Agence non trouvée - Code agencia: {}", codAgencia);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    public Optional<MotifCorrection> findMotifsCorrectionByPersonneLast(Long personnePhysiqueId) {
+        log.debug("Recherche motifs de correction - Personne Physique ID: {}", personnePhysiqueId);
+
+        try {
+            MotifCorrection motif = jdbcClient.sql(FIND_MOTIFS_BY_PERSONNE_LAST)
+                    .param("personnePhysiqueId", personnePhysiqueId)
+                    .query(MOTIF_CORRECTION_ROW_MAPPER)
+                    .single();
+            return Optional.of(motif);
+        } catch (EmptyResultDataAccessException e) {
+            log.debug("Aucun motif trouvé pour la personne physique: {}", personnePhysiqueId);
+            return Optional.empty();
         }
     }
 }

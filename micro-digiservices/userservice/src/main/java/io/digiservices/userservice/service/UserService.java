@@ -1,5 +1,7 @@
 package io.digiservices.userservice.service;
 
+import io.digiservices.userservice.dto.AgentCreditDTO;
+import io.digiservices.userservice.dto.AgentDisponibilityDto;
 import io.digiservices.userservice.dto.RotationDto;
 import io.digiservices.userservice.model.Credential;
 import io.digiservices.userservice.model.Device;
@@ -44,4 +46,9 @@ public interface UserService {
     RotationDto activateRotation(Long userId, Long pointVenteId);
     Integer deactivateRotation(Long userId);
     List<RotationDto> getRotationHistory(Long userId, Long pointVenteId, boolean activeOnly);
-}
+
+    List<AgentCreditDTO> getListAgentCredit(Long agenceId);
+
+     AgentDisponibilityDto getDisponibilityAgent(Long userId, Long pointVenteId);
+
+    }

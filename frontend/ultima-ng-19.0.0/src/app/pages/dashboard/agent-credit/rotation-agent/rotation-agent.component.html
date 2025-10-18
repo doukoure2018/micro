@@ -1,0 +1,142 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="card">
+    <!-- En-tête -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h2 class="text-2xl font-bold text-surface-900 dark:text-surface-0 mb-2">
+                Gestion des Rotations - Agents de Crédit
+            </h2>
+            @if(state().user) {
+            <p class="text-surface-600 dark:text-surface-400">
+                Agence: <strong>{{ state().user?.agenceId }}</strong> |
+                Responsable: <strong>{{ state().user?.firstName }} {{ state().user?.lastName }}</strong>
+            </p>
+            }
+        </div>
+        <button pButton pRipple icon="pi pi-refresh" label="Actualiser" (click)="refresh()" [loading]="state().loading"
+            class="p-button-outlined">
+        </button>
+    </div>
+
+    <!-- Loader -->
+    @if(state().loading) {
+    <div class="flex justify-center items-center py-8">
+        <p-progressSpinner [style]="{ width: '50px', height: '50px' }"></p-progressSpinner>
+    </div>
+    }
+
+    <!-- Tableau -->
+    @if(!state().loading && state().agents.length > 0) {
+    <p-table [value]="state().agents" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[5, 10, 20]"
+        styleClass="p-datatable-gridlines">
+
+        <ng-template pTemplate="caption">
+            <div class="flex justify-between items-center">
+                <span class="text-xl font-semibold">
+                    Agents ({{ state().agents.length }}) | Points de vente disponibles ({{ state().pointsVente.length
+                    }})
+                </span>
+            </div>
+        </ng-template>
+
+        <ng-template pTemplate="header">
+            <tr>
+                <th>Agent</th>
+                <th>Email / Téléphone</th>
+                <th>PS Actuel</th>
+                <th>Statut</th>
+                <th style="min-width: 250px">Sélectionner PS</th>
+                <th style="width: 180px">Action</th>
+            </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-agent>
+            <tr>
+                <!-- Agent -->
+                <td>
+                    <div class="font-semibold">{{ agent.fullName }}</div>
+                    <div class="text-sm text-gray-600">{{ agent.username }}</div>
+                </td>
+
+                <!-- Contact -->
+                <td>
+                    <div class="text-sm">
+                        <div><i class="pi pi-envelope text-blue-500 mr-1"></i>{{ agent.email }}</div>
+                        @if(agent.phone) {
+                        <div class="mt-1"><i class="pi pi-phone text-green-500 mr-1"></i>{{ agent.phone }}</div>
+                        }
+                    </div>
+                </td>
+
+                <!-- PS Actuel -->
+                <td>
+                    <div class="flex items-center gap-2">
+                        <i class="pi pi-map-marker text-orange-500"></i>
+                        <span class="font-medium">{{ agent.pointVenteDisplay }}</span>
+                    </div>
+                </td>
+
+                <!-- Statut -->
+                <td>
+                    @if(agent.isLoading) {
+                    <i class="pi pi-spin pi-spinner text-blue-500"></i>
+                    } @else {
+                    @if(agent.isActive) {
+                    <p-tag value="ACTIF" severity="success" icon="pi pi-check-circle"></p-tag>
+                    } @else {
+                    <p-tag value="INACTIF" severity="danger" icon="pi pi-times-circle"></p-tag>
+                    }
+                    }
+                </td>
+
+                <!-- Dropdown Sélection PS -->
+                <td>
+                    @if(!agent.isActive) {
+                    <p-dropdown [(ngModel)]="agent.selectedPointVenteId" [options]="state().pointsVente"
+                        optionLabel="libele" optionValue="id" placeholder="Sélectionner un point de vente"
+                        [showClear]="false" [filter]="true" filterBy="libele,code" [style]="{'width': '100%'}"
+                        appendTo="body">
+                        <ng-template pTemplate="selectedItem" let-ps>
+                            @if(ps) {
+                            <div class="flex items-center gap-2">
+                                <i class="pi pi-map-marker text-blue-500"></i>
+                                <span>{{ ps.libele }} ({{ ps.code }})</span>
+                            </div>
+                            }
+                        </ng-template>
+                        <ng-template pTemplate="item" let-ps>
+                            <div class="flex items-center gap-2 p-2">
+                                <i class="pi pi-map-marker text-orange-500"></i>
+                                <div>
+                                    <div class="font-semibold">{{ ps.libele }}</div>
+                                    <div class="text-sm text-gray-600">Code: {{ ps.code }}</div>
+                                </div>
+                            </div>
+                        </ng-template>
+                    </p-dropdown>
+                    } @else {
+                    <span class="text-gray-500 italic">Rotation active</span>
+                    }
+                </td>
+
+                <!-- Actions -->
+                <td>
+                    @if(agent.isActive) {
+                    <button pButton pRipple icon="pi pi-times-circle" label="Désactiver"
+                        (click)="deactivateRotation(agent)" [loading]="agent.isLoading" [disabled]="agent.isLoading"
+                        class="p-button-danger p-button-sm w-full">
+                    </button>
+                    } @else {
+                    <button pButton pRipple icon="pi pi-check-circle" label="Activer" (click)="activateRotation(agent)"
+                        [loading]="agent.isLoading" [disabled]="agent.isLoading || !agent.selectedPointVenteId"
+                        class="p-button-success p-button-sm w-full">
+                    </button>
+                    }
+                </td>
+            </tr>
+        </ng-template>
+    </p-table>
+    }
+</div>

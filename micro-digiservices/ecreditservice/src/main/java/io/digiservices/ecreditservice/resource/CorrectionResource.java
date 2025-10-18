@@ -22,12 +22,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import javax.swing.text.html.Option;
 import java.net.URI;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static io.digiservices.ecreditservice.utils.RequestUtils.getResponse;
 import static org.springframework.http.HttpStatus.*;
@@ -388,12 +386,12 @@ public class CorrectionResource {
         }
     }
 
+
     @GetMapping("/personnePhysique/{codCliente}")
     public ResponseEntity<Response> getPersonnePhysique(
             @PathVariable(name = "codCliente") String codCliente,
             HttpServletRequest request)
     {
-
         log.info("Endpoint - Récupération personne physique: {}", codCliente);
 
         try {
@@ -401,9 +399,20 @@ public class CorrectionResource {
                     .findPersonnePhysiqueByCodClientes(codCliente);
 
             if (personnePhysique.isPresent()) {
+                // Option 2: Si la méthode retourne Optional<MotifCorrection>
+                Optional<MotifCorrection> motifOpt = correctionService.getMotifCorrectionByPersonneLast(
+                        personnePhysique.get().getId()
+                );
+
+                Map<String, Object> responseData = new HashMap<>();
+                responseData.put("personnePhysique", personnePhysique.get());
+
+                // Ajouter le motif seulement s'il est présent
+                motifOpt.ifPresent(motif -> responseData.put("motif", motif));
+
                 return ResponseEntity.ok(
                         getResponse(request,
-                                Map.of("personnePhysique", personnePhysique.get()),
+                                responseData,
                                 "Personne physique trouvée",
                                 OK));
             } else {
@@ -628,6 +637,36 @@ public class CorrectionResource {
         }
     }
 
+
+    /**
+     * Get motif de correction by personnePhysiqueId for the last
+     */
+    @GetMapping("/motifCorrection/last/{personnePhysiqueId}")
+    public ResponseEntity<Response> getMotifCorrectionByPersonneLast(
+            @PathVariable Long personnePhysiqueId,
+            HttpServletRequest request) {
+
+        log.info("Recherche des motifs de correction pour la personne physique: {}", personnePhysiqueId);
+
+        try {
+            Optional<MotifCorrection> motif = correctionService.getMotifCorrectionByPersonneLast(personnePhysiqueId);
+
+            return ResponseEntity.ok(
+                    getResponse(request,
+                            Map.of("motif", motif),
+                            "Motif de correction trouvé",
+                            OK));
+
+        } catch (Exception e) {
+            log.error("Erreur lors de la recherche", e);
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR)
+                    .body(getResponse(request,
+                            Map.of("error", "Erreur lors de la recherche"),
+                            "Erreur interne du serveur",
+                            INTERNAL_SERVER_ERROR));
+        }
+    }
+
     /**
      * Update statut of motif de correction
      */
@@ -748,7 +787,35 @@ public class CorrectionResource {
         }
     }
 
+    /**
+     * Liste de toutes les Corrections rejette par l'agent de credit
+     * @param authentication
+     * @param request
+     * @return
+     */
+    @GetMapping("/listRejet")
+    public ResponseEntity<Response> listRejet(@NotNull Authentication authentication,
+                                                             HttpServletRequest request) {
+        try {
+            User user = userClient.getUserByUuid(authentication.getName());
+            String codAgencia = userClient.getPointVenteClient(user.getPointventeId()).getCode();
+            // get liste of personne Physique
+            List<PersonnePhysique> listRejet = correctionService.listRejet(codAgencia);
 
+            return ResponseEntity.ok(
+                    getResponse(request,
+                            Map.of("listRejet", listRejet),
+                            "Personne physique trouvée",
+                            OK));
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération", e);
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR)
+                    .body(getResponse(request,
+                            Map.of("error", "Erreur interne"),
+                            "Erreur lors de la récupération",
+                            INTERNAL_SERVER_ERROR));
+        }
+    }
 
 
     private URI getUri() {

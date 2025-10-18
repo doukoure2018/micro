@@ -13,165 +13,225 @@
                         <i class="pi pi-search"></i>
                         <input type="text" pInputText [(ngModel)]="state().searchValue"
                             (ngModelChange)="onSearchChange($event)"
-                            placeholder="Rechercher par nom, code client, ID..." class="search-input" />
+                            placeholder="Rechercher par nom, code client, ID..." class="search-input"
+                            [disabled]="state().isAgentActive === false" />
                     </span>
                     <button pButton icon="pi pi-refresh" class="p-button-rounded p-button-outlined"
-                        pTooltip="Rafraîchir" (click)="refresh()" [loading]="state().loading">
+                        pTooltip="Rafraîchir" (click)="refresh()" [loading]="state().loading || state().checkingStatus">
                     </button>
                 </div>
             </div>
         </ng-template>
 
         <ng-template pTemplate="content">
-            <!-- Indicateur de chargement -->
-            <div *ngIf="state().loading" class="loading-container">
-                <p-progressSpinner></p-progressSpinner>
-                <p>Chargement des données en cours...</p>
+            <!-- Vérification du statut en cours -->
+            <div *ngIf="state().checkingStatus" class="loading-container">
+                <div class="flex flex-col items-center gap-3">
+                    <i class="pi pi-spin pi-spinner text-4xl text-blue-500"></i>
+                    <p class="text-gray-600">Vérification de votre statut d'activation...</p>
+                </div>
             </div>
 
-            <!-- Message d'erreur -->
-            <div *ngIf="state().error && !state().loading" class="error-container">
-                <i class="pi pi-exclamation-triangle"></i>
-                <p>{{ state().error }}</p>
-                <button pButton label="Réessayer" icon="pi pi-refresh" (click)="loadListePPAttente()"></button>
-            </div>
-
-            <!-- Table des données -->
-            <div *ngIf="!state().loading && !state().error" class="table-container">
-                <p-table [value]="filteredList()" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[5, 10, 20, 50]"
-                    [showCurrentPageReport]="true"
-                    currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} entrées"
-                    [globalFilterFields]="['nomCliente', 'codCliente', 'numId', 'telPrincipal']"
-                    styleClass="p-datatable-striped" [tableStyle]="{'min-width': '75rem'}" responsiveLayout="scroll">
-
-                    <ng-template pTemplate="caption">
-                        <div class="table-caption">
-                            <span>{{ filteredList().length }} personne(s) trouvée(s)</span>
-                        </div>
-                    </ng-template>
-
-                    <ng-template pTemplate="header">
-                        <tr>
-                            <th style="width: 3rem">#</th>
-                            <th pSortableColumn="codCliente">
-                                Code Client
-                                <p-sortIcon field="codCliente"></p-sortIcon>
-                            </th>
-                            <th pSortableColumn="nomCliente">
-                                Nom Complet
-                                <p-sortIcon field="nomCliente"></p-sortIcon>
-                            </th>
-                            <th>N° Identité</th>
-                            <th>Téléphone</th>
-                            <th pSortableColumn="fechNacimiento">
-                                Date Naissance
-                                <p-sortIcon field="fechNacimiento"></p-sortIcon>
-                            </th>
-                            <th>Sexe</th>
-                            <th>État Civil</th>
-                            <th pSortableColumn="statutClt">
-                                Statut
-                                <p-sortIcon field="statutClt"></p-sortIcon>
-                            </th>
-                            <th>Agence</th>
-                            <th pSortableColumn="createdAt">
-                                Date Création
-                                <p-sortIcon field="createdAt"></p-sortIcon>
-                            </th>
-                            <th style="width: 12rem">Actions</th>
-                        </tr>
-                    </ng-template>
-
-                    <ng-template pTemplate="body" let-pp let-rowIndex="rowIndex">
-                        <tr>
-                            <td>{{ rowIndex + 1 }}</td>
-                            <td>
-                                <span class="code-badge">{{ pp.codCliente }}</span>
-                            </td>
-                            <td>
-                                <div class="client-info">
-                                    <strong>{{ pp.nomCliente }}</strong>
-                                    <small class="text-muted d-block">{{ pp.nomClient }} {{ pp.prenomClient }}</small>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="id-info">
-                                    <span>{{ pp.numId }}</span>
-                                    <small class="text-muted d-block">Type: {{ pp.typePiece }}</small>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="phone-info">
-                                    <i class="pi pi-phone"></i> {{ pp.telPrincipal }}
-                                    <small *ngIf="pp.telOtro" class="text-muted d-block">
-                                        <i class="pi pi-mobile"></i> {{ pp.telOtro }}
-                                    </small>
-                                </div>
-                            </td>
-                            <td>
-                                <span *ngIf="pp.fechNacimiento">{{ pp.fechNacimiento }}</span>
-                                <span *ngIf="!pp.fechNacimiento" class="text-muted">-</span>
-                            </td>
-                            <td>
-                                <p-tag [value]="getSexeLabel(pp.indSexo)"
-                                    [severity]="pp.indSexo === 'M' ? 'info' : 'success'">
-                                </p-tag>
-                            </td>
-                            <td>
-                                <span>{{ getEtatCivilLabel(pp.estCivil) }}</span>
-                                <small *ngIf="pp.conjoint" class="text-muted d-block">
-                                    Conjoint: {{ pp.conjoint }}
-                                </small>
-                            </td>
-                            <td>
-                                <p-tag [value]="getStatusLabel(pp.correctionStatut)"
-                                    [severity]="getStatusSeverity(pp.correctionStatut)">
-                                </p-tag>
-                            </td>
-                            <td>
-                                <span class="agence-code">{{ pp.codeAgence }}</span>
-                            </td>
-                            <td>
-                                <small>{{ pp.createdAt }}</small>
-                            </td>
-                            <td>
-                                <div class="action-buttons">
-                                    <button pButton icon="pi pi-eye"
-                                        class="p-button-rounded p-button-text p-button-info" pTooltip="Voir détails"
-                                        (click)="viewDetails(pp)">
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    </ng-template>
-
-                    <ng-template pTemplate="emptymessage">
-                        <tr>
-                            <td colspan="12" class="text-center">
-                                <div class="empty-message">
-                                    <i class="pi pi-inbox" style="font-size: 2rem;"></i>
-                                    <p>Aucune personne physique en attente trouvée</p>
-                                </div>
-                            </td>
-                        </tr>
-                    </ng-template>
-
-                    <ng-template pTemplate="summary">
-                        <div class="summary-section">
-                            <div class="summary-stats">
-                                <span class="stat-item">
-                                    <i class="pi pi-users"></i>
-                                    Total: <strong>{{ filteredList().length }}</strong>
-                                </span>
-                                <span class="stat-item" *ngIf="filteredList().length > 0">
-                                    <i class="pi pi-clock"></i>
-                                    En attente: <strong>{{ enAttenteCount }}</strong>
-                                </span>
-
+            <!-- Agent Non Activé - Message d'Avertissement -->
+            <div *ngIf="!state().checkingStatus && state().isAgentActive === false" class="inactive-agent-warning">
+                <div class="warning-content">
+                    <div class="warning-icon">
+                        <i class="pi pi-exclamation-triangle"></i>
+                    </div>
+                    <div class="warning-details">
+                        <h3 class="warning-title">
+                            🚫 Accès Restreint - Agent Non Activé
+                        </h3>
+                        <div class="warning-messages">
+                            <p class="primary-message">
+                                Vous n'êtes pas activé dans ce point de service.
+                            </p>
+                            <p class="secondary-message">
+                                Pour accéder aux fonctionnalités de validation, votre compte doit être activé
+                                par le Responsable d'Agence (RA) pour ce point de service.
+                            </p>
+                            <div class="action-steps">
+                                <h4>📋 Que faire ?</h4>
+                                <ul>
+                                    <li>Contactez votre Responsable d'Agence (RA)</li>
+                                    <li>Demandez l'activation de votre compte pour ce point de service</li>
+                                    <li>Une fois activé, rafraîchissez cette page</li>
+                                </ul>
+                            </div>
+                            <div class="info-note" *ngIf="state().user">
+                                <p>
+                                    <i class="pi pi-info-circle"></i>
+                                    <strong>Note:</strong> Point de service actuel:
+                                    <strong>{{ state().user?.pointventeId! || 'Non assigné' }}</strong>
+                                </p>
                             </div>
                         </div>
-                    </ng-template>
-                </p-table>
+                        <div class="warning-actions">
+                            <button pButton pRipple label="Vérifier mon statut" icon="pi pi-refresh"
+                                (click)="checkAgentStatus(state().user!)" [loading]="state().checkingStatus"
+                                class="p-button-outlined p-button-danger">
+                            </button>
+                            <button pButton pRipple label="Recharger la page" icon="pi pi-replay" (click)="reloadPage()"
+                                class="p-button-outlined">
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contenu Principal - Affiché uniquement si l'agent est actif -->
+            <div *ngIf="state().isAgentActive === true && !state().checkingStatus">
+                <!-- Indicateur de chargement -->
+                <div *ngIf="state().loading" class="loading-container">
+                    <p-progressSpinner></p-progressSpinner>
+                    <p>Chargement des données en cours...</p>
+                </div>
+
+                <!-- Message d'erreur -->
+                <div *ngIf="state().error && !state().loading" class="error-container">
+                    <i class="pi pi-exclamation-triangle"></i>
+                    <p>{{ state().error }}</p>
+                    <button pButton label="Réessayer" icon="pi pi-refresh" (click)="loadListePPAttente()"></button>
+                </div>
+
+                <!-- Table des données -->
+                <div *ngIf="!state().loading && !state().error" class="table-container">
+                    <p-table [value]="filteredList()" [paginator]="true" [rows]="10"
+                        [rowsPerPageOptions]="[5, 10, 20, 50]" [showCurrentPageReport]="true"
+                        currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} entrées"
+                        [globalFilterFields]="['nomCliente', 'codCliente', 'numId', 'telPrincipal']"
+                        styleClass="p-datatable-striped" [tableStyle]="{ 'min-width': '75rem' }"
+                        responsiveLayout="scroll">
+
+                        <ng-template pTemplate="caption">
+                            <div class="table-caption">
+                                <span>{{ filteredList().length }} personne(s) trouvée(s)</span>
+                            </div>
+                        </ng-template>
+
+                        <ng-template pTemplate="header">
+                            <tr>
+                                <th style="width: 3rem">#</th>
+                                <th pSortableColumn="codCliente">
+                                    Code Client
+                                    <p-sortIcon field="codCliente"></p-sortIcon>
+                                </th>
+                                <th pSortableColumn="nomCliente">
+                                    Nom Complet
+                                    <p-sortIcon field="nomCliente"></p-sortIcon>
+                                </th>
+                                <th>N° Identité</th>
+                                <th>Téléphone</th>
+                                <th pSortableColumn="fechNacimiento">
+                                    Date Naissance
+                                    <p-sortIcon field="fechNacimiento"></p-sortIcon>
+                                </th>
+                                <th>Sexe</th>
+                                <th>État Civil</th>
+                                <th pSortableColumn="statutClt">
+                                    Statut
+                                    <p-sortIcon field="statutClt"></p-sortIcon>
+                                </th>
+                                <th>Agence</th>
+                                <th pSortableColumn="createdAt">
+                                    Date Création
+                                    <p-sortIcon field="createdAt"></p-sortIcon>
+                                </th>
+                                <th style="width: 12rem">Actions</th>
+                            </tr>
+                        </ng-template>
+
+                        <ng-template pTemplate="body" let-pp let-rowIndex="rowIndex">
+                            <tr>
+                                <td>{{ rowIndex + 1 }}</td>
+                                <td>
+                                    <span class="code-badge">{{ pp.codCliente }}</span>
+                                </td>
+                                <td>
+                                    <div class="client-info">
+                                        <strong>{{ pp.nomCliente }}</strong>
+                                        <small class="text-muted d-block">{{ pp.nomClient }} {{ pp.prenomClient
+                                            }}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="id-info">
+                                        <span>{{ pp.numId }}</span>
+                                        <small class="text-muted d-block">Type: {{ pp.typePiece }}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="phone-info">
+                                        <i class="pi pi-phone"></i> {{ pp.telPrincipal }}
+                                        <small *ngIf="pp.telOtro" class="text-muted d-block">
+                                            <i class="pi pi-mobile"></i> {{ pp.telOtro }}
+                                        </small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span *ngIf="pp.fechNacimiento">{{ pp.fechNacimiento }}</span>
+                                    <span *ngIf="!pp.fechNacimiento" class="text-muted">-</span>
+                                </td>
+                                <td>
+                                    <p-tag [value]="getSexeLabel(pp.indSexo)"
+                                        [severity]="pp.indSexo === 'M' ? 'info' : 'success'">
+                                    </p-tag>
+                                </td>
+                                <td>
+                                    <span>{{ getEtatCivilLabel(pp.estCivil) }}</span>
+                                    <small *ngIf="pp.conjoint" class="text-muted d-block">
+                                        Conjoint: {{ pp.conjoint }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <p-tag [value]="getStatusLabel(pp.correctionStatut)"
+                                        [severity]="getStatusSeverity(pp.correctionStatut)">
+                                    </p-tag>
+                                </td>
+                                <td>
+                                    <span class="agence-code">{{ pp.codeAgence }}</span>
+                                </td>
+                                <td>
+                                    <small>{{ pp.createdAt }}</small>
+                                </td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button pButton icon="pi pi-eye"
+                                            class="p-button-rounded p-button-text p-button-info" pTooltip="Voir détails"
+                                            (click)="viewDetails(pp)">
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </ng-template>
+
+                        <ng-template pTemplate="emptymessage">
+                            <tr>
+                                <td colspan="12" class="text-center">
+                                    <div class="empty-message">
+                                        <i class="pi pi-inbox" style="font-size: 2rem"></i>
+                                        <p>Aucune personne physique en attente trouvée</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </ng-template>
+
+                        <ng-template pTemplate="summary">
+                            <div class="summary-section">
+                                <div class="summary-stats">
+                                    <span class="stat-item">
+                                        <i class="pi pi-users"></i>
+                                        Total: <strong>{{ filteredList().length }}</strong>
+                                    </span>
+                                    <span class="stat-item" *ngIf="filteredList().length > 0">
+                                        <i class="pi pi-clock"></i>
+                                        En attente: <strong>{{ enAttenteCount }}</strong>
+                                    </span>
+                                </div>
+                            </div>
+                        </ng-template>
+                    </p-table>
+                </div>
             </div>
         </ng-template>
     </p-card>

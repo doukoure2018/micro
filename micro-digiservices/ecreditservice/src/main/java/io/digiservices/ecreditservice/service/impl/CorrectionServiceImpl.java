@@ -10,6 +10,7 @@ import org.apache.kafka.common.errors.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.lang.reflect.Modifier;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -202,6 +203,17 @@ public class CorrectionServiceImpl implements CorrectionService {
         correctionRepository.updateCorrectionStatut(idPersonnePhysique, statut);
 
         log.info("Statut de correction mis à jour avec succès pour ID: {}", idPersonnePhysique);
+    }
+
+    @Override
+    public List<PersonnePhysique> listRejet(String codAgencia) {
+
+        return correctionRepository.listRejet(codAgencia);
+    }
+
+    @Override
+    public Optional<MotifCorrection> getMotifCorrectionByPersonneLast(Long personnePhysiqueId) {
+        return correctionRepository.findMotifsCorrectionByPersonneLast(personnePhysiqueId);
     }
 
     private void validatePersonnePhysique(PersonnePhysique pp) {

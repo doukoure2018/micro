@@ -1,22 +1,24 @@
 import { PersonnePhysique } from '@/interface/personnePhysique';
+import { IResponse } from '@/interface/response';
+import { IUser } from '@/interface/user';
 import { UserService } from '@/service/user.service';
-import { Component, DestroyRef, inject, signal, OnInit, computed } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Component, DestroyRef, inject, signal, OnInit, computed, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { CommonModule } from '@angular/common';
-import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { ProgressSpinnerModule } from 'primeng/progressspinner';
-import { TagModule } from 'primeng/tag';
-import { TooltipModule } from 'primeng/tooltip';
 import { CalendarModule } from 'primeng/calendar';
-import { FormsModule } from '@angular/forms';
+import { CardModule } from 'primeng/card';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
-import { CardModule } from 'primeng/card';
+import { InputTextModule } from 'primeng/inputtext';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { TableModule } from 'primeng/table';
+import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
+import { TooltipModule } from 'primeng/tooltip';
 
 interface StateType {
     listePPAttente: PersonnePhysique[];
@@ -27,8 +29,23 @@ interface StateType {
     dateKeys: string[];
     selectedPP: PersonnePhysique | null;
     searchValue: string;
+    isAgentActive?: boolean;
+    checkingStatus: boolean;
 }
 
+interface StateType {
+    user?: IUser;
+    listePPAttente: PersonnePhysique[];
+    loading: boolean;
+    message: string | undefined;
+    error: string | any;
+    statusOptions: { label: string; value: string }[];
+    dateKeys: string[];
+    selectedPP: PersonnePhysique | null;
+    searchValue: string;
+    isAgentActive?: boolean;
+    checkingStatus: boolean;
+}
 @Component({
     selector: 'app-correction-en-attente',
     standalone: true,
@@ -39,6 +56,7 @@ interface StateType {
 })
 export class CorrectionEnAttenteComponent implements OnInit {
     state = signal<StateType>({
+        user: undefined,
         listePPAttente: [],
         loading: false,
         message: undefined,
@@ -51,10 +69,11 @@ export class CorrectionEnAttenteComponent implements OnInit {
         ],
         dateKeys: ['fecVencim', 'fechNacimiento', 'dateAttente', 'createdAt', 'updatedAt'],
         selectedPP: null,
-        searchValue: ''
+        searchValue: '',
+        isAgentActive: undefined,
+        checkingStatus: false
     });
 
-    // Computed pour le filtrage
     filteredList = computed(() => {
         const searchValue = this.state().searchValue.toLowerCase();
         if (!searchValue) {
@@ -72,10 +91,175 @@ export class CorrectionEnAttenteComponent implements OnInit {
     private messageService = inject(MessageService);
 
     ngOnInit(): void {
-        this.loadListePPAttente();
+        console.log('🔧 ngOnInit - Chargement du user...');
+        this.loadUserAndCheckStatus();
     }
 
+    /**
+     * Charger l'utilisateur connecté et vérifier son statut
+     */
+    private loadUserAndCheckStatus(): void {
+        console.log('👤 Loading user from API...');
+
+        this.state.update((s) => ({ ...s, checkingStatus: true }));
+
+        this.userService
+            .getInstanceUser$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    console.log('📥 User API response:', response);
+
+                    const user = response.data?.user;
+
+                    if (!user) {
+                        console.error('❌ No user in response');
+                        this.state.update((s) => ({
+                            ...s,
+                            checkingStatus: false,
+                            error: 'Impossible de charger les informations utilisateur'
+                        }));
+                        return;
+                    }
+
+                    console.log('✅ User loaded:', {
+                        userId: user.userId,
+                        pointventeId: user.pointventeId,
+                        role: user.role,
+                        firstName: user.firstName,
+                        lastName: user.lastName
+                    });
+
+                    this.state.update((s) => ({ ...s, user }));
+
+                    // Vérifier le statut d'activation
+                    if (user.userId && user.pointventeId) {
+                        this.checkAgentStatus(user);
+                    } else {
+                        console.error('❌ User missing userId or pointventeId');
+                        this.state.update((s) => ({
+                            ...s,
+                            checkingStatus: false,
+                            isAgentActive: false,
+                            error: 'Point de vente non assigné'
+                        }));
+
+                        this.messageService.add({
+                            severity: 'warn',
+                            summary: 'Attention',
+                            detail: 'Aucun point de vente assigné à votre compte',
+                            life: 5000
+                        });
+                    }
+                },
+                error: (error) => {
+                    console.error('❌ Error loading user:', error);
+                    this.state.update((s) => ({
+                        ...s,
+                        checkingStatus: false,
+                        error: 'Erreur lors du chargement des informations utilisateur'
+                    }));
+
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Erreur',
+                        detail: 'Impossible de charger vos informations',
+                        life: 5000
+                    });
+                }
+            });
+    }
+
+    /**
+     * Vérifier si l'agent est actif dans son point de vente
+     */
+    public checkAgentStatus(user: IUser): void {
+        console.log('🔍 checkAgentStatus called for:', {
+            userId: user.userId,
+            pointventeId: user.pointventeId
+        });
+
+        this.userService
+            .checkAgentDisponibility$(user.userId, user.pointventeId!)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    console.log('📥 Status check response:', response);
+
+                    const disponibility = response.data?.disponibilityAgent;
+                    const isActive = disponibility?.isActive || false;
+
+                    console.log('✅ Agent status:', {
+                        isActive,
+                        message: disponibility?.message,
+                        currentPs: disponibility?.currentPs
+                    });
+
+                    this.state.update((state) => ({
+                        ...state,
+                        isAgentActive: isActive,
+                        checkingStatus: false
+                    }));
+
+                    if (!isActive) {
+                        console.warn('⚠️ Agent is NOT active');
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: 'Accès Restreint',
+                            detail: "Vous n'êtes pas activé dans ce point de service.",
+                            life: 10000
+                        });
+                    } else {
+                        console.log('✅ Agent is ACTIVE - Loading data...');
+                        this.messageService.add({
+                            severity: 'success',
+                            summary: 'Accès Autorisé',
+                            detail: 'Chargement des données...',
+                            life: 3000
+                        });
+                        this.loadListePPAttente();
+                    }
+                },
+                error: (error) => {
+                    console.error('❌ Error checking agent status:', error);
+                    this.state.update((state) => ({
+                        ...state,
+                        isAgentActive: false,
+                        checkingStatus: false,
+                        error: 'Impossible de vérifier votre statut'
+                    }));
+
+                    this.messageService.add({
+                        severity: 'warn',
+                        summary: 'Erreur',
+                        detail: "Impossible de vérifier votre statut d'activation.",
+                        life: 5000
+                    });
+                }
+            });
+    }
+
+    /**
+     * Charger la liste des personnes physiques en attente
+     */
+    /**
+     * Charger la liste des personnes physiques en attente
+     */
     loadListePPAttente(): void {
+        console.log('📋 loadListePPAttente called');
+
+        if (this.state().isAgentActive === false) {
+            console.warn('⚠️ Cannot load data - Agent not active');
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Accès Refusé',
+                detail: 'Vous devez être activé pour accéder aux données',
+                life: 3000
+            });
+            return;
+        }
+
+        console.log('🔄 Loading PP Attente list...');
         this.state.update((s) => ({ ...s, loading: true, error: undefined }));
 
         this.userService
@@ -83,9 +267,14 @@ export class CorrectionEnAttenteComponent implements OnInit {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (response) => {
+                    console.log('📥 PP Attente response:', response);
+
                     if (response.code === 200 && response.data?.listePPAttente) {
                         const liste = Array.isArray(response.data.listePPAttente) ? response.data.listePPAttente : [response.data.listePPAttente];
                         const processedList = this.processDateArrays(liste);
+
+                        console.log('✅ Loaded PP Attente:', processedList.length);
+
                         this.state.update((s) => ({
                             ...s,
                             listePPAttente: processedList,
@@ -96,96 +285,88 @@ export class CorrectionEnAttenteComponent implements OnInit {
                         this.messageService.add({
                             severity: 'success',
                             summary: 'Succès',
-                            detail: `${processedList.length} personne(s) physique(s) en attente chargée(s)`
+                            detail: `${processedList.length} personne(s) chargée(s)`,
+                            life: 3000
                         });
                     } else {
+                        console.warn('⚠️ No data in response');
                         this.state.update((s) => ({
                             ...s,
+                            listePPAttente: [],
                             loading: false,
-                            error: response.message || 'Aucune donnée trouvée'
+                            error: 'Aucune donnée trouvée'
                         }));
 
                         this.messageService.add({
-                            severity: 'warn',
-                            summary: 'Attention',
-                            detail: response.message || 'Aucune donnée trouvée'
+                            severity: 'info',
+                            summary: 'Information',
+                            detail: 'Aucune personne physique en attente',
+                            life: 3000
                         });
                     }
                 },
                 error: (error) => {
+                    console.error('❌ Error loading PP Attente:', error);
                     this.state.update((s) => ({
                         ...s,
                         loading: false,
-                        error: error
+                        error: 'Erreur lors du chargement'
                     }));
 
                     this.messageService.add({
                         severity: 'error',
                         summary: 'Erreur',
-                        detail: 'Erreur lors du chargement des données'
+                        detail: 'Erreur lors du chargement des données',
+                        life: 5000
                     });
-
-                    console.error('Erreur lors du chargement:', error);
                 }
             });
     }
 
-    /**
-     * Convertit les tableaux de dates en objets Date
-     */
     processDateArrays(list: any[]): PersonnePhysique[] {
         return list.map((item) => {
             const processed = { ...item };
-
-            // Convertir les tableaux de dates en chaînes formatées
             if (item.fecVencim && Array.isArray(item.fecVencim)) {
                 processed.fecVencim = this.arrayToDateString(item.fecVencim);
             }
-
             if (item.fechNacimiento && Array.isArray(item.fechNacimiento)) {
                 processed.fechNacimiento = this.arrayToDateString(item.fechNacimiento);
             }
-
             if (item.createdAt && Array.isArray(item.createdAt)) {
                 processed.createdAt = this.arrayToDateTimeString(item.createdAt);
             }
-
             if (item.updatedAt && Array.isArray(item.updatedAt)) {
                 processed.updatedAt = this.arrayToDateTimeString(item.updatedAt);
             }
-
             return processed;
         });
     }
 
-    /**
-     * Convertit un tableau de date [année, mois, jour] en chaîne
-     */
     arrayToDateString(dateArray: number[]): string {
         if (!dateArray || dateArray.length < 3) return '';
         const [year, month, day] = dateArray;
         return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
     }
 
-    /**
-     * Convertit un tableau de date-heure en chaîne
-     */
     arrayToDateTimeString(dateArray: number[]): string {
         if (!dateArray || dateArray.length < 6) return '';
         const [year, month, day, hour, minute, second] = dateArray;
         return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year} ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
     }
 
-    /**
-     * Navigation vers les détails
-     */
     viewDetails(pp: PersonnePhysique): void {
+        if (this.state().isAgentActive === false) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Accès Refusé',
+                detail: 'Vous devez être activé',
+                life: 5000
+            });
+            return;
+        }
         this.router.navigate(['dashboards/correction-en-attente/detail', pp.codCliente]);
     }
 
-    /**
-     * Obtenir la couleur du badge selon le statut
-     */
     getStatusSeverity(status: string): 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast' | undefined {
         switch (status) {
             case 'EN_ATTENTE':
@@ -199,24 +380,15 @@ export class CorrectionEnAttenteComponent implements OnInit {
         }
     }
 
-    /**
-     * Obtenir le label du statut
-     */
     getStatusLabel(status: string): string {
         const option = this.state().statusOptions.find((opt) => opt.value === status);
         return option ? option.label : status;
     }
 
-    /**
-     * Obtenir le label du sexe
-     */
     getSexeLabel(sexe: string): string {
         return sexe === 'M' ? 'Masculin' : sexe === 'F' ? 'Féminin' : sexe;
     }
 
-    /**
-     * Obtenir le label de l'état civil
-     */
     getEtatCivilLabel(etatCivil: string): string {
         switch (etatCivil) {
             case 'S':
@@ -234,22 +406,25 @@ export class CorrectionEnAttenteComponent implements OnInit {
         }
     }
 
-    /**
-     * Rafraîchir la liste
-     */
-    refresh(): void {
-        this.state.update((s) => ({ ...s, searchValue: '' }));
-        this.loadListePPAttente();
+    public refresh(): void {
+        console.log('🔄 Refresh clicked');
+        if (this.state().isAgentActive) {
+            this.state.update((s) => ({ ...s, searchValue: '' }));
+            this.loadListePPAttente();
+        } else {
+            this.loadUserAndCheckStatus();
+        }
     }
 
-    /**
-     * Mettre à jour la recherche
-     */
     onSearchChange(value: string): void {
         this.state.update((s) => ({ ...s, searchValue: value }));
     }
 
-    // Add this getter to your component class
+    public reloadPage(): void {
+        window.location.reload();
+    }
+
+    // ⭐ Mise à jour du getter pour utiliser state().user
     get enAttenteCount(): number {
         return this.filteredList().filter((p) => p.correctionStatut === 'EN_ATTENTE').length;
     }

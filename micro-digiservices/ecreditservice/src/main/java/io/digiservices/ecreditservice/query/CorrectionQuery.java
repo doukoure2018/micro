@@ -10,12 +10,12 @@ public class CorrectionQuery {
             fec_vencim, fech_nacimiento, date_attente,
             lieux_naiss, nationalite, pays,
             nom_beneficiario, relac_beneficiario,
-            det_direccion, cod_provincia, district, agence, code_agence,
+            det_direccion, cod_provincia, cod_canton, district, agence, code_agence,
             cod_actividad, cod_profesion, cod_sector, type_entre, nbr_annee2,
             ind_sexo, est_civil, conjoint, nbr_enfant,
             type_habit, nbr_annee,
             statut_clt, nature, prov_serv_destino,
-            id_user, id_manager_agent,correction_statut
+            id_user, id_manager_agent, correction_statut
         ) VALUES (
             :codCliente, :numId, :typePiece,
             :nomCliente, :nomClient, :prenomClient,
@@ -23,12 +23,12 @@ public class CorrectionQuery {
             :fecVencim, :fechNacimiento, :dateAttente,
             :lieuxNaiss, :nationalite, :pays,
             :nomBeneficiario, :relacBeneficiario,
-            :detDireccion, :codProvincia, :district, :agence, :codeAgence,
+            :detDireccion, :codProvincia, :codCanton, :district, :agence, :codeAgence,
             :codActividad, :codProfesion, :codSector, :typeEntre, :nbrAnnee2,
             :indSexo, :estCivil, :conjoint, :nbrEnfant,
             :typeHabit, :nbrAnnee,
             :statutClt, :nature, :provServDestino,
-            :idUser, :idManagerAgent,:correctionStatut
+            :idUser, :idManagerAgent, :correctionStatut
         ) RETURNING *
         """;
 
@@ -72,8 +72,7 @@ public class CorrectionQuery {
             statut_clt = :statutClt,
             nature = :nature,
             prov_serv_destino = :provServDestino,
-            id_user = :idUser,
-            id_manager_agent = :idManagerAgent
+            correction_statut = :correctionStatut
         WHERE cod_cliente = :codCliente
         RETURNING *
         """;
@@ -87,12 +86,24 @@ public class CorrectionQuery {
             """
                SELECT id, cod_cliente, num_id, type_piece, nom_cliente, nom_client, prenom_client, tel_principal, tel_otro,
                       fec_vencim, fech_nacimiento, date_attente, lieux_naiss, nationalite, pays, nom_beneficiario,
-                      relac_beneficiario, det_direccion, cod_provincia, district, agence, code_agence, cod_actividad, 
-                      cod_profesion, cod_sector, type_entre, nbr_annee2, ind_sexo, est_civil, conjoint, nbr_enfant, 
+                      relac_beneficiario, det_direccion, cod_provincia,cod_canton, district, agence, code_agence, cod_actividad,
+                      cod_profesion, cod_sector, type_entre, nbr_annee2, ind_sexo, est_civil, conjoint, nbr_enfant,
                       type_habit, nbr_annee, statut_clt, nature, prov_serv_destino, id_user, id_manager_agent, created_at, 
                       updated_at, correction_statut 
                FROM public.personne_physique 
                WHERE code_agence = :codAgencia 
+            """;
+
+    public static final String GET_ALL_DEMANDE_CORRECTION_ATTENTE_BY_COD_AGENCIA_REJET =
+            """
+               SELECT id, cod_cliente, num_id, type_piece, nom_cliente, nom_client, prenom_client, tel_principal, tel_otro,
+                      fec_vencim, fech_nacimiento, date_attente, lieux_naiss, nationalite, pays, nom_beneficiario,
+                      relac_beneficiario, det_direccion, cod_provincia,cod_canton, district, agence, code_agence, cod_actividad,
+                      cod_profesion, cod_sector, type_entre, nbr_annee2, ind_sexo, est_civil, conjoint, nbr_enfant, 
+                      type_habit, nbr_annee, statut_clt, nature, prov_serv_destino, id_user, id_manager_agent, created_at, 
+                      updated_at, correction_statut 
+               FROM public.personne_physique 
+               WHERE code_agence = :codAgencia AND correction_statut='REJETE'
             """;
 
 
@@ -122,7 +133,13 @@ public class CorrectionQuery {
     public static final String FIND_MOTIFS_BY_PERSONNE = """
         SELECT * FROM motif_correction
         WHERE personne_physique_id = :personnePhysiqueId
-        ORDER BY created_at DESC
+        ORDER BY created_at DESC 
+        """;
+
+    public static final String FIND_MOTIFS_BY_PERSONNE_LAST = """
+        SELECT * FROM motif_correction
+        WHERE personne_physique_id = :personnePhysiqueId
+        ORDER BY created_at DESC LIMIT 1
         """;
 
     public static final String FIND_MOTIFS_BY_AGENCE = """

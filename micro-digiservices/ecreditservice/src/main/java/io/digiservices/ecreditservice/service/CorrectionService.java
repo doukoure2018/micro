@@ -25,4 +25,7 @@ public interface CorrectionService {
 
     void updateStatutPersonnePhysique(Long idPersonnePhysique, String statut);
 
+    List<PersonnePhysique> listRejet(String codAgencia);
+
+    Optional<MotifCorrection> getMotifCorrectionByPersonneLast(Long personnePhysiqueId);
 }

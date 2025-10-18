@@ -12,15 +12,14 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 @SpringBootApplication
 public class DiscoveryServiceApplication {
 
-	public static void main(String[] args) {
+	public static void main(String[] args)
+    {
 		SpringApplication.run(DiscoveryServiceApplication.class, args);
 	}
-
-
     @Bean
     public CommandLineRunner startup(BCryptPasswordEncoder encoder) {
         return args -> {
-            var password = encoder.encode("Moumine80");
+            var password = encoder.encode("admin2711");
             System.out.println(password);
         };
     }

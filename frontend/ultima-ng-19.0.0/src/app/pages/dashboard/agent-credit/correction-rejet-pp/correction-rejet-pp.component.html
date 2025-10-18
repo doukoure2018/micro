@@ -1,0 +1,196 @@
+<div class="correction-rejet-container">
+    <p-toast></p-toast>
+
+    <p-card>
+        <ng-template pTemplate="header">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <i class="pi pi-times-circle"></i>
+                    Corrections Rejetées
+                </h2>
+                <div class="header-actions">
+                    <p-iconField iconPosition="left">
+                        <p-inputIcon styleClass="pi pi-search"></p-inputIcon>
+                        <input type="text" pInputText [(ngModel)]="state().searchValue" placeholder="Rechercher..."
+                            class="search-input" />
+                    </p-iconField>
+                    <button pButton icon="pi pi-refresh" class="p-button-rounded p-button-outlined"
+                        pTooltip="Rafraîchir" (click)="refresh()"></button>
+                    <button pButton icon="pi pi-download" class="p-button-rounded p-button-outlined" pTooltip="Exporter"
+                        (click)="exportData()"></button>
+                </div>
+            </div>
+        </ng-template>
+
+        <ng-template pTemplate="content">
+            <!-- Indicateur de chargement -->
+            <div *ngIf="state().loading" class="loading-container">
+                <p-progressSpinner></p-progressSpinner>
+                <p>Chargement des corrections rejetées...</p>
+            </div>
+
+            <!-- Message d'erreur -->
+            <div *ngIf="state().error && !state().loading" class="error-container">
+                <i class="pi pi-exclamation-triangle"></i>
+                <p>{{ state().error }}</p>
+                <button pButton label="Réessayer" icon="pi pi-refresh" (click)="loadListePPRejet()"></button>
+            </div>
+
+            <!-- Table des données -->
+            <div *ngIf="!state().loading && !state().error" class="table-container">
+                <p-table [value]="filteredList()" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[5, 10, 20, 50]"
+                    [showCurrentPageReport]="true"
+                    currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} entrées"
+                    [globalFilterFields]="['nomCliente', 'codCliente', 'numId', 'telPrincipal', 'codeAgence']"
+                    styleClass="p-datatable-striped" [tableStyle]="{'min-width': '80rem'}" responsiveLayout="scroll">
+
+                    <ng-template pTemplate="caption">
+                        <div class="table-caption">
+                            <div class="caption-left">
+                                <span class="caption-text">
+                                    <strong>{{ filteredCount }}</strong> correction(s) rejetée(s) sur <strong>{{
+                                        totalRejet }}</strong> total
+                                </span>
+                            </div>
+                            <div class="caption-right">
+                                <p-tag [value]="'Rejetées: ' + rejetCount" severity="danger" [rounded]="true"></p-tag>
+                            </div>
+                        </div>
+                    </ng-template>
+
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th style="width: 3rem">#</th>
+                            <th pSortableColumn="codCliente">
+                                Code Client
+                                <p-sortIcon field="codCliente"></p-sortIcon>
+                            </th>
+                            <th pSortableColumn="nomCliente">
+                                Nom Complet
+                                <p-sortIcon field="nomCliente"></p-sortIcon>
+                            </th>
+                            <th>N° Identité</th>
+                            <th>Téléphone</th>
+                            <th pSortableColumn="fechNacimiento">
+                                Date Naissance
+                                <p-sortIcon field="fechNacimiento"></p-sortIcon>
+                            </th>
+                            <th>Sexe</th>
+                            <th>État Civil</th>
+                            <th pSortableColumn="correctionStatut">
+                                Statut
+                                <p-sortIcon field="correctionStatut"></p-sortIcon>
+                            </th>
+                            <th>Agence</th>
+                            <th pSortableColumn="updatedAt">
+                                Date Rejet
+                                <p-sortIcon field="updatedAt"></p-sortIcon>
+                            </th>
+                            <th style="width: 14rem">Actions</th>
+                        </tr>
+                    </ng-template>
+
+                    <ng-template pTemplate="body" let-pp let-rowIndex="rowIndex">
+                        <tr>
+                            <td>{{ rowIndex + 1 }}</td>
+                            <td>
+                                <span class="code-badge">{{ pp.codCliente }}</span>
+                            </td>
+                            <td>
+                                <div class="client-info">
+                                    <strong>{{ pp.nomCliente }}</strong>
+                                    <small class="text-muted d-block">{{ pp.nomClient }} {{ pp.prenomClient }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="id-info">
+                                    <span>{{ pp.numId }}</span>
+                                    <small class="text-muted d-block">Type: {{ pp.typePiece }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="phone-info">
+                                    <i class="pi pi-phone"></i> {{ pp.telPrincipal }}
+                                    <small *ngIf="pp.telOtro && pp.telOtro !== pp.telPrincipal"
+                                        class="text-muted d-block">
+                                        <i class="pi pi-mobile"></i> {{ pp.telOtro }}
+                                    </small>
+                                </div>
+                            </td>
+                            <td>
+                                <span *ngIf="pp.fechNacimiento">{{ pp.fechNacimiento }}</span>
+                                <span *ngIf="!pp.fechNacimiento" class="text-muted">-</span>
+                            </td>
+                            <td>
+                                <p-tag [value]="getSexeLabel(pp.indSexo)"
+                                    [severity]="pp.indSexo === 'M' ? 'info' : 'success'">
+                                </p-tag>
+                            </td>
+                            <td>
+                                <span>{{ getEtatCivilLabel(pp.estCivil) }}</span>
+                                <small *ngIf="pp.conjoint" class="text-muted d-block">
+                                    Conjoint: {{ pp.conjoint }}
+                                </small>
+                            </td>
+                            <td>
+                                <p-tag [value]="getStatusLabel(pp.correctionStatut)"
+                                    [severity]="getStatusSeverity(pp.correctionStatut)">
+                                </p-tag>
+                            </td>
+                            <td>
+                                <span class="agence-code">{{ pp.codeAgence }}</span>
+                            </td>
+                            <td>
+                                <small class="date-text">{{ pp.updatedAt }}</small>
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+
+                                    <button pButton icon="pi pi-pencil"
+                                        class="p-button-rounded p-button-text p-button-warning"
+                                        pTooltip="Traiter la correction" (click)="processRejectedCorrection(pp)">
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </ng-template>
+
+                    <ng-template pTemplate="emptymessage">
+                        <tr>
+                            <td colspan="12" class="text-center">
+                                <div class="empty-message">
+                                    <i class="pi pi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                                    <p style="margin-top: 1rem; font-size: 1.1rem; color: #666;">
+                                        Aucune correction rejetée trouvée
+                                    </p>
+                                    <p style="margin-top: 0.5rem; color: #999;">
+                                        Les corrections rejetées apparaîtront ici
+                                    </p>
+                                </div>
+                            </td>
+                        </tr>
+                    </ng-template>
+
+                    <ng-template pTemplate="summary">
+                        <div class="summary-section">
+                            <div class="summary-stats">
+                                <span class="stat-item">
+                                    <i class="pi pi-users"></i>
+                                    Total: <strong>{{ totalRejet }}</strong>
+                                </span>
+                                <span class="stat-item stat-danger" *ngIf="rejetCount > 0">
+                                    <i class="pi pi-times-circle"></i>
+                                    Rejetées: <strong>{{ rejetCount }}</strong>
+                                </span>
+                                <span class="stat-item" *ngIf="state().searchValue">
+                                    <i class="pi pi-filter"></i>
+                                    Filtrées: <strong>{{ filteredCount }}</strong>
+                                </span>
+                            </div>
+                        </div>
+                    </ng-template>
+                </p-table>
+            </div>
+        </ng-template>
+    </p-card>
+</div>

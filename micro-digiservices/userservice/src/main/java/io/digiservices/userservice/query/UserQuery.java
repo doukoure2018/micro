@@ -232,7 +232,7 @@ public class UserQuery {
                 SELECT id_rotation, message
                 FROM activer_rotation(:userId, :pointVenteId)
             )
-                SELECT 
+                SELECT
                     r.id_rotation AS idRotation,
                     r.id_user AS userId,
                     u.username,
@@ -266,7 +266,7 @@ public class UserQuery {
             FROM rotation r
             JOIN users u ON r.id_user = u.user_id
             JOIN pointvente pv ON r.ps = pv.id
-            WHERE r.id_user = :userId 
+            WHERE r.id_user = :userId
               AND r.statut = true
             ORDER BY r.date_rotation DESC
             LIMIT 1
@@ -299,7 +299,7 @@ public class UserQuery {
     // Sélectionner toutes les rotations (vue)
     public static final String SELECT_ALL_ROTATIONS_QUERY =
             """
-            SELECT 
+            SELECT
                 id_rotation AS idRotation,
                 id_user AS userId,
                 username,
@@ -496,4 +496,64 @@ public class UserQuery {
             WHERE ps = :pointVenteId
             ORDER BY date_rotation DESC
             """;
+
+
+    public static final String GET_LIST_AGENT_CREDIT_BY_AGENCE = """
+                SELECT DISTINCT ON (u.user_id)
+                    d.libele AS delegation_libele,
+                    a.libele AS agence_libele,
+                    u.agence_id,
+                    pv.libele AS pointvente_libele,
+                    pv.code AS pointvente_code,
+                    pv.id AS pointvente_id,
+                    u.user_id,
+                    u.username,
+                    u.first_name,
+                    u.last_name,
+                    u.email,
+                    u.phone,
+                    r.name AS role_name
+                FROM users u
+                INNER JOIN user_roles ur ON u.user_id = ur.user_id
+                INNER JOIN roles r ON ur.role_id = r.role_id
+                -- ⭐ CHANGEMENT CRITIQUE : Récupérer le PS depuis rotation (la dernière rotation)
+                INNER JOIN rotation rot ON u.user_id = rot.id_user
+                INNER JOIN pointvente pv ON rot.ps = pv.id
+                LEFT JOIN agence a ON u.agence_id = a.id
+                LEFT JOIN delegation d ON u.delegation_id = d.id
+                WHERE r.name = 'AGENT_CREDIT'
+                  AND u.agence_id = :agenceId
+                ORDER BY u.user_id, rot.date_rotation DESC
+               """;
+
+
+    public static final String GET_AGENT_DISPONIBILITY =
+                    """
+                             SELECT
+                                    :userId AS user_id,
+                                    :pointVenteId AS point_vente_id,
+                                    COALESCE(
+                                        (SELECT statut
+                                         FROM rotation
+                                         WHERE id_user = :userId
+                                           AND ps = :pointVenteId
+                                           AND statut = true
+                                         LIMIT 1),
+                                        false
+                                    ) AS is_active,
+                                    (SELECT ps
+                                     FROM rotation
+                                     WHERE id_user = :userId
+                                       AND ps = :pointVenteId
+                                       AND statut = true
+                                     LIMIT 1) AS current_ps,
+                                    (SELECT date_rotation
+                                     FROM rotation
+                                     WHERE id_user = :userId
+                                       AND ps = :pointVenteId
+                                       AND statut = true
+                                     ORDER BY date_rotation DESC
+                                     LIMIT 1) AS rotation_date
+                    """;
+
 }
