@@ -138,7 +138,7 @@ public class UserRepositoryImpl implements UserRepository {
             log.info("Location parameters: delegationId={}, agenceId={}, pointventeId={}",
                     delegationId, agenceId, pointventeId);
 
-            if(roleName.equalsIgnoreCase("AGENT_CREDIT") || roleName.equalsIgnoreCase("CAISSE") || roleName.equalsIgnoreCase("AGENT_CORRECTEUR")){
+            if(roleName.equalsIgnoreCase("AGENT_CREDIT")) {
                 // Validate required parameters for AGENT_CREDIT
                 if(delegationId == null || agenceId == null || pointventeId == null) {
                     throw new ApiException("AGENT_CREDIT role requires delegation, agence, and point vente selection");
@@ -146,6 +146,30 @@ public class UserRepositoryImpl implements UserRepository {
 
                 log.info("Creating AGENT_CREDIT account");
                 jdbcClient.sql(CREATE_ACCOUNT_AGENT_CREDIT_STORED_PROCEDURE)
+                        .paramSource(getParamSourceAccountAgentCredit(firstName, lastName, email, username,
+                                password, token, phone, bio, delegationId, agenceId, pointventeId))
+                        .update();
+
+            } else if(roleName.equalsIgnoreCase("CAISSE")) {
+                // Validate required parameters for CAISSE
+                if(delegationId == null || agenceId == null || pointventeId == null) {
+                    throw new ApiException("CAISSE role requires delegation, agence, and point vente selection");
+                }
+
+                log.info("Creating CAISSE account");
+                jdbcClient.sql(CREATE_ACCOUNT_CAISSE_STORED_PROCEDURE)
+                        .paramSource(getParamSourceAccountAgentCredit(firstName, lastName, email, username,
+                                password, token, phone, bio, delegationId, agenceId, pointventeId))
+                        .update();
+
+            } else if(roleName.equalsIgnoreCase("AGENT_CORRECTEUR")) {
+                // Validate required parameters for AGENT_CORRECTEUR
+                if(delegationId == null || agenceId == null || pointventeId == null) {
+                    throw new ApiException("AGENT_CORRECTEUR role requires delegation, agence, and point vente selection");
+                }
+
+                log.info("Creating AGENT_CORRECTEUR account");
+                jdbcClient.sql(CREATE_ACCOUNT_AGENT_CORRECTEUR_STORED_PROCEDURE)
                         .paramSource(getParamSourceAccountAgentCredit(firstName, lastName, email, username,
                                 password, token, phone, bio, delegationId, agenceId, pointventeId))
                         .update();

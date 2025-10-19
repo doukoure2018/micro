@@ -98,6 +98,14 @@ public class UserQuery {
             """
             CALL create_user_agent_credit(:userUuid, :firstName, :lastName, :email, :username, :password, :credentialUuid, :token, :memberId, :delegationId, :agenceId, :pointventeId, :phone, :bio)
             """;
+    public static final String CREATE_ACCOUNT_CAISSE_STORED_PROCEDURE =
+            """
+            CALL create_user_caisse(:userUuid, :firstName, :lastName, :email, :username, :password, :credentialUuid, :token, :memberId, :delegationId, :agenceId, :pointventeId, :phone, :bio)
+            """;
+    public static final String CREATE_ACCOUNT_AGENT_CORRECTEUR_STORED_PROCEDURE =
+            """
+            CALL create_user_agent_correcteur(:userUuid, :firstName, :lastName, :email, :username, :password, :credentialUuid, :token, :memberId, :delegationId, :agenceId, :pointventeId, :phone, :bio)
+            """;
 
     public static final String CREATE_ACCOUNT_DA_STORED_PROCEDURE =
             """
