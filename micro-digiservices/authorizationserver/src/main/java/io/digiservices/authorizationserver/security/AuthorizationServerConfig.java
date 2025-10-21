@@ -22,13 +22,19 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
+import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.OAuth2RefreshToken;
 import org.springframework.security.oauth2.core.OAuth2Token;
+import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
+import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
+import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.springframework.security.oauth2.server.authorization.token.*;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -47,9 +53,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.time.Duration;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.google.common.net.HttpHeaders.X_REQUESTED_WITH;
@@ -256,7 +261,48 @@ public class AuthorizationServerConfig {
 
     @Bean
     public RegisteredClientRepository registeredClientRepository(JdbcTemplate jdbcTemplate) {
-        return new JdbcRegisteredClientRepository(jdbcTemplate);
+        JdbcRegisteredClientRepository repository = new JdbcRegisteredClientRepository(jdbcTemplate);
+
+        // Check if mobile client exists, if not create it
+        try {
+            RegisteredClient existingClient = repository.findByClientId("mobile-app-client");
+            if (existingClient == null) {
+                RegisteredClient mobileClient = RegisteredClient.withId(UUID.randomUUID().toString())
+                        .clientId("mobile-app-client")
+                        .clientName("DIGI CRG Mobile App")
+                        // No client secret for public mobile clients
+                        .clientAuthenticationMethod(ClientAuthenticationMethod.NONE)
+                        // Authorization code flow with refresh token
+                        .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                        .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+                        // Mobile app redirect URI
+                        .redirectUri("com.digiservices.digicrg://oauth2redirect")
+                        .postLogoutRedirectUri("com.digiservices.digicrg://oauth2redirect")
+                        // Required scopes
+                        .scope(OidcScopes.OPENID)
+                        .scope(OidcScopes.PROFILE)
+                        .scope(OidcScopes.EMAIL)
+                        // Client settings - REQUIRE PKCE for mobile apps
+                        .clientSettings(ClientSettings.builder()
+                                .requireProofKey(true) // CRITICAL: Require PKCE for security
+                                .requireAuthorizationConsent(false)
+                                .build())
+                        // Token settings
+                        .tokenSettings(TokenSettings.builder()
+                                .accessTokenTimeToLive(Duration.ofHours(1))
+                                .refreshTokenTimeToLive(Duration.ofDays(30))
+                                .reuseRefreshTokens(false)
+                                .build())
+                        .build();
+
+                repository.save(mobileClient);
+                log.info("Mobile client registered successfully");
+            }
+        } catch (Exception e) {
+            log.error("Error checking/creating mobile client: {}", e.getMessage());
+        }
+
+        return repository;
     }
 
     @Bean
@@ -269,7 +315,10 @@ public class AuthorizationServerConfig {
                 "http://digi-creditrural-io.com",
                 "https://digi-creditrural-io.com",
                 "http://www.digi-creditrural-io.com",
-                "https://www.digi-creditrural-io.com"
+                "https://www.digi-creditrural-io.com",
+                // Add mobile origins
+                "http://localhost", // For local mobile testing
+                "capacitor://localhost" // If using Capacitor
         ));
         corsConfiguration.setAllowedHeaders(Arrays.asList(
                 ORIGIN, ACCESS_CONTROL_ALLOW_ORIGIN, CONTENT_TYPE,
