@@ -10,4 +10,6 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/notification")
 public class NotificationResource {
 
+
+    // this is my notification for sending email
 }
