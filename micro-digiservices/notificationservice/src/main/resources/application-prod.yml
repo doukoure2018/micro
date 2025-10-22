@@ -24,6 +24,14 @@ spring:
             required: true
     default-encoding: UTF-8
 
+
+  sendgrid:
+    api:
+      key: ${SENDGRID_API_KEY}
+    from:
+      email: ${SENDGRID_FROM_EMAIL:support@digi-creditrural-io.com}
+      name: ${SENDGRID_FROM_NAME:Digicrg}
+
   cloud:
     discovery:
       client:

@@ -2,6 +2,8 @@ package io.digiservices.authorizationserver.security;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.digiservices.authorizationserver.model.User;
+import io.digiservices.authorizationserver.repository.UserRepository;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +29,9 @@ import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.OAuth2RefreshToken;
 import org.springframework.security.oauth2.core.OAuth2Token;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
+import org.springframework.security.oauth2.core.oidc.endpoint.OidcParameterNames;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
@@ -79,6 +83,8 @@ public class AuthorizationServerConfig {
 
     @Value("${UI_APP_URL:https://digi-creditrural-io.com}")
     private String uiAppUrl;
+
+    private final UserRepository userRepository;
 
     @Bean
     @Order(1)
@@ -253,12 +259,50 @@ public class AuthorizationServerConfig {
     @Bean
     public OAuth2TokenCustomizer<JwtEncodingContext> customizer() {
         return context -> {
-            if(ACCESS_TOKEN.equals(context.getTokenType())) {
-                context.getClaims().claims(claims -> claims.put(AUTHORITY_KEY, getAuthorities(context)));
+            Authentication principal = context.getPrincipal();
+
+            // Add authorities to access token
+            if (OAuth2TokenType.ACCESS_TOKEN.equals(context.getTokenType())) {
+                context.getClaims().claims(claims ->
+                        claims.put(AUTHORITY_KEY, getAuthoritiesAsString(context))
+                );
+            }
+
+            // Add user info to ID token for Flutter app
+            if (OidcParameterNames.ID_TOKEN.equals(context.getTokenType().getValue())) {
+                try {
+                    // The principal IS the User object!
+                    Object principalObj = principal.getPrincipal();
+
+                    if (principalObj instanceof User) {
+                        User user = (User) principalObj;
+
+                        log.info("✅ Adding user claims to ID token for user: {} (ID: {})",
+                                user.getEmail(), user.getUserId());
+
+                        context.getClaims()
+                                .claim("sub", user.getUserId().toString())
+                                .claim("name", user.getFirstName() + " " + user.getLastName())
+                                .claim("given_name", user.getFirstName())
+                                .claim("family_name", user.getLastName())
+                                .claim("email", user.getEmail())
+                                .claim("preferred_username", user.getEmail());
+                    } else {
+                        log.warn("⚠️ Principal is not a User object: {}", principalObj.getClass().getName());
+                    }
+                } catch (Exception e) {
+                    log.error("❌ Error adding user claims to ID token: {}", e.getMessage(), e);
+                }
             }
         };
     }
 
+    // Method for access token authorities (returns String)
+    private String getAuthoritiesAsString(JwtEncodingContext context) {
+        return context.getPrincipal().getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.joining(","));
+    }
     @Bean
     public RegisteredClientRepository registeredClientRepository(JdbcTemplate jdbcTemplate) {
         JdbcRegisteredClientRepository repository = new JdbcRegisteredClientRepository(jdbcTemplate);
@@ -304,6 +348,8 @@ public class AuthorizationServerConfig {
 
         return repository;
     }
+
+
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
