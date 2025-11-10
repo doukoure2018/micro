@@ -59,21 +59,18 @@
                         <td colspan="8">
                             <div class="detail-container">
                                 <div class="grid">
-                                    <div class="col-12 lg:col-6">
+
+
+                                    <!-- Section Informations Complètes de la Commande -->
+                                    <div class="col-12">
                                         <div class="detail-card">
                                             <div class="detail-header">
                                                 <i class="pi pi-info-circle"></i>
-                                                <span>Informations Générales</span>
+                                                <span>Informations Complètes de la Commande</span>
                                             </div>
                                             <table class="detail-table">
                                                 <tbody>
-                                                    <tr>
-                                                        <td class="label-cell">
-                                                            <i class="pi pi-hashtag mini-icon"></i>
-                                                            ID Commande
-                                                        </td>
-                                                        <td class="value-cell">{{ stock.idCmd }}</td>
-                                                    </tr>
+
                                                     <tr>
                                                         <td class="label-cell">
                                                             <i class="pi pi-user mini-icon"></i>
@@ -82,35 +79,7 @@
                                                         <td class="value-cell">{{ stock.userFullName || stock.username
                                                             }}</td>
                                                     </tr>
-                                                    <tr *ngIf="stock.dateTraitement">
-                                                        <td class="label-cell">
-                                                            <i class="pi pi-calendar mini-icon"></i>
-                                                            Date de traitement
-                                                        </td>
-                                                        <td class="value-cell">{{ formatDate(stock.dateTraitement) }}
-                                                        </td>
-                                                    </tr>
-                                                    <tr *ngIf="stock.traitePar">
-                                                        <td class="label-cell">
-                                                            <i class="pi pi-user-edit mini-icon"></i>
-                                                            Traité par
-                                                        </td>
-                                                        <td class="value-cell">ID: {{ stock.traitePar }}</td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
 
-                                    <!-- Section Organisation -->
-                                    <div class="col-12 lg:col-6">
-                                        <div class="detail-card">
-                                            <div class="detail-header">
-                                                <i class="pi pi-building"></i>
-                                                <span>Organisation</span>
-                                            </div>
-                                            <table class="detail-table">
-                                                <tbody>
                                                     <tr>
                                                         <td class="label-cell">
                                                             <i class="pi pi-map-marker mini-icon"></i>
@@ -132,37 +101,52 @@
                                                         </td>
                                                         <td class="value-cell">{{ stock.pointventeLibele || '-' }}</td>
                                                     </tr>
+                                                    <tr>
+                                                        <td class="label-cell">
+                                                            <i class="pi pi-file-text mini-icon"></i>
+                                                            Description
+                                                        </td>
+                                                        <td class="value-cell">
+                                                            <div
+                                                                *ngIf="parseDetails(stock.detailBonCommande) as details">
+                                                                <p *ngIf="details.detailStandard">
+                                                                    {{ details.detailStandard }}
+                                                                </p>
+                                                                <div *ngIf="!details.detailStandard">
+                                                                    <div *ngFor="let key of Object.keys(details)"
+                                                                        class="mb-1">
+                                                                        <strong>{{ key }}:</strong> {{ details[key] }}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="label-cell">
+                                                            <i class="pi pi-sort-numeric-up mini-icon"></i>
+                                                            Quantité commandée
+                                                        </td>
+                                                        <td class="value-cell">{{ stock.qte || 0 }}</td>
+                                                    </tr>
+                                                    <tr *ngIf="stock.dateTraitement">
+                                                        <td class="label-cell">
+                                                            <i class="pi pi-calendar mini-icon"></i>
+                                                            Date de traitement
+                                                        </td>
+                                                        <td class="value-cell">{{ formatDate(stock.dateTraitement) }}
+                                                        </td>
+                                                    </tr>
+                                                    <tr *ngIf="stock.traitePar">
+                                                        <td class="label-cell">
+                                                            <i class="pi pi-user-edit mini-icon"></i>
+                                                            Traité par
+                                                        </td>
+                                                        <td class="value-cell">ID: {{ stock.traitePar }}</td>
+                                                    </tr>
                                                 </tbody>
                                             </table>
                                         </div>
                                     </div>
-
-                                    <!-- Section Description -->
-                                    <div class="col-12">
-                                        <div class="detail-card">
-                                            <div class="detail-header">
-                                                <i class="pi pi-file-text"></i>
-                                                <span>Description</span>
-                                            </div>
-                                            <div class="description-content">
-                                                <div *ngIf="parseDetails(stock.detailBonCommande) as details">
-                                                    <div class="description-box">
-                                                        <p *ngIf="details.detailStandard" class="description-text">
-                                                            {{ details.detailStandard }}
-                                                        </p>
-                                                        <div *ngIf="!details.detailStandard" class="description-items">
-                                                            <div *ngFor="let key of Object.keys(details)"
-                                                                class="description-item">
-                                                                <span class="item-key">{{ key }}:</span>
-                                                                <span class="item-value">{{ details[key] }}</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
                                     <!-- Section Observations et Motifs -->
                                     <div class="col-12" *ngIf="stock.observations || stock.motif">
                                         <div class="detail-card">

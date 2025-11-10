@@ -6,11 +6,12 @@ public class StockQuery {
             INSERT INTO bon_commande (
                 id_user, service, detail_bon_commande,
                 pointvente_id, agence_id, delegation_id,
-                categorie_id, observations, numero_commande
+                categorie_id, observations, numero_commande,
+                qte
             ) VALUES (
                 :idUser, :service, :detailBonCommande,
                 :pointventeId, :agenceId, :delegationId,
-                :categorieId, :observations, :numeroCommande
+                :categorieId, :observations, :numeroCommande,:qte
             )
         """;
 
@@ -22,7 +23,8 @@ public class StockQuery {
             agence_id = COALESCE(:agenceId, agence_id),
             delegation_id = COALESCE(:delegationId, delegation_id),
             categorie_id = COALESCE(:categorieId, categorie_id),
-            observations = COALESCE(:observations, observations)
+            observations = COALESCE(:observations, observations),
+            qte = COALESCE(:qte, qte),
         WHERE id_cmd = :idCmd
     """;
 
@@ -50,7 +52,8 @@ public class StockQuery {
             bc.state_validation as validation,
             d.libele as delegation_libele, d.id as delegation_id,
             cat.libele as categorie_libele, cat.id as categorie_id,
-            u.username, CONCAT(u.first_name, ' ', u.last_name) as user_full_name
+            u.username, CONCAT(u.first_name, ' ', u.last_name) as user_full_name,
+            bc.qte
         FROM bon_commande bc
         LEFT JOIN pointvente pv ON bc.pointvente_id = pv.id
         LEFT JOIN agence a ON bc.agence_id = a.id
@@ -71,7 +74,8 @@ public class StockQuery {
             bc.state_validation as validation,
             d.libele as delegation_libele, d.id as delegation_id,
             cat.libele as categorie_libele, cat.id as categorie_id,
-            u.username, CONCAT(u.first_name, ' ', u.last_name) as user_full_name
+            u.username, CONCAT(u.first_name, ' ', u.last_name) as user_full_name,
+              bc.qte
         FROM bon_commande bc
         LEFT JOIN pointvente pv ON bc.pointvente_id = pv.id
         LEFT JOIN agence a ON bc.agence_id = a.id
@@ -92,7 +96,8 @@ public class StockQuery {
             bc.state_validation as validation,
             d.libele as delegation_libele, d.id as delegation_id,
             cat.libele as categorie_libele, cat.id as categorie_id,
-            u.username, CONCAT(u.first_name, ' ', u.last_name) as user_full_name
+            u.username, CONCAT(u.first_name, ' ', u.last_name) as user_full_name,
+              bc.qte
         FROM bon_commande bc
         LEFT JOIN pointvente pv ON bc.pointvente_id = pv.id
         LEFT JOIN agence a ON bc.agence_id = a.id
@@ -112,7 +117,8 @@ public class StockQuery {
                     bc.state_validation as validation,
                     d.libele as delegation_libele, d.id as delegation_id,
                     cat.libele as categorie_libele, cat.id as categorie_id,
-                    u.username, CONCAT(u.first_name, ' ', u.last_name) as user_full_name
+                    u.username, CONCAT(u.first_name, ' ', u.last_name) as user_full_name,
+                      bc.qte
                 FROM bon_commande bc
                 LEFT JOIN pointvente pv ON bc.pointvente_id = pv.id
                 LEFT JOIN agence a ON bc.agence_id = a.id
@@ -145,7 +151,8 @@ public class StockQuery {
             d.libele as delegation_libele, d.id as delegation_id,
             bc.state_validation as validation,
             cat.libele as categorie_libele, cat.id as categorie_id,
-            u.username, CONCAT(u.first_name, ' ', u.last_name) as user_full_name
+            u.username, CONCAT(u.first_name, ' ', u.last_name) as user_full_name,
+              bc.qte
         FROM bon_commande bc
         LEFT JOIN pointvente pv ON bc.pointvente_id = pv.id
         LEFT JOIN agence a ON bc.agence_id = a.id
@@ -185,22 +192,18 @@ public class StockQuery {
 
 
     public static final String UPDATE_STOCK_STATE_VALIDATION = """
-            UPDATE bon_commande SET
-                state_validation = :stateValidation,
-                motif = CASE
-                    WHEN :stateValidation IN ('REFUSE', 'REJET')
-                    THEN :motif
-                    ELSE motif
-                END,
-                observations = CASE
-                    WHEN :observations IS NOT NULL
-                    THEN :observations
-                    ELSE observations
-                END,
-                traite_par = :traitePar,
-                date_traitement = CURRENT_TIMESTAMP
-            WHERE id_cmd = :idCmd
-                AND status = 'ENCOURS'
-        """;
+    UPDATE bon_commande SET
+        state_validation = :stateValidation,
+        motif = CASE
+            WHEN :stateValidation IN ('REFUSE', 'REJET')
+            THEN :motif
+            ELSE motif
+        END,
+        observations = COALESCE(:observations, observations),
+        traite_par = :traitePar,
+        date_traitement = CURRENT_TIMESTAMP
+    WHERE id_cmd = :idCmd
+        AND status = 'ENCOURS'
+""";
 
 }

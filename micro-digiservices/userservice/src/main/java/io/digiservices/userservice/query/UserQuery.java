@@ -96,20 +96,20 @@ public class UserQuery {
 
     public static final String CREATE_ACCOUNT_AGENT_CREDIT_STORED_PROCEDURE =
             """
-            CALL create_user_agent_credit(:userUuid, :firstName, :lastName, :email, :username, :password, :credentialUuid, :token, :memberId, :delegationId, :agenceId, :pointventeId, :phone, :bio)
+            CALL create_user_agent_credit(:userUuid, :firstName, :lastName, :email, :username, :password, :credentialUuid, :token, :memberId, :delegationId, :agenceId, :pointventeId, :phone, :bio, :service)
             """;
     public static final String CREATE_ACCOUNT_CAISSE_STORED_PROCEDURE =
             """
-            CALL create_user_caisse(:userUuid, :firstName, :lastName, :email, :username, :password, :credentialUuid, :token, :memberId, :delegationId, :agenceId, :pointventeId, :phone, :bio)
+            CALL create_user_caisse(:userUuid, :firstName, :lastName, :email, :username, :password, :credentialUuid, :token, :memberId, :delegationId, :agenceId, :pointventeId, :phone, :bio, :service)
             """;
     public static final String CREATE_ACCOUNT_AGENT_CORRECTEUR_STORED_PROCEDURE =
             """
-            CALL create_user_agent_correcteur(:userUuid, :firstName, :lastName, :email, :username, :password, :credentialUuid, :token, :memberId, :delegationId, :agenceId, :pointventeId, :phone, :bio)
+            CALL create_user_agent_correcteur(:userUuid, :firstName, :lastName, :email, :username, :password, :credentialUuid, :token, :memberId, :delegationId, :agenceId, :pointventeId, :phone, :bio, :service)
             """;
 
     public static final String CREATE_ACCOUNT_DA_STORED_PROCEDURE =
             """
-            CALL create_user_da(:userUuid, :firstName, :lastName, :email, :username, :password, :credentialUuid, :token, :memberId, :delegationId, :agenceId, :phone, :bio)
+            CALL create_user_da(:userUuid, :firstName, :lastName, :email, :username, :password, :credentialUuid, :token, :memberId, :delegationId, :agenceId, :phone, :bio,:service)
             """;
 
     public static final String SELECT_ACCOUNT_TOKEN_QUERY=

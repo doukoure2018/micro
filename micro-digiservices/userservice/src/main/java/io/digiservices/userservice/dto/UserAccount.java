@@ -32,6 +32,8 @@ public class UserAccount {
     private Long agenceId;
     private Long pointventeId;
 
+    private String service; // the service is added
+
     // Handle both camelCase variations from frontend
     @JsonProperty("pointVenteId")
     public void setPointVenteId(Long pointVenteId) {

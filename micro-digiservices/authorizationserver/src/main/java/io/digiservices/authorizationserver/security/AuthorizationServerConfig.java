@@ -303,6 +303,8 @@ public class AuthorizationServerConfig {
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
     }
+
+
     @Bean
     public RegisteredClientRepository registeredClientRepository(JdbcTemplate jdbcTemplate) {
         JdbcRegisteredClientRepository repository = new JdbcRegisteredClientRepository(jdbcTemplate);
@@ -314,24 +316,18 @@ public class AuthorizationServerConfig {
                 RegisteredClient mobileClient = RegisteredClient.withId(UUID.randomUUID().toString())
                         .clientId("mobile-app-client")
                         .clientName("DIGI CRG Mobile App")
-                        // No client secret for public mobile clients
                         .clientAuthenticationMethod(ClientAuthenticationMethod.NONE)
-                        // Authorization code flow with refresh token
                         .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                         .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-                        // Mobile app redirect URI
                         .redirectUri("com.digiservices.digicrg://oauth2redirect")
                         .postLogoutRedirectUri("com.digiservices.digicrg://oauth2redirect")
-                        // Required scopes
                         .scope(OidcScopes.OPENID)
                         .scope(OidcScopes.PROFILE)
                         .scope(OidcScopes.EMAIL)
-                        // Client settings - REQUIRE PKCE for mobile apps
                         .clientSettings(ClientSettings.builder()
-                                .requireProofKey(true) // CRITICAL: Require PKCE for security
+                                .requireProofKey(true)
                                 .requireAuthorizationConsent(false)
                                 .build())
-                        // Token settings
                         .tokenSettings(TokenSettings.builder()
                                 .accessTokenTimeToLive(Duration.ofHours(1))
                                 .refreshTokenTimeToLive(Duration.ofDays(30))
@@ -341,6 +337,8 @@ public class AuthorizationServerConfig {
 
                 repository.save(mobileClient);
                 log.info("Mobile client registered successfully");
+            } else {
+                log.info("Mobile client already exists");
             }
         } catch (Exception e) {
             log.error("Error checking/creating mobile client: {}", e.getMessage());
@@ -364,7 +362,8 @@ public class AuthorizationServerConfig {
                 "https://www.digi-creditrural-io.com",
                 // Add mobile origins
                 "http://localhost", // For local mobile testing
-                "capacitor://localhost" // If using Capacitor
+                "capacitor://localhost",
+                "com.digiservices.digicrg://"  // ← AJOUTEZ CE SCHÉMA
         ));
         corsConfiguration.setAllowedHeaders(Arrays.asList(
                 ORIGIN, ACCESS_CONTROL_ALLOW_ORIGIN, CONTENT_TYPE,

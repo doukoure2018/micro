@@ -19,7 +19,7 @@ public interface UserService {
     void createAccountUser(String firstName, String lastName, String email, String username, String password, String roleName);
 
     void createAccountAgentCreditAndDa(String firstName, String lastName, String email, String username,
-                                       String password, String roleName, String phone, String bio,
+                                       String password, String roleName, String phone, String bio,String service,
                                        Long delegationId, Long agenceId, Long pointventeId);
     void verifyAccount(String token);
     User verifyPasswordToken(String token);

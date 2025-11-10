@@ -130,7 +130,8 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public String createAccountAgentCreditAndDa(String firstName, String lastName, String email, String username,
                                                 String password, String roleName, String phone, String bio,
-                                                Long delegationId, Long agenceId, Long pointventeId) {
+                                                String service, Long delegationId, Long agenceId, Long pointventeId)
+    {
         try {
             var token = randomUUUID.get();
 
@@ -147,7 +148,7 @@ public class UserRepositoryImpl implements UserRepository {
                 log.info("Creating AGENT_CREDIT account");
                 jdbcClient.sql(CREATE_ACCOUNT_AGENT_CREDIT_STORED_PROCEDURE)
                         .paramSource(getParamSourceAccountAgentCredit(firstName, lastName, email, username,
-                                password, token, phone, bio, delegationId, agenceId, pointventeId))
+                                password, token, phone, bio,service, delegationId, agenceId, pointventeId))
                         .update();
 
             } else if(roleName.equalsIgnoreCase("CAISSE")) {
@@ -159,7 +160,7 @@ public class UserRepositoryImpl implements UserRepository {
                 log.info("Creating CAISSE account");
                 jdbcClient.sql(CREATE_ACCOUNT_CAISSE_STORED_PROCEDURE)
                         .paramSource(getParamSourceAccountAgentCredit(firstName, lastName, email, username,
-                                password, token, phone, bio, delegationId, agenceId, pointventeId))
+                                password, token, phone, bio, service ,delegationId, agenceId, pointventeId))
                         .update();
 
             } else if(roleName.equalsIgnoreCase("AGENT_CORRECTEUR")) {
@@ -171,7 +172,7 @@ public class UserRepositoryImpl implements UserRepository {
                 log.info("Creating AGENT_CORRECTEUR account");
                 jdbcClient.sql(CREATE_ACCOUNT_AGENT_CORRECTEUR_STORED_PROCEDURE)
                         .paramSource(getParamSourceAccountAgentCredit(firstName, lastName, email, username,
-                                password, token, phone, bio, delegationId, agenceId, pointventeId))
+                                password, token, phone, bio,service, delegationId, agenceId, pointventeId))
                         .update();
 
             } else if (roleName.equalsIgnoreCase("DA")){
@@ -183,7 +184,7 @@ public class UserRepositoryImpl implements UserRepository {
                 log.info("Creating DA account");
                 jdbcClient.sql(CREATE_ACCOUNT_DA_STORED_PROCEDURE)
                         .paramSource(getParamSourceAccountDA(firstName, lastName, email, username,
-                                password, token, phone, bio, delegationId, agenceId))
+                                password, token, phone, bio,service,delegationId, agenceId))
                         .update();
 
             } else {
@@ -842,7 +843,7 @@ public class UserRepositoryImpl implements UserRepository {
     private SqlParameterSource getParamSourceAccountAgentCredit(String firstName, String lastName,
                                                                 String email, String username, String password,
                                                                 String token, String phone, String bio,
-                                                                Long delegationId, Long agenceId, Long pointventeId) {
+                                                                String service,Long delegationId, Long agenceId, Long pointventeId) {
         return new MapSqlParameterSource()
                 .addValue("userUuid", randomUUUID.get(), VARCHAR)
                 .addValue("firstName", firstName, VARCHAR)
@@ -857,13 +858,14 @@ public class UserRepositoryImpl implements UserRepository {
                 .addValue("agenceId", agenceId, BIGINT)
                 .addValue("pointventeId", pointventeId, BIGINT)
                 .addValue("phone", phone, VARCHAR)
-                .addValue("bio", bio, VARCHAR);
+                .addValue("bio", bio, VARCHAR)
+                .addValue("service", service, VARCHAR);
     }
 
     // Parameter source for DA
     private SqlParameterSource getParamSourceAccountDA(String firstName, String lastName,
                                                        String email, String username, String password,
-                                                       String token, String phone, String bio,
+                                                       String token, String phone, String bio,String service,
                                                        Long delegationId, Long agenceId) {
         return new MapSqlParameterSource()
                 .addValue("userUuid", randomUUUID.get(), VARCHAR)
@@ -878,7 +880,8 @@ public class UserRepositoryImpl implements UserRepository {
                 .addValue("delegationId", delegationId, BIGINT)
                 .addValue("agenceId", agenceId, BIGINT)
                 .addValue("phone", phone, VARCHAR)
-                .addValue("bio", bio, VARCHAR);
+                .addValue("bio", bio, VARCHAR)
+                .addValue("service", service, VARCHAR);
     }
 
 

@@ -15,7 +15,7 @@
             <form #userForm="ngForm" (ngSubmit)="createAccout(userForm)">
                 <div class="grid grid-cols-12 gap-4">
                     <!-- Role Selection -->
-                    <div class="mb-6 col-span-12">
+                    <div class="mb-6 col-span-12 md:col-span-6">
                         <label for="role" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
                             Roles *
                         </label>
@@ -40,6 +40,29 @@
                         userForm.controls['role'].touched) {
                         <p-message severity="error" text="Role is required"></p-message>
                         }
+                    </div>
+
+                    <!-- Service Selection -->
+                    <div class="mb-6 col-span-12 md:col-span-6">
+                        <label for="service" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
+                            Service
+                        </label>
+                        <p-dropdown [(ngModel)]="selectedService" name="service" [options]="services"
+                            optionLabel="label" [filter]="true" filterBy="label" [showClear]="true"
+                            placeholder="Sélectionner un service" [disabled]="state().submitting" styleClass="w-full"
+                            dataKey="value" appendTo="body" (onChange)="onServiceChange($event.value)">
+                            <ng-template pTemplate="selectedItem" let-service>
+                                <div class="flex items-center">
+                                    <span>{{ service?.label }}</span>
+                                </div>
+                            </ng-template>
+                            <ng-template pTemplate="item" let-service>
+                                <div class="flex items-center">
+                                    <span>{{ service.label }}</span>
+                                    <span class="ml-2 text-xs text-gray-500">({{ service.value }})</span>
+                                </div>
+                            </ng-template>
+                        </p-dropdown>
                     </div>
 
                     <!-- Conditional Location Fields -->
@@ -260,7 +283,7 @@
                                 [disabled]="userForm && userForm.invalid || state().submitting || !canSubmitForm()"
                                 class="w-auto mt-3"></button>
                             <button pButton pRipple type="button" label="Annuler" icon="pi pi-times"
-                                (click)="userForm.resetForm()" [disabled]="state().submitting"
+                                (click)="userForm.resetForm(); selectedService = null" [disabled]="state().submitting"
                                 class="p-button-secondary w-auto mt-3"></button>
                         </div>
 
@@ -275,6 +298,7 @@
                         @if(state().selectedRole) {
                         <div class="mt-4 p-3 bg-gray-100 dark:bg-gray-800 rounded text-xs">
                             <p><strong>Role sélectionné:</strong> {{ state().selectedRole?.name }}</p>
+                            <p><strong>Service:</strong> {{ state().selectedServiceValue || 'Non sélectionné' }}</p>
                             <p><strong>Délégation ID:</strong> {{ state().selectedDelegationId || 'Non sélectionné' }}
                             </p>
                             <p><strong>Agence ID:</strong> {{ state().selectedAgenceId || 'Non sélectionné' }}</p>

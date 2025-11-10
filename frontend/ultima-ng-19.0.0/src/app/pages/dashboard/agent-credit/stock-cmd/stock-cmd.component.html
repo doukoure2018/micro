@@ -22,8 +22,9 @@
                             </small>
                         </div>
                     </div>
-                    <!-- Délégation -->
-                    <div class="col-12 md:col-4">
+
+                    <!-- Délégation - Only show for Exploitation -->
+                    <div class="col-12 md:col-4" *ngIf="stockForm.get('service')?.value === 'DE'">
                         <div class="field">
                             <label for="delegation" class="block mb-2">Délégation</label>
                             <p-dropdown id="delegation" formControlName="delegationId" [options]="delegations()"
@@ -32,8 +33,8 @@
                         </div>
                     </div>
 
-                    <!-- Agence -->
-                    <div class="col-12 md:col-4">
+                    <!-- Agence - Only show for Exploitation -->
+                    <div class="col-12 md:col-4" *ngIf="stockForm.get('service')?.value === 'DE'">
                         <div class="field">
                             <label for="agence" class="block mb-2">Agence</label>
                             <p-dropdown id="agence" formControlName="agenceId" [options]="agences()"
@@ -42,8 +43,8 @@
                         </div>
                     </div>
 
-                    <!-- Point de vente -->
-                    <div class="col-12 md:col-4">
+                    <!-- Point de vente - Only show for Exploitation -->
+                    <div class="col-12 md:col-4" *ngIf="stockForm.get('service')?.value === 'DE'">
                         <div class="field">
                             <label for="pointvente" class="block mb-2">Point de vente</label>
                             <p-dropdown id="pointvente" formControlName="pointventeId" [options]="pointsVente()"
@@ -73,6 +74,21 @@
                             <label for="detail" class="block mb-2">Description générale</label>
                             <textarea pTextarea id="detail" formControlName="detailBonCommande" rows="3" class="w-full"
                                 placeholder="Description détaillée de la demande..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Quantité -->
+                    <div class="col-12 md:col-6">
+                        <div class="field">
+                            <label for="qte" class="block mb-2">
+                                Quantité <span class="text-red-500">*</span>
+                            </label>
+                            <input pInputText id="qte" type="number" formControlName="qte"
+                                placeholder="Entrer la quantité" min="1" class="w-full" />
+                            <small class="p-error"
+                                *ngIf="stockForm.get('qte')?.invalid && stockForm.get('qte')?.touched">
+                                La quantité est obligatoire et doit être supérieure à 0
+                            </small>
                         </div>
                     </div>
 

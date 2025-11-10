@@ -19,6 +19,7 @@ public class CreateStockDto {
     private String service;
 
     private String detailBonCommande;
+    private Integer qte;
     private Long pointventeId;
     private Long agenceId;
     private Long delegationId;

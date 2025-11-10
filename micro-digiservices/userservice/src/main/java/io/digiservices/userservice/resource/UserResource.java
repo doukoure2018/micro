@@ -90,7 +90,7 @@ public class UserResource {
             userService.createAccountAgentCreditAndDa(
                     user.getFirstName(), user.getLastName(), user.getEmail(),
                     user.getUsername(), user.getPassword(), user.getRoleName(),
-                    user.getPhone(), user.getBio(), user.getDelegationId(),
+                    user.getPhone(), user.getBio(),user.getService() ,user.getDelegationId(),
                     user.getAgenceId(), user.getPointventeId()
             );
         } else {

@@ -25,4 +25,5 @@ export interface IUser {
     agenceId?: number;
     delegationId?: number;
     pointventeId?: number;
+    service?: string;
 }

@@ -41,7 +41,8 @@ public class StockRepositoryImpl  implements StockRepository {
                     .addValue("delegationId", stockDto.getDelegationId())
                     .addValue("categorieId", stockDto.getCategorieId())
                     .addValue("observations", stockDto.getObservations())
-                    .addValue("numeroCommande", numeroCommande);
+                    .addValue("numeroCommande", numeroCommande)
+                    .addValue("qte", stockDto.getQte());
 
             KeyHolder keyHolder = new GeneratedKeyHolder();
             jdbcTemplate.update(StockQuery.ADD_STOCK_QUERY, params, keyHolder, new String[]{"id_cmd"});
@@ -280,6 +281,7 @@ public class StockRepositoryImpl  implements StockRepository {
                 .username(rs.getString("username"))
                 .userFullName(rs.getString("user_full_name"))
                 .stateValidation(rs.getString("validation"))
+                .qte(rs.getInt("qte"))
                 .build();
     }
 

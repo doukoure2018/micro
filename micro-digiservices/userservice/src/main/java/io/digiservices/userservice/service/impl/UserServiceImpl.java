@@ -93,14 +93,14 @@ public class UserServiceImpl  implements UserService {
 
     @Override
     public void createAccountAgentCreditAndDa(String firstName, String lastName, String email, String username,
-                                              String password, String roleName, String phone, String bio,
+                                              String password, String roleName, String phone, String bio,String service,
                                               Long delegationId, Long agenceId, Long pointventeId) {
 
         log.info("Service: Creating location-based account for role: {}", roleName);
 
         var token = userRepository.createAccountAgentCreditAndDa(
                 firstName, lastName, email, username,
-                encoder.encode(password), roleName, phone, bio,
+                encoder.encode(password), roleName, phone, bio,service,
                 delegationId, agenceId, pointventeId
         );
 

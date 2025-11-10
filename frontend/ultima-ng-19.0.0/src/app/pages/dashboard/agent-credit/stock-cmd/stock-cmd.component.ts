@@ -130,11 +130,8 @@ export class StockCmdComponent implements OnInit {
 
     // Ajoutez cette propriété
     services = [
-        { label: 'Direction Exploitation', value: 'DE' },
-        { label: 'Direction Inspection', value: 'DI' },
-        { label: "Direction du Système d'Information et de Gestion", value: 'DSIG' },
-        { label: 'Direction des Ressources Humaines', value: 'DRH' },
-        { label: 'Direction Commerciale', value: 'DC' }
+        { label: 'Exploitation', value: 'DE' },
+        { label: 'SIEGE', value: 'SIEGE' }
     ];
 
     initializeForm(): void {
@@ -145,11 +142,26 @@ export class StockCmdComponent implements OnInit {
             agenceId: [{ value: null, disabled: true }],
             pointventeId: [{ value: null, disabled: true }],
             categorieId: [null, Validators.required],
+            qte: [1, [Validators.required, Validators.min(1)]],
             observations: ['']
         });
 
-        // Dynamic form pour les champs additionnels
         this.dynamicForm = this.fb.group({});
+
+        // Listener for service changes
+        this.stockForm.get('service')?.valueChanges.subscribe((service) => {
+            if (service === 'SIEGE') {
+                // Reset and disable location fields for SIEGE
+                this.stockForm.get('delegationId')?.reset();
+                this.stockForm.get('agenceId')?.reset();
+                this.stockForm.get('pointventeId')?.reset();
+            } else if (service === 'DE') {
+                // Reset fields when switching to DE
+                this.stockForm.get('delegationId')?.reset();
+                this.stockForm.get('agenceId')?.reset();
+                this.stockForm.get('pointventeId')?.reset();
+            }
+        });
 
         // Listeners pour les cascades de sélection
         this.stockForm.get('delegationId')?.valueChanges.subscribe((delegationId) => {
@@ -391,6 +403,7 @@ export class StockCmdComponent implements OnInit {
             agenceId: formValue.agenceId,
             pointventeId: formValue.pointventeId,
             categorieId: formValue.categorieId,
+            qte: formValue.qte, // Add this line
             observations: formValue.observations
         };
 

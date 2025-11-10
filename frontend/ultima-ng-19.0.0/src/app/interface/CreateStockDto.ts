@@ -7,4 +7,5 @@ export interface CreateStockDto {
     delegationId?: number;
     categorieId?: number;
     observations?: string;
+    qte?: number;
 }

@@ -23,6 +23,12 @@ import { RippleModule } from 'primeng/ripple';
 import { TextareaModule } from 'primeng/textarea';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 
+// Service interface
+interface Service {
+    label: string;
+    value: string;
+}
+
 @Component({
     selector: 'app-create-user',
     imports: [CommonModule, InputText, TextareaModule, FileUploadModule, FormsModule, ButtonModule, InputGroupModule, RippleModule, MessageModule, ProgressSpinnerModule, PasswordModule, DropdownModule],
@@ -33,6 +39,22 @@ export class CreateUserComponent {
     selectedDelegation: Delegation | null = null;
     selectedAgence: Agence | null = null;
     selectedPointVente: PointVente | null = null;
+    selectedService: Service | null = null;
+
+    // Service options
+    services: Service[] = [
+        { label: 'Direction Système Information', value: 'DSIG' },
+        { label: 'Direction Exploitation', value: 'DE' },
+        { label: 'Direction Inspection', value: 'DI' },
+        { label: 'Direction Financière', value: 'DF' },
+        { label: 'Direction Commerciale', value: 'DC' },
+        { label: 'Direction Resource Humaine', value: 'DRH' },
+        { label: 'Logistique', value: 'Logistique' },
+        { label: 'Contrôle', value: 'Contrôle' },
+        { label: 'Audit', value: 'Audit' },
+        { label: 'Partenariat', value: 'Partenariat' }
+    ];
+
     state = signal<{
         roles?: IRole[];
         delegations?: Delegation[];
@@ -42,6 +64,7 @@ export class CreateUserComponent {
         selectedDelegationId?: number;
         selectedAgenceId?: number;
         selectedPointVenteId?: number;
+        selectedServiceValue?: string;
         usuario?: SG_USUARIOS;
         usernameValidation?: {
             isValid: boolean;
@@ -65,6 +88,7 @@ export class CreateUserComponent {
         loadingPointVentes: false,
         message: undefined,
         error: undefined,
+        selectedServiceValue: undefined,
         usernameValidation: {
             isValid: false,
             isActive: false,
@@ -133,6 +157,14 @@ export class CreateUserComponent {
                     });
                 }
             });
+    }
+
+    // Handle service selection
+    onServiceChange(service: Service): void {
+        this.state.update((state) => ({
+            ...state,
+            selectedServiceValue: service?.value
+        }));
     }
 
     // Handle role selection change
@@ -320,7 +352,7 @@ export class CreateUserComponent {
     shouldShowAgenceField(roleName: string): boolean {
         // DR only needs delegation, not agence
         // AGENT_CREDIT, CAISSE, AGENT_CORRECTEUR, DA and RA need agence
-        return roleName === 'AGENT_CREDIT' || roleName === 'CAISSE' || roleName === 'AGENT_CORRECTEUR' || roleName === 'DA' || roleName === 'RA'; // ✅ AJOUTÉ
+        return roleName === 'AGENT_CREDIT' || roleName === 'CAISSE' || roleName === 'AGENT_CORRECTEUR' || roleName === 'DA' || roleName === 'RA';
     }
 
     // Check if role requires point vente field
@@ -328,7 +360,6 @@ export class CreateUserComponent {
         // AGENT_CREDIT, CAISSE and AGENT_CORRECTEUR need point de vente
         // DA and RA do NOT need point de vente
         return roleName === 'AGENT_CREDIT' || roleName === 'CAISSE' || roleName === 'AGENT_CORRECTEUR';
-        // RA n'est PAS ajouté ici (comme DA)
     }
 
     // Load delegations
@@ -556,12 +587,14 @@ export class CreateUserComponent {
         const delegationId = this.state().selectedDelegationId || this.selectedDelegation?.id || null;
         const agenceId = this.state().selectedAgenceId || this.selectedAgence?.id || null;
         const pointventeId = this.state().selectedPointVenteId || this.selectedPointVente?.id || null;
+        const serviceValue = this.state().selectedServiceValue || this.selectedService?.value || null;
 
         // Log the IDs for debugging
         console.log('Creating user with location IDs:', {
             delegationId,
             agenceId,
             pointventeId,
+            service: serviceValue,
             role: selectedRole.name
         });
 
@@ -611,6 +644,7 @@ export class CreateUserComponent {
             phone: form.value.phone,
             password: form.value.password,
             bio: form.value.bio,
+            service: serviceValue,
             roleName: selectedRole.name,
             roleId: selectedRole.role_id,
             // Add location-based IDs
@@ -638,6 +672,7 @@ export class CreateUserComponent {
                     this.selectedDelegation = null;
                     this.selectedAgence = null;
                     this.selectedPointVente = null;
+                    this.selectedService = null;
                     this.router.navigate(['/dashboards']);
                 },
                 error: (error) => {

@@ -20,4 +20,5 @@ export interface StockResponseDto {
     dateTraitement?: Date | string;
     username?: string;
     userFullName?: string;
+    qte?: number;
 }
