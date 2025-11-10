@@ -465,6 +465,7 @@ services:
 
 volumes:
   microservices_postgres_data_v16:
+    external: true
   pgadminvolume:
 
 networks:

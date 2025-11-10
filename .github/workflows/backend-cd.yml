@@ -192,7 +192,15 @@ jobs:
 
             # Load environment
             export $(cat .env.prod | grep -v '^#' | xargs)
-
+            
+             # Backup database before deployment
+            echo "📦 Creating pre-deployment backup..."
+            if sudo docker ps | grep -q postgrecontainer; then
+              sudo docker exec postgrecontainer pg_dumpall -U ${POSTGRES_USER:-user2711} > ~/backup_pre_deploy_$(date +%Y%m%d_%H%M%S).sql && echo "✅ Backup created" || echo "⚠️ Backup failed (first deployment?)"
+            else
+              echo "ℹ️ PostgreSQL not running, skipping backup (first deployment?)"
+            fi
+            
             # Complete cleanup
             echo "🛑 Complete Docker cleanup..."
             sudo docker compose --env-file .env.prod down --remove-orphans || true
