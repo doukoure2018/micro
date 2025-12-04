@@ -36,4 +36,6 @@ public class User {
     private Long delegationId;
     private Long agenceId;
     private Long pointventeId;
+
+    private String service;
 }

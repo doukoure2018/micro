@@ -1425,7 +1425,7 @@ export class AnalyseFluxTresorerieComponent {
 
                 // Encaissements
                 ventes: [{ value: null, disabled: mois === 0 }],
-                autresRevenus: [{ value: null, disabled: mois === 0 }],
+                autresRevenus: [null],
                 pret: [null],
 
                 // Décaissements
@@ -2065,12 +2065,9 @@ export class AnalyseFluxTresorerieComponent {
 
         if (mois === 0) {
             ventesControl?.disable({ emitEvent: false });
-            autresRevenusControl?.disable({ emitEvent: false });
             ventesControl?.setValue(null, { emitEvent: false });
-            autresRevenusControl?.setValue(null, { emitEvent: false });
         } else {
             ventesControl?.enable({ emitEvent: false });
-            autresRevenusControl?.enable({ emitEvent: false });
         }
 
         // Les champs de calcul restent toujours disabled
@@ -2288,18 +2285,29 @@ export class AnalyseFluxTresorerieComponent {
 
         if (!moisForm) return;
 
-        if (previsionState && previsionState.hasData) {
-            // Charger les données depuis l'état
-            moisForm.patchValue(previsionState.data, { emitEvent: false });
+        // AJOUT: Toujours recalculer le solde de début depuis le mois précédent
+        if (mois > 0) {
+            const prevMoisForm = this.getMoisFormGroup(mois - 1);
+            if (prevMoisForm) {
+                const soldeFin = prevMoisForm.get('soldeFin')?.value || 0;
+                moisForm.patchValue({ soldeDebut: soldeFin }, { emitEvent: false });
+            }
+        }
 
-            // Mettre à jour les états de validation
+        if (previsionState && previsionState.hasData) {
+            // Charger les données depuis l'état SAUF soldeDebut pour mois > 0
+            const dataToLoad = { ...previsionState.data };
+            if (mois > 0) {
+                delete dataToLoad.soldeDebut; // Ne pas écraser le solde calculé
+            }
+            moisForm.patchValue(dataToLoad, { emitEvent: false });
+
             if (previsionState.saved) {
                 moisForm.markAsPristine();
             } else {
                 moisForm.markAsDirty();
             }
         } else {
-            // Initialiser avec des valeurs par défaut
             this.resetMonthToDefaults(mois);
         }
 
@@ -2307,7 +2315,6 @@ export class AnalyseFluxTresorerieComponent {
         this.updateFieldsStateForMonth(mois);
         this.cdr.detectChanges();
     }
-
     // Sauvegarder le mois actuel
     saveCurrentMonth() {
         const currentMonth = this.currentMonth();
@@ -2363,8 +2370,27 @@ export class AnalyseFluxTresorerieComponent {
         // Sauvegarder l'état actuel avant de changer de mois
         this.saveCurrentMonthState();
 
+        // AJOUT: Recalculer le mois actuel pour s'assurer que soldeFin est à jour
+        this.calculateMonth(this.currentMonth());
+
+        // AJOUT: Propager les soldes de fin vers les mois suivants
+        this.propagateSoldes();
+
         // Changer le mois via le service
         this.tresorerieState.setCurrentMonth(mois);
+    }
+
+    // Propager les soldes de fin vers les soldes de début des mois suivants
+    private propagateSoldes(): void {
+        for (let m = 0; m < 12; m++) {
+            const currentMoisForm = this.getMoisFormGroup(m);
+            const nextMoisForm = this.getMoisFormGroup(m + 1);
+
+            if (currentMoisForm && nextMoisForm) {
+                const soldeFin = currentMoisForm.get('soldeFin')?.value || 0;
+                nextMoisForm.patchValue({ soldeDebut: soldeFin }, { emitEvent: false });
+            }
+        }
     }
 
     private saveCurrentMonthState(): void {

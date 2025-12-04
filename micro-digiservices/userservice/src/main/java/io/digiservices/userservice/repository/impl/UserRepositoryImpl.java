@@ -104,14 +104,14 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
-    public String createAccountUser(String firstName, String lastName, String email, String username, String password, String roleName) {
+    public String createAccountUser(String firstName, String lastName, String email, String username, String password, String roleName,String service) {
         try {
             var token = randomUUUID.get();
 
             log.info("Creating standard user account for role: {}", roleName);
 
             jdbcClient.sql(CREATE_ACCOUNT_STORED_PROCEDURE)
-                    .paramSource(getParamSourceAccount(firstName, lastName, email, username, password, token, roleName))
+                    .paramSource(getParamSourceAccount(firstName, lastName, email, username, password, token, roleName,service))
                     .update();
 
             log.info("Standard user account created successfully with token: {}", token);
@@ -187,7 +187,19 @@ public class UserRepositoryImpl implements UserRepository {
                                 password, token, phone, bio,service,delegationId, agenceId))
                         .update();
 
-            } else {
+            } else if (roleName.equalsIgnoreCase("RA")){
+                // Validate required parameters for DA
+                if(delegationId == null || agenceId == null) {
+                    throw new ApiException("RA role requires delegation and agence selection");
+                }
+
+                log.info("Creating DA account");
+                jdbcClient.sql(CREATE_ACCOUNT_DA_STORED_PROCEDURE)
+                        .paramSource(getParamSourceAccountDA(firstName, lastName, email, username,
+                                password, token, phone, bio,service,delegationId, agenceId))
+                        .update();
+
+            }else {
                 throw new ApiException("Invalid role for location-based account creation: " + roleName);
             }
 
@@ -887,7 +899,7 @@ public class UserRepositoryImpl implements UserRepository {
 
     // Keep the original method for other roles
     private SqlParameterSource getParamSourceAccount(String firstName, String lastName, String email,
-                                                     String username, String password, String token, String roleName) {
+                                                     String username, String password, String token, String roleName,String service) {
         return new MapSqlParameterSource()
                 .addValue("userUuid", randomUUUID.get(), VARCHAR)
                 .addValue("firstName", firstName, VARCHAR)
@@ -898,7 +910,8 @@ public class UserRepositoryImpl implements UserRepository {
                 .addValue("credentialUuid", randomUUUID.get(), VARCHAR)
                 .addValue("password", password, VARCHAR)
                 .addValue("token", token, VARCHAR)
-                .addValue("roleName", roleName, VARCHAR);
+                .addValue("roleName", roleName, VARCHAR)
+                .addValue("service", service, VARCHAR);
     }
 
     private SqlParameterSource getParamSource(String firstName, String lastName, String email, String username, String password, String token)

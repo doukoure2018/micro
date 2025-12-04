@@ -26,7 +26,8 @@ public class UserQuery {
                 u.address,
                 u.delegation_id,
                 u.agence_id,
-                u.pointvente_id
+                u.pointvente_id,
+                u.service
                 FROM users u JOIN user_roles ur ON ur.user_id = u.user_id JOIN roles r ON r.role_id = ur.role_id  WHERE u.user_uuid =:userUuid;
               """;
     public static final String SELECT_USER_BY_ID_QUERY=
@@ -91,7 +92,7 @@ public class UserQuery {
 
     public static final String CREATE_ACCOUNT_STORED_PROCEDURE=
             """
-               CALL create_account(:userUuid, :firstName, :lastName, :email, :username, :password, :credentialUuid, :token, :memberId,:roleName)
+               CALL create_account(:userUuid, :firstName, :lastName, :email, :username, :password, :credentialUuid, :token, :memberId,:roleName,:service)
             """;
 
     public static final String CREATE_ACCOUNT_AGENT_CREDIT_STORED_PROCEDURE =
@@ -506,34 +507,62 @@ public class UserQuery {
             """;
 
 
+//    public static final String GET_LIST_AGENT_CREDIT_BY_AGENCE = """
+//                SELECT DISTINCT ON (u.user_id)
+//                    d.libele AS delegation_libele,
+//                    a.libele AS agence_libele,
+//                    u.agence_id,
+//                    pv.libele AS pointvente_libele,
+//                    pv.code AS pointvente_code,
+//                    pv.id AS pointvente_id,
+//                    u.user_id,
+//                    u.username,
+//                    u.first_name,
+//                    u.last_name,
+//                    u.email,
+//                    u.phone,
+//                    r.name AS role_name
+//                FROM users u
+//                INNER JOIN user_roles ur ON u.user_id = ur.user_id
+//                INNER JOIN roles r ON ur.role_id = r.role_id
+//                -- ⭐ CHANGEMENT CRITIQUE : Récupérer le PS depuis rotation (la dernière rotation)
+//                INNER JOIN rotation rot ON u.user_id = rot.id_user
+//                INNER JOIN pointvente pv ON rot.ps = pv.id
+//                LEFT JOIN agence a ON u.agence_id = a.id
+//                LEFT JOIN delegation d ON u.delegation_id = d.id
+//                WHERE r.name = 'AGENT_CREDIT'
+//                  AND u.agence_id = :agenceId
+//                ORDER BY u.user_id, rot.date_rotation DESC
+//               """;
+
+
     public static final String GET_LIST_AGENT_CREDIT_BY_AGENCE = """
                 SELECT DISTINCT ON (u.user_id)
-                    d.libele AS delegation_libele,
-                    a.libele AS agence_libele,
-                    u.agence_id,
-                    pv.libele AS pointvente_libele,
-                    pv.code AS pointvente_code,
-                    pv.id AS pointvente_id,
-                    u.user_id,
-                    u.username,
-                    u.first_name,
-                    u.last_name,
-                    u.email,
-                    u.phone,
-                    r.name AS role_name
-                FROM users u
-                INNER JOIN user_roles ur ON u.user_id = ur.user_id
-                INNER JOIN roles r ON ur.role_id = r.role_id
-                -- ⭐ CHANGEMENT CRITIQUE : Récupérer le PS depuis rotation (la dernière rotation)
-                INNER JOIN rotation rot ON u.user_id = rot.id_user
-                INNER JOIN pointvente pv ON rot.ps = pv.id
-                LEFT JOIN agence a ON u.agence_id = a.id
-                LEFT JOIN delegation d ON u.delegation_id = d.id
-                WHERE r.name = 'AGENT_CREDIT'
-                  AND u.agence_id = :agenceId
-                ORDER BY u.user_id, rot.date_rotation DESC
-               """;
-
+                 d.libele AS delegation_libele,
+                 a.libele AS agence_libele,
+                 u.agence_id,
+                 COALESCE(pv_rot.libele, pv_user.libele) AS pointvente_libele,
+                 COALESCE(pv_rot.code, pv_user.code) AS pointvente_code,
+                 COALESCE(pv_rot.id, pv_user.id) AS pointvente_id,
+                 u.user_id,
+                 u.username,
+                 u.first_name,
+                 u.last_name,
+                 u.email,
+                 u.phone,
+                 r.name AS role_name
+             FROM users u
+             INNER JOIN user_roles ur ON u.user_id = ur.user_id
+             INNER JOIN roles r ON ur.role_id = r.role_id
+             LEFT JOIN rotation rot ON u.user_id = rot.id_user
+             LEFT JOIN pointvente pv_rot ON rot.ps = pv_rot.id
+             LEFT JOIN pointvente pv_user ON u.pointvente_id = pv_user.id
+             LEFT JOIN agence a ON u.agence_id = a.id
+             LEFT JOIN delegation d ON u.delegation_id = d.id
+             WHERE r.name = 'AGENT_CREDIT'
+               AND u.agence_id = :agenceId
+             ORDER BY u.user_id, rot.date_rotation DESC NULLS LAST
+           """;
 
     public static final String GET_AGENT_DISPONIBILITY =
                     """

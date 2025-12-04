@@ -169,7 +169,8 @@ public class DemandeIndServiceImpl implements DemandeIndService {
 
     @Override
     @Transactional
-    public DemandeResponse addDemandeIndWithGaranties(DemandeIndividuel demandeIndividuel) {
+    public DemandeResponse addDemandeIndWithGaranties(DemandeIndividuel demandeIndividuel)
+    {
         log.info("Création d'une nouvelle demande avec {} garanties",
                 demandeIndividuel.getGaranties() != null ? demandeIndividuel.getGaranties().size() : 0);
 

@@ -206,4 +206,128 @@ public class StockQuery {
         AND status = 'ENCOURS'
 """;
 
+
+    public static final String GET_SYNTHESE_BONS_COMMANDE_DELEGATIONS =
+            """
+            SELECT
+                d.libele as delegation,
+                COUNT(bc.id_cmd) as nombreCommandes
+            FROM bon_commande bc
+            LEFT JOIN delegation d ON bc.delegation_id = d.id
+            WHERE bc.state_validation = 'VALIDE'
+              AND bc.traite_par IS NOT NULL
+            GROUP BY d.id, d.libele
+            ORDER BY nombreCommandes DESC
+            """;
+
+    public static final String GET_BONS_COMMANDE_PAR_DELEGATION =
+            """
+            SELECT
+                bc.id_cmd as idCmd,
+                bc.numero_commande as numeroCommande,
+                bc.service,
+                bc.detail_bon_commande as detailBonCommande,
+                bc.status,
+                bc.date_creation as dateCreation,
+                bc.date_traitement as dateTraitement,
+                bc.observations,
+                
+                d.libele as delegation,
+                a.libele as agence,
+                pv.libele as pointVente,
+                pv.code as codePointVente,
+                
+                CONCAT(u.first_name, ' ', u.last_name) as nomCompletUtilisateur,
+                u.first_name as prenomUtilisateur,
+                u.last_name as nomUtilisateur,
+                u.phone as contactUtilisateur,
+                u.email as emailUtilisateur,
+                
+                CONCAT(ut.first_name, ' ', ut.last_name) as nomCompletTraitant,
+                
+                ROUND(EXTRACT(EPOCH FROM (bc.date_traitement - bc.date_creation))/3600::numeric, 2) as dureeTraitementHeures,
+                EXTRACT(DAY FROM (bc.date_traitement - bc.date_creation)) as dureeTraitementJours,
+                
+                CASE 
+                    WHEN EXTRACT(DAY FROM (bc.date_traitement - bc.date_creation)) >= 1 THEN
+                        CONCAT(
+                            EXTRACT(DAY FROM (bc.date_traitement - bc.date_creation))::text, ' jour(s) ',
+                            EXTRACT(HOUR FROM (bc.date_traitement - bc.date_creation))::text, 'h ',
+                            EXTRACT(MINUTE FROM (bc.date_traitement - bc.date_creation))::text, 'min'
+                        )
+                    ELSE
+                        CONCAT(
+                            EXTRACT(HOUR FROM (bc.date_traitement - bc.date_creation))::text, 'h ',
+                            EXTRACT(MINUTE FROM (bc.date_traitement - bc.date_creation))::text, 'min'
+                        )
+                END as dureeTraitementFormatee
+            
+            FROM bon_commande bc
+            INNER JOIN users u ON bc.id_user = u.user_id
+            INNER JOIN users ut ON bc.traite_par = ut.user_id
+            LEFT JOIN delegation d ON bc.delegation_id = d.id
+            LEFT JOIN agence a ON bc.agence_id = a.id
+            LEFT JOIN pointvente pv ON bc.pointvente_id = pv.id
+            
+            WHERE bc.state_validation = 'VALIDE' 
+              AND bc.traite_par IS NOT NULL
+              AND d.libele = :delegation
+            
+            ORDER BY bc.date_creation DESC
+            """;
+
+    public static final String GET_TOUS_BONS_COMMANDE_VALIDES =
+            """
+            SELECT 
+                bc.id_cmd as idCmd,
+                bc.numero_commande as numeroCommande,
+                bc.service,
+                bc.detail_bon_commande as detailBonCommande,
+                bc.status,
+                bc.date_creation as dateCreation,
+                bc.date_traitement as dateTraitement,
+                bc.observations,
+                
+                d.libele as delegation,
+                a.libele as agence,
+                pv.libele as pointVente,
+                pv.code as codePointVente,
+                
+                CONCAT(u.first_name, ' ', u.last_name) as nomCompletUtilisateur,
+                u.first_name as prenomUtilisateur,
+                u.last_name as nomUtilisateur,
+                u.phone as contactUtilisateur,
+                u.email as emailUtilisateur,
+                
+                CONCAT(ut.first_name, ' ', ut.last_name) as nomCompletTraitant,
+                
+                ROUND(EXTRACT(EPOCH FROM (bc.date_traitement - bc.date_creation))/3600::numeric, 2) as dureeTraitementHeures,
+                EXTRACT(DAY FROM (bc.date_traitement - bc.date_creation)) as dureeTraitementJours,
+                
+                CASE 
+                    WHEN EXTRACT(DAY FROM (bc.date_traitement - bc.date_creation)) >= 1 THEN
+                        CONCAT(
+                            EXTRACT(DAY FROM (bc.date_traitement - bc.date_creation))::text, ' jour(s) ',
+                            EXTRACT(HOUR FROM (bc.date_traitement - bc.date_creation))::text, 'h ',
+                            EXTRACT(MINUTE FROM (bc.date_traitement - bc.date_creation))::text, 'min'
+                        )
+                    ELSE
+                        CONCAT(
+                            EXTRACT(HOUR FROM (bc.date_traitement - bc.date_creation))::text, 'h ',
+                            EXTRACT(MINUTE FROM (bc.date_traitement - bc.date_creation))::text, 'min'
+                        )
+                END as dureeTraitementFormatee
+            
+            FROM bon_commande bc
+            INNER JOIN users u ON bc.id_user = u.user_id
+            INNER JOIN users ut ON bc.traite_par = ut.user_id
+            LEFT JOIN delegation d ON bc.delegation_id = d.id
+            LEFT JOIN agence a ON bc.agence_id = a.id
+            LEFT JOIN pointvente pv ON bc.pointvente_id = pv.id
+            
+            WHERE bc.state_validation = 'VALIDE' 
+              AND bc.traite_par IS NOT NULL
+            
+            ORDER BY bc.date_creation DESC
+            """;
 }

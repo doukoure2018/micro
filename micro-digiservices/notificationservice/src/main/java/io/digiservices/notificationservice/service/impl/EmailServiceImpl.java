@@ -4,6 +4,7 @@ import com.sendgrid.*;
 import com.sendgrid.helpers.mail.Mail;
 import com.sendgrid.helpers.mail.objects.Content;
 import com.sendgrid.helpers.mail.objects.Email;
+import io.digiservices.notificationservice.domain.StockNotificationData;
 import io.digiservices.notificationservice.exception.ApiException;
 import io.digiservices.notificationservice.service.EmailService;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,9 @@ public class EmailServiceImpl implements EmailService {
     public static final String NEW_COMMENT_TEMPLATE = "newcomment";
     public static final String NEW_FILE_TEMPLATE = "newfile";
     public static final String NEW_TICKET_REQUEST = "New Support Ticket";
+
+    public static final String STOCK_VALIDATION_TEMPLATE = "stock_validation";
+    public static final String STOCK_REJECTION_TEMPLATE = "stock_rejection";
 
     private final TemplateEngine templateEngine;
 
@@ -83,6 +87,47 @@ public class EmailServiceImpl implements EmailService {
         } catch (Exception exception) {
             log.error("Error sending password reset email: {}", exception.getMessage(), exception);
             throw new ApiException("Unable to send email");
+        }
+    }
+
+    @Override
+    @Async
+    public void sendStockValidationEmail(StockNotificationData data) {
+        try {
+            var context = new Context();
+            context.setVariables(Map.of(
+                    "nomDR", data.getNomDR(),
+                    "delegation", data.getDelegation(),
+                    "nombreCommandes", data.getNombreCommandes(),
+                    "detailsCommandes", data.getDetailsCommandes()
+            ));
+            var htmlContent = templateEngine.process(STOCK_VALIDATION_TEMPLATE, context);
+
+            sendEmail(data.getEmailDR(), "Validation des Bons de Commande - " + data.getDelegation(), htmlContent);
+            log.info("Stock validation email sent to: {}", data.getEmailDR());
+        } catch (Exception exception) {
+            log.error("Error sending stock validation email: {}", exception.getMessage(), exception);
+        }
+    }
+
+    @Override
+    @Async
+    public void sendStockRejectionEmail(StockNotificationData data) {
+        try {
+            var context = new Context();
+            context.setVariables(Map.of(
+                    "nomDR", data.getNomDR(),
+                    "delegation", data.getDelegation(),
+                    "nombreCommandes", data.getNombreCommandes(),
+                    "detailsCommandes", data.getDetailsCommandes(),
+                    "motif", data.getMotif()
+            ));
+            var htmlContent = templateEngine.process(STOCK_REJECTION_TEMPLATE, context);
+
+            sendEmail(data.getEmailDR(), "Rejet des Bons de Commande - " + data.getDelegation(), htmlContent);
+            log.info("Stock rejection email sent to: {}", data.getEmailDR());
+        } catch (Exception exception) {
+            log.error("Error sending stock rejection email: {}", exception.getMessage(), exception);
         }
     }
 

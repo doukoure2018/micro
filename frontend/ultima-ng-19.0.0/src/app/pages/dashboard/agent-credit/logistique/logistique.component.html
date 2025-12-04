@@ -1,0 +1,388 @@
+<div class="logistique-container">
+    <!-- Toast pour les notifications -->
+    <p-toast position="top-right"></p-toast>
+
+    <!-- Header -->
+    <p-card styleClass="header-card mb-4">
+        <div class="flex justify-content-between align-items-center">
+            <div>
+                <h2 class="text-2xl font-bold text-primary m-0 mb-2">
+                    <i class="pi pi-box mr-2"></i>
+                    Gestion Logistique
+                </h2>
+                <p class="text-600 m-0">
+                    Bienvenue, {{ state().user?.firstName }} {{ state().user?.lastName }}
+                </p>
+            </div>
+            <p-button icon="pi pi-refresh" label="Actualiser" [outlined]="true" (onClick)="loadSyntheseDelegations()"
+                [loading]="state().loading">
+            </p-button>
+        </div>
+    </p-card>
+
+    <!-- Loading Spinner -->
+    @if (state().loading) {
+    <div class="flex justify-content-center align-items-center" style="min-height: 300px;">
+        <div class="text-center">
+            <p-progressSpinner></p-progressSpinner>
+            <p class="mt-3 text-600">Chargement de la synthèse...</p>
+        </div>
+    </div>
+    }
+
+    <!-- Synthèse par Délégation -->
+    @if (!state().loading && state().syntheseDelegations.length > 0) {
+    <p-card>
+        <ng-template pTemplate="header">
+            <div class="p-4 border-bottom-1 surface-border">
+                <h3 class="m-0 text-xl font-semibold">
+                    <i class="pi pi-chart-bar mr-2 text-primary"></i>
+                    Synthèse des Commandes par Délégation
+                </h3>
+            </div>
+        </ng-template>
+
+        <p-table [value]="state().syntheseDelegations" [tableStyle]="{ 'min-width': '50rem' }"
+            styleClass="p-datatable-striped">
+
+            <ng-template pTemplate="header">
+                <tr>
+                    <th style="width: 5%">#</th>
+                    <th>Délégation</th>
+                    <th class="text-center" style="width: 20%">Nombre de Commandes</th>
+                    <th class="text-center" style="width: 15%">Actions</th>
+                </tr>
+            </ng-template>
+
+            <ng-template pTemplate="body" let-synthese let-rowIndex="rowIndex">
+                <tr>
+                    <td>{{ rowIndex + 1 }}</td>
+                    <td>
+                        <span class="font-semibold text-primary">
+                            {{ synthese.delegation || 'Non spécifiée' }}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <p-chip [label]="getNombreCommandes(synthese.nombreCommandes).toString()"
+                            styleClass="bg-primary">
+                        </p-chip>
+                    </td>
+                    <td class="text-center">
+                        <p-button icon="pi pi-eye" label="Voir Détails" severity="info" size="small"
+                            (onClick)="loadBonsCommande(synthese.delegation)"
+                            [loading]="state().searching && state().selectedDelegation === synthese.delegation">
+                        </p-button>
+                    </td>
+                </tr>
+            </ng-template>
+
+            <ng-template pTemplate="footer">
+                <tr>
+                    <td colspan="2" class="text-right font-bold">TOTAL:</td>
+                    <td class="text-center">
+                        <p-chip [label]="getTotalCommandes().toString()" styleClass="bg-green-500">
+                        </p-chip>
+                    </td>
+                    <td></td>
+                </tr>
+            </ng-template>
+        </p-table>
+    </p-card>
+    }
+
+    <!-- Dialog Modal de Détails -->
+    <p-dialog [(visible)]="state().showDetailModal" [header]="'Bons de Commande - ' + state().selectedDelegation"
+        [modal]="true" [style]="{ width: '95vw', 'max-width': '1400px' }" [draggable]="false" [resizable]="false">
+
+        <ng-template pTemplate="header">
+            <div class="flex align-items-center gap-2">
+                <i class="pi pi-list text-2xl"></i>
+                <span class="font-semibold text-xl">Bons de Commande - {{ state().selectedDelegation }}</span>
+            </div>
+        </ng-template>
+
+        @if (state().bonsCommandeDelegation.length > 0) {
+        <div class="mb-4 p-3 surface-100 border-round flex justify-content-between align-items-center">
+            <div class="flex align-items-center gap-2">
+                <i class="pi pi-info-circle text-xl text-blue-500"></i>
+                <span class="font-semibold">
+                    {{ state().bonsCommandeDelegation.length }} commande(s) trouvée(s)
+                </span>
+            </div>
+            <p-button icon="pi pi-print" label="Imprimer" severity="primary" (onClick)="print()">
+            </p-button>
+        </div>
+
+        <p-table [value]="state().bonsCommandeDelegation" [scrollable]="true" scrollHeight="500px"
+            styleClass="p-datatable-sm p-datatable-striped">
+
+            <ng-template pTemplate="header">
+                <tr>
+                    <th>N° Commande</th>
+                    <th>Service</th>
+                    <th>Détails</th>
+                    <th>Utilisateur</th>
+                    <th>Contact</th>
+                    <th>Agence</th>
+                    <th>Point Vente</th>
+                    <th>Statut</th>
+                    <th>Date Création</th>
+                    <th>Durée</th>
+                </tr>
+            </ng-template>
+
+            <ng-template pTemplate="body" let-bon>
+                <tr>
+                    <td><strong>{{ bon.numeroCommande }}</strong></td>
+                    <td>{{ bon.service }}</td>
+                    <td>
+                        <span [pTooltip]="parseDetailCommande(bon.detailBonCommande)" tooltipPosition="top">
+                            {{ parseDetailCommande(bon.detailBonCommande) | slice:0:30 }}
+                            @if (parseDetailCommande(bon.detailBonCommande).length > 30) {
+                            <span>...</span>
+                            }
+                        </span>
+                    </td>
+                    <td>{{ bon.nomCompletUtilisateur }}</td>
+                    <td>
+                        <a [href]="'tel:' + bon.contactUtilisateur" class="text-primary no-underline">
+                            {{ bon.contactUtilisateur || 'N/A' }}
+                        </a>
+                    </td>
+                    <td>{{ bon.agence }}</td>
+                    <td>
+                        {{ bon.pointVente }}
+                        <br>
+                        <small class="text-500">({{ bon.codePointVente }})</small>
+                    </td>
+                    <td>
+                        <p-tag [value]="getStatusLabel(bon.status)" [severity]="getStatusSeverity(bon.status)">
+                        </p-tag>
+                    </td>
+                    <td>{{ formatDate(bon.dateCreation) }}</td>
+                    <td>{{ bon.dureeTraitementFormatee }}</td>
+                </tr>
+            </ng-template>
+        </p-table>
+        } @else {
+        <p-message severity="info" text="Aucun bon de commande trouvé pour cette délégation." styleClass="w-full">
+        </p-message>
+        }
+
+        <ng-template pTemplate="footer">
+            <p-button label="Fermer" icon="pi pi-times" severity="secondary" (onClick)="closeDetailModal()">
+            </p-button>
+        </ng-template>
+    </p-dialog>
+
+    <!-- Vue d'impression -->
+    @if (state().showPrintView) {
+    <div class="print-view">
+        <div class="print-header no-print">
+            <div class="flex gap-2 p-3 bg-white border-round shadow-2">
+                <p-button icon="pi pi-print" label="Imprimer" severity="primary" (onClick)="print()">
+                </p-button>
+                <p-button icon="pi pi-times" label="Fermer" severity="secondary" (onClick)="closePrint()">
+                </p-button>
+            </div>
+        </div>
+
+        <div class="print-content">
+            <div class="print-page bg-white p-5 shadow-3 border-round">
+                <!-- En-tête du rapport -->
+                <div class="text-center mb-5 pb-4 border-bottom-3 border-primary">
+                    <h1 class="text-4xl font-bold text-900 mb-2">Rapport des Bons de Commande</h1>
+                    <h2 class="text-2xl text-primary mb-2">Délégation: {{ state().selectedDelegation }}</h2>
+                    <p class="text-600 text-lg">Généré le: {{ getCurrentDate() }}</p>
+                </div>
+
+                <!-- Statistiques en cartes -->
+                <div class="grid mb-5">
+                    <div class="col-12 md:col-6 lg:col-3">
+                        <div class="surface-card p-4 border-round border-2 border-primary shadow-1">
+                            <div class="text-center">
+                                <i class="pi pi-list text-6xl text-primary mb-3"></i>
+                                <div class="text-500 font-medium mb-2">Total Commandes</div>
+                                <div class="text-4xl font-bold text-primary mb-1">
+                                    {{ state().bonsCommandeDelegation.length }}
+                                </div>
+                                <div class="text-500 text-sm">100%</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 md:col-6 lg:col-3">
+                        <div class="surface-card p-4 border-round border-2 border-yellow-500 shadow-1">
+                            <div class="text-center">
+                                <i class="pi pi-clock text-6xl text-yellow-500 mb-3"></i>
+                                <div class="text-500 font-medium mb-2">En Cours</div>
+                                <div class="text-4xl font-bold text-yellow-600 mb-1">
+                                    {{ getCommandesEnCours() }}
+                                </div>
+                                <div class="text-500 text-sm">{{ getPourcentageStatut('ENCOURS') }}%</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 md:col-6 lg:col-3">
+                        <div class="surface-card p-4 border-round border-2 border-green-500 shadow-1">
+                            <div class="text-center">
+                                <i class="pi pi-check-circle text-6xl text-green-500 mb-3"></i>
+                                <div class="text-500 font-medium mb-2">Terminées</div>
+                                <div class="text-4xl font-bold text-green-600 mb-1">
+                                    {{ getCommandesTerminees() }}
+                                </div>
+                                <div class="text-500 text-sm">{{ getPourcentageStatut('TERMINE') }}%</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 md:col-6 lg:col-3">
+                        <div class="surface-card p-4 border-round border-2 border-red-500 shadow-1">
+                            <div class="text-center">
+                                <i class="pi pi-times-circle text-6xl text-red-500 mb-3"></i>
+                                <div class="text-500 font-medium mb-2">Annulées</div>
+                                <div class="text-4xl font-bold text-red-600 mb-1">
+                                    {{ getCommandesAnnulees() }}
+                                </div>
+                                <div class="text-500 text-sm">{{ getPourcentageStatut('ANNULE') }}%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Liste détaillée des commandes -->
+                <h3 class="text-2xl font-bold text-900 mb-4 mt-5">Détails des Commandes</h3>
+
+                @for (bon of state().bonsCommandeDelegation; track bon.idCmd; let i = $index) {
+                <div class="surface-card mb-4 border-round shadow-2 page-break-avoid">
+                    <!-- En-tête de la commande -->
+                    <div class="bg-primary-50 p-3 border-round-top flex justify-content-between align-items-center">
+                        <div class="flex align-items-center gap-2">
+                            <span
+                                class="bg-primary text-white border-circle w-2rem h-2rem flex align-items-center justify-content-center font-bold">
+                                {{ i + 1 }}
+                            </span>
+                            <h4 class="m-0 font-bold text-900">Commande N° {{ bon.numeroCommande }}</h4>
+                        </div>
+                        <p-tag [value]="getStatusLabel(bon.status)" [severity]="getStatusSeverity(bon.status)"
+                            styleClass="text-lg px-3 py-2">
+                        </p-tag>
+                    </div>
+
+                    <!-- Corps de la commande -->
+                    <div class="p-4">
+                        <div class="grid">
+                            <!-- Colonne gauche -->
+                            <div class="col-12 md:col-6">
+                                <div class="mb-3">
+                                    <div class="text-primary font-bold mb-1">Service</div>
+                                    <div class="text-900">{{ bon.service }}</div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="text-primary font-bold mb-1">Détails de la commande</div>
+                                    <div class="text-900">{{ parseDetailCommande(bon.detailBonCommande) }}</div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="text-primary font-bold mb-1">Utilisateur</div>
+                                    <div class="text-900">{{ bon.nomCompletUtilisateur }}</div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="text-primary font-bold mb-1">Contact</div>
+                                    <div class="text-900">
+                                        <i class="pi pi-phone mr-2"></i>
+                                        {{ bon.contactUtilisateur || 'N/A' }}
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="text-primary font-bold mb-1">Email</div>
+                                    <div class="text-900">
+                                        <i class="pi pi-envelope mr-2"></i>
+                                        {{ bon.emailUtilisateur }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Colonne droite -->
+                            <div class="col-12 md:col-6">
+                                <div class="mb-3">
+                                    <div class="text-primary font-bold mb-1">Délégation</div>
+                                    <div class="text-900">
+                                        <i class="pi pi-map-marker mr-2"></i>
+                                        {{ bon.delegation }}
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="text-primary font-bold mb-1">Agence</div>
+                                    <div class="text-900">
+                                        <i class="pi pi-building mr-2"></i>
+                                        {{ bon.agence }}
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="text-primary font-bold mb-1">Point de Vente</div>
+                                    <div class="text-900">
+                                        <i class="pi pi-shop mr-2"></i>
+                                        {{ bon.pointVente }} ({{ bon.codePointVente }})
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="text-primary font-bold mb-1">Traité par</div>
+                                    <div class="text-900">
+                                        <i class="pi pi-user mr-2"></i>
+                                        {{ bon.nomCompletTraitant }}
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="text-primary font-bold mb-1">Durée de traitement</div>
+                                    <div class="text-900">
+                                        <i class="pi pi-clock mr-2"></i>
+                                        {{ bon.dureeTraitementFormatee }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Dates -->
+                        <div class="surface-100 p-3 border-round mt-3">
+                            <div class="grid">
+                                <div class="col-12 md:col-6">
+                                    <div class="text-primary font-bold mb-1">Date de création</div>
+                                    <div class="text-900">
+                                        <i class="pi pi-calendar-plus mr-2"></i>
+                                        {{ formatDate(bon.dateCreation) }}
+                                    </div>
+                                </div>
+                                <div class="col-12 md:col-6">
+                                    <div class="text-primary font-bold mb-1">Date de traitement</div>
+                                    <div class="text-900">
+                                        <i class="pi pi-calendar-check mr-2"></i>
+                                        {{ formatDate(bon.dateTraitement) }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Observations -->
+                        @if (bon.observations) {
+                        <div class="surface-200 p-3 border-round mt-3">
+                            <div class="text-primary font-bold mb-2">
+                                <i class="pi pi-comment mr-2"></i>
+                                Observations
+                            </div>
+                            <div class="text-700">{{ bon.observations }}</div>
+                        </div>
+                        }
+                    </div>
+                </div>
+                }
+
+                <!-- Pied de page -->
+                <div class="text-center mt-6 pt-4 border-top-2 border-200">
+                    <p class="text-500 text-sm mb-2">
+                        <i class="pi pi-info-circle mr-2"></i>
+                        Document généré automatiquement
+                    </p>
+                    <p class="text-600 font-medium">{{ getCurrentDate() }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    }

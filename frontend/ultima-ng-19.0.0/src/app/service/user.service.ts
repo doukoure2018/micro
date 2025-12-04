@@ -709,6 +709,24 @@ export class UserService {
     getListPPRejet$ = (): Observable<IResponse> => this.http.get<IResponse>(`${this.server}/ecredit/listRejet`).pipe(tap(console.log), catchError(this.handleError));
 
     /**
+     * Récupérer la synthèse des bons de commande par délégation
+     */
+    getSyntheseDelegations$ = (): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/synthese-delegations`).pipe(
+            tap((response) => console.log('Synthèse délégations:', response)),
+            catchError(this.handleError)
+        );
+
+    /**
+     * Récupérer les bons de commande d'une délégation spécifique
+     */
+    getBonsCommandeParDelegation$ = (delegation: string): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/bons-commande-delegation?delegation=${encodeURIComponent(delegation)}`).pipe(
+            tap((response) => console.log('Bons commande délégation:', response)),
+            catchError(this.handleError)
+        );
+
+    /**
      *  Functionnaly for logout
      */
     logOut(): void {

@@ -48,7 +48,7 @@ public interface UserClient {
 
 
     @GetMapping(path = "/user/offLine/getUserByUuid/{userUuid}")
-     User getUserByUuid(@PathVariable("userUuid") String userUuid);
+     User getUserByUuid(@PathVariable(name = "userUuid") String userUuid);
 
 
 }

@@ -320,7 +320,9 @@ public class DemandeIndResource {
         return created(getUri()).body(getResponse(request,Map.of(
                          "demandeAnalyseCredits",demandeIndService.listDemandeAnalyseCreditByUserId(),
                          "creditDtos",demandeIndService.getListCreditAttente(userClient.getUserByUuid(authentication.getName()).getAgenceId()),
-                        "agence",userClient.getAgenceById(userClient.getUserByUuid(authentication.getName()).getAgenceId())), "Liste des Credits Pour la Mise en Place", OK));
+                        "agence",userClient.getAgenceById(userClient.getUserByUuid(authentication.getName()).getAgenceId())
+                ),
+                "Liste des Credits Pour la Mise en Place", OK));
     }
 
     @GetMapping("/viewCredit/{referenceCredit}/{numeroMembre}/{userId}")

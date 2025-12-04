@@ -1,18 +1,35 @@
-@if (state().user?.role ==='SUPER_ADMIN') {
+@if (state().user?.role === 'SUPER_ADMIN') {
 <app-admin></app-admin>
-}@else if(state().user?.role ==='AGENT_CREDIT') {
+} @else if (state().user?.role === 'AGENT_CREDIT') {
 <app-agent-credit></app-agent-credit>
-}@else if(state().user?.role ==='DA') {
+} @else if (state().user?.role === 'DA') {
 <app-resp-agent [user]="state().user"></app-resp-agent>
-}@else if(state().user?.role ==='MANAGER') {
-<!-- <app-manager [user]="state().user"></app-manager> -->
+} @else if (state().user?.role === 'MANAGER') {
+@switch (state().user?.service) {
+@case ('Logistique') {
+<app-logistique [user]="state().user"></app-logistique>
+}
+@case ('Finance') {
+<!-- <app-finance [user]="state().user"></app-finance> -->
+}
+@case ('RH') {
+<!-- <app-rh [user]="state().user"></app-rh> -->
+}
+@default {
 <app-digital-verification [user]="state().user"></app-digital-verification>
-}@else if(state().user?.role ==='DR') {
+}
+}
+} @else if (state().user?.role === 'DR') {
 <app-list-stock [user]="state().user"></app-list-stock>
-}@else if(state().user?.role ==='CAISSE') {
+} @else if (state().user?.role === 'CAISSE') {
 <app-rapprochement-caisse [user]="state().user"></app-rapprochement-caisse>
-}@else if(state().user?.role ==='AGENT_CORRECTEUR') {
+} @else if (state().user?.role === 'AGENT_CORRECTEUR') {
 <app-correction-rejet-pp [user]="state().user"></app-correction-rejet-pp>
-}@else if(state().user?.role ==='RA') {
+} @else if (state().user?.role === 'RA') {
 <app-rotation-agent></app-rotation-agent>
+} @else {
+<!-- Composant par défaut si aucun rôle ne correspond -->
+<div class="alert alert-warning">
+    <p>Rôle non reconnu. Veuillez contacter l'administrateur.</p>
+</div>
 }

@@ -23,4 +23,19 @@ public interface StockService {
 
 
     void updateStockStatut(UpdateStatusDto stockStatut, Long idCmd);
+
+    /**
+     * Récupère la synthèse des bons de commande par délégation
+     */
+    List<SyntheseDelegationDto> listBonParDelegation();
+
+    /**
+     * Récupère la liste détaillée des bons de commande pour une délégation spécifique
+     */
+    List<BonCommandeDelegationDto> getBonsCommandeParDelegation(String delegation);
+
+    /**
+     * Récupère tous les bons de commande validés (toutes délégations)
+     */
+    List<BonCommandeDelegationDto> getTousBonsCommandeValides();
 }

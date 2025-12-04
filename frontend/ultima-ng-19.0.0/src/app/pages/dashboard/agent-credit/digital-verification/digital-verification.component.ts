@@ -103,7 +103,7 @@ export class DigitalVerificationComponent implements OnInit {
 
     loadUserInfo(): void {
         this.userService
-            .profile$()
+            .getInstanceUser$()
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (response) => {

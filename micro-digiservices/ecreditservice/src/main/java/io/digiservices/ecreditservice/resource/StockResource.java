@@ -264,6 +264,50 @@ public class StockResource {
         return updateStock(authentication, dto, idCmd, request);
     }
 
+
+    /**
+     * Endpoint pour récupérer la synthèse des bons de commande par délégation
+     */
+    @GetMapping("/synthese-delegations")
+    public ResponseEntity<Response> getSyntheseDelegations(HttpServletRequest request) {
+        log.info("API: Récupération de la synthèse des bons de commandes par délégation");
+        List<SyntheseDelegationDto> syntheseDelegations = stockService.listBonParDelegation();
+        return ok(getResponse(request, Map.of(
+                "syntheseDelegations", syntheseDelegations,
+                "count", syntheseDelegations.size()
+        ), "Synthèse des délégations récupérée avec succès", OK));
+    }
+
+    /**
+     * Endpoint pour récupérer la liste détaillée des bons de commande d'une délégation spécifique
+     */
+    @GetMapping("/bons-commande-delegation")
+    public ResponseEntity<Response> getBonsCommandeParDelegation(
+            @RequestParam(value = "delegation") String delegation,
+            HttpServletRequest request)
+    {
+        log.info("API: Récupération des bons de commande pour la délégation: {}", delegation);
+        List<BonCommandeDelegationDto> bonsCommandeDelegation = stockService.getBonsCommandeParDelegation(delegation);
+        return ok(getResponse(request, Map.of(
+                "delegation", delegation,
+                "bonsCommandeDelegation", bonsCommandeDelegation,
+                "count", bonsCommandeDelegation.size()
+        ), "Bons de commande de la délégation récupérés avec succès", OK));
+    }
+
+    /**
+     * Endpoint pour récupérer tous les bons de commande validés (toutes délégations)
+     */
+    @GetMapping("/tous-bons-commande-valides")
+    public ResponseEntity<Response> getTousBonsCommandeValides(HttpServletRequest request) {
+        log.info("API: Récupération de tous les bons de commande validés");
+        List<BonCommandeDelegationDto> bonsCommande = stockService.getTousBonsCommandeValides();
+        return ok(getResponse(request, Map.of(
+                "bonsCommande", bonsCommande,
+                "count", bonsCommande.size()
+        ), "Tous les bons de commande validés récupérés avec succès", OK));
+    }
+
     // Méthode utilitaire si nécessaire
     private URI getUri() {
         return URI.create("/stock");

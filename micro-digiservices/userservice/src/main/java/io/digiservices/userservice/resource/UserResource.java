@@ -81,7 +81,8 @@ public class UserResource {
         }
     }
 
-    private void createAccountByRole(UserAccount user) {
+    private void createAccountByRole(UserAccount user)
+    {
         if (isLocationBasedRole(user.getRoleName())) {
             log.info("Creating location-based account using createAccountAgentCreditAndDa");
             log.info("Location data - delegationId: {}, agenceId: {}, pointventeId: {}",
@@ -97,13 +98,13 @@ public class UserResource {
             log.info("Creating standard account using createAccountUser");
             userService.createAccountUser(
                     user.getFirstName(), user.getLastName(), user.getEmail(),
-                    user.getUsername(), user.getPassword(), user.getRoleName()
+                    user.getUsername(), user.getPassword(), user.getRoleName(),user.getService()
             );
         }
     }
 
     private boolean isLocationBasedRole(String roleName) {
-        return "AGENT_CREDIT".equalsIgnoreCase(roleName) || "DA".equalsIgnoreCase(roleName) || "CAISSE".equalsIgnoreCase(roleName) || "AGENT_CORRECTEUR".equalsIgnoreCase(roleName);
+        return "AGENT_CREDIT".equalsIgnoreCase(roleName) || "DA".equalsIgnoreCase(roleName) || "DR".equalsIgnoreCase(roleName) || "RA".equalsIgnoreCase(roleName) || "CAISSE".equalsIgnoreCase(roleName) || "AGENT_CORRECTEUR".equalsIgnoreCase(roleName);
     }
     // When user is not logged in
     @GetMapping("/verify/account")
@@ -136,8 +137,9 @@ public class UserResource {
     }
 
     @GetMapping("/instanceUser")
-    public ResponseEntity<Response> getUserInfo(@NotNull Authentication authentication, HttpServletRequest request) {
-        System.out.println(authentication.getName());
+    public ResponseEntity<Response> getUserInfo(@NotNull Authentication authentication, HttpServletRequest request)
+    {
+        //System.out.println(authentication.getName());
         var user= userService.getUserByUuid(authentication.getName());
         return ok(getResponse(request, Map.of("user",user), "user retrieved Successfully", OK));
     }
@@ -252,6 +254,7 @@ public class UserResource {
                                     "pointVentes", pointVenteService.getAllPointVente()),
                               "List of Roles Retreived Successfully", OK));
     }
+
 
     // When user is logged in
     @GetMapping("/photo")
@@ -425,7 +428,7 @@ public class UserResource {
      * @return
      */
     @GetMapping("/offLine/getUserByUuid/{userUuid}")
-    public ResponseEntity<User> getUserByUuid(@PathVariable("userUuid") String userUuid) {
+    public ResponseEntity<User> getUserByUuid(@PathVariable(name = "userUuid") String userUuid) {
         var user= userService.getUserByUuid(userUuid);
         return ResponseEntity.ok(user);
     }

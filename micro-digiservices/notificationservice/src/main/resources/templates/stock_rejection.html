@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Rejet des Bons de Commande</title>
+</head>
+<body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+<div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #dc3545; margin: 0;">❌ Rejet des Bons de Commande</h1>
+    </div>
+
+    <p style="font-size: 16px;">Bonjour <strong th:text="${nomDR}">Nom DR</strong>,</p>
+
+    <p style="font-size: 14px; line-height: 1.6;">
+        Les bons de commande de la délégation <strong th:text="${delegation}">Délégation</strong>
+        ont été rejetés.
+    </p>
+
+    <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px; padding: 15px; margin: 20px 0;">
+        <h3 style="color: #721c24; margin: 0 0 10px 0;">Motif du rejet</h3>
+        <p style="margin: 0;" th:text="${motif}">Motif</p>
+    </div>
+
+    <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
+        <h4 style="color: #856404; margin: 0 0 10px 0;">Récapitulatif</h4>
+        <p style="margin: 5px 0;"><strong>Nombre de commandes:</strong> <span th:text="${nombreCommandes}">0</span></p>
+        <p style="margin: 5px 0;"><strong>Délégation:</strong> <span th:text="${delegation}">-</span></p>
+    </div>
+
+    <div style="background-color: #f8f9fa; border-radius: 5px; padding: 15px; margin: 20px 0;">
+        <h4 style="margin: 0 0 10px 0;">Commandes concernées:</h4>
+        <pre style="white-space: pre-wrap; font-size: 12px; margin: 0;" th:text="${detailsCommandes}">Détails</pre>
+    </div>
+
+    <hr style="border: none; border-top: 1px solid #dee2e6; margin: 30px 0;">
+
+    <p style="font-size: 12px; color: #6c757d; text-align: center;">
+        Cet email a été envoyé automatiquement. Merci de ne pas y répondre.
+    </p>
+</div>
+</body>
+</html>

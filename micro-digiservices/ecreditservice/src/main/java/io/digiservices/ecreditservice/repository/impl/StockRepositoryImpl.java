@@ -18,8 +18,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
-import static io.digiservices.ecreditservice.query.StockQuery.GET_ALL_CATEGORIE_STOCK;
-import static io.digiservices.ecreditservice.query.StockQuery.GET_STOCK_ENCOURS_BY_DELEGATION_QUERY;
+import static io.digiservices.ecreditservice.query.StockQuery.*;
 
 @Repository
 @RequiredArgsConstructor
@@ -242,6 +241,44 @@ public class StockRepositoryImpl  implements StockRepository {
         }
 
         log.info("Mise à jour effectuée pour le bon de commande {}", idCmd);
+    }
+
+    @Override
+    public List<SyntheseDelegationDto> listBonParDelegation() {
+        try {
+            return jdbcClient.sql(GET_SYNTHESE_BONS_COMMANDE_DELEGATIONS)
+                    .query(SyntheseDelegationDto.class)
+                    .list();
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération de la synthèse par délégation: {}", e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public List<BonCommandeDelegationDto> getBonsCommandeParDelegation(String delegation) {
+        try {
+            return jdbcClient.sql(GET_BONS_COMMANDE_PAR_DELEGATION)
+                    .param("delegation", delegation)
+                    .query(BonCommandeDelegationDto.class)
+                    .list();
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des bons de commande pour la délégation {}: {}",
+                    delegation, e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public List<BonCommandeDelegationDto> getTousBonsCommandeValides() {
+        try {
+            return jdbcClient.sql(GET_TOUS_BONS_COMMANDE_VALIDES)
+                    .query(BonCommandeDelegationDto.class)
+                    .list();
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération de tous les bons de commande validés: {}", e.getMessage());
+            return new ArrayList<>();
+        }
     }
 
     // Méthode alternative si vous voulez utiliser UPDATE_STATUS_QUERY existant

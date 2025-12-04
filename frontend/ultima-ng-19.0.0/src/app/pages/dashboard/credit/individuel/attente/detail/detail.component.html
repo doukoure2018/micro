@@ -442,6 +442,18 @@
             </div>
         </div>
 
+        <div *ngIf="state().user?.role === 'AGENT_CREDIT'" class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
+            <div class="p-6 bg-red-50">
+                <div class="flex justify-center gap-4">
+                    <button pButton type="button" (click)="openInNewTab('/dashboards/credit/analyse-credit')"
+                        [disabled]="state().loading"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300"
+                        icon="pi pi-chart-line" label="ANALYSER SON ANCIEN CRÉDIT">
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Section de traitement de la demande -->
         <div *ngIf="state().demandeIndividuel?.validationState !== 'SELECTION'"
             class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">

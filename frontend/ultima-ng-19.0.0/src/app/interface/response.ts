@@ -7,6 +7,7 @@ import { Appreciation } from './appreciation';
 import { Avis } from './avis';
 import { BilanEntreprise } from './bilan.entreprise';
 import { BilanPersonnel } from './bilan.personnel';
+import { BonCommandeDelegationDto } from './BonCommandeDelegationDto';
 import { CategorieStockDto } from './CategorieStockDto';
 import { ChargeInd } from './ChargeInd';
 import { ClientesDto } from './clientes-dto.model';
@@ -67,6 +68,7 @@ import { SG_USUARIOS } from './sg_usuarios';
 import { SousActivite } from './sous-activite.model';
 import { SousSousActivite } from './sous-sous-activite.model';
 import { StockResponseDto } from './StockResponseDto';
+import { SyntheseDelegationDto } from './SyntheseDelegationDto';
 import { TipoPlazo } from './tipo-plazo.model';
 import { TypeCreditDto } from './typeCredit.model';
 import { IUser } from './user';
@@ -220,5 +222,7 @@ export interface IResponse {
         motif: MotifCorrection;
         agentCreditDTO: AgentCreditDTO[];
         disponibilityAgent?: AgentDisponibilityDto; // AJOUTÉ
+        syntheseDelegations?: SyntheseDelegationDto[];
+        bonsCommandeDelegation?: BonCommandeDelegationDto[];
     };
 }

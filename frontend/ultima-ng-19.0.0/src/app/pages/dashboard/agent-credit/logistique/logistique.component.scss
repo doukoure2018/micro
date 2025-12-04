@@ -1,0 +1,133 @@
+.logistique-container {
+    padding: 2rem;
+    min-height: 100vh;
+
+    .header-card {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-600) 100%);
+        color: white;
+
+        ::ng-deep .p-card-body {
+            padding: 1.5rem;
+        }
+    }
+}
+
+// Vue d'impression améliorée
+.print-view {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #e9ecef;
+    z-index: 9999;
+    overflow-y: auto;
+
+    .print-header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        padding: 1rem;
+        background-color: #e9ecef;
+    }
+
+    .print-content {
+        padding: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+
+        .print-page {
+            min-height: calc(100vh - 6rem);
+        }
+    }
+
+    .page-break-avoid {
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+}
+
+// Styles d'impression
+@media print {
+    body {
+        background: white !important;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+
+    .print-view {
+        position: static;
+        background-color: white;
+        overflow: visible;
+
+        .print-header {
+            display: none !important;
+        }
+
+        .print-content {
+            padding: 0;
+            max-width: 100%;
+
+            .print-page {
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                min-height: auto;
+            }
+        }
+    }
+
+    .page-break-avoid {
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+
+    // Forcer les couleurs à l'impression
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+    }
+
+    // Masquer les ombres à l'impression
+    .shadow-1,
+    .shadow-2,
+    .shadow-3 {
+        box-shadow: none !important;
+    }
+
+    // Optimiser les bordures pour l'impression
+    .border-round {
+        border-radius: 8px !important;
+    }
+
+    // S'assurer que les cartes de statistiques sont bien visibles
+    .surface-card {
+        border: 1px solid #dee2e6 !important;
+        page-break-inside: avoid;
+    }
+
+    // Éviter les coupures de page dans les sections importantes
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        page-break-after: avoid;
+    }
+
+    .grid {
+        page-break-inside: avoid;
+    }
+}
+
+// Responsive
+@media screen and (max-width: 768px) {
+    .print-view {
+        .print-content {
+            padding: 1rem;
+        }
+    }
+}

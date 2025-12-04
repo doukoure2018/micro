@@ -175,4 +175,22 @@ public class StockServiceImpl implements StockService {
         log.info("Bon de commande {} mis à jour avec succès. Nouveau state_validation: {}",
                 idCmd, stockStatut.getStateValidation());
     }
+
+    @Override
+    public List<SyntheseDelegationDto> listBonParDelegation() {
+        log.info("Service: Récupération de la synthèse par délégation");
+        return stockRepository.listBonParDelegation();
+    }
+
+    @Override
+    public List<BonCommandeDelegationDto> getBonsCommandeParDelegation(String delegation) {
+        log.info("Service: Récupération des bons de commande pour la délégation: {}", delegation);
+        return stockRepository.getBonsCommandeParDelegation(delegation);
+    }
+
+    @Override
+    public List<BonCommandeDelegationDto> getTousBonsCommandeValides() {
+        log.info("Service: Récupération de tous les bons de commande validés");
+        return stockRepository.getTousBonsCommandeValides();
+    }
 }

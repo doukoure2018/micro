@@ -76,11 +76,11 @@ public class UserServiceImpl  implements UserService {
 
     // Original method for backward compatibility
     @Override
-    public void createAccountUser(String firstName, String lastName, String email, String username, String password, String roleName) {
+    public void createAccountUser(String firstName, String lastName, String email, String username, String password, String roleName,String service) {
         log.info("Service: Creating standard user account for role: {}", roleName);
 
         var token = userRepository.createAccountUser(firstName, lastName, email, username,
-                encoder.encode(password), roleName);
+                encoder.encode(password), roleName,service);
 
         System.out.println(token);
         publisher.publishEvent(new Event(USER_CREATED, Map.of(

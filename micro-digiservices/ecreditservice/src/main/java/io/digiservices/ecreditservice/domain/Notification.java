@@ -35,6 +35,7 @@ public class Notification implements Serializable {
         this.headers = headers;
     }
 
+
     @Override
     public boolean equals(@Nullable Object other) {
         // Using nullSafeEquals for proper array equals comparisons

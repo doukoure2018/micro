@@ -16,7 +16,7 @@ public interface UserService {
     User getUserByUuid(String userUuid);
     User updateUser(String userUuid, String firstName, String lastName, String email, String phone, String bio, String address);
     void createUser(String firstName, String lastName, String email, String username, String password);
-    void createAccountUser(String firstName, String lastName, String email, String username, String password, String roleName);
+    void createAccountUser(String firstName, String lastName, String email, String username, String password, String roleName,String service);
 
     void createAccountAgentCreditAndDa(String firstName, String lastName, String email, String username,
                                        String password, String roleName, String phone, String bio,String service,

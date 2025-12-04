@@ -3,6 +3,7 @@ package io.digiservices.notificationservice.event.listener;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digiservices.notificationservice.domain.Data;
 import io.digiservices.notificationservice.domain.Notification;
+import io.digiservices.notificationservice.domain.StockNotificationData;
 import io.digiservices.notificationservice.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,13 +24,24 @@ public class NotificationListener {
         log.info("Received notification: {}", notification.toString());
         var mapper = new ObjectMapper();
         mapper.configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
-        var data = mapper.convertValue(notification.getPayload().getData(), Data.class);
+
         switch (notification.getPayload().getEventType()) {
-            case RESETPASSWORD -> emailService.sendPasswordResetHtmlEmail(data.getName(), data.getEmail(), data.getToken());
-            case USER_CREATED -> emailService.sendNewAccountHtmlEmail(data.getName(), data.getEmail(), data.getToken());
-//            case TICKET_CREATED -> emailService.sendNewTicketHtmlEmail(data.getName(), data.getEmail(), data.getTicketTitle(), data.getTicketNumber());
-//            case FILE_UPLOADED -> emailService.sendNewFilesHtmlEmail(data.getName(), data.getEmail(), data.getFiles(), data.getTicketTitle(), data.getTicket());
-//            case COMMENT_CREATED -> emailService.sendNewCommentHtmlEmail(data.getName(), data.getEmail(), data.getFiles(), data.getTicketTitle(), data.getTicket());
+            case RESETPASSWORD -> {
+                var data = mapper.convertValue(notification.getPayload().getData(), Data.class);
+                emailService.sendPasswordResetHtmlEmail(data.getName(), data.getEmail(), data.getToken());
+            }
+            case USER_CREATED -> {
+                var data = mapper.convertValue(notification.getPayload().getData(), Data.class);
+                emailService.sendNewAccountHtmlEmail(data.getName(), data.getEmail(), data.getToken());
+            }
+            case STOCK_VALIDATED -> {
+                var data = mapper.convertValue(notification.getPayload().getData(), StockNotificationData.class);
+                emailService.sendStockValidationEmail(data);
+            }
+            case STOCK_REJECTED -> {
+                var data = mapper.convertValue(notification.getPayload().getData(), StockNotificationData.class);
+                emailService.sendStockRejectionEmail(data);
+            }
         }
     }
 }
