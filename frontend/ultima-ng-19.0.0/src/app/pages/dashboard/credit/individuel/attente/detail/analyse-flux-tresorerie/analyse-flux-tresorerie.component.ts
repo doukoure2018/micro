@@ -1,6 +1,6 @@
 import { Component, signal, computed, OnInit, inject, effect, ChangeDetectorRef, NgZone, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import { InputNumberModule } from 'primeng/inputnumber';
@@ -30,6 +30,14 @@ import { TresorerieStateService } from '@/service/tresorerie-state.service';
 import { TresoreriePrintService } from '@/service/TresoreriePrintService';
 import { SplitButtonModule } from 'primeng/splitbutton';
 
+interface LigneTresorerie {
+    id: string;
+    categorie: string;
+    libelle: string;
+    type: 'encaissement' | 'decaissement' | 'remboursement' | 'calcul';
+    editable: boolean;
+    cssClass?: string;
+}
 @Component({
     selector: 'app-analyse-flux-tresorerie',
     imports: [
@@ -54,8 +62,8 @@ import { SplitButtonModule } from 'primeng/splitbutton';
         ProgressBarModule,
         TooltipModule,
         BadgeModule,
-        ModeVueTresorerieComponent,
-        SplitButtonModule
+        SplitButtonModule,
+        FormsModule
     ],
     templateUrl: './analyse-flux-tresorerie.component.html',
     styleUrl: './analyse-flux-tresorerie.component.scss',
@@ -102,6 +110,236 @@ export class AnalyseFluxTresorerieComponent {
         viewMode: 'saisie' as 'saisie' | 'vue-ensemble',
         error: null as string | null
     });
+
+    // Structure du tableau
+    lignesTableau: LigneTresorerie[] = [
+        // Solde début
+        { id: 'soldeDebut', categorie: 'SOLDE_DEBUT', libelle: 'Solde Début de période', type: 'calcul', editable: false, cssClass: 'row-solde-debut' },
+
+        // Encaissements
+        { id: 'ventes', categorie: 'VENTES', libelle: 'Ventes', type: 'encaissement', editable: true, cssClass: 'row-encaissement' },
+        { id: 'autresRevenus', categorie: 'AUTRES_REVENUS', libelle: 'Autres revenus', type: 'encaissement', editable: true, cssClass: 'row-encaissement' },
+        { id: 'pret', categorie: 'PRET', libelle: 'Prêt reçu', type: 'encaissement', editable: true, cssClass: 'row-encaissement row-pret' },
+
+        // Total Encaissements
+        { id: 'totalEncaissements', categorie: 'TOTAL_ENC', libelle: 'Total Encaissements', type: 'calcul', editable: false, cssClass: 'row-total row-total-enc' },
+
+        // Décaissements
+        { id: 'achatmarchandises', categorie: 'ACHAT_MARCHANDISES', libelle: 'Achat marchandises', type: 'decaissement', editable: true, cssClass: 'row-decaissement' },
+        { id: 'mainoeuvre', categorie: 'MAIN_OEUVRE', libelle: "Main d'œuvre", type: 'decaissement', editable: true, cssClass: 'row-decaissement' },
+        { id: 'investissement', categorie: 'INVESTISSEMENT', libelle: 'Investissement', type: 'decaissement', editable: true, cssClass: 'row-decaissement' },
+        { id: 'impotstaxes', categorie: 'IMPOTS_TAXES', libelle: 'Impôts et taxes', type: 'decaissement', editable: true, cssClass: 'row-decaissement' },
+        { id: 'loyer', categorie: 'LOYER', libelle: 'Loyer', type: 'decaissement', editable: true, cssClass: 'row-decaissement' },
+        { id: 'utilities', categorie: 'UTILITIES', libelle: 'Eau, Électricité', type: 'decaissement', editable: true, cssClass: 'row-decaissement' },
+        { id: 'transport', categorie: 'TRANSPORT', libelle: 'Transport', type: 'decaissement', editable: true, cssClass: 'row-decaissement' },
+        { id: 'salaires', categorie: 'SALAIRES', libelle: 'Salaires', type: 'decaissement', editable: true, cssClass: 'row-decaissement' },
+        { id: 'fraistelephone', categorie: 'FRAIS_TELEPHONE', libelle: 'Frais téléphone', type: 'decaissement', editable: true, cssClass: 'row-decaissement' },
+        { id: 'chargesfinancieres', categorie: 'CHARGES_FINANCIERES', libelle: 'Charges financières', type: 'decaissement', editable: true, cssClass: 'row-decaissement' },
+        { id: 'entretien', categorie: 'ENTRETIEN', libelle: 'Entretien', type: 'decaissement', editable: true, cssClass: 'row-decaissement' },
+        { id: 'autresdepenses', categorie: 'AUTRES_DEPENSES', libelle: 'Autres dépenses', type: 'decaissement', editable: true, cssClass: 'row-decaissement' },
+
+        // Total Décaissements
+        { id: 'totalDecaissements', categorie: 'TOTAL_DEC', libelle: 'Total Décaissements', type: 'calcul', editable: false, cssClass: 'row-total row-total-dec' },
+
+        // Disponible et Excédent
+        { id: 'disponibleEnCaisse', categorie: 'DISPONIBLE', libelle: 'Disponible en caisse', type: 'calcul', editable: false, cssClass: 'row-calcul' },
+        { id: 'excedentDeficit', categorie: 'EXCEDENT', libelle: 'Excédent (Déficit)', type: 'calcul', editable: false, cssClass: 'row-calcul row-excedent' },
+
+        // Remboursements
+        { id: 'interetsAVerser', categorie: 'INTERETS', libelle: 'Intérêts à verser', type: 'remboursement', editable: true, cssClass: 'row-remboursement' },
+        { id: 'remboursementCapital', categorie: 'CAPITAL', libelle: 'Remboursement capital', type: 'remboursement', editable: true, cssClass: 'row-remboursement' },
+
+        // Solde fin
+        { id: 'soldeFin', categorie: 'SOLDE_FIN', libelle: 'Solde Fin de période', type: 'calcul', editable: false, cssClass: 'row-solde-fin' }
+    ];
+
+    // Colonnes des mois (0 à 12)
+    moisColumns = Array.from({ length: 13 }, (_, i) => i);
+
+    // ========================================
+    // MÉTHODES POUR LE MODE TABLEAU
+    // ========================================
+
+    /**
+     * Obtenir la valeur d'une cellule depuis le formulaire
+     */
+    getCellValue(ligneId: string, mois: number): number | null {
+        const moisForm = this.getMoisFormGroup(mois);
+        if (!moisForm) return null;
+        return moisForm.get(ligneId)?.value;
+    }
+
+    /**
+     * Définir la valeur d'une cellule dans le formulaire
+     */
+    setCellValue(ligneId: string, mois: number, value: number | null): void {
+        const moisForm = this.getMoisFormGroup(mois);
+        if (!moisForm) return;
+        moisForm.patchValue({ [ligneId]: value }, { emitEvent: false });
+    }
+
+    /**
+     * Gérer le changement de valeur dans une cellule du tableau
+     */
+    onTableCellChange(ligneId: string, mois: number, value: number | null): void {
+        // value est directement la valeur, pas event.value
+        this.setCellValue(ligneId, mois, value);
+
+        // Recalculer ce mois et propager aux mois suivants
+        this.calculateMonth(mois);
+        this.propagateSoldesToFollowingMonths(mois);
+
+        // Marquer comme modifié dans tresorerieState
+        const moisForm = this.getMoisFormGroup(mois);
+        if (moisForm) {
+            this.tresorerieState.updatePrevision(mois, moisForm.getRawValue(), false, true);
+        }
+
+        this.cdr.detectChanges();
+    }
+
+    /**
+     * Propager les soldes de fin vers les mois suivants
+     */
+    private propagateSoldesToFollowingMonths(fromMois: number): void {
+        for (let m = fromMois; m < 12; m++) {
+            const currentMoisForm = this.getMoisFormGroup(m);
+            const nextMoisForm = this.getMoisFormGroup(m + 1);
+
+            if (currentMoisForm && nextMoisForm) {
+                const soldeFin = currentMoisForm.get('soldeFin')?.value || 0;
+                nextMoisForm.patchValue({ soldeDebut: soldeFin }, { emitEvent: false });
+                this.calculateMonth(m + 1);
+            }
+        }
+    }
+
+    /**
+     * Vérifier si une cellule est éditable
+     */
+    isCellEditable(ligne: LigneTresorerie, mois: number): boolean {
+        // Solde début: seulement mois 0
+        if (ligne.id === 'soldeDebut') {
+            return mois === 0;
+        }
+
+        // Ventes: pas au mois 0
+        if (ligne.id === 'ventes' && mois === 0) {
+            return false;
+        }
+
+        // Remboursements: pas au mois 0
+        if (ligne.type === 'remboursement' && mois === 0) {
+            return false;
+        }
+
+        return ligne.editable;
+    }
+
+    /**
+     * Obtenir le label du mois pour le tableau
+     */
+    getTableMoisLabel(mois: number): string {
+        return mois === 0 ? 'M0' : `M${mois}`;
+    }
+
+    /**
+     * Calculer le cumul pour une ligne
+     */
+    getCumulForLigne(ligneId: string): number {
+        // Pour les lignes de solde, retourner la valeur du dernier mois
+        if (ligneId === 'soldeDebut' || ligneId === 'soldeFin' || ligneId === 'disponibleEnCaisse' || ligneId === 'excedentDeficit') {
+            return this.getCellValue(ligneId, 12) || 0;
+        }
+
+        // Pour les autres, faire la somme de tous les mois
+        let total = 0;
+        for (let mois = 0; mois <= 12; mois++) {
+            total += this.getCellValue(ligneId, mois) || 0;
+        }
+        return total;
+    }
+
+    /**
+     * Copier la valeur d'une cellule vers tous les mois suivants
+     */
+    copyToFollowingMonths(ligneId: string, fromMois: number): void {
+        const value = this.getCellValue(ligneId, fromMois);
+        const ligne = this.lignesTableau.find((l) => l.id === ligneId);
+
+        if (!ligne) return;
+
+        for (let mois = fromMois + 1; mois <= 12; mois++) {
+            if (this.isCellEditable(ligne, mois)) {
+                this.setCellValue(ligneId, mois, value);
+            }
+        }
+
+        // Recalculer tous les mois
+        this.calculateAllMonths();
+
+        this.messageService.add({
+            severity: 'info',
+            summary: 'Copié',
+            detail: `Valeur copiée vers les mois ${fromMois + 1} à 12`
+        });
+    }
+
+    /**
+     * Réinitialiser tout le tableau
+     */
+    resetTableau(): void {
+        this.confirmationService.confirm({
+            message: 'Réinitialiser toutes les données du tableau ?',
+            header: 'Confirmation',
+            icon: 'pi pi-exclamation-triangle',
+            accept: () => {
+                // Réinitialiser tous les mois
+                for (let mois = 0; mois <= 12; mois++) {
+                    this.resetMonthToDefaults(mois);
+                }
+
+                // Remettre le prêt au mois 0
+                if (this.creditParams().montantCredit > 0) {
+                    this.setCellValue('pret', 0, this.creditParams().montantCredit);
+                }
+
+                this.calculateAllMonths();
+                this.tresorerieState.clearAll();
+
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Réinitialisé',
+                    detail: 'Toutes les données ont été effacées'
+                });
+            }
+        });
+    }
+
+    /**
+     * Compter les mois avec données dans le tableau
+     */
+    getTableMonthsWithData(): number {
+        let count = 0;
+        for (let mois = 0; mois <= 12; mois++) {
+            if (this.checkIfMoisHasData(this.getMoisFormGroup(mois)?.getRawValue())) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /**
+     * Vérifier si on peut sauvegarder le tableau (version corrigée)
+     */
+    canSaveTableau(): boolean {
+        // Vérifier via le formulaire directement, pas seulement tresorerieState
+        const hasData = this.getTableMonthsWithData() > 0;
+        const hasDossier = this.creditParams().dossierId > 0;
+        const notSaving = !this.state().saving;
+
+        return hasData && hasDossier && notSaving;
+    }
 
     // Observable du mois courant
     currentMonth = signal(0);
@@ -317,32 +555,24 @@ export class AnalyseFluxTresorerieComponent {
                 if (response.data?.previsions?.length! > 0) {
                     // Réinitialiser le service d'état
                     this.tresorerieState.clearAll();
-                    const previsionsData = response.data.previsions!.map((p: any) => ({
-                        numeroMois: p.numeroMois,
-                        data: this.extractPrevisionFormData(p)
-                    }));
 
-                    this.tresorerieState.loadAllPrevisions(previsionsData);
+                    const previsions = response.data.previsions!;
 
-                    // Charger dans les formulaires
-                    response.data.previsions!.forEach((prevision: any) => {
-                        this.loadPrevisionData(prevision);
+                    // Charger chaque prévision dans le formulaire
+                    previsions.forEach((prevision: any) => {
+                        this.loadPrevisionIntoForm(prevision);
                     });
 
-                    // Aller au premier mois avec des données ou au mois 0
-                    const firstMonthWithData = this.tresorerieState.getMonthsWithData()[0] || 0;
-                    this.goToMonth(firstMonthWithData);
-
-                    // Recalculer après un délai
+                    // Recalculer tous les mois APRÈS avoir chargé toutes les données
                     setTimeout(() => {
                         this.calculateAllMonths();
                         this.cdr.detectChanges();
-                    }, 200);
+                    }, 100);
 
                     this.messageService.add({
                         severity: 'success',
                         summary: 'Prévisions chargées',
-                        detail: `${response.data.previsions!.length} mois chargés`
+                        detail: `${previsions.length} mois chargés`
                     });
                 }
 
@@ -353,6 +583,46 @@ export class AnalyseFluxTresorerieComponent {
                 this.state.update((s) => ({ ...s, loading: false }));
             }
         });
+    }
+
+    /**
+     * Charger une prévision dans le formulaire (pour le mode tableau)
+     */
+    private loadPrevisionIntoForm(prevision: any): void {
+        const moisNum = prevision.numeroMois;
+        const moisForm = this.getMoisFormGroup(moisNum);
+
+        if (!moisForm) {
+            console.warn(`FormGroup pour mois ${moisNum} non trouvé`);
+            return;
+        }
+
+        // Extraire les données
+        const formData = this.extractPrevisionFormData(prevision);
+
+        // Mettre à jour le formulaire
+        moisForm.patchValue(formData, { emitEvent: false });
+
+        // Mettre à jour le service d'état
+        this.tresorerieState.updatePrevision(
+            moisNum,
+            formData,
+            true, // saved
+            true // hasData
+        );
+
+        // Mettre à jour les tracking sets
+        this.moisSauvegardes.update((set) => {
+            set.add(moisNum);
+            return new Set(set);
+        });
+
+        this.moisRenseignes.update((set) => {
+            set.add(moisNum);
+            return new Set(set);
+        });
+
+        console.log(`Mois ${moisNum} chargé:`, formData);
     }
 
     // Méthode pour charger les prévisions avec meilleure gestion d'état
@@ -389,8 +659,10 @@ export class AnalyseFluxTresorerieComponent {
             soldeDebut: prevision.soldeDebut || 0,
             totalEncaissements: prevision.totalEncaissements || 0,
             totalDecaissements: prevision.totalDecaissements || 0,
+            disponibleEnCaisse: (prevision.soldeDebut || 0) + (prevision.totalEncaissements || 0),
             excedentDeficit: prevision.excedentDeficit || 0,
             soldeFin: prevision.soldeFin || 0,
+            // Valeurs par défaut pour tous les champs
             ventes: 0,
             autresRevenus: 0,
             pret: 0,
@@ -413,15 +685,16 @@ export class AnalyseFluxTresorerieComponent {
         // Traiter les encaissements
         if (prevision.lignesEncaissement?.length) {
             prevision.lignesEncaissement.forEach((ligne: any) => {
+                const montant = ligne.montant || 0;
                 switch (ligne.categorie) {
                     case 'VENTES':
-                        formData.ventes = ligne.montant;
+                        formData.ventes = montant;
                         break;
                     case 'AUTRES_REVENUS':
-                        formData.autresRevenus = ligne.montant;
+                        formData.autresRevenus = montant;
                         break;
                     case 'PRET':
-                        formData.pret = ligne.montant;
+                        formData.pret = montant;
                         break;
                 }
             });
@@ -430,48 +703,49 @@ export class AnalyseFluxTresorerieComponent {
         // Traiter les décaissements
         if (prevision.lignesDecaissement?.length) {
             prevision.lignesDecaissement.forEach((ligne: any) => {
+                const montant = ligne.montant || 0;
                 switch (ligne.categorie) {
                     case 'ACHAT_MARCHANDISES':
-                        formData.achatmarchandises = ligne.montant;
+                        formData.achatmarchandises = montant;
                         break;
                     case 'MAIN_OEUVRE':
-                        formData.mainoeuvre = ligne.montant;
+                        formData.mainoeuvre = montant;
                         break;
                     case 'INVESTISSEMENT':
-                        formData.investissement = ligne.montant;
+                        formData.investissement = montant;
                         break;
                     case 'IMPOTS_TAXES':
-                        formData.impotstaxes = ligne.montant;
+                        formData.impotstaxes = montant;
                         break;
                     case 'LOYER':
-                        formData.loyer = ligne.montant;
+                        formData.loyer = montant;
                         break;
                     case 'UTILITIES':
-                        formData.utilities = ligne.montant;
+                        formData.utilities = montant;
                         break;
                     case 'TRANSPORT':
-                        formData.transport = ligne.montant;
+                        formData.transport = montant;
                         break;
                     case 'SALAIRES':
-                        formData.salaires = ligne.montant;
+                        formData.salaires = montant;
                         break;
                     case 'FRAIS_TELEPHONE':
-                        formData.fraistelephone = ligne.montant;
+                        formData.fraistelephone = montant;
                         break;
                     case 'CHARGES_FINANCIERES':
-                        formData.chargesfinancieres = ligne.montant;
+                        formData.chargesfinancieres = montant;
                         break;
                     case 'ENTRETIEN':
-                        formData.entretien = ligne.montant;
+                        formData.entretien = montant;
                         break;
                     case 'AUTRES_DEPENSES':
-                        formData.autresdepenses = ligne.montant;
+                        formData.autresdepenses = montant;
                         break;
                     case 'INTERETS':
-                        formData.interetsAVerser = ligne.montant;
+                        formData.interetsAVerser = montant;
                         break;
                     case 'CAPITAL':
-                        formData.remboursementCapital = ligne.montant;
+                        formData.remboursementCapital = montant;
                         break;
                 }
             });
@@ -1842,12 +2116,15 @@ export class AnalyseFluxTresorerieComponent {
         return isValid;
     }
 
-    // Préparer toutes les données
+    /**
+     * Préparer toutes les données pour la sauvegarde (version corrigée)
+     */
     private prepareAllPrevisionsData(): any[] {
         const previsions = [];
 
         for (let mois = 0; mois <= 12; mois++) {
-            if (this.tresorerieState.monthHasData(mois)) {
+            const moisForm = this.getMoisFormGroup(mois);
+            if (moisForm && this.checkIfMoisHasData(moisForm.getRawValue())) {
                 const monthData = this.prepareMonthData(mois);
                 previsions.push(monthData);
             }
@@ -2987,17 +3264,160 @@ export class AnalyseFluxTresorerieComponent {
 
     public splitButtonOptions = [
         {
-            label: 'Prévisualiser',
+            label: 'Aperçu avant impression',
             icon: 'pi pi-eye',
             command: () => this.previsualiserTableauTresorerie()
-        },
-        {
-            separator: true
         },
         {
             label: 'Exporter en PDF',
             icon: 'pi pi-file-pdf',
             command: () => this.exporterTableauPDF()
+        },
+        {
+            separator: true
+        },
+        {
+            label: 'Imprimer avec en-tête',
+            icon: 'pi pi-id-card',
+            command: () => this.imprimerAvecOptions({ inclureAnalyse: true })
+        },
+        {
+            label: 'Imprimer tableau seul',
+            icon: 'pi pi-table',
+            command: () => this.imprimerTableauTresorerie()
         }
     ];
+
+    // ========================================
+    // MÉTHODES POUR LA VISUALISATION DES MOIS
+    // ========================================
+
+    /**
+     * Obtient les statistiques d'un trimestre
+     */
+    getTrimestreStats(mois: number[]): { filled: number; saved: number; empty: number } {
+        let filled = 0;
+        let saved = 0;
+        let empty = 0;
+
+        mois.forEach((m) => {
+            const status = this.getMoisStatus(m);
+            if (status === 'saved') saved++;
+            else if (status === 'filled') filled++;
+            else empty++;
+        });
+
+        return { filled, saved, empty };
+    }
+
+    /**
+     * Obtient le tooltip pour un mois
+     */
+    getMonthTooltip(mois: number): string {
+        const status = this.getMoisStatus(mois);
+        const moisForm = this.getMoisFormGroup(mois);
+        const soldeFin = moisForm?.get('soldeFin')?.value || 0;
+
+        let tooltip = `Mois ${mois}`;
+
+        if (status === 'saved') {
+            tooltip += ' - ✓ Sauvegardé';
+        } else if (status === 'filled') {
+            tooltip += ' - ⚠ Non sauvegardé';
+        } else {
+            tooltip += ' - À renseigner';
+        }
+
+        if (soldeFin !== 0) {
+            tooltip += ` | Solde: ${this.formatMontant(soldeFin)}`;
+        }
+
+        return tooltip;
+    }
+
+    /**
+     * Calcule le total annuel des encaissements
+     */
+    getTotalAnnuelEncaissements(): number {
+        let total = 0;
+        for (let m = 0; m <= 12; m++) {
+            const moisForm = this.getMoisFormGroup(m);
+            if (moisForm) {
+                total += moisForm.get('totalEncaissements')?.value || 0;
+            }
+        }
+        return total;
+    }
+
+    /**
+     * Calcule le total annuel des décaissements
+     */
+    getTotalAnnuelDecaissements(): number {
+        let total = 0;
+        for (let m = 0; m <= 12; m++) {
+            const moisForm = this.getMoisFormGroup(m);
+            if (moisForm) {
+                total += moisForm.get('totalDecaissements')?.value || 0;
+            }
+        }
+        return total;
+    }
+
+    /**
+     * Obtient le solde final du mois 12
+     */
+    getSoldeAnnuelFinal(): number {
+        const mois12Form = this.getMoisFormGroup(12);
+        return mois12Form?.get('soldeFin')?.value || 0;
+    }
+
+    /**
+     * Obtient la classe CSS pour le solde annuel
+     */
+    getSoldeAnnuelClass(): string {
+        const solde = this.getSoldeAnnuelFinal();
+        if (solde > 0) return 'bg-green-50';
+        if (solde < 0) return 'bg-red-50';
+        return 'bg-gray-50';
+    }
+
+    /**
+     * Navigue vers le premier mois vide
+     */
+    goToFirstEmptyMonth(): void {
+        for (let m = 0; m <= 12; m++) {
+            if (this.getMoisStatus(m) === 'empty') {
+                this.goToMonth(m);
+                return;
+            }
+        }
+    }
+
+    /**
+     * Vérifie s'il reste des mois vides
+     */
+    hasEmptyMonths(): boolean {
+        for (let m = 0; m <= 12; m++) {
+            if (this.getMoisStatus(m) === 'empty') {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Obtient le résumé de tous les mois pour l'affichage
+     */
+    getMoisResume(): { mois: number; status: string; soldeFin: number }[] {
+        const resume = [];
+        for (let m = 0; m <= 12; m++) {
+            const moisForm = this.getMoisFormGroup(m);
+            resume.push({
+                mois: m,
+                status: this.getMoisStatus(m),
+                soldeFin: moisForm?.get('soldeFin')?.value || 0
+            });
+        }
+        return resume;
+    }
 }

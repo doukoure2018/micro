@@ -641,26 +641,136 @@
                             </div>
                         </div>
 
-                        <div class="col-12 md:col-6 lg:col-4">
+                        <!-- Nouveau design: Sélecteur de durée en tableau -->
+                        <div class="col-12">
                             <div class="field">
-                                <label for="dureeMois" class="block font-medium mb-2">Durée (mois) *</label>
-                                <p-inputNumber id="dureeMois" formControlName="dureeMois" [showButtons]="true" [min]="1"
-                                    [max]="120" class="w-full" suffix=" mois"></p-inputNumber>
-                                <small
-                                    *ngIf="demandeCreditForm.get('dureeMois')?.invalid && demandeCreditForm.get('dureeMois')?.touched"
+                                <label class="block font-medium mb-3">
+                                    <i class="pi pi-calendar mr-2 text-primary"></i>
+                                    Durée du crédit (mois) *
+                                </label>
+                                
+                                <!-- Tableau de sélection rapide des mois -->
+                                <div class="duration-grid-container p-3 surface-ground border-round mb-3">
+                                    <div class="grid">
+                                        <!-- En-tête du tableau -->
+                                        <div class="col-12 mb-2">
+                                            <span class="text-sm text-color-secondary">
+                                                <i class="pi pi-info-circle mr-1"></i>
+                                                Cliquez sur une durée pour la sélectionner
+                                            </span>
+                                        </div>
+                                        
+                                        <!-- Ligne 1: Durées courtes (6-24 mois) -->
+                                        <div class="col-12">
+                                            <div class="flex flex-wrap gap-2 justify-content-start">
+                                                @for (duree of [6, 12, 18, 24]; track duree) {
+                                                    <div class="duration-card cursor-pointer p-3 border-round-lg text-center transition-all duration-200"
+                                                        [ngClass]="{
+                                                            'bg-primary text-white shadow-3': demandeCreditForm.get('dureeMois')?.value === duree,
+                                                            'surface-card border-1 surface-border hover:border-primary hover:shadow-2': demandeCreditForm.get('dureeMois')?.value !== duree
+                                                        }"
+                                                        (click)="selectionnerDureeMois(duree)">
+                                                        <div class="text-2xl font-bold">{{ duree }}</div>
+                                                        <div class="text-xs opacity-80">mois</div>
+                                                        <div class="text-xs mt-1" [ngClass]="{'text-white opacity-70': demandeCreditForm.get('dureeMois')?.value === duree, 'text-color-secondary': demandeCreditForm.get('dureeMois')?.value !== duree}">
+                                                            {{ duree < 12 ? duree + ' mois' : (duree / 12) + (duree === 12 ? ' an' : ' ans') }}
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Ligne 2: Durées longues (36-60 mois) -->
+                                        <div class="col-12 mt-2">
+                                            <div class="flex flex-wrap gap-2 justify-content-start">
+                                                @for (duree of [36, 48, 60, 72]; track duree) {
+                                                    <div class="duration-card cursor-pointer p-3 border-round-lg text-center transition-all duration-200"
+                                                        [ngClass]="{
+                                                            'bg-primary text-white shadow-3': demandeCreditForm.get('dureeMois')?.value === duree,
+                                                            'surface-card border-1 surface-border hover:border-primary hover:shadow-2': demandeCreditForm.get('dureeMois')?.value !== duree
+                                                        }"
+                                                        (click)="selectionnerDureeMois(duree)">
+                                                        <div class="text-2xl font-bold">{{ duree }}</div>
+                                                        <div class="text-xs opacity-80">mois</div>
+                                                        <div class="text-xs mt-1" [ngClass]="{'text-white opacity-70': demandeCreditForm.get('dureeMois')?.value === duree, 'text-color-secondary': demandeCreditForm.get('dureeMois')?.value !== duree}">
+                                                            {{ duree / 12 }} ans
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Option durée personnalisée -->
+                                        <div class="col-12 mt-3">
+                                            <div class="flex align-items-center gap-3 p-3 surface-card border-round border-1 surface-border">
+                                                <span class="text-sm font-medium text-color-secondary white-space-nowrap">
+                                                    <i class="pi pi-pencil mr-1"></i>
+                                                    Autre durée:
+                                                </span>
+                                                <p-inputNumber 
+                                                    formControlName="dureeMois" 
+                                                    [showButtons]="true" 
+                                                    [min]="1" 
+                                                    [max]="120" 
+                                                    buttonLayout="horizontal"
+                                                    spinnerMode="horizontal"
+                                                    incrementButtonIcon="pi pi-plus"
+                                                    decrementButtonIcon="pi pi-minus"
+                                                    suffix=" mois"
+                                                    [style]="{'width': '180px'}"
+                                                    inputStyleClass="text-center font-bold">
+                                                </p-inputNumber>
+                                                <p-tag 
+                                                    [value]="getDureeEnAnnees()" 
+                                                    [severity]="getDureeSeverity()"
+                                                    class="ml-auto">
+                                                </p-tag>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <small *ngIf="demandeCreditForm.get('dureeMois')?.invalid && demandeCreditForm.get('dureeMois')?.touched"
                                     class="p-error block mt-1">
                                     <i class="pi pi-exclamation-circle mr-1"></i>Durée entre 1 et 120 mois
                                 </small>
                             </div>
                         </div>
-
-                        <div class="col-12 lg:col-4">
-                            <div class="p-3 bg-blue-50 border-round border-1 border-blue-200">
-                                <div class="flex align-items-center justify-content-between">
-                                    <span class="font-medium">Mensualité estimée:</span>
-                                    <span class="text-lg font-bold text-blue-600">
-                                        {{ calculerMensualite() | currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
-                                    </span>
+                        
+                        <!-- Carte récapitulative avec mensualité -->
+                        <div class="col-12">
+                            <div class="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-round-lg border-1 border-blue-200">
+                                <div class="grid">
+                                    <div class="col-12 md:col-4">
+                                        <div class="text-center">
+                                            <div class="text-color-secondary text-sm mb-1">
+                                                <i class="pi pi-money-bill mr-1"></i>Montant demandé
+                                            </div>
+                                            <div class="text-xl font-bold text-900">
+                                                {{ demandeCreditForm.get('montantDemande')?.value | currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 md:col-4">
+                                        <div class="text-center">
+                                            <div class="text-color-secondary text-sm mb-1">
+                                                <i class="pi pi-calendar mr-1"></i>Durée sélectionnée
+                                            </div>
+                                            <div class="text-xl font-bold text-primary">
+                                                {{ demandeCreditForm.get('dureeMois')?.value }} mois
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 md:col-4">
+                                        <div class="text-center">
+                                            <div class="text-color-secondary text-sm mb-1">
+                                                <i class="pi pi-wallet mr-1"></i>Mensualité estimée
+                                            </div>
+                                            <div class="text-xl font-bold text-green-600">
+                                                {{ calculerMensualite() | currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

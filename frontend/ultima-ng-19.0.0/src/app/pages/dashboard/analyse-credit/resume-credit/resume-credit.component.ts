@@ -59,14 +59,14 @@ export class ResumeCreditComponent {
         resumeCredit?: ResumeCredit;
         infoAdministrative?: InfoAdministrative;
         loading: boolean;
-        loadingAdmin: boolean; // NOUVEAU
+        loadingAdmin: boolean;
         message: string | undefined;
         error: string | any;
         searching: boolean;
     }>({
         loading: false,
         message: undefined,
-        loadingAdmin: false, // NOUVEAU
+        loadingAdmin: false,
         error: undefined,
         searching: false
     });
@@ -2590,5 +2590,131 @@ export class ResumeCreditComponent {
         }
 
         return baseOptions;
+    }
+
+    // ========================================
+    // NOUVELLES MÉTHODES POUR VISUALISATION DURÉE
+    // ========================================
+
+    /**
+     * Retourne la durée en mois du crédit
+     */
+    getDureeMois(): number {
+        return this.state().resumeCredit?.demande_credit?.duree_mois || 0;
+    }
+
+    /**
+     * Retourne la durée formatée en années et mois
+     */
+    getDureeEnAnneesResume(): string {
+        const mois = this.getDureeMois();
+        if (mois === 0) return '0 mois';
+        if (mois < 12) return `${mois} mois`;
+
+        const annees = Math.floor(mois / 12);
+        const moisRestants = mois % 12;
+
+        if (moisRestants === 0) {
+            return annees === 1 ? '1 an' : `${annees} ans`;
+        }
+        return `${annees} an${annees > 1 ? 's' : ''} et ${moisRestants} mois`;
+    }
+
+    /**
+     * Retourne la sévérité du tag selon la durée
+     */
+    getDureeSeverityResume(): PrimeSeverity {
+        const mois = this.getDureeMois();
+        if (mois <= 12) return 'success';
+        if (mois <= 36) return 'info';
+        if (mois <= 60) return 'warn';
+        return 'danger';
+    }
+
+    /**
+     * Retourne la liste des années du crédit avec le nombre de mois par année
+     */
+    getAnneesCredit(): { numero: number; mois: number }[] {
+        const totalMois = this.getDureeMois();
+        if (totalMois === 0) return [];
+
+        const annees: { numero: number; mois: number }[] = [];
+        let moisRestants = totalMois;
+        let numeroAnnee = 1;
+
+        while (moisRestants > 0) {
+            const moisCetteAnnee = Math.min(12, moisRestants);
+            annees.push({
+                numero: numeroAnnee,
+                mois: moisCetteAnnee
+            });
+            moisRestants -= moisCetteAnnee;
+            numeroAnnee++;
+        }
+
+        return annees;
+    }
+
+    /**
+     * Retourne les mois d'une année donnée avec leur état
+     */
+    getMoisAnnee(numeroAnnee: number): { index: number; nom: string; actif: boolean; numeroGlobal: number }[] {
+        const nomsDesMois = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+        const totalMois = this.getDureeMois();
+        const moisDebutAnnee = (numeroAnnee - 1) * 12;
+
+        return nomsDesMois.map((nom, index) => {
+            const numeroGlobal = moisDebutAnnee + index + 1;
+            return {
+                index: index,
+                nom: nom,
+                actif: numeroGlobal <= totalMois,
+                numeroGlobal: numeroGlobal
+            };
+        });
+    }
+
+    /**
+     * Retourne la classe CSS pour la couleur de l'année
+     */
+    getAnneeColorClass(numeroAnnee: number): string {
+        if (numeroAnnee === 1) return 'text-green-700';
+        if (numeroAnnee === 2) return 'text-blue-700';
+        return 'text-orange-700';
+    }
+
+    /**
+     * Retourne les segments de la barre de progression
+     */
+    getProgressSegments(): { annee: number; mois: number; pourcentage: number; couleur: string }[] {
+        const annees = this.getAnneesCredit();
+        const totalMois = this.getDureeMois();
+
+        if (totalMois === 0) return [];
+
+        return annees.map((annee) => ({
+            annee: annee.numero,
+            mois: annee.mois,
+            pourcentage: (annee.mois / totalMois) * 100,
+            couleur: annee.numero === 1 ? 'green' : annee.numero === 2 ? 'blue' : 'orange'
+        }));
+    }
+
+    /**
+     * Retourne les données pour le tableau de calcul des mensualités
+     */
+    getCalculMensualiteData(): TableDataItem[] {
+        const montant = this.getMontantCredit();
+        const duree = this.getDureeMois();
+        const mensualite = this.calculerMensualite();
+        const totalRemboursement = mensualite * duree;
+
+        return [
+            { label: 'Montant emprunté', value: this.formatCurrency(montant) },
+            { label: 'Durée du crédit', value: `${duree} mois (${this.getDureeEnAnneesResume()})` },
+            { label: 'Mensualité', value: this.formatCurrency(mensualite) },
+            { label: 'Nombre de paiements', value: `${duree} mensualités` },
+            { label: 'Total à rembourser', value: this.formatCurrency(totalRemboursement), isTotal: true }
+        ];
     }
 }

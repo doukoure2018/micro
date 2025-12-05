@@ -744,3 +744,227 @@
         transform: translateX(5px);
     }
 }
+
+/* ========================================
+   STYLES POUR LA VISUALISATION DE LA DURÉE
+   ======================================== */
+
+.duration-visualization-card {
+    overflow: hidden;
+
+    ::ng-deep .p-card-header {
+        background: linear-gradient(135deg, var(--surface-ground) 0%, var(--surface-100) 100%);
+        border-bottom: 1px solid var(--surface-border);
+    }
+}
+
+/* Cartes de statistiques avec gradients */
+.duration-stat-card {
+    transition: all 0.3s ease;
+
+    &:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%);
+}
+
+.bg-gradient-success {
+    background: linear-gradient(135deg, var(--green-500) 0%, var(--green-700) 100%);
+}
+
+.bg-gradient-info {
+    background: linear-gradient(135deg, var(--blue-500) 0%, var(--blue-700) 100%);
+}
+
+/* Section Timeline */
+.duration-timeline-section {
+    border-left: 4px solid var(--primary-color);
+}
+
+/* Grille des mois */
+.months-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 0.25rem;
+}
+
+.month-cell {
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    min-height: 50px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+        transform: scale(1.05);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        z-index: 1;
+    }
+}
+
+.text-xxs {
+    font-size: 0.65rem;
+}
+
+/* Barre de progression personnalisée */
+.duration-progress-bar {
+    height: 24px;
+    background: var(--surface-200);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-track {
+    display: flex;
+    height: 100%;
+    width: 100%;
+}
+
+.progress-segment {
+    height: 100%;
+    transition: all 0.3s ease;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+        filter: brightness(1.1);
+    }
+
+    &:first-child {
+        border-radius: 12px 0 0 12px;
+    }
+
+    &:last-child {
+        border-radius: 0 12px 12px 0;
+    }
+
+    &:only-child {
+        border-radius: 12px;
+    }
+}
+
+/* Section répartition */
+.repartition-item {
+    transition: all 0.2s ease;
+
+    &:hover {
+        transform: translateX(4px);
+        background: var(--surface-100) !important;
+    }
+}
+
+.repartition-dot {
+    flex-shrink: 0;
+}
+
+/* Animation pour l'apparition des éléments */
+.year-section {
+    animation: slideInUp 0.4s ease forwards;
+    opacity: 0;
+
+    &:nth-child(1) {
+        animation-delay: 0.1s;
+    }
+    &:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+    &:nth-child(3) {
+        animation-delay: 0.3s;
+    }
+    &:nth-child(4) {
+        animation-delay: 0.4s;
+    }
+    &:nth-child(5) {
+        animation-delay: 0.5s;
+    }
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Styles responsifs pour la visualisation de durée */
+@media (max-width: 992px) {
+    .months-grid {
+        grid-template-columns: repeat(6, 1fr);
+    }
+
+    .duration-stat-card {
+        margin-bottom: 1rem;
+
+        .text-4xl {
+            font-size: 1.75rem !important;
+        }
+    }
+
+    .duration-legend-item {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .months-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .month-cell {
+        min-height: 40px;
+        padding: 0.25rem !important;
+
+        .font-bold {
+            font-size: 0.7rem;
+        }
+
+        .text-xxs {
+            display: none;
+        }
+    }
+
+    .duration-stat-card {
+        padding: 1rem !important;
+
+        .text-4xl {
+            font-size: 1.5rem !important;
+        }
+
+        i {
+            font-size: 1.5rem !important;
+        }
+    }
+
+    .duration-progress-bar {
+        height: 16px;
+    }
+}
+
+@media (max-width: 576px) {
+    .months-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .year-section {
+        padding: 0.5rem !important;
+    }
+
+    .duration-stat-card {
+        .text-4xl {
+            font-size: 1.25rem !important;
+        }
+    }
+}

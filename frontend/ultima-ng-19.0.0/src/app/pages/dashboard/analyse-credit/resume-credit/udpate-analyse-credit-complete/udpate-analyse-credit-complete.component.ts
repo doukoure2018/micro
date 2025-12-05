@@ -1289,4 +1289,43 @@ export class UdpateAnalyseCreditCompleteComponent {
         if (ratio > 0.8) return 'warn';
         return 'danger';
     }
+
+    // ========================================
+    // NOUVELLES MÉTHODES POUR SÉLECTION DURÉE
+    // ========================================
+
+    /**
+     * Sélectionne une durée prédéfinie en mois
+     * @param duree - La durée en mois à sélectionner
+     */
+    selectionnerDureeMois(duree: number): void {
+        this.demandeCreditForm.patchValue({ dureeMois: duree });
+    }
+
+    /**
+     * Retourne la durée formatée en années pour l'affichage
+     */
+    getDureeEnAnnees(): string {
+        const mois = this.demandeCreditForm.get('dureeMois')?.value || 0;
+        if (mois < 12) {
+            return `${mois} mois`;
+        }
+        const annees = Math.floor(mois / 12);
+        const moisRestants = mois % 12;
+        if (moisRestants === 0) {
+            return annees === 1 ? '1 an' : `${annees} ans`;
+        }
+        return `${annees} an${annees > 1 ? 's' : ''} et ${moisRestants} mois`;
+    }
+
+    /**
+     * Retourne la sévérité (couleur) du tag selon la durée
+     */
+    getDureeSeverity(): PrimeSeverity {
+        const mois = this.demandeCreditForm.get('dureeMois')?.value || 0;
+        if (mois <= 12) return 'success';
+        if (mois <= 36) return 'info';
+        if (mois <= 60) return 'warn';
+        return 'danger';
+    }
 }
