@@ -144,3 +144,22 @@
         0 2px 4px -1px rgba(0, 0, 0, 0.06);
     transition: box-shadow 0.3s ease;
 }
+
+input.uppercase,
+input[style*='text-transform: uppercase'] {
+    text-transform: uppercase;
+}
+
+input.border-green-500 {
+    border-color: #22c55e !important;
+    &:focus {
+        box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+    }
+}
+
+input.border-red-500 {
+    border-color: #ef4444 !important;
+    &:focus {
+        box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+    }
+}

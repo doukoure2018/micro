@@ -455,6 +455,7 @@
         </div>
 
         <!-- Section de traitement de la demande -->
+        <!-- Section de traitement de la demande -->
         <div *ngIf="state().demandeIndividuel?.validationState !== 'SELECTION'"
             class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
             <div class="bg-orange-600 text-white px-4 py-3">
@@ -473,7 +474,9 @@
                 </div>
 
                 <form [formGroup]="updateForm" (ngSubmit)="onSubmit()">
-                    <div class="grid grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                        <!-- Point de Service -->
                         <div>
                             <label class="block font-semibold mb-2">Point de Service :</label>
                             <p-dropdown formControlName="code" [options]="state().pointVentes || []"
@@ -487,19 +490,89 @@
                             </small>
                         </div>
 
+                        <!-- Code Agent - Champ de saisie avec validation SAF -->
                         <div>
-                            <label class="block font-semibold mb-2">Agent de Crédit :</label>
-                            <p-dropdown formControlName="usuario" [options]="state().usuarios || []"
-                                optionLabel="nom_USUARIO" placeholder="Sélectionner..." [showClear]="true"
-                                styleClass="w-full" [disabled]="!updateForm.get('code')?.value">
-                            </p-dropdown>
-                            <small
-                                *ngIf="updateForm.get('usuario')?.hasError('required') && updateForm.get('usuario')?.touched"
-                                class="text-red-500">
-                                Agent de crédit obligatoire
+                            <label class="block font-semibold mb-2">
+                                Code Agent de Crédit :
+                                <span class="text-blue-500 text-sm ml-1">(Validation SAF)</span>
+                            </label>
+                            <div class="relative">
+                                <input pInputText formControlName="codAgent" placeholder="Ex: AGCR001" class="w-full"
+                                    [ngClass]="{
+                                   'border-red-500': state().agentValidation.checked && !state().agentValidation.isActive,
+                                   'border-green-500': state().agentValidation.checked && state().agentValidation.isActive
+                               }" (input)="onAgentCodeChange($any($event.target).value)"
+                                    [disabled]="!updateForm.get('code')?.value" style="text-transform: uppercase;" />
+
+                                <!-- Icône de chargement -->
+                                <div *ngIf="state().agentValidation.isLoading"
+                                    class="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                    <i class="pi pi-spin pi-spinner text-blue-500"></i>
+                                </div>
+
+                                <!-- Icône de succès -->
+                                <div *ngIf="state().agentValidation.checked && state().agentValidation.isActive"
+                                    class="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                    <i class="pi pi-check-circle text-green-500"></i>
+                                </div>
+
+                                <!-- Icône d'erreur -->
+                                <div *ngIf="state().agentValidation.checked && !state().agentValidation.isValid"
+                                    class="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                    <i class="pi pi-times-circle text-red-500"></i>
+                                </div>
+                            </div>
+
+                            <!-- Messages de validation -->
+                            <div class="mt-2">
+                                <!-- Champ requis -->
+                                <small
+                                    *ngIf="updateForm.get('codAgent')?.hasError('required') && updateForm.get('codAgent')?.touched"
+                                    class="text-red-500 block">
+                                    Code agent obligatoire
+                                </small>
+
+                                <!-- Message de succès -->
+                                <p-message *ngIf="state().agentValidation.checked && state().agentValidation.isActive"
+                                    severity="success" [text]="state().agentValidation.message" styleClass="w-full">
+                                </p-message>
+
+                                <!-- Message d'avertissement (existe mais non actif) -->
+                                <p-message
+                                    *ngIf="state().agentValidation.checked && state().agentValidation.isValid && !state().agentValidation.isActive"
+                                    severity="warn" [text]="state().agentValidation.message" styleClass="w-full">
+                                </p-message>
+
+                                <!-- Message d'erreur (non trouvé) -->
+                                <p-message *ngIf="state().agentValidation.checked && !state().agentValidation.isValid"
+                                    severity="error" [text]="state().agentValidation.message" styleClass="w-full">
+                                </p-message>
+                            </div>
+
+                            <!-- Agent trouvé - Détails -->
+                            <div *ngIf="state().agentValidation.isActive && state().foundAgent"
+                                class="mt-2 p-3 bg-green-50 border border-green-300 rounded-lg">
+                                <div class="flex items-center gap-2">
+                                    <i class="pi pi-user text-green-600 text-xl"></i>
+                                    <div>
+                                        <span class="text-green-700 font-bold block">
+                                            {{ state().foundAgent?.nom_USUARIO }}
+                                        </span>
+                                        <span class="text-green-600 text-sm">
+                                            Code: {{ state().foundAgent?.usariosPKId?.codUsuarios }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Indication si point de service non sélectionné -->
+                            <small *ngIf="!updateForm.get('code')?.value" class="text-gray-500 block mt-1">
+                                <i class="pi pi-info-circle mr-1"></i>
+                                Sélectionnez d'abord un point de service
                             </small>
                         </div>
 
+                        <!-- Statut -->
                         <div>
                             <label class="block font-semibold mb-2">Statut :</label>
                             <p-dropdown formControlName="statut" [options]="state().statusOptions" optionLabel="label"
@@ -513,15 +586,24 @@
                         </div>
                     </div>
 
+                    <!-- Bouton de soumission -->
                     <div class="mt-6 text-center">
-                        <button pButton type="submit" [disabled]="updateForm.invalid || state().loading"
-                            class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded font-bold shadow-lg">
+                        <button pButton type="submit" [disabled]="!canSubmitForm() || state().loading"
+                            class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded font-bold shadow-lg"
+                            [ngClass]="{'opacity-50 cursor-not-allowed': !canSubmitForm()}">
                             <i *ngIf="!state().loading" class="pi pi-check mr-2"></i>
                             <i *ngIf="state().loading" class="pi pi-spinner pi-spin mr-2"></i>
-                            {{ updateForm.get('statut')?.value === 'VALIDATION' ?
-                            'VALIDER POUR OCTROI' :
-                            'VALIDER POUR SÉLECTION' }}
+                            {{ updateForm.get('statut')?.value === 'VALIDATION' ? 'VALIDER POUR OCTROI' : 'VALIDER POUR
+                            SÉLECTION' }}
                         </button>
+                    </div>
+
+                    <!-- Message d'avertissement si validation requise -->
+                    <div *ngIf="!canSubmitForm() && updateForm.get('codAgent')?.value" class="mt-4">
+                        <p-message severity="warn"
+                            text="La validation du code agent SAF est requise avant de pouvoir traiter la demande"
+                            styleClass="w-full">
+                        </p-message>
                     </div>
                 </form>
             </div>

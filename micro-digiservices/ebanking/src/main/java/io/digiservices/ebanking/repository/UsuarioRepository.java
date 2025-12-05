@@ -10,6 +10,8 @@ public interface UsuarioRepository extends JpaRepository<SG_USUARIOS, UsariosPKI
 
     List<SG_USUARIOS> findByUsariosPKIdCodAgenciaAndCodPuestoAndIndActivo(String codAgencia, String codPuesto, String indActivo);
 
+    List<SG_USUARIOS> findByUsariosPKIdCodAgenciaAndAndIndActivo(String codAgencia, String codPuesto, String indActivo);
+
     boolean existsByUsariosPKIdCodUsuarios(String codUsuario);
 
 }

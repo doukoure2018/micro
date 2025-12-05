@@ -32,7 +32,7 @@ import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
-import { switchMap, EMPTY, Observer } from 'rxjs';
+import { switchMap, EMPTY, Observer, Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Avis } from '@/interface/avis';
 import { AvatarModule } from 'primeng/avatar';
@@ -83,7 +83,7 @@ export class DetailComponent {
         demandeIndividuel?: DemandeIndividuel;
         demande_credit?: DemandeCredit;
         documents?: Selection[];
-        usuarios?: SG_USUARIOS[];
+        // usuarios?: SG_USUARIOS[];  // SUPPRIMÉ
         loading: boolean;
         message: string | undefined;
         error: string | any;
@@ -95,7 +95,6 @@ export class DetailComponent {
         pdfBlobUrl: string | null;
         hasDemandeCredit?: boolean;
         hasDossierCredit?: boolean;
-        // Nouvelles propriétés pour les avis
         avisList: Avis[];
         loadingAvis: boolean;
         showAvisForm: boolean;
@@ -105,6 +104,14 @@ export class DetailComponent {
         editingAvis: boolean;
         editingAvisId?: number;
         deletingAvisId?: number;
+        agentValidation: {
+            isValid: boolean;
+            isActive: boolean;
+            isLoading: boolean;
+            message: string;
+            checked: boolean;
+        };
+        foundAgent?: SG_USUARIOS;
     }>({
         loading: false,
         message: undefined,
@@ -115,7 +122,6 @@ export class DetailComponent {
         showPDFPreview: false,
         selectedPDFDocument: null,
         pdfBlobUrl: null,
-        // Initialisation des nouvelles propriétés
         avisList: [],
         loadingAvis: false,
         showAvisForm: true,
@@ -124,8 +130,18 @@ export class DetailComponent {
         submittingAvis: false,
         editingAvis: false,
         editingAvisId: undefined,
-        deletingAvisId: undefined
+        deletingAvisId: undefined,
+        agentValidation: {
+            isValid: false,
+            isActive: false,
+            isLoading: false,
+            message: '',
+            checked: false
+        },
+        foundAgent: undefined
     });
+
+    private agentCodeSubject = new Subject<string>();
 
     updateForm: FormGroup;
     private userService = inject(UserService);
@@ -143,11 +159,10 @@ export class DetailComponent {
     constructor() {
         this.updateForm = this.fb.group({
             code: ['', Validators.required],
-            usuario: ['', Validators.required],
+            codAgent: ['', [Validators.required]],
             statut: ['', Validators.required]
         });
 
-        // Initialiser le formulaire d'avis
         this.avisForm = this.fb.group({
             libele: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(1000)]]
         });
@@ -155,6 +170,152 @@ export class DetailComponent {
 
     ngOnInit(): void {
         this.loadDemandeWithGaranties();
+        this.setupAgentCodeValidation();
+    }
+
+    private setupAgentCodeValidation(): void {
+        this.agentCodeSubject
+            .pipe(
+                debounceTime(500), // Attendre 500ms après que l'utilisateur arrête de taper
+                distinctUntilChanged(),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe((codAgent) => {
+                if (codAgent && codAgent.length >= 2) {
+                    this.validateAgentCode(codAgent);
+                }
+            });
+    }
+
+    // Valider le code agent via SAF (comme dans create-user)
+    private validateAgentCode(codAgent: string): void {
+        const pointVente = this.updateForm.get('code')?.value;
+
+        if (!pointVente) {
+            this.state.update((s) => ({
+                ...s,
+                agentValidation: {
+                    isValid: false,
+                    isActive: false,
+                    isLoading: false,
+                    message: "Veuillez d'abord sélectionner un point de service",
+                    checked: true
+                }
+            }));
+            return;
+        }
+
+        this.state.update((s) => ({
+            ...s,
+            agentValidation: {
+                ...s.agentValidation,
+                isLoading: true,
+                message: 'Vérification en cours...'
+            }
+        }));
+
+        this.userService
+            .getUserSaf$(codAgent)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    console.log('Agent validation response:', response);
+
+                    if (response.data?.usuario) {
+                        const usuario: SG_USUARIOS = response.data.usuario;
+                        const isActive = usuario.indActivo === 'A';
+
+                        this.state.update((s) => ({
+                            ...s,
+                            foundAgent: usuario,
+                            agentValidation: {
+                                isValid: true,
+                                isActive: isActive,
+                                isLoading: false,
+                                message: isActive ? `Agent validé: ${usuario.nom_USUARIO}` : 'Agent existe mais non actif',
+                                checked: true
+                            }
+                        }));
+
+                        if (isActive) {
+                            this.messageService.add({
+                                severity: 'success',
+                                summary: 'Validation réussie',
+                                detail: `Agent ${usuario.nom_USUARIO} validé et actif`,
+                                life: 3000
+                            });
+                        } else {
+                            this.messageService.add({
+                                severity: 'warn',
+                                summary: 'Agent non actif',
+                                detail: "Cet agent existe mais n'est pas actif",
+                                life: 5000
+                            });
+                        }
+                    } else {
+                        this.state.update((s) => ({
+                            ...s,
+                            foundAgent: undefined,
+                            agentValidation: {
+                                isValid: false,
+                                isActive: false,
+                                isLoading: false,
+                                message: `Aucun agent trouvé avec le code "${codAgent}"`,
+                                checked: true
+                            }
+                        }));
+
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: 'Agent non trouvé',
+                            detail: 'Aucun agent trouvé avec ce code',
+                            life: 3000
+                        });
+                    }
+                },
+                error: (error) => {
+                    console.error('Error validating agent code:', error);
+                    this.state.update((s) => ({
+                        ...s,
+                        foundAgent: undefined,
+                        agentValidation: {
+                            isValid: false,
+                            isActive: false,
+                            isLoading: false,
+                            message: 'Erreur lors de la validation',
+                            checked: true
+                        }
+                    }));
+
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Erreur de validation',
+                        detail: 'Impossible de valider le code agent',
+                        life: 3000
+                    });
+                }
+            });
+    }
+
+    canSubmitForm(): boolean {
+        const validation = this.state().agentValidation;
+        return this.updateForm.valid && validation.checked && validation.isActive;
+    }
+
+    onAgentCodeChange(codAgent: string): void {
+        // Réinitialiser l'état de validation pendant la saisie
+        this.state.update((s) => ({
+            ...s,
+            agentValidation: {
+                ...s.agentValidation,
+                checked: false,
+                message: ''
+            },
+            foundAgent: undefined
+        }));
+
+        // Déclencher la validation avec debounce
+        this.agentCodeSubject.next(codAgent?.trim()?.toUpperCase());
     }
 
     /**
@@ -666,42 +827,33 @@ export class DetailComponent {
             });
     }
 
+    // onPointVenteChange - Simplifié
     onPointVenteChange(event: any): void {
-        const selectedPointVente = event.value;
-        this.updateForm.get('usuario')?.reset();
-
-        if (selectedPointVente) {
-            const codAgencia = selectedPointVente.code;
-            const codPuesto = 'AGENCR';
-            const indActivo = 'A';
-
-            this.userService
-                .getListUsuariosByCodAgencia$(codAgencia, codPuesto, indActivo)
-                .pipe(takeUntilDestroyed(this.destroyRef))
-                .subscribe({
-                    next: (response: IResponse) => {
-                        this.state.update((s) => ({
-                            ...s,
-                            usuarios: response.data.usuarios
-                        }));
-                    },
-                    error: (error) => {
-                        console.error('Error loading usuarios:', error);
-                    }
-                });
-        }
+        // Réinitialiser le champ agent et son état de validation
+        this.updateForm.get('codAgent')?.reset();
+        this.state.update((s) => ({
+            ...s,
+            agentValidation: {
+                isValid: false,
+                isActive: false,
+                isLoading: false,
+                message: '',
+                checked: false
+            },
+            foundAgent: undefined
+        }));
     }
-
     onSubmit(): void {
-        if (this.updateForm.valid) {
-            const { statut, usuario } = this.updateForm.value;
+        if (this.updateForm.valid && this.canSubmitForm()) {
+            const { statut } = this.updateForm.value;
             const demandeIndividuelId = this.state().demandeIndividuel?.demandeIndividuelId;
+            const foundAgent = this.state().foundAgent;
 
-            if (demandeIndividuelId && usuario) {
+            if (demandeIndividuelId && foundAgent) {
                 this.state.update((s) => ({ ...s, loading: true }));
 
                 this.userService
-                    .updateDemandeIndividuel$(statut, usuario.usariosPKId.codUsuarios, +demandeIndividuelId)
+                    .updateDemandeIndividuel$(statut, foundAgent.usariosPKId!.codUsuarios!, +demandeIndividuelId)
                     .pipe(takeUntilDestroyed(this.destroyRef))
                     .subscribe({
                         next: (response: IResponse) => {
@@ -741,9 +893,17 @@ export class DetailComponent {
             }
         } else {
             this.updateForm.markAllAsTouched();
+
+            if (!this.state().agentValidation.isActive) {
+                this.messageService.add({
+                    severity: 'warn',
+                    summary: 'Attention',
+                    detail: 'Veuillez saisir un code agent valide et actif',
+                    life: 3000
+                });
+            }
         }
     }
-
     // ===============================
     // MÉTHODES POUR LES GARANTIES
     // ===============================
