@@ -1,0 +1,263 @@
+<div class="document-detail-container">
+    <!-- Header -->
+    <div class="page-header">
+        <button class="btn btn-back" (click)="goBack()">
+            <i class="fas fa-arrow-left"></i>
+            Retour
+        </button>
+        <h1 class="page-title">
+            Détail de la demande
+            @if (state().etat) {
+            <span class="id-badge">#{{ state().etat?.id }}</span>
+            }
+        </h1>
+    </div>
+
+    <!-- Messages -->
+    @if (state().success) {
+    <div class="alert alert-success">
+        <i class="fas fa-check-circle"></i>
+        {{ state().success }}
+    </div>
+    }
+
+    @if (state().error) {
+    <div class="alert alert-danger">
+        <i class="fas fa-exclamation-triangle"></i>
+        {{ state().error }}
+    </div>
+    }
+
+    <!-- Loading -->
+    @if (state().loading) {
+    <div class="loading-container">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p>Chargement des détails...</p>
+    </div>
+    }
+
+    <!-- Content -->
+    @if (!state().loading && state().etat) {
+    <div class="detail-content">
+        <!-- Statut et Actions -->
+        <div class="status-actions-card">
+            <div class="status-section">
+                <span class="status-label">Statut actuel</span>
+                <span class="status-badge" [ngClass]="getStatutClass(state().etat!.statut)">
+                    {{ getStatutLabel(state().etat!.statut) }}
+                </span>
+            </div>
+
+            <div class="actions-section">
+                @if (canValidate()) {
+                <button class="btn btn-success btn-action" [disabled]="state().processing" (click)="valider()">
+                    <i class="fas fa-check"></i>
+                    Valider
+                </button>
+                }
+
+                @if (canAccept()) {
+                <button class="btn btn-primary btn-action" [disabled]="state().processing" (click)="accepter()">
+                    <i class="fas fa-thumbs-up"></i>
+                    Accepter
+                </button>
+                }
+
+                @if (canReject()) {
+                <button class="btn btn-danger btn-action" [disabled]="state().processing" (click)="openRejectModal()">
+                    <i class="fas fa-times"></i>
+                    Rejeter
+                </button>
+                }
+
+                @if (state().processing) {
+                <span class="processing-indicator">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Traitement...
+                </span>
+                }
+            </div>
+        </div>
+
+        <!-- Informations Grid -->
+        <div class="info-grid">
+            <!-- Utilisateur -->
+            <div class="info-card user-card">
+                <div class="card-header">
+                    <i class="fas fa-user"></i>
+                    <h3>Informations Utilisateur</h3>
+                </div>
+                <div class="card-body">
+                    @if (state().etat!.user) {
+                    <div class="user-profile">
+                        <img [src]="state().etat!.user.imageUrl || 'assets/images/default-avatar.png'"
+                            [alt]="state().etat!.user.firstName" class="user-avatar"
+                            (error)="$any($event.target).src = 'assets/images/default-avatar.png'">
+                        <div class="user-info">
+                            <h4 class="user-name">
+                                {{ state().etat!.user.firstName }} {{ state().etat!.user.lastName }}
+                            </h4>
+                            <p class="user-email">
+                                <i class="fas fa-envelope"></i>
+                                {{ state().etat!.user.email }}
+                            </p>
+                            <p class="user-phone">
+                                <i class="fas fa-phone"></i>
+                                {{ state().etat!.user.phone || 'Non renseigné' }}
+                            </p>
+                        </div>
+                    </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Localisation -->
+            <div class="info-card location-card">
+                <div class="card-header">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <h3>Localisation</h3>
+                </div>
+                <div class="card-body">
+                    <div class="info-row">
+                        <span class="info-label">Délégation</span>
+                        <span class="info-value">
+                            {{ state().etat!.delegation.libele || '-' }}
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Agence</span>
+                        <span class="info-value">
+                            {{ state().etat!.agence.libele || '-' }}
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Point de Vente</span>
+                        <span class="info-value">
+                            {{ state().etat!.pointVente.libele || '-' }}
+                            @if (state().etat!.pointVente.code) {
+                            <span class="code-badge">{{ state().etat!.pointVente.code }}</span>
+                            }
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dates -->
+            <div class="info-card dates-card">
+                <div class="card-header">
+                    <i class="fas fa-calendar-alt"></i>
+                    <h3>Dates</h3>
+                </div>
+                <div class="card-body">
+                    <div class="info-row">
+                        <span class="info-label">Créé le</span>
+                        <span class="info-value">{{ formatDate(state().etat!.createdAt) }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Mis à jour le</span>
+                        <span class="info-value">{{ formatDate(state().etat!.updatedAt) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Documents Section -->
+        <div class="documents-section">
+            <div class="section-header">
+                <i class="fas fa-file-image"></i>
+                <h3>Documents ({{ state().etat!.documentCount }})</h3>
+            </div>
+
+            @if (state().etat!.documents && state().etat!.documents.length > 0) {
+            <div class="documents-grid">
+                @for (doc of state().etat!.documents; track doc.id) {
+                <div class="document-card" (click)="isImage(doc.doc) ? openImage(doc.doc) : null">
+                    @if (isImage(doc.doc)) {
+                    <div class="document-preview image-preview">
+                        <img [src]="doc.doc" [alt]="getFileName(doc.doc)">
+                        <div class="preview-overlay">
+                            <i class="fas fa-search-plus"></i>
+                            <span>Agrandir</span>
+                        </div>
+                    </div>
+                    } @else {
+                    <div class="document-preview file-preview">
+                        <i class="fas fa-file-pdf"></i>
+                    </div>
+                    }
+                    <div class="document-info">
+                        <span class="document-name" [title]="getFileName(doc.doc)">
+                            {{ getFileName(doc.doc) }}
+                        </span>
+                        <span class="document-date">
+                            {{ formatDate(doc.createdAt) }}
+                        </span>
+                    </div>
+                    <a [href]="doc.doc" target="_blank" class="btn btn-sm btn-outline-primary download-btn"
+                        (click)="$event.stopPropagation()">
+                        <i class="fas fa-external-link-alt"></i>
+                    </a>
+                </div>
+                }
+            </div>
+            } @else {
+            <div class="empty-documents">
+                <i class="fas fa-folder-open"></i>
+                <p>Aucun document uploadé</p>
+            </div>
+            }
+        </div>
+    </div>
+    }
+</div>
+
+<!-- Image Modal -->
+@if (state().selectedImage) {
+<div class="modal-overlay" (click)="closeImage()">
+    <div class="modal-content image-modal" (click)="$event.stopPropagation()">
+        <button class="close-btn" (click)="closeImage()">
+            <i class="fas fa-times"></i>
+        </button>
+        <img [src]="state().selectedImage" alt="Document">
+    </div>
+</div>
+}
+
+<!-- Reject Modal -->
+@if (state().showRejectModal) {
+<div class="modal-overlay" (click)="closeRejectModal()">
+    <div class="modal-content reject-modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <h3>
+                <i class="fas fa-exclamation-triangle text-danger"></i>
+                Rejeter la demande
+            </h3>
+            <button class="close-btn" (click)="closeRejectModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p>Êtes-vous sûr de vouloir rejeter cette demande ?</p>
+            <div class="form-group">
+                <label for="motif">Motif du rejet (optionnel)</label>
+                <textarea id="motif" class="form-control" rows="3" placeholder="Indiquez la raison du rejet..."
+                    [value]="state().rejectMotif" (input)="updateRejectMotif($event)">
+                    </textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" (click)="closeRejectModal()">
+                Annuler
+            </button>
+            <button class="btn btn-danger" [disabled]="state().processing" (click)="rejeter()">
+                @if (state().processing) {
+                <i class="fas fa-spinner fa-spin"></i>
+                } @else {
+                <i class="fas fa-times"></i>
+                }
+                Confirmer le rejet
+            </button>
+        </div>
+    </div>
+</div>
+}

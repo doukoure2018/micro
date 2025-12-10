@@ -3,7 +3,7 @@
     <p-confirmDialog></p-confirmDialog>
     <p-toast></p-toast>
 
-    <!-- Section Informations du Demandeur (existante - garder telle quelle) -->
+    <!-- Section Informations du Demandeur -->
     <p-card class="mb-3" *ngIf="demandeIndividuel()">
         <ng-template pTemplate="header">
             <div class="flex justify-content-between align-items-center p-3">
@@ -88,6 +88,7 @@
                     </div>
                 </div>
             </div>
+
             <!-- Activité -->
             <div class="col-12">
                 <p-divider></p-divider>
@@ -102,6 +103,7 @@
                     </small>
                 </div>
             </div>
+
             <!-- Garanties -->
             <div class="col-12" *ngIf="garanties().length > 0">
                 <p-divider></p-divider>
@@ -133,12 +135,11 @@
                     </ng-template>
                 </p-table>
             </div>
-
         </div>
     </p-card>
 
     <p-divider></p-divider>
-    <!-- Affichage simplifié si demandeIndividuel existe -->
+
     <!-- Section Statut du Dossier de Crédit -->
     <div class="credit-status-section mb-4" *ngIf="demandeIndividuel()">
         <!-- Si dossier existe -->
@@ -207,6 +208,7 @@
             </div>
         </div>
     </div>
+
     <!-- SECTION PRINCIPALE : TABLEAU DE TRÉSORERIE -->
     <p-card>
         <ng-template pTemplate="header">
@@ -220,7 +222,8 @@
                         </h2>
                         <div class="flex gap-2">
                             <p-tag *ngIf="getTableMonthsWithData() > 0" severity="info"
-                                [value]="getTableMonthsWithData() + '/13 mois'" icon="pi pi-calendar">
+                                [value]="getTableMonthsWithData() + '/' + (nombreMois() + 1) + ' mois'"
+                                icon="pi pi-calendar">
                             </p-tag>
                             <p-tag *ngIf="tresorerieState.hasUnsavedChanges()" severity="warn" value="Modifications"
                                 icon="pi pi-exclamation-triangle">
@@ -233,7 +236,6 @@
 
                     <!-- Boutons d'action -->
                     <div class="flex gap-2 align-items-center flex-wrap">
-                        <!-- Groupe impression -->
                         @if (peutImprimer()) {
                         <div class="btn-group-print flex gap-1">
                             <p-button icon="pi pi-print" label="Imprimer" severity="success" size="small"
@@ -248,41 +250,31 @@
                             [disabled]="true" pTooltip="Saisissez des données pour imprimer">
                         </p-button>
                         }
-
-                        <!-- Séparateur -->
-                        <!-- <span class="text-gray-300">|</span> -->
-
-                        <!-- Toggle vue -->
-                        <!-- <p-button [icon]="state().viewMode === 'saisie' ? 'pi pi-list' : 'pi pi-table'"
-                            [label]="state().viewMode === 'saisie' ? 'Vue liste' : 'Vue tableau'" outlined size="small"
-                            (onClick)="toggleView()">
-                        </p-button> -->
                     </div>
                 </div>
             </div>
         </ng-template>
 
-        <!-- Bannière d'info impression (après le header, dans le contenu) -->
+        <!-- Bannière de progression -->
         @if (peutImprimer()) {
-
         <div class="progress-banner mb-3">
             <div class="p-3 surface-100 border-round-lg border-1 surface-border">
                 <div class="flex align-items-center justify-content-between mb-2">
                     <span class="font-semibold text-gray-700">
                         <i class="pi pi-chart-line mr-2"></i>
-                        Progression: {{ getTableMonthsWithData() }}/13 mois
+                        Progression: {{ getTableMonthsWithData() }}/{{ nombreMois() + 1 }} mois
                     </span>
                     <span [ngClass]="{
-                'text-red-500': (getCellValue('soldeFin', 12) ?? 0) < 0,
-                'text-green-600': (getCellValue('soldeFin', 12) ?? 0) >= 0
-            }">
-                        Solde final: <strong>{{ formatMontant(getCellValue('soldeFin', 12) ?? 0) }}</strong>
+                            'text-red-500': (getCellValue('soldeFin', dernierMois()) ?? 0) < 0,
+                            'text-green-600': (getCellValue('soldeFin', dernierMois()) ?? 0) >= 0
+                        }">
+                        Solde final: <strong>{{ formatMontant(getCellValue('soldeFin', dernierMois()) ?? 0) }}</strong>
                     </span>
                 </div>
 
                 <!-- Segments pour chaque mois -->
                 <div class="month-segments flex gap-1">
-                    @for (mois of moisColumns; track mois) {
+                    @for (mois of moisColumns(); track mois) {
                     <div class="month-segment flex-1"
                         [class.segment-empty]="!checkIfMoisHasData(getMoisFormGroup(mois).getRawValue())"
                         [class.segment-filled]="checkIfMoisHasData(getMoisFormGroup(mois).getRawValue()) && !moisSauvegardes().has(mois)"
@@ -293,7 +285,7 @@
                     }
                 </div>
 
-                <!-- Légende et actions -->
+                <!-- Légende -->
                 <div class="flex justify-content-between align-items-center mt-2">
                     <div class="flex gap-3 text-xs">
                         <span class="flex align-items-center gap-1">
@@ -306,51 +298,25 @@
                             <span class="legend-dot bg-green-500"></span> Sauvegardé
                         </span>
                     </div>
-
-                    <!-- <div class="flex gap-2">
-                        @if (peutImprimer()) {
-                        <p-button icon="pi pi-print" label="Imprimer" size="small" severity="success"
-                            (onClick)="imprimerTableauTresorerie()">
-                        </p-button>
-                        }
-                    </div> -->
                 </div>
             </div>
         </div>
         }
 
-        <!-- Barre d'actions du tableau -->
-        <!-- <div
-            class="tableau-actions mb-3 p-3 surface-100 border-round flex justify-content-between align-items-center flex-wrap gap-2">
-            <div class="flex gap-2 flex-wrap">
-                <p-button label="Appliquer remboursements suggérés" icon="pi pi-calculator" outlined size="small"
-                    (onClick)="applySuggestedRepayments()"
-                    pTooltip="Applique la mensualité calculée ({{ formatMontant(mensualite().total) }}) aux mois 1-12">
-                </p-button>
-                <p-button label="Réinitialiser tout" icon="pi pi-refresh" outlined severity="danger" size="small"
-                    (onClick)="resetTableau()">
-                </p-button>
-            </div>
-            <div class="flex gap-2 align-items-center">
-                <span class="text-sm text-gray-600">
-                    Mensualité suggérée:
-                    <strong class="text-primary">{{ formatMontant(mensualite().total) }}</strong>
-                    (Capital: {{ formatMontant(mensualite().capital) }} + Intérêts: {{
-                    formatMontant(mensualite().interet) }})
-                </span>
-            </div>
-        </div> -->
-
         <!-- Info sur le solde final -->
-        <div class="solde-final-info mb-3 p-3 border-round flex justify-content-between align-items-center" [ngClass]="{'bg-green-50 border-green-200': (getCellValue('soldeFin', 12) ?? 0) >= 0, 
-                         'bg-red-50 border-red-200': (getCellValue('soldeFin', 12) ?? 0) < 0}">
+        <div class="solde-final-info mb-3 p-3 border-round flex justify-content-between align-items-center" [ngClass]="{
+                'bg-green-50 border-green-200': (getCellValue('soldeFin', dernierMois()) ?? 0) >= 0, 
+                'bg-red-50 border-red-200': (getCellValue('soldeFin', dernierMois()) ?? 0) < 0
+            }">
             <div>
-                <span class="text-sm">Solde final prévu (Mois 12):</span>
+                <span class="text-sm">Solde final prévu (Mois {{ dernierMois() }}):</span>
             </div>
             <div>
-                <span class="font-bold text-2xl" [ngClass]="{'text-green-600': (getCellValue('soldeFin', 12) ?? 0) >= 0, 
-                                  'text-red-600': (getCellValue('soldeFin', 12) ?? 0) < 0}">
-                    {{ formatMontant(getCellValue('soldeFin', 12) ?? 0) }}
+                <span class="font-bold text-2xl" [ngClass]="{
+                        'text-green-600': (getCellValue('soldeFin', dernierMois()) ?? 0) >= 0, 
+                        'text-red-600': (getCellValue('soldeFin', dernierMois()) ?? 0) < 0
+                    }">
+                    {{ formatMontant(getCellValue('soldeFin', dernierMois()) ?? 0) }}
                 </span>
             </div>
         </div>
@@ -361,80 +327,95 @@
                 <thead>
                     <tr class="header-row">
                         <th class="col-libelle sticky-col">Libellé</th>
-                        <th *ngFor="let mois of moisColumns" class="col-mois" [class.col-mois-0]="mois === 0">
+                        @for (mois of moisColumns(); track mois) {
+                        <th class="col-mois" [class.col-mois-0]="mois === 0">
                             {{ getTableMoisLabel(mois) }}
                             <small *ngIf="mois === 0" class="block text-xs opacity-70">Démarrage</small>
                         </th>
+                        }
                         <th class="col-cumul">Cumul</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <ng-container *ngFor="let ligne of lignesTableau; let i = index">
-                        <!-- Séparateurs de section -->
-                        <tr *ngIf="ligne.id === 'ventes'" class="section-header-row">
-                            <td [attr.colspan]="moisColumns.length + 2" class="section-title section-encaissement">
-                                <i class="pi pi-download mr-2"></i> ENCAISSEMENTS
-                            </td>
-                        </tr>
-                        <tr *ngIf="ligne.id === 'achatmarchandises'" class="section-header-row">
-                            <td [attr.colspan]="moisColumns.length + 2" class="section-title section-decaissement">
-                                <i class="pi pi-upload mr-2"></i> DÉCAISSEMENTS
-                            </td>
-                        </tr>
-                        <tr *ngIf="ligne.id === 'disponibleEnCaisse'" class="section-header-row">
-                            <td [attr.colspan]="moisColumns.length + 2" class="section-title section-calcul">
-                                <i class="pi pi-calculator mr-2"></i> RÉSULTATS
-                            </td>
-                        </tr>
-                        <tr *ngIf="ligne.id === 'interetsAVerser'" class="section-header-row">
-                            <td [attr.colspan]="moisColumns.length + 2" class="section-title section-remboursement">
-                                <i class="pi pi-money-bill mr-2"></i> REMBOURSEMENTS CRÉDIT
-                            </td>
-                        </tr>
+                    @for (ligne of lignesTableau; track ligne.id; let i = $index) {
+                    <!-- Séparateurs de section -->
+                    @if (ligne.id === 'ventes') {
+                    <tr class="section-header-row">
+                        <td [attr.colspan]="moisColumns().length + 2" class="section-title section-encaissement">
+                            <i class="pi pi-download mr-2"></i> ENCAISSEMENTS
+                        </td>
+                    </tr>
+                    }
+                    @if (ligne.id === 'achatmarchandises') {
+                    <tr class="section-header-row">
+                        <td [attr.colspan]="moisColumns().length + 2" class="section-title section-decaissement">
+                            <i class="pi pi-upload mr-2"></i> DÉCAISSEMENTS
+                        </td>
+                    </tr>
+                    }
+                    @if (ligne.id === 'disponibleEnCaisse') {
+                    <tr class="section-header-row">
+                        <td [attr.colspan]="moisColumns().length + 2" class="section-title section-calcul">
+                            <i class="pi pi-calculator mr-2"></i> RÉSULTATS
+                        </td>
+                    </tr>
+                    }
+                    @if (ligne.id === 'interetsAVerser') {
+                    <tr class="section-header-row">
+                        <td [attr.colspan]="moisColumns().length + 2" class="section-title section-remboursement">
+                            <i class="pi pi-money-bill mr-2"></i> REMBOURSEMENTS CRÉDIT
+                        </td>
+                    </tr>
+                    }
 
-                        <!-- Ligne de données -->
-                        <tr [class]="ligne.cssClass">
-                            <!-- Colonne libellé -->
-                            <td class="col-libelle sticky-col">
-                                <div class="flex align-items-center justify-content-between">
-                                    <span class="libelle-text">{{ ligne.libelle }}</span>
-                                    <button *ngIf="ligne.editable" pButton type="button" icon="pi pi-copy"
-                                        class="p-button-text p-button-sm p-button-rounded copy-btn"
-                                        pTooltip="Copier M0 vers les mois suivants" tooltipPosition="right"
-                                        (click)="copyToFollowingMonths(ligne.id, 0)">
-                                    </button>
-                                </div>
-                            </td>
+                    <!-- Ligne de données -->
+                    <tr [class]="ligne.cssClass">
+                        <!-- Colonne libellé -->
+                        <td class="col-libelle sticky-col">
+                            <div class="flex align-items-center justify-content-between">
+                                <span class="libelle-text">{{ ligne.libelle }}</span>
+                                @if (ligne.editable) {
+                                <button pButton type="button" icon="pi pi-copy"
+                                    class="p-button-text p-button-sm p-button-rounded copy-btn"
+                                    pTooltip="Copier M0 vers les mois suivants" tooltipPosition="right"
+                                    (click)="copyToFollowingMonths(ligne.id, 0)">
+                                </button>
+                                }
+                            </div>
+                        </td>
 
-                            <!-- Cellules pour chaque mois -->
-                            <td *ngFor="let mois of moisColumns" class="col-mois" [class.col-mois-0]="mois === 0"
-                                [class.cell-editable]="isCellEditable(ligne, mois)"
-                                [class.cell-readonly]="!isCellEditable(ligne, mois)"
-                                [class.cell-negative]="(getCellValue(ligne.id, mois) ?? 0) < 0"
-                                [class.cell-positive]="(getCellValue(ligne.id, mois) ?? 0) > 0 && ligne.type === 'calcul'">
+                        <!-- Cellules pour chaque mois -->
+                        @for (mois of moisColumns(); track mois) {
+                        <td class="col-mois" [class.col-mois-0]="mois === 0"
+                            [class.cell-editable]="isCellEditable(ligne, mois)"
+                            [class.cell-readonly]="!isCellEditable(ligne, mois)"
+                            [class.cell-negative]="(getCellValue(ligne.id, mois) ?? 0) < 0"
+                            [class.cell-positive]="(getCellValue(ligne.id, mois) ?? 0) > 0 && ligne.type === 'calcul'">
 
-                                <!-- Cellule éditable -->
-                                <p-inputNumber *ngIf="isCellEditable(ligne, mois)"
-                                    [ngModel]="getCellValue(ligne.id, mois)"
-                                    (ngModelChange)="onTableCellChange(ligne.id, mois, $event)" mode="decimal"
-                                    [minFractionDigits]="0" [maxFractionDigits]="0" [useGrouping]="true" locale="fr-FR"
-                                    inputStyleClass="table-cell-input" [placeholder]="'-'">
-                                </p-inputNumber>
+                            <!-- Cellule éditable -->
+                            @if (isCellEditable(ligne, mois)) {
+                            <p-inputNumber [ngModel]="getCellValue(ligne.id, mois)"
+                                (ngModelChange)="onTableCellChange(ligne.id, mois, $event)" mode="decimal"
+                                [minFractionDigits]="0" [maxFractionDigits]="0" [useGrouping]="true" locale="fr-FR"
+                                inputStyleClass="table-cell-input" [placeholder]="'-'">
+                            </p-inputNumber>
+                            } @else {
+                            <!-- Cellule en lecture seule -->
+                            <span class="cell-value-display">
+                                {{ getCellValue(ligne.id, mois) | number:'1.0-0' }}
+                            </span>
+                            }
+                        </td>
+                        }
 
-                                <!-- Cellule en lecture seule -->
-                                <span *ngIf="!isCellEditable(ligne, mois)" class="cell-value-display">
-                                    {{ getCellValue(ligne.id, mois) | number:'1.0-0' }}
-                                </span>
-                            </td>
-
-                            <!-- Colonne Cumul -->
-                            <td class="col-cumul">
-                                <span class="cumul-value">
-                                    {{ getCumulForLigne(ligne.id) | number:'1.0-0' }}
-                                </span>
-                            </td>
-                        </tr>
-                    </ng-container>
+                        <!-- Colonne Cumul -->
+                        <td class="col-cumul">
+                            <span class="cumul-value">
+                                {{ getCumulForLigne(ligne.id) | number:'1.0-0' }}
+                            </span>
+                        </td>
+                    </tr>
+                    }
                 </tbody>
             </table>
         </div>
@@ -445,18 +426,20 @@
                 <div class="status-info flex align-items-center gap-2">
                     <i class="pi pi-info-circle text-primary"></i>
                     <span class="text-sm">
-                        <span *ngIf="getTableMonthsWithData() === 0" class="text-orange-500">
+                        @if (getTableMonthsWithData() === 0) {
+                        <span class="text-orange-500">
                             Commencez par saisir les données dans le tableau
                         </span>
-                        <span *ngIf="getTableMonthsWithData() > 0 && tresorerieState.hasUnsavedChanges()"
-                            class="text-orange-500">
+                        } @else if (tresorerieState.hasUnsavedChanges()) {
+                        <span class="text-orange-500">
                             {{ getTableMonthsWithData() }} mois renseignés - Modifications non sauvegardées
                         </span>
-                        <span *ngIf="!tresorerieState.hasUnsavedChanges() && getTableMonthsWithData() > 0"
-                            class="text-green-600">
+                        } @else {
+                        <span class="text-green-600">
                             <i class="pi pi-check-circle mr-1"></i>
                             Tous les changements sont sauvegardés
                         </span>
+                        }
                     </span>
                 </div>
 
@@ -465,9 +448,11 @@
                         [routerLink]="['/dashboards/credit/individuel/attente/detail', demandeIndividuelId]">
                     </p-button>
 
-                    <p-button *ngIf="peutImprimer()" label="Imprimer" icon="pi pi-print" severity="secondary"
+                    @if (peutImprimer()) {
+                    <p-button label="Imprimer" icon="pi pi-print" severity="secondary"
                         (onClick)="imprimerTableauTresorerie()">
                     </p-button>
+                    }
 
                     <p-button label="Sauvegarder" icon="pi pi-save" severity="success" [loading]="state().saving"
                         [disabled]="!canSaveTableau()" (onClick)="savePrevisions()">

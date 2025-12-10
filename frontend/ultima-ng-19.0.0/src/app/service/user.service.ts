@@ -726,6 +726,54 @@ export class UserService {
             catchError(this.handleError)
         );
 
+    // ==================== BACKOFFICE ETATS DOCUMENTS ====================
+
+    /**
+     * Récupérer toutes les délégations
+     */
+    getAllDelegationsBackoffice$ = (): Observable<IResponse> => this.http.get<IResponse>(`${this.server}/ecredit/backoffice/delegations`).pipe(tap(console.log), catchError(this.handleError));
+
+    /**
+     * Récupérer tous les états de documents (toutes délégations)
+     */
+    getAllEtatsDocuments$ = (page: number = 0, size: number = 20): Observable<IResponse> => this.http.get<IResponse>(`${this.server}/ecredit/backoffice/etats?page=${page}&size=${size}`).pipe(tap(console.log), catchError(this.handleError));
+
+    /**
+     * Récupérer les états par délégation
+     */
+    getEtatsByDelegation$ = (delegationId: number, page: number = 0, size: number = 20, statut?: string): Observable<IResponse> => {
+        let url = `${this.server}/ecredit/backoffice/delegations/${delegationId}/etats?page=${page}&size=${size}`;
+        if (statut) {
+            url += `&statut=${statut}`;
+        }
+        return this.http.get<IResponse>(url).pipe(tap(console.log), catchError(this.handleError));
+    };
+
+    /**
+     * Récupérer le détail d'un état
+     */
+    getEtatDocumentDetail$ = (etatId: number): Observable<IResponse> => this.http.get<IResponse>(`${this.server}/ecredit/backoffice/etats/${etatId}/detail`).pipe(tap(console.log), catchError(this.handleError));
+
+    /**
+     * Valider un état (ENCOURS -> VALIDE)
+     */
+    validerEtatDocument$ = (etatId: number): Observable<IResponse> => this.http.put<IResponse>(`${this.server}/ecredit/backoffice/etats/${etatId}/valider`, {}).pipe(tap(console.log), catchError(this.handleError));
+
+    /**
+     * Accepter un état (VALIDE -> ACCEPTE)
+     */
+    accepterEtatDocument$ = (etatId: number): Observable<IResponse> => this.http.put<IResponse>(`${this.server}/ecredit/backoffice/etats/${etatId}/accepter`, {}).pipe(tap(console.log), catchError(this.handleError));
+
+    /**
+     * Rejeter un état
+     */
+    rejeterEtatDocument$ = (etatId: number, motif?: string): Observable<IResponse> => this.http.put<IResponse>(`${this.server}/ecredit/backoffice/etats/${etatId}/rejeter`, { motif }).pipe(tap(console.log), catchError(this.handleError));
+
+    /**
+     * Récupérer les statistiques par délégation
+     */
+    getStatsEtatsDocuments$ = (): Observable<IResponse> => this.http.get<IResponse>(`${this.server}/ecredit/backoffice/stats`).pipe(tap(console.log), catchError(this.handleError));
+
     /**
      *  Functionnaly for logout
      */

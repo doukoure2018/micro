@@ -36,6 +36,7 @@ public class ResourceServerConfig {
                // .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests( authorize -> authorize
                         .requestMatchers("/actuator/health","/actuator/info","/user/register/**", "/user/verify/account/**","/user/verify/password/**", "/user/resetpassword/**", "/user/image/**","/ecredit/addDemandeInd/**","/ecredit/docs/**","/user/getUser/**","/ecredit/search/**","/ecredit/newDemandeInd/**","/ecredit/edg/**").permitAll()
+                        .requestMatchers("/ecredit/files/**").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .accessDeniedHandler(new CustomAccessDeniedHandler())

@@ -57,6 +57,15 @@ export default [
         loadComponent: () => import('./agent-credit/digital-verification/digital-verification.component').then((c) => c.DigitalVerificationComponent)
     },
     {
+        path: 'document-verification',
+        data: { breadcrumb: 'Document Verification' },
+        loadComponent: () => import('./agent-credit/digital-verification/document-verification/document-verification.component').then((c) => c.DocumentVerificationComponent)
+    },
+    {
+        path: 'document-verification/documents/:id',
+        loadComponent: () => import('./agent-credit/digital-verification/document-verification/document-detail/document-detail.component').then((c) => c.DocumentDetailComponent)
+    },
+    {
         path: 'agent-credit/verification/:numeroMembre',
         data: { breadcrumb: 'Verfication du Statut de Client' },
         loadComponent: () => import('./agent-credit/mise-en-place-credit/mise-en-place-credit.component').then((c) => c.MiseEnPlaceCreditComponent)

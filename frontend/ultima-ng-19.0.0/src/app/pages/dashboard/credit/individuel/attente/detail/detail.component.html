@@ -593,8 +593,10 @@
                             [ngClass]="{'opacity-50 cursor-not-allowed': !canSubmitForm()}">
                             <i *ngIf="!state().loading" class="pi pi-check mr-2"></i>
                             <i *ngIf="state().loading" class="pi pi-spinner pi-spin mr-2"></i>
-                            {{ updateForm.get('statut')?.value === 'VALIDATION' ? 'VALIDER POUR OCTROI' : 'VALIDER POUR
-                            SÉLECTION' }}
+                            {{
+                            updateForm.get('statut')?.value === 'VALIDATION' ? 'VALIDER POUR OCTROI' : 'VALIDER POUR
+                            SÉLECTION'
+                            }}
                         </button>
                     </div>
 

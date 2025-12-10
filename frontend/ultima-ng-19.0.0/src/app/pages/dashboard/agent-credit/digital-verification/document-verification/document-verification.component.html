@@ -1,0 +1,167 @@
+<div class="document-verification-container">
+    <!-- Header -->
+    <div class="page-header">
+        <div class="header-content">
+            <h1 class="page-title">
+                <i class="fas fa-file-alt"></i>
+                Vérification des Documents
+            </h1>
+            <p class="page-subtitle">Gestion des demandes de carte prépayée par délégation</p>
+        </div>
+        <button class="btn btn-primary" (click)="refresh()">
+            <i class="fas fa-sync-alt" [class.fa-spin]="state().loading"></i>
+            Actualiser
+        </button>
+    </div>
+
+    <!-- Filtres -->
+    <div class="filters-section">
+        <div class="filter-group">
+            <label>Filtrer par statut :</label>
+            <div class="btn-group">
+                @for (option of statutOptions; track option.value) {
+                <button class="btn btn-filter" [class.active]="state().selectedStatut === option.value"
+                    [ngClass]="'btn-outline-' + option.color" (click)="onStatutChange(option.value)">
+                    {{ option.label }}
+                </button>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading -->
+    @if (state().loading) {
+    <div class="loading-overlay">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Chargement...</span>
+        </div>
+        <p>Chargement des données...</p>
+    </div>
+    }
+
+    <!-- Error -->
+    @if (state().error) {
+    <div class="alert alert-danger">
+        <i class="fas fa-exclamation-triangle"></i>
+        {{ state().error }}
+    </div>
+    }
+
+    <!-- Liste par Délégation -->
+    @if (!state().loading && !state().error) {
+    <div class="delegations-list">
+        @for (groupe of filteredEtats(); track groupe.delegation.id) {
+        <div class="delegation-card" [class.expanded]="isDelegationExpanded(groupe.delegation.id)">
+            <!-- Header Délégation -->
+            <div class="delegation-header" (click)="toggleDelegation(groupe.delegation.id)">
+                <div class="delegation-info">
+                    <i class="fas fa-building"></i>
+                    <h3 class="delegation-name">{{ groupe.delegation.libele }}</h3>
+                </div>
+
+                <div class="delegation-stats">
+                    <span class="stat-badge total">
+                        <i class="fas fa-folder"></i>
+                        {{ groupe.stats.total }} demande(s)
+                    </span>
+                    @if (groupe.stats.encours > 0) {
+                    <span class="stat-badge warning">
+                        {{ groupe.stats.encours }} en cours
+                    </span>
+                    }
+                    @if (groupe.stats.valide > 0) {
+                    <span class="stat-badge info">
+                        {{ groupe.stats.valide }} validé(s)
+                    </span>
+                    }
+                    @if (groupe.stats.accepte > 0) {
+                    <span class="stat-badge success">
+                        {{ groupe.stats.accepte }} accepté(s)
+                    </span>
+                    }
+                    @if (groupe.stats.rejet > 0) {
+                    <span class="stat-badge danger">
+                        {{ groupe.stats.rejet }} rejeté(s)
+                    </span>
+                    }
+                </div>
+
+                <i class="fas fa-chevron-down toggle-icon"></i>
+            </div>
+
+            <!-- Liste des États -->
+            @if (isDelegationExpanded(groupe.delegation.id)) {
+            <div class="delegation-content">
+                @if (groupe.etats.length === 0) {
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <p>Aucune demande trouvée pour cette délégation</p>
+                </div>
+                } @else {
+                <div class="etats-table-wrapper">
+                    <table class="etats-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Utilisateur</th>
+                                <th>Téléphone</th>
+                                <th>Agence</th>
+                                <th>Point de Vente</th>
+                                <th>Documents</th>
+                                <th>Statut</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (etat of groupe.etats; track etat.id) {
+                            <tr>
+                                <td class="id-cell">#{{ etat.id }}</td>
+                                <td class="user-cell">
+                                    <i class="fas fa-user"></i>
+                                    {{ etat.userFullName }}
+                                </td>
+                                <td class="phone-cell">
+                                    <i class="fas fa-phone"></i>
+                                    {{ etat.userPhone || '-' }}
+                                </td>
+                                <td>{{ etat.agenceLibele || '-' }}</td>
+                                <td>{{ etat.pointVenteLibele || '-' }}</td>
+                                <td class="docs-cell">
+                                    <span class="docs-badge">
+                                        <i class="fas fa-file-image"></i>
+                                        {{ etat.documentCount }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge" [ngClass]="getStatutClass(etat.statut)">
+                                        {{ getStatutLabel(etat.statut) }}
+                                    </span>
+                                </td>
+                                <td class="date-cell">{{ formatDate(etat.createdAt) }}</td>
+                                <td class="actions-cell">
+                                    <button class="btn btn-sm btn-primary"
+                                        (click)="viewDetail(etat.id); $event.stopPropagation()">
+                                        <i class="fas fa-eye"></i>
+                                        Détails
+                                    </button>
+                                </td>
+                            </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                }
+            </div>
+            }
+        </div>
+        } @empty {
+        <div class="empty-state-global">
+            <i class="fas fa-folder-open"></i>
+            <h3>Aucune demande trouvée</h3>
+            <p>Il n'y a pas de demande de documents à vérifier pour le moment.</p>
+        </div>
+        }
+    </div>
+    }
+</div>

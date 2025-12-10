@@ -124,7 +124,12 @@ export class AppMenu {
                                     //     label: 'Verification client',
                                     //     icon: 'pi pi-fw pi-hourglass',
                                     //     routerLink: ['/dashboards/verification-client']
-                                    // }
+                                    // },
+                                    {
+                                        label: 'Document Verification',
+                                        icon: 'pi pi-fw pi-hourglass',
+                                        routerLink: ['/dashboards/document-verification']
+                                    }
                                 ]
                               : this.user?.role === 'AGENT_CORRECTEUR'
                                 ? [

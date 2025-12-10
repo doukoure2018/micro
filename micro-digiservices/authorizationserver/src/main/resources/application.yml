@@ -52,6 +52,9 @@ key:
   private: "private.key"
   public: "public.key"
 
+oauth:
+  issuer: http://localhost:8080
 
 server:
   port: 8080
+  address: 0.0.0.0

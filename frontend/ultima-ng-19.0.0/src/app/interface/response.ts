@@ -21,6 +21,7 @@ import { DemandeIndividuel } from './demande-individuel.interface';
 import { DemandeCredit } from './demande.credit';
 import { DossierCreditRequest } from './dossierCreditRequest';
 import { Entreprise } from './entreprise';
+import { DelegationStats, EtatDocumentByDelegationDto, EtatDocumentDetailDto } from './etat-document.model';
 import { FicheSignaletique } from './ficheSignaletique';
 import { Garantiepersonnecaution } from './Garantiepersonnecaution';
 import { Individuel } from './individuel';
@@ -224,5 +225,13 @@ export interface IResponse {
         disponibilityAgent?: AgentDisponibilityDto; // AJOUTÉ
         syntheseDelegations?: SyntheseDelegationDto[];
         bonsCommandeDelegation?: BonCommandeDelegationDto[];
+
+        etats?: EtatDocumentByDelegationDto[];
+        etat?: EtatDocumentDetailDto;
+
+        statistics?: DelegationStats[];
+        page?: number;
+        totalPages?: number;
+        totalElements?: number;
     };
 }

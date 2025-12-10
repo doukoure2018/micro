@@ -154,7 +154,19 @@ export class AnalyseFluxTresorerieComponent {
     ];
 
     // Colonnes des mois (0 à 12)
-    moisColumns = Array.from({ length: 13 }, (_, i) => i);
+    nombreMois = computed(() => {
+        const demande = this.demandeIndividuel();
+        return demande?.dureeDemande || 12; // Par défaut 12 si pas de demande
+    });
+
+    // Colonnes dynamiques (M0 à M_duree)
+    moisColumns = computed(() => {
+        const duree = this.nombreMois();
+        return Array.from({ length: duree + 1 }, (_, i) => i); // +1 pour inclure M0
+    });
+
+    // Dernier mois (pour remplacer les références à "12")
+    dernierMois = computed(() => this.nombreMois());
 
     // ========================================
     // MÉTHODES POUR LE MODE TABLEAU
@@ -202,7 +214,9 @@ export class AnalyseFluxTresorerieComponent {
      * Propager les soldes de fin vers les mois suivants
      */
     private propagateSoldesToFollowingMonths(fromMois: number): void {
-        for (let m = fromMois; m < 12; m++) {
+        const duree = this.nombreMois();
+        for (let m = fromMois; m < duree; m++) {
+            // ← Remplacer "12" par "duree"
             const currentMoisForm = this.getMoisFormGroup(m);
             const nextMoisForm = this.getMoisFormGroup(m + 1);
 
@@ -247,14 +261,17 @@ export class AnalyseFluxTresorerieComponent {
      * Calculer le cumul pour une ligne
      */
     getCumulForLigne(ligneId: string): number {
+        const duree = this.nombreMois();
+
         // Pour les lignes de solde, retourner la valeur du dernier mois
         if (ligneId === 'soldeDebut' || ligneId === 'soldeFin' || ligneId === 'disponibleEnCaisse' || ligneId === 'excedentDeficit') {
-            return this.getCellValue(ligneId, 12) || 0;
+            return this.getCellValue(ligneId, duree) || 0; // ← Remplacer "12" par "duree"
         }
 
         // Pour les autres, faire la somme de tous les mois
         let total = 0;
-        for (let mois = 0; mois <= 12; mois++) {
+        for (let mois = 0; mois <= duree; mois++) {
+            // ← Remplacer "12" par "duree"
             total += this.getCellValue(ligneId, mois) || 0;
         }
         return total;
@@ -294,8 +311,9 @@ export class AnalyseFluxTresorerieComponent {
             header: 'Confirmation',
             icon: 'pi pi-exclamation-triangle',
             accept: () => {
-                // Réinitialiser tous les mois
-                for (let mois = 0; mois <= 12; mois++) {
+                const duree = this.nombreMois();
+                for (let mois = 0; mois <= duree; mois++) {
+                    // ← Dynamique
                     this.resetMonthToDefaults(mois);
                 }
 
@@ -320,8 +338,10 @@ export class AnalyseFluxTresorerieComponent {
      * Compter les mois avec données dans le tableau
      */
     getTableMonthsWithData(): number {
+        const duree = this.nombreMois();
         let count = 0;
-        for (let mois = 0; mois <= 12; mois++) {
+        for (let mois = 0; mois <= duree; mois++) {
+            // ← Dynamique
             if (this.checkIfMoisHasData(this.getMoisFormGroup(mois)?.getRawValue())) {
                 count++;
             }
@@ -447,11 +467,9 @@ export class AnalyseFluxTresorerieComponent {
     }
 
     ngOnInit() {
-        // D'ABORD initialiser les formulaires
+        // D'ABORD initialiser les formulaires de base
         this.initializeCreditParamsForm();
         this.initializeNewClientForm();
-        this.initializeForm();
-        this.setupCalculations();
 
         // ENSUITE charger les données
         this.route.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
@@ -477,7 +495,9 @@ export class AnalyseFluxTresorerieComponent {
                     const demande = response.data.demandeIndividuel;
                     this.demandeIndividuel.set(demande);
                     this.garanties.set(demande.garanties || []);
-
+                    // ⭐ IMPORTANT: Initialiser le formulaire APRÈS avoir la durée
+                    this.initializeForm();
+                    this.setupCalculations();
                     // Pré-remplir le formulaire des paramètres du crédit
                     this.preFillCreditParams(demande);
 
@@ -1162,7 +1182,9 @@ export class AnalyseFluxTresorerieComponent {
 
     // Réinitialiser le formulaire de trésorerie
     resetTresorerieForm() {
-        for (let mois = 1; mois <= 12; mois++) {
+        const duree = this.nombreMois();
+        for (let mois = 1; mois <= duree; mois++) {
+            // ← Dynamique
             const moisForm = this.getMoisFormGroup(mois);
             if (moisForm) {
                 moisForm.reset({
@@ -1690,9 +1712,10 @@ export class AnalyseFluxTresorerieComponent {
     // Améliorer initializeForm pour initialiser correctement chaque mois
     initializeForm() {
         const moisGroups: { [key: string]: FormGroup } = {};
+        const duree = this.nombreMois();
 
-        // Créer les formulaires pour les mois 0 à 12
-        for (let mois = 0; mois <= 12; mois++) {
+        // Créer les formulaires pour les mois 0 à duree (dynamique)
+        for (let mois = 0; mois <= duree; mois++) {
             moisGroups[`mois${mois}`] = this.fb.group({
                 numeroMois: [mois],
                 soldeDebut: [{ value: null, disabled: mois > 0 }],
@@ -1785,7 +1808,6 @@ export class AnalyseFluxTresorerieComponent {
             const num = Number(val);
             return isNaN(num) ? 0 : num;
         };
-
         // Total Encaissements
         const totalEnc = safeValue(values.ventes) + safeValue(values.autresRevenus) + safeValue(values.pret);
 
@@ -1826,7 +1848,9 @@ export class AnalyseFluxTresorerieComponent {
         );
 
         // Mettre à jour le solde début du mois suivant
-        if (mois < 12) {
+        const duree = this.nombreMois();
+        if (mois < duree) {
+            // ← Remplacer "12" par "duree"
             const nextMoisForm = this.getMoisFormGroup(mois + 1);
             if (nextMoisForm) {
                 nextMoisForm.patchValue({ soldeDebut: soldeFin }, { emitEvent: false });
@@ -1866,26 +1890,31 @@ export class AnalyseFluxTresorerieComponent {
     getFormSummary() {
         const monthsWithData = this.tresorerieState.getMonthsWithData();
         const savedMonths = this.tresorerieState.getSavedMonths();
+        const totalMois = this.nombreMois() + 1; // +1 car on inclut M0
 
         return {
-            totalMois: 13,
+            totalMois: totalMois,
             moisRenseignes: monthsWithData.length,
             moisSauvegardes: savedMonths.length,
-            pourcentageComplete: Math.round((monthsWithData.length / 13) * 100),
-            pourcentageSauvegarde: Math.round((savedMonths.length / 13) * 100),
+            pourcentageComplete: Math.round((monthsWithData.length / totalMois) * 100),
+            pourcentageSauvegarde: Math.round((savedMonths.length / totalMois) * 100),
             peutSauvegarder: this.canSave()
         };
     }
     // Calculer tous les mois
     calculateAllMonths() {
-        for (let mois = 0; mois <= 12; mois++) {
+        const duree = this.nombreMois();
+        for (let mois = 0; mois <= duree; mois++) {
+            // ← Remplacer "12" par "duree"
             this.calculateMonth(mois);
         }
     }
 
     // Écouter les changements
     setupCalculations() {
-        for (let mois = 0; mois <= 12; mois++) {
+        const duree = this.nombreMois();
+        for (let mois = 0; mois <= duree; mois++) {
+            // ← Dynamique
             const moisForm = this.getMoisFormGroup(mois);
             if (!moisForm) continue;
 
@@ -1945,6 +1974,7 @@ export class AnalyseFluxTresorerieComponent {
     // Appliquer les remboursements suggérés
     applySuggestedRepayments() {
         const mensualite = this.mensualite();
+        const duree = this.nombreMois();
 
         if (mensualite.total === 0) {
             this.messageService.add({
@@ -1956,12 +1986,12 @@ export class AnalyseFluxTresorerieComponent {
         }
 
         this.confirmationService.confirm({
-            message: `Voulez-vous appliquer les remboursements suggérés (Capital: ${mensualite.capital.toFixed(0)} GNF, Intérêts: ${mensualite.interet.toFixed(0)} GNF) aux mois 1 à 12 ?`,
+            message: `Voulez-vous appliquer les remboursements suggérés aux mois 1 à ${duree} ?`,
             header: 'Appliquer les remboursements',
             icon: 'pi pi-question-circle',
             accept: () => {
-                // Appliquer uniquement aux mois 1 à 12 (pas au mois 0)
-                for (let mois = 1; mois <= 12; mois++) {
+                for (let mois = 1; mois <= duree; mois++) {
+                    // ← Dynamique
                     const moisForm = this.getMoisFormGroup(mois);
                     if (moisForm) {
                         moisForm.patchValue({
@@ -1974,7 +2004,7 @@ export class AnalyseFluxTresorerieComponent {
                 this.messageService.add({
                     severity: 'success',
                     summary: 'Succès',
-                    detail: 'Remboursements appliqués aux mois 1 à 12'
+                    detail: `Remboursements appliqués aux mois 1 à ${duree}`
                 });
             }
         });
@@ -2119,10 +2149,12 @@ export class AnalyseFluxTresorerieComponent {
     /**
      * Préparer toutes les données pour la sauvegarde (version corrigée)
      */
-    private prepareAllPrevisionsData(): any[] {
+    prepareAllPrevisionsData(): any[] {
         const previsions = [];
+        const duree = this.nombreMois();
 
-        for (let mois = 0; mois <= 12; mois++) {
+        for (let mois = 0; mois <= duree; mois++) {
+            // ← Dynamique
             const moisForm = this.getMoisFormGroup(mois);
             if (moisForm && this.checkIfMoisHasData(moisForm.getRawValue())) {
                 const monthData = this.prepareMonthData(mois);
@@ -2659,7 +2691,9 @@ export class AnalyseFluxTresorerieComponent {
 
     // Propager les soldes de fin vers les soldes de début des mois suivants
     private propagateSoldes(): void {
-        for (let m = 0; m < 12; m++) {
+        const duree = this.nombreMois();
+        for (let m = 0; m < duree; m++) {
+            // ← Remplacer "12" par "duree"
             const currentMoisForm = this.getMoisFormGroup(m);
             const nextMoisForm = this.getMoisFormGroup(m + 1);
 
@@ -2891,7 +2925,9 @@ export class AnalyseFluxTresorerieComponent {
 
     // SOLUTION 8: Améliorer setupFormChangeListeners
     setupFormChangeListeners() {
-        for (let mois = 0; mois <= 12; mois++) {
+        const duree = this.nombreMois();
+        for (let mois = 0; mois <= duree; mois++) {
+            // ← Dynamique
             const moisForm = this.getMoisFormGroup(mois);
             if (!moisForm) continue;
 
@@ -3367,8 +3403,9 @@ export class AnalyseFluxTresorerieComponent {
      * Obtient le solde final du mois 12
      */
     getSoldeAnnuelFinal(): number {
-        const mois12Form = this.getMoisFormGroup(12);
-        return mois12Form?.get('soldeFin')?.value || 0;
+        const duree = this.nombreMois();
+        const dernierMoisForm = this.getMoisFormGroup(duree);
+        return dernierMoisForm?.get('soldeFin')?.value || 0;
     }
 
     /**
@@ -3410,7 +3447,8 @@ export class AnalyseFluxTresorerieComponent {
      */
     getMoisResume(): { mois: number; status: string; soldeFin: number }[] {
         const resume = [];
-        for (let m = 0; m <= 12; m++) {
+        const duree = this.nombreMois();
+        for (let m = 0; m <= duree; m++) {
             const moisForm = this.getMoisFormGroup(m);
             resume.push({
                 mois: m,

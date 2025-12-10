@@ -76,13 +76,15 @@ import java.util.stream.Collectors;
 @Configuration
 @RequiredArgsConstructor
 public class AuthorizationServerConfig {
-    // http://localhost:8080/.well-known/openid-configuration
     private static final String AUTHORITY_KEY = "authorities";
     private final JwtConfiguration jwtConfiguration;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${UI_APP_URL:https://digi-creditrural-io.com}")
     private String uiAppUrl;
+
+    @Value("${oauth.issuer:http://localhost:8080}")
+    private String oauthIssuer;
 
     private final UserRepository userRepository;
 
@@ -249,10 +251,9 @@ public class AuthorizationServerConfig {
     }
 
     @Bean
-    public AuthorizationServerSettings authorizationServerSettings()
-    {
+    public AuthorizationServerSettings authorizationServerSettings() {
         return AuthorizationServerSettings.builder()
-                .issuer("https://digi-creditrural-io.com/auth")  // Ajouter l'issuer explicite
+                .issuer(oauthIssuer)  // ← Utiliser la variable
                 .build();
     }
 

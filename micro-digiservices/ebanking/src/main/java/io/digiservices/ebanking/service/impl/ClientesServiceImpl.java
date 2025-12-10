@@ -119,7 +119,8 @@ public class ClientesServiceImpl implements ClientesService {
 
     }
     @Override
-    public ClientesDto searchsClientes(String query) {
+    public ClientesDto searchsClientes(String query)
+    {
         try {
             Clientes clientes=clientesRepository.findByClientesPKIdCodCliente(query).orElseThrow(
                     ()->new ResourceNotFoundException("IdClientesDto",query,query)
