@@ -177,3 +177,6 @@ security:
 cache:
   caffeine:
     spec: maximumSize=1000,expireAfterWrite=300s
+
+oauth:
+  issuer: https://digi-creditrural-io.com/auth
