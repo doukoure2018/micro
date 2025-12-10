@@ -7,6 +7,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.annotation.PostConstruct;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,6 +36,26 @@ public class FileStorageService {
             log.info("Répertoire de stockage créé: {}", this.fileStorageLocation);
         } catch (IOException e) {
             throw new RuntimeException("Impossible de créer le répertoire de stockage", e);
+        }
+    }
+
+    /**
+     * Obtenir l'URL de base pour les fichiers
+     * Utilise la config si définie, sinon génère dynamiquement
+     */
+    private String getBaseUrl() {
+        if (baseUrl != null && !baseUrl.isEmpty()) {
+            return baseUrl;
+        }
+
+        // Générer dynamiquement depuis la requête courante
+        try {
+            return ServletUriComponentsBuilder.fromCurrentContextPath()
+                    .path("/ecredit/files")
+                    .toUriString();
+        } catch (Exception e) {
+            // Fallback si pas de contexte de requête
+            return "http://localhost:8087/ecredit/files";
         }
     }
 

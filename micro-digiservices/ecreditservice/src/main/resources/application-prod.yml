@@ -158,5 +158,5 @@ cache:
     config: classpath:ehcache.xml
 
 file:
-  upload-dir: uploads
-  base-url: http://localhost:8087/ecredit/files
+  upload-dir: /app/uploads
+  base-url: https://digi-creditrural-io.com/ecredit/files

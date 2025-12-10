@@ -6,6 +6,9 @@ import { Injectable } from '@angular/core';
 export class TresoreriePrintService {
     /**
      * Imprime le tableau de prévision de trésorerie
+     * @param tresorerieForm - Le formulaire de trésorerie
+     * @param creditParams - Les paramètres du crédit (inclut la durée)
+     * @param demandeIndividuel - Les informations du demandeur (optionnel)
      */
     imprimerTableauTresorerie(tresorerieForm: any, creditParams: any, demandeIndividuel?: any): void {
         const printWindow = window.open('', '_blank', 'width=1400,height=900');
@@ -14,7 +17,10 @@ export class TresoreriePrintService {
             return;
         }
 
-        const htmlContent = this.genererHTMLTableau(tresorerieForm, creditParams, demandeIndividuel);
+        // Récupérer la durée depuis creditParams ou demandeIndividuel
+        const nombreMois = demandeIndividuel?.dureeDemande || creditParams?.duree || 12;
+
+        const htmlContent = this.genererHTMLTableau(tresorerieForm, creditParams, demandeIndividuel, nombreMois);
 
         printWindow.document.write(htmlContent);
         printWindow.document.close();
@@ -31,9 +37,9 @@ export class TresoreriePrintService {
     /**
      * Génère le HTML complet pour l'impression
      */
-    private genererHTMLTableau(tresorerieForm: any, creditParams: any, demandeIndividuel?: any): string {
-        const styles = this.getTableauStyles();
-        const content = this.genererContenuTableau(tresorerieForm, creditParams, demandeIndividuel);
+    private genererHTMLTableau(tresorerieForm: any, creditParams: any, demandeIndividuel: any, nombreMois: number): string {
+        const styles = this.getTableauStyles(nombreMois);
+        const content = this.genererContenuTableau(tresorerieForm, creditParams, demandeIndividuel, nombreMois);
 
         return `
       <!DOCTYPE html>
@@ -53,7 +59,7 @@ export class TresoreriePrintService {
     /**
      * Génère le contenu du tableau de trésorerie
      */
-    private genererContenuTableau(tresorerieForm: any, creditParams: any, demandeIndividuel?: any): string {
+    private genererContenuTableau(tresorerieForm: any, creditParams: any, demandeIndividuel: any, nombreMois: number): string {
         const dateImpression = new Date().toLocaleDateString('fr-FR', {
             year: 'numeric',
             month: 'long',
@@ -62,7 +68,7 @@ export class TresoreriePrintService {
             minute: '2-digit'
         });
 
-        const donneesMois = this.extraireDonneesMois(tresorerieForm);
+        const donneesMois = this.extraireDonneesMois(tresorerieForm, nombreMois);
         const totauxAnnuels = this.calculerTotauxAnnuels(donneesMois);
 
         return `
@@ -85,7 +91,7 @@ export class TresoreriePrintService {
               <p><strong>Montant du crédit:</strong> ${this.formatCurrency(creditParams.montantCredit)}</p>
             </div>
             <div class="header-right">
-              <p><strong>Durée:</strong> ${creditParams.duree} mois</p>
+              <p><strong>Durée:</strong> ${nombreMois} mois</p>
               <p><strong>Taux:</strong> ${creditParams.tauxInteret}% annuel</p>
               <p><strong>Date d'impression:</strong> ${dateImpression}</p>
             </div>
@@ -94,12 +100,12 @@ export class TresoreriePrintService {
 
         <!-- Tableau principal -->
         <div class="table-container">
-          ${this.genererTableauPrincipal(donneesMois, totauxAnnuels)}
+          ${this.genererTableauPrincipal(donneesMois, totauxAnnuels, nombreMois)}
         </div>
 
         <!-- Analyses et indicateurs -->
         <div class="analysis-section">
-          ${this.genererAnalyseFinanciere(donneesMois, totauxAnnuels, creditParams)}
+          ${this.genererAnalyseFinanciere(donneesMois, totauxAnnuels, creditParams, nombreMois)}
         </div>
 
         <!-- Pied de page -->
@@ -116,18 +122,20 @@ export class TresoreriePrintService {
     }
 
     /**
-     * Génère le tableau principal avec tous les mois
+     * Génère le tableau principal avec tous les mois (dynamique)
      */
-    private genererTableauPrincipal(donneesMois: any[], totauxAnnuels: any): string {
-        const moisLabels = ['Mois 0', 'Mois 1', 'Mois 2', 'Mois 3', 'Mois 4', 'Mois 5', 'Mois 6', 'Mois 7', 'Mois 8', 'Mois 9', 'Mois 10', 'Mois 11', 'Mois 12'];
+    private genererTableauPrincipal(donneesMois: any[], totauxAnnuels: any, nombreMois: number): string {
+        // Générer les labels des mois dynamiquement (M0 à M{nombreMois})
+        const moisLabels = Array.from({ length: nombreMois + 1 }, (_, i) => (i === 0 ? 'M0' : `M${i}`));
+        const nombreColonnes = nombreMois + 3; // Libellé + mois + Total
 
         return `
       <table class="main-table">
         <thead>
           <tr>
             <th class="category-header">ÉLÉMENTS</th>
-            ${moisLabels.map((label) => `<th class="month-header">${label}</th>`).join('')}
-            <th class="total-header">TOTAL ANNUEL</th>
+            ${moisLabels.map((label, index) => `<th class="month-header ${index === 0 ? 'month-start' : ''}">${label}</th>`).join('')}
+            <th class="total-header">TOTAL</th>
           </tr>
         </thead>
         <tbody>
@@ -140,7 +148,7 @@ export class TresoreriePrintService {
 
           <!-- ENCAISSEMENTS -->
           <tr class="section-header">
-            <td class="section-title" colspan="${moisLabels.length + 2}"><strong>ENCAISSEMENTS</strong></td>
+            <td class="section-title" colspan="${nombreColonnes}"><strong>ENCAISSEMENTS</strong></td>
           </tr>
           
           <tr>
@@ -169,7 +177,7 @@ export class TresoreriePrintService {
 
           <!-- DÉCAISSEMENTS -->
           <tr class="section-header">
-            <td class="section-title" colspan="${moisLabels.length + 2}"><strong>DÉCAISSEMENTS</strong></td>
+            <td class="section-title" colspan="${nombreColonnes}"><strong>DÉCAISSEMENTS</strong></td>
           </tr>
           
           <tr>
@@ -203,7 +211,7 @@ export class TresoreriePrintService {
           </tr>
           
           <tr>
-            <td class="category-cell">Eau, Électricité, téléphone</td>
+            <td class="category-cell">Eau, Électricité</td>
             ${donneesMois.map((mois) => `<td class="amount-cell">${this.formatNumber(mois.utilities)}</td>`).join('')}
             <td class="total-cell total-expense">${this.formatNumber(totauxAnnuels.utilities)}</td>
           </tr>
@@ -215,13 +223,13 @@ export class TresoreriePrintService {
           </tr>
           
           <tr>
-            <td class="category-cell">Salaire personnel</td>
+            <td class="category-cell">Salaires</td>
             ${donneesMois.map((mois) => `<td class="amount-cell">${this.formatNumber(mois.salaires)}</td>`).join('')}
             <td class="total-cell total-expense">${this.formatNumber(totauxAnnuels.salaires)}</td>
           </tr>
           
           <tr>
-            <td class="category-cell">Frais de téléphone</td>
+            <td class="category-cell">Frais téléphone</td>
             ${donneesMois.map((mois) => `<td class="amount-cell">${this.formatNumber(mois.fraistelephone)}</td>`).join('')}
             <td class="total-cell total-expense">${this.formatNumber(totauxAnnuels.fraistelephone)}</td>
           </tr>
@@ -233,7 +241,7 @@ export class TresoreriePrintService {
           </tr>
           
           <tr>
-            <td class="category-cell">Entretien et réparation</td>
+            <td class="category-cell">Entretien</td>
             ${donneesMois.map((mois) => `<td class="amount-cell">${this.formatNumber(mois.entretien)}</td>`).join('')}
             <td class="total-cell total-expense">${this.formatNumber(totauxAnnuels.entretien)}</td>
           </tr>
@@ -246,7 +254,7 @@ export class TresoreriePrintService {
 
           <!-- REMBOURSEMENTS -->
           <tr class="section-header">
-            <td class="section-title" colspan="${moisLabels.length + 2}"><strong>REMBOURSEMENTS CRÉDIT</strong></td>
+            <td class="section-title" colspan="${nombreColonnes}"><strong>REMBOURSEMENTS CRÉDIT</strong></td>
           </tr>
           
           <tr>
@@ -269,7 +277,7 @@ export class TresoreriePrintService {
 
           <!-- RÉSULTATS -->
           <tr class="section-header">
-            <td class="section-title" colspan="${moisLabels.length + 2}"><strong>RÉSULTATS</strong></td>
+            <td class="section-title" colspan="${nombreColonnes}"><strong>RÉSULTATS</strong></td>
           </tr>
           
           <tr>
@@ -295,23 +303,27 @@ export class TresoreriePrintService {
     }
 
     /**
-     * Génère la section d'analyse financière
+     * Génère la section d'analyse financière (avec durée dynamique)
      */
-    private genererAnalyseFinanciere(donneesMois: any[], totauxAnnuels: any, creditParams: any): string {
-        const cashFlowMoyen = totauxAnnuels.excedentDeficit / 12;
-        const remboursementMensuelMoyen = (totauxAnnuels.interetsAVerser + totauxAnnuels.remboursementCapital) / 12;
+    private genererAnalyseFinanciere(donneesMois: any[], totauxAnnuels: any, creditParams: any, nombreMois: number): string {
+        // Calculs basés sur le nombre de mois réel
+        const cashFlowMoyen = totauxAnnuels.excedentDeficit / nombreMois;
+        const remboursementMensuelMoyen = (totauxAnnuels.interetsAVerser + totauxAnnuels.remboursementCapital) / nombreMois;
         const ratioRemboursement = totauxAnnuels.totalEncaissements > 0 ? ((totauxAnnuels.interetsAVerser + totauxAnnuels.remboursementCapital) / totauxAnnuels.totalEncaissements) * 100 : 0;
 
         // Identifier les mois déficitaires
         const moisDeficitaires = donneesMois.map((mois, index) => ({ mois: index, deficit: mois.excedentDeficit })).filter((item) => item.deficit < 0);
 
+        // Solde final (dernier mois)
+        const soldeFinal = donneesMois[donneesMois.length - 1]?.soldeFin || 0;
+
         return `
       <div class="analysis-grid">
         <div class="analysis-block">
-          <h3>📊 INDICATEURS CLÉS</h3>
+          <h3>📊 INDICATEURS CLÉS (${nombreMois} mois)</h3>
           <div class="indicators">
             <div class="indicator">
-              <span class="indicator-label">Cash Flow annuel moyen:</span>
+              <span class="indicator-label">Cash Flow moyen mensuel:</span>
               <span class="indicator-value ${cashFlowMoyen >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(cashFlowMoyen)}</span>
             </div>
             <div class="indicator">
@@ -321,6 +333,10 @@ export class TresoreriePrintService {
             <div class="indicator">
               <span class="indicator-label">Ratio remboursement/revenus:</span>
               <span class="indicator-value ${ratioRemboursement <= 30 ? 'positive' : ratioRemboursement <= 50 ? 'warning' : 'negative'}">${ratioRemboursement.toFixed(1)}%</span>
+            </div>
+            <div class="indicator">
+              <span class="indicator-label">Solde final (Mois ${nombreMois}):</span>
+              <span class="indicator-value ${soldeFinal >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(soldeFinal)}</span>
             </div>
           </div>
         </div>
@@ -332,13 +348,13 @@ export class TresoreriePrintService {
                 moisDeficitaires.length > 0
                     ? `
               <div class="alert alert-danger">
-                <strong>Mois déficitaires identifiés:</strong>
-                ${moisDeficitaires.map((item) => `Mois ${item.mois} (${this.formatCurrency(item.deficit)})`).join(', ')}
+                <strong>Mois déficitaires identifiés (${moisDeficitaires.length}/${nombreMois}):</strong>
+                ${moisDeficitaires.map((item) => `M${item.mois} (${this.formatCurrency(item.deficit)})`).join(', ')}
               </div>
             `
                     : `
               <div class="alert alert-success">
-                <strong>✓ Aucun déficit mensuel identifié</strong>
+                <strong>✓ Aucun déficit mensuel identifié sur les ${nombreMois} mois</strong>
               </div>
             `
             }
@@ -357,7 +373,17 @@ export class TresoreriePrintService {
                 cashFlowMoyen < 0
                     ? `
               <div class="alert alert-danger">
-                <strong>Cash Flow annuel négatif</strong> - Viabilité à long terme questionnée
+                <strong>Cash Flow moyen négatif</strong> - Viabilité à long terme questionnée
+              </div>
+            `
+                    : ''
+            }
+
+            ${
+                soldeFinal < 0
+                    ? `
+              <div class="alert alert-danger">
+                <strong>Solde final négatif</strong> - Insuffisance de trésorerie en fin de période
               </div>
             `
                     : ''
@@ -366,15 +392,16 @@ export class TresoreriePrintService {
         </div>
 
         <div class="analysis-block">
-          <h3>💰 SYNTHÈSE FINANCIÈRE</h3>
+          <h3>💰 SYNTHÈSE FINANCIÈRE (${nombreMois} mois)</h3>
           <div class="synthesis">
-            <p><strong>Total revenus annuels:</strong> ${this.formatCurrency(totauxAnnuels.totalEncaissements)}</p>
-            <p><strong>Total charges annuelles:</strong> ${this.formatCurrency(totauxAnnuels.totalDecaissements)}</p>
-            <p><strong>Résultat net annuel:</strong> 
+            <p><strong>Total revenus sur la période:</strong> ${this.formatCurrency(totauxAnnuels.totalEncaissements)}</p>
+            <p><strong>Total charges sur la période:</strong> ${this.formatCurrency(totauxAnnuels.totalDecaissements)}</p>
+            <p><strong>Résultat net sur la période:</strong> 
               <span class="${totauxAnnuels.excedentDeficit >= 0 ? 'positive' : 'negative'}">
                 ${this.formatCurrency(totauxAnnuels.excedentDeficit)}
               </span>
             </p>
+            <p><strong>Total remboursements:</strong> ${this.formatCurrency(totauxAnnuels.interetsAVerser + totauxAnnuels.remboursementCapital)}</p>
             <p><strong>Capacité de remboursement:</strong> 
               <span class="${cashFlowMoyen >= remboursementMensuelMoyen ? 'positive' : 'negative'}">
                 ${cashFlowMoyen >= remboursementMensuelMoyen ? 'Suffisante' : 'Insuffisante'}
@@ -387,15 +414,17 @@ export class TresoreriePrintService {
     }
 
     /**
-     * Extrait les données de tous les mois du formulaire
+     * Extrait les données de tous les mois du formulaire (dynamique)
      */
-    private extraireDonneesMois(tresorerieForm: any): any[] {
+    private extraireDonneesMois(tresorerieForm: any, nombreMois: number): any[] {
         const donneesMois = [];
 
-        for (let mois = 0; mois <= 12; mois++) {
+        // Boucle de 0 à nombreMois (inclus)
+        for (let mois = 0; mois <= nombreMois; mois++) {
             const moisData = tresorerieForm.get(`mois${mois}`)?.getRawValue() || {};
 
             donneesMois.push({
+                numeroMois: mois,
                 soldeDebut: moisData.soldeDebut || 0,
                 ventes: moisData.ventes || 0,
                 autresRevenus: moisData.autresRevenus || 0,
@@ -426,7 +455,7 @@ export class TresoreriePrintService {
     }
 
     /**
-     * Calcule les totaux annuels
+     * Calcule les totaux sur tous les mois
      */
     private calculerTotauxAnnuels(donneesMois: any[]): any {
         const totaux: any = {};
@@ -485,9 +514,16 @@ export class TresoreriePrintService {
     }
 
     /**
-     * Retourne les styles CSS pour l'impression
+     * Retourne les styles CSS pour l'impression (adaptés au nombre de mois)
      */
-    private getTableauStyles(): string {
+    private getTableauStyles(nombreMois: number): string {
+        // Ajuster la largeur des colonnes selon le nombre de mois
+        const isLongDuration = nombreMois > 12;
+        const columnWidth = isLongDuration ? '40px' : '55px';
+        const fontSize = isLongDuration ? '6px' : '7px';
+        const headerFontSize = isLongDuration ? '6px' : '8px';
+        const pageOrientation = nombreMois > 18 ? 'A3 landscape' : 'A4 landscape';
+
         return `
       * {
         margin: 0;
@@ -504,7 +540,7 @@ export class TresoreriePrintService {
       }
 
       .print-container {
-        max-width: 297mm;
+        max-width: ${nombreMois > 18 ? '420mm' : '297mm'};
         margin: 0 auto;
         padding: 10mm;
       }
@@ -541,14 +577,14 @@ export class TresoreriePrintService {
       .main-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 8px;
+        font-size: ${fontSize};
         table-layout: fixed;
       }
 
       .main-table th,
       .main-table td {
         border: 1px solid #333;
-        padding: 3px 2px;
+        padding: 2px 1px;
         text-align: center;
         vertical-align: middle;
       }
@@ -557,7 +593,7 @@ export class TresoreriePrintService {
         background: #2c3e50;
         color: white;
         font-weight: bold;
-        width: 120px;
+        width: ${isLongDuration ? '100px' : '120px'};
         font-size: 9px;
       }
 
@@ -565,17 +601,20 @@ export class TresoreriePrintService {
         background: #34495e;
         color: white;
         font-weight: bold;
-        width: 60px;
-        font-size: 8px;
-        writing-mode: vertical-rl;
-        text-orientation: mixed;
+        width: ${columnWidth};
+        font-size: ${headerFontSize};
+        ${isLongDuration ? 'writing-mode: vertical-rl; text-orientation: mixed;' : ''}
+      }
+
+      .month-start {
+        background: #1a5276;
       }
 
       .total-header {
         background: #2c3e50;
         color: white;
         font-weight: bold;
-        width: 80px;
+        width: ${isLongDuration ? '60px' : '80px'};
         font-size: 9px;
       }
 
@@ -592,21 +631,21 @@ export class TresoreriePrintService {
         text-align: left;
         padding-left: 5px;
         font-weight: 500;
-        font-size: 8px;
+        font-size: ${isLongDuration ? '7px' : '8px'};
       }
 
       .amount-cell {
         text-align: right;
-        padding-right: 3px;
-        font-size: 7px;
+        padding-right: 2px;
+        font-size: ${fontSize};
       }
 
       .total-cell {
         background: #ecf0f1;
         text-align: right;
-        padding-right: 3px;
+        padding-right: 2px;
         font-weight: bold;
-        font-size: 8px;
+        font-size: ${isLongDuration ? '7px' : '8px'};
       }
 
       .total-revenue {
@@ -673,7 +712,7 @@ export class TresoreriePrintService {
 
       .analysis-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 15px;
       }
 
@@ -763,7 +802,7 @@ export class TresoreriePrintService {
 
       @page {
         margin: 8mm;
-        size: A4 landscape;
+        size: ${pageOrientation};
       }
     `;
     }
