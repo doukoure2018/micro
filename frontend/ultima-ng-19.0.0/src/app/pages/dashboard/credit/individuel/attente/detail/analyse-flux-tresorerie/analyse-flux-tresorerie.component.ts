@@ -1,4 +1,4 @@
-import { Component, signal, computed, OnInit, inject, effect, ChangeDetectorRef, NgZone, DestroyRef } from '@angular/core';
+import { Component, signal, computed, OnInit, inject, effect, ChangeDetectorRef, NgZone, DestroyRef, HostBinding } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -1936,8 +1936,7 @@ export class AnalyseFluxTresorerieComponent {
     getFormSummary() {
         const monthsWithData = this.tresorerieState.getMonthsWithData();
         const savedMonths = this.tresorerieState.getSavedMonths();
-        const totalMois = this.nombreMois() + 1; // +1 car on inclut M0
-
+        const totalMois = this.nombreMois() + 1;
         return {
             totalMois: totalMois,
             moisRenseignes: monthsWithData.length,
@@ -3503,5 +3502,16 @@ export class AnalyseFluxTresorerieComponent {
             });
         }
         return resume;
+    }
+
+    // Dans la classe du composant
+    @HostBinding('class.duration-long')
+    get isDurationLong(): boolean {
+        return this.nombreMois() > 12 && this.nombreMois() <= 18;
+    }
+
+    @HostBinding('class.duration-extra-long')
+    get isDurationExtraLong(): boolean {
+        return this.nombreMois() > 18;
     }
 }

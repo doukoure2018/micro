@@ -14,7 +14,7 @@
     width: 100%;
     border-collapse: collapse;
     font-size: 0.85rem;
-    min-width: 1400px;
+    min-width: 1600px; // Augmenté pour accommoder les cellules élargies
 
     th,
     td {
@@ -52,10 +52,11 @@
         z-index: 10;
     }
 
-    // Colonnes des mois
+    // Colonnes des mois - ÉLARGIES
     .col-mois {
-        min-width: 90px;
-        max-width: 110px;
+        min-width: 115px; // Augmenté de 90px à 115px
+        max-width: 140px; // Augmenté de 110px à 140px
+        width: 115px;
     }
 
     .col-mois-0 {
@@ -63,9 +64,10 @@
         border-left: 2px solid #ffc107;
     }
 
-    // Colonne cumul
+    // Colonne cumul - ÉLARGIE
     .col-cumul {
-        min-width: 110px;
+        min-width: 130px; // Augmenté de 110px à 130px
+        width: 130px;
         background: #e9ecef;
         font-weight: bold;
         border-left: 2px solid #6c757d;
@@ -217,20 +219,100 @@
     .cell-value-display {
         display: block;
         padding: 0.25rem;
+        font-variant-numeric: tabular-nums; // Alignement des chiffres
     }
 
     .cumul-value {
         font-weight: bold;
         color: #495057;
+        font-variant-numeric: tabular-nums;
     }
 }
 
-// Styles des inputs dans les cellules
+// ========================================
+// CELLULES AVEC BOUTON DE COPIE - AMÉLIORÉ
+// ========================================
+
+.cell-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    width: 100%;
+    min-height: 32px;
+
+    // Input dans la cellule
+    p-inputNumber {
+        flex: 1;
+        min-width: 0;
+
+        ::ng-deep {
+            .p-inputnumber {
+                width: 100%;
+            }
+
+            .p-inputnumber-input,
+            .table-cell-input {
+                width: 100% !important;
+                min-width: 75px; // Largeur minimum pour les valeurs
+                text-align: right !important;
+                padding: 0.35rem 0.5rem !important;
+                font-size: 0.85rem !important;
+                border: 1px solid transparent !important;
+                background: transparent !important;
+                border-radius: 4px;
+                transition: all 0.2s ease;
+                font-variant-numeric: tabular-nums;
+
+                &:hover {
+                    border-color: #90caf9 !important;
+                    background: white !important;
+                }
+
+                &:focus {
+                    border-color: #2196f3 !important;
+                    background: white !important;
+                    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2) !important;
+                    outline: none !important;
+                }
+            }
+        }
+    }
+
+    // Bouton de copie dans la cellule
+    .copy-cell-btn {
+        opacity: 0;
+        transition: all 0.2s ease;
+        padding: 0.2rem !important;
+        width: 1.4rem !important;
+        min-width: 1.4rem !important;
+        height: 1.4rem !important;
+        flex-shrink: 0;
+        border-radius: 4px !important;
+
+        .pi {
+            font-size: 0.65rem;
+        }
+
+        &:hover {
+            background-color: #e3f2fd !important;
+            color: #1976d2 !important;
+            transform: scale(1.1);
+        }
+    }
+
+    &:hover .copy-cell-btn {
+        opacity: 1;
+    }
+}
+
+// Styles des inputs dans les cellules (global)
 :host ::ng-deep {
     .table-cell-input {
         width: 100% !important;
         text-align: right !important;
-        padding: 0.25rem 0.5rem !important;
+        padding: 0.35rem 0.5rem !important;
         font-size: 0.85rem !important;
         border: none !important;
         background: transparent !important;
@@ -248,7 +330,7 @@
     .p-inputnumber-input {
         width: 100% !important;
         text-align: right !important;
-        padding: 0.25rem !important;
+        padding: 0.35rem 0.5rem !important;
         font-size: 0.85rem !important;
     }
 
@@ -269,7 +351,65 @@
     transition: all 0.3s ease;
 }
 
-// Responsive
+// ========================================
+// RESPONSIVE - ADAPTATION SELON LA TAILLE
+// ========================================
+
+@media (max-width: 1800px) {
+    .tresorerie-table {
+        min-width: 1400px;
+
+        .col-mois {
+            min-width: 105px;
+            width: 105px;
+        }
+
+        .col-cumul {
+            min-width: 120px;
+            width: 120px;
+        }
+    }
+}
+
+@media (max-width: 1400px) {
+    .tresorerie-table {
+        font-size: 0.8rem;
+        min-width: 1200px;
+
+        .col-libelle {
+            min-width: 170px;
+        }
+
+        .col-mois {
+            min-width: 95px;
+            width: 95px;
+        }
+
+        .col-cumul {
+            min-width: 110px;
+            width: 110px;
+        }
+
+        .cell-container {
+            p-inputNumber ::ng-deep .p-inputnumber-input {
+                min-width: 65px;
+                padding: 0.3rem 0.4rem !important;
+                font-size: 0.8rem !important;
+            }
+
+            .copy-cell-btn {
+                width: 1.2rem !important;
+                min-width: 1.2rem !important;
+                height: 1.2rem !important;
+
+                .pi {
+                    font-size: 0.6rem;
+                }
+            }
+        }
+    }
+}
+
 @media (max-width: 768px) {
     .tresorerie-table {
         font-size: 0.75rem;
@@ -279,12 +419,72 @@
         }
 
         .col-mois {
-            min-width: 70px;
+            min-width: 80px;
+            width: 80px;
+        }
+
+        .col-cumul {
+            min-width: 100px;
+            width: 100px;
         }
     }
 
     .tableau-actions {
         flex-direction: column;
+    }
+}
+
+// Pour les écrans tactiles, toujours afficher le bouton de copie
+@media (hover: none) {
+    .cell-container .copy-cell-btn {
+        opacity: 0.6;
+    }
+}
+
+// ========================================
+// ADAPTATION POUR DURÉES LONGUES
+// ========================================
+
+// Classes à ajouter dynamiquement selon la durée
+:host-context(.duration-long) {
+    .tresorerie-table {
+        .col-mois {
+            min-width: 90px;
+            width: 90px;
+        }
+
+        .cell-container p-inputNumber ::ng-deep .p-inputnumber-input {
+            min-width: 60px;
+            font-size: 0.78rem !important;
+        }
+    }
+}
+
+:host-context(.duration-extra-long) {
+    .tresorerie-table {
+        .col-mois {
+            min-width: 80px;
+            width: 80px;
+        }
+
+        .cell-container {
+            p-inputNumber ::ng-deep .p-inputnumber-input {
+                min-width: 52px;
+                font-size: 0.72rem !important;
+                padding: 0.25rem 0.3rem !important;
+            }
+
+            .copy-cell-btn {
+                width: 1.1rem !important;
+                min-width: 1.1rem !important;
+                height: 1.1rem !important;
+                padding: 0.15rem !important;
+
+                .pi {
+                    font-size: 0.55rem;
+                }
+            }
+        }
     }
 }
 
@@ -302,11 +502,15 @@
     animation: cellHighlight 0.5s ease;
 }
 
-// Impression
+// ========================================
+// IMPRESSION
+// ========================================
+
 @media print {
     .tableau-actions,
     .actions-footer,
-    .copy-btn {
+    .copy-btn,
+    .copy-cell-btn {
         display: none !important;
     }
 
@@ -321,10 +525,18 @@
         .sticky-col {
             position: static;
         }
+
+        .col-mois {
+            min-width: 60px;
+            width: auto;
+        }
     }
 }
 
-// Section statut dossier
+// ========================================
+// SECTION STATUT DOSSIER
+// ========================================
+
 .credit-status-section {
     .status-card {
         transition: all 0.3s ease;
@@ -399,7 +611,7 @@
     }
 }
 
-// Responsive
+// Responsive pour les sections
 @media (max-width: 768px) {
     .credit-status-section {
         .status-card {
@@ -434,7 +646,10 @@
     }
 }
 
-// Barre de progression
+// ========================================
+// BARRE DE PROGRESSION
+// ========================================
+
 .progress-banner {
     .p-progressbar {
         background: #e9ecef;
@@ -445,7 +660,6 @@
         }
     }
 
-    // Animation quand complet
     &.complete .p-progressbar .p-progressbar-value {
         background: linear-gradient(90deg, #10b981 0%, #059669 100%);
         animation: pulse-success 2s infinite;
@@ -462,7 +676,6 @@
     }
 }
 
-// Responsive
 @media (max-width: 768px) {
     .progress-banner {
         .flex {
@@ -476,7 +689,10 @@
     }
 }
 
-// Segments des mois
+// ========================================
+// SEGMENTS DES MOIS
+// ========================================
+
 .month-segments {
     height: 28px;
 
@@ -523,50 +739,4 @@
     height: 10px;
     border-radius: 2px;
     display: inline-block;
-}
-
-.cell-container {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 2px;
-
-    .copy-cell-btn {
-        opacity: 0;
-        transition: opacity 0.2s ease;
-        padding: 0.25rem !important;
-        width: 1.5rem !important;
-        height: 1.5rem !important;
-
-        .pi {
-            font-size: 0.7rem;
-        }
-    }
-
-    &:hover .copy-cell-btn {
-        opacity: 1;
-    }
-}
-
-// Adapter la largeur de l'input quand le bouton est présent
-.cell-container p-inputNumber {
-    flex: 1;
-
-    ::ng-deep .p-inputnumber-input {
-        width: 100%;
-        padding-right: 0.25rem;
-    }
-}
-
-// Style du bouton au survol
-.copy-cell-btn:hover {
-    background-color: var(--primary-100) !important;
-    color: var(--primary-600) !important;
-}
-
-// Pour les écrans tactiles, toujours afficher le bouton
-@media (hover: none) {
-    .cell-container .copy-cell-btn {
-        opacity: 0.7;
-    }
 }
