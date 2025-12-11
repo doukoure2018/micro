@@ -374,13 +374,13 @@
                         <td class="col-libelle sticky-col">
                             <div class="flex align-items-center justify-content-between">
                                 <span class="libelle-text">{{ ligne.libelle }}</span>
-                                @if (ligne.editable) {
+                                <!-- @if (ligne.editable) {
                                 <button pButton type="button" icon="pi pi-copy"
                                     class="p-button-text p-button-sm p-button-rounded copy-btn"
-                                    pTooltip="Copier M0 vers les mois suivants" tooltipPosition="right"
+                                    [pTooltip]="'Copier M0 vers M1-M' + nombreMois()" tooltipPosition="right"
                                     (click)="copyToFollowingMonths(ligne.id, 0)">
                                 </button>
-                                }
+                                } -->
                             </div>
                         </td>
 
@@ -394,11 +394,23 @@
 
                             <!-- Cellule éditable -->
                             @if (isCellEditable(ligne, mois)) {
-                            <p-inputNumber [ngModel]="getCellValue(ligne.id, mois)"
-                                (ngModelChange)="onTableCellChange(ligne.id, mois, $event)" mode="decimal"
-                                [minFractionDigits]="0" [maxFractionDigits]="0" [useGrouping]="true" locale="fr-FR"
-                                inputStyleClass="table-cell-input" [placeholder]="'-'">
-                            </p-inputNumber>
+                            <div class="cell-container">
+                                <p-inputNumber [ngModel]="getCellValue(ligne.id, mois)"
+                                    (ngModelChange)="onTableCellChange(ligne.id, mois, $event)" mode="decimal"
+                                    [minFractionDigits]="0" [maxFractionDigits]="0" [useGrouping]="true" locale="fr-FR"
+                                    inputStyleClass="table-cell-input" [placeholder]="'-'">
+                                </p-inputNumber>
+
+                                <!-- Bouton copie vers mois suivants (visible au survol) -->
+                                @if (mois < nombreMois() && getCellValue(ligne.id, mois) !==null &&
+                                    getCellValue(ligne.id, mois) !==0) { <button pButton type="button"
+                                    icon="pi pi-arrow-right"
+                                    class="copy-cell-btn p-button-text p-button-sm p-button-rounded"
+                                    [pTooltip]="'Copier vers M' + (mois + 1) + ' à M' + nombreMois()"
+                                    tooltipPosition="top" (click)="copyToFollowingMonths(ligne.id, mois)">
+                                    </button>
+                                    }
+                            </div>
                             } @else {
                             <!-- Cellule en lecture seule -->
                             <span class="cell-value-display">
@@ -407,7 +419,6 @@
                             }
                         </td>
                         }
-
                         <!-- Colonne Cumul -->
                         <td class="col-cumul">
                             <span class="cumul-value">

@@ -280,15 +280,31 @@ export class AnalyseFluxTresorerieComponent {
     /**
      * Copier la valeur d'une cellule vers tous les mois suivants
      */
+    /**
+     * Copier la valeur d'une cellule vers tous les mois suivants
+     */
     copyToFollowingMonths(ligneId: string, fromMois: number): void {
         const value = this.getCellValue(ligneId, fromMois);
         const ligne = this.lignesTableau.find((l) => l.id === ligneId);
+        const duree = this.nombreMois();
 
         if (!ligne) return;
 
-        for (let mois = fromMois + 1; mois <= 12; mois++) {
+        // Vérifier qu'il y a des mois suivants
+        if (fromMois >= duree) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Attention',
+                detail: 'Aucun mois suivant disponible pour la copie'
+            });
+            return;
+        }
+
+        let copiedCount = 0;
+        for (let mois = fromMois + 1; mois <= duree; mois++) {
             if (this.isCellEditable(ligne, mois)) {
                 this.setCellValue(ligneId, mois, value);
+                copiedCount++;
             }
         }
 
@@ -298,7 +314,37 @@ export class AnalyseFluxTresorerieComponent {
         this.messageService.add({
             severity: 'info',
             summary: 'Copié',
-            detail: `Valeur copiée vers les mois ${fromMois + 1} à 12`
+            detail: `Valeur "${this.formatMontant(value || 0)}" copiée de M${fromMois} vers M${fromMois + 1} à M${duree} (${copiedCount} mois)`
+        });
+    }
+
+    /**
+     * Copier la valeur vers une plage de mois spécifique
+     */
+    copyToMonthRange(ligneId: string, fromMois: number, toMois: number): void {
+        const value = this.getCellValue(ligneId, fromMois);
+        const ligne = this.lignesTableau.find((l) => l.id === ligneId);
+        const duree = this.nombreMois();
+
+        if (!ligne) return;
+
+        // Limiter toMois à la durée max
+        const maxMois = Math.min(toMois, duree);
+
+        let copiedCount = 0;
+        for (let mois = fromMois + 1; mois <= maxMois; mois++) {
+            if (this.isCellEditable(ligne, mois)) {
+                this.setCellValue(ligneId, mois, value);
+                copiedCount++;
+            }
+        }
+
+        this.calculateAllMonths();
+
+        this.messageService.add({
+            severity: 'info',
+            summary: 'Copié',
+            detail: `Valeur copiée vers ${copiedCount} mois (M${fromMois + 1} à M${maxMois})`
         });
     }
 

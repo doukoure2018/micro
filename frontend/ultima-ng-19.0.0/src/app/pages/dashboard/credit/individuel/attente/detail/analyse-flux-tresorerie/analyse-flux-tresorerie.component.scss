@@ -524,3 +524,49 @@
     border-radius: 2px;
     display: inline-block;
 }
+
+.cell-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+
+    .copy-cell-btn {
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        padding: 0.25rem !important;
+        width: 1.5rem !important;
+        height: 1.5rem !important;
+
+        .pi {
+            font-size: 0.7rem;
+        }
+    }
+
+    &:hover .copy-cell-btn {
+        opacity: 1;
+    }
+}
+
+// Adapter la largeur de l'input quand le bouton est présent
+.cell-container p-inputNumber {
+    flex: 1;
+
+    ::ng-deep .p-inputnumber-input {
+        width: 100%;
+        padding-right: 0.25rem;
+    }
+}
+
+// Style du bouton au survol
+.copy-cell-btn:hover {
+    background-color: var(--primary-100) !important;
+    color: var(--primary-600) !important;
+}
+
+// Pour les écrans tactiles, toujours afficher le bouton
+@media (hover: none) {
+    .cell-container .copy-cell-btn {
+        opacity: 0.7;
+    }
+}
