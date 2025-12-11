@@ -843,9 +843,10 @@ export class AnalyseBilanActiviteComponent {
             personnecautions: this.personnecautions || [],
 
             // Location IDs - Correction importante ici
-            delegationId: 1, // Forcer les valeurs pour le test
-            agenceId: 1,
-            pointVenteId: 1,
+            // Location IDs - Valeurs dynamiques avec fallback
+            delegationId: getFormValue(this.demandeCreditForm, 'delegation', null)?.id ?? this.state().demandeIndividuel?.delegation ?? 1,
+            agenceId: getFormValue(this.demandeCreditForm, 'agence', null)?.id ?? this.state().demandeIndividuel?.agence ?? 1,
+            pointVenteId: getFormValue(this.demandeCreditForm, 'pointVente', null)?.id ?? this.state().demandeIndividuel?.pos ?? 1,
             userId: this.state().userId || 3
         };
 
