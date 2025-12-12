@@ -3504,6 +3504,84 @@ export class AnalyseFluxTresorerieComponent {
         return resume;
     }
 
+    /**
+     * Génère le contenu du tooltip pour une cellule
+     */
+    getCellTooltip(ligne: LigneTresorerie, mois: number): string {
+        const value = this.getCellValue(ligne.id, mois);
+
+        if (value === null || value === undefined) {
+            return `${ligne.libelle} - M${mois}\nAucune valeur`;
+        }
+
+        const montantFormate = this.formatMontant(value);
+        const status = this.getCellStatus(ligne.id, mois);
+
+        let tooltip = `${ligne.libelle}\n`;
+        tooltip += `Mois ${mois}${mois === 0 ? ' (Démarrage)' : ''}\n`;
+        tooltip += `━━━━━━━━━━━━━━━\n`;
+        tooltip += `💰 ${montantFormate}`;
+
+        // Ajouter des infos supplémentaires selon le type
+        if (ligne.type === 'calcul') {
+            tooltip += `\n📊 Calculé automatiquement`;
+        } else if (ligne.editable) {
+            tooltip += `\n✏️ Modifiable`;
+            if (value !== 0 && mois < this.nombreMois()) {
+                tooltip += `\n➡️ Clic droit pour copier`;
+            }
+        }
+
+        // Indiquer si négatif
+        if (value < 0) {
+            tooltip += `\n⚠️ Valeur négative`;
+        }
+
+        return tooltip;
+    }
+
+    /**
+     * Génère le tooltip pour la colonne cumul
+     */
+    getCumulTooltip(ligne: LigneTresorerie): string {
+        const cumul = this.getCumulForLigne(ligne.id);
+        const montantFormate = this.formatMontant(cumul);
+        const duree = this.nombreMois();
+
+        let tooltip = `${ligne.libelle}\n`;
+        tooltip += `━━━━━━━━━━━━━━━\n`;
+        tooltip += `📊 Cumul M0 à M${duree}\n`;
+        tooltip += `💰 ${montantFormate}`;
+
+        // Pour les lignes de solde, indiquer que c'est la valeur finale
+        if (ligne.id === 'soldeFin' || ligne.id === 'soldeDebut') {
+            tooltip = `${ligne.libelle}\n`;
+            tooltip += `━━━━━━━━━━━━━━━\n`;
+            tooltip += `📊 Valeur au M${duree}\n`;
+            tooltip += `💰 ${montantFormate}`;
+        }
+
+        // Moyenne mensuelle pour les autres lignes
+        if (ligne.type !== 'calcul' || ligne.id === 'totalEncaissements' || ligne.id === 'totalDecaissements') {
+            const moyenne = cumul / (duree + 1);
+            tooltip += `\n📈 Moyenne: ${this.formatMontant(moyenne)}/mois`;
+        }
+
+        return tooltip;
+    }
+    /**
+     * Obtient le statut d'une cellule pour le tooltip
+     */
+    private getCellStatus(ligneId: string, mois: number): string {
+        if (this.moisSauvegardes().has(mois)) {
+            return 'saved';
+        }
+        if (this.moisRenseignes().has(mois)) {
+            return 'filled';
+        }
+        return 'empty';
+    }
+
     // Dans la classe du composant
     @HostBinding('class.duration-long')
     get isDurationLong(): boolean {

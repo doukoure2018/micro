@@ -390,7 +390,9 @@
                             [class.cell-editable]="isCellEditable(ligne, mois)"
                             [class.cell-readonly]="!isCellEditable(ligne, mois)"
                             [class.cell-negative]="(getCellValue(ligne.id, mois) ?? 0) < 0"
-                            [class.cell-positive]="(getCellValue(ligne.id, mois) ?? 0) > 0 && ligne.type === 'calcul'">
+                            [class.cell-positive]="(getCellValue(ligne.id, mois) ?? 0) > 0 && ligne.type === 'calcul'"
+                            [pTooltip]="getCellTooltip(ligne, mois)" tooltipPosition="top"
+                            [tooltipOptions]="{ showDelay: 300, hideDelay: 0 }">
 
                             <!-- Cellule éditable -->
                             @if (isCellEditable(ligne, mois)) {
@@ -407,7 +409,8 @@
                                     icon="pi pi-arrow-right"
                                     class="copy-cell-btn p-button-text p-button-sm p-button-rounded"
                                     [pTooltip]="'Copier vers M' + (mois + 1) + ' à M' + nombreMois()"
-                                    tooltipPosition="top" (click)="copyToFollowingMonths(ligne.id, mois)">
+                                    tooltipPosition="top"
+                                    (click)="copyToFollowingMonths(ligne.id, mois); $event.stopPropagation()">
                                     </button>
                                     }
                             </div>
@@ -419,8 +422,10 @@
                             }
                         </td>
                         }
-                        <!-- Colonne Cumul -->
-                        <td class="col-cumul">
+
+                        <!-- Colonne Cumul avec tooltip -->
+                        <td class="col-cumul" [pTooltip]="getCumulTooltip(ligne)" tooltipPosition="top"
+                            [tooltipOptions]="{ showDelay: 300 }">
                             <span class="cumul-value">
                                 {{ getCumulForLigne(ligne.id) | number:'1.0-0' }}
                             </span>

@@ -740,3 +740,53 @@
     border-radius: 2px;
     display: inline-block;
 }
+
+// ========================================
+// STYLES DES TOOLTIPS
+// ========================================
+
+:host ::ng-deep {
+    .p-tooltip {
+        max-width: 280px;
+
+        .p-tooltip-text {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            white-space: pre-line; // Permet les retours à la ligne avec \n
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .p-tooltip-arrow {
+            border-top-color: #1e293b;
+        }
+
+        &.p-tooltip-top .p-tooltip-arrow {
+            border-top-color: #334155;
+        }
+
+        &.p-tooltip-bottom .p-tooltip-arrow {
+            border-bottom-color: #1e293b;
+        }
+    }
+}
+
+// Tooltip spécial pour les valeurs négatives
+.cell-negative {
+    :host ::ng-deep .p-tooltip .p-tooltip-text {
+        background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+        border-color: rgba(239, 68, 68, 0.3);
+    }
+}
+
+// Tooltip spécial pour les valeurs positives (calcul)
+.cell-positive {
+    :host ::ng-deep .p-tooltip .p-tooltip-text {
+        background: linear-gradient(135deg, #14532d 0%, #166534 100%);
+        border-color: rgba(34, 197, 94, 0.3);
+    }
+}
