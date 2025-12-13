@@ -11,10 +11,11 @@ import { DigitalVerificationComponent } from '../agent-credit/digital-verificati
 import { CorrectionRejetPpComponent } from '../agent-credit/correction-rejet-pp/correction-rejet-pp.component';
 import { RotationAgentComponent } from '../agent-credit/rotation-agent/rotation-agent.component';
 import { LogistiqueComponent } from '../agent-credit/logistique/logistique.component';
+import { DeComponent } from '../admin/de/de.component';
 
 @Component({
     selector: 'app-home',
-    imports: [AdminComponent, AgentCreditComponent, RespAgentComponent, ListStockComponent, RapprochementCaisseComponent, DigitalVerificationComponent, CorrectionRejetPpComponent, RotationAgentComponent, LogistiqueComponent],
+    imports: [AdminComponent, AgentCreditComponent, RespAgentComponent, ListStockComponent, RapprochementCaisseComponent, DigitalVerificationComponent, CorrectionRejetPpComponent, RotationAgentComponent, LogistiqueComponent, DeComponent],
     templateUrl: './home.component.html'
 })
 export class HomeComponent {
