@@ -22,7 +22,11 @@
 
     <!-- Main Content -->
     <div *ngIf="state().demandeIndividuel" class="container mx-auto px-4 py-6 max-w-6xl">
-
+        <div class="mb-4">
+            <button pButton type="button" (click)="goBack()" icon="pi pi-arrow-left" label="Retour"
+                class="p-button-secondary">
+            </button>
+        </div>
         <!-- Document Header -->
         <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
             <div class="bg-gray-800 text-white text-center py-3">
@@ -787,9 +791,10 @@
                                         </div>
                                     </div>
                                     <a [routerLink]="['/dashboards/credit', state().user?.userId, 'resume-credit', state().demande_credit?.demandeCreditId]"
-                                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors duration-200">
-                                        <i class="pi pi-eye mr-2"></i>
-                                        Visualiser l'analyse
+                                        class="inline-flex items-center bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border-2 border-white/20 animate-pulse hover:animate-none">
+                                        <i class="pi pi-eye text-lg mr-2"></i>
+                                        <span class="text-base">Visualiser l'analyse</span>
+                                        <i class="pi pi-arrow-right ml-2"></i>
                                     </a>
                                 </div>
                             </div>
@@ -822,9 +827,10 @@
                                         <span class="font-semibold text-green-700">Analyse des flux disponible</span>
                                     </div>
                                     <a [routerLink]="['/dashboards/credit/individuel/detail/analyse-flux-tresorerie/' + state().demandeIndividuel?.demandeIndividuelId]"
-                                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors duration-200">
-                                        <i class="pi pi-eye mr-2"></i>
-                                        Visualiser l'analyse
+                                        class="inline-flex items-center bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border-2 border-white/20 animate-pulse hover:animate-none">
+                                        <i class="pi pi-eye text-lg mr-2"></i>
+                                        <span class="text-base">Visualiser l'analyse</span>
+                                        <i class="pi pi-arrow-right ml-2"></i>
                                     </a>
                                 </div>
                             </div>

@@ -25,6 +25,7 @@ import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static io.digiservices.ecreditservice.query.DemandeIndQuery.*;
 import static io.digiservices.ecreditservice.query.IndividuelQuery.SELECT_INDIVIDUEL_BY_NUMERO_MEMBRE;
@@ -845,6 +846,86 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
             log.error(e.getMessage());
             throw new ApiException("An error occurred please try again");
         }
+    }
+
+    @Override
+    public List<DelegationCreditDto> listCreditParDelegation() {
+        log.info("Fetching credits grouped by delegation");
+
+        List<DemandeIndividuel> allDemandes = jdbcClient.sql(DemandeIndQuery.LIST_CREDIT_PAR_DELEGATION)
+                .query((rs, rowNum) -> {
+                    DemandeIndividuel demande = new DemandeIndividuel();
+                    demande.setDemandeIndividuelId(rs.getLong("demandeindividuel_id"));
+                    demande.setNom(rs.getString("nom"));
+                    demande.setPrenom(rs.getString("prenom"));
+                    demande.setTelephone(rs.getString("telephone"));
+                    demande.setAge(rs.getInt("age"));
+                    demande.setNumeroMembre(rs.getString("numero_membre"));
+                    demande.setDelegation(rs.getInt("delegation"));
+                    demande.setAgence(rs.getInt("agence"));
+                    demande.setPos(rs.getInt("pos"));
+
+                    Timestamp timestamp = rs.getTimestamp("createdat");
+                    if (timestamp != null) {
+                        demande.setCreatedAt(timestamp.toLocalDateTime());
+                    }
+
+                    demande.setStatutDemande(rs.getString("statut_demande"));
+                    demande.setValidationState(rs.getString("validation_state"));
+                    demande.setStatutSelection(rs.getString("statut_selection"));
+                    demande.setCurrentActivite(rs.getString("current_activite"));
+                    demande.setMontantDemande(rs.getBigDecimal("montant_demande"));
+                    demande.setDureeDemande(rs.getInt("duree_demande"));
+                    demande.setPeriodiciteRemboursement(rs.getString("periodicite_remboursement"));
+                    demande.setTauxInteret(rs.getBigDecimal("taux_interet"));
+                    demande.setNombreEcheance(rs.getInt("nombre_echeance"));
+                    demande.setEcheance(rs.getBigDecimal("echeance"));
+                    demande.setDescriptionActivite(rs.getString("description_activite"));
+                    demande.setNatureClient(rs.getString("nature_client"));
+                    demande.setObjectCredit(rs.getString("object_credit"));
+                    demande.setStatutCredit(rs.getString("statut_credit"));
+                    demande.setRangCredit(rs.getInt("rang_credit"));
+
+                    // Champs de jointure
+                    demande.setDelegationLibele(rs.getString("delegation_libele"));
+                    demande.setAgenceLibele(rs.getString("agence_libele"));
+                    demande.setPointVenteLibele(rs.getString("point_vente_libele"));
+
+                    return demande;
+                })
+                .list();
+
+        // Grouper par délégation
+        Map<Integer, List<DemandeIndividuel>> groupedByDelegation = allDemandes.stream()
+                .filter(d -> d.getDelegation() != null)
+                .collect(Collectors.groupingBy(DemandeIndividuel::getDelegation));
+
+        // Construire la liste de DTOs
+        return groupedByDelegation.entrySet().stream()
+                .map(entry -> {
+                    List<DemandeIndividuel> demandes = entry.getValue();
+                    String delegationLibele = demandes.isEmpty() ? "Non définie"
+                            : (demandes.get(0).getDelegationLibele() != null
+                            ? demandes.get(0).getDelegationLibele()
+                            : "Non définie");
+
+                    // Calculer le montant total
+                    BigDecimal montantTotal = demandes.stream()
+                            .map(DemandeIndividuel::getMontantDemande)
+                            .filter(Objects::nonNull)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                    return DelegationCreditDto.builder()
+                            .delegationId(entry.getKey().longValue())
+                            .delegationLibele(delegationLibele)
+                            .totalDemandes(demandes.size())
+                            .montantTotal(montantTotal)
+                            .demandes(demandes)
+                            .build();
+                })
+                .sorted(Comparator.comparing(DelegationCreditDto::getDelegationLibele,
+                        Comparator.nullsLast(String::compareTo)))
+                .collect(Collectors.toList());
     }
 
     private DemandeIndividuel parseDemandeFromJson(String demandeJson, String garantiesJson) {

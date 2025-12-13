@@ -1,0 +1,191 @@
+<!-- src/app/components/credit-par-delegation/credit-par-delegation.component.html -->
+<div class="card">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+        <div class="flex flex-col">
+            <span class="text-surface-900 dark:text-surface-0 text-2xl font-semibold mb-2">
+                Liste des Crédits par Délégation
+            </span>
+            <span class="text-surface-600 dark:text-surface-200">
+                Vue consolidée des demandes de crédit pour la mise en place
+            </span>
+        </div>
+
+        <div class="flex gap-2">
+            <p-button icon="pi pi-refresh" label="Actualiser" severity="secondary" [loading]="state().loading"
+                (onClick)="refreshData()">
+            </p-button>
+        </div>
+    </div>
+
+    <!-- Statistiques globales -->
+    @if (!state().loading && state().delegations.length > 0) {
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-500 rounded-full p-3">
+                    <i class="pi pi-building text-white text-xl"></i>
+                </div>
+                <div>
+                    <div class="text-surface-600 dark:text-surface-300 text-sm">Délégations</div>
+                    <div class="text-2xl font-bold text-surface-900 dark:text-surface-0">
+                        {{ state().delegations.length }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-green-500 rounded-full p-3">
+                    <i class="pi pi-file text-white text-xl"></i>
+                </div>
+                <div>
+                    <div class="text-surface-600 dark:text-surface-300 text-sm">Total Demandes</div>
+                    <div class="text-2xl font-bold text-surface-900 dark:text-surface-0">
+                        {{ state().totalDemandes }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-purple-500 rounded-full p-3">
+                    <i class="pi pi-wallet text-white text-xl"></i>
+                </div>
+                <div>
+                    <div class="text-surface-600 dark:text-surface-300 text-sm">Montant Global</div>
+                    <div class="text-2xl font-bold text-surface-900 dark:text-surface-0">
+                        {{ state().montantGlobal | currency:'GNF ':'symbol':'1.0-0' }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    }
+
+    <!-- Loading State -->
+    @if (state().loading) {
+    <div class="flex justify-center items-center py-8">
+        <p-progressSpinner strokeWidth="4"></p-progressSpinner>
+    </div>
+    }
+
+    <!-- Error Message -->
+    @if (state().error) {
+    <p-message severity="error" [text]="state().error" styleClass="w-full mb-4"></p-message>
+    }
+
+    <!-- Accordion par Délégation -->
+    @if (!state().loading && state().delegations.length > 0) {
+    <p-accordion [multiple]="true">
+        @for (delegation of state().delegations; track trackByDelegation($index, delegation)) {
+        <p-accordion-panel>
+            <p-accordion-header>
+                <div class="flex justify-between items-center w-full pr-4">
+                    <div class="flex items-center gap-3">
+                        <i class="pi pi-building text-primary"></i>
+                        <span class="font-semibold text-lg">{{ delegation.delegationLibele }}</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <p-tag [value]="delegation.totalDemandes + ' demande(s)'"
+                            [severity]="getDelegationSeverity(delegation.totalDemandes)">
+                        </p-tag>
+                        <span class="text-sm text-surface-600 dark:text-surface-300">
+                            {{ delegation.montantTotal | currency:'GNF ':'symbol':'1.0-0' }}
+                        </span>
+                    </div>
+                </div>
+            </p-accordion-header>
+            <p-accordion-content>
+                <div class="p-2">
+                    <p-table [value]="delegation.demandes" [paginator]="delegation.demandes.length > 10" [rows]="10"
+                        [rowsPerPageOptions]="[10, 25, 50]"
+                        [globalFilterFields]="['nom', 'prenom', 'numeroMembre', 'descriptionActivite']"
+                        responsiveLayout="scroll" styleClass="p-datatable-sm" [rowHover]="true">
+
+                        <ng-template pTemplate="header">
+                            <tr>
+                                <th>Référence</th>
+                                <th>Client</th>
+                                <th>N° Membre</th>
+                                <th>Montant</th>
+                                <th>Durée</th>
+                                <th>Activité</th>
+                                <th>Statut</th>
+                                <th>Date</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </ng-template>
+
+                        <ng-template pTemplate="body" let-demande>
+                            <tr>
+                                <td>
+                                    <span class="font-mono text-sm">{{ demande.demandeIndividuelId }}</span>
+                                </td>
+                                <td>
+                                    <div class="flex flex-col">
+                                        <span class="font-medium">{{ demande.prenom }} {{ demande.nom }}</span>
+                                        <span class="text-xs text-surface-500">{{ demande.telephone }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="font-mono">{{ demande.numeroMembre }}</span>
+                                </td>
+                                <td>
+                                    <span class="font-semibold text-primary">
+                                        {{ demande.montantDemande | currency:'GNF ':'symbol':'1.0-0' }}
+                                    </span>
+                                </td>
+                                <td>{{ demande.dureeDemande }} mois</td>
+                                <td>
+                                    <span class="text-sm" [pTooltip]="demande.descriptionActivite">
+                                        {{ demande.typeActivite || demande.descriptionActivite | slice:0:20 }}...
+                                    </span>
+                                </td>
+                                <td>
+                                    <p-tag [value]="getStatusLabel(demande.statutDemande, demande.validationState)"
+                                        [severity]="getStatusSeverity(demande.statutDemande, demande.validationState)">
+                                    </p-tag>
+                                </td>
+                                <td>
+                                    <span class="text-sm">{{ formatDate(demande.createdAt) }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="flex justify-center gap-1">
+                                        <p-button
+                                            [routerLink]="['/dashboards/credit/individuel/attente/detail', demande.demandeIndividuelId]"
+                                            icon="pi pi-eye" severity="info" [rounded]="true" [text]="true"
+                                            pTooltip="Voir détails">
+                                        </p-button>
+                                        <p-button icon="pi pi-check-circle" severity="success" [rounded]="true"
+                                            [text]="true" pTooltip="Valider">
+                                        </p-button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </ng-template>
+
+                        <ng-template pTemplate="emptymessage">
+                            <tr>
+                                <td colspan="9" class="text-center py-4">
+                                    <i class="pi pi-inbox text-4xl text-surface-300 mb-2"></i>
+                                    <p class="text-surface-500">Aucune demande pour cette délégation</p>
+                                </td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+                </div>
+            </p-accordion-content>
+        </p-accordion-panel>
+        }
+    </p-accordion>
+    } @else if (!state().loading) {
+    <div class="flex flex-col items-center justify-center py-12">
+        <i class="pi pi-folder-open text-6xl text-surface-300 mb-4"></i>
+        <p class="text-xl text-surface-500">Aucune demande de crédit trouvée</p>
+        <p class="text-surface-400">Les demandes en attente apparaîtront ici</p>
+    </div>
+    }
+</div>

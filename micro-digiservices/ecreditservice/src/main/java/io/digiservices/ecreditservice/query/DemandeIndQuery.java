@@ -463,4 +463,49 @@ public class DemandeIndQuery {
 
    public static final String UPDATE_STATUT_REJET_DEMANDE_QUERY =  "UPDATE demandeIndividuel SET statut_demande = 'REJET', createdat = NOW() WHERE demandeIndividuel_id = :demandeindividuel_id";
 
+
+    public static final String LIST_CREDIT_PAR_DELEGATION = """
+        SELECT 
+            d.demandeindividuel_id,
+            d.nom,
+            d.prenom,
+            d.telephone,
+            d.age,
+            d.numero_membre,
+            d.delegation,
+            d.agence,
+            d.pos,
+            d.createdat,
+            d.statut_demande,
+            d.validation_state,
+            d.statut_selection,
+            d.current_activite,
+            d.montant_demande,
+            d.duree_demande,
+            d.periodicite_remboursement,
+            d.taux_interet,
+            d.nombre_echeance,
+            d.echeance,
+            d.description_activite,
+            d.nature_client,
+            d.object_credit,
+            d.statut_credit,
+            d.rang_credit,
+            del.id AS delegation_id,
+            del.libele AS delegation_libele,
+            ag.libele AS agence_libele,
+            pv.libele AS point_vente_libele
+        FROM demandeindividuel d
+        LEFT JOIN delegation del ON d.delegation = del.id
+        LEFT JOIN agence ag ON d.agence = ag.id
+        LEFT JOIN pointvente pv ON d.pos = pv.id
+        WHERE d.statut_demande = 'EN_ATTENTE'
+          AND d.validation_state IN ('NOUVEAU', 'SELECTION', 'APPROVED')
+        ORDER BY del.libele, d.createdat DESC
+        """;
+    public static final String LIST_ALL_DELEGATIONS = """
+        SELECT id, libele FROM delegation ORDER BY libele
+        """;
+
+
 }

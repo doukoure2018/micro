@@ -775,6 +775,20 @@ export class UserService {
     getStatsEtatsDocuments$ = (): Observable<IResponse> => this.http.get<IResponse>(`${this.server}/ecredit/backoffice/stats`).pipe(tap(console.log), catchError(this.handleError));
 
     /**
+     * Récupérer la liste des crédits groupés par délégation
+     * @returns Observable<IResponse> contenant la liste des crédits par délégation
+     */
+    getListCreditParDelegation$ = (): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/listCreditParDelegation`).pipe(
+            tap((response) => {
+                console.log('Liste crédits par délégation:', response);
+                if (response.data?.listCreditParDelegation) {
+                    console.log(`Nombre de délégations: ${response.data.listCreditParDelegation.length}`);
+                }
+            }),
+            catchError(this.handleError)
+        );
+    /**
      *  Functionnaly for logout
      */
     logOut(): void {

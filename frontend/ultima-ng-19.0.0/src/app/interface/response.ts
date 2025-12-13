@@ -17,6 +17,7 @@ import { CreditDataResponse } from './credit.data.response';
 import { CreditosClienteResponseDTO } from './CreditosClienteResponseDTO';
 import { CreditResponse } from './creditResponse';
 import { Delegation } from './delegation';
+import { DelegationCreditDto } from './delegation-credit-dto.interface';
 import { DemandeIndividuel } from './demande-individuel.interface';
 import { DemandeCredit } from './demande.credit';
 import { DossierCreditRequest } from './dossierCreditRequest';
@@ -233,5 +234,7 @@ export interface IResponse {
         page?: number;
         totalPages?: number;
         totalElements?: number;
+
+        listCreditParDelegation?: DelegationCreditDto[];
     };
 }

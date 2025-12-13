@@ -195,6 +195,12 @@ public class DemandeIndServiceImpl implements DemandeIndService {
         return demandeIndRepository.getAllDemandesWithGaranties(agenceId, pointVenteId);
     }
 
+    @Override
+    public List<DelegationCreditDto> listCreditParDelegation() {
+        log.info("Service: Getting credits grouped by delegation");
+        return demandeIndRepository.listCreditParDelegation();
+    }
+
 
     private void validateDemandeData(DemandeIndividuel demande) {
         // Validation métier

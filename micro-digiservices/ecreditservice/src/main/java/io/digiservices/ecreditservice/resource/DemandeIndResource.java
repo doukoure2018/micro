@@ -614,6 +614,17 @@ public class DemandeIndResource {
         return created(getUri()).body(getResponse(request, emptyMap(), "Mise à jour effectué avec Success", OK));
     }
 
+    /**
+     * Liste des credits par delegations
+     */
+    @GetMapping("/listCreditParDelegation")
+    public ResponseEntity<Response> listCreditParDelegation(@NotNull Authentication authentication,
+                                                            HttpServletRequest request) {
+        return created(getUri()).body(getResponse(request, Map.of(
+                        "listCreditParDelegation", demandeIndService.listCreditParDelegation()
+                ),
+                "Liste des Credits Par Délégation", OK));
+    }
 
     @GetMapping("/doukoure/test")
     public ResponseEntity<Response> doukoureTest(@NotNull Authentication authentication,HttpServletRequest request) {

@@ -73,4 +73,6 @@ public interface DemandeIndRepository {
     boolean checkDemandeExists(Long demandeindividuelId);
 
     void rejetDemandeInd(Long demandeindividuelId);
+
+    List<DelegationCreditDto> listCreditParDelegation();
 }

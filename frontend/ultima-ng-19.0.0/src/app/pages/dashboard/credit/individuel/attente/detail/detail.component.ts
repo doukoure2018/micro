@@ -1824,4 +1824,13 @@ export class DetailComponent {
     openInNewTab(route: string): void {
         window.open(route, '_blank');
     }
+
+    // Ajouter cette méthode dans DetailComponent
+    goBack(): void {
+        if (this.state().user?.role === 'MANAGER') {
+            this.router.navigate(['/dashboards']);
+        } else {
+            this.router.navigate(['/dashboards/agent-credit/list-selection-ind']);
+        }
+    }
 }

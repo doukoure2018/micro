@@ -77,5 +77,10 @@ public class DemandeIndividuel {
 
     // Liste des garanties
     private List<GarantiePropose> garanties;
+
+    // ========== NOUVEAUX CHAMPS POUR LE GROUPEMENT PAR DELEGATION ==========
+    private String delegationLibele;
+    private String agenceLibele;
+    private String pointVenteLibele;
 }
 

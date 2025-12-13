@@ -72,4 +72,6 @@ public interface DemandeIndService {
     DemandeIndividuel getDemandeWithGaranties(Long demandeId);
 
     List<DemandeIndividuel> getAllDemandesWithGaranties(Long agenceId, Long pointVenteId);
+
+    List<DelegationCreditDto> listCreditParDelegation();
 }
