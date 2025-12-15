@@ -8,12 +8,17 @@ import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import lombok.AllArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.annotation.CurrentSecurityContext;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.WebAttributes;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -38,8 +43,41 @@ public class LoginController {
     private final UserService userService;
 
     @GetMapping("/login")
-    public String login() {
+    public String login(@RequestParam(value = "error", required = false) String error,
+                        HttpServletRequest request,
+                        Model model) {
+        if (error != null) {
+            String errorMessage = getErrorMessage(request);
+            model.addAttribute("errorMessage", errorMessage);
+        }
         return "login";
+    }
+
+    private String getErrorMessage(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            AuthenticationException exception = (AuthenticationException) session.getAttribute(WebAttributes.AUTHENTICATION_EXCEPTION);
+            if (exception != null) {
+                // Clear the exception from session after reading
+                session.removeAttribute(WebAttributes.AUTHENTICATION_EXCEPTION);
+                
+                // Return French error messages based on exception type
+                if (exception instanceof BadCredentialsException) {
+                    return "Email ou mot de passe incorrect";
+                } else if (exception instanceof UsernameNotFoundException) {
+                    return "Compte utilisateur introuvable";
+                } else if (exception instanceof DisabledException) {
+                    return "Votre compte a été désactivé";
+                } else if (exception instanceof LockedException) {
+                    return "Votre compte a été verrouillé";
+                } else {
+                    // Return the original message or a default one
+                    String message = exception.getMessage();
+                    return (message != null && !message.isEmpty()) ? message : "Échec de l'authentification";
+                }
+            }
+        }
+        return "Email ou mot de passe incorrect";
     }
 
     @GetMapping("/mfa")

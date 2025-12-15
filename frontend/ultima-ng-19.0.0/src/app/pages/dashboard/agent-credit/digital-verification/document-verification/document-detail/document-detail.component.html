@@ -162,29 +162,50 @@
         </div>
 
         <!-- Documents Section -->
+        <!-- Documents Section -->
         <div class="documents-section">
             <div class="section-header">
-                <i class="fas fa-file-image"></i>
-                <h3>Documents ({{ state().etat!.documentCount }})</h3>
+                <div class="section-title">
+                    <i class="fas fa-file-image"></i>
+                    <h3>Documents ({{ state().etat!.documentCount }})</h3>
+                </div>
+
+                <!-- Bouton télécharger tout -->
+                @if (state().etat!.documents && state().etat!.documents.length > 0) {
+                <button class="btn btn-outline-primary btn-download-all" [disabled]="state().processing"
+                    (click)="downloadAllDocuments()">
+                    @if (state().processing) {
+                    <i class="fas fa-spinner fa-spin"></i>
+                    } @else {
+                    <i class="fas fa-download"></i>
+                    }
+                    Tout télécharger
+                </button>
+                }
             </div>
 
             @if (state().etat!.documents && state().etat!.documents.length > 0) {
             <div class="documents-grid">
                 @for (doc of state().etat!.documents; track doc.id) {
-                <div class="document-card" (click)="isImage(doc.doc) ? openImage(doc.doc) : null">
-                    @if (isImage(doc.doc)) {
-                    <div class="document-preview image-preview">
-                        <img [src]="doc.doc" [alt]="getFileName(doc.doc)">
-                        <div class="preview-overlay">
-                            <i class="fas fa-search-plus"></i>
-                            <span>Agrandir</span>
+                <div class="document-card">
+                    <!-- Preview (clic pour agrandir) -->
+                    <div class="document-preview-wrapper" (click)="isImage(doc.doc) ? openImage(doc.doc) : null">
+                        @if (isImage(doc.doc)) {
+                        <div class="document-preview image-preview">
+                            <img [src]="doc.doc" [alt]="getFileName(doc.doc)">
+                            <div class="preview-overlay">
+                                <i class="fas fa-search-plus"></i>
+                                <span>Agrandir</span>
+                            </div>
                         </div>
+                        } @else {
+                        <div class="document-preview file-preview">
+                            <i class="fas fa-file-pdf"></i>
+                        </div>
+                        }
                     </div>
-                    } @else {
-                    <div class="document-preview file-preview">
-                        <i class="fas fa-file-pdf"></i>
-                    </div>
-                    }
+
+                    <!-- Info -->
                     <div class="document-info">
                         <span class="document-name" [title]="getFileName(doc.doc)">
                             {{ getFileName(doc.doc) }}
@@ -193,10 +214,21 @@
                             {{ formatDate(doc.createdAt) }}
                         </span>
                     </div>
-                    <a [href]="doc.doc" target="_blank" class="btn btn-sm btn-outline-primary download-btn"
-                        (click)="$event.stopPropagation()">
-                        <i class="fas fa-external-link-alt"></i>
-                    </a>
+
+                    <!-- Actions -->
+                    <div class="document-actions">
+                        <!-- Télécharger -->
+                        <button class="btn btn-sm btn-primary download-btn" title="Télécharger"
+                            (click)="downloadDocument(doc); $event.stopPropagation()">
+                            <i class="fas fa-download"></i>
+                        </button>
+
+                        <!-- Ouvrir dans nouvel onglet -->
+                        <a [href]="doc.doc" target="_blank" class="btn btn-sm btn-outline-secondary"
+                            title="Ouvrir dans un nouvel onglet" (click)="$event.stopPropagation()">
+                            <i class="fas fa-external-link-alt"></i>
+                        </a>
+                    </div>
                 </div>
                 }
             </div>

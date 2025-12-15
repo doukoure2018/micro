@@ -1,7 +1,7 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { EtatDocumentDetailDto, StatutDocument } from '@/interface/etat-document.model';
+import { DocumentCartePrepaidDto, EtatDocumentDetailDto, StatutDocument } from '@/interface/etat-document.model';
 import { UserService } from '@/service/user.service';
 
 interface State {
@@ -218,5 +218,55 @@ export class DocumentDetailComponent implements OnInit {
     updateRejectMotif(event: Event): void {
         const input = event.target as HTMLTextAreaElement;
         this.updateState({ rejectMotif: input.value });
+    }
+
+    /**
+     * Télécharger un document
+     */
+    async downloadDocument(doc: DocumentCartePrepaidDto): Promise<void> {
+        try {
+            const response = await fetch(doc.doc);
+            const blob = await response.blob();
+
+            // Créer un lien de téléchargement
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = this.getFileName(doc.doc);
+
+            // Déclencher le téléchargement
+            document.body.appendChild(link);
+            link.click();
+
+            // Nettoyer
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Erreur lors du téléchargement:', error);
+            this.updateState({ error: 'Erreur lors du téléchargement du document' });
+        }
+    }
+
+    /**
+     * Télécharger tous les documents
+     */
+    async downloadAllDocuments(): Promise<void> {
+        const { etat } = this.state();
+        if (!etat?.documents || etat.documents.length === 0) return;
+
+        this.updateState({ processing: true });
+
+        try {
+            for (const doc of etat.documents) {
+                await this.downloadDocument(doc);
+                // Petit délai entre chaque téléchargement
+                await new Promise((resolve) => setTimeout(resolve, 500));
+            }
+            this.updateState({ success: `${etat.documents.length} document(s) téléchargé(s)` });
+        } catch (error) {
+            this.updateState({ error: 'Erreur lors du téléchargement des documents' });
+        } finally {
+            this.updateState({ processing: false });
+        }
     }
 }
