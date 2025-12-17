@@ -49,19 +49,8 @@
                     <label for="natureClient" class="block mb-2">Nature du client *</label>
                     <p-dropdown [(ngModel)]="formData.natureClient" name="natureClient" [options]="natureClientOptions"
                         optionLabel="label" optionValue="value" placeholder="Sélectionner la nature du client" required
-                        [disabled]="state().submitting" styleClass="w-full" (onChange)="onNatureClientChange($event)">
-                        <ng-template pTemplate="selectedItem" let-option>
-                            <div class="flex align-items-center" *ngIf="option">
-                                <i [class]="option.icon + ' mr-2'"></i>
-                                <span>{{ option.label }}</span>
-                            </div>
-                        </ng-template>
-                        <ng-template pTemplate="item" let-option>
-                            <div class="flex align-items-center">
-                                <i [class]="option.icon + ' mr-2'"></i>
-                                <span>{{ option.label }}</span>
-                            </div>
-                        </ng-template>
+                        [disabled]="state().submitting" styleClass="w-full" appendTo="body"
+                        (onChange)="onNatureClientChange($event)">
                     </p-dropdown>
                 </div>
                 <div class="col-12 md:col-6 lg:col-8">
@@ -160,7 +149,7 @@
                     <label for="typePiece" class="block mb-2">Type de pièce d'identité *</label>
                     <p-dropdown [(ngModel)]="formData.typePiece" name="typePiece" [options]="typePieceOptions"
                         optionLabel="label" optionValue="value" placeholder="Sélectionner" [showClear]="true" required
-                        [disabled]="state().submitting" styleClass="w-full">
+                        [disabled]="state().submitting" styleClass="w-full" appendTo="body">
                     </p-dropdown>
                 </div>
 
@@ -206,7 +195,8 @@
                     <label for="situationMatrimoniale" class="block mb-2">Situation matrimoniale *</label>
                     <p-dropdown [(ngModel)]="formData.situationMatrimoniale" name="situationMatrimoniale"
                         [options]="situationMatrimonialeOptions" optionLabel="label" optionValue="value"
-                        placeholder="Sélectionner" required [disabled]="state().submitting" styleClass="w-full">
+                        placeholder="Sélectionner" required [disabled]="state().submitting" styleClass="w-full"
+                        appendTo="body">
                     </p-dropdown>
                 </div>
 
@@ -236,7 +226,8 @@
                     <label for="typePropriete" class="block mb-2">Type de propriété *</label>
                     <p-dropdown [(ngModel)]="formData.typePropriete" name="typePropriete"
                         [options]="typeProprieteOptions" optionLabel="label" optionValue="value"
-                        placeholder="Sélectionner" required [disabled]="state().submitting" styleClass="w-full">
+                        placeholder="Sélectionner" required [disabled]="state().submitting" styleClass="w-full"
+                        appendTo="body">
                     </p-dropdown>
                 </div>
 
@@ -259,7 +250,7 @@
                     <p-dropdown [(ngModel)]="formData.delegation" name="delegation"
                         [options]="state().allDelegations || []" optionLabel="libele" dataKey="id" [filter]="true"
                         filterBy="libele" [showClear]="true" placeholder="Sélectionner une délégation" required
-                        [disabled]="state().submitting || state().loading" styleClass="w-full"
+                        [disabled]="state().submitting || state().loading" styleClass="w-full" appendTo="body"
                         (onChange)="onDelegationChange($event)">
                     </p-dropdown>
                 </div>
@@ -270,7 +261,7 @@
                         optionLabel="libele" dataKey="id" [filter]="true" filterBy="libele" [showClear]="true"
                         placeholder="Sélectionner une agence" required
                         [disabled]="state().submitting || !state().filteredAgences?.length" styleClass="w-full"
-                        (onChange)="onAgenceChange($event)">
+                        appendTo="body" (onChange)="onAgenceChange($event)">
                     </p-dropdown>
                 </div>
 
@@ -279,7 +270,8 @@
                     <p-dropdown [(ngModel)]="formData.pos" name="pos" [options]="state().filteredPointsVente || []"
                         optionLabel="libele" dataKey="id" [filter]="true" filterBy="libele" [showClear]="true"
                         placeholder="Sélectionner un point de vente" required
-                        [disabled]="state().submitting || !state().filteredPointsVente?.length" styleClass="w-full">
+                        [disabled]="state().submitting || !state().filteredPointsVente?.length" styleClass="w-full"
+                        appendTo="body">
                     </p-dropdown>
                 </div>
 
@@ -296,18 +288,7 @@
                     <p-dropdown [(ngModel)]="formData.typeActivite" name="typeActivite" [options]="activiteOptions"
                         optionLabel="label" optionValue="value" placeholder="Sélectionner une activité" [filter]="true"
                         filterBy="label" [showClear]="true" required [disabled]="state().submitting" styleClass="w-full"
-                        (onChange)="onActiviteChange($event)">
-                        <ng-template pTemplate="selectedItem" let-option>
-                            <div class="flex align-items-center">
-                                <span>{{ option?.label }}</span>
-                            </div>
-                        </ng-template>
-                        <ng-template pTemplate="item" let-option>
-                            <div class="flex align-items-center">
-                                <span class="font-bold mr-2">{{ option.value }}</span>
-                                <span>{{ option.label }}</span>
-                            </div>
-                        </ng-template>
+                        appendTo="body" (onChange)="onActiviteChange($event)">
                     </p-dropdown>
                 </div>
 
@@ -317,19 +298,8 @@
                     <p-dropdown [(ngModel)]="formData.sousActivite" name="sousActivite" [options]="sousActiviteOptions"
                         optionLabel="label" optionValue="value" placeholder="Sélectionner une sous-activité"
                         [filter]="true" filterBy="label" [showClear]="true" required
-                        [disabled]="state().submitting || !selectedActivite" styleClass="w-full"
+                        [disabled]="state().submitting || !selectedActivite" styleClass="w-full" appendTo="body"
                         (onChange)="onSousActiviteChange($event)">
-                        <ng-template pTemplate="selectedItem" let-option>
-                            <div class="flex align-items-center">
-                                <span>{{ option?.label }}</span>
-                            </div>
-                        </ng-template>
-                        <ng-template pTemplate="item" let-option>
-                            <div class="flex align-items-center">
-                                <span class="font-bold mr-2">{{ option.value }}</span>
-                                <span>{{ option.label }}</span>
-                            </div>
-                        </ng-template>
                     </p-dropdown>
                 </div>
 
@@ -339,19 +309,8 @@
                     <p-dropdown [(ngModel)]="formData.sousSousActivite" name="sousSousActivite"
                         [options]="sousSousActiviteOptions" optionLabel="label" optionValue="value"
                         placeholder="Sélectionner (optionnel)" [filter]="true" filterBy="label" [showClear]="true"
-                        [disabled]="state().submitting || !selectedSousActivite" styleClass="w-full"
+                        [disabled]="state().submitting || !selectedSousActivite" styleClass="w-full" appendTo="body"
                         (onChange)="onSousSousActiviteChange($event)">
-                        <ng-template pTemplate="selectedItem" let-option>
-                            <div class="flex align-items-center">
-                                <span>{{ option?.label }}</span>
-                            </div>
-                        </ng-template>
-                        <ng-template pTemplate="item" let-option>
-                            <div class="flex align-items-center">
-                                <span class="font-bold mr-2">{{ option.value }}</span>
-                                <span>{{ option.label }}</span>
-                            </div>
-                        </ng-template>
                     </p-dropdown>
                 </div>
 
@@ -435,7 +394,8 @@
                     <label for="periodiciteRemboursement" class="block mb-2">Périodicité de remboursement *</label>
                     <p-dropdown [(ngModel)]="formData.periodiciteRemboursement" name="periodiciteRemboursement"
                         [options]="periodiciteOptions" optionLabel="label" optionValue="value"
-                        placeholder="Sélectionner" required [disabled]="state().submitting" styleClass="w-full">
+                        placeholder="Sélectionner" required [disabled]="state().submitting" styleClass="w-full"
+                        appendTo="body">
                     </p-dropdown>
                 </div>
 
@@ -473,18 +433,7 @@
                     <p-dropdown [(ngModel)]="formData.tipCredito" name="tipCredito" [options]="typeCreditOptions"
                         optionLabel="label" optionValue="value" [filter]="true" filterBy="label" [showClear]="true"
                         required placeholder="Sélectionner un type de crédit" [disabled]="state().submitting"
-                        styleClass="w-full" (onChange)="onTypeCreditChange($event)">
-                        <ng-template pTemplate="selectedItem" let-option>
-                            <div class="flex align-items-center">
-                                <span>{{ option?.label }}</span>
-                            </div>
-                        </ng-template>
-                        <ng-template pTemplate="item" let-option>
-                            <div class="flex align-items-center justify-content-between w-full">
-                                <span>{{ option.label }}</span>
-                                <span class="text-xs text-gray-500 ml-2">({{ option.value }})</span>
-                            </div>
-                        </ng-template>
+                        styleClass="w-full" appendTo="body" (onChange)="onTypeCreditChange($event)">
                     </p-dropdown>
                 </div>
 
@@ -498,7 +447,7 @@
                     <label for="objectCredit" class="block mb-2">Objet du crédit sollicité *</label>
                     <p-dropdown [(ngModel)]="formData.objectCredit" name="objectCredit" [options]="objectCreditOptions"
                         optionLabel="label" optionValue="value" placeholder="Sélectionner" required
-                        [disabled]="state().submitting" styleClass="w-full">
+                        [disabled]="state().submitting" styleClass="w-full" appendTo="body">
                     </p-dropdown>
                 </div>
 
@@ -666,45 +615,8 @@
             <div class="col-12">
                 <label for="typeGarantie" class="block mb-2">Type de garantie *</label>
                 <p-dropdown [(ngModel)]="state().currentGarantie.typeGarantie" [options]="typeGarantieOptions"
-                    optionLabel="label" optionValue="value" placeholder="Sélectionner" styleClass="w-full">
-                    <ng-template pTemplate="selectedItem" let-option>
-                        <div class="flex align-items-center" *ngIf="option">
-                            @switch(option.value) {
-                            @case('Garantie Financiere') {
-                            <i class="pi pi-dollar mr-2 text-green-500"></i>
-                            }
-                            @case('Garantie Materielle') {
-                            <i class="pi pi-box mr-2 text-blue-500"></i>
-                            }
-                            @case('Caution Solidaire') {
-                            <i class="pi pi-users mr-2 text-orange-500"></i>
-                            }
-                            @default {
-                            <i class="pi pi-question-circle mr-2 text-gray-500"></i>
-                            }
-                            }
-                            <span>{{ option.label }}</span>
-                        </div>
-                    </ng-template>
-                    <ng-template pTemplate="item" let-option>
-                        <div class="flex align-items-center">
-                            @switch(option.value) {
-                            @case('Garantie Financiere') {
-                            <i class="pi pi-dollar mr-2 text-green-500"></i>
-                            }
-                            @case('Garantie Materielle') {
-                            <i class="pi pi-box mr-2 text-blue-500"></i>
-                            }
-                            @case('Caution Solidaire') {
-                            <i class="pi pi-users mr-2 text-orange-500"></i>
-                            }
-                            @default {
-                            <i class="pi pi-question-circle mr-2 text-gray-500"></i>
-                            }
-                            }
-                            <span>{{ option.label }}</span>
-                        </div>
-                    </ng-template>
+                    optionLabel="label" optionValue="value" placeholder="Sélectionner" styleClass="w-full"
+                    appendTo="body">
                 </p-dropdown>
             </div>
 
