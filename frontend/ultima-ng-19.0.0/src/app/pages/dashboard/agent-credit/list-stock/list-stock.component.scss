@@ -484,3 +484,125 @@
     gap: 0.5rem;
     font-size: 0.875rem;
 }
+
+// Styles pour le badge DE
+.badge-de {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+// Styles pour les boutons de changement de mode
+.view-mode-buttons {
+    display: inline-flex;
+    gap: 0.5rem;
+    margin-left: 1rem;
+}
+
+// Styles pour la suggestion de quantité
+.suggestion-status {
+    text-align: center;
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 6px;
+    
+    .suggestion-pending {
+        color: #6b7280;
+        background: #f3f4f6;
+        padding: 0.25rem 0.75rem;
+        border-radius: 4px;
+    }
+    
+    .suggestion-confirmed {
+        color: #15803d;
+        background: #dcfce7;
+        padding: 0.25rem 0.75rem;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+    
+    .suggestion-modified {
+        color: #b45309;
+        background: #fef3c7;
+        padding: 0.25rem 0.75rem;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+}
+
+// Classe globale pour le statut de suggestion
+.suggestion-pending {
+    color: #6b7280;
+}
+
+.suggestion-confirmed {
+    color: #15803d;
+    font-weight: 600;
+}
+
+.suggestion-modified {
+    color: #b45309;
+    font-weight: 600;
+}
+
+// Texte du motif de quantité
+.motif-qte-text {
+    font-style: italic;
+    color: #b45309;
+}
+
+// Styles pour le dialogue de suggestion
+.suggestion-summary {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+    
+    .summary-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 0.5rem 1rem;
+        font-weight: 600;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .summary-content {
+        padding: 1rem;
+        
+        p {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+    }
+}
+
+// Amélioration du checkbox
+:host ::ng-deep {
+    .field-checkbox {
+        display: flex;
+        align-items: center;
+        
+        label {
+            cursor: pointer;
+            font-weight: 500;
+        }
+    }
+    
+    // Styles pour le InputNumber
+    .p-inputnumber {
+        width: 100%;
+        
+        .p-inputnumber-input {
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.25rem;
+        }
+    }
+}

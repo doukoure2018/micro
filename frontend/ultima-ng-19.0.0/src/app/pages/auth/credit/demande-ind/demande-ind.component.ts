@@ -10,7 +10,7 @@ import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule, NgForm } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CalendarModule } from 'primeng/calendar';
@@ -232,7 +232,6 @@ export class DemandeIndComponent implements OnInit {
 
     // Services injectés
     public router = inject(Router);
-    private activatedRoute = inject(ActivatedRoute);
     private destroyRef = inject(DestroyRef);
     private creditService = inject(UserService);
     private messageService = inject(MessageService);
@@ -240,13 +239,6 @@ export class DemandeIndComponent implements OnInit {
     ngOnInit(): void {
         this.loadInitialData();
         this.initializeOptions();
-
-        this.activatedRoute.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
-            const codeClient = params['codeClient'];
-            if (codeClient) {
-                this.loadClientData(codeClient);
-            }
-        });
     }
 
     // Nouvelle méthode pour gérer le changement de nature client

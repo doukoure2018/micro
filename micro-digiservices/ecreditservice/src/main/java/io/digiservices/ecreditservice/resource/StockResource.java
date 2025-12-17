@@ -308,6 +308,108 @@ public class StockResource {
         ), "Tous les bons de commande validés récupérés avec succès", OK));
     }
 
+    // ==================== ENDPOINTS POUR LA SUGGESTION DE QUANTITÉ (DE) ====================
+
+    /**
+     * Endpoint pour suggérer une modification de quantité sur un bon validé par le DR
+     * Utilisé par le DE (Directeur d'Exploitation)
+     * 
+     * @param authentication L'utilisateur connecté (DE)
+     * @param suggestionDto DTO contenant la quantité suggérée et le motif
+     * @param idCmd ID du bon de commande
+     * @param request HttpServletRequest
+     * @return Response contenant le bon mis à jour
+     */
+    @PutMapping("/stock/{idCmd}/suggestion-quantite")
+    public ResponseEntity<Response> suggererQuantite(
+            @NotNull Authentication authentication,
+            @Valid @RequestBody SuggestionQuantiteDto suggestionDto,
+            @PathVariable Long idCmd,
+            HttpServletRequest request) {
+        
+        log.info("API: Suggestion de quantité pour le bon {} par {}", idCmd, authentication.getName());
+
+        // Récupérer l'utilisateur connecté
+        User user = userClient.getUserByUuid(authentication.getName());
+        suggestionDto.setSuggerePar(user.getUserId());
+
+        // Appeler le service
+        StockResponseDto response = stockService.updateSuggestionQuantite(idCmd, suggestionDto);
+
+        String message = suggestionDto.getGarderQuantite() != null && suggestionDto.getGarderQuantite() 
+                ? "Quantité confirmée avec succès" 
+                : "Suggestion de quantité enregistrée avec succès";
+
+        return ok(getResponse(request, Map.of(
+                "stock", response,
+                "qteSuggeree", response.getQteSuggeree(),
+                "qteActuelle", response.getQteActuelle()
+        ), message, OK));
+    }
+
+    /**
+     * Endpoint pour garder la quantité actuelle (sans modification)
+     * Raccourci pour le DE qui valide la quantité telle quelle
+     */
+    @PutMapping("/stock/{idCmd}/garder-quantite")
+    public ResponseEntity<Response> garderQuantite(
+            @NotNull Authentication authentication,
+            @PathVariable Long idCmd,
+            @RequestBody(required = false) Map<String, String> body,
+            HttpServletRequest request) {
+        
+        log.info("API: Conservation de la quantité pour le bon {} par {}", idCmd, authentication.getName());
+
+        // Récupérer le bon pour obtenir la quantité actuelle
+        StockResponseDto existingStock = stockService.getStockById(idCmd);
+        Integer qteActuelle = existingStock.getQteActuelle() != null ? 
+                existingStock.getQteActuelle() : existingStock.getQte();
+
+        SuggestionQuantiteDto suggestionDto = SuggestionQuantiteDto.builder()
+                .qteSuggeree(qteActuelle)
+                .garderQuantite(true)
+                .observations(body != null ? body.get("observations") : null)
+                .build();
+
+        return suggererQuantite(authentication, suggestionDto, idCmd, request);
+    }
+
+    /**
+     * Endpoint pour récupérer les bons validés par le DR disponibles pour le DE
+     * pour une délégation spécifique
+     * Ne retourne pas les bons rejetés
+     */
+    @GetMapping("/stock/valides-pour-de/{delegationId}")
+    public ResponseEntity<Response> getStockValidesPourDE(
+            @PathVariable Long delegationId,
+            HttpServletRequest request) {
+        
+        log.info("API: Récupération des bons validés pour DE, délégation {}", delegationId);
+        List<StockResponseDto> stocks = stockService.getStockValidesPourDE(delegationId);
+        
+        return ok(getResponse(request, Map.of(
+                "stocks", stocks,
+                "delegationId", delegationId,
+                "delegation", userClient.getAllDelegationOffLineById(delegationId),
+                "count", stocks.size()
+        ), "Bons validés pour DE récupérés avec succès", OK));
+    }
+
+    /**
+     * Endpoint pour récupérer tous les bons validés par le DR (toutes délégations)
+     * Pour la vue admin/DE global
+     */
+    @GetMapping("/stock/tous-valides-pour-de")
+    public ResponseEntity<Response> getAllStockValidesPourDE(HttpServletRequest request) {
+        log.info("API: Récupération de tous les bons validés pour DE");
+        List<StockResponseDto> stocks = stockService.getAllStockValidesPourDE();
+        
+        return ok(getResponse(request, Map.of(
+                "stocks", stocks,
+                "count", stocks.size()
+        ), "Tous les bons validés pour DE récupérés avec succès", OK));
+    }
+
     // Méthode utilitaire si nécessaire
     private URI getUri() {
         return URI.create("/stock");

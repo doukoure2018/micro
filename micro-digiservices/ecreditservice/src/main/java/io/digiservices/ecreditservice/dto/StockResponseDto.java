@@ -35,10 +35,34 @@ public class StockResponseDto {
     private String stateValidation;
 
     private Integer qte;
+    
+    // Nouveaux champs pour la suggestion de quantité
+    private Integer qteActuelle;
+    private Integer qteSuggeree;
+    private String motifQte;
+    private Long suggerePar;
+    private String suggereParFullName;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime dateCreation;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime dateTraitement;
+    
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime dateSuggestion;
+    
+    /**
+     * Indique si une suggestion de quantité a été faite
+     */
+    public boolean hasSuggestion() {
+        return qteSuggeree != null;
+    }
+    
+    /**
+     * Indique si la quantité suggérée est différente de la quantité actuelle
+     */
+    public boolean hasQuantityChange() {
+        return qteSuggeree != null && qteActuelle != null && !qteSuggeree.equals(qteActuelle);
+    }
 }

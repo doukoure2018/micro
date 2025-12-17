@@ -17,11 +17,13 @@ import { DialogModule } from 'primeng/dialog';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { FormsModule } from '@angular/forms';
 import { TextareaModule } from 'primeng/textarea';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { CheckboxModule } from 'primeng/checkbox';
 
 @Component({
     selector: 'app-list-stock',
     standalone: true,
-    imports: [CommonModule, FormsModule, TableModule, TagModule, ButtonModule, CardModule, ToastModule, ProgressSpinnerModule, DividerModule, TooltipModule, DialogModule, ConfirmDialogModule, TextareaModule],
+    imports: [CommonModule, FormsModule, TableModule, TagModule, ButtonModule, CardModule, ToastModule, ProgressSpinnerModule, DividerModule, TooltipModule, DialogModule, ConfirmDialogModule, TextareaModule, InputNumberModule, CheckboxModule],
     templateUrl: './list-stock.component.html',
     styleUrl: './list-stock.component.scss',
     providers: [MessageService, ConfirmationService],
@@ -50,12 +52,72 @@ export class ListStockComponent implements OnInit {
     rejectObservations = signal('');
     processingAction = signal(false);
 
+    // Signals pour la suggestion de quantité (DE)
+    showSuggestionDialog = signal(false);
+    qteSuggeree = signal<number | null>(null);
+    motifQte = signal('');
+    suggestionObservations = signal('');
+    garderQuantite = signal(false);
+    
+    // Mode de vue: 'encours' (DR) ou 'valides' (DE)
+    viewMode = signal<'encours' | 'valides'>('encours');
+
     ngOnInit(): void {
         if (this.user?.delegationId) {
             this.delegationId.set(this.user.delegationId);
-            this.loadStocksByDelegation();
+            // Charger selon le rôle de l'utilisateur
+            if (this.user?.role === 'DE') {
+                this.viewMode.set('valides');
+                this.loadStockValidesPourDE();
+            } else {
+                this.viewMode.set('encours');
+                this.loadStocksByDelegation();
+            }
         } else {
             this.showWarning('Aucune délégation associée à cet utilisateur');
+        }
+    }
+
+    /**
+     * Charger les bons validés par le DR pour le DE
+     */
+    loadStockValidesPourDE(): void {
+        const delId = this.delegationId();
+        if (!delId) return;
+
+        this.loading.set(true);
+
+        this.userService.getStockValidesPourDE$(delId).subscribe({
+            next: (response) => {
+                console.log('Stocks validés pour DE:', response);
+                if (response?.data?.stocks) {
+                    this.stocks.set(response.data.stocks);
+                    this.delegation.set(response.data.delegation);
+                    this.showSuccess(`${response.data.stocks.length} bon(s) validé(s) disponible(s)`);
+                } else {
+                    this.stocks.set([]);
+                }
+            },
+            error: (error) => {
+                console.error('Erreur:', error);
+                this.showError('Erreur lors du chargement des bons validés');
+                this.stocks.set([]);
+            },
+            complete: () => {
+                this.loading.set(false);
+            }
+        });
+    }
+
+    /**
+     * Changer le mode de vue
+     */
+    switchViewMode(mode: 'encours' | 'valides'): void {
+        this.viewMode.set(mode);
+        if (mode === 'valides') {
+            this.loadStockValidesPourDE();
+        } else {
+            this.loadStocksByDelegation();
         }
     }
 
@@ -442,5 +504,166 @@ export class ListStockComponent implements OnInit {
             }
         });
         */
+    }
+
+    // ==================== FONCTIONNALITÉS DE SUGGESTION DE QUANTITÉ (DE) ====================
+
+    /**
+     * Ouvrir le dialogue de suggestion de quantité
+     */
+    openSuggestionDialog(stock: any): void {
+        this.selectedStock.set(stock);
+        // Initialiser avec la quantité actuelle
+        const qteActuelle = stock.qteActuelle || stock.qte;
+        this.qteSuggeree.set(stock.qteSuggeree || qteActuelle);
+        this.motifQte.set(stock.motifQte || '');
+        this.suggestionObservations.set('');
+        this.garderQuantite.set(false);
+        this.showSuggestionDialog.set(true);
+    }
+
+    /**
+     * Vérifier si le motif est obligatoire
+     */
+    isMotifRequired(): boolean {
+        const stock = this.selectedStock();
+        if (!stock || this.garderQuantite()) return false;
+        
+        const qteActuelle = stock.qteActuelle || stock.qte;
+        return this.qteSuggeree() !== qteActuelle;
+    }
+
+    /**
+     * Soumettre la suggestion de quantité
+     */
+    submitSuggestion(): void {
+        const stock = this.selectedStock();
+        if (!stock) return;
+
+        // Validation
+        if (this.isMotifRequired() && (!this.motifQte() || this.motifQte().trim().length === 0)) {
+            this.showWarning('Le motif est obligatoire lorsque la quantité est modifiée');
+            return;
+        }
+
+        this.confirmationService.confirm({
+            message: this.garderQuantite() 
+                ? `Confirmer la quantité actuelle (${stock.qteActuelle || stock.qte}) pour la commande ${stock.numeroCommande} ?`
+                : `Suggérer une quantité de ${this.qteSuggeree()} pour la commande ${stock.numeroCommande} ?`,
+            header: 'Confirmation',
+            icon: 'pi pi-question-circle',
+            acceptLabel: 'Confirmer',
+            rejectLabel: 'Annuler',
+            acceptButtonStyleClass: 'p-button-primary',
+            accept: () => {
+                this.performSuggestion(stock);
+            }
+        });
+    }
+
+    /**
+     * Effectuer la suggestion de quantité
+     */
+    private performSuggestion(stock: any): void {
+        this.processingAction.set(true);
+
+        const suggestionDto = {
+            qteSuggeree: this.garderQuantite() ? (stock.qteActuelle || stock.qte) : this.qteSuggeree()!,
+            motifQte: this.motifQte() || undefined,
+            observations: this.suggestionObservations() || undefined,
+            garderQuantite: this.garderQuantite()
+        };
+
+        this.userService.suggererQuantite$(stock.idCmd, suggestionDto).subscribe({
+            next: (response) => {
+                const message = this.garderQuantite() 
+                    ? `Quantité confirmée pour la commande ${stock.numeroCommande}`
+                    : `Suggestion de quantité enregistrée pour la commande ${stock.numeroCommande}`;
+                this.showSuccess(message);
+                
+                // Recharger les données selon le mode
+                if (this.viewMode() === 'valides') {
+                    this.loadStockValidesPourDE();
+                } else {
+                    this.loadStocksByDelegation();
+                }
+                
+                this.closeSuggestionDialog();
+            },
+            error: (error) => {
+                console.error('Erreur suggestion:', error);
+                this.showError(error.error?.message || 'Erreur lors de l\'enregistrement de la suggestion');
+            },
+            complete: () => {
+                this.processingAction.set(false);
+            }
+        });
+    }
+
+    /**
+     * Fermer le dialogue de suggestion
+     */
+    closeSuggestionDialog(): void {
+        this.showSuggestionDialog.set(false);
+        this.selectedStock.set(null);
+        this.qteSuggeree.set(null);
+        this.motifQte.set('');
+        this.suggestionObservations.set('');
+        this.garderQuantite.set(false);
+    }
+
+    /**
+     * Vérifier si le bouton de suggestion doit être affiché
+     * Seulement pour les bons validés par le DR
+     */
+    canSuggestQuantity(stock: any): boolean {
+        return stock.status === 'ENCOURS' && stock.stateValidation === 'VALIDE';
+    }
+
+    /**
+     * Vérifier si une suggestion a déjà été faite
+     */
+    hasSuggestion(stock: any): boolean {
+        return stock.qteSuggeree !== null && stock.qteSuggeree !== undefined;
+    }
+
+    /**
+     * Obtenir le libellé de la suggestion
+     */
+    getSuggestionLabel(stock: any): string {
+        if (!this.hasSuggestion(stock)) {
+            return 'Aucune suggestion';
+        }
+        const qteActuelle = stock.qteActuelle || stock.qte;
+        if (stock.qteSuggeree === qteActuelle) {
+            return 'Quantité confirmée';
+        }
+        return `Suggéré: ${stock.qteSuggeree} (était: ${qteActuelle})`;
+    }
+
+    /**
+     * Obtenir la classe CSS pour la suggestion
+     */
+    getSuggestionClass(stock: any): string {
+        if (!this.hasSuggestion(stock)) {
+            return 'suggestion-pending';
+        }
+        const qteActuelle = stock.qteActuelle || stock.qte;
+        if (stock.qteSuggeree === qteActuelle) {
+            return 'suggestion-confirmed';
+        }
+        return 'suggestion-modified';
+    }
+
+    /**
+     * Handler pour le changement de "garder quantité"
+     */
+    onGarderQuantiteChange(): void {
+        if (this.garderQuantite()) {
+            const stock = this.selectedStock();
+            if (stock) {
+                this.qteSuggeree.set(stock.qteActuelle || stock.qte);
+            }
+        }
     }
 }

@@ -193,4 +193,81 @@ public class StockServiceImpl implements StockService {
         log.info("Service: Récupération de tous les bons de commande validés");
         return stockRepository.getTousBonsCommandeValides();
     }
+
+    @Override
+    @Transactional
+    public StockResponseDto updateSuggestionQuantite(Long idCmd, SuggestionQuantiteDto suggestionDto) {
+        log.info("Mise à jour de la suggestion de quantité pour le bon {}: qté suggérée = {}", 
+                idCmd, suggestionDto.getQteSuggeree());
+
+        // Vérifier que le bon existe
+        StockResponseDto existingStock = stockRepository.getStockById(idCmd)
+                .orElseThrow(() -> new ResourceNotFoundException("Bon de commande introuvable: " + idCmd));
+
+        // Vérifier que le statut est ENCOURS
+        if (!"ENCOURS".equals(existingStock.getStatus())) {
+            throw new ApiException(
+                    String.format("Impossible de suggérer une quantité pour un bon avec le statut: %s", 
+                            existingStock.getStatus())
+            );
+        }
+
+        // Vérifier que le bon est validé par le DR (state_validation = VALIDE)
+        if (!"VALIDE".equals(existingStock.getStateValidation())) {
+            throw new ApiException(
+                    String.format("Seuls les bons validés par le DR peuvent recevoir une suggestion de quantité. État actuel: %s", 
+                            existingStock.getStateValidation())
+            );
+        }
+
+        // Déterminer la quantité actuelle (utiliser qte_actuelle si défini, sinon qte)
+        Integer qteActuelle = existingStock.getQteActuelle() != null ? 
+                existingStock.getQteActuelle() : existingStock.getQte();
+
+        // Vérifier si le motif est requis
+        boolean isQuantityDifferent = suggestionDto.getQteSuggeree() != null && 
+                !suggestionDto.getQteSuggeree().equals(qteActuelle);
+
+        // Si la quantité suggérée est différente et le flag garderQuantite n'est pas true, le motif est obligatoire
+        if (isQuantityDifferent && 
+                (suggestionDto.getGarderQuantite() == null || !suggestionDto.getGarderQuantite())) {
+            if (suggestionDto.getMotifQte() == null || suggestionDto.getMotifQte().trim().isEmpty()) {
+                throw new ApiException(
+                        "Un motif est obligatoire lorsque la quantité suggérée est différente de la quantité actuelle"
+                );
+            }
+        }
+
+        // Si garderQuantite est true, la quantité suggérée devient égale à la quantité actuelle
+        if (suggestionDto.getGarderQuantite() != null && suggestionDto.getGarderQuantite()) {
+            suggestionDto.setQteSuggeree(qteActuelle);
+            log.info("Conservation de la quantité actuelle: {}", qteActuelle);
+        }
+
+        // Effectuer la mise à jour
+        boolean updated = stockRepository.updateSuggestionQuantite(idCmd, suggestionDto);
+
+        if (!updated) {
+            throw new RuntimeException("Échec de la mise à jour de la suggestion de quantité");
+        }
+
+        log.info("Suggestion de quantité mise à jour avec succès pour le bon {}. Quantité suggérée: {}", 
+                idCmd, suggestionDto.getQteSuggeree());
+
+        // Retourner le bon mis à jour
+        return stockRepository.getStockById(idCmd)
+                .orElseThrow(() -> new RuntimeException("Bon de commande mis à jour mais introuvable"));
+    }
+
+    @Override
+    public List<StockResponseDto> getStockValidesPourDE(Long delegationId) {
+        log.info("Service: Récupération des bons validés pour DE, délégation: {}", delegationId);
+        return stockRepository.getStockValidesPourDE(delegationId);
+    }
+
+    @Override
+    public List<StockResponseDto> getAllStockValidesPourDE() {
+        log.info("Service: Récupération de tous les bons validés pour DE");
+        return stockRepository.getAllStockValidesPourDE();
+    }
 }

@@ -149,7 +149,7 @@ export class HomeComponent {
     ];
 
     navigateToNewDemande() {
-        this.router.navigate(['/auth/credit']);
+        this.router.navigate(['/auth/credit/demandeInd']);
     }
 
     navigateToMyDemandes() {

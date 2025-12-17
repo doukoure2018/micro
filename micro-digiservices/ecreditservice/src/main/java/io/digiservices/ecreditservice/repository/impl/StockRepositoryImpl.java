@@ -293,6 +293,57 @@ public class StockRepositoryImpl  implements StockRepository {
         jdbcTemplate.update(StockQuery.UPDATE_STATUS_QUERY, params);
     }
 
+    @Override
+    public boolean updateSuggestionQuantite(Long idCmd, SuggestionQuantiteDto suggestionDto) {
+        try {
+            MapSqlParameterSource params = new MapSqlParameterSource()
+                    .addValue("idCmd", idCmd)
+                    .addValue("qteSuggeree", suggestionDto.getQteSuggeree())
+                    .addValue("motifQte", suggestionDto.getMotifQte())
+                    .addValue("suggerePar", suggestionDto.getSuggerePar())
+                    .addValue("observations", suggestionDto.getObservations());
+
+            int updated = jdbcTemplate.update(StockQuery.UPDATE_SUGGESTION_QUANTITE, params);
+            log.info("Suggestion de quantité pour le bon {} mise à jour: {}", idCmd, updated > 0);
+            return updated > 0;
+        } catch (Exception e) {
+            log.error("Erreur lors de la mise à jour de la suggestion de quantité pour {}: {}", idCmd, e.getMessage());
+            return false;
+        }
+    }
+
+    @Override
+    public List<StockResponseDto> getStockValidesPourDE(Long delegationId) {
+        try {
+            MapSqlParameterSource params = new MapSqlParameterSource()
+                    .addValue("delegationId", delegationId);
+
+            return jdbcTemplate.query(
+                    StockQuery.GET_STOCK_VALIDES_POUR_DE_QUERY,
+                    params,
+                    (rs, rowNum) -> mapRowToStockResponse(rs)
+            );
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des bons validés pour DE, délégation {}: {}", 
+                    delegationId, e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public List<StockResponseDto> getAllStockValidesPourDE() {
+        try {
+            return jdbcTemplate.query(
+                    StockQuery.GET_ALL_STOCK_VALIDES_POUR_DE_QUERY,
+                    new MapSqlParameterSource(),
+                    (rs, rowNum) -> mapRowToStockResponse(rs)
+            );
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération de tous les bons validés pour DE: {}", e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
     private StockResponseDto mapRowToStockResponse(ResultSet rs) throws SQLException {
         return StockResponseDto.builder()
                 .idCmd(rs.getLong("id_cmd"))
@@ -319,6 +370,14 @@ public class StockRepositoryImpl  implements StockRepository {
                 .userFullName(rs.getString("user_full_name"))
                 .stateValidation(rs.getString("validation"))
                 .qte(rs.getInt("qte"))
+                // Nouveaux champs pour la suggestion de quantité
+                .qteActuelle(rs.getObject("qte_actuelle", Integer.class))
+                .qteSuggeree(rs.getObject("qte_suggeree", Integer.class))
+                .motifQte(rs.getString("motif_qte"))
+                .suggerePar(rs.getObject("suggere_par", Long.class))
+                .suggereParFullName(rs.getString("suggere_par_full_name"))
+                .dateSuggestion(rs.getTimestamp("date_suggestion") != null ?
+                        rs.getTimestamp("date_suggestion").toLocalDateTime() : null)
                 .build();
     }
 

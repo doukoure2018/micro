@@ -38,4 +38,32 @@ public interface StockService {
      * Récupère tous les bons de commande validés (toutes délégations)
      */
     List<BonCommandeDelegationDto> getTousBonsCommandeValides();
+
+    /**
+     * Met à jour la suggestion de quantité pour un bon de commande validé par le DR
+     * Utilisé par le DE pour proposer une modification de quantité
+     * 
+     * @param idCmd ID du bon de commande
+     * @param suggestionDto DTO contenant les informations de suggestion
+     * @return Le bon de commande mis à jour
+     */
+    StockResponseDto updateSuggestionQuantite(Long idCmd, SuggestionQuantiteDto suggestionDto);
+
+    /**
+     * Récupère les bons de commande validés par le DR pour une délégation
+     * Ces bons sont disponibles pour le DE pour modifier la quantité suggérée
+     * Les bons rejetés ne sont pas retournés
+     * 
+     * @param delegationId ID de la délégation
+     * @return Liste des bons validés disponibles pour suggestion
+     */
+    List<StockResponseDto> getStockValidesPourDE(Long delegationId);
+
+    /**
+     * Récupère tous les bons de commande validés par le DR (toutes délégations)
+     * Pour la vue admin/DE global
+     * 
+     * @return Liste de tous les bons validés
+     */
+    List<StockResponseDto> getAllStockValidesPourDE();
 }

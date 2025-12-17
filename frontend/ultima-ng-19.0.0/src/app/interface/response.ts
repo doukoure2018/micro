@@ -69,7 +69,7 @@ import { Selection } from './selection';
 import { SG_USUARIOS } from './sg_usuarios';
 import { SousActivite } from './sous-activite.model';
 import { SousSousActivite } from './sous-sous-activite.model';
-import { StockResponseDto } from './StockResponseDto';
+import { StockResponseDto, SuggestionQuantiteDto } from './StockResponseDto';
 import { SyntheseDelegationDto } from './SyntheseDelegationDto';
 import { TipoPlazo } from './tipo-plazo.model';
 import { TypeCreditDto } from './typeCredit.model';

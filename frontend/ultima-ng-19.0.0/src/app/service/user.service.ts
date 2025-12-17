@@ -708,6 +708,54 @@ export class UserService {
 
     getListPPRejet$ = (): Observable<IResponse> => this.http.get<IResponse>(`${this.server}/ecredit/listRejet`).pipe(tap(console.log), catchError(this.handleError));
 
+    // ==================== SERVICES POUR LA SUGGESTION DE QUANTITÉ (DE) ====================
+
+    /**
+     * Suggérer une modification de quantité pour un bon validé par le DR
+     * @param idCmd ID du bon de commande
+     * @param suggestionDto DTO contenant la quantité suggérée et le motif
+     */
+    suggererQuantite$(idCmd: number, suggestionDto: { qteSuggeree: number; motifQte?: string; observations?: string; garderQuantite?: boolean }): Observable<IResponse> {
+        return this.http.put<IResponse>(`${this.server}/ecredit/stock/${idCmd}/suggestion-quantite`, suggestionDto).pipe(
+            tap((response) => console.log('Suggestion de quantité:', response)),
+            catchError(this.handleError)
+        );
+    }
+
+    /**
+     * Garder la quantité actuelle sans modification
+     * @param idCmd ID du bon de commande
+     * @param observations Observations optionnelles
+     */
+    garderQuantite$(idCmd: number, observations?: string): Observable<IResponse> {
+        const body = observations ? { observations } : {};
+        return this.http.put<IResponse>(`${this.server}/ecredit/stock/${idCmd}/garder-quantite`, body).pipe(
+            tap((response) => console.log('Quantité conservée:', response)),
+            catchError(this.handleError)
+        );
+    }
+
+    /**
+     * Récupérer les bons validés par le DR pour une délégation (pour le DE)
+     * @param delegationId ID de la délégation
+     */
+    getStockValidesPourDE$(delegationId: number): Observable<IResponse> {
+        return this.http.get<IResponse>(`${this.server}/ecredit/stock/valides-pour-de/${delegationId}`).pipe(
+            tap((response) => console.log('Bons validés pour DE:', response)),
+            catchError(this.handleError)
+        );
+    }
+
+    /**
+     * Récupérer tous les bons validés par le DR (toutes délégations)
+     */
+    getAllStockValidesPourDE$(): Observable<IResponse> {
+        return this.http.get<IResponse>(`${this.server}/ecredit/stock/tous-valides-pour-de`).pipe(
+            tap((response) => console.log('Tous les bons validés pour DE:', response)),
+            catchError(this.handleError)
+        );
+    }
+
     /**
      * Récupérer la synthèse des bons de commande par délégation
      */

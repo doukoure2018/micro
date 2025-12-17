@@ -7,11 +7,11 @@ public class StockQuery {
                 id_user, service, detail_bon_commande,
                 pointvente_id, agence_id, delegation_id,
                 categorie_id, observations, numero_commande,
-                qte
+                qte, qte_actuelle
             ) VALUES (
                 :idUser, :service, :detailBonCommande,
                 :pointventeId, :agenceId, :delegationId,
-                :categorieId, :observations, :numeroCommande,:qte
+                :categorieId, :observations, :numeroCommande, :qte, :qte
             )
         """;
 
@@ -53,13 +53,16 @@ public class StockQuery {
             d.libele as delegation_libele, d.id as delegation_id,
             cat.libele as categorie_libele, cat.id as categorie_id,
             u.username, CONCAT(u.first_name, ' ', u.last_name) as user_full_name,
-            bc.qte
+            bc.qte, bc.qte_actuelle, bc.qte_suggeree, bc.motif_qte, 
+            bc.date_suggestion, bc.suggere_par,
+            CONCAT(us.first_name, ' ', us.last_name) as suggere_par_full_name
         FROM bon_commande bc
         LEFT JOIN pointvente pv ON bc.pointvente_id = pv.id
         LEFT JOIN agence a ON bc.agence_id = a.id
         LEFT JOIN delegation d ON bc.delegation_id = d.id
         LEFT JOIN categorie_bon_commande cat ON bc.categorie_id = cat.id
         LEFT JOIN users u ON bc.id_user = u.user_id
+        LEFT JOIN users us ON bc.suggere_par = us.user_id
         WHERE bc.status = 'ENCOURS'
         ORDER BY bc.date_creation DESC
     """;
@@ -75,13 +78,16 @@ public class StockQuery {
             d.libele as delegation_libele, d.id as delegation_id,
             cat.libele as categorie_libele, cat.id as categorie_id,
             u.username, CONCAT(u.first_name, ' ', u.last_name) as user_full_name,
-              bc.qte
+            bc.qte, bc.qte_actuelle, bc.qte_suggeree, bc.motif_qte,
+            bc.date_suggestion, bc.suggere_par,
+            CONCAT(us.first_name, ' ', us.last_name) as suggere_par_full_name
         FROM bon_commande bc
         LEFT JOIN pointvente pv ON bc.pointvente_id = pv.id
         LEFT JOIN agence a ON bc.agence_id = a.id
         LEFT JOIN delegation d ON bc.delegation_id = d.id
         LEFT JOIN categorie_bon_commande cat ON bc.categorie_id = cat.id
         LEFT JOIN users u ON bc.id_user = u.user_id
+        LEFT JOIN users us ON bc.suggere_par = us.user_id
         ORDER BY bc.date_creation DESC
         LIMIT :limit OFFSET :offset
     """;
@@ -97,13 +103,16 @@ public class StockQuery {
             d.libele as delegation_libele, d.id as delegation_id,
             cat.libele as categorie_libele, cat.id as categorie_id,
             u.username, CONCAT(u.first_name, ' ', u.last_name) as user_full_name,
-              bc.qte
+            bc.qte, bc.qte_actuelle, bc.qte_suggeree, bc.motif_qte,
+            bc.date_suggestion, bc.suggere_par,
+            CONCAT(us.first_name, ' ', us.last_name) as suggere_par_full_name
         FROM bon_commande bc
         LEFT JOIN pointvente pv ON bc.pointvente_id = pv.id
         LEFT JOIN agence a ON bc.agence_id = a.id
         LEFT JOIN delegation d ON bc.delegation_id = d.id
         LEFT JOIN categorie_bon_commande cat ON bc.categorie_id = cat.id
         LEFT JOIN users u ON bc.id_user = u.user_id
+        LEFT JOIN users us ON bc.suggere_par = us.user_id
         WHERE bc.id_cmd = :idCmd
     """;
 
@@ -118,13 +127,16 @@ public class StockQuery {
                     d.libele as delegation_libele, d.id as delegation_id,
                     cat.libele as categorie_libele, cat.id as categorie_id,
                     u.username, CONCAT(u.first_name, ' ', u.last_name) as user_full_name,
-                      bc.qte
+                    bc.qte, bc.qte_actuelle, bc.qte_suggeree, bc.motif_qte,
+                    bc.date_suggestion, bc.suggere_par,
+                    CONCAT(us.first_name, ' ', us.last_name) as suggere_par_full_name
                 FROM bon_commande bc
                 LEFT JOIN pointvente pv ON bc.pointvente_id = pv.id
                 LEFT JOIN agence a ON bc.agence_id = a.id
                 LEFT JOIN delegation d ON bc.delegation_id = d.id
                 LEFT JOIN categorie_bon_commande cat ON bc.categorie_id = cat.id
                 LEFT JOIN users u ON bc.id_user = u.user_id
+                LEFT JOIN users us ON bc.suggere_par = us.user_id
                 WHERE bc.id_user = :userId AND bc.status = 'ENCOURS'
                 ORDER BY bc.date_creation DESC
             """;
@@ -152,13 +164,16 @@ public class StockQuery {
             bc.state_validation as validation,
             cat.libele as categorie_libele, cat.id as categorie_id,
             u.username, CONCAT(u.first_name, ' ', u.last_name) as user_full_name,
-              bc.qte
+            bc.qte, bc.qte_actuelle, bc.qte_suggeree, bc.motif_qte,
+            bc.date_suggestion, bc.suggere_par,
+            CONCAT(us.first_name, ' ', us.last_name) as suggere_par_full_name
         FROM bon_commande bc
         LEFT JOIN pointvente pv ON bc.pointvente_id = pv.id
         LEFT JOIN agence a ON bc.agence_id = a.id
         LEFT JOIN delegation d ON bc.delegation_id = d.id
         LEFT JOIN categorie_bon_commande cat ON bc.categorie_id = cat.id
         LEFT JOIN users u ON bc.id_user = u.user_id
+        LEFT JOIN users us ON bc.suggere_par = us.user_id
         WHERE bc.status = 'ENCOURS'
         AND bc.delegation_id = :delegationId
         ORDER BY bc.date_creation DESC
@@ -330,4 +345,82 @@ public class StockQuery {
             
             ORDER BY bc.date_creation DESC
             """;
+
+    /**
+     * Requête pour mettre à jour la suggestion de quantité
+     * Utilisée par le DE pour suggérer une modification de quantité
+     */
+    public static final String UPDATE_SUGGESTION_QUANTITE = """
+        UPDATE bon_commande SET
+            qte_suggeree = :qteSuggeree,
+            motif_qte = :motifQte,
+            date_suggestion = CURRENT_TIMESTAMP,
+            suggere_par = :suggerePar,
+            observations = COALESCE(:observations, observations)
+        WHERE id_cmd = :idCmd
+            AND status = 'ENCOURS'
+            AND state_validation = 'VALIDE'
+    """;
+
+    /**
+     * Requête pour récupérer les bons de commande validés par le DR 
+     * et disponibles pour le DE (sans suggestion déjà faite ou avec possibilité de modification)
+     * Ne retourne pas les bons rejetés
+     */
+    public static final String GET_STOCK_VALIDES_POUR_DE_QUERY = """
+        SELECT
+            bc.id_cmd, bc.numero_commande, bc.id_user, bc.service,
+            bc.detail_bon_commande, bc.date_creation, bc.status,
+            bc.motif, bc.traite_par, bc.observations, bc.date_traitement,
+            pv.libele as pointvente_libele, pv.id as pointvente_id,
+            a.libele as agence_libele, a.id as agence_id,
+            d.libele as delegation_libele, d.id as delegation_id,
+            bc.state_validation as validation,
+            cat.libele as categorie_libele, cat.id as categorie_id,
+            u.username, CONCAT(u.first_name, ' ', u.last_name) as user_full_name,
+            bc.qte, bc.qte_actuelle, bc.qte_suggeree, bc.motif_qte,
+            bc.date_suggestion, bc.suggere_par,
+            CONCAT(us.first_name, ' ', us.last_name) as suggere_par_full_name
+        FROM bon_commande bc
+        LEFT JOIN pointvente pv ON bc.pointvente_id = pv.id
+        LEFT JOIN agence a ON bc.agence_id = a.id
+        LEFT JOIN delegation d ON bc.delegation_id = d.id
+        LEFT JOIN categorie_bon_commande cat ON bc.categorie_id = cat.id
+        LEFT JOIN users u ON bc.id_user = u.user_id
+        LEFT JOIN users us ON bc.suggere_par = us.user_id
+        WHERE bc.status = 'ENCOURS'
+            AND bc.state_validation = 'VALIDE'
+            AND bc.delegation_id = :delegationId
+        ORDER BY bc.date_creation DESC
+    """;
+
+    /**
+     * Requête pour récupérer tous les bons validés par le DR (toutes délégations)
+     * pour la vue DE/admin
+     */
+    public static final String GET_ALL_STOCK_VALIDES_POUR_DE_QUERY = """
+        SELECT
+            bc.id_cmd, bc.numero_commande, bc.id_user, bc.service,
+            bc.detail_bon_commande, bc.date_creation, bc.status,
+            bc.motif, bc.traite_par, bc.observations, bc.date_traitement,
+            pv.libele as pointvente_libele, pv.id as pointvente_id,
+            a.libele as agence_libele, a.id as agence_id,
+            d.libele as delegation_libele, d.id as delegation_id,
+            bc.state_validation as validation,
+            cat.libele as categorie_libele, cat.id as categorie_id,
+            u.username, CONCAT(u.first_name, ' ', u.last_name) as user_full_name,
+            bc.qte, bc.qte_actuelle, bc.qte_suggeree, bc.motif_qte,
+            bc.date_suggestion, bc.suggere_par,
+            CONCAT(us.first_name, ' ', us.last_name) as suggere_par_full_name
+        FROM bon_commande bc
+        LEFT JOIN pointvente pv ON bc.pointvente_id = pv.id
+        LEFT JOIN agence a ON bc.agence_id = a.id
+        LEFT JOIN delegation d ON bc.delegation_id = d.id
+        LEFT JOIN categorie_bon_commande cat ON bc.categorie_id = cat.id
+        LEFT JOIN users u ON bc.id_user = u.user_id
+        LEFT JOIN users us ON bc.suggere_par = us.user_id
+        WHERE bc.status = 'ENCOURS'
+            AND bc.state_validation = 'VALIDE'
+        ORDER BY d.libele, bc.date_creation DESC
+    """;
 }
