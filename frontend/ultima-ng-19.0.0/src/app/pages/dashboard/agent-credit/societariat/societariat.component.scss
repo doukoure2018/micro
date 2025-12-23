@@ -1,0 +1,82 @@
+@use 'sass:color';
+
+.societariat-card {
+    width: 100%;
+
+    .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1rem;
+
+        h3 {
+            margin: 0;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            margin: 0.15rem 0 0;
+            color: #6b7280;
+            font-size: 0.95rem;
+        }
+    }
+
+    .loading {
+        display: flex;
+        justify-content: center;
+        padding: 2rem 0;
+    }
+
+    .error {
+        padding: 0.75rem 1rem;
+        margin-bottom: 1rem;
+        border-radius: 6px;
+        background: #fef2f2;
+        color: #b91c1c;
+        border: 1px solid #fecdd3;
+    }
+
+    ::ng-deep {
+        .p-table {
+            .p-datatable-header {
+                display: none;
+            }
+        }
+    }
+
+    .number {
+        text-align: right;
+        font-weight: 700;
+    }
+
+    .clickable {
+        cursor: pointer;
+
+        &:hover {
+            background: #f9fafb;
+        }
+    }
+
+    .en-attente {
+        color: #d97706;
+    }
+
+    .rejete {
+        color: #dc2626;
+    }
+
+    .valide {
+        color: #15803d;
+    }
+
+    .total {
+        color: #111827;
+    }
+
+    .empty {
+        text-align: center;
+        padding: 1rem;
+        color: #6b7280;
+    }
+}

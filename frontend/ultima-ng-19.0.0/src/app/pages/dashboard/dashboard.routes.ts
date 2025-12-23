@@ -32,6 +32,11 @@ export default [
         loadComponent: () => import('./agent-credit/correction-physique/correction-physique.component').then((c) => c.CorrectionPhysiqueComponent)
     },
     {
+        path: 'situation-stock',
+        data: { breadcrumb: 'Situation Stock' },
+        loadComponent: () => import('./admin/de/situation-stock/situation-stock.component').then((c) => c.SituationStockComponent)
+    },
+    {
         path: 'stock',
         data: { breadcrumb: 'Gestion de Stock' },
         loadComponent: () => import('./agent-credit/stock-cmd/stock-cmd.component').then((c) => c.StockCmdComponent)
@@ -190,5 +195,15 @@ export default [
         path: 'saas',
         data: { breadcrumb: 'Saas Dashboard' },
         loadComponent: () => import('./saas/dashboardsaas').then((c) => c.DashboardSaas)
+    },
+    {
+        path: 'agent-credit/societariat/detail-ps',
+        data: { breadcrumb: 'Détails corrections par point de service' },
+        loadComponent: () => import('./agent-credit/societariat/societariat-detail-ps/societariat-detail-ps.component').then((c) => c.SocietariatDetailPsComponent)
+    },
+    {
+        path: 'suivi-societariat',
+        data: { breadcrumb: 'Suivi Societariat' },
+        loadComponent: () => import('./admin/suivi-societariat/suivi-societariat.component').then((c) => c.SuiviSocietariatComponent)
     }
 ] as Routes;

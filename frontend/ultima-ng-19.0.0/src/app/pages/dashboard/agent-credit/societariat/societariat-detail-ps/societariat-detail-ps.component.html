@@ -1,0 +1,56 @@
+<div class="panel">
+    <div class="panel-header">
+        <div>
+            <h4>Détails des corrections</h4>
+            <p class="subtitle">Point de service : {{ pointLibele || pointCode || 'Non renseigné' }}</p>
+        </div>
+        <div class="actions">
+            <button pButton type="button" label="Tous" class="p-button-text" (click)="filterAll()"
+                [disabled]="isLoading() || !pointCode"></button>
+            <button pButton type="button" label="En attente" class="p-button-text" (click)="filterAttente()"
+                [disabled]="isLoading() || !pointCode"></button>
+            <button pButton type="button" label="Rejeté" class="p-button-text" (click)="filterRejete()"
+                [disabled]="isLoading() || !pointCode"></button>
+            <button pButton type="button" label="Validé" class="p-button-text" (click)="filterValide()"
+                [disabled]="isLoading() || !pointCode"></button>
+        </div>
+    </div>
+
+    @if (error()) {
+    <div class="error">{{ error() }}</div>
+    }
+
+    @if (isLoading()) {
+    <div class="loading">Chargement...</div>
+    } @else {
+    <p-table [value]="items()" [tableStyle]="{'min-width':'100%'}">
+        <ng-template pTemplate="header">
+            <tr>
+                <th>Code Client</th>
+                <th>Nom</th>
+                <th>Prénom</th>
+                <th>Téléphone</th>
+                <th>Statut</th>
+                <th>Agence</th>
+                <th>Créé le</th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-row>
+            <tr>
+                <td>{{ row.codCliente }}</td>
+                <td>{{ row.nomClient }}</td>
+                <td>{{ row.prenomClient }}</td>
+                <td>{{ row.telPrincipal }}</td>
+                <td>{{ row.correctionStatut || 'EN_ATTENTE' }}</td>
+                <td>{{ row.codeAgence }}</td>
+                <td>{{ row.createdAt | date:'short' }}</td>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr>
+                <td colspan="7" class="empty">Aucune correction trouvée pour ce point de service</td>
+            </tr>
+        </ng-template>
+    </p-table>
+    }
+</div>

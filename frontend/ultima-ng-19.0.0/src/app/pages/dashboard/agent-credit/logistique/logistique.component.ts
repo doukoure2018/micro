@@ -1,11 +1,10 @@
 import { IUser } from '@/interface/user';
-import { Component, Input, signal, OnInit, inject } from '@angular/core';
+import { Component, Input, signal, OnInit, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { UserService } from '@/service/user.service';
 import { catchError, of } from 'rxjs';
-import { SyntheseDelegationDto } from '@/interface/SyntheseDelegationDto';
-import { BonCommandeDelegationDto } from '@/interface/BonCommandeDelegationDto';
+import { StockResponseDto } from '@/interface/StockResponseDto';
 
 // PrimeNG imports
 import { ButtonModule } from 'primeng/button';
@@ -23,14 +22,25 @@ import { MessagesModule } from 'primeng/messages';
 import { TooltipModule } from 'primeng/tooltip';
 import { BadgeModule } from 'primeng/badge';
 import { ChipModule } from 'primeng/chip';
-import { MessageService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { PrintBonCommandeService } from '@/service/print-bon-commande.service';
+import { InputTextModule } from 'primeng/inputtext';
+import { DropdownModule } from 'primeng/dropdown';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { TextareaModule } from 'primeng/textarea';
+import { animate, state, style, transition, trigger } from '@angular/animations';
 
+/**
+ * Composant Logistique
+ * Affiche uniquement les bons de commande acceptés par le DE (state_validation = 'ACCEPTE')
+ * Ces bons sont prêts pour le traitement logistique
+ */
 @Component({
     selector: 'app-logistique',
     standalone: true,
     imports: [
         CommonModule,
+        FormsModule,
         ReactiveFormsModule,
         ButtonModule,
         CardModule,
@@ -46,41 +56,114 @@ import { PrintBonCommandeService } from '@/service/print-bon-commande.service';
         MessagesModule,
         TooltipModule,
         BadgeModule,
-        ChipModule
+        ChipModule,
+        InputTextModule,
+        DropdownModule,
+        ConfirmDialogModule,
+        TextareaModule
     ],
     templateUrl: './logistique.component.html',
     styleUrl: './logistique.component.scss',
-    providers: [MessageService]
+    providers: [MessageService, ConfirmationService],
+    animations: [trigger('rowExpand', [state('collapsed', style({ height: '0px', minHeight: '0', display: 'none' })), state('expanded', style({ height: '*' })), transition('expanded <=> collapsed', animate('225ms cubic-bezier(0.4, 0.0, 0.2, 1)'))])]
 })
 export class LogistiqueComponent implements OnInit {
     @Input() user?: IUser;
+    public Object = Object;
 
     private userService = inject(UserService);
     private messageService = inject(MessageService);
     private printService = inject(PrintBonCommandeService);
+    private confirmationService = inject(ConfirmationService);
 
-    state = signal<{
-        user?: IUser;
-        syntheseDelegations: SyntheseDelegationDto[];
-        bonsCommandeDelegation: BonCommandeDelegationDto[];
-        selectedDelegation?: string;
-        showDetailModal: boolean;
-        showPrintView: boolean;
-        loading: boolean;
-        searching: boolean;
-    }>({
-        syntheseDelegations: [],
-        bonsCommandeDelegation: [],
-        selectedDelegation: undefined,
-        showDetailModal: false,
-        showPrintView: false,
-        loading: false,
-        searching: false
+    // Signals principaux
+    stocks = signal<StockResponseDto[]>([]);
+    loading = signal(false);
+    expandedRows = signal<{ [key: string]: boolean }>({});
+    processingAction = signal(false);
+
+    // Dialogue de validation
+    showValidationDialog = signal(false);
+    validationObservations = signal('');
+
+    // Filtres
+    searchTerm = signal('');
+    selectedDelegation = signal<string | null>(null);
+
+    // Dialogue de détail
+    showDetailDialog = signal(false);
+    selectedStock = signal<StockResponseDto | null>(null);
+
+    // Liste des délégations uniques
+    delegations = computed(() => {
+        const uniqueDelegations = [
+            ...new Set(
+                this.stocks()
+                    .map((s) => s.delegationLibele)
+                    .filter(Boolean)
+            )
+        ];
+        return [{ label: 'Toutes les délégations', value: null }, ...uniqueDelegations.map((d) => ({ label: d, value: d }))];
     });
 
+    // Stocks filtrés
+    filteredStocks = computed(() => {
+        let result = this.stocks();
+
+        // Filtre par délégation
+        if (this.selectedDelegation()) {
+            result = result.filter((s) => s.delegationLibele === this.selectedDelegation());
+        }
+
+        // Filtre par terme de recherche
+        const term = this.searchTerm().toLowerCase();
+        if (term) {
+            result = result.filter(
+                (s) =>
+                    s.numeroCommande?.toLowerCase().includes(term) ||
+                    s.service?.toLowerCase().includes(term) ||
+                    s.userFullName?.toLowerCase().includes(term) ||
+                    s.delegationLibele?.toLowerCase().includes(term) ||
+                    s.agenceLibele?.toLowerCase().includes(term)
+            );
+        }
+
+        return result;
+    });
+
+    // Statistiques
+    totalCommandes = computed(() => this.filteredStocks().length);
+    totalQuantite = computed(() => this.filteredStocks().reduce((sum, s) => sum + (s.qteSuggeree || s.qte || 0), 0));
+
     ngOnInit(): void {
-        this.state.update((s) => ({ ...s, user: this.user }));
-        this.loadSyntheseDelegations();
+        this.loadStockAcceptes();
+    }
+
+    /**
+     * Charger les bons acceptés par le DE pour la logistique
+     */
+    loadStockAcceptes(): void {
+        this.loading.set(true);
+
+        this.userService
+            .getStockAcceptesPourLogistique$()
+            .pipe(
+                catchError((error) => {
+                    console.error('Erreur lors du chargement des bons acceptés:', error);
+                    this.showError('Erreur lors du chargement des bons de commande');
+                    return of({ data: { stocks: [] } });
+                })
+            )
+            .subscribe((response) => {
+                console.log('Bons acceptés pour logistique:', response);
+                if (response?.data?.stocks) {
+                    this.stocks.set(response.data.stocks);
+                    this.showSuccess(`${response.data.stocks.length} bon(s) de commande prêt(s) pour traitement`);
+                } else {
+                    this.stocks.set([]);
+                }
+                this.loading.set(false);
+            });
     }
 
     /**
@@ -107,205 +190,150 @@ export class LogistiqueComponent implements OnInit {
         });
     }
 
-    /**
-     * Charger la synthèse des délégations
-     */
-    loadSyntheseDelegations(): void {
-        this.state.update((s) => ({ ...s, loading: true }));
+    // ==================== GESTION DES LIGNES EXPANSIBLES ====================
 
-        this.userService
-            .getSyntheseDelegations$()
-            .pipe(
-                catchError((error) => {
-                    console.error('Erreur lors du chargement de la synthèse:', error);
-                    this.showError('Erreur lors du chargement de la synthèse des délégations');
-                    this.state.update((s) => ({ ...s, loading: false }));
-                    return of(null);
-                })
-            )
-            .subscribe((response) => {
-                console.log('Response synthèse:', response);
-                if (response && response.data) {
-                    this.state.update((s) => ({
-                        ...s,
-                        syntheseDelegations: response.data.syntheseDelegations || [],
-                        loading: false
-                    }));
-                    this.showSuccess(response.message || 'Synthèse chargée avec succès');
-                } else {
-                    this.state.update((s) => ({ ...s, loading: false }));
-                }
-            });
-    }
+    toggleRow(stock: StockResponseDto): void {
+        const currentExpanded = this.expandedRows();
+        const stockId = stock.idCmd?.toString() || '';
 
-    /**
-     * Charger les bons de commande d'une délégation
-     */
-    loadBonsCommande(delegation: string): void {
-        console.log('Chargement des bons pour:', delegation);
-
-        this.state.update((s) => ({
-            ...s,
-            searching: true,
-            selectedDelegation: delegation
-        }));
-
-        this.userService
-            .getBonsCommandeParDelegation$(delegation)
-            .pipe(
-                catchError((error) => {
-                    console.error('Erreur lors du chargement des bons de commande:', error);
-                    this.showError('Erreur lors du chargement des bons de commande');
-                    this.state.update((s) => ({ ...s, searching: false }));
-                    return of(null);
-                })
-            )
-            .subscribe((response) => {
-                console.log('Response bons commande:', response);
-                if (response && response.data) {
-                    const bons = response.data.bonsCommandeDelegation || [];
-                    console.log('Bons récupérés:', bons);
-
-                    this.state.update((s) => ({
-                        ...s,
-                        bonsCommandeDelegation: bons,
-                        searching: false,
-                        showDetailModal: true
-                    }));
-                    this.showSuccess(`${bons.length} bon(s) de commande trouvé(s)`);
-                } else {
-                    this.state.update((s) => ({ ...s, searching: false }));
-                }
-            });
-    }
-
-    /**
-     * Afficher la vue d'impression
-     */
-    showPrint(): void {
-        this.state.update((s) => ({ ...s, showPrintView: true, showDetailModal: false }));
-    }
-
-    /**
-     * Fermer la vue d'impression
-     */
-    closePrint(): void {
-        this.state.update((s) => ({ ...s, showPrintView: false, showDetailModal: true }));
-    }
-
-    /**
-     * Fermer le modal de détails
-     */
-    closeDetailModal(): void {
-        this.state.update((s) => ({
-            ...s,
-            showDetailModal: false,
-            selectedDelegation: undefined,
-            bonsCommandeDelegation: []
-        }));
-    }
-
-    /**
-     * Imprimer la page en utilisant le service
-     */
-    print(): void {
-        if (this.state().selectedDelegation && this.state().bonsCommandeDelegation.length > 0) {
-            this.printService.imprimerRapport(this.state().selectedDelegation!, this.state().bonsCommandeDelegation, {
-                includeSignature: true,
-                autoClose: false
-            });
-        }
-    }
-
-    /**
-     * Convertir un nombre de commandes
-     */
-    getNombreCommandes(value: string | number): number {
-        return typeof value === 'string' ? parseInt(value, 10) : value;
-    }
-
-    /**
-     * Convertir un tableau de date en Date object
-     */
-    private arrayToDate(dateArray: number[]): Date {
-        if (!dateArray || dateArray.length < 3) {
-            return new Date();
-        }
-        return new Date(dateArray[0], dateArray[1] - 1, dateArray[2], dateArray[3] || 0, dateArray[4] || 0, dateArray[5] || 0, Math.floor((dateArray[6] || 0) / 1000000));
-    }
-
-    /**
-     * Formater une date
-     */
-    formatDate(date: string | number[] | null | undefined): string {
-        if (!date) return 'N/A';
-
-        let dateObj: Date;
-
-        if (Array.isArray(date)) {
-            dateObj = this.arrayToDate(date);
-        } else if (typeof date === 'string') {
-            dateObj = new Date(date);
-        } else {
-            return 'N/A';
-        }
-
-        return dateObj.toLocaleDateString('fr-FR', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+        this.expandedRows.set({
+            ...currentExpanded,
+            [stockId]: !currentExpanded[stockId]
         });
     }
 
-    /**
-     * Parser le détail JSON de la commande
-     */
-    parseDetailCommande(detail: string): string {
-        if (!detail) return 'N/A';
+    isExpanded(stock: StockResponseDto): boolean {
+        return this.expandedRows()[stock.idCmd?.toString() || ''] || false;
+    }
+
+    // ==================== UTILITAIRES D'AFFICHAGE ====================
+
+    parseDetails(detailJson: string): any {
         try {
-            const parsed = JSON.parse(detail);
-            return parsed.detailStandard || detail;
-        } catch {
-            return detail;
+            if (!detailJson) return null;
+            return JSON.parse(detailJson);
+        } catch (e) {
+            return { detailStandard: detailJson };
         }
     }
 
-    /**
-     * Obtenir la sévérité du tag selon le statut
-     */
     getStatusSeverity(status: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
         const statusMap: { [key: string]: 'success' | 'info' | 'warn' | 'danger' | 'secondary' } = {
             ENCOURS: 'warn',
             TERMINE: 'success',
             ANNULE: 'danger',
             EN_ATTENTE: 'info',
-            VALIDE: 'success'
+            VALIDE: 'success',
+            ACCEPTE: 'success'
         };
         return statusMap[status] || 'secondary';
     }
 
-    /**
-     * Obtenir le label du statut
-     */
     getStatusLabel(status: string): string {
         const statusLabels: { [key: string]: string } = {
             ENCOURS: 'En cours',
             TERMINE: 'Terminé',
             ANNULE: 'Annulé',
             EN_ATTENTE: 'En attente',
-            VALIDE: 'Validé'
+            VALIDE: 'Validé DR',
+            ACCEPTE: 'Accepté DE'
         };
         return statusLabels[status] || status;
     }
 
+    getValidationSeverity(validation: string): 'success' | 'danger' | 'warn' | 'info' {
+        switch (validation) {
+            case 'ACCEPTE':
+                return 'success';
+            case 'VALIDE':
+                return 'info';
+            case 'REFUSE':
+                return 'danger';
+            default:
+                return 'warn';
+        }
+    }
+
+    getValidationLabel(validation: string): string {
+        const labels: { [key: string]: string } = {
+            ACCEPTE: 'Accepté par DE',
+            VALIDE: 'Validé par DR',
+            REFUSE: 'Refusé',
+            EN_ATTENTE: 'En attente'
+        };
+        return labels[validation] || validation;
+    }
+
+    formatDate(date: any): string {
+        if (!date) return '-';
+        if (Array.isArray(date)) {
+            const [year, month, day, hour = 0, minute = 0] = date;
+            return new Date(year, month - 1, day, hour, minute).toLocaleString('fr-FR');
+        }
+        if (typeof date === 'string') {
+            return new Date(date).toLocaleString('fr-FR');
+        }
+        return '-';
+    }
+
+    // ==================== DIALOGUE DE DÉTAIL ====================
+
+    openDetailDialog(stock: StockResponseDto): void {
+        this.selectedStock.set(stock);
+        this.showDetailDialog.set(true);
+    }
+
+    closeDetailDialog(): void {
+        this.showDetailDialog.set(false);
+        this.selectedStock.set(null);
+    }
+
+    // ==================== IMPRESSION ====================
+
     /**
-     * Calculer le total des commandes
+     * Imprimer le rapport synthétique (tableau uniquement)
      */
-    getTotalCommandes(): number {
-        if (!this.state().syntheseDelegations) return 0;
-        return this.state().syntheseDelegations.reduce((sum, s) => sum + this.getNombreCommandes(s.nombreCommandes), 0);
+    printRapportSynthese(): void {
+        if (this.filteredStocks().length === 0) {
+            this.showError('Aucune commande à imprimer');
+            return;
+        }
+
+        this.printService.imprimerRapportLogistique(this.filteredStocks(), {
+            includeSignature: true,
+            includeDetails: false,
+            autoClose: false,
+            companyName: 'DIRECTION LOGISTIQUE'
+        });
+    }
+
+    /**
+     * Imprimer le rapport complet avec fiches détaillées
+     */
+    printRapportComplet(): void {
+        if (this.filteredStocks().length === 0) {
+            this.showError('Aucune commande à imprimer');
+            return;
+        }
+
+        this.printService.imprimerRapportLogistique(this.filteredStocks(), {
+            includeSignature: true,
+            includeDetails: true,
+            autoClose: false,
+            companyName: 'DIRECTION LOGISTIQUE'
+        });
+    }
+
+    /**
+     * Imprimer une commande spécifique
+     */
+    printCommande(stock: StockResponseDto): void {
+        this.printService.imprimerRapportLogistique([stock], {
+            includeSignature: true,
+            includeDetails: true,
+            autoClose: false,
+            companyName: 'DIRECTION LOGISTIQUE'
+        });
     }
 
     /**
@@ -321,43 +349,118 @@ export class LogistiqueComponent implements OnInit {
         });
     }
 
+    // ==================== VALIDATION LOGISTIQUE ====================
+
     /**
-     * Compter les commandes par statut
+     * Ouvrir le dialogue de validation pour une commande
      */
-    getCommandesParStatut(status: string): number {
-        if (!this.state().bonsCommandeDelegation) return 0;
-        return this.state().bonsCommandeDelegation.filter((b) => b.status === status).length;
+    openValidationDialog(stock: StockResponseDto): void {
+        this.selectedStock.set(stock);
+        this.validationObservations.set('');
+        this.showValidationDialog.set(true);
     }
 
     /**
-     * Compter les commandes en cours
+     * Fermer le dialogue de validation
      */
-    getCommandesEnCours(): number {
-        return this.getCommandesParStatut('ENCOURS');
+    closeValidationDialog(): void {
+        this.showValidationDialog.set(false);
+        this.selectedStock.set(null);
+        this.validationObservations.set('');
     }
 
     /**
-     * Compter les commandes terminées
+     * Confirmer et exécuter la validation logistique
      */
-    getCommandesTerminees(): number {
-        return this.getCommandesParStatut('TERMINE');
+    confirmValidation(): void {
+        const stock = this.selectedStock();
+        if (!stock) return;
+
+        this.confirmationService.confirm({
+            message: `Êtes-vous sûr de vouloir valider la commande ${stock.numeroCommande} ?\nCette action est définitive et le bon disparaîtra de votre liste.`,
+            header: 'Confirmation de traitement',
+            icon: 'pi pi-check-circle',
+            acceptLabel: 'Valider',
+            rejectLabel: 'Annuler',
+            acceptButtonStyleClass: 'p-button-success',
+            accept: () => {
+                this.executeValidation(stock);
+            }
+        });
     }
 
     /**
-     * Compter les commandes annulées
+     * Exécuter la validation logistique
      */
-    getCommandesAnnulees(): number {
-        return this.getCommandesParStatut('ANNULE');
+    private executeValidation(stock: StockResponseDto): void {
+        this.processingAction.set(true);
+
+        this.userService.validationLogistique$(stock.idCmd!, this.validationObservations() || undefined).subscribe({
+            next: (response) => {
+                this.showSuccess(`Commande ${stock.numeroCommande} traitée avec succès`);
+                this.closeValidationDialog();
+                this.loadStockAcceptes(); // Recharger la liste
+            },
+            error: (error) => {
+                console.error('Erreur validation logistique:', error);
+                this.showError(error.error?.message || 'Erreur lors du traitement de la commande');
+            },
+            complete: () => {
+                this.processingAction.set(false);
+            }
+        });
     }
 
     /**
-     * Calculer le pourcentage d'un statut
+     * Validation rapide sans dialogue (avec confirmation)
      */
-    getPourcentageStatut(status: string): number {
-        if (!this.state().bonsCommandeDelegation) return 0;
-        const total = this.state().bonsCommandeDelegation.length;
-        if (total === 0) return 0;
-        const count = this.getCommandesParStatut(status);
-        return Math.round((count / total) * 100);
+    quickValidate(stock: StockResponseDto): void {
+        this.confirmationService.confirm({
+            message: `Valider la commande ${stock.numeroCommande} ?\nLe bon sera marqué comme traité et disparaîtra de votre liste.`,
+            header: 'Confirmation rapide',
+            icon: 'pi pi-check',
+            acceptLabel: 'Oui, valider',
+            rejectLabel: 'Annuler',
+            acceptButtonStyleClass: 'p-button-success',
+            accept: () => {
+                this.processingAction.set(true);
+                this.userService.validationLogistique$(stock.idCmd!).subscribe({
+                    next: () => {
+                        this.showSuccess(`Commande ${stock.numeroCommande} traitée`);
+                        this.loadStockAcceptes();
+                    },
+                    error: (error) => {
+                        this.showError(error.error?.message || 'Erreur lors du traitement');
+                    },
+                    complete: () => {
+                        this.processingAction.set(false);
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * Compter les commandes par délégation
+     */
+    getCommandesParDelegation(): { delegation: string; count: number; quantite: number }[] {
+        const map = new Map<string, { count: number; quantite: number }>();
+
+        this.filteredStocks().forEach((stock) => {
+            const delegation = stock.delegationLibele || 'Non spécifiée';
+            const existing = map.get(delegation) || { count: 0, quantite: 0 };
+            map.set(delegation, {
+                count: existing.count + 1,
+                quantite: existing.quantite + (stock.qteSuggeree || stock.qte || 0)
+            });
+        });
+
+        return Array.from(map.entries())
+            .map(([delegation, data]) => ({
+                delegation,
+                count: data.count,
+                quantite: data.quantite
+            }))
+            .sort((a, b) => b.count - a.count);
     }
 }

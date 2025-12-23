@@ -1,0 +1,131 @@
+@use 'sass:color';
+
+.suivi-societariat-card {
+    width: 100%;
+
+    .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+
+        h3 {
+            margin: 0;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .subtitle {
+            margin: 0.25rem 0 0;
+            color: #6b7280;
+            font-size: 0.95rem;
+
+            strong {
+                color: #374151;
+            }
+        }
+    }
+
+    .loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 0;
+        gap: 1rem;
+
+        p {
+            margin: 0;
+            color: #6b7280;
+        }
+    }
+
+    .error {
+        padding: 0.75rem 1rem;
+        margin-bottom: 1rem;
+        border-radius: 6px;
+        background: #fef2f2;
+        color: #b91c1c;
+        border: 1px solid #fecdd3;
+    }
+
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+
+        @media (max-width: 992px) {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        @media (max-width: 576px) {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .summary-card {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1.25rem;
+        border-radius: 12px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .summary-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+
+            i {
+                font-size: 1.5rem;
+                color: white;
+            }
+        }
+
+        .summary-content {
+            display: flex;
+            flex-direction: column;
+
+            .summary-value {
+                font-size: 1.75rem;
+                font-weight: 700;
+                color: white;
+            }
+
+            .summary-label {
+                font-size: 0.875rem;
+                color: rgba(255, 255, 255, 0.85);
+            }
+        }
+
+        &.en-attente-bg {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+
+        &.rejete-bg {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        &.valide-bg {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+        }
+
+        &.total-bg {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+        }
+    }
+}
+
+.mt-3 {
+    margin-top: 1.5rem;
+}

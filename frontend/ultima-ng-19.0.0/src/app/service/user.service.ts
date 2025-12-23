@@ -722,6 +722,16 @@ export class UserService {
         );
     }
 
+    getCorrectionStatsByDelegation$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/corrections/stats/delegations`).pipe(tap(console.log), catchError(this.handleError));
+
+    getCorrectionStatsByAgence$ = (delegationId: number) => this.http.get<IResponse>(`${this.server}/ecredit/corrections/stats/delegations/${delegationId}/by-agency`).pipe(tap(console.log), catchError(this.handleError));
+
+    getCorrectionStatsByPointVente$ = (agenceId: number) => this.http.get<IResponse>(`${this.server}/ecredit/corrections/stats/by-agency/${agenceId}/by-point`).pipe(tap(console.log), catchError(this.handleError));
+
+    getCorrectionsByPointVente$ = (codeAgence: string, statut?: string) => {
+        const url = `${this.server}/ecredit/corrections/pointvente/${codeAgence}/personnes${statut ? `?statut=${statut}` : ''}`;
+        return <Observable<IResponse>>this.http.get<IResponse>(url).pipe(tap(console.log), catchError(this.handleError));
+    };
     /**
      * Garder la quantité actuelle sans modification
      * @param idCmd ID du bon de commande
@@ -752,6 +762,51 @@ export class UserService {
     getAllStockValidesPourDE$(): Observable<IResponse> {
         return this.http.get<IResponse>(`${this.server}/ecredit/stock/tous-valides-pour-de`).pipe(
             tap((response) => console.log('Tous les bons validés pour DE:', response)),
+            catchError(this.handleError)
+        );
+    }
+
+    /**
+     * Validation finale par le DE
+     * Passe le state_validation de 'VALIDE' à 'ACCEPTE'
+     */
+    validationFinaleDE$(idCmd: number, observations?: string): Observable<IResponse> {
+        const body = observations ? { observations } : {};
+        return this.http.put<IResponse>(`${this.server}/ecredit/stock/${idCmd}/validation-finale-de`, body).pipe(
+            tap((response) => console.log('Validation finale DE:', response)),
+            catchError(this.handleError)
+        );
+    }
+
+    /**
+     * Récupérer tous les bons acceptés par le DE pour la logistique
+     */
+    getStockAcceptesPourLogistique$(): Observable<IResponse> {
+        return this.http.get<IResponse>(`${this.server}/ecredit/stock/acceptes-logistique`).pipe(
+            tap((response) => console.log('Bons acceptés pour logistique:', response)),
+            catchError(this.handleError)
+        );
+    }
+
+    /**
+     * Récupérer les bons acceptés par délégation pour la logistique
+     */
+    getStockAcceptesParDelegation$(delegationId: number): Observable<IResponse> {
+        return this.http.get<IResponse>(`${this.server}/ecredit/stock/acceptes-logistique/${delegationId}`).pipe(
+            tap((response) => console.log('Bons acceptés par délégation:', response)),
+            catchError(this.handleError)
+        );
+    }
+
+    /**
+     * Validation finale par la logistique
+     * Change le status de 'ENCOURS' à 'ACCEPT'
+     * Le bon disparaît de la vue logistique
+     */
+    validationLogistique$(idCmd: number, observations?: string): Observable<IResponse> {
+        const body = observations ? { observations } : {};
+        return this.http.put<IResponse>(`${this.server}/ecredit/stock/${idCmd}/validation-logistique`, body).pipe(
+            tap((response) => console.log('Validation logistique:', response)),
             catchError(this.handleError)
         );
     }

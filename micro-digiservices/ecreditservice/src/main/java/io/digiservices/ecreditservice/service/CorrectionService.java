@@ -1,8 +1,10 @@
 package io.digiservices.ecreditservice.service;
 
-import io.digiservices.clients.domain.PointVenteDto;
 import io.digiservices.ecreditservice.dto.MotifCorrection;
 import io.digiservices.ecreditservice.dto.PersonnePhysique;
+import io.digiservices.ecreditservice.dto.CorrectionDelegationStat;
+import io.digiservices.ecreditservice.dto.CorrectionAgenceStat;
+import io.digiservices.ecreditservice.dto.CorrectionPointVenteStat;
 
 import java.util.List;
 import java.util.Optional;
@@ -28,4 +30,12 @@ public interface CorrectionService {
     List<PersonnePhysique> listRejet(String codAgencia);
 
     Optional<MotifCorrection> getMotifCorrectionByPersonneLast(Long personnePhysiqueId);
+
+    List<CorrectionDelegationStat> getCorrectionStatsByDelegation();
+
+    List<CorrectionAgenceStat> getCorrectionStatsByAgence(Long delegationId);
+
+    List<CorrectionPointVenteStat> getCorrectionStatsByPointVente(Long agenceId);
+
+    List<PersonnePhysique> getCorrectionsByPointVente(String codeAgence, String statut);
 }

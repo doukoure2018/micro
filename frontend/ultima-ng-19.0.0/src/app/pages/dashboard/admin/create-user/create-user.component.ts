@@ -52,7 +52,8 @@ export class CreateUserComponent {
         { label: 'Logistique', value: 'Logistique' },
         { label: 'Contrôle', value: 'Contrôle' },
         { label: 'Audit', value: 'Audit' },
-        { label: 'Partenariat', value: 'Partenariat' }
+        { label: 'Partenariat', value: 'Partenariat' },
+        { label: 'Societariat', value: 'Societariat' }
     ];
 
     state = signal<{

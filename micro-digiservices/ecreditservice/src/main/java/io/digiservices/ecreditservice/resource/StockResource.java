@@ -324,7 +324,7 @@ public class StockResource {
     public ResponseEntity<Response> suggererQuantite(
             @NotNull Authentication authentication,
             @Valid @RequestBody SuggestionQuantiteDto suggestionDto,
-            @PathVariable Long idCmd,
+            @PathVariable(name = "idCmd") Long idCmd,
             HttpServletRequest request) {
         
         log.info("API: Suggestion de quantité pour le bon {} par {}", idCmd, authentication.getName());
@@ -354,7 +354,7 @@ public class StockResource {
     @PutMapping("/stock/{idCmd}/garder-quantite")
     public ResponseEntity<Response> garderQuantite(
             @NotNull Authentication authentication,
-            @PathVariable Long idCmd,
+            @PathVariable(name = "idCmd") Long idCmd,
             @RequestBody(required = false) Map<String, String> body,
             HttpServletRequest request) {
         
@@ -381,7 +381,7 @@ public class StockResource {
      */
     @GetMapping("/stock/valides-pour-de/{delegationId}")
     public ResponseEntity<Response> getStockValidesPourDE(
-            @PathVariable Long delegationId,
+            @PathVariable(name = "delegationId") Long delegationId,
             HttpServletRequest request) {
         
         log.info("API: Récupération des bons validés pour DE, délégation {}", delegationId);
@@ -408,6 +408,89 @@ public class StockResource {
                 "stocks", stocks,
                 "count", stocks.size()
         ), "Tous les bons validés pour DE récupérés avec succès", OK));
+    }
+
+    /**
+     * Endpoint pour la validation finale par le DE
+     * Passe le state_validation de 'VALIDE' à 'ACCEPTE'
+     * Le bon devient visible pour la logistique
+     */
+    @PutMapping("/stock/{idCmd}/validation-finale-de")
+    public ResponseEntity<Response> validationFinaleDE(
+            @NotNull Authentication authentication,
+            @PathVariable(name = "idCmd") Long idCmd,
+            @RequestBody(required = false) Map<String, String> body,
+            HttpServletRequest request) {
+        
+        Long userId = userClient.getUserByUuid(authentication.getName()).getUserId();
+        String observations = body != null ? body.get("observations") : null;
+        
+        log.info("API: Validation finale DE pour le bon {} par l'utilisateur {}", idCmd, userId);
+        
+        StockResponseDto result = stockService.validationFinaleDE(idCmd, userId, observations);
+        
+        return ok(getResponse(request, Map.of(
+                "stock", result,
+                "message", "Bon de commande accepté par le DE avec succès"
+        ), "Validation finale effectuée avec succès", OK));
+    }
+
+    /**
+     * Endpoint pour récupérer tous les bons acceptés par le DE pour la logistique
+     * Ces bons ont state_validation = 'ACCEPTE'
+     */
+    @GetMapping("/stock/acceptes-logistique")
+    public ResponseEntity<Response> getStockAcceptesPourLogistique(HttpServletRequest request) {
+        log.info("API: Récupération des bons acceptés pour la logistique");
+        List<StockResponseDto> stocks = stockService.getStockAcceptesPourLogistique();
+        
+        return ok(getResponse(request, Map.of(
+                "stocks", stocks,
+                "count", stocks.size()
+        ), "Bons acceptés pour logistique récupérés avec succès", OK));
+    }
+
+    /**
+     * Endpoint pour récupérer les bons acceptés par délégation pour la logistique
+     */
+    @GetMapping("/stock/acceptes-logistique/{delegationId}")
+    public ResponseEntity<Response> getStockAcceptesParDelegation(
+            @PathVariable(name = "delegationId") Long delegationId,
+            HttpServletRequest request) {
+        
+        log.info("API: Récupération des bons acceptés pour la délégation {}", delegationId);
+        List<StockResponseDto> stocks = stockService.getStockAcceptesParDelegation(delegationId);
+        
+        return ok(getResponse(request, Map.of(
+                "stocks", stocks,
+                "delegationId", delegationId,
+                "count", stocks.size()
+        ), "Bons acceptés par délégation récupérés avec succès", OK));
+    }
+
+    /**
+     * Endpoint pour la validation finale par la logistique
+     * Change le status de 'ENCOURS' à 'ACCEPT'
+     * Le bon disparaît ensuite de la vue logistique
+     */
+    @PutMapping("/stock/{idCmd}/validation-logistique")
+    public ResponseEntity<Response> validationLogistique(
+            @NotNull Authentication authentication,
+            @PathVariable(name = "idCmd") Long idCmd,
+            @RequestBody(required = false) Map<String, String> body,
+            HttpServletRequest request) {
+        
+        Long userId = userClient.getUserByUuid(authentication.getName()).getUserId();
+        String observations = body != null ? body.get("observations") : null;
+        
+        log.info("API: Validation logistique pour le bon {} par l'utilisateur {}", idCmd, userId);
+        
+        StockResponseDto result = stockService.validationLogistique(idCmd, userId, observations);
+        
+        return ok(getResponse(request, Map.of(
+                "stock", result,
+                "message", "Bon de commande traité avec succès par la logistique"
+        ), "Validation logistique effectuée avec succès", OK));
     }
 
     // Méthode utilitaire si nécessaire

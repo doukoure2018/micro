@@ -1,8 +1,10 @@
 package io.digiservices.ecreditservice.repository.impl;
 
-import io.digiservices.clients.domain.PointVenteDto;
+import io.digiservices.ecreditservice.dto.CorrectionDelegationStat;
 import io.digiservices.ecreditservice.dto.MotifCorrection;
 import io.digiservices.ecreditservice.dto.PersonnePhysique;
+import io.digiservices.ecreditservice.dto.CorrectionAgenceStat;
+import io.digiservices.ecreditservice.dto.CorrectionPointVenteStat;
 import io.digiservices.ecreditservice.repository.CorrectionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -97,6 +99,38 @@ public class CorrectionRepositoryImpl implements CorrectionRepository {
             return pp;
         }
     };
+
+    private static final RowMapper<CorrectionDelegationStat> CORRECTION_STATS_ROW_MAPPER = (rs, rowNum) ->
+            CorrectionDelegationStat.builder()
+                    .delegationId(rs.getObject("delegation_id", Long.class))
+                    .delegationLibele(rs.getString("delegation_libele"))
+                    .enAttente(rs.getLong("en_attente"))
+                    .rejete(rs.getLong("rejete"))
+                    .valide(rs.getLong("valide"))
+                    .total(rs.getLong("total"))
+                    .build();
+
+    private static final RowMapper<CorrectionAgenceStat> CORRECTION_AGENCE_ROW_MAPPER = (rs, rowNum) ->
+            CorrectionAgenceStat.builder()
+                    .agenceId(rs.getObject("agence_id", Long.class))
+                    .agenceLibele(rs.getString("agence_libele"))
+                    .agenceCode(rs.getString("agence_code"))
+                    .enAttente(rs.getLong("en_attente"))
+                    .rejete(rs.getLong("rejete"))
+                    .valide(rs.getLong("valide"))
+                    .total(rs.getLong("total"))
+                    .build();
+
+    private static final RowMapper<CorrectionPointVenteStat> CORRECTION_PV_ROW_MAPPER = (rs, rowNum) ->
+            CorrectionPointVenteStat.builder()
+                    .pointVenteId(rs.getObject("pointvente_id", Long.class))
+                    .pointVenteCode(rs.getString("pointvente_code"))
+                    .pointVenteLibele(rs.getString("pointvente_libele"))
+                    .enAttente(rs.getLong("en_attente"))
+                    .rejete(rs.getLong("rejete"))
+                    .valide(rs.getLong("valide"))
+                    .total(rs.getLong("total"))
+                    .build();
 
     @Override
     @Transactional
@@ -512,6 +546,62 @@ public class CorrectionRepositoryImpl implements CorrectionRepository {
         } catch (EmptyResultDataAccessException e) {
             log.debug("Aucun motif trouvé pour la personne physique: {}", personnePhysiqueId);
             return Optional.empty();
+        }
+    }
+
+    @Override
+    public List<CorrectionDelegationStat> getCorrectionStatsByDelegation() {
+        log.debug("Récupération des statistiques de correction par délégation");
+        try {
+            return jdbcClient.sql(CORRECTION_STATS_BY_DELEGATION)
+                    .query(CORRECTION_STATS_ROW_MAPPER)
+                    .list();
+        } catch (DataAccessException e) {
+            log.error("Erreur lors de la récupération des statistiques de correction par délégation", e);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    public List<CorrectionAgenceStat> getCorrectionStatsByAgence(Long delegationId) {
+        log.debug("Récupération des statistiques de correction par agence pour la délégation {}", delegationId);
+        try {
+            return jdbcClient.sql(CORRECTION_STATS_BY_AGENCE)
+                    .param("delegationId", delegationId)
+                    .query(CORRECTION_AGENCE_ROW_MAPPER)
+                    .list();
+        } catch (DataAccessException e) {
+            log.error("Erreur lors de la récupération des statistiques par agence", e);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    public List<CorrectionPointVenteStat> getCorrectionStatsByPointVente(Long agenceId) {
+        log.debug("Récupération des statistiques de correction par point de vente pour l'agence {}", agenceId);
+        try {
+            return jdbcClient.sql(CORRECTION_STATS_BY_POINTVENTE)
+                    .param("agenceId", agenceId)
+                    .query(CORRECTION_PV_ROW_MAPPER)
+                    .list();
+        } catch (DataAccessException e) {
+            log.error("Erreur lors de la récupération des statistiques par point de vente", e);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    public List<PersonnePhysique> getCorrectionsByPointVente(String codeAgence, String statut) {
+        log.debug("Récupération des corrections pour le point de vente {} avec filtre statut {}", codeAgence, statut);
+        try {
+            return jdbcClient.sql(CORRECTION_DETAIL_BY_POINTVENTE)
+                    .param("codeAgence", codeAgence)
+                    .param("statut", statut)
+                    .query(PERSONNE_PHYSIQUE_ROW_MAPPER)
+                    .list();
+        } catch (DataAccessException e) {
+            log.error("Erreur lors de la récupération des corrections pour le point de vente {}", codeAgence, e);
+            return Collections.emptyList();
         }
     }
 }

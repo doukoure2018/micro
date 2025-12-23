@@ -423,4 +423,99 @@ public class StockQuery {
             AND bc.state_validation = 'VALIDE'
         ORDER BY d.libele, bc.date_creation DESC
     """;
+
+    /**
+     * Requête pour la validation finale par le DE (state_validation = 'ACCEPTE')
+     * Le DE valide définitivement le bon après avoir ajusté les quantités
+     */
+    public static final String UPDATE_VALIDATION_FINALE_DE = """
+        UPDATE bon_commande SET
+            state_validation = 'ACCEPTE',
+            date_traitement = CURRENT_TIMESTAMP,
+            traite_par = :traitePar,
+            observations = COALESCE(:observations, observations)
+        WHERE id_cmd = :idCmd
+            AND status = 'ENCOURS'
+            AND state_validation = 'VALIDE'
+    """;
+
+    /**
+     * Requête pour récupérer les bons acceptés par le DE pour la logistique
+     * Ces bons ont state_validation = 'ACCEPTE' et sont prêts pour traitement logistique
+     */
+    public static final String GET_STOCK_ACCEPTES_POUR_LOGISTIQUE = """
+        SELECT
+            bc.id_cmd, bc.numero_commande, bc.id_user, bc.service,
+            bc.detail_bon_commande, bc.date_creation, bc.status,
+            bc.motif, bc.traite_par, bc.observations, bc.date_traitement,
+            pv.libele as pointvente_libele, pv.id as pointvente_id,
+            a.libele as agence_libele, a.id as agence_id,
+            d.libele as delegation_libele, d.id as delegation_id,
+            bc.state_validation as validation,
+            cat.libele as categorie_libele, cat.id as categorie_id,
+            u.username, CONCAT(u.first_name, ' ', u.last_name) as user_full_name,
+            bc.qte, bc.qte_actuelle, bc.qte_suggeree, bc.motif_qte,
+            bc.date_suggestion, bc.suggere_par,
+            CONCAT(us.first_name, ' ', us.last_name) as suggere_par_full_name,
+            CONCAT(ut.first_name, ' ', ut.last_name) as traite_par_full_name
+        FROM bon_commande bc
+        LEFT JOIN pointvente pv ON bc.pointvente_id = pv.id
+        LEFT JOIN agence a ON bc.agence_id = a.id
+        LEFT JOIN delegation d ON bc.delegation_id = d.id
+        LEFT JOIN categorie_bon_commande cat ON bc.categorie_id = cat.id
+        LEFT JOIN users u ON bc.id_user = u.user_id
+        LEFT JOIN users us ON bc.suggere_par = us.user_id
+        LEFT JOIN users ut ON bc.traite_par = ut.user_id
+        WHERE bc.status = 'ENCOURS'
+            AND bc.state_validation = 'ACCEPTE'
+        ORDER BY bc.date_traitement DESC, bc.date_creation DESC
+    """;
+
+    /**
+     * Requête pour récupérer les bons acceptés par délégation pour la logistique
+     */
+    public static final String GET_STOCK_ACCEPTES_PAR_DELEGATION = """
+        SELECT
+            bc.id_cmd, bc.numero_commande, bc.id_user, bc.service,
+            bc.detail_bon_commande, bc.date_creation, bc.status,
+            bc.motif, bc.traite_par, bc.observations, bc.date_traitement,
+            pv.libele as pointvente_libele, pv.id as pointvente_id,
+            a.libele as agence_libele, a.id as agence_id,
+            d.libele as delegation_libele, d.id as delegation_id,
+            bc.state_validation as validation,
+            cat.libele as categorie_libele, cat.id as categorie_id,
+            u.username, CONCAT(u.first_name, ' ', u.last_name) as user_full_name,
+            bc.qte, bc.qte_actuelle, bc.qte_suggeree, bc.motif_qte,
+            bc.date_suggestion, bc.suggere_par,
+            CONCAT(us.first_name, ' ', us.last_name) as suggere_par_full_name,
+            CONCAT(ut.first_name, ' ', ut.last_name) as traite_par_full_name
+        FROM bon_commande bc
+        LEFT JOIN pointvente pv ON bc.pointvente_id = pv.id
+        LEFT JOIN agence a ON bc.agence_id = a.id
+        LEFT JOIN delegation d ON bc.delegation_id = d.id
+        LEFT JOIN categorie_bon_commande cat ON bc.categorie_id = cat.id
+        LEFT JOIN users u ON bc.id_user = u.user_id
+        LEFT JOIN users us ON bc.suggere_par = us.user_id
+        LEFT JOIN users ut ON bc.traite_par = ut.user_id
+        WHERE bc.status = 'ENCOURS'
+            AND bc.state_validation = 'ACCEPTE'
+            AND bc.delegation_id = :delegationId
+        ORDER BY bc.date_traitement DESC, bc.date_creation DESC
+    """;
+
+    /**
+     * Requête pour la validation finale par la logistique
+     * Change le status de 'ENCOURS' à 'ACCEPT'
+     * Le bon disparaît ensuite de la vue logistique
+     */
+    public static final String UPDATE_STATUS_LOGISTIQUE_ACCEPT = """
+        UPDATE bon_commande SET
+            status = 'ACCEPT',
+            date_traitement = CURRENT_TIMESTAMP,
+            traite_par = :traitePar,
+            observations = COALESCE(:observations, observations)
+        WHERE id_cmd = :idCmd
+            AND status = 'ENCOURS'
+            AND state_validation = 'ACCEPTE'
+    """;
 }

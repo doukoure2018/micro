@@ -344,6 +344,72 @@ public class StockRepositoryImpl  implements StockRepository {
         }
     }
 
+    @Override
+    public boolean validationFinaleDE(Long idCmd, Long traitePar, String observations) {
+        try {
+            MapSqlParameterSource params = new MapSqlParameterSource()
+                    .addValue("idCmd", idCmd)
+                    .addValue("traitePar", traitePar)
+                    .addValue("observations", observations);
+
+            int updated = jdbcTemplate.update(StockQuery.UPDATE_VALIDATION_FINALE_DE, params);
+            log.info("Validation finale DE pour le bon {} : {}", idCmd, updated > 0);
+            return updated > 0;
+        } catch (Exception e) {
+            log.error("Erreur lors de la validation finale DE pour le bon {}: {}", idCmd, e.getMessage());
+            return false;
+        }
+    }
+
+    @Override
+    public List<StockResponseDto> getStockAcceptesPourLogistique() {
+        try {
+            return jdbcTemplate.query(
+                    StockQuery.GET_STOCK_ACCEPTES_POUR_LOGISTIQUE,
+                    new MapSqlParameterSource(),
+                    (rs, rowNum) -> mapRowToStockResponseWithTraitePar(rs)
+            );
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des bons acceptés pour logistique: {}", e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public List<StockResponseDto> getStockAcceptesParDelegation(Long delegationId) {
+        try {
+            MapSqlParameterSource params = new MapSqlParameterSource()
+                    .addValue("delegationId", delegationId);
+
+            return jdbcTemplate.query(
+                    StockQuery.GET_STOCK_ACCEPTES_PAR_DELEGATION,
+                    params,
+                    (rs, rowNum) -> mapRowToStockResponseWithTraitePar(rs)
+            );
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des bons acceptés pour la délégation {}: {}", 
+                    delegationId, e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public boolean validationLogistique(Long idCmd, Long traitePar, String observations) {
+        try {
+            MapSqlParameterSource params = new MapSqlParameterSource()
+                    .addValue("idCmd", idCmd)
+                    .addValue("traitePar", traitePar)
+                    .addValue("observations", observations);
+
+            int updated = jdbcTemplate.update(StockQuery.UPDATE_STATUS_LOGISTIQUE_ACCEPT, params);
+            log.info("Validation logistique pour le bon {} : {}", idCmd, updated > 0);
+            return updated > 0;
+        } catch (Exception e) {
+            log.error("Erreur lors de la validation logistique pour le bon {}: {}", idCmd, e.getMessage());
+            return false;
+        }
+    }
+
     private StockResponseDto mapRowToStockResponse(ResultSet rs) throws SQLException {
         return StockResponseDto.builder()
                 .idCmd(rs.getLong("id_cmd"))
@@ -379,6 +445,20 @@ public class StockRepositoryImpl  implements StockRepository {
                 .dateSuggestion(rs.getTimestamp("date_suggestion") != null ?
                         rs.getTimestamp("date_suggestion").toLocalDateTime() : null)
                 .build();
+    }
+
+    /**
+     * Mapper incluant le nom complet de la personne qui a traité (pour logistique)
+     */
+    private StockResponseDto mapRowToStockResponseWithTraitePar(ResultSet rs) throws SQLException {
+        StockResponseDto dto = mapRowToStockResponse(rs);
+        // Ajouter le nom de la personne qui a traité
+        try {
+            dto.setTraiteParFullName(rs.getString("traite_par_full_name"));
+        } catch (SQLException e) {
+            // La colonne peut ne pas exister dans certaines requêtes
+        }
+        return dto;
     }
 
 }

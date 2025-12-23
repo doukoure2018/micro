@@ -88,7 +88,7 @@ public class CorrectionQuery {
                       fec_vencim, fech_nacimiento, date_attente, lieux_naiss, nationalite, pays, nom_beneficiario,
                       relac_beneficiario, det_direccion, cod_provincia,cod_canton, district, agence, code_agence, cod_actividad,
                       cod_profesion, cod_sector, type_entre, nbr_annee2, ind_sexo, est_civil, conjoint, nbr_enfant,
-                      type_habit, nbr_annee, statut_clt, nature, prov_serv_destino, id_user, id_manager_agent, created_at, 
+                      type_habit, nbr_annee, statut_clt, nature, prov_serv_destino, id_user, id_manager_agent, created_at,
                       updated_at, correction_statut 
                FROM public.personne_physique 
                WHERE code_agence = :codAgencia 
@@ -214,4 +214,60 @@ public class CorrectionQuery {
         updated_at = CURRENT_TIMESTAMP
     WHERE id = :id
     """;
+
+    public static final String CORRECTION_STATS_BY_DELEGATION = """
+        SELECT
+            d.id AS delegation_id,
+            COALESCE(d.libele, 'Non renseignée') AS delegation_libele,
+            COALESCE(SUM(CASE WHEN pp.correction_statut = 'EN_ATTENTE' THEN 1 ELSE 0 END), 0) AS en_attente,
+            COALESCE(SUM(CASE WHEN pp.correction_statut = 'REJETE' THEN 1 ELSE 0 END), 0) AS rejete,
+            COALESCE(SUM(CASE WHEN pp.correction_statut = 'VALIDE' THEN 1 ELSE 0 END), 0) AS valide,
+            COUNT(pp.id) AS total
+        FROM personne_physique pp
+        LEFT JOIN pointvente pv ON pv.code = pp.code_agence
+        LEFT JOIN delegation d ON d.id = pv.delegation_id
+        GROUP BY d.id, d.libele
+        ORDER BY delegation_libele NULLS LAST
+        """;
+
+    public static final String CORRECTION_STATS_BY_AGENCE = """
+        SELECT
+            a.id AS agence_id,
+            a.libele AS agence_libele,
+            pv.code AS agence_code,
+            COALESCE(SUM(CASE WHEN pp.correction_statut = 'EN_ATTENTE' THEN 1 ELSE 0 END), 0) AS en_attente,
+            COALESCE(SUM(CASE WHEN pp.correction_statut = 'REJETE' THEN 1 ELSE 0 END), 0) AS rejete,
+            COALESCE(SUM(CASE WHEN pp.correction_statut = 'VALIDE' THEN 1 ELSE 0 END), 0) AS valide,
+            COUNT(pp.id) AS total
+        FROM personne_physique pp
+        LEFT JOIN pointvente pv ON pv.code = pp.code_agence
+        LEFT JOIN agence a ON a.id = pv.agence_id
+        WHERE (pv.delegation_id = :delegationId OR a.delegation_id = :delegationId)
+        GROUP BY a.id, a.libele, pv.code
+        ORDER BY a.libele
+        """;
+
+    public static final String CORRECTION_STATS_BY_POINTVENTE = """
+        SELECT
+            pv.id AS pointvente_id,
+            pv.code AS pointvente_code,
+            pv.libele AS pointvente_libele,
+            COALESCE(SUM(CASE WHEN pp.correction_statut = 'EN_ATTENTE' THEN 1 ELSE 0 END), 0) AS en_attente,
+            COALESCE(SUM(CASE WHEN pp.correction_statut = 'REJETE' THEN 1 ELSE 0 END), 0) AS rejete,
+            COALESCE(SUM(CASE WHEN pp.correction_statut = 'VALIDE' THEN 1 ELSE 0 END), 0) AS valide,
+            COUNT(pp.id) AS total
+        FROM personne_physique pp
+        LEFT JOIN pointvente pv ON pv.code = pp.code_agence
+        WHERE pv.agence_id = :agenceId
+        GROUP BY pv.id, pv.code, pv.libele
+        ORDER BY pv.libele
+        """;
+
+    public static final String CORRECTION_DETAIL_BY_POINTVENTE = """
+        SELECT *
+        FROM personne_physique pp
+        WHERE pp.code_agence = :codeAgence
+          AND (COALESCE(:statut, '') = '' OR pp.correction_statut = :statut)
+        ORDER BY pp.created_at DESC
+        """;
 }

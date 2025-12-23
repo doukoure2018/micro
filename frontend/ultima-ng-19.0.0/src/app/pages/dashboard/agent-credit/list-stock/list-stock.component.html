@@ -3,30 +3,15 @@
         <p-toast></p-toast>
         <p-confirmDialog></p-confirmDialog>
 
-        <p-card header="Bons de Commande">
+        <p-card header="Bons de Commande - Espace DR">
             <div class="mb-3" *ngIf="user">
                 <span class="ml-3 text-500">Délégation : </span>
                 <span class="font-bold">{{ delegation()?.libele | uppercase}}</span>
                 <span class="ml-4 text-500">Rôle : </span>
                 <span class="font-bold badge"
-                    [ngClass]="{'badge-dr': user.role === 'DR', 'badge-de': user.role === 'DE', 'badge-user': user.role !== 'DR' && user.role !== 'DE'}">
+                    [ngClass]="{'badge-dr': user.role === 'DR', 'badge-user': user.role !== 'DR'}">
                     {{ user.role }}
                 </span>
-                
-                <!-- Boutons de changement de mode (visible pour DE et admin) -->
-                <div class="view-mode-buttons ml-4" *ngIf="user.role === 'DE' || user.role === 'ADMIN'">
-                    <button pButton type="button" 
-                        [label]="'En cours'" 
-                        [class]="viewMode() === 'encours' ? 'p-button-primary' : 'p-button-outlined'"
-                        (click)="switchViewMode('encours')"
-                        class="mr-2">
-                    </button>
-                    <button pButton type="button" 
-                        [label]="'Validés (pour suggestion)'" 
-                        [class]="viewMode() === 'valides' ? 'p-button-primary' : 'p-button-outlined'"
-                        (click)="switchViewMode('valides')">
-                    </button>
-                </div>
             </div>
 
             <div *ngIf="loading()" class="flex justify-content-center p-4">
@@ -74,8 +59,6 @@
                         <td colspan="8">
                             <div class="detail-container">
                                 <div class="grid">
-
-
                                     <!-- Section Informations Complètes de la Commande -->
                                     <div class="col-12">
                                         <div class="detail-card">
@@ -85,16 +68,13 @@
                                             </div>
                                             <table class="detail-table">
                                                 <tbody>
-
                                                     <tr>
                                                         <td class="label-cell">
                                                             <i class="pi pi-user mini-icon"></i>
                                                             Demandeur
                                                         </td>
-                                                        <td class="value-cell">{{ stock.userFullName || stock.username
-                                                            }}</td>
+                                                        <td class="value-cell">{{ stock.userFullName || stock.username }}</td>
                                                     </tr>
-
                                                     <tr>
                                                         <td class="label-cell">
                                                             <i class="pi pi-map-marker mini-icon"></i>
@@ -122,14 +102,10 @@
                                                             Description
                                                         </td>
                                                         <td class="value-cell">
-                                                            <div
-                                                                *ngIf="parseDetails(stock.detailBonCommande) as details">
-                                                                <p *ngIf="details.detailStandard">
-                                                                    {{ details.detailStandard }}
-                                                                </p>
+                                                            <div *ngIf="parseDetails(stock.detailBonCommande) as details">
+                                                                <p *ngIf="details.detailStandard">{{ details.detailStandard }}</p>
                                                                 <div *ngIf="!details.detailStandard">
-                                                                    <div *ngFor="let key of Object.keys(details)"
-                                                                        class="mb-1">
+                                                                    <div *ngFor="let key of Object.keys(details)" class="mb-1">
                                                                         <strong>{{ key }}:</strong> {{ details[key] }}
                                                                     </div>
                                                                 </div>
@@ -143,56 +119,12 @@
                                                         </td>
                                                         <td class="value-cell">{{ stock.qte || 0 }}</td>
                                                     </tr>
-                                                    <!-- Affichage de la quantité actuelle et suggérée -->
-                                                    <tr *ngIf="stock.qteActuelle">
-                                                        <td class="label-cell">
-                                                            <i class="pi pi-box mini-icon"></i>
-                                                            Quantité actuelle
-                                                        </td>
-                                                        <td class="value-cell">{{ stock.qteActuelle }}</td>
-                                                    </tr>
-                                                    <tr *ngIf="hasSuggestion(stock)">
-                                                        <td class="label-cell">
-                                                            <i class="pi pi-pencil mini-icon"></i>
-                                                            Quantité suggérée
-                                                        </td>
-                                                        <td class="value-cell">
-                                                            <span [ngClass]="getSuggestionClass(stock)">
-                                                                {{ stock.qteSuggeree }}
-                                                            </span>
-                                                            <span *ngIf="stock.qteSuggeree !== stock.qteActuelle" class="text-orange-500 ml-2">
-                                                                (modification de {{ (stock.qteActuelle || stock.qte) - stock.qteSuggeree }} unité(s))
-                                                            </span>
-                                                        </td>
-                                                    </tr>
-                                                    <tr *ngIf="stock.motifQte">
-                                                        <td class="label-cell">
-                                                            <i class="pi pi-comment mini-icon"></i>
-                                                            Motif modification qté
-                                                        </td>
-                                                        <td class="value-cell motif-qte-text">{{ stock.motifQte }}</td>
-                                                    </tr>
-                                                    <tr *ngIf="stock.suggereParFullName">
-                                                        <td class="label-cell">
-                                                            <i class="pi pi-user mini-icon"></i>
-                                                            Suggéré par
-                                                        </td>
-                                                        <td class="value-cell">{{ stock.suggereParFullName }}</td>
-                                                    </tr>
-                                                    <tr *ngIf="stock.dateSuggestion">
-                                                        <td class="label-cell">
-                                                            <i class="pi pi-calendar mini-icon"></i>
-                                                            Date suggestion
-                                                        </td>
-                                                        <td class="value-cell">{{ formatDate(stock.dateSuggestion) }}</td>
-                                                    </tr>
                                                     <tr *ngIf="stock.dateTraitement">
                                                         <td class="label-cell">
                                                             <i class="pi pi-calendar mini-icon"></i>
                                                             Date de traitement
                                                         </td>
-                                                        <td class="value-cell">{{ formatDate(stock.dateTraitement) }}
-                                                        </td>
+                                                        <td class="value-cell">{{ formatDate(stock.dateTraitement) }}</td>
                                                     </tr>
                                                     <tr *ngIf="stock.traitePar">
                                                         <td class="label-cell">
@@ -205,6 +137,7 @@
                                             </table>
                                         </div>
                                     </div>
+
                                     <!-- Section Observations et Motifs -->
                                     <div class="col-12" *ngIf="stock.observations || stock.motif">
                                         <div class="detail-card">
@@ -218,83 +151,51 @@
                                                         <i class="pi pi-eye mini-icon"></i>
                                                         Observations
                                                     </div>
-                                                    <div class="observation-text">
-                                                        {{ stock.observations }}
-                                                    </div>
+                                                    <div class="observation-text">{{ stock.observations }}</div>
                                                 </div>
                                                 <div class="motif-box" *ngIf="stock.motif">
                                                     <div class="motif-label">
                                                         <i class="pi pi-exclamation-triangle"></i>
                                                         Motif de refus/rejet
                                                     </div>
-                                                    <div class="motif-text">
-                                                        {{ stock.motif }}
-                                                    </div>
+                                                    <div class="motif-text">{{ stock.motif }}</div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <!-- Section Boutons d'action mise à jour -->
+                                    <!-- Section Boutons d'action DR -->
                                     <div class="col-12">
                                         <div class="action-buttons-container">
                                             <div class="action-status-info" *ngIf="stock.dateTraitement">
                                                 <i class="pi pi-info-circle"></i>
                                                 <span>Traité le {{ formatDate(stock.dateTraitement) }}
-                                                    <span *ngIf="stock.traitePar">par l'utilisateur #{{ stock.traitePar
-                                                        }}</span>
+                                                    <span *ngIf="stock.traitePar">par l'utilisateur #{{ stock.traitePar }}</span>
                                                 </span>
                                             </div>
                                             
-                                            <!-- Boutons d'action selon le rôle -->
                                             <div class="action-buttons">
-                                                <!-- Boutons DR: Valider/Rejeter -->
-                                                <ng-container *ngIf="viewMode() === 'encours'">
-                                                    <button pButton type="button" label="Rejeter" icon="pi pi-times"
-                                                        class="p-button-danger p-button-raised"
-                                                        [disabled]="isRejectDisabled(stock) || processingAction()"
-                                                        (click)="openRejectDialog(stock)"
-                                                        [pTooltip]="getRejectTooltip(stock)">
-                                                    </button>
-                                                    <button pButton type="button" label="Valider" icon="pi pi-check"
-                                                        class="p-button-success p-button-raised"
-                                                        [disabled]="isValidateDisabled(stock) || processingAction()"
-                                                        (click)="openValidateDialog(stock)"
-                                                        [pTooltip]="getValidateTooltip(stock)">
-                                                    </button>
-                                                </ng-container>
-                                                
-                                                <!-- Bouton DE: Suggérer quantité -->
-                                                <ng-container *ngIf="viewMode() === 'valides' && canSuggestQuantity(stock)">
-                                                    <button pButton type="button" 
-                                                        [label]="hasSuggestion(stock) ? 'Modifier suggestion' : 'Suggérer quantité'" 
-                                                        icon="pi pi-pencil"
-                                                        class="p-button-warning p-button-raised"
-                                                        [disabled]="processingAction()"
-                                                        (click)="openSuggestionDialog(stock)"
-                                                        pTooltip="Suggérer une modification de quantité">
-                                                    </button>
-                                                </ng-container>
-                                            </div>
-                                            
-                                            <!-- Information sur l'état de la suggestion -->
-                                            <div class="suggestion-status" *ngIf="viewMode() === 'valides' && canSuggestQuantity(stock)">
-                                                <span [ngClass]="getSuggestionClass(stock)">
-                                                    <i class="pi" [ngClass]="hasSuggestion(stock) ? 'pi-check-circle' : 'pi-clock'"></i>
-                                                    {{ getSuggestionLabel(stock) }}
-                                                </span>
+                                                <button pButton type="button" label="Rejeter" icon="pi pi-times"
+                                                    class="p-button-danger p-button-raised"
+                                                    [disabled]="isRejectDisabled(stock) || processingAction()"
+                                                    (click)="openRejectDialog(stock)"
+                                                    [pTooltip]="getRejectTooltip(stock)">
+                                                </button>
+                                                <button pButton type="button" label="Valider" icon="pi pi-check"
+                                                    class="p-button-success p-button-raised"
+                                                    [disabled]="isValidateDisabled(stock) || processingAction()"
+                                                    (click)="openValidateDialog(stock)"
+                                                    [pTooltip]="getValidateTooltip(stock)">
+                                                </button>
                                             </div>
                                             
                                             <div class="action-info">
                                                 <i class="pi pi-info-circle"></i>
-                                                <span *ngIf="stock.status === 'ENCOURS' && !stock.stateValidation">
+                                                <span *ngIf="stock.status === 'ENCOURS' && (!stock.stateValidation || stock.stateValidation === 'EN_ATTENTE')">
                                                     Actions disponibles pour cette commande en cours
                                                 </span>
-                                                <span *ngIf="stock.stateValidation === 'VALIDE' && viewMode() === 'encours'">
+                                                <span *ngIf="stock.stateValidation === 'VALIDE'">
                                                     Cette commande a été validée par un DR
-                                                </span>
-                                                <span *ngIf="stock.stateValidation === 'VALIDE' && viewMode() === 'valides'">
-                                                    Vous pouvez suggérer une modification de la quantité
                                                 </span>
                                                 <span *ngIf="stock.stateValidation === 'ACCEPTE'">
                                                     Cette commande a été acceptée
@@ -353,7 +254,7 @@
 
         <div class="field">
             <label for="validate-observations">Observations (optionnel)</label>
-            <textarea pTextarea id="validate-observations" pInputTextarea [(ngModel)]="validateObservations" rows="3"
+            <textarea pTextarea id="validate-observations" [(ngModel)]="validateObservations" rows="3"
                 class="w-full" [disabled]="processingAction()" placeholder="Ajoutez des observations si nécessaire...">
             </textarea>
         </div>
@@ -393,7 +294,7 @@
 
         <div class="field mb-3">
             <label for="reject-motif" class="required">Motif de rejet *</label>
-            <textarea pTextarea id="reject-motif" pInputTextarea [(ngModel)]="rejectMotif" rows="3" class="w-full"
+            <textarea pTextarea id="reject-motif" [(ngModel)]="rejectMotif" rows="3" class="w-full"
                 [disabled]="processingAction()" placeholder="Indiquez le motif de rejet (obligatoire)..."
                 [ngClass]="{'ng-invalid': !rejectMotif() && showRejectDialog()}">
             </textarea>
@@ -404,7 +305,7 @@
 
         <div class="field">
             <label for="reject-observations">Observations complémentaires (optionnel)</label>
-            <textarea id="reject-observations" pInputTextarea [(ngModel)]="rejectObservations" rows="2" class="w-full"
+            <textarea id="reject-observations" pTextarea [(ngModel)]="rejectObservations" rows="2" class="w-full"
                 [disabled]="processingAction()" placeholder="Observations supplémentaires...">
             </textarea>
         </div>
@@ -416,120 +317,6 @@
         </button>
         <button pButton label="Confirmer le rejet" icon="pi pi-ban" class="p-button-danger" (click)="rejectCommand()"
             [disabled]="processingAction() || !rejectMotif()" [loading]="processingAction()">
-        </button>
-    </ng-template>
-</p-dialog>
-
-<!-- Dialogue de suggestion de quantité (DE) -->
-<p-dialog [(visible)]="showSuggestionDialog" [modal]="true" [draggable]="false" [resizable]="false"
-    [style]="{width: '500px'}" header="Suggestion de quantité" [closable]="!processingAction()">
-
-    <div class="dialog-content" *ngIf="selectedStock()">
-        <div class="info-section mb-3">
-            <p class="mb-2">
-                <strong>Commande :</strong> {{ selectedStock().numeroCommande }}
-            </p>
-            <p class="mb-2">
-                <strong>Service :</strong> {{ selectedStock().service }}
-            </p>
-            <p class="mb-2">
-                <strong>Demandeur :</strong> {{ selectedStock().userFullName || selectedStock().username }}
-            </p>
-            <p class="mb-2">
-                <strong>Quantité actuelle :</strong> 
-                <span class="font-bold text-primary">{{ selectedStock().qteActuelle || selectedStock().qte }}</span>
-            </p>
-        </div>
-
-        <div class="alert alert-info mb-3">
-            <i class="pi pi-info-circle mr-2"></i>
-            <span>
-                Vous pouvez suggérer une modification de la quantité pour cette commande validée par le DR.
-                Si la quantité convient, cochez "Garder la quantité actuelle".
-            </span>
-        </div>
-
-        <!-- Checkbox pour garder la quantité -->
-        <div class="field-checkbox mb-3">
-            <p-checkbox [(ngModel)]="garderQuantite" [binary]="true" inputId="garderQte"
-                (onChange)="onGarderQuantiteChange()" [disabled]="processingAction()">
-            </p-checkbox>
-            <label for="garderQte" class="ml-2">Garder la quantité actuelle</label>
-        </div>
-
-        <!-- Champ quantité suggérée -->
-        <div class="field mb-3" *ngIf="!garderQuantite()">
-            <label for="qte-suggeree" class="required">Quantité suggérée *</label>
-            <p-inputNumber [(ngModel)]="qteSuggeree" inputId="qte-suggeree" 
-                [min]="1" [showButtons]="true" buttonLayout="horizontal"
-                incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus"
-                [disabled]="processingAction()" class="w-full">
-            </p-inputNumber>
-        </div>
-
-        <!-- Motif du changement -->
-        <div class="field mb-3" *ngIf="isMotifRequired()">
-            <label for="motif-qte" class="required">Motif du changement de quantité *</label>
-            <textarea pTextarea id="motif-qte" pInputTextarea [(ngModel)]="motifQte" rows="3" class="w-full"
-                [disabled]="processingAction()" 
-                placeholder="Expliquez pourquoi vous suggérez cette modification de quantité..."
-                [ngClass]="{'ng-invalid': isMotifRequired() && !motifQte()}">
-            </textarea>
-            <small class="p-error" *ngIf="isMotifRequired() && !motifQte()">
-                Le motif est obligatoire lorsque la quantité est modifiée
-            </small>
-        </div>
-
-        <!-- Motif optionnel si garder quantité -->
-        <div class="field mb-3" *ngIf="garderQuantite()">
-            <label for="motif-qte-opt">Motif (optionnel)</label>
-            <textarea pTextarea id="motif-qte-opt" pInputTextarea [(ngModel)]="motifQte" rows="2" class="w-full"
-                [disabled]="processingAction()" 
-                placeholder="Observations sur la quantité (optionnel)...">
-            </textarea>
-        </div>
-
-        <!-- Observations -->
-        <div class="field">
-            <label for="suggestion-observations">Observations complémentaires (optionnel)</label>
-            <textarea pTextarea id="suggestion-observations" pInputTextarea [(ngModel)]="suggestionObservations" 
-                rows="2" class="w-full" [disabled]="processingAction()" 
-                placeholder="Observations supplémentaires...">
-            </textarea>
-        </div>
-
-        <!-- Résumé de la suggestion -->
-        <div class="suggestion-summary mt-3" *ngIf="qteSuggeree() || garderQuantite()">
-            <div class="summary-header">
-                <i class="pi pi-info-circle"></i>
-                Résumé de la suggestion
-            </div>
-            <div class="summary-content">
-                <p *ngIf="garderQuantite()">
-                    <i class="pi pi-check text-green-500"></i>
-                    La quantité <strong>{{ selectedStock().qteActuelle || selectedStock().qte }}</strong> sera confirmée.
-                </p>
-                <p *ngIf="!garderQuantite() && qteSuggeree()">
-                    <i class="pi pi-arrow-right text-orange-500"></i>
-                    Quantité : <strong>{{ selectedStock().qteActuelle || selectedStock().qte }}</strong> → 
-                    <strong class="text-orange-500">{{ qteSuggeree() }}</strong>
-                    <span class="ml-2">({{ qteSuggeree()! - (selectedStock().qteActuelle || selectedStock().qte) > 0 ? '+' : '' }}{{ qteSuggeree()! - (selectedStock().qteActuelle || selectedStock().qte) }} unité(s))</span>
-                </p>
-            </div>
-        </div>
-    </div>
-
-    <ng-template pTemplate="footer">
-        <button pButton label="Annuler" icon="pi pi-times" class="p-button-text" 
-            (click)="closeSuggestionDialog()" [disabled]="processingAction()">
-        </button>
-        <button pButton 
-            [label]="garderQuantite() ? 'Confirmer la quantité' : 'Enregistrer la suggestion'" 
-            [icon]="garderQuantite() ? 'pi pi-check' : 'pi pi-save'" 
-            [class]="garderQuantite() ? 'p-button-success' : 'p-button-warning'"
-            (click)="submitSuggestion()"
-            [disabled]="processingAction() || (!garderQuantite() && !qteSuggeree()) || (isMotifRequired() && !motifQte())" 
-            [loading]="processingAction()">
         </button>
     </ng-template>
 </p-dialog>

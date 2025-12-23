@@ -119,13 +119,30 @@ export class AppMenu {
                                   //   }
                               ]
                             : this.user?.role === 'MANAGER'
-                              ? [
-                                    {
-                                        label: 'Document Verification',
-                                        icon: 'pi pi-fw pi-hourglass',
-                                        routerLink: ['/dashboards/document-verification']
-                                    }
-                                ]
+                              ? this.user?.service === 'DE'
+                                  ? [
+                                        {
+                                            label: 'Situation Stock',
+                                            icon: 'pi pi-fw pi-box',
+                                            routerLink: ['/dashboards/situation-stock']
+                                        }
+                                    ]
+                                  : this.user?.service === 'Logistique'
+                                    ? []
+                                    : this.user?.service === 'Societariat'
+                                      ? []
+                                      : [
+                                            {
+                                                label: 'Document Verification',
+                                                icon: 'pi pi-fw pi-hourglass',
+                                                routerLink: ['/dashboards/document-verification']
+                                            },
+                                            {
+                                                label: 'Situation Stock',
+                                                icon: 'pi pi-fw pi-box',
+                                                routerLink: ['/dashboards/situation-stock']
+                                            }
+                                        ]
                               : this.user?.role === 'AGENT_CORRECTEUR'
                                 ? [
                                       {
@@ -134,7 +151,15 @@ export class AppMenu {
                                           routerLink: ['/dashboards/correction-physique']
                                       }
                                   ]
-                                : [])
+                                : this.user?.role === 'DR'
+                                  ? [
+                                        {
+                                            label: 'Suivi Societariat',
+                                            icon: 'pi pi-fw pi-hourglass',
+                                            routerLink: ['/dashboards/suivi-societariat']
+                                        }
+                                    ]
+                                  : [])
                 ]
             }
         ];

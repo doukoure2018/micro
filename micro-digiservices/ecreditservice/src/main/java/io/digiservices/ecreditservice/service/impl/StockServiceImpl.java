@@ -161,11 +161,15 @@ public class StockServiceImpl implements StockService {
             );
         }
 
-        // Vérifier que la commande n'a pas déjà été traitée
-        if (existingStock.getStateValidation() != null &&
-                !"EN_ATTENTE".equals(existingStock.getStateValidation())) {
+        // Vérifier que la commande n'a pas déjà été traitée (états finaux)
+        // On refuse seulement si state_validation est VALIDE, ACCEPTE ou REFUSE
+        String currentValidation = existingStock.getStateValidation();
+        if (currentValidation != null && 
+                ("VALIDE".equals(currentValidation) || 
+                 "ACCEPTE".equals(currentValidation) || 
+                 "REFUSE".equals(currentValidation))) {
             throw new ApiException(
-                    String.format("Cette commande a déjà été traitée (état: %s)", existingStock.getStateValidation())
+                    String.format("Cette commande a déjà été traitée (état: %s)", currentValidation)
             );
         }
 
@@ -269,5 +273,93 @@ public class StockServiceImpl implements StockService {
     public List<StockResponseDto> getAllStockValidesPourDE() {
         log.info("Service: Récupération de tous les bons validés pour DE");
         return stockRepository.getAllStockValidesPourDE();
+    }
+
+    @Override
+    @Transactional
+    public StockResponseDto validationFinaleDE(Long idCmd, Long traitePar, String observations) {
+        log.info("Validation finale DE pour le bon de commande: {} par l'utilisateur: {}", idCmd, traitePar);
+
+        // Vérifier que le bon existe
+        StockResponseDto existingStock = stockRepository.getStockById(idCmd)
+                .orElseThrow(() -> new ResourceNotFoundException("Bon de commande introuvable: " + idCmd));
+
+        // Vérifier que le statut est ENCOURS
+        if (!"ENCOURS".equals(existingStock.getStatus())) {
+            throw new ApiException(
+                    String.format("Impossible de valider un bon avec le statut: %s", existingStock.getStatus())
+            );
+        }
+
+        // Vérifier que le bon a été validé par le DR (state_validation = VALIDE)
+        if (!"VALIDE".equals(existingStock.getStateValidation())) {
+            throw new ApiException(
+                    String.format("Seuls les bons validés par le DR peuvent être acceptés par le DE. État actuel: %s", 
+                            existingStock.getStateValidation())
+            );
+        }
+
+        // Effectuer la validation finale
+        boolean updated = stockRepository.validationFinaleDE(idCmd, traitePar, observations);
+
+        if (!updated) {
+            throw new RuntimeException("Échec de la validation finale par le DE");
+        }
+
+        log.info("Bon de commande {} accepté par le DE avec succès", idCmd);
+
+        // Retourner le bon mis à jour
+        return stockRepository.getStockById(idCmd)
+                .orElseThrow(() -> new RuntimeException("Bon de commande mis à jour mais introuvable"));
+    }
+
+    @Override
+    public List<StockResponseDto> getStockAcceptesPourLogistique() {
+        log.info("Service: Récupération des bons acceptés pour la logistique");
+        return stockRepository.getStockAcceptesPourLogistique();
+    }
+
+    @Override
+    public List<StockResponseDto> getStockAcceptesParDelegation(Long delegationId) {
+        log.info("Service: Récupération des bons acceptés pour la délégation: {}", delegationId);
+        return stockRepository.getStockAcceptesParDelegation(delegationId);
+    }
+
+    @Override
+    @Transactional
+    public StockResponseDto validationLogistique(Long idCmd, Long traitePar, String observations) {
+        log.info("Validation logistique pour le bon de commande: {} par l'utilisateur: {}", idCmd, traitePar);
+
+        // Vérifier que le bon existe
+        StockResponseDto existingStock = stockRepository.getStockById(idCmd)
+                .orElseThrow(() -> new ResourceNotFoundException("Bon de commande introuvable: " + idCmd));
+
+        // Vérifier que le statut est ENCOURS
+        if (!"ENCOURS".equals(existingStock.getStatus())) {
+            throw new ApiException(
+                    String.format("Impossible de traiter un bon avec le statut: %s", existingStock.getStatus())
+            );
+        }
+
+        // Vérifier que le bon a été accepté par le DE (state_validation = ACCEPTE)
+        if (!"ACCEPTE".equals(existingStock.getStateValidation())) {
+            throw new ApiException(
+                    String.format("Seuls les bons acceptés par le DE peuvent être traités par la logistique. État actuel: %s", 
+                            existingStock.getStateValidation())
+            );
+        }
+
+        // Effectuer la validation logistique
+        boolean updated = stockRepository.validationLogistique(idCmd, traitePar, observations);
+
+        if (!updated) {
+            throw new RuntimeException("Échec de la validation par la logistique");
+        }
+
+        log.info("Bon de commande {} traité par la logistique avec succès (status: ACCEPT)", idCmd);
+
+        // Retourner le bon mis à jour
+        return stockRepository.getStockById(idCmd)
+                .orElseThrow(() -> new RuntimeException("Bon de commande mis à jour mais introuvable"));
     }
 }

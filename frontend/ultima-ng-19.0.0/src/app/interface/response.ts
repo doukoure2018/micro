@@ -61,6 +61,9 @@ import { ProcessCreditInd } from './process.credit.ind';
 import { ProductInd } from './ProductInd';
 import { Promoteur } from './promoteur';
 import { ReconciliationResultDTO } from './ReconciliationResultDTO';
+import { CorrectionDelegationStats } from './correction-delegation-stats';
+import { CorrectionAgenceStats } from './correction-agence-stats';
+import { CorrectionPointVenteStats } from './correction-pointvente-stats';
 import { RequisitoRequest } from './requisitoRequest';
 import { ResultNote } from './result.note';
 import { ResumeCredit } from './resumeCredit.model';
@@ -231,6 +234,10 @@ export interface IResponse {
         etat?: EtatDocumentDetailDto;
 
         statistics?: DelegationStats[];
+        correctionStats?: CorrectionDelegationStats[];
+        correctionAgenceStats?: CorrectionAgenceStats[];
+        correctionPointVenteStats?: CorrectionPointVenteStats[];
+        corrections?: PersonnePhysique[];
         page?: number;
         totalPages?: number;
         totalElements?: number;

@@ -66,4 +66,44 @@ public interface StockService {
      * @return Liste de tous les bons validés
      */
     List<StockResponseDto> getAllStockValidesPourDE();
+
+    /**
+     * Validation finale par le DE
+     * Passe le state_validation de 'VALIDE' à 'ACCEPTE'
+     * Le bon devient ensuite visible pour la logistique
+     * 
+     * @param idCmd ID du bon de commande
+     * @param traitePar ID de l'utilisateur DE qui valide
+     * @param observations Observations optionnelles
+     * @return Le bon de commande mis à jour
+     */
+    StockResponseDto validationFinaleDE(Long idCmd, Long traitePar, String observations);
+
+    /**
+     * Récupère tous les bons acceptés par le DE pour la logistique
+     * Ces bons ont state_validation = 'ACCEPTE' et sont prêts pour traitement
+     * 
+     * @return Liste des bons acceptés
+     */
+    List<StockResponseDto> getStockAcceptesPourLogistique();
+
+    /**
+     * Récupère les bons acceptés par le DE pour une délégation spécifique
+     * 
+     * @param delegationId ID de la délégation
+     * @return Liste des bons acceptés pour cette délégation
+     */
+    List<StockResponseDto> getStockAcceptesParDelegation(Long delegationId);
+
+    /**
+     * Validation finale par la logistique
+     * Change le status de 'ENCOURS' à 'ACCEPT'
+     * Le bon disparaît ensuite de la vue logistique
+     * 
+     * @param idCmd ID du bon de commande
+     * @param traitePar ID de l'utilisateur logistique qui traite
+     * @param observations Observations optionnelles
+     * @return Le bon de commande mis à jour
+     */
+    StockResponseDto validationLogistique(Long idCmd, Long traitePar, String observations);
 }

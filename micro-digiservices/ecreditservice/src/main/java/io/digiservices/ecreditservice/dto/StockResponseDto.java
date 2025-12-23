@@ -29,6 +29,7 @@ public class StockResponseDto {
     private String status;
     private String motif;
     private Long traitePar;
+    private String traiteParFullName;
     private String observations;
     private String username;
     private String userFullName;

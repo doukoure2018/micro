@@ -10,6 +10,9 @@ import io.digiservices.ecreditservice.domain.Response;
 
 import io.digiservices.ecreditservice.dto.MotifCorrection;
 import io.digiservices.ecreditservice.dto.PersonnePhysique;
+import io.digiservices.ecreditservice.dto.CorrectionDelegationStat;
+import io.digiservices.ecreditservice.dto.CorrectionAgenceStat;
+import io.digiservices.ecreditservice.dto.CorrectionPointVenteStat;
 import io.digiservices.ecreditservice.service.CorrectionService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -22,7 +25,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import javax.swing.text.html.Option;
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -813,6 +815,102 @@ public class CorrectionResource {
                     .body(getResponse(request,
                             Map.of("error", "Erreur interne"),
                             "Erreur lors de la récupération",
+                            INTERNAL_SERVER_ERROR));
+        }
+    }
+
+    /**
+     * Statistiques des corrections par délégation (EN_ATTENTE / REJETE / VALIDE)
+     */
+    @GetMapping("/corrections/stats/delegations")
+    public ResponseEntity<Response> getCorrectionStatsByDelegation(
+            HttpServletRequest request) {
+        try {
+            List<CorrectionDelegationStat> stats = correctionService.getCorrectionStatsByDelegation();
+            return ResponseEntity.ok(
+                    getResponse(request,
+                            Map.of("correctionStats", stats),
+                            "Statistiques de correction par délégation récupérées avec succès",
+                            OK));
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des statistiques de correction par délégation", e);
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR)
+                    .body(getResponse(request,
+                            Map.of("error", "Erreur lors de la récupération des statistiques"),
+                            "Erreur interne du serveur",
+                            INTERNAL_SERVER_ERROR));
+        }
+    }
+
+    /**
+     * Statistiques des corrections par agence pour une délégation donnée
+     */
+    @GetMapping("/corrections/stats/delegations/{delegationId}/by-agency")
+    public ResponseEntity<Response> getCorrectionStatsByAgence(
+            @PathVariable(name = "delegationId") Long delegationId,
+            HttpServletRequest request) {
+        try {
+            List<CorrectionAgenceStat> stats = correctionService.getCorrectionStatsByAgence(delegationId);
+            return ResponseEntity.ok(
+                    getResponse(request,
+                            Map.of("correctionAgenceStats", stats),
+                            "Statistiques de correction par agence récupérées avec succès",
+                            OK));
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des statistiques de correction par agence", e);
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR)
+                    .body(getResponse(request,
+                            Map.of("error", "Erreur lors de la récupération des statistiques par agence"),
+                            "Erreur interne du serveur",
+                            INTERNAL_SERVER_ERROR));
+        }
+    }
+
+    /**
+     * Statistiques des corrections par point de vente pour une agence donnée
+     */
+    @GetMapping("/corrections/stats/by-agency/{agenceId}/by-point")
+    public ResponseEntity<Response> getCorrectionStatsByPointVente(
+            @PathVariable(name = "agenceId") Long agenceId,
+            HttpServletRequest request) {
+        try {
+            List<CorrectionPointVenteStat> stats = correctionService.getCorrectionStatsByPointVente(agenceId);
+            return ResponseEntity.ok(
+                    getResponse(request,
+                            Map.of("correctionPointVenteStats", stats),
+                            "Statistiques de correction par point de vente récupérées avec succès",
+                            OK));
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des statistiques de correction par point de vente", e);
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR)
+                    .body(getResponse(request,
+                            Map.of("error", "Erreur lors de la récupération des statistiques par point de vente"),
+                            "Erreur interne du serveur",
+                            INTERNAL_SERVER_ERROR));
+        }
+    }
+
+    /**
+     * Détails des corrections par point de vente, filtrables par statut.
+     */
+    @GetMapping("/corrections/pointvente/{codeAgence}/personnes")
+    public ResponseEntity<Response> getCorrectionsByPointVente(
+            @PathVariable("codeAgence") String codeAgence,
+            @RequestParam(name = "statut", required = false) String statut,
+            HttpServletRequest request) {
+        try {
+            List<PersonnePhysique> personnes = correctionService.getCorrectionsByPointVente(codeAgence, statut);
+            return ResponseEntity.ok(
+                    getResponse(request,
+                            Map.of("corrections", personnes),
+                            "Corrections récupérées avec succès",
+                            OK));
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des corrections pour le point de vente {}", codeAgence, e);
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR)
+                    .body(getResponse(request,
+                            Map.of("error", "Erreur lors de la récupération des corrections"),
+                            "Erreur interne du serveur",
                             INTERNAL_SERVER_ERROR));
         }
     }

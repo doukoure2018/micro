@@ -12,10 +12,23 @@ import { CorrectionRejetPpComponent } from '../agent-credit/correction-rejet-pp/
 import { RotationAgentComponent } from '../agent-credit/rotation-agent/rotation-agent.component';
 import { LogistiqueComponent } from '../agent-credit/logistique/logistique.component';
 import { DeComponent } from '../admin/de/de.component';
+import { SocietariatComponent } from '../agent-credit/societariat/societariat.component';
 
 @Component({
     selector: 'app-home',
-    imports: [AdminComponent, AgentCreditComponent, RespAgentComponent, ListStockComponent, RapprochementCaisseComponent, DigitalVerificationComponent, CorrectionRejetPpComponent, RotationAgentComponent, LogistiqueComponent, DeComponent],
+    imports: [
+        AdminComponent,
+        AgentCreditComponent,
+        RespAgentComponent,
+        ListStockComponent,
+        RapprochementCaisseComponent,
+        DigitalVerificationComponent,
+        CorrectionRejetPpComponent,
+        RotationAgentComponent,
+        LogistiqueComponent,
+        DeComponent,
+        SocietariatComponent
+    ],
     templateUrl: './home.component.html'
 })
 export class HomeComponent {

@@ -1,0 +1,82 @@
+<p-card class="suivi-societariat-card">
+    <div class="header">
+        <div>
+            <h3>Suivi Sociétariat - Ma Délégation</h3>
+            @if (user()) {
+            <p class="subtitle">
+                Statistiques des corrections pour la délégation de <strong>{{ user()?.firstName }} {{ user()?.lastName
+                    }}</strong>
+            </p>
+            }
+        </div>
+        <button pButton type="button" icon="pi pi-refresh" label="Rafraîchir" (click)="refresh()"
+            [disabled]="loadingUser() || loadingAgences()" class="p-button-outlined"></button>
+    </div>
+
+    @if (userError()) {
+    <div class="error">
+        {{ userError() }}
+    </div>
+    }
+
+    @if (loadingUser()) {
+    <div class="loading">
+        <p-progressSpinner></p-progressSpinner>
+        <p>Chargement des informations...</p>
+    </div>
+    } @else if (user()) {
+    <!-- Summary Cards -->
+    <div class="summary-grid">
+        <div class="summary-card en-attente-bg">
+            <div class="summary-icon">
+                <i class="pi pi-clock"></i>
+            </div>
+            <div class="summary-content">
+                <span class="summary-value">{{ totalEnAttente() }}</span>
+                <span class="summary-label">En attente</span>
+            </div>
+        </div>
+        <div class="summary-card rejete-bg">
+            <div class="summary-icon">
+                <i class="pi pi-times-circle"></i>
+            </div>
+            <div class="summary-content">
+                <span class="summary-value">{{ totalRejete() }}</span>
+                <span class="summary-label">Rejetées</span>
+            </div>
+        </div>
+        <div class="summary-card valide-bg">
+            <div class="summary-icon">
+                <i class="pi pi-check-circle"></i>
+            </div>
+            <div class="summary-content">
+                <span class="summary-value">{{ totalValide() }}</span>
+                <span class="summary-label">Validées</span>
+            </div>
+        </div>
+        <div class="summary-card total-bg">
+            <div class="summary-icon">
+                <i class="pi pi-chart-bar"></i>
+            </div>
+            <div class="summary-content">
+                <span class="summary-value">{{ totalGlobal() }}</span>
+                <span class="summary-label">Total</span>
+            </div>
+        </div>
+    </div>
+    }
+</p-card>
+
+@if (user() && !userError()) {
+<div class="grid mt-3">
+    <div class="col-12 md:col-6">
+        <app-societariat-by-agence [delegationLibele]="'Agences de ma délégation'" [stats]="agences()"
+            [loading]="loadingAgences()" [error]="agenceError()"
+            (agenceSelected)="onSelectAgence($event)"></app-societariat-by-agence>
+    </div>
+    <div class="col-12 md:col-6">
+        <app-societariat-by-ps [agenceLibele]="selectedAgence()?.agenceLibele" [stats]="points()"
+            [loading]="loadingPoints()" [error]="pointError()"></app-societariat-by-ps>
+    </div>
+</div>
+}

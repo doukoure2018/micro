@@ -1,5 +1,8 @@
 package io.digiservices.ecreditservice.service.impl;
 
+import io.digiservices.ecreditservice.dto.CorrectionDelegationStat;
+import io.digiservices.ecreditservice.dto.CorrectionAgenceStat;
+import io.digiservices.ecreditservice.dto.CorrectionPointVenteStat;
 import io.digiservices.ecreditservice.dto.MotifCorrection;
 import io.digiservices.ecreditservice.dto.PersonnePhysique;
 import io.digiservices.ecreditservice.repository.CorrectionRepository;
@@ -10,7 +13,6 @@ import org.apache.kafka.common.errors.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.lang.reflect.Modifier;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -214,6 +216,30 @@ public class CorrectionServiceImpl implements CorrectionService {
     @Override
     public Optional<MotifCorrection> getMotifCorrectionByPersonneLast(Long personnePhysiqueId) {
         return correctionRepository.findMotifsCorrectionByPersonneLast(personnePhysiqueId);
+    }
+
+    @Override
+    public List<CorrectionDelegationStat> getCorrectionStatsByDelegation() {
+        log.info("Service - Récupération des statistiques de correction par délégation");
+        return correctionRepository.getCorrectionStatsByDelegation();
+    }
+
+    @Override
+    public List<CorrectionAgenceStat> getCorrectionStatsByAgence(Long delegationId) {
+        log.info("Service - Récupération des statistiques de correction par agence pour la délégation {}", delegationId);
+        return correctionRepository.getCorrectionStatsByAgence(delegationId);
+    }
+
+    @Override
+    public List<CorrectionPointVenteStat> getCorrectionStatsByPointVente(Long agenceId) {
+        log.info("Service - Récupération des statistiques de correction par point de vente pour l'agence {}", agenceId);
+        return correctionRepository.getCorrectionStatsByPointVente(agenceId);
+    }
+
+    @Override
+    public List<PersonnePhysique> getCorrectionsByPointVente(String codeAgence, String statut) {
+        log.info("Service - Récupération des corrections pour le point de vente {} avec statut {}", codeAgence, statut);
+        return correctionRepository.getCorrectionsByPointVente(codeAgence, statut);
     }
 
     private void validatePersonnePhysique(PersonnePhysique pp) {

@@ -1,0 +1,389 @@
+// situation-stock.component.scss - Styles pour l'espace DE
+
+// Badge DE
+.badge-de {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+// Badge Délégation
+.badge-delegation {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+// Boutons de mode de vue
+.view-mode-buttons {
+    display: inline-flex;
+    gap: 0.5rem;
+    
+    .p-button {
+        transition: all 0.2s ease;
+        
+        &.p-button-primary {
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+        }
+    }
+}
+
+// Bannière d'information
+.info-banner {
+    background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+    border-left: 4px solid #0ea5e9;
+    padding: 1rem;
+    border-radius: 6px;
+    color: #0369a1;
+    display: flex;
+    align-items: center;
+}
+
+// Ligne avec suggestion faite
+.row-suggestion-done {
+    background-color: #f0fdf4 !important;
+}
+
+.row-urgent {
+    background-color: #fef2f2 !important;
+}
+
+// Badge de suggestion dans le tableau
+.suggestion-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    
+    &.suggestion-pending {
+        background: #f3f4f6;
+        color: #6b7280;
+    }
+    
+    &.suggestion-confirmed {
+        background: #dcfce7;
+        color: #15803d;
+        font-weight: 600;
+    }
+    
+    &.suggestion-modified {
+        background: #fef3c7;
+        color: #b45309;
+        font-weight: 600;
+    }
+}
+
+// Container des détails
+:host ::ng-deep {
+    .detail-container {
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        border-radius: 12px;
+        animation: slideDown 0.3s ease-out;
+    }
+
+    .detail-card {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        margin-bottom: 1rem;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+        }
+    }
+
+    .detail-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 0.75rem 1rem;
+        font-weight: 600;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        i {
+            font-size: 1.1rem;
+        }
+        
+        &.detail-header-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+    }
+
+    .detail-table {
+        width: 100%;
+        border-collapse: collapse;
+
+        tbody tr {
+            border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.2s ease;
+
+            &:last-child {
+                border-bottom: none;
+            }
+
+            &:hover {
+                background-color: #f8f9fc;
+            }
+        }
+
+        .label-cell {
+            padding: 0.75rem 1rem;
+            color: #6b7280;
+            font-size: 0.875rem;
+            font-weight: 500;
+            width: 45%;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+
+            .mini-icon {
+                color: #9ca3af;
+                font-size: 0.875rem;
+            }
+        }
+
+        .value-cell {
+            padding: 0.75rem 1rem;
+            color: #1f2937;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+    }
+
+    .observations-content {
+        padding: 1rem;
+
+        .observation-box {
+            background: #f9fafb;
+            border-left: 4px solid #667eea;
+            padding: 1rem;
+            border-radius: 6px;
+
+            .observation-text {
+                margin: 0;
+                color: #374151;
+                line-height: 1.6;
+                font-size: 0.95rem;
+            }
+        }
+    }
+
+    .action-buttons-container {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        padding: 1.5rem;
+        position: relative;
+        overflow: hidden;
+        text-align: center;
+
+        &::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #f59e0b, #d97706);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .action-info {
+            color: #6b7280;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+
+            i {
+                color: #9ca3af;
+            }
+        }
+    }
+}
+
+// Classes globales pour suggestion
+.suggestion-pending {
+    color: #6b7280;
+}
+
+.suggestion-confirmed {
+    color: #15803d;
+    font-weight: 600;
+}
+
+.suggestion-modified {
+    color: #b45309;
+    font-weight: 600;
+}
+
+.motif-qte-text {
+    font-style: italic;
+    color: #b45309;
+}
+
+// Styles pour le dialogue
+.dialog-content {
+    padding: 0.5rem 0;
+}
+
+.info-section {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 6px;
+}
+
+.alert {
+    padding: 0.75rem;
+    border-radius: 6px;
+    display: flex;
+    align-items: flex-start;
+}
+
+.alert-info {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+.required::after {
+    content: ' *';
+    color: #ef4444;
+}
+
+.field {
+    margin-bottom: 1rem;
+}
+
+.field label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.field-checkbox {
+    display: flex;
+    align-items: center;
+
+    label {
+        cursor: pointer;
+        font-weight: 500;
+    }
+}
+
+// Résumé de suggestion
+.suggestion-summary {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+
+    .summary-header {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: white;
+        padding: 0.5rem 1rem;
+        font-weight: 600;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .summary-content {
+        padding: 1rem;
+
+        p {
+            margin: 0;
+            display: flex;
+            align-items: center;
+        }
+    }
+}
+
+// Amélioration du InputNumber
+:host ::ng-deep {
+    .p-inputnumber {
+        width: 100%;
+
+        .p-inputnumber-input {
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.25rem;
+        }
+    }
+}
+
+// Animation
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+// Badge info
+.badge-info {
+    background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+    color: #4338ca;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+// Résumé de validation finale
+.validation-summary {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    overflow: hidden;
+
+    .summary-header {
+        background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+        color: white;
+        padding: 0.5rem 1rem;
+        font-weight: 600;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .summary-content {
+        padding: 1rem;
+    }
+}
+
+// Alert success
+.alert-success {
+    background: #dcfce7;
+    color: #166534;
+    border-left: 4px solid #22c55e;
+}

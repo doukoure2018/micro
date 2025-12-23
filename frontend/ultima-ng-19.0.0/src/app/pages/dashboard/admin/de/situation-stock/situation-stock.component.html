@@ -1,0 +1,499 @@
+<div class="grid">
+    <div class="col-12">
+        <p-toast></p-toast>
+        <p-confirmDialog></p-confirmDialog>
+
+        <p-card header="Bons de Commande Validés - Espace DE">
+            <div class="mb-3 flex align-items-center flex-wrap gap-3" *ngIf="user">
+                <div class="flex align-items-center">
+                    <span class="text-500">Rôle : </span>
+                    <span class="font-bold badge badge-de ml-2">{{ user.role }}</span>
+                </div>
+
+                <!-- Boutons de changement de mode -->
+                <div class="view-mode-buttons">
+                    <button pButton type="button" label="Toutes les délégations" icon="pi pi-globe"
+                        [class]="viewMode() === 'all' ? 'p-button-primary' : 'p-button-outlined'"
+                        (click)="switchViewMode('all')" [disabled]="loading()" class="mr-2">
+                    </button>
+                    <button pButton type="button" label="Ma délégation" icon="pi pi-home"
+                        [class]="viewMode() === 'delegation' ? 'p-button-primary' : 'p-button-outlined'"
+                        (click)="switchViewMode('delegation')" [disabled]="loading()">
+                    </button>
+                </div>
+
+                <!-- Bouton de rafraîchissement -->
+                <button pButton type="button" icon="pi pi-refresh" class="p-button-text p-button-rounded"
+                    (click)="refresh()" [disabled]="loading()" pTooltip="Rafraîchir les données">
+                </button>
+
+                <!-- Affichage de la délégation si mode délégation -->
+                <div *ngIf="viewMode() === 'delegation' && delegation()" class="flex align-items-center">
+                    <span class="text-500">Délégation : </span>
+                    <span class="font-bold ml-2">{{ delegation()?.libele | uppercase}}</span>
+                </div>
+            </div>
+
+            <!-- Message d'information -->
+            <div class="info-banner mb-3">
+                <i class="pi pi-info-circle mr-2"></i>
+                <span *ngIf="viewMode() === 'all'">
+                    Affichage de <strong>tous les bons validés par les DR</strong> de toutes les délégations.
+                    Vous pouvez suggérer une modification de quantité pour chaque bon.
+                </span>
+                <span *ngIf="viewMode() === 'delegation'">
+                    Affichage des bons validés par le DR pour <strong>votre délégation uniquement</strong>.
+                    Vous pouvez suggérer une modification de quantité pour chaque bon.
+                </span>
+            </div>
+
+            <div *ngIf="loading()" class="flex justify-content-center p-4">
+                <p-progressSpinner></p-progressSpinner>
+            </div>
+
+            <p-table *ngIf="!loading()" [value]="stocks()" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+                currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} entrées"
+                responsiveLayout="scroll" dataKey="idCmd"
+                [globalFilterFields]="['numeroCommande', 'service', 'delegationLibele', 'categorieLibele']">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th style="width: 3rem"></th>
+                        <th>N° Commande</th>
+                        <th *ngIf="viewMode() === 'all'">Délégation</th>
+                        <th>Service</th>
+                        <th>Catégorie</th>
+                        <th>Qté</th>
+                        <th>Suggestion</th>
+                        <th>Date Création</th>
+                        <th>Actions</th>
+                    </tr>
+                </ng-template>
+
+                <ng-template pTemplate="body" let-stock let-expanded="expanded">
+                    <tr [ngClass]="{'row-urgent': isUrgent(stock), 'row-suggestion-done': hasSuggestion(stock)}">
+                        <td>
+                            <button type="button" pButton
+                                [pTooltip]="isExpanded(stock) ? 'Masquer les détails' : 'Afficher les détails'"
+                                (click)="toggleRow(stock)" class="p-button-text p-button-rounded p-button-plain"
+                                [icon]="isExpanded(stock) ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"></button>
+                        </td>
+                        <td class="font-bold">{{ stock.numeroCommande }}</td>
+                        <td *ngIf="viewMode() === 'all'">
+                            <span class="badge badge-delegation">{{ stock.delegationLibele || '-' }}</span>
+                        </td>
+                        <td>{{ stock.service }}</td>
+                        <td>
+                            <span class="badge badge-info">{{ stock.categorieLibele || '-' }}</span>
+                        </td>
+                        <td>
+                            <span class="font-bold">{{ stock.qteActuelle || stock.qte }}</span>
+                        </td>
+                        <td>
+                            <span [ngClass]="getSuggestionClass(stock)" class="suggestion-badge">
+                                <i class="pi mr-1"
+                                    [ngClass]="hasSuggestion(stock) ? 'pi-check-circle' : 'pi-clock'"></i>
+                                {{ getSuggestionLabel(stock) }}
+                            </span>
+                        </td>
+                        <td>{{ formatDate(stock.dateCreation) }}</td>
+                        <td>
+                            <div class="flex gap-2">
+                                <button pButton type="button" [label]="hasSuggestion(stock) ? 'Modifier' : 'Suggérer'"
+                                    [icon]="hasSuggestion(stock) ? 'pi pi-pencil' : 'pi pi-plus'"
+                                    [class]="hasSuggestion(stock) ? 'p-button-outlined p-button-warning' : 'p-button-warning'"
+                                    [disabled]="processingAction() || !canSuggestQuantity(stock)"
+                                    (click)="openSuggestionDialog(stock)"
+                                    pTooltip="Suggérer une modification de quantité">
+                                </button>
+                                <button pButton type="button" label="Valider" icon="pi pi-check"
+                                    class="p-button-success"
+                                    [disabled]="processingAction() || !canValidateFinale(stock)"
+                                    (click)="openValidationFinaleDialog(stock)"
+                                    pTooltip="Validation finale - envoyer à la logistique" *ngIf="hasSuggestion(stock)">
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Ligne expansible avec détails -->
+                    <tr *ngIf="isExpanded(stock)" [@rowExpand]="isExpanded(stock) ? 'expanded' : 'collapsed'">
+                        <td [attr.colspan]="viewMode() === 'all' ? 10 : 9">
+                            <div class="detail-container">
+                                <div class="grid">
+                                    <!-- Section Informations Complètes de la Commande -->
+                                    <div class="col-12 md:col-6">
+                                        <div class="detail-card">
+                                            <div class="detail-header">
+                                                <i class="pi pi-info-circle"></i>
+                                                <span>Informations de la Commande</span>
+                                            </div>
+                                            <table class="detail-table">
+                                                <tbody>
+                                                    <tr>
+                                                        <td class="label-cell">
+                                                            <i class="pi pi-user mini-icon"></i>
+                                                            Demandeur
+                                                        </td>
+                                                        <td class="value-cell">{{ stock.userFullName || stock.username
+                                                            }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="label-cell">
+                                                            <i class="pi pi-map-marker mini-icon"></i>
+                                                            Délégation
+                                                        </td>
+                                                        <td class="value-cell">{{ stock.delegationLibele || '-' }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="label-cell">
+                                                            <i class="pi pi-home mini-icon"></i>
+                                                            Agence
+                                                        </td>
+                                                        <td class="value-cell">{{ stock.agenceLibele || '-' }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="label-cell">
+                                                            <i class="pi pi-shopping-cart mini-icon"></i>
+                                                            Point de vente
+                                                        </td>
+                                                        <td class="value-cell">{{ stock.pointventeLibele || '-' }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="label-cell">
+                                                            <i class="pi pi-file-text mini-icon"></i>
+                                                            Description
+                                                        </td>
+                                                        <td class="value-cell">
+                                                            <div
+                                                                *ngIf="parseDetails(stock.detailBonCommande) as details">
+                                                                <p *ngIf="details.detailStandard">{{
+                                                                    details.detailStandard }}</p>
+                                                                <div *ngIf="!details.detailStandard">
+                                                                    <div *ngFor="let key of Object.keys(details)"
+                                                                        class="mb-1">
+                                                                        <strong>{{ key }}:</strong> {{ details[key] }}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!-- Section Quantités et Suggestion -->
+                                    <div class="col-12 md:col-6">
+                                        <div class="detail-card">
+                                            <div class="detail-header detail-header-warning">
+                                                <i class="pi pi-sort-numeric-up"></i>
+                                                <span>Quantités & Suggestion</span>
+                                            </div>
+                                            <table class="detail-table">
+                                                <tbody>
+                                                    <tr>
+                                                        <td class="label-cell">
+                                                            <i class="pi pi-box mini-icon"></i>
+                                                            Quantité commandée
+                                                        </td>
+                                                        <td class="value-cell font-bold text-lg">{{ stock.qte || 0 }}
+                                                        </td>
+                                                    </tr>
+                                                    <tr *ngIf="stock.qteActuelle">
+                                                        <td class="label-cell">
+                                                            <i class="pi pi-check-circle mini-icon"></i>
+                                                            Quantité actuelle
+                                                        </td>
+                                                        <td class="value-cell font-bold text-primary text-lg">{{
+                                                            stock.qteActuelle }}</td>
+                                                    </tr>
+                                                    <tr *ngIf="hasSuggestion(stock)">
+                                                        <td class="label-cell">
+                                                            <i class="pi pi-pencil mini-icon"></i>
+                                                            Quantité suggérée
+                                                        </td>
+                                                        <td class="value-cell">
+                                                            <span [ngClass]="getSuggestionClass(stock)"
+                                                                class="font-bold text-lg">
+                                                                {{ stock.qteSuggeree }}
+                                                            </span>
+                                                            <span
+                                                                *ngIf="stock.qteSuggeree !== (stock.qteActuelle || stock.qte)"
+                                                                class="text-orange-500 ml-2">
+                                                                ({{ stock.qteSuggeree - (stock.qteActuelle || stock.qte)
+                                                                > 0 ? '+' : '' }}{{ stock.qteSuggeree -
+                                                                (stock.qteActuelle || stock.qte) }})
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                    <tr *ngIf="stock.motifQte">
+                                                        <td class="label-cell">
+                                                            <i class="pi pi-comment mini-icon"></i>
+                                                            Motif modification
+                                                        </td>
+                                                        <td class="value-cell motif-qte-text">{{ stock.motifQte }}</td>
+                                                    </tr>
+                                                    <tr *ngIf="stock.suggereParFullName">
+                                                        <td class="label-cell">
+                                                            <i class="pi pi-user mini-icon"></i>
+                                                            Suggéré par
+                                                        </td>
+                                                        <td class="value-cell">{{ stock.suggereParFullName }}</td>
+                                                    </tr>
+                                                    <tr *ngIf="stock.dateSuggestion">
+                                                        <td class="label-cell">
+                                                            <i class="pi pi-calendar mini-icon"></i>
+                                                            Date suggestion
+                                                        </td>
+                                                        <td class="value-cell">{{ formatDate(stock.dateSuggestion) }}
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!-- Section Observations -->
+                                    <div class="col-12" *ngIf="stock.observations">
+                                        <div class="detail-card">
+                                            <div class="detail-header">
+                                                <i class="pi pi-comments"></i>
+                                                <span>Observations</span>
+                                            </div>
+                                            <div class="observations-content">
+                                                <div class="observation-box">
+                                                    <div class="observation-text">{{ stock.observations }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Section Bouton d'action -->
+                                    <div class="col-12">
+                                        <div class="action-buttons-container">
+                                            <div class="action-buttons">
+                                                <button pButton type="button"
+                                                    [label]="hasSuggestion(stock) ? 'Modifier la suggestion' : 'Suggérer une quantité'"
+                                                    [icon]="hasSuggestion(stock) ? 'pi pi-pencil' : 'pi pi-plus'"
+                                                    class="p-button-warning p-button-raised p-button-lg"
+                                                    [disabled]="processingAction() || !canSuggestQuantity(stock)"
+                                                    (click)="openSuggestionDialog(stock)"
+                                                    pTooltip="Suggérer une modification de quantité">
+                                                </button>
+                                            </div>
+
+                                            <div class="action-info mt-2">
+                                                <i class="pi pi-info-circle"></i>
+                                                <span *ngIf="!hasSuggestion(stock)">
+                                                    Cette commande validée par le DR attend votre suggestion de quantité
+                                                </span>
+                                                <span *ngIf="hasSuggestion(stock)">
+                                                    Suggestion déjà enregistrée - Vous pouvez la modifier si nécessaire
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </ng-template>
+
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td [attr.colspan]="viewMode() === 'all' ? 10 : 9" class="text-center p-4">
+                            <i class="pi pi-inbox text-4xl text-300"></i>
+                            <p class="mt-3">Aucun bon de commande validé à traiter</p>
+                            <small class="text-500">Les bons validés par le DR apparaîtront ici</small>
+                        </td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </p-card>
+    </div>
+</div>
+
+<!-- Dialogue de suggestion de quantité -->
+<p-dialog [(visible)]="showSuggestionDialog" [modal]="true" [draggable]="false" [resizable]="false"
+    [style]="{width: '500px'}" header="Suggestion de quantité" [closable]="!processingAction()">
+
+    <div class="dialog-content" *ngIf="selectedStock()">
+        <div class="info-section mb-3">
+            <p class="mb-2">
+                <strong>Commande :</strong> {{ selectedStock().numeroCommande }}
+            </p>
+            <p class="mb-2">
+                <strong>Service :</strong> {{ selectedStock().service }}
+            </p>
+            <p class="mb-2">
+                <strong>Demandeur :</strong> {{ selectedStock().userFullName || selectedStock().username }}
+            </p>
+            <p class="mb-2">
+                <strong>Quantité actuelle :</strong>
+                <span class="font-bold text-primary text-xl">{{ selectedStock().qteActuelle || selectedStock().qte
+                    }}</span>
+            </p>
+        </div>
+
+        <div class="alert alert-info mb-3">
+            <i class="pi pi-info-circle mr-2"></i>
+            <span>
+                Vous pouvez suggérer une modification de la quantité pour cette commande validée par le DR.
+                Si la quantité convient, cochez "Garder la quantité actuelle".
+            </span>
+        </div>
+
+        <!-- Checkbox pour garder la quantité -->
+        <div class="field-checkbox mb-3">
+            <p-checkbox [(ngModel)]="garderQuantite" [binary]="true" inputId="garderQte"
+                (onChange)="onGarderQuantiteChange()" [disabled]="processingAction()">
+            </p-checkbox>
+            <label for="garderQte" class="ml-2 cursor-pointer">Garder la quantité actuelle</label>
+        </div>
+
+        <!-- Champ quantité suggérée -->
+        <div class="field mb-3" *ngIf="!garderQuantite()">
+            <label for="qte-suggeree" class="required">Quantité suggérée *</label>
+            <p-inputNumber [(ngModel)]="qteSuggeree" inputId="qte-suggeree" [min]="1" [showButtons]="true"
+                buttonLayout="horizontal" incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus"
+                [disabled]="processingAction()" class="w-full">
+            </p-inputNumber>
+        </div>
+
+        <!-- Motif du changement (obligatoire si quantité modifiée) -->
+        <div class="field mb-3" *ngIf="isMotifRequired()">
+            <label for="motif-qte" class="required">Motif du changement de quantité *</label>
+            <textarea pTextarea id="motif-qte" [(ngModel)]="motifQte" rows="3" class="w-full"
+                [disabled]="processingAction()"
+                placeholder="Expliquez pourquoi vous suggérez cette modification de quantité..."
+                [ngClass]="{'ng-invalid': isMotifRequired() && !motifQte()}">
+            </textarea>
+            <small class="p-error" *ngIf="isMotifRequired() && !motifQte()">
+                Le motif est obligatoire lorsque la quantité est modifiée
+            </small>
+        </div>
+
+        <!-- Motif optionnel si garder quantité -->
+        <div class="field mb-3" *ngIf="garderQuantite()">
+            <label for="motif-qte-opt">Motif (optionnel)</label>
+            <textarea pTextarea id="motif-qte-opt" [(ngModel)]="motifQte" rows="2" class="w-full"
+                [disabled]="processingAction()" placeholder="Observations sur la quantité (optionnel)...">
+            </textarea>
+        </div>
+
+        <!-- Observations -->
+        <div class="field">
+            <label for="suggestion-observations">Observations complémentaires (optionnel)</label>
+            <textarea pTextarea id="suggestion-observations" [(ngModel)]="suggestionObservations" rows="2"
+                class="w-full" [disabled]="processingAction()" placeholder="Observations supplémentaires...">
+            </textarea>
+        </div>
+
+        <!-- Résumé de la suggestion -->
+        <div class="suggestion-summary mt-3" *ngIf="qteSuggeree() || garderQuantite()">
+            <div class="summary-header">
+                <i class="pi pi-info-circle"></i>
+                Résumé de la suggestion
+            </div>
+            <div class="summary-content">
+                <p *ngIf="garderQuantite()">
+                    <i class="pi pi-check text-green-500 mr-2"></i>
+                    La quantité <strong>{{ selectedStock().qteActuelle || selectedStock().qte }}</strong> sera
+                    confirmée.
+                </p>
+                <p *ngIf="!garderQuantite() && qteSuggeree()">
+                    <i class="pi pi-arrow-right text-orange-500 mr-2"></i>
+                    Quantité : <strong>{{ selectedStock().qteActuelle || selectedStock().qte }}</strong> →
+                    <strong class="text-orange-500">{{ qteSuggeree() }}</strong>
+                    <span class="ml-2">({{ qteSuggeree()! - (selectedStock().qteActuelle || selectedStock().qte) > 0 ?
+                        '+' : '' }}{{ qteSuggeree()! - (selectedStock().qteActuelle || selectedStock().qte) }}
+                        unité(s))</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+        <button pButton label="Annuler" icon="pi pi-times" class="p-button-text" (click)="closeSuggestionDialog()"
+            [disabled]="processingAction()">
+        </button>
+        <button pButton [label]="garderQuantite() ? 'Confirmer la quantité' : 'Enregistrer la suggestion'"
+            [icon]="garderQuantite() ? 'pi pi-check' : 'pi pi-save'"
+            [class]="garderQuantite() ? 'p-button-success' : 'p-button-warning'" (click)="submitSuggestion()"
+            [disabled]="processingAction() || (!garderQuantite() && !qteSuggeree()) || (isMotifRequired() && !motifQte())"
+            [loading]="processingAction()">
+        </button>
+    </ng-template>
+</p-dialog>
+
+<!-- Dialogue de validation finale par le DE -->
+<p-dialog [(visible)]="showValidationFinaleDialog" [modal]="true" [draggable]="false" [resizable]="false"
+    [style]="{width: '500px'}" header="Validation finale - Envoyer à la logistique" [closable]="!processingAction()">
+
+    <div class="dialog-content" *ngIf="selectedStock()">
+        <div class="info-section mb-3">
+            <p class="mb-2">
+                <strong>Commande :</strong> {{ selectedStock().numeroCommande }}
+            </p>
+            <p class="mb-2">
+                <strong>Service :</strong> {{ selectedStock().service }}
+            </p>
+            <p class="mb-2">
+                <strong>Demandeur :</strong> {{ selectedStock().userFullName || selectedStock().username }}
+            </p>
+            <p class="mb-2">
+                <strong>Délégation :</strong> {{ selectedStock().delegationLibele }}
+            </p>
+        </div>
+
+        <!-- Résumé des quantités -->
+        <div class="validation-summary mb-3">
+            <div class="summary-header">
+                <i class="pi pi-box"></i>
+                Récapitulatif des quantités
+            </div>
+            <div class="summary-content">
+                <div class="flex justify-content-between mb-2">
+                    <span>Quantité demandée :</span>
+                    <strong>{{ selectedStock().qte }}</strong>
+                </div>
+                <div class="flex justify-content-between mb-2">
+                    <span>Quantité actuelle :</span>
+                    <strong>{{ selectedStock().qteActuelle || selectedStock().qte }}</strong>
+                </div>
+                <div class="flex justify-content-between mb-2" *ngIf="selectedStock().qteSuggeree !== null">
+                    <span>Quantité suggérée :</span>
+                    <strong class="text-primary">{{ selectedStock().qteSuggeree }}</strong>
+                </div>
+                <div class="flex justify-content-between" *ngIf="selectedStock().motifQte">
+                    <span>Motif :</span>
+                    <span class="text-orange-500 font-italic">{{ selectedStock().motifQte }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-success mb-3">
+            <i class="pi pi-check-circle mr-2"></i>
+            <span>
+                En validant, ce bon de commande sera <strong>envoyé à la logistique</strong> pour traitement.
+                Cette action est définitive.
+            </span>
+        </div>
+
+        <div class="field">
+            <label for="validation-observations">Observations (optionnel)</label>
+            <textarea pTextarea id="validation-observations" [(ngModel)]="validationObservations" rows="2"
+                class="w-full" [disabled]="processingAction()" placeholder="Ajoutez des observations si nécessaire...">
+            </textarea>
+        </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+        <button pButton label="Annuler" icon="pi pi-times" class="p-button-text" (click)="closeValidationFinaleDialog()"
+            [disabled]="processingAction()">
+        </button>
+        <button pButton label="Valider et envoyer" icon="pi pi-send" class="p-button-success"
+            (click)="submitValidationFinale()" [disabled]="processingAction()" [loading]="processingAction()">
+        </button>
+    </ng-template>
+</p-dialog>

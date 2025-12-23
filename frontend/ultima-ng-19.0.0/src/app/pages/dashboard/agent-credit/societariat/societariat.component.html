@@ -1,0 +1,62 @@
+<p-card class="societariat-card">
+    <div class="header">
+        <div>
+            <h3>Statistiques des corrections</h3>
+            <p class="subtitle">Répartition par délégation (EN_ATTENTE / REJETE / VALIDE)</p>
+        </div>
+        <button pButton type="button" icon="pi pi-refresh" label="Rafraîchir" (click)="loadStats()"
+            [disabled]="isLoading()" class="p-button-outlined"></button>
+    </div>
+
+    @if (error()) {
+    <div class="error">
+        {{ error() }}
+    </div>
+    }
+
+    @if (isLoading()) {
+    <div class="loading">
+        <p-progressSpinner></p-progressSpinner>
+    </div>
+    } @else {
+    <p-table [value]="stats()" [tableStyle]="{'min-width': '100%'}">
+        <ng-template pTemplate="header">
+            <tr>
+                <th>Délégation</th>
+                <th>En attente</th>
+                <th>Rejeté</th>
+                <th>Validé</th>
+                <th>Total</th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-row>
+            <tr (click)="onSelectDelegation(row)" class="clickable">
+                <td>{{ row.delegationLibele || 'Non renseignée' }}</td>
+                <td class="number en-attente">{{ row.enAttente }}</td>
+                <td class="number rejete">{{ row.rejete }}</td>
+                <td class="number valide">{{ row.valide }}</td>
+                <td class="number total">{{ row.total }}</td>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr>
+                <td colspan="5" class="empty">Aucune donnée disponible</td>
+            </tr>
+        </ng-template>
+    </p-table>
+    }
+</p-card>
+
+@if (selectedDelegation()) {
+<div class="grid">
+    <div class="col-12 md:col-6">
+        <app-societariat-by-agence [delegationLibele]="selectedDelegation()?.delegationLibele" [stats]="agences()"
+            [loading]="loadingAgences()" [error]="agenceError()"
+            (agenceSelected)="onSelectAgence($event)"></app-societariat-by-agence>
+    </div>
+    <div class="col-12 md:col-6">
+        <app-societariat-by-ps [agenceLibele]="selectedAgence()?.agenceLibele" [stats]="points()"
+            [loading]="loadingPoints()" [error]="pointError()"></app-societariat-by-ps>
+    </div>
+</div>
+}

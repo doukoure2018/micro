@@ -17,17 +17,42 @@ import { DialogModule } from 'primeng/dialog';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { FormsModule } from '@angular/forms';
 import { TextareaModule } from 'primeng/textarea';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { CheckboxModule } from 'primeng/checkbox';
 
+/**
+ * Composant pour la gestion des bons de commande par le DR (Directeur Régional)
+ * 
+ * Fonctionnalités:
+ * - Affiche les bons de commande en cours
+ * - Permet de valider ou rejeter les bons
+ */
 @Component({
     selector: 'app-list-stock',
     standalone: true,
-    imports: [CommonModule, FormsModule, TableModule, TagModule, ButtonModule, CardModule, ToastModule, ProgressSpinnerModule, DividerModule, TooltipModule, DialogModule, ConfirmDialogModule, TextareaModule, InputNumberModule, CheckboxModule],
+    imports: [
+        CommonModule, 
+        FormsModule, 
+        TableModule, 
+        TagModule, 
+        ButtonModule, 
+        CardModule, 
+        ToastModule, 
+        ProgressSpinnerModule, 
+        DividerModule, 
+        TooltipModule, 
+        DialogModule, 
+        ConfirmDialogModule, 
+        TextareaModule
+    ],
     templateUrl: './list-stock.component.html',
     styleUrl: './list-stock.component.scss',
     providers: [MessageService, ConfirmationService],
-    animations: [trigger('rowExpand', [state('collapsed', style({ height: '0px', minHeight: '0', display: 'none' })), state('expanded', style({ height: '*' })), transition('expanded <=> collapsed', animate('225ms cubic-bezier(0.4, 0.0, 0.2, 1)'))])]
+    animations: [
+        trigger('rowExpand', [
+            state('collapsed', style({ height: '0px', minHeight: '0', display: 'none' })), 
+            state('expanded', style({ height: '*' })), 
+            transition('expanded <=> collapsed', animate('225ms cubic-bezier(0.4, 0.0, 0.2, 1)'))
+        ])
+    ]
 })
 export class ListStockComponent implements OnInit {
     @Input() user?: IUser;
@@ -43,7 +68,7 @@ export class ListStockComponent implements OnInit {
     delegationId = signal<number | null>(null);
     expandedRows = signal<{ [key: string]: boolean }>({});
 
-    // Nouveaux signals pour les dialogues
+    // Signals pour les dialogues
     showRejectDialog = signal(false);
     showValidateDialog = signal(false);
     selectedStock = signal<any>(null);
@@ -52,77 +77,16 @@ export class ListStockComponent implements OnInit {
     rejectObservations = signal('');
     processingAction = signal(false);
 
-    // Signals pour la suggestion de quantité (DE)
-    showSuggestionDialog = signal(false);
-    qteSuggeree = signal<number | null>(null);
-    motifQte = signal('');
-    suggestionObservations = signal('');
-    garderQuantite = signal(false);
-    
-    // Mode de vue: 'encours' (DR) ou 'valides' (DE)
-    viewMode = signal<'encours' | 'valides'>('encours');
-
     ngOnInit(): void {
         if (this.user?.delegationId) {
             this.delegationId.set(this.user.delegationId);
-            // Charger selon le rôle de l'utilisateur
-            if (this.user?.role === 'DE') {
-                this.viewMode.set('valides');
-                this.loadStockValidesPourDE();
-            } else {
-                this.viewMode.set('encours');
-                this.loadStocksByDelegation();
-            }
+            this.loadStocksByDelegation();
         } else {
             this.showWarning('Aucune délégation associée à cet utilisateur');
         }
     }
 
-    /**
-     * Charger les bons validés par le DR pour le DE
-     */
-    loadStockValidesPourDE(): void {
-        const delId = this.delegationId();
-        if (!delId) return;
-
-        this.loading.set(true);
-
-        this.userService.getStockValidesPourDE$(delId).subscribe({
-            next: (response) => {
-                console.log('Stocks validés pour DE:', response);
-                if (response?.data?.stocks) {
-                    this.stocks.set(response.data.stocks);
-                    this.delegation.set(response.data.delegation);
-                    this.showSuccess(`${response.data.stocks.length} bon(s) validé(s) disponible(s)`);
-                } else {
-                    this.stocks.set([]);
-                }
-            },
-            error: (error) => {
-                console.error('Erreur:', error);
-                this.showError('Erreur lors du chargement des bons validés');
-                this.stocks.set([]);
-            },
-            complete: () => {
-                this.loading.set(false);
-            }
-        });
-    }
-
-    /**
-     * Changer le mode de vue
-     */
-    switchViewMode(mode: 'encours' | 'valides'): void {
-        this.viewMode.set(mode);
-        if (mode === 'valides') {
-            this.loadStockValidesPourDE();
-        } else {
-            this.loadStocksByDelegation();
-        }
-    }
-
     isUrgent(stock: any): boolean {
-        // Remplacez la logique ci-dessous par la condition réelle pour l'urgence
         return stock && stock.urgent === true;
     }
 
@@ -251,6 +215,7 @@ export class ListStockComponent implements OnInit {
             life: 5000
         });
     }
+
     private showWarning(message: string): void {
         this.messageService.add({
             severity: 'warn',
@@ -301,10 +266,9 @@ export class ListStockComponent implements OnInit {
         this.userService.rejectCommand(stock.idCmd, motif, observations).subscribe({
             next: (response) => {
                 this.showSuccess(`Commande ${stock.numeroCommande} rejetée avec succès`);
-                this.loadStocksByDelegation(); // Recharger les données
+                this.loadStocksByDelegation();
                 this.closeDialogs();
 
-                // Mettre à jour localement le stock
                 this.updateLocalStock(stock.idCmd, {
                     stateValidation: 'REFUSE',
                     motif: motif,
@@ -357,10 +321,9 @@ export class ListStockComponent implements OnInit {
         this.userService.validateCommand(stock.idCmd, observations).subscribe({
             next: (response) => {
                 this.showSuccess(`Commande ${stock.numeroCommande} validée avec succès`);
-                this.loadStocksByDelegation(); // Recharger les données
+                this.loadStocksByDelegation();
                 this.closeDialogs();
 
-                // Mettre à jour localement le stock
                 this.updateLocalStock(stock.idCmd, {
                     stateValidation: this.user?.role === 'DR' ? 'VALIDE' : 'ACCEPTE',
                     dateTraitement: new Date(),
@@ -381,8 +344,6 @@ export class ListStockComponent implements OnInit {
      * Vérifie si les boutons d'action doivent être affichés
      */
     shouldShowActionButtons(stock: any): boolean {
-        // Afficher les boutons seulement si la commande est en cours
-        // ou si l'utilisateur a les permissions nécessaires
         return stock.status === 'ENCOURS' || stock.stateValidation === 'EN_ATTENTE';
     }
 
@@ -390,13 +351,20 @@ export class ListStockComponent implements OnInit {
      * Vérifier si le bouton de rejet doit être désactivé
      */
     isRejectDisabled(stock: any): boolean {
-        return stock.status !== 'ENCOURS' || stock.stateValidation === 'REFUSE' || stock.stateValidation === 'VALIDE' || stock.stateValidation === 'ACCEPTE';
+        return stock.status !== 'ENCOURS' || 
+               stock.stateValidation === 'REFUSE' || 
+               stock.stateValidation === 'VALIDE' || 
+               stock.stateValidation === 'ACCEPTE';
     }
+
     /**
      * Vérifier si le bouton de validation doit être désactivé
      */
     isValidateDisabled(stock: any): boolean {
-        return stock.status !== 'ENCOURS' || stock.stateValidation === 'REFUSE' || stock.stateValidation === 'VALIDE' || stock.stateValidation === 'ACCEPTE';
+        return stock.status !== 'ENCOURS' || 
+               stock.stateValidation === 'REFUSE' || 
+               stock.stateValidation === 'VALIDE' || 
+               stock.stateValidation === 'ACCEPTE';
     }
 
     /**
@@ -449,6 +417,7 @@ export class ListStockComponent implements OnInit {
         }
         return 'Valider cette commande';
     }
+
     /**
      * Message d'information temporaire
      */
@@ -485,185 +454,5 @@ export class ListStockComponent implements OnInit {
             return stock;
         });
         this.stocks.set(updatedStocks);
-    }
-
-    /**
-     * Ouvre un dialogue de confirmation avant action
-     * À utiliser quand l'implémentation sera prête
-     */
-    private confirmAction(title: string, message: string, onConfirm: () => void): void {
-        // Utilisation future avec PrimeNG ConfirmDialog
-        /*
-        this.confirmationService.confirm({
-            message: message,
-            header: title,
-            icon: 'pi pi-exclamation-triangle',
-            accept: onConfirm,
-            reject: () => {
-                this.showInfo('Action annulée');
-            }
-        });
-        */
-    }
-
-    // ==================== FONCTIONNALITÉS DE SUGGESTION DE QUANTITÉ (DE) ====================
-
-    /**
-     * Ouvrir le dialogue de suggestion de quantité
-     */
-    openSuggestionDialog(stock: any): void {
-        this.selectedStock.set(stock);
-        // Initialiser avec la quantité actuelle
-        const qteActuelle = stock.qteActuelle || stock.qte;
-        this.qteSuggeree.set(stock.qteSuggeree || qteActuelle);
-        this.motifQte.set(stock.motifQte || '');
-        this.suggestionObservations.set('');
-        this.garderQuantite.set(false);
-        this.showSuggestionDialog.set(true);
-    }
-
-    /**
-     * Vérifier si le motif est obligatoire
-     */
-    isMotifRequired(): boolean {
-        const stock = this.selectedStock();
-        if (!stock || this.garderQuantite()) return false;
-        
-        const qteActuelle = stock.qteActuelle || stock.qte;
-        return this.qteSuggeree() !== qteActuelle;
-    }
-
-    /**
-     * Soumettre la suggestion de quantité
-     */
-    submitSuggestion(): void {
-        const stock = this.selectedStock();
-        if (!stock) return;
-
-        // Validation
-        if (this.isMotifRequired() && (!this.motifQte() || this.motifQte().trim().length === 0)) {
-            this.showWarning('Le motif est obligatoire lorsque la quantité est modifiée');
-            return;
-        }
-
-        this.confirmationService.confirm({
-            message: this.garderQuantite() 
-                ? `Confirmer la quantité actuelle (${stock.qteActuelle || stock.qte}) pour la commande ${stock.numeroCommande} ?`
-                : `Suggérer une quantité de ${this.qteSuggeree()} pour la commande ${stock.numeroCommande} ?`,
-            header: 'Confirmation',
-            icon: 'pi pi-question-circle',
-            acceptLabel: 'Confirmer',
-            rejectLabel: 'Annuler',
-            acceptButtonStyleClass: 'p-button-primary',
-            accept: () => {
-                this.performSuggestion(stock);
-            }
-        });
-    }
-
-    /**
-     * Effectuer la suggestion de quantité
-     */
-    private performSuggestion(stock: any): void {
-        this.processingAction.set(true);
-
-        const suggestionDto = {
-            qteSuggeree: this.garderQuantite() ? (stock.qteActuelle || stock.qte) : this.qteSuggeree()!,
-            motifQte: this.motifQte() || undefined,
-            observations: this.suggestionObservations() || undefined,
-            garderQuantite: this.garderQuantite()
-        };
-
-        this.userService.suggererQuantite$(stock.idCmd, suggestionDto).subscribe({
-            next: (response) => {
-                const message = this.garderQuantite() 
-                    ? `Quantité confirmée pour la commande ${stock.numeroCommande}`
-                    : `Suggestion de quantité enregistrée pour la commande ${stock.numeroCommande}`;
-                this.showSuccess(message);
-                
-                // Recharger les données selon le mode
-                if (this.viewMode() === 'valides') {
-                    this.loadStockValidesPourDE();
-                } else {
-                    this.loadStocksByDelegation();
-                }
-                
-                this.closeSuggestionDialog();
-            },
-            error: (error) => {
-                console.error('Erreur suggestion:', error);
-                this.showError(error.error?.message || 'Erreur lors de l\'enregistrement de la suggestion');
-            },
-            complete: () => {
-                this.processingAction.set(false);
-            }
-        });
-    }
-
-    /**
-     * Fermer le dialogue de suggestion
-     */
-    closeSuggestionDialog(): void {
-        this.showSuggestionDialog.set(false);
-        this.selectedStock.set(null);
-        this.qteSuggeree.set(null);
-        this.motifQte.set('');
-        this.suggestionObservations.set('');
-        this.garderQuantite.set(false);
-    }
-
-    /**
-     * Vérifier si le bouton de suggestion doit être affiché
-     * Seulement pour les bons validés par le DR
-     */
-    canSuggestQuantity(stock: any): boolean {
-        return stock.status === 'ENCOURS' && stock.stateValidation === 'VALIDE';
-    }
-
-    /**
-     * Vérifier si une suggestion a déjà été faite
-     */
-    hasSuggestion(stock: any): boolean {
-        return stock.qteSuggeree !== null && stock.qteSuggeree !== undefined;
-    }
-
-    /**
-     * Obtenir le libellé de la suggestion
-     */
-    getSuggestionLabel(stock: any): string {
-        if (!this.hasSuggestion(stock)) {
-            return 'Aucune suggestion';
-        }
-        const qteActuelle = stock.qteActuelle || stock.qte;
-        if (stock.qteSuggeree === qteActuelle) {
-            return 'Quantité confirmée';
-        }
-        return `Suggéré: ${stock.qteSuggeree} (était: ${qteActuelle})`;
-    }
-
-    /**
-     * Obtenir la classe CSS pour la suggestion
-     */
-    getSuggestionClass(stock: any): string {
-        if (!this.hasSuggestion(stock)) {
-            return 'suggestion-pending';
-        }
-        const qteActuelle = stock.qteActuelle || stock.qte;
-        if (stock.qteSuggeree === qteActuelle) {
-            return 'suggestion-confirmed';
-        }
-        return 'suggestion-modified';
-    }
-
-    /**
-     * Handler pour le changement de "garder quantité"
-     */
-    onGarderQuantiteChange(): void {
-        if (this.garderQuantite()) {
-            const stock = this.selectedStock();
-            if (stock) {
-                this.qteSuggeree.set(stock.qteActuelle || stock.qte);
-            }
-        }
     }
 }

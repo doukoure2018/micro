@@ -76,44 +76,42 @@
         <!-- Informations Personnelles -->
         <div class="section mb-3">
             <h4 class="text-primary">Informations Personnelles</h4>
-            <div class="grid">
-                <div class="col-12 md:col-6">
-                    <div class="field-group">
-                        <label>Code Client:</label>
-                        <span>{{ fiche.codCliente }}</span>
-                    </div>
-                    <div class="field-group">
-                        <label>Nom Complet:</label>
-                        <span>{{ fiche.nombreComplet }}</span>
-                    </div>
-                    <div class="field-group">
-                        <label>Prénom:</label>
-                        <span>{{ fiche.primerNombre }}</span>
-                    </div>
-                    <div class="field-group">
-                        <label>Nom:</label>
-                        <span>{{ fiche.primerApellido }}</span>
-                    </div>
-                </div>
-                <div class="col-12 md:col-6">
-                    <div class="field-group">
-                        <label>Date de Naissance:</label>
-                        <span>{{ fiche.fechNacimiento }}</span>
-                    </div>
-                    <div class="field-group">
-                        <label>Lieu de Naissance:</label>
-                        <span>{{ fiche.lugarNacimiento }}</span>
-                    </div>
-                    <div class="field-group">
-                        <label>Nationalité:</label>
-                        <span>{{ fiche.nacionalidad }}</span>
-                    </div>
-                    <div class="field-group">
-                        <label>Sexe:</label>
-                        <span>{{ fiche.sexeLibelle }}</span>
-                    </div>
-                </div>
-            </div>
+            <table class="info-table">
+                <tbody>
+                    <tr>
+                        <th>Code Client</th>
+                        <td>{{ fiche.codCliente }}</td>
+                    </tr>
+                    <tr>
+                        <th>Nom Complet</th>
+                        <td>{{ fiche.nombreComplet }}</td>
+                    </tr>
+                    <tr>
+                        <th>Prénom</th>
+                        <td>{{ fiche.primerNombre }}</td>
+                    </tr>
+                    <tr>
+                        <th>Nom</th>
+                        <td>{{ fiche.primerApellido }}</td>
+                    </tr>
+                    <tr>
+                        <th>Date de Naissance</th>
+                        <td>{{ fiche.fechNacimiento }}</td>
+                    </tr>
+                    <tr>
+                        <th>Lieu de Naissance</th>
+                        <td>{{ fiche.lugarNacimiento }}</td>
+                    </tr>
+                    <tr>
+                        <th>Nationalité</th>
+                        <td>{{ fiche.nacionalidad }}</td>
+                    </tr>
+                    <tr>
+                        <th>Sexe</th>
+                        <td>{{ fiche.sexeLibelle }}</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
 
         <p-divider></p-divider>
@@ -121,28 +119,26 @@
         <!-- Informations de Contact -->
         <div class="section mb-3">
             <h4 class="text-primary">Informations de Contact</h4>
-            <div class="grid">
-                <div class="col-12 md:col-6">
-                    <div class="field-group">
-                        <label>Téléphone Principal:</label>
-                        <span>{{ fiche.telPrincipal || 'Non renseigné' }}</span>
-                    </div>
-                    <div class="field-group">
-                        <label>Téléphone Secondaire:</label>
-                        <span>{{ fiche.telSecundario || 'Non renseigné' }}</span>
-                    </div>
-                </div>
-                <div class="col-12 md:col-6">
-                    <div class="field-group">
-                        <label>Autre Téléphone:</label>
-                        <span>{{ fiche.telOtro || 'Non renseigné' }}</span>
-                    </div>
-                    <div class="field-group">
-                        <label>Adresse:</label>
-                        <span>{{ fiche.detDireccion || 'Non renseignée' }}</span>
-                    </div>
-                </div>
-            </div>
+            <table class="info-table">
+                <tbody>
+                    <tr>
+                        <th>Téléphone Principal</th>
+                        <td>{{ fiche.telPrincipal || 'Non renseigné' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Téléphone Secondaire</th>
+                        <td>{{ fiche.telSecundario || 'Non renseigné' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Autre Téléphone</th>
+                        <td>{{ fiche.telOtro || 'Non renseigné' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Adresse</th>
+                        <td>{{ fiche.detDireccion || 'Non renseignée' }}</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
 
         <p-divider></p-divider>
@@ -150,32 +146,30 @@
         <!-- Informations Familiales -->
         <div class="section mb-3">
             <h4 class="text-primary">Informations Familiales</h4>
-            <div class="grid">
-                <div class="col-12 md:col-6">
-                    <div class="field-group">
-                        <label>État Civil:</label>
-                        <span>{{ fiche.estatCivilLibelle || 'Non renseigné' }}</span>
-                    </div>
-                    <div class="field-group">
-                        <label>Conjoint(e):</label>
-                        <span>{{ fiche.nomConyugue || fiche.codCteConyugue || 'Non renseigné' }}</span>
-                    </div>
-                    <div class="field-group">
-                        <label>Nombre d'Enfants:</label>
-                        <span>{{ fiche.numHijos || 0 }}</span>
-                    </div>
-                </div>
-                <div class="col-12 md:col-6">
-                    <div class="field-group">
-                        <label>Bénéficiaire:</label>
-                        <span>{{ fiche.nomBeneficiario || 'Non renseigné' }}</span>
-                    </div>
-                    <div class="field-group">
-                        <label>Relation Bénéficiaire:</label>
-                        <span>{{ fiche.relacBeneficiario || 'Non renseignée' }}</span>
-                    </div>
-                </div>
-            </div>
+            <table class="info-table">
+                <tbody>
+                    <tr>
+                        <th>État Civil</th>
+                        <td>{{ fiche.estatCivilLibelle || 'Non renseigné' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Conjoint(e)</th>
+                        <td>{{ fiche.nomConyugue || fiche.codCteConyugue || 'Non renseigné' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Nombre d'Enfants</th>
+                        <td>{{ fiche.numHijos || 0 }}</td>
+                    </tr>
+                    <tr>
+                        <th>Bénéficiaire</th>
+                        <td>{{ fiche.nomBeneficiario || 'Non renseigné' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Relation Bénéficiaire</th>
+                        <td>{{ fiche.relacBeneficiario || 'Non renseignée' }}</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
 
         <p-divider></p-divider>
@@ -183,32 +177,30 @@
         <!-- Informations Professionnelles -->
         <div class="section mb-3">
             <h4 class="text-primary">Informations Professionnelles</h4>
-            <div class="grid">
-                <div class="col-12 md:col-6">
-                    <div class="field-group">
-                        <label>Profession:</label>
-                        <span>{{ getProfessionLabel(fiche.codProfesion!) }}</span>
-                    </div>
-                    <div class="field-group">
-                        <label>Secteur d'Activité:</label>
-                        <span>{{ getSectorLabel(fiche.codSector!) }}</span>
-                    </div>
-                    <div class="field-group">
-                        <label>Type de Travail:</label>
-                        <span>{{ fiche.typeTravailLibelle || 'Non renseigné' }}</span>
-                    </div>
-                </div>
-                <div class="col-12 md:col-6">
-                    <div class="field-group">
-                        <label>Ancienneté Poste:</label>
-                        <span>{{ fiche.antiguedadPuesto ? fiche.antiguedadPuesto + ' ans' : 'Non renseigné' }}</span>
-                    </div>
-                    <div class="field-group">
-                        <label>Lieu de Travail:</label>
-                        <span>{{ fiche.lugarTrabajo || 'Non renseigné' }}</span>
-                    </div>
-                </div>
-            </div>
+            <table class="info-table">
+                <tbody>
+                    <tr>
+                        <th>Profession</th>
+                        <td>{{ getProfessionLabel(fiche.codProfesion!) }}</td>
+                    </tr>
+                    <tr>
+                        <th>Secteur d'Activité</th>
+                        <td>{{ getSectorLabel(fiche.codSector!) }}</td>
+                    </tr>
+                    <tr>
+                        <th>Type de Travail</th>
+                        <td>{{ fiche.typeTravailLibelle || 'Non renseigné' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Ancienneté Poste</th>
+                        <td>{{ fiche.antiguedadPuesto ? fiche.antiguedadPuesto + ' ans' : 'Non renseigné' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Lieu de Travail</th>
+                        <td>{{ fiche.lugarTrabajo || 'Non renseigné' }}</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
 
         <p-divider></p-divider>
@@ -216,29 +208,26 @@
         <!-- Informations Logement -->
         <div class="section mb-3">
             <h4 class="text-primary">Informations Logement</h4>
-            <div class="grid">
-                <div class="col-12 md:col-6">
-                    <div class="field-group">
-                        <label>Type d'Habitation:</label>
-                        <span>{{ fiche.typeHabitationLibelle || 'Non renseigné' }}</span>
-                    </div>
-                    <div class="field-group">
-                        <label>Ancienneté Résidence:</label>
-                        <span>{{ fiche.antiguedadResidencia ? fiche.antiguedadResidencia + ' ans' : 'Non renseigné'
-                            }}</span>
-                    </div>
-                </div>
-                <div class="col-12 md:col-6">
-                    <div class="field-group">
-                        <label>Province:</label>
-                        <span>{{ getProvinceLabel(fiche.codProvincia!) }}</span>
-                    </div>
-                    <div class="field-group">
-                        <label>District:</label>
-                        <span>{{ getDistrictLabel(fiche.codDistrito!, fiche.codProvincia!, fiche.codCanton!) }}</span>
-                    </div>
-                </div>
-            </div>
+            <table class="info-table">
+                <tbody>
+                    <tr>
+                        <th>Type d'Habitation</th>
+                        <td>{{ fiche.typeHabitationLibelle || 'Non renseigné' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Ancienneté Résidence</th>
+                        <td>{{ fiche.antiguedadResidencia ? fiche.antiguedadResidencia + ' ans' : 'Non renseigné' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Province</th>
+                        <td>{{ getProvinceLabel(fiche.codProvincia!) }}</td>
+                    </tr>
+                    <tr>
+                        <th>District</th>
+                        <td>{{ getDistrictLabel(fiche.codDistrito!, fiche.codProvincia!, fiche.codCanton!) }}</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
 
         <p-divider></p-divider>
@@ -246,36 +235,34 @@
         <!-- Informations Administratives -->
         <div class="section">
             <h4 class="text-primary">Informations Administratives</h4>
-            <div class="grid">
-                <div class="col-12 md:col-6">
-                    <div class="field-group">
-                        <label>Type de Pièce:</label>
-                        <span>{{ getIdTypeLabel(fiche.codTipoId!) }}</span>
-                    </div>
-                    <div class="field-group">
-                        <label>Numéro de Pièce:</label>
-                        <span>{{ fiche.numId || 'Non renseigné' }}</span>
-                    </div>
-                    <div class="field-group">
-                        <label>Date d'Expiration:</label>
-                        <span>{{ fiche.fecVencim || 'Non renseignée' }}</span>
-                    </div>
-                </div>
-                <div class="col-12 md:col-6">
-                    <div class="field-group">
-                        <label>Agence:</label>
-                        <span>{{ fiche.codAgencia || 'Non renseignée' }}</span>
-                    </div>
-                    <div class="field-group">
-                        <label>Date d'Inscription:</label>
-                        <span>{{ fiche.fecIngreso || 'Non renseignée' }}</span>
-                    </div>
-                    <div class="field-group">
-                        <label>Type de Personne:</label>
-                        <span>{{ fiche.indPersona === 'F' ? 'Physique' : 'Morale' }}</span>
-                    </div>
-                </div>
-            </div>
+            <table class="info-table">
+                <tbody>
+                    <tr>
+                        <th>Type de Pièce</th>
+                        <td>{{ getIdTypeLabel(fiche.codTipoId!) }}</td>
+                    </tr>
+                    <tr>
+                        <th>Numéro de Pièce</th>
+                        <td>{{ fiche.numId || 'Non renseigné' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Date d'Expiration</th>
+                        <td>{{ fiche.fecVencim || 'Non renseignée' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Agence</th>
+                        <td>{{ fiche.codAgencia || 'Non renseignée' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Date d'Inscription</th>
+                        <td>{{ fiche.fecIngreso || 'Non renseignée' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Type de Personne</th>
+                        <td>{{ fiche.indPersona === 'F' ? 'Physique' : 'Morale' }}</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </p-card>
     }
