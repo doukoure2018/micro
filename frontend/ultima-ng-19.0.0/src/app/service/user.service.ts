@@ -732,6 +732,11 @@ export class UserService {
         const url = `${this.server}/ecredit/corrections/pointvente/${codeAgence}/personnes${statut ? `?statut=${statut}` : ''}`;
         return <Observable<IResponse>>this.http.get<IResponse>(url).pipe(tap(console.log), catchError(this.handleError));
     };
+
+    getCorrectionEvolutionByDay$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/corrections/evolution/by-day`).pipe(tap(console.log), catchError(this.handleError));
+
+    getCorrectionEvolutionByWeek$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/corrections/evolution/by-week`).pipe(tap(console.log), catchError(this.handleError));
+
     /**
      * Garder la quantité actuelle sans modification
      * @param idCmd ID du bon de commande

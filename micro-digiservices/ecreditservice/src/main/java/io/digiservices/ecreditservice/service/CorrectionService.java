@@ -5,6 +5,7 @@ import io.digiservices.ecreditservice.dto.PersonnePhysique;
 import io.digiservices.ecreditservice.dto.CorrectionDelegationStat;
 import io.digiservices.ecreditservice.dto.CorrectionAgenceStat;
 import io.digiservices.ecreditservice.dto.CorrectionPointVenteStat;
+import io.digiservices.ecreditservice.dto.CorrectionEvolutionStat;
 
 import java.util.List;
 import java.util.Optional;
@@ -38,4 +39,8 @@ public interface CorrectionService {
     List<CorrectionPointVenteStat> getCorrectionStatsByPointVente(Long agenceId);
 
     List<PersonnePhysique> getCorrectionsByPointVente(String codeAgence, String statut);
+
+    List<CorrectionEvolutionStat> getCorrectionEvolutionByDay();
+
+    List<CorrectionEvolutionStat> getCorrectionEvolutionByWeek();
 }

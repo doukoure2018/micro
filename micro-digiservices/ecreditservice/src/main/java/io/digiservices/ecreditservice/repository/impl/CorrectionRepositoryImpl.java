@@ -5,6 +5,7 @@ import io.digiservices.ecreditservice.dto.MotifCorrection;
 import io.digiservices.ecreditservice.dto.PersonnePhysique;
 import io.digiservices.ecreditservice.dto.CorrectionAgenceStat;
 import io.digiservices.ecreditservice.dto.CorrectionPointVenteStat;
+import io.digiservices.ecreditservice.dto.CorrectionEvolutionStat;
 import io.digiservices.ecreditservice.repository.CorrectionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -601,6 +602,42 @@ public class CorrectionRepositoryImpl implements CorrectionRepository {
                     .list();
         } catch (DataAccessException e) {
             log.error("Erreur lors de la récupération des corrections pour le point de vente {}", codeAgence, e);
+            return Collections.emptyList();
+        }
+    }
+
+    private static final RowMapper<CorrectionEvolutionStat> CORRECTION_EVOLUTION_ROW_MAPPER = (rs, rowNum) ->
+            CorrectionEvolutionStat.builder()
+                    .date(rs.getDate("date_jour") != null ? rs.getDate("date_jour").toLocalDate() : null)
+                    .periode(rs.getString("periode"))
+                    .enAttente(rs.getLong("en_attente"))
+                    .rejete(rs.getLong("rejete"))
+                    .valide(rs.getLong("valide"))
+                    .total(rs.getLong("total"))
+                    .build();
+
+    @Override
+    public List<CorrectionEvolutionStat> getCorrectionEvolutionByDay() {
+        log.debug("Récupération de l'évolution des corrections par jour");
+        try {
+            return jdbcClient.sql(CORRECTION_EVOLUTION_BY_DAY)
+                    .query(CORRECTION_EVOLUTION_ROW_MAPPER)
+                    .list();
+        } catch (DataAccessException e) {
+            log.error("Erreur lors de la récupération de l'évolution par jour", e);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    public List<CorrectionEvolutionStat> getCorrectionEvolutionByWeek() {
+        log.debug("Récupération de l'évolution des corrections par semaine");
+        try {
+            return jdbcClient.sql(CORRECTION_EVOLUTION_BY_WEEK)
+                    .query(CORRECTION_EVOLUTION_ROW_MAPPER)
+                    .list();
+        } catch (DataAccessException e) {
+            log.error("Erreur lors de la récupération de l'évolution par semaine", e);
             return Collections.emptyList();
         }
     }

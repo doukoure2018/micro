@@ -5,17 +5,21 @@ import { CardModule } from 'primeng/card';
 import { TableModule } from 'primeng/table';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { ButtonModule } from 'primeng/button';
+import { ChartModule } from 'primeng/chart';
+import { SelectButtonModule } from 'primeng/selectbutton';
+import { FormsModule } from '@angular/forms';
 import { UserService } from '@/service/user.service';
 import { CorrectionDelegationStats } from '@/interface/correction-delegation-stats';
 import { CorrectionAgenceStats } from '@/interface/correction-agence-stats';
 import { CorrectionPointVenteStats } from '@/interface/correction-pointvente-stats';
+import { CorrectionEvolutionStats } from '@/interface/correction-evolution-stats';
 import { HttpErrorResponse } from '@angular/common/http';
 import { SocietariatByAgenceComponent } from './societariat-by-agence/societariat-by-agence.component';
 import { SocietariatByPsComponent } from './societariat-by-ps/societariat-by-ps.component';
 
 @Component({
     selector: 'app-societariat',
-    imports: [CommonModule, CardModule, TableModule, ProgressSpinnerModule, ButtonModule, SocietariatByAgenceComponent, SocietariatByPsComponent],
+    imports: [CommonModule, CardModule, TableModule, ProgressSpinnerModule, ButtonModule, ChartModule, SelectButtonModule, FormsModule, SocietariatByAgenceComponent, SocietariatByPsComponent],
     templateUrl: './societariat.component.html',
     styleUrl: './societariat.component.scss'
 })
@@ -23,6 +27,13 @@ export class SocietariatComponent implements OnInit {
     @Input() user?: IUser;
 
     private userService = inject(UserService);
+
+    // Chart period options
+    chartPeriodOptions = [
+        { label: 'Par jour', value: 'day' },
+        { label: 'Par semaine', value: 'week' }
+    ];
+    selectedPeriod = 'day';
 
     state = signal<{
         loading: boolean;
@@ -36,6 +47,10 @@ export class SocietariatComponent implements OnInit {
         pointError?: string;
         selectedDelegation?: CorrectionDelegationStats | null;
         selectedAgence?: CorrectionAgenceStats | null;
+        loadingChart: boolean;
+        evolutionByDay: CorrectionEvolutionStats[];
+        evolutionByWeek: CorrectionEvolutionStats[];
+        chartError?: string;
     }>({
         loading: false,
         stats: [],
@@ -47,7 +62,11 @@ export class SocietariatComponent implements OnInit {
         points: [],
         pointError: undefined,
         selectedDelegation: null,
-        selectedAgence: null
+        selectedAgence: null,
+        loadingChart: false,
+        evolutionByDay: [],
+        evolutionByWeek: [],
+        chartError: undefined
     });
 
     isLoading = computed(() => this.state().loading);
@@ -61,9 +80,92 @@ export class SocietariatComponent implements OnInit {
     selectedAgence = computed(() => this.state().selectedAgence);
     agenceError = computed(() => this.state().agenceError);
     pointError = computed(() => this.state().pointError);
+    loadingChart = computed(() => this.state().loadingChart);
+    chartError = computed(() => this.state().chartError);
+
+    // Chart data computed
+    chartData = computed(() => {
+        const data = this.selectedPeriod === 'day' ? this.state().evolutionByDay : this.state().evolutionByWeek;
+        if (!data || data.length === 0) return null;
+
+        return {
+            labels: data.map((d) => d.periode),
+            datasets: [
+                {
+                    label: 'En attente',
+                    data: data.map((d) => d.enAttente),
+                    fill: false,
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                    tension: 0.4
+                },
+                {
+                    label: 'Rejetées',
+                    data: data.map((d) => d.rejete),
+                    fill: false,
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                    tension: 0.4
+                },
+                {
+                    label: 'Validées',
+                    data: data.map((d) => d.valide),
+                    fill: false,
+                    borderColor: '#22c55e',
+                    backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                    tension: 0.4
+                },
+                {
+                    label: 'Total',
+                    data: data.map((d) => d.total),
+                    fill: false,
+                    borderColor: '#6366f1',
+                    backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                    tension: 0.4,
+                    borderDash: [5, 5]
+                }
+            ]
+        };
+    });
+
+    chartOptions = {
+        maintainAspectRatio: false,
+        aspectRatio: 0.6,
+        plugins: {
+            legend: {
+                labels: {
+                    color: '#495057'
+                }
+            },
+            tooltip: {
+                mode: 'index' as const,
+                intersect: false
+            }
+        },
+        scales: {
+            x: {
+                ticks: {
+                    color: '#6b7280'
+                },
+                grid: {
+                    color: '#e5e7eb'
+                }
+            },
+            y: {
+                ticks: {
+                    color: '#6b7280'
+                },
+                grid: {
+                    color: '#e5e7eb'
+                },
+                beginAtZero: true
+            }
+        }
+    };
 
     ngOnInit(): void {
         this.loadStats();
+        this.loadChartData();
     }
 
     loadStats(): void {
@@ -86,6 +188,36 @@ export class SocietariatComponent implements OnInit {
                 this.state.update((s) => ({ ...s, loading: false, error: message }));
             }
         });
+    }
+
+    loadChartData(): void {
+        this.state.update((s) => ({ ...s, loadingChart: true, chartError: undefined }));
+
+        // Load both day and week data
+        this.userService.getCorrectionEvolutionByDay$().subscribe({
+            next: (response) => {
+                const evolutionByDay = response.data?.evolutionByDay || [];
+                this.state.update((s) => ({ ...s, evolutionByDay }));
+            },
+            error: (err: HttpErrorResponse) => {
+                console.error('Erreur chargement évolution par jour:', err);
+            }
+        });
+
+        this.userService.getCorrectionEvolutionByWeek$().subscribe({
+            next: (response) => {
+                const evolutionByWeek = response.data?.evolutionByWeek || [];
+                this.state.update((s) => ({ ...s, evolutionByWeek, loadingChart: false }));
+            },
+            error: (err: HttpErrorResponse) => {
+                const message = err.error?.message || 'Erreur lors du chargement des données du graphique.';
+                this.state.update((s) => ({ ...s, loadingChart: false, chartError: message }));
+            }
+        });
+    }
+
+    onPeriodChange(): void {
+        // The chart data will automatically update via the computed signal
     }
 
     onSelectDelegation(row: CorrectionDelegationStats): void {

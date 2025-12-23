@@ -64,6 +64,7 @@ import { ReconciliationResultDTO } from './ReconciliationResultDTO';
 import { CorrectionDelegationStats } from './correction-delegation-stats';
 import { CorrectionAgenceStats } from './correction-agence-stats';
 import { CorrectionPointVenteStats } from './correction-pointvente-stats';
+import { CorrectionEvolutionStats } from './correction-evolution-stats';
 import { RequisitoRequest } from './requisitoRequest';
 import { ResultNote } from './result.note';
 import { ResumeCredit } from './resumeCredit.model';
@@ -238,6 +239,8 @@ export interface IResponse {
         correctionAgenceStats?: CorrectionAgenceStats[];
         correctionPointVenteStats?: CorrectionPointVenteStats[];
         corrections?: PersonnePhysique[];
+        evolutionByDay?: CorrectionEvolutionStats[];
+        evolutionByWeek?: CorrectionEvolutionStats[];
         page?: number;
         totalPages?: number;
         totalElements?: number;

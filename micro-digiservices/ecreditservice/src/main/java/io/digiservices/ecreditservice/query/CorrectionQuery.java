@@ -270,4 +270,38 @@ public class CorrectionQuery {
           AND (COALESCE(:statut, '') = '' OR pp.correction_statut = :statut)
         ORDER BY pp.created_at DESC
         """;
+
+    /**
+     * Évolution des corrections par jour (30 derniers jours)
+     */
+    public static final String CORRECTION_EVOLUTION_BY_DAY = """
+        SELECT
+            DATE(pp.created_at) AS date_jour,
+            TO_CHAR(DATE(pp.created_at), 'YYYY-MM-DD') AS periode,
+            COALESCE(SUM(CASE WHEN pp.correction_statut = 'EN_ATTENTE' THEN 1 ELSE 0 END), 0) AS en_attente,
+            COALESCE(SUM(CASE WHEN pp.correction_statut = 'REJETE' THEN 1 ELSE 0 END), 0) AS rejete,
+            COALESCE(SUM(CASE WHEN pp.correction_statut = 'VALIDE' THEN 1 ELSE 0 END), 0) AS valide,
+            COUNT(pp.id) AS total
+        FROM personne_physique pp
+        WHERE pp.created_at >= CURRENT_DATE - INTERVAL '30 days'
+        GROUP BY DATE(pp.created_at)
+        ORDER BY date_jour ASC
+        """;
+
+    /**
+     * Évolution des corrections par semaine (12 dernières semaines)
+     */
+    public static final String CORRECTION_EVOLUTION_BY_WEEK = """
+        SELECT
+            DATE_TRUNC('week', pp.created_at)::DATE AS date_jour,
+            TO_CHAR(DATE_TRUNC('week', pp.created_at), 'IYYY-"S"IW') AS periode,
+            COALESCE(SUM(CASE WHEN pp.correction_statut = 'EN_ATTENTE' THEN 1 ELSE 0 END), 0) AS en_attente,
+            COALESCE(SUM(CASE WHEN pp.correction_statut = 'REJETE' THEN 1 ELSE 0 END), 0) AS rejete,
+            COALESCE(SUM(CASE WHEN pp.correction_statut = 'VALIDE' THEN 1 ELSE 0 END), 0) AS valide,
+            COUNT(pp.id) AS total
+        FROM personne_physique pp
+        WHERE pp.created_at >= CURRENT_DATE - INTERVAL '12 weeks'
+        GROUP BY DATE_TRUNC('week', pp.created_at)
+        ORDER BY date_jour ASC
+        """;
 }

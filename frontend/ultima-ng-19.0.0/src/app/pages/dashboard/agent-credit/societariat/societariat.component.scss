@@ -2,6 +2,7 @@
 
 .societariat-card {
     width: 100%;
+    margin-bottom: 1.5rem;
 
     .header {
         display: flex;
@@ -9,6 +10,7 @@
         justify-content: space-between;
         gap: 1rem;
         margin-bottom: 1rem;
+        flex-wrap: wrap;
 
         h3 {
             margin: 0;
@@ -19,6 +21,12 @@
             margin: 0.15rem 0 0;
             color: #6b7280;
             font-size: 0.95rem;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
         }
     }
 
@@ -41,6 +49,13 @@
         .p-table {
             .p-datatable-header {
                 display: none;
+            }
+        }
+
+        .p-selectbutton {
+            .p-button {
+                padding: 0.5rem 1rem;
+                font-size: 0.875rem;
             }
         }
     }
@@ -78,5 +93,32 @@
         text-align: center;
         padding: 1rem;
         color: #6b7280;
+    }
+}
+
+// Chart card specific styles
+.chart-card {
+    .chart-container {
+        padding: 1rem 0;
+        min-height: 350px;
+    }
+
+    .empty-chart {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 3rem;
+        color: #9ca3af;
+
+        i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        p {
+            margin: 0;
+            font-size: 0.95rem;
+        }
     }
 }

@@ -13,6 +13,7 @@ import io.digiservices.ecreditservice.dto.PersonnePhysique;
 import io.digiservices.ecreditservice.dto.CorrectionDelegationStat;
 import io.digiservices.ecreditservice.dto.CorrectionAgenceStat;
 import io.digiservices.ecreditservice.dto.CorrectionPointVenteStat;
+import io.digiservices.ecreditservice.dto.CorrectionEvolutionStat;
 import io.digiservices.ecreditservice.service.CorrectionService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -915,6 +916,50 @@ public class CorrectionResource {
         }
     }
 
+
+    /**
+     * Évolution des corrections par jour (30 derniers jours)
+     */
+    @GetMapping("/corrections/evolution/by-day")
+    public ResponseEntity<Response> getCorrectionEvolutionByDay(HttpServletRequest request) {
+        try {
+            List<CorrectionEvolutionStat> stats = correctionService.getCorrectionEvolutionByDay();
+            return ResponseEntity.ok(
+                    getResponse(request,
+                            Map.of("evolutionByDay", stats),
+                            "Évolution des corrections par jour récupérée avec succès",
+                            OK));
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération de l'évolution par jour", e);
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR)
+                    .body(getResponse(request,
+                            Map.of("error", "Erreur lors de la récupération de l'évolution"),
+                            "Erreur interne du serveur",
+                            INTERNAL_SERVER_ERROR));
+        }
+    }
+
+    /**
+     * Évolution des corrections par semaine (12 dernières semaines)
+     */
+    @GetMapping("/corrections/evolution/by-week")
+    public ResponseEntity<Response> getCorrectionEvolutionByWeek(HttpServletRequest request) {
+        try {
+            List<CorrectionEvolutionStat> stats = correctionService.getCorrectionEvolutionByWeek();
+            return ResponseEntity.ok(
+                    getResponse(request,
+                            Map.of("evolutionByWeek", stats),
+                            "Évolution des corrections par semaine récupérée avec succès",
+                            OK));
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération de l'évolution par semaine", e);
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR)
+                    .body(getResponse(request,
+                            Map.of("error", "Erreur lors de la récupération de l'évolution"),
+                            "Erreur interne du serveur",
+                            INTERNAL_SERVER_ERROR));
+        }
+    }
 
     private URI getUri() {
         return URI.create("/ecredit/personnePhysique");

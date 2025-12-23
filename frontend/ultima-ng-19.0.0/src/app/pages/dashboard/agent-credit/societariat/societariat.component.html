@@ -1,10 +1,44 @@
+<!-- Evolution Chart Section -->
+<p-card class="societariat-card chart-card">
+    <div class="header">
+        <div>
+            <h3>Évolution des corrections</h3>
+            <p class="subtitle">Tendance sur les dernières {{ selectedPeriod === 'day' ? '30 jours' : '12 semaines' }}</p>
+        </div>
+        <div class="header-actions">
+            <p-selectButton [options]="chartPeriodOptions" [(ngModel)]="selectedPeriod"
+                (onChange)="onPeriodChange()" optionLabel="label" optionValue="value"></p-selectButton>
+        </div>
+    </div>
+
+    @if (chartError()) {
+    <div class="error">{{ chartError() }}</div>
+    }
+
+    @if (loadingChart()) {
+    <div class="loading">
+        <p-progressSpinner></p-progressSpinner>
+    </div>
+    } @else if (chartData()) {
+    <div class="chart-container">
+        <p-chart type="line" [data]="chartData()" [options]="chartOptions" height="300px"></p-chart>
+    </div>
+    } @else {
+    <div class="empty-chart">
+        <i class="pi pi-chart-line"></i>
+        <p>Aucune donnée d'évolution disponible</p>
+    </div>
+    }
+</p-card>
+
+<!-- Stats Table Section -->
 <p-card class="societariat-card">
     <div class="header">
         <div>
             <h3>Statistiques des corrections</h3>
             <p class="subtitle">Répartition par délégation (EN_ATTENTE / REJETE / VALIDE)</p>
         </div>
-        <button pButton type="button" icon="pi pi-refresh" label="Rafraîchir" (click)="loadStats()"
+        <button pButton type="button" icon="pi pi-refresh" label="Rafraîchir" (click)="loadStats(); loadChartData()"
             [disabled]="isLoading()" class="p-button-outlined"></button>
     </div>
 

@@ -1,18 +1,36 @@
 <div class="panel">
     <div class="panel-header">
-        <div>
-            <h4>Détails des corrections</h4>
-            <p class="subtitle">Point de service : {{ pointLibele || pointCode || 'Non renseigné' }}</p>
+        <div class="header-left">
+            <button pButton type="button" icon="pi pi-arrow-left" class="p-button-text p-button-rounded back-btn"
+                (click)="goBack()" pTooltip="Retour aux statistiques" tooltipPosition="right"></button>
+            <div>
+                <h4>Détails des corrections</h4>
+                <p class="subtitle">Point de service : {{ pointLibele || pointCode || 'Non renseigné' }}</p>
+            </div>
         </div>
-        <div class="actions">
-            <button pButton type="button" label="Tous" class="p-button-text" (click)="filterAll()"
-                [disabled]="isLoading() || !pointCode"></button>
-            <button pButton type="button" label="En attente" class="p-button-text" (click)="filterAttente()"
-                [disabled]="isLoading() || !pointCode"></button>
-            <button pButton type="button" label="Rejeté" class="p-button-text" (click)="filterRejete()"
-                [disabled]="isLoading() || !pointCode"></button>
-            <button pButton type="button" label="Validé" class="p-button-text" (click)="filterValide()"
-                [disabled]="isLoading() || !pointCode"></button>
+        <div class="header-right">
+            <button pButton type="button" icon="pi pi-refresh" class="p-button-text p-button-rounded"
+                (click)="refresh()" [disabled]="isLoading()" pTooltip="Rafraîchir"></button>
+        </div>
+    </div>
+
+    <!-- Stats summary cards -->
+    <div class="stats-summary">
+        <div class="stat-card total" [class.active]="statut() === null" (click)="filterAll()">
+            <span class="stat-value">{{ countAll() }}</span>
+            <span class="stat-label">Tous</span>
+        </div>
+        <div class="stat-card en-attente" [class.active]="statut() === 'EN_ATTENTE'" (click)="filterAttente()">
+            <span class="stat-value">{{ countEnAttente() }}</span>
+            <span class="stat-label">En attente</span>
+        </div>
+        <div class="stat-card rejete" [class.active]="statut() === 'REJETE'" (click)="filterRejete()">
+            <span class="stat-value">{{ countRejete() }}</span>
+            <span class="stat-label">Rejetées</span>
+        </div>
+        <div class="stat-card valide" [class.active]="statut() === 'VALIDE'" (click)="filterValide()">
+            <span class="stat-value">{{ countValide() }}</span>
+            <span class="stat-label">Validées</span>
         </div>
     </div>
 
@@ -23,7 +41,9 @@
     @if (isLoading()) {
     <div class="loading">Chargement...</div>
     } @else {
-    <p-table [value]="items()" [tableStyle]="{'min-width':'100%'}">
+    <p-table [value]="items()" [tableStyle]="{'min-width':'100%'}" [paginator]="true" [rows]="10"
+        [rowsPerPageOptions]="[5, 10, 25, 50]" [showCurrentPageReport]="true"
+        currentPageReportTemplate="Affichage {first} à {last} sur {totalRecords} entrées">
         <ng-template pTemplate="header">
             <tr>
                 <th>Code Client</th>
@@ -41,9 +61,15 @@
                 <td>{{ row.nomClient }}</td>
                 <td>{{ row.prenomClient }}</td>
                 <td>{{ row.telPrincipal }}</td>
-                <td>{{ row.correctionStatut || 'EN_ATTENTE' }}</td>
+                <td>
+                    <span class="status-badge" [ngClass]="{
+                        'status-attente': row.correctionStatut === 'EN_ATTENTE',
+                        'status-rejete': row.correctionStatut === 'REJETE',
+                        'status-valide': row.correctionStatut === 'VALIDE'
+                    }">{{ row.correctionStatut || 'EN_ATTENTE' }}</span>
+                </td>
                 <td>{{ row.codeAgence }}</td>
-                <td>{{ row.createdAt | date:'short' }}</td>
+                <td>{{ row.createdAt | date:'dd/MM/yyyy HH:mm':'':'fr-FR' }}</td>
             </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">

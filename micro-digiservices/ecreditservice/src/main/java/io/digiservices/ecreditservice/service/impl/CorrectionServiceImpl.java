@@ -3,6 +3,7 @@ package io.digiservices.ecreditservice.service.impl;
 import io.digiservices.ecreditservice.dto.CorrectionDelegationStat;
 import io.digiservices.ecreditservice.dto.CorrectionAgenceStat;
 import io.digiservices.ecreditservice.dto.CorrectionPointVenteStat;
+import io.digiservices.ecreditservice.dto.CorrectionEvolutionStat;
 import io.digiservices.ecreditservice.dto.MotifCorrection;
 import io.digiservices.ecreditservice.dto.PersonnePhysique;
 import io.digiservices.ecreditservice.repository.CorrectionRepository;
@@ -240,6 +241,18 @@ public class CorrectionServiceImpl implements CorrectionService {
     public List<PersonnePhysique> getCorrectionsByPointVente(String codeAgence, String statut) {
         log.info("Service - Récupération des corrections pour le point de vente {} avec statut {}", codeAgence, statut);
         return correctionRepository.getCorrectionsByPointVente(codeAgence, statut);
+    }
+
+    @Override
+    public List<CorrectionEvolutionStat> getCorrectionEvolutionByDay() {
+        log.info("Service - Récupération de l'évolution des corrections par jour");
+        return correctionRepository.getCorrectionEvolutionByDay();
+    }
+
+    @Override
+    public List<CorrectionEvolutionStat> getCorrectionEvolutionByWeek() {
+        log.info("Service - Récupération de l'évolution des corrections par semaine");
+        return correctionRepository.getCorrectionEvolutionByWeek();
     }
 
     private void validatePersonnePhysique(PersonnePhysique pp) {
