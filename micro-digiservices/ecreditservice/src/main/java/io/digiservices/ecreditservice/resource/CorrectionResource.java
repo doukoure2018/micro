@@ -961,6 +961,38 @@ public class CorrectionResource {
         }
     }
 
+    /**
+     * Debug - Test évolution (à supprimer après debug)
+     */
+    @GetMapping("/corrections/evolution/debug")
+    public ResponseEntity<Response> debugEvolution(HttpServletRequest request) {
+        try {
+            List<CorrectionEvolutionStat> byDay = correctionService.getCorrectionEvolutionByDay();
+            List<CorrectionEvolutionStat> byWeek = correctionService.getCorrectionEvolutionByWeek();
+
+            return ResponseEntity.ok(
+                    getResponse(request,
+                            Map.of(
+                                    "evolutionByDay", byDay,
+                                    "evolutionByDayCount", byDay.size(),
+                                    "evolutionByWeek", byWeek,
+                                    "evolutionByWeekCount", byWeek.size(),
+                                    "currentDate", LocalDateTime.now(),
+                                    "queryUsed", "created_at >= CURRENT_DATE - 30 days"
+                            ),
+                            "Debug évolution",
+                            OK));
+        } catch (Exception e) {
+            log.error("Erreur debug évolution", e);
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR)
+                    .body(getResponse(request,
+                            Map.of("error", e.getMessage(),
+                                    "stackTrace", Arrays.toString(e.getStackTrace())),
+                            "Erreur debug",
+                            INTERNAL_SERVER_ERROR));
+        }
+    }
+
     private URI getUri() {
         return URI.create("/ecredit/personnePhysique");
     }
