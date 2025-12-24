@@ -95,7 +95,16 @@ export class AppMenu {
                                   icon: 'pi pi-fw pi-hourglass',
                                   routerLink: ['/dashboards/stock']
                               },
-
+                              // Correction P. Physique - Uniquement si l'utilisateur est autorisé
+                              ...(this.user?.authorized
+                                  ? [
+                                        {
+                                            label: 'Correction P. Physique ',
+                                            icon: 'pi pi-fw pi-user-edit',
+                                            routerLink: ['/dashboards/correction-physique']
+                                        }
+                                    ]
+                                  : []),
                               {
                                   label: 'Correction En attente',
                                   icon: 'pi pi-fw pi-hourglass',

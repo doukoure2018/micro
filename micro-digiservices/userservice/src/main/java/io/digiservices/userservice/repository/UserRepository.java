@@ -64,4 +64,9 @@ public interface UserRepository {
     List<AgentCreditDTO> getListAgentCredit(Long agenceId);
 
     AgentDisponibilityDto checkAgentDisponibility(Long userId, Long pointVenteId);
+
+    // Autorisation utilisateur
+    void updateUserAuthorization(Long userId, boolean isAuthorized);
+    Boolean getUserAuthorizationStatus(Long userId);
+    List<User> getUsersByRole(String roleName);
 }

@@ -380,5 +380,26 @@ public class UserServiceImpl  implements UserService {
         }
     };
 
+    // ========================================
+    // AUTORISATION UTILISATEUR
+    // ========================================
+
+    @Override
+    public void updateUserAuthorization(Long userId, boolean isAuthorized) {
+        log.info("Mise à jour de l'autorisation pour l'utilisateur {}: {}", userId, isAuthorized);
+        userRepository.updateUserAuthorization(userId, isAuthorized);
+    }
+
+    @Override
+    public Boolean getUserAuthorizationStatus(Long userId) {
+        log.info("Récupération du statut d'autorisation pour l'utilisateur {}", userId);
+        return userRepository.getUserAuthorizationStatus(userId);
+    }
+
+    @Override
+    public List<User> getUsersByRole(String roleName) {
+        log.info("Récupération des utilisateurs avec le rôle: {}", roleName);
+        return userRepository.getUsersByRole(roleName);
+    }
 
 }

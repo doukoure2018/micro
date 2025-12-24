@@ -27,7 +27,8 @@ public class UserQuery {
                 u.delegation_id,
                 u.agence_id,
                 u.pointvente_id,
-                u.service
+                u.service,
+                u.is_authorized
                 FROM users u JOIN user_roles ur ON ur.user_id = u.user_id JOIN roles r ON r.role_id = ur.role_id  WHERE u.user_uuid =:userUuid;
               """;
     public static final String SELECT_USER_BY_ID_QUERY=
@@ -54,7 +55,8 @@ public class UserQuery {
             u.address,
             u.pointvente_id,
             u.agence_id,
-            u.delegation_id
+            u.delegation_id,
+            u.is_authorized
             FROM users u JOIN user_roles ur ON ur.user_id = u.user_id JOIN roles r ON r.role_id = ur.role_id WHERE u.user_id =:userId;
             """;
     public static final String SELECT_USER_BY_EMAIL_QUERY=
@@ -78,7 +80,8 @@ public class UserQuery {
             u.user_uuid,
             u.bio,
             u.phone,
-            u.address
+            u.address,
+            u.is_authorized
             FROM users u JOIN user_roles ur ON ur.user_id = u.user_id JOIN roles r ON r.role_id = ur.role_id WHERE u.email =:email;
             """;
     public static final String UPDATE_USER_FUNCTION=
@@ -203,7 +206,8 @@ public class UserQuery {
                 u.user_uuid,
                 u.bio,
                 u.phone,
-                u.address
+                u.address,
+                u.is_authorized
                 FROM users u JOIN user_roles ur ON ur.user_id = u.user_id JOIN roles r ON r.role_id = ur.role_id LIMIT 100
               """;
     public static final String SELECT_TICKET_ASSIGNEE_QUERY=
@@ -597,5 +601,49 @@ public class UserQuery {
                                      ORDER BY date_rotation DESC
                                      LIMIT 1) AS rotation_date
                     """;
+
+    // ========================================
+    // AUTORISATION UTILISATEUR
+    // ========================================
+
+    public static final String UPDATE_USER_AUTHORIZATION_QUERY =
+            """
+            UPDATE users SET is_authorized = :isAuthorized, updated_at = NOW() WHERE user_id = :userId
+            """;
+
+    public static final String GET_USER_AUTHORIZATION_STATUS_QUERY =
+            """
+            SELECT is_authorized FROM users WHERE user_id = :userId
+            """;
+
+    public static final String SELECT_USERS_BY_ROLE_QUERY =
+            """
+            SELECT 
+                u.user_id,
+                u.user_uuid,
+                u.username,
+                u.first_name,
+                u.last_name,
+                u.email,
+                u.phone,
+                u.image_url,
+                u.enabled,
+                u.account_non_locked,
+                u.account_non_expired,
+                u.is_authorized,
+                u.delegation_id,
+                u.agence_id,
+                u.pointvente_id,
+                u.service,
+                u.created_at,
+                u.updated_at,
+                r.name AS role,
+                r.authority AS authorities
+            FROM users u 
+            JOIN user_roles ur ON ur.user_id = u.user_id 
+            JOIN roles r ON r.role_id = ur.role_id 
+            WHERE r.name = :roleName
+            ORDER BY u.created_at DESC
+            """;
 
 }

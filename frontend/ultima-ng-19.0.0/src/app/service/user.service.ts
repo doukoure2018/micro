@@ -941,4 +941,23 @@ export class UserService {
             return false;
         }
     };
+
+    // ========================================
+    // AUTORISATION UTILISATEUR
+    // ========================================
+
+    /**
+     * Mettre à jour l'autorisation d'un utilisateur
+     */
+    updateUserAuthorization$ = (userId: number, isAuthorized: boolean) => this.http.put<IResponse>(`${this.server}/user/authorization/${userId}?isAuthorized=${isAuthorized}`, {}).pipe(tap(console.log), catchError(this.handleError));
+
+    /**
+     * Récupérer le statut d'autorisation d'un utilisateur
+     */
+    getUserAuthorizationStatus$ = (userId: number) => this.http.get<IResponse>(`${this.server}/user/authorization/${userId}/status`).pipe(tap(console.log), catchError(this.handleError));
+
+    /**
+     * Récupérer tous les utilisateurs par rôle
+     */
+    getUsersByRole$ = (roleName: string) => this.http.get<IResponse>(`${this.server}/user/by-role/${roleName}`).pipe(tap(console.log), catchError(this.handleError));
 }

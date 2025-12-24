@@ -607,5 +607,107 @@ public class UserResource {
         ));
     }
 
+    // ========================================
+    // AUTORISATION UTILISATEUR
+    // ========================================
+
+    /**
+     * Mettre à jour l'autorisation d'un utilisateur
+     * PUT /user/authorization/{userId}
+     */
+    @PutMapping("/authorization/{userId}")
+    public ResponseEntity<Response> updateUserAuthorization(
+            @NotNull Authentication authentication,
+            @PathVariable("userId") Long userId,
+            @RequestParam("isAuthorized") boolean isAuthorized,
+            HttpServletRequest request) {
+
+        log.info("User {} updating authorization for user {}: {}",
+                authentication.getName(), userId, isAuthorized);
+
+        try {
+            userService.updateUserAuthorization(userId, isAuthorized);
+
+            return ResponseEntity.ok(getResponse(
+                    request,
+                    Map.of("userId", userId, "isAuthorized", isAuthorized),
+                    isAuthorized ? "Utilisateur autorisé avec succès" : "Utilisateur désautorisé avec succès",
+                    OK
+            ));
+        } catch (Exception e) {
+            log.error("Erreur lors de la mise à jour de l'autorisation: {}", e.getMessage());
+            return ResponseEntity.status(BAD_REQUEST).body(getResponse(
+                    request,
+                    emptyMap(),
+                    e.getMessage(),
+                    BAD_REQUEST
+            ));
+        }
+    }
+
+    /**
+     * Récupérer le statut d'autorisation d'un utilisateur
+     * GET /user/authorization/{userId}/status
+     */
+    @GetMapping("/authorization/{userId}/status")
+    public ResponseEntity<Response> getUserAuthorizationStatus(
+            @NotNull Authentication authentication,
+            @PathVariable("userId") Long userId,
+            HttpServletRequest request) {
+
+        log.info("User {} checking authorization status for user {}",
+                authentication.getName(), userId);
+
+        try {
+            Boolean isAuthorized = userService.getUserAuthorizationStatus(userId);
+
+            return ResponseEntity.ok(getResponse(
+                    request,
+                    Map.of("userId", userId, "isAuthorized", isAuthorized),
+                    "Statut d'autorisation récupéré avec succès",
+                    OK
+            ));
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération du statut d'autorisation: {}", e.getMessage());
+            return ResponseEntity.status(BAD_REQUEST).body(getResponse(
+                    request,
+                    emptyMap(),
+                    e.getMessage(),
+                    BAD_REQUEST
+            ));
+        }
+    }
+
+    /**
+     * Récupérer tous les utilisateurs par rôle
+     * GET /user/by-role/{roleName}
+     */
+    @GetMapping("/by-role/{roleName}")
+    public ResponseEntity<Response> getUsersByRole(
+            @NotNull Authentication authentication,
+            @PathVariable("roleName") String roleName,
+            HttpServletRequest request) {
+
+        log.info("User {} fetching users with role: {}", authentication.getName(), roleName);
+
+        try {
+            var users = userService.getUsersByRole(roleName);
+
+            return ResponseEntity.ok(getResponse(
+                    request,
+                    Map.of("users", users),
+                    "Utilisateurs récupérés avec succès",
+                    OK
+            ));
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des utilisateurs: {}", e.getMessage());
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR).body(getResponse(
+                    request,
+                    emptyMap(),
+                    e.getMessage(),
+                    INTERNAL_SERVER_ERROR
+            ));
+        }
+    }
 
 }

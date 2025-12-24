@@ -26,4 +26,5 @@ export interface IUser {
     delegationId?: number;
     pointventeId?: number;
     service?: string;
+    authorized?: boolean;
 }

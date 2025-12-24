@@ -38,4 +38,6 @@ public class User {
     private Long pointventeId;
 
     private String service;
+
+    private boolean isAuthorized;
 }

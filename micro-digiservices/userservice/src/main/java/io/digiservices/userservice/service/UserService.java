@@ -49,6 +49,10 @@ public interface UserService {
 
     List<AgentCreditDTO> getListAgentCredit(Long agenceId);
 
-     AgentDisponibilityDto getDisponibilityAgent(Long userId, Long pointVenteId);
+    AgentDisponibilityDto getDisponibilityAgent(Long userId, Long pointVenteId);
 
-    }
+    // Autorisation utilisateur
+    void updateUserAuthorization(Long userId, boolean isAuthorized);
+    Boolean getUserAuthorizationStatus(Long userId);
+    List<User> getUsersByRole(String roleName);
+}

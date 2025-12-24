@@ -1,3 +1,93 @@
+<!-- SECTION GESTION DES AUTORISATIONS AGENT CRÉDIT -->
+<div class="card mb-4">
+    <div class="flex align-items-center justify-content-between mb-4">
+        <div class="flex align-items-center gap-2">
+            <i class="pi pi-shield text-xl text-primary"></i>
+            <span class="text-xl font-semibold text-surface-900 dark:text-surface-0">
+                Gestion des Autorisations - Agents Crédit
+            </span>
+        </div>
+        <button pButton icon="pi pi-refresh" label="Actualiser" class="p-button-secondary p-button-sm"
+            [loading]="state().loadingAgentCredits" (click)="loadAgentCredits()"></button>
+    </div>
+
+    @if (state().loadingAgentCredits) {
+    <div class="flex justify-content-center p-4">
+        <p-progressSpinner [style]="{ width: '40px', height: '40px' }"></p-progressSpinner>
+    </div>
+    } @else if (state().agentCredits && state().agentCredits!.length > 0) {
+    <p-table [value]="state().agentCredits || []" [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5, 10, 20]"
+        styleClass="p-datatable-sm p-datatable-gridlines"
+        [globalFilterFields]="['firstName', 'lastName', 'username', 'email']">
+        <ng-template pTemplate="header">
+            <tr>
+                <th>Nom complet</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Service</th>
+                <th class="text-center">Statut</th>
+                <th class="text-center" style="width: 180px;">Autorisation</th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-agent>
+            <tr>
+                <td>
+                    <div class="flex align-items-center gap-2">
+                        <img [src]="agent.imageUrl || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'"
+                            alt="avatar" class="border-circle" style="width: 32px; height: 32px;">
+                        <span class="font-medium">{{ agent.firstName }} {{ agent.lastName }}</span>
+                    </div>
+                </td>
+                <td>{{ agent.username }}</td>
+                <td>{{ agent.email }}</td>
+                <td>
+                    <p-tag [value]="agent.service || 'N/A'" severity="info"></p-tag>
+                </td>
+                <td class="text-center">
+                    @if (agent.enabled) {
+                    <p-tag value="Actif" severity="success" icon="pi pi-check"></p-tag>
+                    } @else {
+                    <p-tag value="Inactif" severity="danger" icon="pi pi-times"></p-tag>
+                    }
+                </td>
+                <td class="text-center">
+                    <div class="flex align-items-center justify-content-center gap-2">
+                        @if (isUpdatingAuthorization(agent.userId)) {
+                        <i class="pi pi-spin pi-spinner text-primary"></i>
+                        } @else {
+                        <p-inputSwitch [(ngModel)]="agent.authorized" (onChange)="toggleAuthorization(agent)"
+                            [pTooltip]="agent.authorized ? 'Cliquer pour désautoriser' : 'Cliquer pour autoriser'"
+                            tooltipPosition="top">
+                        </p-inputSwitch>
+                        <span class="text-sm" [ngClass]="{
+                            'text-green-600': agent.authorized,
+                            'text-red-600': !agent.authorized
+                        }">
+                            {{ agent.authorized ? 'Autorisé' : 'Non autorisé' }}
+                        </span>
+                        }
+                    </div>
+                </td>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr>
+                <td colspan="6" class="text-center p-4">
+                    <i class="pi pi-inbox text-4xl text-gray-300 mb-2"></i>
+                    <p class="text-gray-500">Aucun agent crédit trouvé</p>
+                </td>
+            </tr>
+        </ng-template>
+    </p-table>
+    } @else {
+    <div class="text-center p-4">
+        <i class="pi pi-inbox text-4xl text-gray-300 mb-2"></i>
+        <p class="text-gray-500">Aucun agent crédit enregistré</p>
+    </div>
+    }
+</div>
+
+<!-- SECTION LISTE DES UTILISATEURS -->
 <div class="card">
     <p-table #dt [value]="state().users!" [paginator]="true" paginatorDropdownAppendTo="body" [rows]="10"
         [showCurrentPageReport]="true" responsiveLayout="scroll"

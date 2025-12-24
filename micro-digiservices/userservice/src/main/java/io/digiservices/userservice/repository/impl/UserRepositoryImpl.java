@@ -940,5 +940,57 @@ public class UserRepositoryImpl implements UserRepository {
                 .addValue("address",address, VARCHAR);
     }
 
+    // ========================================
+    // AUTORISATION UTILISATEUR
+    // ========================================
+
+    @Override
+    public void updateUserAuthorization(Long userId, boolean isAuthorized) {
+        try {
+            int updated = jdbcClient.sql(UPDATE_USER_AUTHORIZATION_QUERY)
+                    .param("userId", userId)
+                    .param("isAuthorized", isAuthorized)
+                    .update();
+            
+            if (updated == 0) {
+                throw new ApiException("Aucun utilisateur trouvé avec l'ID: " + userId);
+            }
+            log.info("Autorisation mise à jour pour l'utilisateur {}: {}", userId, isAuthorized);
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Erreur lors de la mise à jour de l'autorisation: {}", e.getMessage());
+            throw new ApiException("Une erreur est survenue lors de la mise à jour de l'autorisation");
+        }
+    }
+
+    @Override
+    public Boolean getUserAuthorizationStatus(Long userId) {
+        try {
+            return jdbcClient.sql(GET_USER_AUTHORIZATION_STATUS_QUERY)
+                    .param("userId", userId)
+                    .query(Boolean.class)
+                    .single();
+        } catch (EmptyResultDataAccessException e) {
+            log.error("Aucun utilisateur trouvé avec l'ID: {}", userId);
+            throw new ApiException("Aucun utilisateur trouvé avec l'ID: " + userId);
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération du statut d'autorisation: {}", e.getMessage());
+            throw new ApiException("Une erreur est survenue lors de la récupération du statut d'autorisation");
+        }
+    }
+
+    @Override
+    public List<User> getUsersByRole(String roleName) {
+        try {
+            return jdbcClient.sql(SELECT_USERS_BY_ROLE_QUERY)
+                    .param("roleName", roleName)
+                    .query(User.class)
+                    .list();
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des utilisateurs par rôle: {}", e.getMessage());
+            throw new ApiException("Une erreur est survenue lors de la récupération des utilisateurs");
+        }
+    }
 
 }
