@@ -614,6 +614,17 @@ public class CorrectionRepositoryImpl implements CorrectionRepository {
                     .rejete(rs.getLong("rejete"))
                     .valide(rs.getLong("valide"))
                     .total(rs.getLong("total"))
+                    .enAttentePrev(rs.getObject("en_attente_prev", Long.class))
+                    .rejetePrev(rs.getObject("rejete_prev", Long.class))
+                    .validePrev(rs.getObject("valide_prev", Long.class))
+                    .totalPrev(rs.getObject("total_prev", Long.class))
+                    .enAttenteVariation(rs.getObject("en_attente_variation", Double.class))
+                    .rejeteVariation(rs.getObject("rejete_variation", Double.class))
+                    .valideVariation(rs.getObject("valide_variation", Double.class))
+                    .totalVariation(rs.getObject("total_variation", Double.class))
+                    .weekNumber(rs.getObject("week_number", Integer.class))
+                    .dayOfWeek(rs.getObject("day_of_week", Integer.class))
+                    .year(rs.getObject("year", Integer.class))
                     .build();
 
     @Override

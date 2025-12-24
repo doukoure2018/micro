@@ -272,36 +272,166 @@ public class CorrectionQuery {
         """;
 
     /**
-     * Évolution des corrections par jour (30 derniers jours)
+     * Évolution des corrections par jour (30 derniers jours) avec comparaison à la période précédente
      */
     public static final String CORRECTION_EVOLUTION_BY_DAY = """
+    WITH current_period AS (
         SELECT
             DATE(pp.created_at) AS date_jour,
             TO_CHAR(DATE(pp.created_at), 'YYYY-MM-DD') AS periode,
+            EXTRACT(DOW FROM pp.created_at) AS day_of_week,
+            EXTRACT(WEEK FROM pp.created_at) AS week_number,
+            EXTRACT(YEAR FROM pp.created_at) AS year,
             COALESCE(SUM(CASE WHEN pp.correction_statut = 'EN_ATTENTE' THEN 1 ELSE 0 END), 0) AS en_attente,
             COALESCE(SUM(CASE WHEN pp.correction_statut = 'REJETE' THEN 1 ELSE 0 END), 0) AS rejete,
             COALESCE(SUM(CASE WHEN pp.correction_statut = 'VALIDE' THEN 1 ELSE 0 END), 0) AS valide,
             COUNT(pp.id) AS total
         FROM personne_physique pp
         WHERE pp.created_at >= CURRENT_DATE - INTERVAL '30 days'
+        GROUP BY DATE(pp.created_at), EXTRACT(DOW FROM pp.created_at), 
+                 EXTRACT(WEEK FROM pp.created_at), EXTRACT(YEAR FROM pp.created_at)
+    ),
+    previous_period AS (
+        SELECT
+            DATE(pp.created_at) + INTERVAL '30 days' AS date_jour_mapped,
+            COALESCE(SUM(CASE WHEN pp.correction_statut = 'EN_ATTENTE' THEN 1 ELSE 0 END), 0) AS en_attente_prev,
+            COALESCE(SUM(CASE WHEN pp.correction_statut = 'REJETE' THEN 1 ELSE 0 END), 0) AS rejete_prev,
+            COALESCE(SUM(CASE WHEN pp.correction_statut = 'VALIDE' THEN 1 ELSE 0 END), 0) AS valide_prev,
+            COUNT(pp.id) AS total_prev
+        FROM personne_physique pp
+        WHERE pp.created_at >= CURRENT_DATE - INTERVAL '60 days'
+          AND pp.created_at < CURRENT_DATE - INTERVAL '30 days'
         GROUP BY DATE(pp.created_at)
-        ORDER BY date_jour ASC
-        """;
+    )
+    SELECT
+        cp.date_jour,
+        cp.periode,
+        cp.day_of_week::INTEGER AS day_of_week,
+        cp.week_number::INTEGER AS week_number,
+        cp.year::INTEGER AS year,
+        cp.en_attente,
+        cp.rejete,
+        cp.valide,
+        cp.total,
+        COALESCE(pp.en_attente_prev, 0) AS en_attente_prev,
+        COALESCE(pp.rejete_prev, 0) AS rejete_prev,
+        COALESCE(pp.valide_prev, 0) AS valide_prev,
+        COALESCE(pp.total_prev, 0) AS total_prev,
+        CASE WHEN COALESCE(pp.en_attente_prev, 0) > 0 
+             THEN ROUND(((cp.en_attente - pp.en_attente_prev)::NUMERIC / pp.en_attente_prev) * 100, 2)
+             ELSE NULL END AS en_attente_variation,
+        CASE WHEN COALESCE(pp.rejete_prev, 0) > 0 
+             THEN ROUND(((cp.rejete - pp.rejete_prev)::NUMERIC / pp.rejete_prev) * 100, 2)
+             ELSE NULL END AS rejete_variation,
+        CASE WHEN COALESCE(pp.valide_prev, 0) > 0 
+             THEN ROUND(((cp.valide - pp.valide_prev)::NUMERIC / pp.valide_prev) * 100, 2)
+             ELSE NULL END AS valide_variation,
+        CASE WHEN COALESCE(pp.total_prev, 0) > 0 
+             THEN ROUND(((cp.total - pp.total_prev)::NUMERIC / pp.total_prev) * 100, 2)
+             ELSE NULL END AS total_variation
+    FROM current_period cp
+    LEFT JOIN previous_period pp ON cp.date_jour = pp.date_jour_mapped
+    ORDER BY cp.date_jour ASC
+    """;
+
 
     /**
-     * Évolution des corrections par semaine (12 dernières semaines)
+     * Évolution des corrections par semaine (12 dernières semaines) avec comparaison
      */
     public static final String CORRECTION_EVOLUTION_BY_WEEK = """
+    WITH current_period AS (
         SELECT
             DATE_TRUNC('week', pp.created_at)::DATE AS date_jour,
             TO_CHAR(DATE_TRUNC('week', pp.created_at), 'IYYY-"S"IW') AS periode,
+            EXTRACT(WEEK FROM pp.created_at) AS week_number,
+            EXTRACT(YEAR FROM pp.created_at) AS year,
             COALESCE(SUM(CASE WHEN pp.correction_statut = 'EN_ATTENTE' THEN 1 ELSE 0 END), 0) AS en_attente,
             COALESCE(SUM(CASE WHEN pp.correction_statut = 'REJETE' THEN 1 ELSE 0 END), 0) AS rejete,
             COALESCE(SUM(CASE WHEN pp.correction_statut = 'VALIDE' THEN 1 ELSE 0 END), 0) AS valide,
             COUNT(pp.id) AS total
         FROM personne_physique pp
-        WHERE pp.created_at >= CURRENT_DATE - INTERVAL '12 weeks'
+        WHERE pp.created_at >= DATE_TRUNC('week', CURRENT_DATE) - INTERVAL '12 weeks'
+        GROUP BY DATE_TRUNC('week', pp.created_at), EXTRACT(WEEK FROM pp.created_at), 
+                 EXTRACT(YEAR FROM pp.created_at)
+    ),
+    previous_period AS (
+        SELECT
+            (DATE_TRUNC('week', pp.created_at) + INTERVAL '12 weeks')::DATE AS date_jour_mapped,
+            COALESCE(SUM(CASE WHEN pp.correction_statut = 'EN_ATTENTE' THEN 1 ELSE 0 END), 0) AS en_attente_prev,
+            COALESCE(SUM(CASE WHEN pp.correction_statut = 'REJETE' THEN 1 ELSE 0 END), 0) AS rejete_prev,
+            COALESCE(SUM(CASE WHEN pp.correction_statut = 'VALIDE' THEN 1 ELSE 0 END), 0) AS valide_prev,
+            COUNT(pp.id) AS total_prev
+        FROM personne_physique pp
+        WHERE pp.created_at >= DATE_TRUNC('week', CURRENT_DATE) - INTERVAL '24 weeks'
+          AND pp.created_at < DATE_TRUNC('week', CURRENT_DATE) - INTERVAL '12 weeks'
         GROUP BY DATE_TRUNC('week', pp.created_at)
-        ORDER BY date_jour ASC
-        """;
+    )
+    SELECT
+        cp.date_jour,
+        cp.periode,
+        0 AS day_of_week,
+        cp.week_number::INTEGER AS week_number,
+        cp.year::INTEGER AS year,
+        cp.en_attente,
+        cp.rejete,
+        cp.valide,
+        cp.total,
+        COALESCE(pp.en_attente_prev, 0) AS en_attente_prev,
+        COALESCE(pp.rejete_prev, 0) AS rejete_prev,
+        COALESCE(pp.valide_prev, 0) AS valide_prev,
+        COALESCE(pp.total_prev, 0) AS total_prev,
+        CASE WHEN COALESCE(pp.en_attente_prev, 0) > 0 
+             THEN ROUND(((cp.en_attente - pp.en_attente_prev)::NUMERIC / pp.en_attente_prev) * 100, 2)
+             ELSE NULL END AS en_attente_variation,
+        CASE WHEN COALESCE(pp.rejete_prev, 0) > 0 
+             THEN ROUND(((cp.rejete - pp.rejete_prev)::NUMERIC / pp.rejete_prev) * 100, 2)
+             ELSE NULL END AS rejete_variation,
+        CASE WHEN COALESCE(pp.valide_prev, 0) > 0 
+             THEN ROUND(((cp.valide - pp.valide_prev)::NUMERIC / pp.valide_prev) * 100, 2)
+             ELSE NULL END AS valide_variation,
+        CASE WHEN COALESCE(pp.total_prev, 0) > 0 
+             THEN ROUND(((cp.total - pp.total_prev)::NUMERIC / pp.total_prev) * 100, 2)
+             ELSE NULL END AS total_variation
+    FROM current_period cp
+    LEFT JOIN previous_period pp ON cp.date_jour = pp.date_jour_mapped
+    ORDER BY cp.date_jour ASC
+    """;
+
+
+
+    /**
+     * Comparaison semaine sur semaine (même jour de la semaine)
+     */
+    public static final String CORRECTION_WEEK_OVER_WEEK_COMPARISON = """
+    WITH weekly_data AS (
+        SELECT
+            EXTRACT(ISODOW FROM pp.created_at) AS day_of_week,
+            EXTRACT(WEEK FROM pp.created_at) AS week_number,
+            EXTRACT(YEAR FROM pp.created_at) AS year,
+            TO_CHAR(pp.created_at, 'Day') AS day_name,
+            COALESCE(SUM(CASE WHEN pp.correction_statut = 'EN_ATTENTE' THEN 1 ELSE 0 END), 0) AS en_attente,
+            COALESCE(SUM(CASE WHEN pp.correction_statut = 'REJETE' THEN 1 ELSE 0 END), 0) AS rejete,
+            COALESCE(SUM(CASE WHEN pp.correction_statut = 'VALIDE' THEN 1 ELSE 0 END), 0) AS valide,
+            COUNT(pp.id) AS total
+        FROM personne_physique pp
+        WHERE pp.created_at >= CURRENT_DATE - INTERVAL '4 weeks'
+        GROUP BY EXTRACT(ISODOW FROM pp.created_at), EXTRACT(WEEK FROM pp.created_at), 
+                 EXTRACT(YEAR FROM pp.created_at), TO_CHAR(pp.created_at, 'Day')
+    )
+    SELECT
+        day_of_week::INTEGER,
+        TRIM(day_name) AS periode,
+        week_number::INTEGER,
+        year::INTEGER,
+        en_attente,
+        rejete,
+        valide,
+        total,
+        LAG(en_attente) OVER (PARTITION BY day_of_week ORDER BY year, week_number) AS en_attente_prev,
+        LAG(rejete) OVER (PARTITION BY day_of_week ORDER BY year, week_number) AS rejete_prev,
+        LAG(valide) OVER (PARTITION BY day_of_week ORDER BY year, week_number) AS valide_prev,
+        LAG(total) OVER (PARTITION BY day_of_week ORDER BY year, week_number) AS total_prev
+    FROM weekly_data
+    ORDER BY year DESC, week_number DESC, day_of_week ASC
+    """;
 }
