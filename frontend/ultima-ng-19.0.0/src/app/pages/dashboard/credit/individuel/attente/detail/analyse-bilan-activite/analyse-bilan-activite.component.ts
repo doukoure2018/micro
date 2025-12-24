@@ -883,11 +883,12 @@ export class AnalyseBilanActiviteComponent {
                             life: 3000
                         });
 
-                        // Redirection après 2 secondes
-                        console.log('Redirection vers /dashboards dans 2 secondes...');
+                        // Redirection après 2 secondes vers la page de détail
+                        const redirectUrl = `/dashboards/credit/individuel/attente/detail/${this.demandeIndividuelId}`;
+                        console.log('Redirection vers', redirectUrl, 'dans 2 secondes...');
                         setTimeout(() => {
                             console.log('Redirection en cours...');
-                            this.router.navigate(['/dashboards']).then(
+                            this.router.navigate(['/dashboards/credit/individuel/attente/detail', this.demandeIndividuelId]).then(
                                 (success) => console.log('Navigation réussie:', success),
                                 (error) => console.error('Erreur de navigation:', error)
                             );

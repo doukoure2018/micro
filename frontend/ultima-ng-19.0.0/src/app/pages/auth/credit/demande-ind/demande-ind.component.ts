@@ -708,7 +708,7 @@ export class DemandeIndComponent implements OnInit {
                     this.formData = this.getInitialFormData();
 
                     setTimeout(() => {
-                        this.router.navigate(['/demandes']);
+                        this.router.navigate(['/']);
                     }, 2000);
                 },
                 error: (error) => {

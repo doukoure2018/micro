@@ -459,6 +459,9 @@ export class AnalyseFluxTresorerieComponent {
         dossierId: 0
     });
 
+    // Computed pour vérifier si le dossier existe (permet de bloquer le tableau)
+    hasDossierCredit = computed(() => this.creditParams().dossierId > 0);
+
     // SOLUTION 1: Ajouter un signal pour forcer le refresh du formulaire
     formRefreshTrigger = signal(0);
 

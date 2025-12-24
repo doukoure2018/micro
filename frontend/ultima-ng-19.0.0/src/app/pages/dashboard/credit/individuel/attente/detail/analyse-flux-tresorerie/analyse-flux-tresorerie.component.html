@@ -221,14 +221,17 @@
                             Prévision de Trésorerie
                         </h2>
                         <div class="flex gap-2">
-                            <p-tag *ngIf="getTableMonthsWithData() > 0" severity="info"
+                            @if (!hasDossierCredit()) {
+                            <p-tag severity="danger" value="Dossier requis" icon="pi pi-lock"></p-tag>
+                            }
+                            <p-tag *ngIf="getTableMonthsWithData() > 0 && hasDossierCredit()" severity="info"
                                 [value]="getTableMonthsWithData() + '/' + (nombreMois() + 1) + ' mois'"
                                 icon="pi pi-calendar">
                             </p-tag>
-                            <p-tag *ngIf="tresorerieState.hasUnsavedChanges()" severity="warn" value="Modifications"
+                            <p-tag *ngIf="tresorerieState.hasUnsavedChanges() && hasDossierCredit()" severity="warn" value="Modifications"
                                 icon="pi pi-exclamation-triangle">
                             </p-tag>
-                            <p-tag *ngIf="!tresorerieState.hasUnsavedChanges() && getTableMonthsWithData() > 0"
+                            <p-tag *ngIf="!tresorerieState.hasUnsavedChanges() && getTableMonthsWithData() > 0 && hasDossierCredit()"
                                 severity="success" value="Sauvegardé" icon="pi pi-check">
                             </p-tag>
                         </div>
@@ -236,7 +239,7 @@
 
                     <!-- Boutons d'action -->
                     <div class="flex gap-2 align-items-center flex-wrap">
-                        @if (peutImprimer()) {
+                        @if (peutImprimer() && hasDossierCredit()) {
                         <div class="btn-group-print flex gap-1">
                             <p-button icon="pi pi-print" label="Imprimer" severity="success" size="small"
                                 (onClick)="imprimerTableauTresorerie()" pTooltip="Imprimer le tableau">
@@ -247,13 +250,42 @@
                         </div>
                         } @else {
                         <p-button icon="pi pi-print" label="Imprimer" severity="secondary" size="small"
-                            [disabled]="true" pTooltip="Saisissez des données pour imprimer">
+                            [disabled]="true" pTooltip="Créez d'abord le dossier pour imprimer">
                         </p-button>
                         }
                     </div>
                 </div>
             </div>
         </ng-template>
+
+        <!-- BLOQUER SI PAS DE DOSSIER -->
+        @if (!hasDossierCredit()) {
+        <div class="dossier-required-overlay">
+            <div class="overlay-content text-center p-5">
+                <div class="overlay-icon mb-4">
+                    <i class="pi pi-lock text-6xl text-orange-500"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">
+                    Dossier de crédit requis
+                </h3>
+                <p class="text-gray-600 mb-4 max-w-30rem mx-auto">
+                    Avant de pouvoir saisir les prévisions de trésorerie, vous devez d'abord créer le dossier de crédit.
+                    Cette étape est obligatoire pour enregistrer vos données.
+                </p>
+                <div class="flex justify-content-center gap-3 flex-wrap">
+                    <p-button label="Créer le dossier maintenant" icon="pi pi-plus-circle" severity="warn" size="large"
+                        (onClick)="createDossierCredit()" [loading]="state().saving">
+                    </p-button>
+                </div>
+                <div class="mt-4 text-sm text-gray-500">
+                    <i class="pi pi-info-circle mr-1"></i>
+                    Montant: <strong>{{ formatMontant(creditParams().montantCredit) }}</strong> |
+                    Durée: <strong>{{ creditParams().duree }} mois</strong> |
+                    Taux: <strong>{{ creditParams().tauxInteret }}%</strong>
+                </div>
+            </div>
+        </div>
+        } @else {
 
         <!-- Bannière de progression -->
         @if (peutImprimer()) {
@@ -476,5 +508,6 @@
                 </div>
             </div>
         </div>
+        }
     </p-card>
 </div>

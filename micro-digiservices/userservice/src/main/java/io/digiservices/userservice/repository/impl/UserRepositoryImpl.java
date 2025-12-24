@@ -194,7 +194,7 @@ public class UserRepositoryImpl implements UserRepository {
                 }
 
                 log.info("Creating DA account");
-                jdbcClient.sql(CREATE_ACCOUNT_DA_STORED_PROCEDURE)
+                jdbcClient.sql(CREATE_ACCOUNT_RA_STORED_PROCEDURE)
                         .paramSource(getParamSourceAccountDA(firstName, lastName, email, username,
                                 password, token, phone, bio,service,delegationId, agenceId))
                         .update();

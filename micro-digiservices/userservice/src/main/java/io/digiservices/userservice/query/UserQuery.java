@@ -113,6 +113,11 @@ public class UserQuery {
             CALL create_user_da(:userUuid, :firstName, :lastName, :email, :username, :password, :credentialUuid, :token, :memberId, :delegationId, :agenceId, :phone, :bio,:service)
             """;
 
+    public static final String CREATE_ACCOUNT_RA_STORED_PROCEDURE =
+            """
+            CALL create_user_ra(:userUuid, :firstName, :lastName, :email, :username, :password, :credentialUuid, :token, :memberId, :delegationId, :agenceId, :phone, :bio,:service)
+            """;
+
     public static final String SELECT_ACCOUNT_TOKEN_QUERY=
                                 """
                                    SELECT account_token_id, token, user_id, (created_at + '24 HOURS') < NOW() AS expired, created_at, updated_at FROM account_tokens WHERE token=:token;
