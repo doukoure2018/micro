@@ -37,7 +37,7 @@ export class SocietariatComponent implements OnInit {
     ];
     selectedPeriod = 'day';
 
-    // View mode options
+    // View mode options and other
     viewModeOptions = [
         { label: 'Graphique', value: 'chart', icon: 'pi pi-chart-line' },
         { label: 'Tableau', value: 'table', icon: 'pi pi-table' },
