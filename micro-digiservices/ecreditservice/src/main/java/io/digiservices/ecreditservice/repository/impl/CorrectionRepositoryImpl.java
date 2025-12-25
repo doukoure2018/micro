@@ -16,6 +16,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -606,26 +607,45 @@ public class CorrectionRepositoryImpl implements CorrectionRepository {
         }
     }
 
-    private static final RowMapper<CorrectionEvolutionStat> CORRECTION_EVOLUTION_ROW_MAPPER = (rs, rowNum) ->
-            CorrectionEvolutionStat.builder()
-                    .date(rs.getDate("date_jour") != null ? rs.getDate("date_jour").toLocalDate() : null)
-                    .periode(rs.getString("periode"))
-                    .enAttente(rs.getLong("en_attente"))
-                    .rejete(rs.getLong("rejete"))
-                    .valide(rs.getLong("valide"))
-                    .total(rs.getLong("total"))
-                    .enAttentePrev(rs.getObject("en_attente_prev", Long.class))
-                    .rejetePrev(rs.getObject("rejete_prev", Long.class))
-                    .validePrev(rs.getObject("valide_prev", Long.class))
-                    .totalPrev(rs.getObject("total_prev", Long.class))
-                    .enAttenteVariation(rs.getObject("en_attente_variation", Double.class))
-                    .rejeteVariation(rs.getObject("rejete_variation", Double.class))
-                    .valideVariation(rs.getObject("valide_variation", Double.class))
-                    .totalVariation(rs.getObject("total_variation", Double.class))
-                    .weekNumber(rs.getObject("week_number", Integer.class))
-                    .dayOfWeek(rs.getObject("day_of_week", Integer.class))
-                    .year(rs.getObject("year", Integer.class))
-                    .build();
+    private static final RowMapper<CorrectionEvolutionStat> CORRECTION_EVOLUTION_ROW_MAPPER = (rs, rowNum) -> {
+        CorrectionEvolutionStat.CorrectionEvolutionStatBuilder builder = CorrectionEvolutionStat.builder()
+                .periode(rs.getString("periode"))
+                .enAttente(rs.getLong("en_attente"))
+                .rejete(rs.getLong("rejete"))
+                .valide(rs.getLong("valide"))
+                .total(rs.getLong("total"));
+
+        // Date
+        if (rs.getDate("date_jour") != null) {
+            builder.date(rs.getDate("date_jour").toLocalDate());
+        }
+
+        // Previous period values (peuvent être null)
+        builder.enAttentePrev(rs.getObject("en_attente_prev") != null ? rs.getLong("en_attente_prev") : null);
+        builder.rejetePrev(rs.getObject("rejete_prev") != null ? rs.getLong("rejete_prev") : null);
+        builder.validePrev(rs.getObject("valide_prev") != null ? rs.getLong("valide_prev") : null);
+        builder.totalPrev(rs.getObject("total_prev") != null ? rs.getLong("total_prev") : null);
+
+        // Variations - utiliser BigDecimal puis convertir en Double
+        BigDecimal enAttenteVar = rs.getBigDecimal("en_attente_variation");
+        builder.enAttenteVariation(enAttenteVar != null ? enAttenteVar.doubleValue() : null);
+
+        BigDecimal rejeteVar = rs.getBigDecimal("rejete_variation");
+        builder.rejeteVariation(rejeteVar != null ? rejeteVar.doubleValue() : null);
+
+        BigDecimal valideVar = rs.getBigDecimal("valide_variation");
+        builder.valideVariation(valideVar != null ? valideVar.doubleValue() : null);
+
+        BigDecimal totalVar = rs.getBigDecimal("total_variation");
+        builder.totalVariation(totalVar != null ? totalVar.doubleValue() : null);
+
+        // Week/Day/Year
+        builder.weekNumber(rs.getObject("week_number") != null ? rs.getInt("week_number") : null);
+        builder.dayOfWeek(rs.getObject("day_of_week") != null ? rs.getInt("day_of_week") : null);
+        builder.year(rs.getObject("year") != null ? rs.getInt("year") : null);
+
+        return builder.build();
+    };
 
     @Override
     public List<CorrectionEvolutionStat> getCorrectionEvolutionByDay() {
