@@ -153,6 +153,7 @@
         </p-tabPanel>
 
         <!-- TAB 2: Import Fichier Salaire -->
+        <!-- TAB 2: Import Fichier Salaire -->
         <p-tabPanel>
             <ng-template pTemplate="header">
                 <i class="pi pi-wallet mr-2"></i>
@@ -192,7 +193,7 @@
 
                         <p-divider></p-divider>
 
-                        <!-- ✅ MESSAGE D'AVERTISSEMENT SI DONNÉES EXISTENT -->
+                        <!-- MESSAGE D'AVERTISSEMENT SI DONNÉES EXISTENT -->
                         @if (hasSalaireData()) {
                         <div class="import-blocked-message">
                             <p-message severity="warn" [style]="{ width: '100%' }">
@@ -213,7 +214,7 @@
                             </div>
                         </div>
                         } @else {
-                        <!-- ✅ ZONE D'UPLOAD VISIBLE SEULEMENT SI PAS DE DONNÉES -->
+                        <!-- ZONE D'UPLOAD VISIBLE SEULEMENT SI PAS DE DONNÉES -->
                         <div class="upload-zone">
                             <p-fileUpload mode="advanced" name="file" accept=".xlsx,.xls" [maxFileSize]="10000000"
                                 [customUpload]="true" (uploadHandler)="onUploadSalaire($event)" [auto]="false"
@@ -284,9 +285,49 @@
 
                 <!-- Table Avances Salaire -->
                 <p-card header="Liste des avances salaire">
-                    <p-table [value]="avancesSalaire()" [paginator]="true" [rows]="10"
+                    <!-- ✅ NOUVEAU: Header avec recherche -->
+                    <div class="table-header">
+                        <!-- Recherche par nom/prénom -->
+                        <div class="search-section">
+                            <span class="p-input-icon-left p-input-icon-right">
+                                <i class="pi pi-search"></i>
+                                <input type="text" pInputText [ngModel]="searchTermSalaire()"
+                                    (input)="onSearchChangeSalaire($event)"
+                                    placeholder="Rechercher par nom, prénom ou matricule..."
+                                    [style]="{ width: '300px' }" />
+                                @if (searchTermSalaire()) {
+                                <i class="pi pi-times clear-icon" (click)="clearSearchSalaire()"></i>
+                                }
+                            </span>
+                        </div>
+
+                        <!-- Compteur -->
+                        <div class="result-counter">
+                            <span class="counter">
+                                <i class="pi pi-users"></i>
+                                {{ countAvances() }} enregistrement(s)
+                            </span>
+                        </div>
+
+                        <p-button icon="pi pi-refresh" [text]="true" (onClick)="loadAvancesSalaire()"
+                            [loading]="isLoadingSalaire()" pTooltip="Actualiser"></p-button>
+                    </div>
+
+                    <!-- ✅ NOUVEAU: Indicateur de résultats filtrés -->
+                    @if (searchTermSalaire()) {
+                    <div class="search-results-info">
+                        <i class="pi pi-filter"></i>
+                        <span>
+                            {{ countFilteredAvances() }} résultat(s) pour "{{ searchTermSalaire() }}"
+                        </span>
+                        <p-button icon="pi pi-times" label="Effacer" [text]="true" size="small"
+                            (onClick)="clearSearchSalaire()"></p-button>
+                    </div>
+                    }
+
+                    <!-- ✅ IMPORTANT: Utiliser filteredAvancesSalaire() au lieu de avancesSalaire() -->
+                    <p-table [value]="filteredAvancesSalaire()" [paginator]="true" [rows]="10"
                         [rowsPerPageOptions]="[10, 25, 50, 100]" [loading]="isLoadingSalaire()"
-                        [globalFilterFields]="['matricule', 'nomPersonnel', 'prenomPersonnel']"
                         styleClass="p-datatable-striped p-datatable-gridlines" [tableStyle]="{ 'min-width': '60rem' }"
                         [showCurrentPageReport]="true"
                         currentPageReportTemplate="Affichage {first} à {last} sur {totalRecords} avances">
@@ -315,8 +356,13 @@
                                 <td>
                                     <span class="matricule-badge">{{ avance.matricule }}</span>
                                 </td>
-                                <td>{{ avance.nomPersonnel }}</td>
-                                <td>{{ avance.prenomPersonnel }}</td>
+                                <td>
+                                    <!-- ✅ NOUVEAU: Surligner le texte recherché -->
+                                    <span [innerHTML]="highlightSearchSalaire(avance.nomPersonnel)"></span>
+                                </td>
+                                <td>
+                                    <span [innerHTML]="highlightSearchSalaire(avance.prenomPersonnel)"></span>
+                                </td>
                                 <td class="text-right">
                                     <span class="montant">{{ formatMontant(avance.netAmount) }}</span>
                                 </td>
@@ -330,7 +376,11 @@
                             <tr>
                                 <td colspan="6" class="empty-message">
                                     <i class="pi pi-inbox"></i>
+                                    @if (searchTermSalaire()) {
+                                    <span>Aucune avance trouvée pour "{{ searchTermSalaire() }}"</span>
+                                    } @else {
                                     <span>Aucune avance salaire trouvée. Importez un fichier pour commencer.</span>
+                                    }
                                 </td>
                             </tr>
                         </ng-template>

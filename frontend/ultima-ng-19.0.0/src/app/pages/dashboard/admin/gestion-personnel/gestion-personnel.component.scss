@@ -702,3 +702,414 @@
         }
     }
 }
+
+// ==================== TABLE HEADER ====================
+
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+
+    .filter-section {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .search-section {
+        flex: 1;
+        min-width: 250px;
+        max-width: 350px;
+
+        .p-input-icon-left {
+            width: 100%;
+
+            input {
+                width: 100%;
+                padding-right: 2.5rem;
+            }
+        }
+
+        .clear-icon {
+            cursor: pointer;
+            color: var(--text-color-secondary);
+            transition: color 0.2s;
+
+            &:hover {
+                color: var(--primary-color);
+            }
+        }
+    }
+
+    .statut-counters {
+        display: flex;
+        gap: 1rem;
+
+        .counter {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+
+            &.active {
+                background: var(--green-100);
+                color: var(--green-700);
+
+                i {
+                    color: var(--green-500);
+                }
+            }
+
+            &.inactive {
+                background: var(--red-100);
+                color: var(--red-700);
+
+                i {
+                    color: var(--red-500);
+                }
+            }
+        }
+    }
+
+    // ✅ NOUVEAU: Compteur générique
+    .result-counter {
+        .counter {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            background: var(--primary-100);
+            color: var(--primary-700);
+
+            i {
+                color: var(--primary-500);
+            }
+        }
+    }
+}
+
+// ==================== SEARCH RESULTS INFO ====================
+
+.search-results-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: var(--blue-50);
+    border: 1px solid var(--blue-200);
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    color: var(--blue-700);
+
+    i {
+        color: var(--blue-500);
+    }
+}
+
+// ==================== HIGHLIGHT ====================
+
+:host ::ng-deep {
+    .highlight {
+        background-color: var(--yellow-200);
+        padding: 0.1rem 0.2rem;
+        border-radius: 3px;
+        font-weight: 600;
+    }
+}
+
+// ==================== LIGNE INACTIVE ====================
+
+.inactive-row {
+    background-color: var(--surface-100) !important;
+    opacity: 0.7;
+
+    td {
+        color: var(--text-color-secondary);
+    }
+
+    .matricule-badge {
+        background: var(--surface-300);
+        color: var(--text-color-secondary);
+    }
+}
+
+// ==================== ACTIONS ====================
+
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 0.25rem;
+}
+
+.actions-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+// ==================== RESPONSIVE ====================
+
+@media (max-width: 768px) {
+    .table-header {
+        flex-direction: column;
+        align-items: stretch;
+
+        .search-section {
+            max-width: 100%;
+            order: -1;
+        }
+
+        .statut-counters,
+        .result-counter {
+            justify-content: center;
+        }
+    }
+
+    .actions-bar {
+        flex-direction: column;
+
+        > * {
+            width: 100%;
+        }
+    }
+}
+
+// ==================== MONTANTS ====================
+
+.montant {
+    font-weight: 600;
+    color: var(--text-color);
+
+    &.limite {
+        color: var(--green-600);
+    }
+}
+
+.text-right {
+    text-align: right;
+}
+
+// ==================== BADGES ====================
+
+.matricule-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    background: var(--primary-100);
+    color: var(--primary-700);
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.numero-compte {
+    font-family: monospace;
+    font-size: 0.9rem;
+    color: var(--text-color);
+}
+
+.no-data {
+    color: var(--text-color-secondary);
+    font-style: italic;
+    font-size: 0.875rem;
+}
+
+// ==================== EMPTY MESSAGE ====================
+
+.empty-message {
+    text-align: center;
+    padding: 3rem 1rem;
+
+    i {
+        font-size: 3rem;
+        color: var(--text-color-secondary);
+        display: block;
+        margin-bottom: 1rem;
+    }
+
+    span {
+        color: var(--text-color-secondary);
+        font-size: 1rem;
+    }
+}
+
+// ==================== IMPORT SECTION ====================
+
+.import-blocked-message {
+    margin-bottom: 1rem;
+
+    .blocked-content {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+
+        > i {
+            font-size: 1.5rem;
+            margin-top: 0.25rem;
+        }
+
+        .blocked-text {
+            strong {
+                display: block;
+                margin-bottom: 0.25rem;
+            }
+
+            p {
+                margin: 0;
+                font-size: 0.9rem;
+            }
+        }
+    }
+
+    .reset-action {
+        margin-top: 1rem;
+        text-align: center;
+    }
+}
+
+.upload-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    color: var(--text-color-secondary);
+
+    i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: var(--primary-color);
+    }
+
+    p {
+        margin: 0 0 0.5rem 0;
+        font-size: 1rem;
+    }
+
+    span {
+        font-size: 0.875rem;
+    }
+}
+
+.upload-progress {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+
+    span {
+        color: var(--text-color-secondary);
+        font-size: 0.9rem;
+    }
+}
+
+.import-result {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: 8px;
+
+    &.success {
+        background: var(--green-50);
+        border: 1px solid var(--green-200);
+
+        .result-header i {
+            color: var(--green-500);
+        }
+    }
+
+    &.partial {
+        background: var(--orange-50);
+        border: 1px solid var(--orange-200);
+
+        .result-header i {
+            color: var(--orange-500);
+        }
+    }
+
+    .result-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+        font-weight: 600;
+
+        i {
+            font-size: 1.25rem;
+        }
+    }
+
+    .result-stats {
+        display: flex;
+        gap: 2rem;
+        flex-wrap: wrap;
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+
+            .label {
+                color: var(--text-color-secondary);
+            }
+
+            .value {
+                font-weight: 600;
+
+                &.success {
+                    color: var(--green-600);
+                }
+
+                &.error {
+                    color: var(--red-600);
+                }
+            }
+        }
+    }
+}
+
+.format-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+
+    th,
+    td {
+        padding: 0.5rem 1rem;
+        text-align: left;
+        border: 1px solid var(--surface-300);
+    }
+
+    th {
+        background: var(--surface-100);
+        font-weight: 600;
+    }
+
+    td {
+        font-family: monospace;
+    }
+}
+
+.info-note {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--blue-600);
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+
+    i {
+        color: var(--blue-500);
+    }
+}

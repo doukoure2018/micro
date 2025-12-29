@@ -87,6 +87,9 @@ export class GestionPersonnelComponent implements OnInit {
     // ✅ NOUVEAU: Compteurs par statut
     countByStatut = signal<{ ACTIVE?: number; INACTIVE?: number }>({});
 
+    // ✅ NOUVEAU: Filtre par nom/prénom - Salaire
+    searchTermSalaire = signal<string>('');
+
     // Résultats d'import
     importResultPersonnel = signal<ImportResultDto | null>(null);
     importResultSalaire = signal<ImportResultDto | null>(null);
@@ -159,6 +162,28 @@ export class GestionPersonnelComponent implements OnInit {
 
     // ✅ NOUVEAU: Compteur des résultats filtrés
     countFilteredPersonnels = computed(() => this.filteredPersonnels().length);
+
+    // ✅ NOUVEAU: Avances salaire filtrées par recherche
+    filteredAvancesSalaire = computed(() => {
+        const search = this.searchTermSalaire().toLowerCase().trim();
+        const list = this.avancesSalaire();
+
+        if (!search) {
+            return list;
+        }
+
+        return list.filter(
+            (a) =>
+                a.nomPersonnel?.toLowerCase().includes(search) ||
+                a.prenomPersonnel?.toLowerCase().includes(search) ||
+                a.matricule?.toLowerCase().includes(search) ||
+                `${a.prenomPersonnel} ${a.nomPersonnel}`.toLowerCase().includes(search) ||
+                `${a.nomPersonnel} ${a.prenomPersonnel}`.toLowerCase().includes(search)
+        );
+    });
+
+    // ✅ NOUVEAU: Compteur des résultats filtrés - Salaire
+    countFilteredAvances = computed(() => this.filteredAvancesSalaire().length);
     // ✅ NOUVEAU: Réinitialiser la recherche
     clearSearch(): void {
         this.searchTerm.set('');
@@ -169,8 +194,28 @@ export class GestionPersonnelComponent implements OnInit {
         const input = event.target as HTMLInputElement;
         this.searchTerm.set(input.value);
     }
-    // ==================== LIFECYCLE ====================
 
+    // ✅ NOUVEAU: Réinitialiser la recherche - Salaire
+    clearSearchSalaire(): void {
+        this.searchTermSalaire.set('');
+    }
+
+    // ✅ NOUVEAU: Handler pour la recherche - Salaire
+    onSearchChangeSalaire(event: Event): void {
+        const input = event.target as HTMLInputElement;
+        this.searchTermSalaire.set(input.value);
+    }
+    // ✅ NOUVEAU: Surligner le texte recherché - Salaire
+    highlightSearchSalaire(text: string | undefined): string {
+        if (!text) return '';
+
+        const search = this.searchTermSalaire().trim();
+        if (!search) return text;
+
+        const regex = new RegExp(`(${this.escapeRegex(search)})`, 'gi');
+        return text.replace(regex, '<mark class="highlight">$1</mark>');
+    }
+    // ==================== LIFECYCLE ====================
     ngOnInit(): void {
         this.loadPersonnels();
         this.loadAvancesSalaire();
