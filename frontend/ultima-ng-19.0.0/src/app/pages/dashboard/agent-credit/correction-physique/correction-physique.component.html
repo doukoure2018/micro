@@ -12,8 +12,8 @@
                 </p>
                 }
             </div>
-            <p-button label="Ajouter Personne Physique" icon="pi pi-plus" (click)="openAddDialog()"
-                [loading]="isLoading()">
+            <p-button label="Corriger la fiche Signalétique" icon="pi pi-plus" (click)="openAddDialog()"
+                [loading]="isLoading()" [disabled]="!ficheData()">
             </p-button>
         </div>
     </p-card>
@@ -216,7 +216,8 @@
                     </tr>
                     <tr>
                         <th>Ancienneté Résidence</th>
-                        <td>{{ fiche.antiguedadResidencia ? fiche.antiguedadResidencia + ' ans' : 'Non renseigné' }}</td>
+                        <td>{{ fiche.antiguedadResidencia ? fiche.antiguedadResidencia + ' ans' : 'Non renseigné' }}
+                        </td>
                     </tr>
                     <tr>
                         <th>Province</th>
@@ -269,7 +270,7 @@
 
     <!-- Add Personne Physique Dialog -->
     <p-dialog [(visible)]="state().showAddDialog" [modal]="true" [style]="{width: '90vw', maxWidth: '1000px'}"
-        [draggable]="false" [resizable]="false" header="Ajouter une Personne Physique">
+        [draggable]="false" [resizable]="false" header="Corriger la personne Physique">
 
         <app-add-personne-physique [userId]="state().user?.userId" [ficheData]="state().ficheSignaletique"
             (onSave)="onPersonnePhysiqueAdded($event)" (onCancel)="closeAddDialog()">

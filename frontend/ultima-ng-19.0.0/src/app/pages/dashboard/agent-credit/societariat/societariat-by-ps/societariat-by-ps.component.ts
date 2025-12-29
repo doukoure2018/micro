@@ -6,10 +6,10 @@ import { RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 
 @Component({
-    selector: 'app-societariat-by-ps',
+  selector: 'app-societariat-by-ps',
     imports: [CommonModule, TableModule, RouterModule, ButtonModule],
-    templateUrl: './societariat-by-ps.component.html',
-    styleUrl: './societariat-by-ps.component.scss'
+  templateUrl: './societariat-by-ps.component.html',
+  styleUrl: './societariat-by-ps.component.scss'
 })
 export class SocietariatByPsComponent {
     @Input() agenceLibele?: string;

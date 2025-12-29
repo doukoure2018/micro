@@ -89,10 +89,10 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
-    public String createUser(String firstName, String lastName, String email, String username, String password) {
+    public String createUser(String firstName, String lastName, String email, String username, String password, String matricule, String phone) {
         try {
             var token = randomUUUID.get();
-            jdbcClient.sql(CREATE_USER_STORED_PROCEDURE).paramSource(getParamSource(firstName, lastName, email, username, password, token)).update();
+            jdbcClient.sql(CREATE_USER_STORED_PROCEDURE).paramSource(getParamSourceWithMatricule(firstName, lastName, email, username, password, token, matricule, phone)).update();
             return token;
         }catch (DuplicateKeyException exception){
             log.error(exception.getMessage());
@@ -926,6 +926,44 @@ public class UserRepositoryImpl implements UserRepository {
                 .addValue("credentialUuid", randomUUUID.get(), VARCHAR)
                 .addValue("password",password, VARCHAR)
                 .addValue("token",token, VARCHAR);
+    }
+
+    private SqlParameterSource getParamSourceWithMatricule(String firstName, String lastName, String email, String username, String password, String token, String matricule, String phone)
+    {
+        // Générer le username si null ou vide (combinaison prénom + nom)
+        String generatedUsername = (username == null || username.trim().isEmpty()) 
+                ? generateUsername(firstName, lastName) 
+                : username.trim().toLowerCase();
+        
+        return new MapSqlParameterSource()
+                .addValue("userUuid", randomUUUID.get(), VARCHAR)
+                .addValue("firstName", firstName, VARCHAR)
+                .addValue("lastName", lastName, VARCHAR)
+                .addValue("email", email.trim().toLowerCase(), VARCHAR)
+                .addValue("username", generatedUsername, VARCHAR)
+                .addValue("memberId", memberId.get(), VARCHAR)
+                .addValue("credentialUuid", randomUUUID.get(), VARCHAR)
+                .addValue("password", password, VARCHAR)
+                .addValue("token", token, VARCHAR)
+                .addValue("matricule", matricule, VARCHAR)
+                .addValue("phone", phone, VARCHAR);
+    }
+
+    /**
+     * Génère un username unique à partir du prénom et nom
+     * Format: première lettre du prénom + nom + 4 chiffres aléatoires
+     */
+    private String generateUsername(String firstName, String lastName) {
+        String base = (firstName.substring(0, 1) + lastName)
+                .toLowerCase()
+                .replaceAll("[^a-z0-9]", "");
+        // Limiter à 20 caractères pour laisser place aux chiffres
+        if (base.length() > 20) {
+            base = base.substring(0, 20);
+        }
+        // Ajouter 4 chiffres aléatoires
+        int random = (int) (Math.random() * 10000);
+        return base + String.format("%04d", random);
     }
 
     private SqlParameterSource getParamSource(String userUuid, String firstName, String lastName, String email, String phone, String bio, String address)

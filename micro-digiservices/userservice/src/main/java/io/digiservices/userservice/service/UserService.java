@@ -15,7 +15,7 @@ public interface UserService {
     User getUserByEmail(String email);
     User getUserByUuid(String userUuid);
     User updateUser(String userUuid, String firstName, String lastName, String email, String phone, String bio, String address);
-    void createUser(String firstName, String lastName, String email, String username, String password);
+    void createUser(String firstName, String lastName, String email, String username, String password, String matricule, String phone);
     void createAccountUser(String firstName, String lastName, String email, String username, String password, String roleName,String service);
 
     void createAccountAgentCreditAndDa(String firstName, String lastName, String email, String username,
@@ -49,10 +49,10 @@ public interface UserService {
 
     List<AgentCreditDTO> getListAgentCredit(Long agenceId);
 
-    AgentDisponibilityDto getDisponibilityAgent(Long userId, Long pointVenteId);
+     AgentDisponibilityDto getDisponibilityAgent(Long userId, Long pointVenteId);
 
     // Autorisation utilisateur
     void updateUserAuthorization(Long userId, boolean isAuthorized);
     Boolean getUserAuthorizationStatus(Long userId);
     List<User> getUsersByRole(String roleName);
-}
+    }

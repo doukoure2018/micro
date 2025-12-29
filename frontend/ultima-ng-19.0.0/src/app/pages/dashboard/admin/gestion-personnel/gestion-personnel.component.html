@@ -1,0 +1,395 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="rh-container">
+    <!-- En-tête -->
+    <div class="header-section">
+        <h2><i class="pi pi-users"></i> Gestion des Ressources Humaines</h2>
+        <p class="subtitle">Import et gestion des fichiers du personnel et des salaires</p>
+    </div>
+
+    <p-tabView>
+        <!-- TAB 1: Import Fichier Personnel -->
+        <p-tabPanel>
+            <ng-template pTemplate="header">
+                <i class="pi pi-user-plus mr-2"></i>
+                <span>Fichier Personnel</span>
+                <p-badge [value]="countPersonnels().toString()" severity="info" class="ml-2"></p-badge>
+            </ng-template>
+
+            <div class="tab-content">
+                <!-- Section Upload Personnel -->
+                <p-card header="Importer le fichier du personnel" styleClass="mb-4">
+                    <div class="upload-section">
+                        <div class="upload-info">
+                            <h4><i class="pi pi-info-circle"></i> Format attendu du fichier Excel</h4>
+                            <table class="format-table">
+                                <thead>
+                                    <tr>
+                                        <th>Matricule</th>
+                                        <th>Nom</th>
+                                        <th>Prénom</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>1</td>
+                                        <td>BAH</td>
+                                        <td>Amadou Tidiane</td>
+                                    </tr>
+                                    <tr>
+                                        <td>13</td>
+                                        <td>BAH</td>
+                                        <td>Abdoulaye Simbé</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <p-divider></p-divider>
+
+                        <div class="upload-zone">
+                            <p-fileUpload mode="advanced" name="file" accept=".xlsx,.xls" [maxFileSize]="10000000"
+                                [customUpload]="true" (uploadHandler)="onUploadPersonnel($event)" [auto]="false"
+                                chooseLabel="Choisir fichier" uploadLabel="Importer" cancelLabel="Annuler"
+                                [showUploadButton]="true" [showCancelButton]="true" [disabled]="isUploadingPersonnel()">
+                                <ng-template pTemplate="content">
+                                    <div class="upload-placeholder">
+                                        <i class="pi pi-cloud-upload"></i>
+                                        <p>Glissez-déposez votre fichier Excel ici</p>
+                                        <span>ou cliquez pour sélectionner</span>
+                                    </div>
+                                </ng-template>
+                            </p-fileUpload>
+
+                            @if (isUploadingPersonnel()) {
+                            <div class="upload-progress">
+                                <p-progressBar mode="indeterminate" [style]="{ height: '6px' }"></p-progressBar>
+                                <span>Import en cours...</span>
+                            </div>
+                            }
+                        </div>
+
+                        <!-- Résultat d'import -->
+                        @if (statsPersonnel()) {
+                        <div class="import-result" [class.success]="statsPersonnel()!.success"
+                            [class.partial]="!statsPersonnel()!.success">
+                            <div class="result-header">
+                                <i
+                                    [class]="statsPersonnel()!.success ? 'pi pi-check-circle' : 'pi pi-exclamation-triangle'"></i>
+                                <span>{{ statsPersonnel()!.success ? 'Import réussi' : 'Import partiel' }}</span>
+                            </div>
+                            <div class="result-stats">
+                                <div class="stat">
+                                    <span class="label">Total lignes:</span>
+                                    <span class="value">{{ statsPersonnel()!.total }}</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="label">Importées:</span>
+                                    <span class="value success">{{ statsPersonnel()!.importees }}</span>
+                                </div>
+                                @if (statsPersonnel()!.erreurs > 0) {
+                                <div class="stat">
+                                    <span class="label">Erreurs:</span>
+                                    <span class="value error">{{ statsPersonnel()!.erreurs }}</span>
+                                    <p-button icon="pi pi-eye" severity="danger" [text]="true" size="small"
+                                        (onClick)="showErrors('personnel')" pTooltip="Voir les erreurs"></p-button>
+                                </div>
+                                }
+                            </div>
+                        </div>
+                        }
+                    </div>
+                </p-card>
+
+                <!-- Table Personnel -->
+                <p-card header="Liste du personnel">
+                    <div class="table-header">
+                        <span class="p-input-icon-left"></span>
+                        <p-button icon="pi pi-refresh" [text]="true" (onClick)="loadPersonnels()"
+                            [loading]="isLoadingPersonnel()" pTooltip="Actualiser"></p-button>
+                    </div>
+
+                    <p-table [value]="personnels()" [paginator]="true" [rows]="10"
+                        [rowsPerPageOptions]="[10, 25, 50, 100]" [loading]="isLoadingPersonnel()"
+                        [globalFilterFields]="['matricule', 'nom', 'prenom']"
+                        styleClass="p-datatable-striped p-datatable-gridlines" [tableStyle]="{ 'min-width': '50rem' }"
+                        [showCurrentPageReport]="true"
+                        currentPageReportTemplate="Affichage {first} à {last} sur {totalRecords} personnels">
+                        <ng-template pTemplate="header">
+                            <tr>
+                                <th pSortableColumn="matricule" style="width: 120px">
+                                    Matricule <p-sortIcon field="matricule"></p-sortIcon>
+                                </th>
+                                <th pSortableColumn="nom">
+                                    Nom <p-sortIcon field="nom"></p-sortIcon>
+                                </th>
+                                <th pSortableColumn="prenom">
+                                    Prénom <p-sortIcon field="prenom"></p-sortIcon>
+                                </th>
+                                <th pSortableColumn="numeroCompte">
+                                    N° Compte <p-sortIcon field="numeroCompte"></p-sortIcon>
+                                </th>
+                                <th style="width: 150px">Date création</th>
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-personnel>
+                            <tr>
+                                <td>
+                                    <span class="matricule-badge">{{ personnel.matricule }}</span>
+                                </td>
+                                <td>{{ personnel.nom }}</td>
+                                <td>{{ personnel.prenom }}</td>
+                                <td>
+                                    @if (personnel.numeroCompte) {
+                                    <span class="numero-compte">{{ personnel.numeroCompte }}</span>
+                                    } @else {
+                                    <span class="no-data">Non défini</span>
+                                    }
+                                </td>
+                                <td>{{ personnel.createdAt | javaDate:'dd/MM/yyyy HH:mm' }}</td>
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="emptymessage">
+                            <tr>
+                                <td colspan="5" class="empty-message">
+                                    <i class="pi pi-inbox"></i>
+                                    <span>Aucun personnel trouvé</span>
+                                </td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+                </p-card>
+            </div>
+        </p-tabPanel>
+
+        <!-- TAB 2: Import Fichier Salaire -->
+        <p-tabPanel>
+            <ng-template pTemplate="header">
+                <i class="pi pi-wallet mr-2"></i>
+                <span>Fichier Salaire</span>
+                <p-badge [value]="countAvances().toString()" severity="success" class="ml-2"></p-badge>
+            </ng-template>
+
+            <div class="tab-content">
+                <!-- Section Upload Salaire -->
+                <p-card header="Importer le fichier des salaires" styleClass="mb-4">
+                    <div class="upload-section">
+                        <div class="upload-info">
+                            <h4><i class="pi pi-info-circle"></i> Format attendu du fichier Excel</h4>
+                            <table class="format-table">
+                                <thead>
+                                    <tr>
+                                        <th>Matricule</th>
+                                        <th>NET A PAYER</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>1</td>
+                                        <td>7 259 220</td>
+                                    </tr>
+                                    <tr>
+                                        <td>13</td>
+                                        <td>5 931 300</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <p class="info-note">
+                                <i class="pi pi-info-circle"></i>
+                                <span>La limite d'avance (50% du salaire net) est calculée automatiquement.</span>
+                            </p>
+                        </div>
+
+                        <p-divider></p-divider>
+
+                        <!-- ✅ MESSAGE D'AVERTISSEMENT SI DONNÉES EXISTENT -->
+                        @if (hasSalaireData()) {
+                        <div class="import-blocked-message">
+                            <p-message severity="warn" [style]="{ width: '100%' }">
+                                <ng-template pTemplate="content">
+                                    <div class="blocked-content">
+                                        <i class="pi pi-lock"></i>
+                                        <div class="blocked-text">
+                                            <strong>Import bloqué</strong>
+                                            <p>{{ salaireImportMessage() }}</p>
+                                        </div>
+                                    </div>
+                                </ng-template>
+                            </p-message>
+
+                            <div class="reset-action">
+                                <p-button icon="pi pi-refresh" label="Réinitialiser maintenant" severity="danger"
+                                    (onClick)="confirmResetAvancesSalaire()" [loading]="isResetting()"></p-button>
+                            </div>
+                        </div>
+                        } @else {
+                        <!-- ✅ ZONE D'UPLOAD VISIBLE SEULEMENT SI PAS DE DONNÉES -->
+                        <div class="upload-zone">
+                            <p-fileUpload mode="advanced" name="file" accept=".xlsx,.xls" [maxFileSize]="10000000"
+                                [customUpload]="true" (uploadHandler)="onUploadSalaire($event)" [auto]="false"
+                                chooseLabel="Choisir fichier" uploadLabel="Importer" cancelLabel="Annuler"
+                                [showUploadButton]="true" [showCancelButton]="true" [disabled]="isUploadingSalaire()">
+                                <ng-template pTemplate="content">
+                                    <div class="upload-placeholder">
+                                        <i class="pi pi-cloud-upload"></i>
+                                        <p>Glissez-déposez votre fichier Excel ici</p>
+                                        <span>ou cliquez pour sélectionner</span>
+                                    </div>
+                                </ng-template>
+                            </p-fileUpload>
+
+                            @if (isUploadingSalaire()) {
+                            <div class="upload-progress">
+                                <p-progressBar mode="indeterminate" [style]="{ height: '6px' }"></p-progressBar>
+                                <span>Import en cours...</span>
+                            </div>
+                            }
+                        </div>
+                        }
+
+                        <!-- Résultat d'import -->
+                        @if (statsSalaire()) {
+                        <div class="import-result" [class.success]="statsSalaire()!.success"
+                            [class.partial]="!statsSalaire()!.success">
+                            <div class="result-header">
+                                <i
+                                    [class]="statsSalaire()!.success ? 'pi pi-check-circle' : 'pi pi-exclamation-triangle'"></i>
+                                <span>{{ statsSalaire()!.success ? 'Import réussi' : 'Import partiel' }}</span>
+                            </div>
+                            <div class="result-stats">
+                                <div class="stat">
+                                    <span class="label">Total lignes:</span>
+                                    <span class="value">{{ statsSalaire()!.total }}</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="label">Importées:</span>
+                                    <span class="value success">{{ statsSalaire()!.importees }}</span>
+                                </div>
+                                @if (statsSalaire()!.erreurs > 0) {
+                                <div class="stat">
+                                    <span class="label">Erreurs:</span>
+                                    <span class="value error">{{ statsSalaire()!.erreurs }}</span>
+                                    <p-button icon="pi pi-eye" severity="danger" [text]="true" size="small"
+                                        (onClick)="showErrors('salaire')" pTooltip="Voir les erreurs"></p-button>
+                                </div>
+                                }
+                            </div>
+                        </div>
+                        }
+                    </div>
+                </p-card>
+
+                <!-- Actions pour avances salaire -->
+                <div class="actions-bar mb-3">
+                    <p-button icon="pi pi-refresh" label="Actualiser" [text]="true" (onClick)="loadAvancesSalaire()"
+                        [loading]="isLoadingSalaire()"></p-button>
+
+                    @if (hasSalaireData()) {
+                    <p-button icon="pi pi-trash" label="Reset mensuel ({{ countAvances() }} enregistrements)"
+                        severity="danger" [outlined]="true" (onClick)="confirmResetAvancesSalaire()"
+                        [loading]="isResetting()"
+                        pTooltip="Supprimer toutes les avances pour permettre un nouvel import"></p-button>
+                    }
+                </div>
+
+                <!-- Table Avances Salaire -->
+                <p-card header="Liste des avances salaire">
+                    <p-table [value]="avancesSalaire()" [paginator]="true" [rows]="10"
+                        [rowsPerPageOptions]="[10, 25, 50, 100]" [loading]="isLoadingSalaire()"
+                        [globalFilterFields]="['matricule', 'nomPersonnel', 'prenomPersonnel']"
+                        styleClass="p-datatable-striped p-datatable-gridlines" [tableStyle]="{ 'min-width': '60rem' }"
+                        [showCurrentPageReport]="true"
+                        currentPageReportTemplate="Affichage {first} à {last} sur {totalRecords} avances">
+                        <ng-template pTemplate="header">
+                            <tr>
+                                <th pSortableColumn="matricule" style="width: 100px">
+                                    Matricule <p-sortIcon field="matricule"></p-sortIcon>
+                                </th>
+                                <th pSortableColumn="nomPersonnel">
+                                    Nom <p-sortIcon field="nomPersonnel"></p-sortIcon>
+                                </th>
+                                <th pSortableColumn="prenomPersonnel">
+                                    Prénom <p-sortIcon field="prenomPersonnel"></p-sortIcon>
+                                </th>
+                                <th pSortableColumn="netAmount" style="width: 150px">
+                                    Net à payer <p-sortIcon field="netAmount"></p-sortIcon>
+                                </th>
+                                <th pSortableColumn="netAmountLimit" style="width: 150px">
+                                    Limite avance (50%) <p-sortIcon field="netAmountLimit"></p-sortIcon>
+                                </th>
+                                <th style="width: 150px">Date import</th>
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-avance>
+                            <tr>
+                                <td>
+                                    <span class="matricule-badge">{{ avance.matricule }}</span>
+                                </td>
+                                <td>{{ avance.nomPersonnel }}</td>
+                                <td>{{ avance.prenomPersonnel }}</td>
+                                <td class="text-right">
+                                    <span class="montant">{{ formatMontant(avance.netAmount) }}</span>
+                                </td>
+                                <td class="text-right">
+                                    <span class="montant limite">{{ formatMontant(avance.netAmountLimit) }}</span>
+                                </td>
+                                <td>{{ avance.createdAt | javaDate:'dd/MM/yyyy HH:mm' }}</td>
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="emptymessage">
+                            <tr>
+                                <td colspan="6" class="empty-message">
+                                    <i class="pi pi-inbox"></i>
+                                    <span>Aucune avance salaire trouvée. Importez un fichier pour commencer.</span>
+                                </td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+                </p-card>
+            </div>
+        </p-tabPanel>
+    </p-tabView>
+</div>
+
+<!-- Dialog pour afficher les erreurs -->
+<p-dialog [header]="errorDialogTitle()" [(visible)]="showErrorDialog" [modal]="true" [style]="{ width: '700px' }"
+    [dismissableMask]="true" (onHide)="hideErrorDialog()">
+    <div class="error-dialog-content">
+        @if (currentErrors().length > 0) {
+        <p-table [value]="currentErrors()" styleClass="p-datatable-sm">
+            <ng-template pTemplate="header">
+                <tr>
+                    <th style="width: 80px">Ligne</th>
+                    <th style="width: 120px">Champ</th>
+                    <th>Valeur</th>
+                    <th>Message d'erreur</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-error>
+                <tr>
+                    <td><span class="error-line">{{ error.ligne }}</span></td>
+                    <td>{{ error.champ }}</td>
+                    <td>
+                        @if (error.valeur) {
+                        <code>{{ error.valeur }}</code>
+                        } @else {
+                        <span class="no-data">(vide)</span>
+                        }
+                    </td>
+                    <td class="error-message">{{ error.message }}</td>
+                </tr>
+            </ng-template>
+        </p-table>
+        } @else {
+        <div class="no-errors">
+            <i class="pi pi-check-circle"></i>
+            <span>Aucune erreur à afficher</span>
+        </div>
+        }
+    </div>
+
+    <ng-template pTemplate="footer">
+        <p-button label="Fermer" icon="pi pi-times" (onClick)="hideErrorDialog()"></p-button>
+    </ng-template>
+</p-dialog>

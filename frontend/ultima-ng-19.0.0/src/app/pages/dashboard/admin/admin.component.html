@@ -1,157 +1,491 @@
+<!-- STATISTIQUES RAPIDES -->
+<div class="flex flex-wrap gap-3 mb-4">
+    <!-- Card 1: Total Utilisateurs -->
+    <div class="flex-1" style="min-width: 200px;">
+        <div class="card stat-card bg-blue-50 border-left-3 border-blue-500 h-full m-0">
+            <div class="flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-blue-600 font-medium text-sm">Total Utilisateurs</span>
+                    <div class="text-3xl font-bold text-blue-700 mt-1">{{ totalUsers }}</div>
+                </div>
+                <div class="bg-blue-100 p-3 border-circle">
+                    <i class="pi pi-users text-blue-600 text-2xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 2: Utilisateurs Actifs -->
+    <div class="flex-1" style="min-width: 200px;">
+        <div class="card stat-card bg-green-50 border-left-3 border-green-500 h-full m-0">
+            <div class="flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-green-600 font-medium text-sm">Utilisateurs Actifs</span>
+                    <div class="text-3xl font-bold text-green-700 mt-1">{{ activeUsers }}</div>
+                </div>
+                <div class="bg-green-100 p-3 border-circle">
+                    <i class="pi pi-check-circle text-green-600 text-2xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 3: Agents Crédit -->
+    <div class="flex-1" style="min-width: 200px;">
+        <div class="card stat-card bg-purple-50 border-left-3 border-purple-500 h-full m-0">
+            <div class="flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-purple-600 font-medium text-sm">Agents Crédit</span>
+                    <div class="text-3xl font-bold text-purple-700 mt-1">{{ totalAgents }}</div>
+                </div>
+                <div class="bg-purple-100 p-3 border-circle">
+                    <i class="pi pi-id-card text-purple-600 text-2xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 4: Agents Autorisés -->
+    <div class="flex-1" style="min-width: 200px;">
+        <div class="card stat-card bg-orange-50 border-left-3 border-orange-500 h-full m-0">
+            <div class="flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-orange-600 font-medium text-sm">Agents Autorisés</span>
+                    <div class="text-3xl font-bold text-orange-700 mt-1">{{ authorizedAgents }}</div>
+                </div>
+                <div class="bg-orange-100 p-3 border-circle">
+                    <i class="pi pi-shield text-orange-600 text-2xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- SECTION GESTION DES AUTORISATIONS AGENT CRÉDIT -->
 <div class="card mb-4">
-    <div class="flex align-items-center justify-content-between mb-4">
-        <div class="flex align-items-center gap-2">
-            <i class="pi pi-shield text-xl text-primary"></i>
-            <span class="text-xl font-semibold text-surface-900 dark:text-surface-0">
-                Gestion des Autorisations - Agents Crédit
-            </span>
+    <div
+        class="flex flex-column md:flex-row align-items-start md:align-items-center justify-content-between mb-4 gap-3">
+        <div class="flex align-items-center gap-3">
+            <div class="bg-primary-100 p-3 border-circle">
+                <i class="pi pi-shield text-2xl text-primary"></i>
+            </div>
+            <div>
+                <h2 class="m-0 text-xl font-semibold text-surface-900 dark:text-surface-0">
+                    Gestion des Autorisations
+                </h2>
+                <p class="text-500 mt-1 mb-0 text-sm">Gérer les droits d'accès des agents crédit</p>
+            </div>
         </div>
-        <button pButton icon="pi pi-refresh" label="Actualiser" class="p-button-secondary p-button-sm"
-            [loading]="state().loadingAgentCredits" (click)="loadAgentCredits()"></button>
+        <div class="flex gap-2">
+            <button pButton icon="pi pi-filter-slash" label="Effacer filtres"
+                class="p-button-outlined p-button-secondary p-button-sm" (click)="clearFiltersAgents()"
+                pTooltip="Réinitialiser tous les filtres">
+            </button>
+            <button pButton icon="pi pi-refresh" label="Actualiser" class="p-button-sm"
+                [loading]="state().loadingAgentCredits" (click)="loadAgentCredits()">
+            </button>
+        </div>
     </div>
 
     @if (state().loadingAgentCredits) {
-    <div class="flex justify-content-center p-4">
-        <p-progressSpinner [style]="{ width: '40px', height: '40px' }"></p-progressSpinner>
+    <div class="flex flex-column gap-3">
+        @for (item of [1, 2, 3]; track item) {
+        <div class="flex align-items-center gap-3 p-3 surface-ground border-round">
+            <p-skeleton shape="circle" size="3rem"></p-skeleton>
+            <div class="flex-1">
+                <p-skeleton width="60%" height="1rem" styleClass="mb-2"></p-skeleton>
+                <p-skeleton width="40%" height="0.8rem"></p-skeleton>
+            </div>
+            <p-skeleton width="6rem" height="2rem"></p-skeleton>
+        </div>
+        }
     </div>
     } @else if (state().agentCredits && state().agentCredits!.length > 0) {
-    <p-table [value]="state().agentCredits || []" [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5, 10, 20]"
-        styleClass="p-datatable-sm p-datatable-gridlines"
-        [globalFilterFields]="['firstName', 'lastName', 'username', 'email']">
+    <p-table #dtAgents [value]="state().agentCredits || []" [paginator]="true" [rows]="5"
+        [rowsPerPageOptions]="[5, 10, 20]" [showCurrentPageReport]="true"
+        currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} agents" styleClass="p-datatable-sm"
+        [globalFilterFields]="['firstName', 'lastName', 'username', 'email', 'service']" [filterDelay]="300"
+        [rowHover]="true" dataKey="userId">
+
+        <!-- Caption avec recherche globale -->
+        <ng-template pTemplate="caption">
+            <div class="flex flex-column md:flex-row gap-3 justify-content-between">
+                <p-iconfield class="w-full md:w-25rem">
+                    <p-inputicon class="pi pi-search"></p-inputicon>
+                    <input pInputText type="text" [(ngModel)]="globalFilterAgents"
+                        (input)="onGlobalFilterAgents($event)" placeholder="Rechercher un agent..." class="w-full" />
+                </p-iconfield>
+            </div>
+        </ng-template>
+
         <ng-template pTemplate="header">
             <tr>
-                <th>Nom complet</th>
-                <th>Username</th>
-                <th>Email</th>
-                <th>Service</th>
-                <th class="text-center">Statut</th>
-                <th class="text-center" style="width: 180px;">Autorisation</th>
+                <th pSortableColumn="firstName" style="min-width: 200px;">
+                    <div class="flex align-items-center">
+                        Agent
+                        <p-sortIcon field="firstName"></p-sortIcon>
+                    </div>
+                </th>
+                <th pSortableColumn="username" style="min-width: 120px;">
+                    <div class="flex align-items-center">
+                        Username
+                        <p-sortIcon field="username"></p-sortIcon>
+                    </div>
+                </th>
+                <th pSortableColumn="email" style="min-width: 200px;">
+                    <div class="flex align-items-center">
+                        Email
+                        <p-sortIcon field="email"></p-sortIcon>
+                    </div>
+                </th>
+                <th style="min-width: 120px;">Service</th>
+                <th style="min-width: 100px;" class="text-center">Statut</th>
+                <th style="min-width: 180px;" class="text-center">Autorisation</th>
+            </tr>
+            <!-- Ligne de filtres -->
+            <tr>
+                <th>
+                    <p-iconfield>
+                        <p-inputicon class="pi pi-search"></p-inputicon>
+                        <input pInputText type="text"
+                            (input)="dtAgents.filter($any($event.target).value, 'firstName', 'contains')"
+                            placeholder="Filtrer par nom" class="w-full p-inputtext-sm" />
+                    </p-iconfield>
+                </th>
+                <th>
+                    <input pInputText type="text"
+                        (input)="dtAgents.filter($any($event.target).value, 'username', 'contains')"
+                        placeholder="Filtrer" class="w-full p-inputtext-sm" />
+                </th>
+                <th>
+                    <input pInputText type="text"
+                        (input)="dtAgents.filter($any($event.target).value, 'email', 'contains')"
+                        placeholder="Filtrer par email" class="w-full p-inputtext-sm" />
+                </th>
+                <th>
+                    <p-dropdown [options]="serviceOptions"
+                        (onChange)="dtAgents.filter($event.value, 'service', 'equals')" placeholder="Tous"
+                        [showClear]="true" styleClass="w-full p-inputtext-sm">
+                    </p-dropdown>
+                </th>
+                <th>
+                    <p-dropdown [options]="statusOptions"
+                        (onChange)="dtAgents.filter($event.value, 'enabled', 'equals')" placeholder="Tous"
+                        [showClear]="true" styleClass="w-full p-inputtext-sm">
+                    </p-dropdown>
+                </th>
+                <th>
+                    <p-dropdown [options]="authorizationOptions"
+                        (onChange)="dtAgents.filter($event.value, 'authorized', 'equals')" placeholder="Tous"
+                        [showClear]="true" styleClass="w-full p-inputtext-sm">
+                    </p-dropdown>
+                </th>
             </tr>
         </ng-template>
+
         <ng-template pTemplate="body" let-agent>
-            <tr>
+            <tr class="hover-row">
                 <td>
-                    <div class="flex align-items-center gap-2">
-                        <img [src]="agent.imageUrl || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'"
-                            alt="avatar" class="border-circle" style="width: 32px; height: 32px;">
-                        <span class="font-medium">{{ agent.firstName }} {{ agent.lastName }}</span>
+                    <div class="flex align-items-center gap-3">
+                        <p-avatar [image]="agent.imageUrl || ''"
+                            [label]="!agent.imageUrl ? (agent.firstName?.charAt(0) || '') + (agent.lastName?.charAt(0) || '') : undefined"
+                            size="large" shape="circle"
+                            [style]="{'background-color': '#' + (agent.userId * 123456).toString(16).slice(0,6), 'color': 'white'}">
+                        </p-avatar>
+                        <div>
+                            <span class="font-semibold text-surface-900">{{ agent.firstName }} {{ agent.lastName
+                                }}</span>
+                            <div class="text-500 text-sm">ID: {{ agent.userId }}</div>
+                        </div>
                     </div>
                 </td>
-                <td>{{ agent.username }}</td>
-                <td>{{ agent.email }}</td>
                 <td>
-                    <p-tag [value]="agent.service || 'N/A'" severity="info"></p-tag>
+                    <span class="font-mono text-sm">{{ agent.username }}</span>
+                </td>
+                <td>
+                    <a [href]="'mailto:' + agent.email" class="text-primary no-underline hover:underline">
+                        {{ agent.email }}
+                    </a>
+                </td>
+                <td>
+                    <p-chip [label]="agent.service || 'N/A'"
+                        [style]="{'background-color': '#EEF2FF', 'color': '#4F46E5'}">
+                    </p-chip>
                 </td>
                 <td class="text-center">
                     @if (agent.enabled) {
-                    <p-tag value="Actif" severity="success" icon="pi pi-check"></p-tag>
+                    <p-tag value="Actif" severity="success" [rounded]="true" icon="pi pi-check"></p-tag>
                     } @else {
-                    <p-tag value="Inactif" severity="danger" icon="pi pi-times"></p-tag>
+                    <p-tag value="Inactif" severity="danger" [rounded]="true" icon="pi pi-times"></p-tag>
                     }
                 </td>
                 <td class="text-center">
-                    <div class="flex align-items-center justify-content-center gap-2">
+                    <div class="flex align-items-center justify-content-center gap-3">
                         @if (isUpdatingAuthorization(agent.userId)) {
-                        <i class="pi pi-spin pi-spinner text-primary"></i>
+                        <div class="flex align-items-center gap-2">
+                            <i class="pi pi-spin pi-spinner text-primary text-xl"></i>
+                            <span class="text-sm text-500">Mise à jour...</span>
+                        </div>
                         } @else {
                         <p-inputSwitch [(ngModel)]="agent.authorized" (onChange)="toggleAuthorization(agent)"
                             [pTooltip]="agent.authorized ? 'Cliquer pour désautoriser' : 'Cliquer pour autoriser'"
                             tooltipPosition="top">
                         </p-inputSwitch>
-                        <span class="text-sm" [ngClass]="{
-                            'text-green-600': agent.authorized,
-                            'text-red-600': !agent.authorized
-                        }">
-                            {{ agent.authorized ? 'Autorisé' : 'Non autorisé' }}
-                        </span>
+                        <p-tag [value]="agent.authorized ? 'Autorisé' : 'Non autorisé'"
+                            [severity]="agent.authorized ? 'success' : 'danger'" [rounded]="true">
+                        </p-tag>
                         }
                     </div>
                 </td>
             </tr>
         </ng-template>
+
         <ng-template pTemplate="emptymessage">
             <tr>
-                <td colspan="6" class="text-center p-4">
-                    <i class="pi pi-inbox text-4xl text-gray-300 mb-2"></i>
-                    <p class="text-gray-500">Aucun agent crédit trouvé</p>
+                <td colspan="6">
+                    <div class="flex flex-column align-items-center justify-content-center p-5">
+                        <i class="pi pi-inbox text-5xl text-300 mb-3"></i>
+                        <span class="text-lg font-medium text-500">Aucun agent crédit trouvé</span>
+                        <span class="text-sm text-400 mt-1">Essayez de modifier vos critères de recherche</span>
+                    </div>
                 </td>
             </tr>
         </ng-template>
     </p-table>
     } @else {
-    <div class="text-center p-4">
-        <i class="pi pi-inbox text-4xl text-gray-300 mb-2"></i>
-        <p class="text-gray-500">Aucun agent crédit enregistré</p>
+    <div class="flex flex-column align-items-center justify-content-center p-6 surface-ground border-round">
+        <i class="pi pi-inbox text-6xl text-300 mb-3"></i>
+        <span class="text-xl font-medium text-500">Aucun agent crédit enregistré</span>
+        <span class="text-sm text-400 mt-2">Les agents crédit apparaîtront ici une fois créés</span>
     </div>
     }
 </div>
 
+<p-divider></p-divider>
+
 <!-- SECTION LISTE DES UTILISATEURS -->
 <div class="card">
-    <p-table #dt [value]="state().users!" [paginator]="true" paginatorDropdownAppendTo="body" [rows]="10"
-        [showCurrentPageReport]="true" responsiveLayout="scroll"
-        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
-        [rowsPerPageOptions]="[10, 25, 50]" [globalFilterFields]="['firstName', 'lastName', 'email', 'role']">
+    <div
+        class="flex flex-column md:flex-row align-items-start md:align-items-center justify-content-between mb-4 gap-3">
+        <div class="flex align-items-center gap-3">
+            <div class="bg-blue-100 p-3 border-circle">
+                <i class="pi pi-users text-2xl text-blue-600"></i>
+            </div>
+            <div>
+                <h2 class="m-0 text-xl font-semibold text-surface-900 dark:text-surface-0">
+                    Gestion des Utilisateurs
+                </h2>
+                <p class="text-500 mt-1 mb-0 text-sm">Liste complète des utilisateurs du système</p>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <button pButton icon="pi pi-filter-slash" label="Effacer filtres"
+                class="p-button-outlined p-button-secondary p-button-sm" (click)="clearFiltersUsers()"
+                pTooltip="Réinitialiser tous les filtres">
+            </button>
+            <button pButton icon="pi pi-refresh" class="p-button-outlined p-button-sm" [loading]="state().loading"
+                (click)="loadUsers()" pTooltip="Actualiser la liste">
+            </button>
+            <button pButton icon="pi pi-user-plus" label="Nouvel utilisateur" class="p-button-sm"
+                (click)="navigateToCreateUser()">
+            </button>
+        </div>
+    </div>
+
+    @if (state().loading) {
+    <div class="flex flex-column gap-3">
+        @for (item of [1, 2, 3, 4, 5]; track item) {
+        <div class="flex align-items-center gap-3 p-3 surface-ground border-round">
+            <p-skeleton shape="circle" size="2.5rem"></p-skeleton>
+            <div class="flex-1">
+                <p-skeleton width="50%" height="1rem" styleClass="mb-2"></p-skeleton>
+                <p-skeleton width="30%" height="0.8rem"></p-skeleton>
+            </div>
+            <p-skeleton width="5rem" height="1.5rem"></p-skeleton>
+            <p-skeleton width="8rem" height="1rem"></p-skeleton>
+        </div>
+        }
+    </div>
+    } @else {
+    <p-table #dtUsers [value]="state().users || []" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+        responsiveLayout="scroll"
+        currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} utilisateurs"
+        [rowsPerPageOptions]="[10, 25, 50]"
+        [globalFilterFields]="['firstName', 'lastName', 'email', 'role', 'username']" [filterDelay]="300"
+        [rowHover]="true" dataKey="userId" styleClass="p-datatable-sm">
+
+        <!-- Caption avec recherche globale -->
         <ng-template pTemplate="caption">
-            <div class="flex flex-wrap gap-2 items-center justify-between">
-                <p-icon-field class="w-full sm:w-80 order-1 sm:order-none">
-                    <p-inputicon class="pi pi-search" />
-                    <input pInputText type="text" (input)="onGlobalFilter(dt, $event)"
-                        placeholder="Rechercher un Utilisateur" class="w-full" />
-                </p-icon-field>
-                <button (click)="navigateToCreateUser()" pButton outlined
-                    class="w-full sm:w-auto flex-order-0 sm:flex-order-1" icon="pi pi-user-plus"
-                    label="Add New"></button>
+            <div class="flex flex-column md:flex-row gap-3 justify-content-between">
+                <p-iconfield class="w-full md:w-25rem">
+                    <p-inputicon class="pi pi-search"></p-inputicon>
+                    <input pInputText type="text" [(ngModel)]="globalFilterUsers" (input)="onGlobalFilterUsers($event)"
+                        placeholder="Rechercher un utilisateur..." class="w-full" />
+                </p-iconfield>
             </div>
         </ng-template>
+
         <ng-template pTemplate="header">
             <tr>
-                <th pSortableColumn="userId" class="white-space-nowrap" style="width:5%">ID <p-sortIcon
-                        field="userId"></p-sortIcon></th>
-                <th pSortableColumn="firstName" class="white-space-nowrap" style="width:20%">Name <p-sortIcon
-                        field="firstName"></p-sortIcon></th>
-                <th pSortableColumn="email" class="white-space-nowrap" style="width:25%">Email <p-sortIcon
-                        field="email"></p-sortIcon></th>
-                <th pSortableColumn="role" class="white-space-nowrap" style="width:15%">Role <p-sortIcon
-                        field="role"></p-sortIcon></th>
-                <th pSortableColumn="createdAt" class="white-space-nowrap" style="width:15%">Date Creation <p-sortIcon
-                        field="createdAt"></p-sortIcon></th>
-                <th pSortableColumn="lastLogin" class="white-space-nowrap" style="width:15%">Last Login <p-sortIcon
-                        field="lastLogin"></p-sortIcon></th>
-                <th style="width:5%">Actions</th>
+                <th pSortableColumn="userId" style="width: 80px;">
+                    <div class="flex align-items-center">
+                        ID
+                        <p-sortIcon field="userId"></p-sortIcon>
+                    </div>
+                </th>
+                <th pSortableColumn="firstName" style="min-width: 200px;">
+                    <div class="flex align-items-center">
+                        Utilisateur
+                        <p-sortIcon field="firstName"></p-sortIcon>
+                    </div>
+                </th>
+                <th pSortableColumn="email" style="min-width: 220px;">
+                    <div class="flex align-items-center">
+                        Email
+                        <p-sortIcon field="email"></p-sortIcon>
+                    </div>
+                </th>
+                <th pSortableColumn="role" style="min-width: 140px;">
+                    <div class="flex align-items-center">
+                        Rôle
+                        <p-sortIcon field="role"></p-sortIcon>
+                    </div>
+                </th>
+                <th pSortableColumn="createdAt" style="min-width: 150px;">
+                    <div class="flex align-items-center">
+                        Date création
+                        <p-sortIcon field="createdAt"></p-sortIcon>
+                    </div>
+                </th>
+                <th pSortableColumn="lastLogin" style="min-width: 150px;">
+                    <div class="flex align-items-center">
+                        Dernière connexion
+                        <p-sortIcon field="lastLogin"></p-sortIcon>
+                    </div>
+                </th>
+                <th style="width: 120px;" class="text-center">Actions</th>
             </tr>
-        </ng-template>
-        <ng-template pTemplate="body" let-user>
+            <!-- Ligne de filtres -->
             <tr>
-                <td>{{ user.userId }}</td>
+                <th>
+                    <input pInputText type="text"
+                        (input)="dtUsers.filter($any($event.target).value, 'userId', 'contains')" placeholder="ID"
+                        class="w-full p-inputtext-sm" style="max-width: 60px;" />
+                </th>
+                <th>
+                    <p-iconfield>
+                        <p-inputicon class="pi pi-search"></p-inputicon>
+                        <input pInputText type="text"
+                            (input)="dtUsers.filter($any($event.target).value, 'firstName', 'contains')"
+                            placeholder="Filtrer par nom" class="w-full p-inputtext-sm" />
+                    </p-iconfield>
+                </th>
+                <th>
+                    <input pInputText type="text"
+                        (input)="dtUsers.filter($any($event.target).value, 'email', 'contains')"
+                        placeholder="Filtrer par email" class="w-full p-inputtext-sm" />
+                </th>
+                <th>
+                    <p-dropdown [options]="roleOptions" (onChange)="dtUsers.filter($event.value, 'role', 'equals')"
+                        placeholder="Tous les rôles" [showClear]="true" styleClass="w-full p-inputtext-sm">
+                    </p-dropdown>
+                </th>
+                <th>
+                    <p-calendar (onSelect)="dtUsers.filter($event, 'createdAt', 'dateIs')"
+                        (onClear)="dtUsers.filter(null, 'createdAt', 'dateIs')" dateFormat="dd/mm/yy"
+                        placeholder="Filtrer par date" [showClear]="true" [showIcon]="true"
+                        styleClass="w-full p-inputtext-sm">
+                    </p-calendar>
+                </th>
+                <th>
+                    <p-calendar (onSelect)="dtUsers.filter($event, 'lastLogin', 'dateIs')"
+                        (onClear)="dtUsers.filter(null, 'lastLogin', 'dateIs')" dateFormat="dd/mm/yy"
+                        placeholder="Filtrer par date" [showClear]="true" [showIcon]="true"
+                        styleClass="w-full p-inputtext-sm">
+                    </p-calendar>
+                </th>
+                <th></th>
+            </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-user>
+            <tr class="hover-row">
                 <td>
-                    <div class="flex items-center gap-2">
-                        <img [src]="user.imageUrl" [alt]="user.firstName" class=" w-8 h-8 rounded-full" />
-                        <span>{{ user.firstName }} {{ user.lastName }}</span>
+                    <span class="font-mono text-500 text-sm">{{ user.userId }}</span>
+                </td>
+                <td>
+                    <div class="flex align-items-center gap-3">
+                        <p-avatar [image]="user.imageUrl || ''"
+                            [label]="!user.imageUrl ? (user.firstName?.charAt(0) || '') + (user.lastName?.charAt(0) || '') : undefined"
+                            size="large" shape="circle"
+                            [style]="{'background-color': '#' + (user.userId * 654321).toString(16).slice(0,6), 'color': 'white'}">
+                        </p-avatar>
+                        <div>
+                            <span class="font-semibold text-surface-900">{{ user.firstName }} {{ user.lastName }}</span>
+                            <div class="text-500 text-sm font-mono">&#64;{{ user.username }}</div>
+                        </div>
                     </div>
                 </td>
-                <td>{{ user.email }}</td>
                 <td>
-                    <p-tag [value]="user.role" [severity]="getRoleSeverity(user.role)"></p-tag>
+                    <a [href]="'mailto:' + user.email" class="text-primary no-underline hover:underline">
+                        {{ user.email }}
+                    </a>
                 </td>
-                <td>{{ user.createdAt | date: 'MM/dd/yyyy HH:mm' }}</td>
-                <td>{{ user.lastLogin ? (user.lastLogin | date: 'MM/dd/yyyy HH:mm') : 'Never' }}</td>
                 <td>
-                    <div class="flex gap-2 justify-center">
-                        <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-sm"
-                            (click)="editUser(user)"></button>
+                    <p-tag [value]="getRoleLabel(user.role)" [severity]="getRoleSeverity(user.role)"
+                        [rounded]="true"></p-tag>
+                </td>
+                <td>
+                    <div class="flex align-items-center gap-2">
+                        <i class="pi pi-calendar text-400"></i>
+                        <span class="text-sm">{{ user.createdAt | date: 'dd/MM/yyyy' }}</span>
+                    </div>
+                    <div class="text-xs text-400 mt-1">{{ user.createdAt | date: 'HH:mm' }}</div>
+                </td>
+                <td>
+                    @if (user.lastLogin) {
+                    <div class="flex align-items-center gap-2">
+                        <i class="pi pi-clock text-400"></i>
+                        <span class="text-sm">{{ user.lastLogin | date: 'dd/MM/yyyy' }}</span>
+                    </div>
+                    <div class="text-xs text-400 mt-1">{{ user.lastLogin | date: 'HH:mm' }}</div>
+                    } @else {
+                    <span class="text-400 text-sm font-italic">Jamais connecté</span>
+                    }
+                </td>
+                <td>
+                    <div class="flex gap-1 justify-content-center">
+                        <button pButton icon="pi pi-eye"
+                            class="p-button-rounded p-button-text p-button-sm p-button-info" pTooltip="Voir les détails"
+                            tooltipPosition="top">
+                        </button>
+                        <button pButton icon="pi pi-pencil"
+                            class="p-button-rounded p-button-text p-button-sm p-button-warning" (click)="editUser(user)"
+                            pTooltip="Modifier" tooltipPosition="top">
+                        </button>
                         <button pButton icon="pi pi-trash"
-                            class="p-button-rounded p-button-text p-button-danger p-button-sm"
-                            (click)="deleteUser(user)"></button>
+                            class="p-button-rounded p-button-text p-button-sm p-button-danger"
+                            (click)="deleteUser(user)" pTooltip="Supprimer" tooltipPosition="top">
+                        </button>
                     </div>
                 </td>
             </tr>
         </ng-template>
+
         <ng-template pTemplate="emptymessage">
             <tr>
-                <td colspan="7" class="text-center p-4">No users found.</td>
+                <td colspan="7">
+                    <div class="flex flex-column align-items-center justify-content-center p-5">
+                        <i class="pi pi-users text-5xl text-300 mb-3"></i>
+                        <span class="text-lg font-medium text-500">Aucun utilisateur trouvé</span>
+                        <span class="text-sm text-400 mt-1">Essayez de modifier vos critères de recherche</span>
+                        <button pButton label="Créer un utilisateur" icon="pi pi-plus" class="p-button-outlined mt-3"
+                            (click)="navigateToCreateUser()">
+                        </button>
+                    </div>
+                </td>
             </tr>
         </ng-template>
     </p-table>
+    }
 </div>

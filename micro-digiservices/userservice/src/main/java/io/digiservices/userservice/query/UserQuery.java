@@ -28,7 +28,8 @@ public class UserQuery {
                 u.agence_id,
                 u.pointvente_id,
                 u.service,
-                u.is_authorized
+                u.is_authorized,
+                u.matricule
                 FROM users u JOIN user_roles ur ON ur.user_id = u.user_id JOIN roles r ON r.role_id = ur.role_id  WHERE u.user_uuid =:userUuid;
               """;
     public static final String SELECT_USER_BY_ID_QUERY=
@@ -56,7 +57,8 @@ public class UserQuery {
             u.pointvente_id,
             u.agence_id,
             u.delegation_id,
-            u.is_authorized
+            u.is_authorized,
+            u.matricule
             FROM users u JOIN user_roles ur ON ur.user_id = u.user_id JOIN roles r ON r.role_id = ur.role_id WHERE u.user_id =:userId;
             """;
     public static final String SELECT_USER_BY_EMAIL_QUERY=
@@ -81,7 +83,8 @@ public class UserQuery {
             u.bio,
             u.phone,
             u.address,
-            u.is_authorized
+            u.is_authorized,
+            u.matricule
             FROM users u JOIN user_roles ur ON ur.user_id = u.user_id JOIN roles r ON r.role_id = ur.role_id WHERE u.email =:email;
             """;
     public static final String UPDATE_USER_FUNCTION=
@@ -90,7 +93,7 @@ public class UserQuery {
                                 """;
     public static final String CREATE_USER_STORED_PROCEDURE=
                                 """
-                                   CALL create_user(:userUuid, :firstName, :lastName, :email, :username, :password, :credentialUuid, :token, :memberId)
+                                   CALL create_user(:userUuid, :firstName, :lastName, :email, :username, :password, :credentialUuid, :token, :memberId, :matricule, :phone)
                                 """;
 
     public static final String CREATE_ACCOUNT_STORED_PROCEDURE=
@@ -207,7 +210,8 @@ public class UserQuery {
                 u.bio,
                 u.phone,
                 u.address,
-                u.is_authorized
+                u.is_authorized,
+                u.matricule
                 FROM users u JOIN user_roles ur ON ur.user_id = u.user_id JOIN roles r ON r.role_id = ur.role_id LIMIT 100
               """;
     public static final String SELECT_TICKET_ASSIGNEE_QUERY=

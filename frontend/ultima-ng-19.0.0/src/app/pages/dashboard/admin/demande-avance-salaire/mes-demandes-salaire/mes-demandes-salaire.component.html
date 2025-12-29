@@ -1,0 +1,157 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="mes-demandes-container">
+    <!-- En-tête -->
+    <div class="header-section">
+        <h2><i class="pi pi-list"></i> Mes demandes d'avance sur salaire</h2>
+        <p class="subtitle">Consultez et gérez vos demandes d'avance</p>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="stats-section">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="pi pi-file"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-value">{{ countTotal() }}</span>
+                <span class="stat-label">Total demandes</span>
+            </div>
+        </div>
+
+        <div class="stat-card active">
+            <div class="stat-icon">
+                <i class="pi pi-clock"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-value">{{ countActives() }}</span>
+                <span class="stat-label">Demandes actives</span>
+            </div>
+        </div>
+
+        <div class="stat-card amount">
+            <div class="stat-icon">
+                <i class="pi pi-wallet"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-value">{{ formatMontant(totalActif()) }}</span>
+                <span class="stat-label">Montant total actif</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions-bar">
+        <p-button icon="pi pi-refresh" label="Actualiser" [text]="true" (onClick)="loadDemandes()"
+            [loading]="isLoading()"></p-button>
+
+        <p-button icon="pi pi-plus" label="Nouvelle demande" (onClick)="nouvelleDemande()"></p-button>
+    </div>
+
+    <!-- Table des demandes -->
+    <p-card>
+        <p-table [value]="demandes()" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[5, 10, 25, 50]"
+            [loading]="isLoading()" styleClass="p-datatable-striped p-datatable-gridlines"
+            [tableStyle]="{ 'min-width': '50rem' }" [showCurrentPageReport]="true"
+            currentPageReportTemplate="Affichage {first} à {last} sur {totalRecords} demandes" [sortField]="'createdAt'"
+            [sortOrder]="-1">
+            <ng-template pTemplate="header">
+                <tr>
+                    <th pSortableColumn="id" style="width: 80px">
+                        ID <p-sortIcon field="id"></p-sortIcon>
+                    </th>
+                    <th pSortableColumn="matricule" style="width: 100px">
+                        Matricule <p-sortIcon field="matricule"></p-sortIcon>
+                    </th>
+                    <th pSortableColumn="amount">
+                        Montant <p-sortIcon field="amount"></p-sortIcon>
+                    </th>
+                    <th>N° Compte</th>
+                    <th pSortableColumn="statut" style="width: 120px">
+                        Statut <p-sortIcon field="statut"></p-sortIcon>
+                    </th>
+                    <th pSortableColumn="createdAt" style="width: 150px">
+                        Date <p-sortIcon field="createdAt"></p-sortIcon>
+                    </th>
+                    <th style="width: 100px">Actions</th>
+                </tr>
+            </ng-template>
+
+            <ng-template pTemplate="body" let-demande>
+                <tr>
+                    <td>
+                        <span class="id-badge">#{{ demande.id }}</span>
+                    </td>
+                    <td>
+                        <span class="matricule-badge">{{ demande.matricule }}</span>
+                    </td>
+                    <td class="text-right">
+                        <span class="montant">{{ formatMontant(demande.amount) }}</span>
+                    </td>
+                    <td>
+                        @if (demande.numeroCompte) {
+                        <span class="numero-compte">{{ demande.numeroCompte }}</span>
+                        } @else {
+                        <span class="no-data">-</span>
+                        }
+                    </td>
+                    <td>
+                        <p-tag [value]="getStatutLabel(demande.statut)"
+                            [severity]="getStatutSeverity(demande.statut)"></p-tag>
+                    </td>
+                    <td>{{ demande.createdAt | javaDate:'dd/MM/yyyy HH:mm' }}</td>
+                    <td>
+                        @if (canCancel(demande)) {
+                        <p-button icon="pi pi-times" severity="danger" [text]="true" [rounded]="true"
+                            (onClick)="confirmAnnuler(demande)" [loading]="cancellingId() === demande.id"
+                            pTooltip="Annuler cette demande"></p-button>
+                        } @else {
+                        <span class="no-action">-</span>
+                        }
+                    </td>
+                </tr>
+            </ng-template>
+
+            <ng-template pTemplate="emptymessage">
+                <tr>
+                    <td colspan="7" class="empty-message">
+                        <div class="empty-content">
+                            <i class="pi pi-inbox"></i>
+                            <span>Aucune demande trouvée</span>
+                            <p-button label="Faire une demande" icon="pi pi-plus" [link]="true"
+                                routerLink="/dashboard/demande-avance-salaire"></p-button>
+                        </div>
+                    </td>
+                </tr>
+            </ng-template>
+        </p-table>
+    </p-card>
+
+    <!-- Légende des statuts -->
+    <div class="legend-section">
+        <h4>Légende des statuts</h4>
+        <div class="legend-items">
+            <div class="legend-item">
+                <p-tag value="En cours" severity="info"></p-tag>
+                <span>Demande en attente de validation</span>
+            </div>
+            <div class="legend-item">
+                <p-tag value="Validée" severity="success"></p-tag>
+                <span>Demande validée par le responsable</span>
+            </div>
+            <div class="legend-item">
+                <p-tag value="Confirmée" severity="success"></p-tag>
+                <span>Demande confirmée et en traitement</span>
+            </div>
+            <div class="legend-item">
+                <p-tag value="Rejetée" severity="danger"></p-tag>
+                <span>Demande rejetée</span>
+            </div>
+            <div class="legend-item">
+                <p-tag value="Annulée" severity="secondary"></p-tag>
+                <span>Demande annulée par vous</span>
+            </div>
+        </div>
+    </div>
+</div>

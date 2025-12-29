@@ -1,0 +1,252 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="rh-container">
+    <!-- En-tête -->
+    <div class="header-section">
+        <!-- Contrôle d'autorisation des demandes -->
+        <div class="authorization-control">
+            <p-card>
+                <div class="auth-content">
+                    <div class="auth-info">
+                        <div class="auth-status" [class.active]="isDemandesAuthorized()"
+                            [class.inactive]="!isDemandesAuthorized()">
+                            <i [class]="isDemandesAuthorized() ? 'pi pi-lock-open' : 'pi pi-lock'"></i>
+                        </div>
+                        <div class="auth-text">
+                            <h4>Demandes d'avance sur salaire</h4>
+                            <p>
+                                @if (isDemandesAuthorized()) {
+                                <span class="status-active">
+                                    <i class="pi pi-check-circle"></i> Les demandes sont OUVERTES
+                                </span>
+                                } @else {
+                                <span class="status-inactive">
+                                    <i class="pi pi-times-circle"></i> Les demandes sont FERMÉES
+                                </span>
+                                }
+                            </p>
+                        </div>
+                    </div>
+                    <div class="auth-action">
+                        <p-button [icon]="isDemandesAuthorized() ? 'pi pi-lock' : 'pi pi-lock-open'"
+                            [label]="isDemandesAuthorized() ? 'Désactiver' : 'Activer'"
+                            [severity]="isDemandesAuthorized() ? 'danger' : 'success'" (onClick)="toggleAuthorization()"
+                            [loading]="isLoadingAuth()"></p-button>
+                    </div>
+                </div>
+            </p-card>
+        </div>
+        <div class="header-content">
+            <h2><i class="pi pi-briefcase"></i> Gestion des demandes d'avance sur salaire</h2>
+            <p class="subtitle">Validez les demandes d'avance des employés</p>
+        </div>
+
+        <div class="header-actions">
+            <p-button icon="pi pi-refresh" label="Actualiser" [text]="true" (onClick)="loadDemandesGroupedByDate()"
+                [loading]="isLoading()"></p-button>
+        </div>
+    </div>
+
+    <!-- Filtres par statut -->
+    <div class="filter-section">
+        <p-tabView
+            (onChange)="onStatutChange($event.index === 0 ? 'ENCOURS' : $event.index === 1 ? 'VALIDER' : 'REJET')">
+            <p-tabPanel>
+                <ng-template pTemplate="header">
+                    <i class="pi pi-clock mr-2"></i>
+                    <span>En attente</span>
+                    <p-badge [value]="selectedStatut() === 'ENCOURS' ? totalDemandes().toString() : ''" severity="info"
+                        class="ml-2"></p-badge>
+                </ng-template>
+            </p-tabPanel>
+            <p-tabPanel>
+                <ng-template pTemplate="header">
+                    <i class="pi pi-check-circle mr-2"></i>
+                    <span>Validées</span>
+                </ng-template>
+            </p-tabPanel>
+            <p-tabPanel>
+                <ng-template pTemplate="header">
+                    <i class="pi pi-times-circle mr-2"></i>
+                    <span>Rejetées</span>
+                </ng-template>
+            </p-tabPanel>
+        </p-tabView>
+    </div>
+
+    <!-- Stats globales -->
+    <div class="stats-section">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="pi pi-file"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-value">{{ totalDemandes() }}</span>
+                <span class="stat-label">Demandes</span>
+            </div>
+        </div>
+
+        <div class="stat-card amount">
+            <div class="stat-icon">
+                <i class="pi pi-wallet"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-value">{{ formatMontant(totalMontant()) }}</span>
+                <span class="stat-label">Montant total</span>
+            </div>
+        </div>
+
+        @if (hasSelection() && selectedStatut() === 'ENCOURS') {
+        <div class="stat-card selected">
+            <div class="stat-icon">
+                <i class="pi pi-check-square"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-value">{{ totalSelected() }}</span>
+                <span class="stat-label">Sélectionnées</span>
+            </div>
+        </div>
+        }
+    </div>
+
+    <!-- Bouton validation massive -->
+    @if (hasSelection() && selectedStatut() === 'ENCOURS') {
+    <div class="bulk-action-bar">
+        <div class="selection-info">
+            <i class="pi pi-info-circle"></i>
+            <span>{{ totalSelected() }} demande(s) sélectionnée(s)</span>
+        </div>
+        <p-button icon="pi pi-check-circle" label="Valider la sélection" severity="success"
+            (onClick)="confirmValiderSelection()" [loading]="isValidating()"></p-button>
+    </div>
+    }
+
+    <!-- Loading -->
+    @if (isLoading()) {
+    <div class="loading-container">
+        <p-progressSpinner></p-progressSpinner>
+        <span>Chargement des demandes...</span>
+    </div>
+    }
+
+    <!-- Liste des demandes par jour -->
+    @if (!isLoading()) {
+    @if (demandesParJour().length === 0) {
+    <div class="empty-state">
+        <i class="pi pi-inbox"></i>
+        <h3>Aucune demande</h3>
+        <p>Il n'y a pas de demandes {{ selectedStatut() === 'ENCOURS' ? 'en attente' : selectedStatut() === 'VALIDER' ?
+            'validées' : 'rejetées' }} pour le moment.</p>
+    </div>
+    } @else {
+    <div class="days-list">
+        @for (jour of demandesParJour(); track jour.date) {
+        <div class="day-card" [class.expanded]="jour.expanded">
+            <!-- En-tête du jour -->
+            <div class="day-header" (click)="toggleDay(jour)">
+                <div class="day-info">
+                    <div class="day-toggle">
+                        <i [class]="jour.expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"></i>
+                    </div>
+                    <div class="day-date">
+                        <span class="date-full">{{ formatDate(jour.date) }}</span>
+                        <span class="date-short">{{ formatDateShort(jour.date) }}</span>
+                    </div>
+                    <div class="day-badges">
+                        <p-chip [label]="jour.count + ' demande(s)'" icon="pi pi-file"></p-chip>
+                        <p-chip [label]="formatMontant(jour.totalAmount)" icon="pi pi-wallet"
+                            styleClass="amount-chip"></p-chip>
+                    </div>
+                </div>
+
+                @if (selectedStatut() === 'ENCOURS') {
+                <div class="day-actions" (click)="$event.stopPropagation()">
+                    <p-button icon="pi pi-check-circle" label="Tout valider" severity="success" [outlined]="true"
+                        size="small" (onClick)="confirmValiderJour(jour)" [loading]="isValidating()"></p-button>
+                </div>
+                }
+            </div>
+
+            <!-- Contenu du jour (liste des demandes) -->
+            @if (jour.expanded) {
+            <div class="day-content">
+                <!-- Sélection globale -->
+                @if (selectedStatut() === 'ENCOURS') {
+                <div class="select-all-row">
+                    <p-checkbox [(ngModel)]="jour.allSelected" [binary]="true" (onChange)="toggleSelectAll(jour)"
+                        inputId="selectAll-{{jour.date}}"></p-checkbox>
+                    <label for="selectAll-{{jour.date}}">
+                        Tout sélectionner ({{ jour.selectedIds?.length || 0 }}/{{ jour.count }})
+                    </label>
+                </div>
+                }
+
+                <!-- Table des demandes -->
+                <p-table [value]="jour.demandes" styleClass="p-datatable-sm p-datatable-striped"
+                    [tableStyle]="{ 'min-width': '50rem' }">
+                    <ng-template pTemplate="header">
+                        <tr>
+                            @if (selectedStatut() === 'ENCOURS') {
+                            <th style="width: 50px"></th>
+                            }
+                            <th style="width: 80px">Matricule</th>
+                            <th>Nom & Prénom</th>
+                            <th style="width: 150px">Montant</th>
+                            <th style="width: 130px">N° Compte</th>
+                            <th style="width: 100px">Heure</th>
+                            <th style="width: 150px">Actions</th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-demande>
+                        <tr [class.selected-row]="isSelected(jour, demande.id)">
+                            @if (selectedStatut() === 'ENCOURS') {
+                            <td>
+                                <p-checkbox [binary]="true" [ngModel]="isSelected(jour, demande.id)"
+                                    (onChange)="toggleSelectDemande(jour, demande.id)"></p-checkbox>
+                            </td>
+                            }
+                            <td>
+                                <span class="matricule-badge">{{ demande.matricule }}</span>
+                            </td>
+                            <td>
+                                <div class="person-info">
+                                    <span class="person-name">{{ demande.prenomPersonnel }} {{ demande.nomPersonnel
+                                        }}</span>
+                                </div>
+                            </td>
+                            <td class="text-right">
+                                <span class="montant">{{ formatMontant(demande.amount) }}</span>
+                            </td>
+                            <td>
+                                <span class="numero-compte">{{ demande.numeroCompte || '-' }}</span>
+                            </td>
+                            <td>
+                                {{ demande.createdAt | javaDate:'HH:mm' }}
+                            </td>
+                            <td>
+                                @if (selectedStatut() === 'ENCOURS') {
+                                <div class="action-buttons">
+                                    <p-button icon="pi pi-check" severity="success" [rounded]="true" [text]="true"
+                                        size="small" (onClick)="confirmValider(demande)"
+                                        [loading]="validatingId() === demande.id" pTooltip="Valider"></p-button>
+                                    <p-button icon="pi pi-times" severity="danger" [rounded]="true" [text]="true"
+                                        size="small" (onClick)="confirmRejeter(demande)"
+                                        [loading]="validatingId() === demande.id" pTooltip="Rejeter"></p-button>
+                                </div>
+                                } @else {
+                                <p-tag [value]="getStatutLabel(demande.statut)"
+                                    [severity]="getStatutSeverity(demande.statut)"></p-tag>
+                                }
+                            </td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+            </div>
+            }
+        </div>
+        }
+    </div>
+    }
+    }
+</div>

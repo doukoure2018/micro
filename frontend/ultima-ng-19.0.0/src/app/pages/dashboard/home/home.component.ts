@@ -13,6 +13,9 @@ import { RotationAgentComponent } from '../agent-credit/rotation-agent/rotation-
 import { LogistiqueComponent } from '../agent-credit/logistique/logistique.component';
 import { DeComponent } from '../admin/de/de.component';
 import { SocietariatComponent } from '../agent-credit/societariat/societariat.component';
+import { DemandeAvanceSalaireComponent } from '../admin/demande-avance-salaire/demande-avance-salaire.component';
+import { RhComponent } from '../admin/rh/rh.component';
+import { DfComponent } from '../admin/df/df.component';
 
 @Component({
     selector: 'app-home',
@@ -27,7 +30,10 @@ import { SocietariatComponent } from '../agent-credit/societariat/societariat.co
         RotationAgentComponent,
         LogistiqueComponent,
         DeComponent,
-        SocietariatComponent
+        SocietariatComponent,
+        DemandeAvanceSalaireComponent,
+        RhComponent,
+        DfComponent
     ],
     templateUrl: './home.component.html'
 })

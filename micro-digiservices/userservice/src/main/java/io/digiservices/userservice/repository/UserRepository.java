@@ -13,7 +13,7 @@ public interface UserRepository {
     User getUserByUuid(String userUuid);
     User getUserById(Long userId);
     User updateUser(String userUuid, String firstName, String lastName, String email, String phone, String bio, String address);
-    String createUser(String firstName, String lastName, String email, String username, String password);
+    String createUser(String firstName, String lastName, String email, String username, String password, String matricule, String phone);
     String createAccountUser(String firstName, String lastName, String email, String username, String password, String roleName,String service);
 
     String createAccountAgentCreditAndDa(String firstName, String lastName, String email, String username,

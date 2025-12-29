@@ -40,4 +40,5 @@ public class User {
     private String service;
     
     private boolean isAuthorized;
+    private String matricule;
 }

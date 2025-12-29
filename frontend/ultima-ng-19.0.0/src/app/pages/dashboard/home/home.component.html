@@ -12,14 +12,26 @@
 @case ('Societariat') {
 <app-societariat [user]="state().user"></app-societariat>
 }
-@case ('RH') {
-<!-- <app-rh [user]="state().user"></app-rh> -->
+@case ('Personnel') {
+<app-demande-avance-salaire [user]="state().user"></app-demande-avance-salaire>
+}
+@case ('DRH') {
+<app-rh [user]="state().user"></app-rh>
 }
 @case ('DE') {
 <app-de [user]="state().user"></app-de>
 }
+@case ('DF') {
+<app-df [user]="state().user"></app-df>
+}
 @default {
 <app-digital-verification [user]="state().user"></app-digital-verification>
+}
+}
+} @else if (state().user?.role === 'USER') {
+@switch (state().user?.service) {
+@case ('Personnel') {
+<app-demande-avance-salaire [user]="state().user"></app-demande-avance-salaire>
 }
 }
 } @else if (state().user?.role === 'DR') {

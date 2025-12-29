@@ -65,12 +65,12 @@ public class UserServiceImpl  implements UserService {
     }
 
     @Override
-    public void createUser(String firstName, String lastName, String email, String username, String password)
+    public void createUser(String firstName, String lastName, String email, String username, String password, String matricule, String phone)
     {
         // firstly get the token
-        var token = userRepository.createUser(firstName,lastName,email,username,encoder.encode(password));
+        var token = userRepository.createUser(firstName, lastName, email, username, encoder.encode(password), matricule, phone);
         System.out.println(token);
-        publisher.publishEvent(new Event(USER_CREATED, Map.of("token", token,"name",capitalizeFully(firstName),"email",email)));
+        publisher.publishEvent(new Event(USER_CREATED, Map.of("token", token, "name", capitalizeFully(firstName), "email", email)));
 
     }
 

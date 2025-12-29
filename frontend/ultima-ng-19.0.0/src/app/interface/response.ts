@@ -78,6 +78,10 @@ import { SyntheseDelegationDto } from './SyntheseDelegationDto';
 import { TipoPlazo } from './tipo-plazo.model';
 import { TypeCreditDto } from './typeCredit.model';
 import { IUser } from './user';
+import { InfoPersonnelDto } from './info.personnel';
+import { AvanceSalaireDto } from './salary';
+import { DemandeSalaryDto } from './demande.salary';
+import { AuthorizeSalaireDto } from './authorize-salaire.dto';
 export interface IResponse {
     time: Date | string;
     code: number;
@@ -246,5 +250,18 @@ export interface IResponse {
         totalElements?: number;
 
         listCreditParDelegation?: DelegationCreditDto[];
+        personnels?: InfoPersonnelDto[];
+        personnel?: InfoPersonnelDto;
+        avances?: AvanceSalaireDto[];
+        avance?: AvanceSalaireDto;
+        demandes?: DemandeSalaryDto[];
+        hasMatricule?: boolean;
+        groupedDemandes?: any;
+        totalValidated?: any;
+        statut?: any;
+        totalConfirmed?: any;
+        isAuthorized?: any;
+        message?: any;
+        authorize?: AuthorizeSalaireDto;
     };
 }

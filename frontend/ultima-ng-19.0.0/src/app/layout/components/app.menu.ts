@@ -95,6 +95,7 @@ export class AppMenu {
                                   icon: 'pi pi-fw pi-hourglass',
                                   routerLink: ['/dashboards/stock']
                               },
+
                               // Correction P. Physique - Uniquement si l'utilisateur est autorisé
                               ...(this.user?.authorized
                                   ? [
@@ -109,6 +110,11 @@ export class AppMenu {
                                   label: 'Correction En attente',
                                   icon: 'pi pi-fw pi-hourglass',
                                   routerLink: ['/dashboards/correction-en-attente']
+                              },
+                              {
+                                  label: 'Mes avances de salaire',
+                                  icon: 'pi pi-fw pi-list',
+                                  routerLink: ['/dashboards/mes-demandes-salaire']
                               }
                           ]
                         : this.user?.role === 'SUPER_ADMIN'
@@ -134,24 +140,31 @@ export class AppMenu {
                                             label: 'Situation Stock',
                                             icon: 'pi pi-fw pi-box',
                                             routerLink: ['/dashboards/situation-stock']
+                                        },
+                                        {
+                                            label: 'Mes avances de salaire',
+                                            icon: 'pi pi-fw pi-list',
+                                            routerLink: ['/dashboards/mes-demandes-salaire']
                                         }
                                     ]
                                   : this.user?.service === 'Logistique'
                                     ? []
                                     : this.user?.service === 'Societariat'
                                       ? []
-                                      : [
-                                            {
-                                                label: 'Document Verification',
-                                                icon: 'pi pi-fw pi-hourglass',
-                                                routerLink: ['/dashboards/document-verification']
-                                            },
-                                            {
-                                                label: 'Situation Stock',
-                                                icon: 'pi pi-fw pi-box',
-                                                routerLink: ['/dashboards/situation-stock']
-                                            }
-                                        ]
+                                      : this.user?.service === 'DRH'
+                                        ? [
+                                              {
+                                                  label: 'Gestion Personnel',
+                                                  icon: 'pi pi-fw pi-hourglass',
+                                                  routerLink: ['/dashboards/gestion-personnel']
+                                              },
+                                              {
+                                                  label: 'Mes avances de salaire',
+                                                  icon: 'pi pi-fw pi-list',
+                                                  routerLink: ['/dashboards/mes-demandes-salaire']
+                                              }
+                                          ]
+                                        : []
                               : this.user?.role === 'AGENT_CORRECTEUR'
                                 ? [
                                       {
@@ -160,15 +173,42 @@ export class AppMenu {
                                           routerLink: ['/dashboards/correction-physique']
                                       }
                                   ]
-                                : this.user?.role === 'DR'
+                                : // :
+                                  // this.user?.role === 'DR'
+                                  //   ? [
+                                  //         {
+                                  //             label: 'Suivi Societariat',
+                                  //             icon: 'pi pi-fw pi-hourglass',
+                                  //             routerLink: ['/dashboards/suivi-societariat']
+                                  //         }
+                                  //     ]
+                                  this.user?.role === 'DR'
                                   ? [
                                         {
                                             label: 'Suivi Societariat',
                                             icon: 'pi pi-fw pi-hourglass',
                                             routerLink: ['/dashboards/suivi-societariat']
+                                        },
+                                        {
+                                            label: 'Mes avances de salaire',
+                                            icon: 'pi pi-fw pi-list',
+                                            routerLink: ['/dashboards/mes-demandes-salaire']
                                         }
                                     ]
-                                  : [])
+                                  : this.user?.role === 'USER' && this.user?.service === 'Personnel'
+                                    ? [
+                                          {
+                                              label: 'Demande Avance Salaire',
+                                              icon: 'pi pi-fw pi-wallet',
+                                              routerLink: ['/dashboards/demande-avance-salaire']
+                                          },
+                                          {
+                                              label: 'Mes Demandes',
+                                              icon: 'pi pi-fw pi-list',
+                                              routerLink: ['/dashboards/mes-demandes-salaire']
+                                          }
+                                      ]
+                                    : [])
                 ]
             }
         ];

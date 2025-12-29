@@ -1,8 +1,8 @@
 import { inject, Injectable } from '@angular/core';
 import { StorageService } from './storage.service';
-import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
 import { JwtHelperService } from '@auth0/angular-jwt';
-import { catchError, Observable, tap, throwError } from 'rxjs';
+import { catchError, map, Observable, tap, throwError } from 'rxjs';
 import { IResponse } from '@/interface/response';
 import { Key } from '@/enum/cache.key';
 import { IAuthentication } from '@/interface/IAuthentication';
@@ -960,4 +960,311 @@ export class UserService {
      * Récupérer tous les utilisateurs par rôle
      */
     getUsersByRole$ = (roleName: string) => this.http.get<IResponse>(`${this.server}/user/by-role/${roleName}`).pipe(tap(console.log), catchError(this.handleError));
+
+    // ==================== INFO PERSONNEL ====================
+
+    /**
+     * Importer le fichier du personnel (Excel)
+     * Format attendu: Matricule | Nom | Prénom
+     */
+    importInfoPersonnel(file: File): Observable<IResponse> {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        return this.http.post<IResponse>(`${this.server}/ecredit/salaire/import/info-personnel`, formData).pipe(catchError(this.handleError));
+    }
+
+    /**
+     * Récupérer tous les personnels
+     */
+    getAllInfoPersonnel(): Observable<IResponse> {
+        return this.http.get<IResponse>(`${this.server}/ecredit/salaire/info-personnel`).pipe(catchError(this.handleError));
+    }
+
+    /**
+     * Récupérer un personnel par matricule
+     */
+    getInfoPersonnelByMatricule(matricule: string): Observable<IResponse> {
+        return this.http.get<IResponse>(`${this.server}/ecredit/salaire/info-personnel/matricule/${matricule}`);
+    }
+
+    /**
+     * Récupérer un personnel par ID
+     */
+    getInfoPersonnelById(id: number): Observable<IResponse> {
+        return this.http.get<IResponse>(`${this.server}/ecredit/salaire/info-personnel/${id}`).pipe(catchError(this.handleError));
+    }
+
+    /**
+     * Compter le nombre de personnels
+     */
+    countInfoPersonnel(): Observable<IResponse> {
+        return this.http.get<IResponse>(`${this.server}/ecredit/salaire/info-personnel/count`).pipe(catchError(this.handleError));
+    }
+
+    /**
+     * Mettre à jour le numéro de compte d'un personnel
+     */
+    updateNumeroCompte(matricule: string, numeroCompte: string): Observable<IResponse> {
+        return this.http.put<IResponse>(`${this.server}/ecredit/info-personnel/${matricule}/numero-compte`, null, { params: { numeroCompte } });
+    }
+
+    /**
+     * Vérifier si le numéro de compte est défini pour un matricule
+     */
+    checkNumeroCompte(matricule: string): Observable<IResponse> {
+        return this.http.get<IResponse>(`${this.server}/ecredit/salaire/info-personnel/${matricule}/check-numero-compte`).pipe(catchError(this.handleError));
+    }
+
+    // ==================== AVANCE SALAIRE ====================
+
+    /**
+     * Importer le fichier des avances salaire (Excel)
+     * Format attendu: Matricule | NET A PAYER
+     */
+    importAvanceSalaire(file: File): Observable<IResponse> {
+        const formData = new FormData();
+        formData.append('file', file);
+        return this.http.post<IResponse>(`${this.server}/ecredit/import/avance-salaire`, formData);
+    }
+
+    /**
+     * Récupérer toutes les avances salaire
+     */
+    getAllAvanceSalaire(): Observable<IResponse> {
+        return this.http.get<IResponse>(`${this.server}/ecredit/salaire/avance-salaire`).pipe(catchError(this.handleError));
+    }
+
+    /**
+     * Récupérer MON avance salaire (utilise le matricule du compte)
+     */
+    getMyAvanceSalaire(): Observable<IResponse> {
+        return this.http.get<IResponse>(`${this.server}/ecredit/salaire/avance-salaire/me`);
+    }
+
+    /**
+     * Récupérer les avances par utilisateur
+     */
+    getAvanceSalaireByUser(userId: number): Observable<IResponse> {
+        return this.http.get<IResponse>(`${this.server}/ecredit/salaire/avance-salaire/user/${userId}`).pipe(catchError(this.handleError));
+    }
+
+    /**
+     * Récupérer une avance par ID
+     */
+    getAvanceSalaireById(id: number): Observable<IResponse> {
+        return this.http.get<IResponse>(`${this.server}/ecredit/salaire/avance-salaire/${id}`).pipe(catchError(this.handleError));
+    }
+
+    getAvanceSalaireByMatricule(matricule: string): Observable<IResponse> {
+        return this.getAllAvanceSalaire().pipe(
+            map((response) => {
+                if (response.data?.avances) {
+                    const avances = response.data.avances as any[];
+                    const avance = avances.find((a) => a.matricule === matricule);
+
+                    if (avance) {
+                        // Créer une nouvelle réponse avec le bon type
+                        const newResponse: IResponse = {
+                            ...response,
+                            data: {
+                                ...response.data,
+                                avance: avance
+                            } as any
+                        };
+                        return newResponse;
+                    }
+                }
+                // Simuler une erreur 404
+                throw { status: 404, message: 'Aucune avance trouvée pour ce matricule' };
+            })
+        );
+    }
+
+    /**
+     * Récupérer avances par statut
+     */
+    getAvanceSalaireByStatut(statut: string): Observable<IResponse> {
+        return this.http.get<IResponse>(`${this.server}/ecredit/salaire/avance-salaire/statut/${statut}`).pipe(catchError(this.handleError));
+    }
+
+    /**
+     * Mettre à jour le statut d'une avance
+     */
+    updateAvanceSalaireStatut(id: number, statut: string): Observable<IResponse> {
+        return this.http.put<IResponse>(`${this.server}/ecredit/salaire/avance-salaire/${id}/statut?statut=${statut}`, {}).pipe(catchError(this.handleError));
+    }
+
+    /**
+     * Supprimer toutes les avances d'un utilisateur
+     */
+    deleteAvanceSalaireByUser(userId: number): Observable<IResponse> {
+        return this.http.delete<IResponse>(`${this.server}/ecredit/salaire/avance-salaire/user/${userId}`).pipe(catchError(this.handleError));
+    }
+
+    /**
+     * Vider la table avance_salaire (reset mensuel)
+     */
+    truncateAvanceSalaire(): Observable<IResponse> {
+        return this.http.delete<IResponse>(`${this.server}/ecredit/salaire/avance-salaire/truncate`).pipe(catchError(this.handleError));
+    }
+
+    // ==================== DEMANDE SALARY ====================
+
+    /**
+     * Créer une demande d'avance sur salaire
+     */
+    createDemandeSalary(matricule: string, amount: number, numeroCompte?: string): Observable<IResponse> {
+        let params = new HttpParams().set('matricule', matricule).set('amount', amount.toString());
+
+        if (numeroCompte) {
+            params = params.set('numeroCompte', numeroCompte);
+        }
+
+        return this.http.post<IResponse>(`${this.server}/ecredit/salaire/demande-salary`, null, { params });
+    }
+
+    /**
+     * Récupérer toutes les demandes de salaire
+     */
+    getAllDemandeSalary(): Observable<IResponse> {
+        return this.http.get<IResponse>(`${this.server}/ecredit/salaire/demande-salary`).pipe(catchError(this.handleError));
+    }
+
+    /**
+     * Récupérer les demandes de salaire de l'utilisateur connecté
+     */
+    getMyDemandeSalary(): Observable<IResponse> {
+        return this.http.get<IResponse>(`${this.server}/ecredit/salaire/demande-salary/me`).pipe(catchError(this.handleError));
+    }
+
+    /**
+     * Récupérer une demande par ID
+     */
+    getDemandeSalaryById(id: number): Observable<IResponse> {
+        return this.http.get<IResponse>(`${this.server}/ecredit/salaire/demande-salary/${id}`).pipe(catchError(this.handleError));
+    }
+
+    /**
+     * Récupérer demandes par statut
+     */
+    getDemandeSalaryByStatut(statut: string): Observable<IResponse> {
+        return this.http.get<IResponse>(`${this.server}/ecredit/salaire/demande-salary/statut/${statut}`).pipe(catchError(this.handleError));
+    }
+
+    /**
+     * Annuler une demande de salaire
+     */
+    annulerDemandeSalary(id: number): Observable<IResponse> {
+        return this.http.put<IResponse>(`${this.server}/ecredit/salaire/demande-salary/${id}/annuler`, {}).pipe(catchError(this.handleError));
+    }
+
+    /**
+     * Rejeter une demande de salaire
+     */
+    rejeterDemandeSalary(id: number): Observable<IResponse> {
+        return this.http.put<IResponse>(`${this.server}/ecredit/salaire/demande-salary/${id}/rejeter`, {}).pipe(catchError(this.handleError));
+    }
+
+    /**
+     * Valider une demande de salaire
+     */
+    validerDemandeSalary(id: number): Observable<IResponse> {
+        return this.http.put<IResponse>(`${this.server}/ecredit/salaire/demande-salary/${id}/valider`, {}).pipe(catchError(this.handleError));
+    }
+
+    /**
+     * Confirmer une demande de salaire
+     */
+    confirmerDemandeSalary(id: number): Observable<IResponse> {
+        return this.http.put<IResponse>(`${this.server}/ecredit/salaire/demande-salary/${id}/confirmer`, {}).pipe(catchError(this.handleError));
+    }
+
+    /**
+     * Créer MA demande d'avance (utilise le matricule du compte)
+     */
+    createMyDemandeSalary(amount: number, numeroCompte?: string): Observable<IResponse> {
+        let params = new HttpParams().set('amount', amount.toString());
+
+        if (numeroCompte) {
+            params = params.set('numeroCompte', numeroCompte);
+        }
+
+        return this.http.post<IResponse>(`${this.server}/ecredit/salaire/demande-salary/me`, null, { params });
+    }
+
+    /**
+     * Valider plusieurs demandes en une seule opération
+     */
+    validerMultipleDemandeSalary(ids: number[]): Observable<IResponse> {
+        return this.http.put<IResponse>(`${this.server}/ecredit/salaire/demande-salary/valider-multiple`, ids);
+    }
+
+    /**
+     * Récupérer les demandes groupées par date
+     */
+    getDemandesGroupedByDate(statut: string = 'ENCOURS'): Observable<IResponse> {
+        return this.http.get<IResponse>(`${this.server}/ecredit/salaire/demande-salary/grouped-by-date?statut=${statut}`);
+    }
+
+    /**
+     * Confirmer plusieurs demandes en une seule opération (DF)
+     */
+    confirmerMultipleDemandeSalary(ids: number[]): Observable<IResponse> {
+        return this.http.put<IResponse>(`${this.server}/ecredit/salaire/demande-salary/confirmer-multiple`, ids);
+    }
+
+    /**
+     * Exporter les demandes en Excel
+     */
+    exportDemandesExcel(ids?: number[]): Observable<Blob> {
+        return this.http.post(`${this.server}/ecredit/salaire/demande-salary/export-excel`, ids || [], {
+            responseType: 'blob'
+        });
+    }
+
+    /**
+     * Exporter toutes les demandes confirmées en Excel
+     */
+    exportAllConfirmedDemandesExcel(): Observable<Blob> {
+        return this.http.get(`${this.server}/ecredit/salaire/demande-salary/export-excel/confirmer`, {
+            responseType: 'blob'
+        });
+    }
+
+    // ==================== AUTHORIZE SALAIRE ====================
+
+    /**
+     * Récupérer l'état d'autorisation des demandes
+     */
+    getAuthorizeSalaire(): Observable<IResponse> {
+        // ✅ Ajouter un timestamp pour éviter le cache
+        const timestamp = new Date().getTime();
+        return this.http.get<IResponse>(`${this.server}/ecredit/salaire/authorize?_t=${timestamp}`);
+    }
+
+    /**
+     * Mettre à jour l'autorisation
+     */
+    updateAuthorizeSalaire(isAuthorized: boolean, message?: string): Observable<IResponse> {
+        let params = new HttpParams().set('isAuthorized', isAuthorized.toString());
+        if (message) {
+            params = params.set('message', message);
+        }
+        return this.http.put<IResponse>(`${this.server}/ecredit/salaire/authorize`, null, { params });
+    }
+
+    /**
+     * Activer les demandes
+     */
+    enableAuthorizeSalaire(): Observable<IResponse> {
+        return this.http.put<IResponse>(`${this.server}/ecredit/salaire/authorize/enable`, {});
+    }
+
+    /**
+     * Désactiver les demandes
+     */
+    disableAuthorizeSalaire(): Observable<IResponse> {
+        return this.http.put<IResponse>(`${this.server}/ecredit/salaire/authorize/disable`, {});
+    }
 }

@@ -205,5 +205,20 @@ export default [
         path: 'suivi-societariat',
         data: { breadcrumb: 'Suivi Societariat' },
         loadComponent: () => import('./admin/suivi-societariat/suivi-societariat.component').then((c) => c.SuiviSocietariatComponent)
+    },
+    {
+        path: 'demande-avance-salaire',
+        data: { breadcrumb: 'Demande Avance Salaire' },
+        loadComponent: () => import('./admin/demande-avance-salaire/demande-avance-salaire.component').then((c) => c.DemandeAvanceSalaireComponent)
+    },
+    {
+        path: 'mes-demandes-salaire',
+        data: { breadcrumb: 'Demande Avance Salaire' },
+        loadComponent: () => import('./admin/demande-avance-salaire/mes-demandes-salaire/mes-demandes-salaire.component').then((c) => c.MesDemandesSalaireComponent)
+    },
+    {
+        path: 'gestion-personnel',
+        data: { breadcrumb: 'Gestion Personnel' },
+        loadComponent: () => import('./admin/gestion-personnel/gestion-personnel.component').then((c) => c.GestionPersonnelComponent)
     }
 ] as Routes;

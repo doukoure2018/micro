@@ -52,7 +52,15 @@ public class UserResource {
     // When user is not logged in
     @PostMapping("/register")
     public ResponseEntity<Response> register(@RequestBody UserRequest user, HttpServletRequest request) {
-        userService.createUser(user.getFirstName(), user.getLastName(), user.getEmail(), user.getUsername(), user.getPassword());
+        userService.createUser(
+                user.getFirstName(), 
+                user.getLastName(), 
+                user.getEmail(), 
+                user.getUsername(), 
+                user.getPassword(),
+                user.getMatricule(),
+                user.getPhone()
+        );
         return created(getUri()).body(getResponse(request, emptyMap(), "Account created. Check your email to enable your account", CREATED));
     }
 

@@ -1,0 +1,440 @@
+<p-toast></p-toast>
+
+<!-- ✅ Vérification de l'autorisation en cours -->
+@if (isCheckingAuthorization()) {
+<div class="authorization-check">
+    <p-card>
+        <div class="loading-authorization">
+            <p-progressSpinner [style]="{ width: '50px', height: '50px' }"></p-progressSpinner>
+            <p>Vérification de la disponibilité du service...</p>
+        </div>
+    </p-card>
+</div>
+}
+
+<!-- ✅ Service non autorisé -->
+@else if (!isAuthorized()) {
+<div class="not-authorized">
+    <p-card>
+        <div class="not-authorized-content">
+            <div class="icon-container">
+                <i class="pi pi-lock"></i>
+            </div>
+            <h2>Service temporairement indisponible</h2>
+            <p class="message">{{ authorizationMessage() }}</p>
+
+            <div class="info-box">
+                <i class="pi pi-info-circle"></i>
+                <div>
+                    <strong>Pourquoi ce message ?</strong>
+                    <p>Les demandes d'avance sur salaire sont ouvertes après l'import du fichier de paie mensuel par le
+                        service RH. Veuillez patienter ou contacter la DRH pour plus d'informations.</p>
+                </div>
+            </div>
+
+            <div class="actions">
+                <p-button icon="pi pi-refresh" label="Vérifier à nouveau" (onClick)="checkAuthorization()"
+                    [outlined]="true" [loading]="isCheckingAuthorization()"></p-button>
+                <p-button icon="pi pi-list" label="Voir mes demandes" (onClick)="goToMesDemandes()"
+                    severity="secondary"></p-button>
+            </div>
+        </div>
+    </p-card>
+</div>
+}
+
+<!-- ✅ Service autorisé -->
+@else {
+<div class="demande-container">
+    <!-- En-tête -->
+    <div class="header-section">
+        <h2><i class="pi pi-wallet"></i> Demande d'avance sur salaire</h2>
+        <p class="subtitle">Faites une demande d'avance sur votre salaire (jusqu'à 50% du net)</p>
+    </div>
+
+    <!-- Chargement initial -->
+    @if (isSearching() && !needsManualMatricule()) {
+    <p-card>
+        <div class="loading-section">
+            <p-progressSpinner [style]="{ width: '40px', height: '40px' }"></p-progressSpinner>
+            <p>Chargement de vos informations...</p>
+        </div>
+    </p-card>
+    }
+
+    <!-- ✅ NOUVEAU: Formulaire de recherche matricule (utilisateur sans matricule dans son compte) -->
+    @else if (needsManualMatricule()) {
+    <p-card header="Identification par matricule" styleClass="manual-matricule-card">
+        <div class="manual-matricule-section">
+            <div class="info-banner">
+                <i class="pi pi-info-circle"></i>
+                <div>
+                    <strong>Matricule non associé à votre compte</strong>
+                    <p>Votre compte utilisateur n'a pas de matricule associé. Veuillez saisir votre matricule pour
+                        continuer.</p>
+                </div>
+            </div>
+
+            <form [formGroup]="searchForm" (ngSubmit)="searchMatricule()" class="search-form">
+                <div class="p-field">
+                    <label for="matricule">Votre matricule *</label>
+                    <div class="p-inputgroup">
+                        <span class="p-inputgroup-addon">
+                            <i class="pi pi-id-card"></i>
+                        </span>
+                        <input type="text" pInputText id="matricule" formControlName="matricule"
+                            placeholder="Entrez votre matricule (ex: 631)" [disabled]="isSearchingMatricule()" />
+                        <button type="submit" pButton icon="pi pi-search" label="Vérifier"
+                            [loading]="isSearchingMatricule()" [disabled]="searchForm.invalid"></button>
+                    </div>
+                    @if (searchForm.get('matricule')?.touched && searchForm.get('matricule')?.invalid) {
+                    <small class="p-error">Le matricule est obligatoire</small>
+                    }
+                </div>
+            </form>
+
+            <!-- Erreur de recherche -->
+            @if (matriculeSearchError()) {
+            <div class="search-error">
+                <p-message severity="error" [text]="matriculeSearchError()"></p-message>
+            </div>
+            }
+
+            <p-divider></p-divider>
+
+            <div class="help-section">
+                <h4><i class="pi pi-question-circle"></i> Où trouver mon matricule ?</h4>
+                <ul>
+                    <li>Sur votre bulletin de paie</li>
+                    <li>Sur votre badge d'employé</li>
+                    <li>Auprès du service des Ressources Humaines</li>
+                </ul>
+            </div>
+
+            <div class="actions">
+                <p-button icon="pi pi-list" label="Voir mes demandes" (onClick)="goToMesDemandes()" severity="secondary"
+                    [outlined]="true"></p-button>
+            </div>
+        </div>
+    </p-card>
+    }
+
+    <!-- Erreur générale -->
+    @else if (searchError()) {
+    <p-card>
+        <div class="error-section">
+            <div class="error-icon">
+                <i class="pi pi-exclamation-triangle"></i>
+            </div>
+            <h3>Une erreur est survenue</h3>
+            <p>{{ searchError() }}</p>
+            <div class="error-actions">
+                <p-button icon="pi pi-refresh" label="Réessayer" (onClick)="loadMyAvanceInfo()"
+                    [outlined]="true"></p-button>
+                <p-button icon="pi pi-list" label="Voir mes demandes" (onClick)="goToMesDemandes()"
+                    severity="secondary"></p-button>
+            </div>
+        </div>
+    </p-card>
+    }
+
+    <!-- ✅ Étapes normales (une fois le matricule trouvé) -->
+    @else if (currentStep() >= 1) {
+
+    <!-- Steps -->
+    <div class="steps-container">
+        <p-steps [model]="steps" [activeIndex]="currentStep()" [readonly]="true"></p-steps>
+    </div>
+
+    <!-- Indicateur: utilisateur avec matricule manuel -->
+    @if (!hasMatriculeInAccount() && manualMatricule()) {
+    <div class="manual-matricule-badge">
+        <i class="pi pi-user"></i>
+        <span>Matricule saisi manuellement: <strong>{{ manualMatricule() }}</strong></span>
+    </div>
+    }
+
+    <!-- Étape 1: Vérification -->
+    @if (currentStep() === 1) {
+    <p-card header="Étape 2: Vérification de votre éligibilité" styleClass="step-card">
+        <div class="verification-section">
+            <!-- Infos du personnel -->
+            <div class="info-card">
+                <div class="info-header">
+                    <i class="pi pi-user"></i>
+                    <h3>Informations du personnel</h3>
+                </div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="label">Matricule</span>
+                        <span class="value badge">{{ matricule() }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Nom complet</span>
+                        <span class="value">{{ nomComplet() }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">N° Compte</span>
+                        <span class="value">
+                            @if (hasNumeroCompte()) {
+                            {{ personnelInfo()?.numeroCompte }}
+                            } @else {
+                            <span class="no-data">Non défini</span>
+                            }
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <p-divider></p-divider>
+
+            <!-- Infos financières -->
+            <div class="info-card financial">
+                <div class="info-header">
+                    <i class="pi pi-chart-bar"></i>
+                    <h3>Situation financière</h3>
+                </div>
+                <div class="financial-grid">
+                    <div class="financial-item">
+                        <span class="label">Salaire net</span>
+                        <span class="value amount">{{ formatMontant(salaireNet()) }}</span>
+                    </div>
+                    <div class="financial-item">
+                        <span class="label">Limite d'avance (50%)</span>
+                        <span class="value amount limite">{{ formatMontant(limiteAvance()) }}</span>
+                    </div>
+                    <div class="financial-item">
+                        <span class="label">Demandes actives</span>
+                        <span class="value amount used">{{ formatMontant(totalDemandesActives()) }}</span>
+                    </div>
+                    <div class="financial-item highlight" [ngClass]="getUsageClass()">
+                        <span class="label">Montant disponible</span>
+                        <span class="value amount available">{{ formatMontant(montantDisponible()) }}</span>
+                    </div>
+                </div>
+
+                <!-- Barre de progression -->
+                <div class="usage-bar">
+                    <div class="usage-progress"
+                        [style.width.%]="limiteAvance() > 0 ? (totalDemandesActives() / limiteAvance()) * 100 : 0"
+                        [ngClass]="getUsageClass()">
+                    </div>
+                </div>
+                <div class="usage-text">
+                    {{ totalDemandesActives() > 0 ? ((totalDemandesActives() / limiteAvance()) * 100 | number:'1.0-0') +
+                    '% utilisé' : 'Aucune demande active' }}
+                </div>
+            </div>
+
+            <!-- Liste des demandes actives -->
+            @if (demandesActives().length > 0) {
+            <div class="active-demands">
+                <h4><i class="pi pi-list"></i> Vos demandes actives</h4>
+                <div class="demands-list">
+                    @for (demande of demandesActives(); track demande.id) {
+                    <div class="demand-item">
+                        <span class="demand-amount">{{ formatMontant(demande.amount) }}</span>
+                        <p-tag [value]="demande.statut" [severity]="getStatutSeverity(demande.statut!)"></p-tag>
+                        <span class="demand-date">{{ demande.createdAt | javaDate:'dd/MM/yyyy' }}</span>
+                    </div>
+                    }
+                </div>
+            </div>
+            }
+
+            <!-- Actions -->
+            <div class="verification-actions">
+                <p-button label="Retour" icon="pi pi-arrow-left" severity="secondary" [outlined]="true"
+                    (onClick)="reset()"></p-button>
+
+                @if (montantDisponible() > 0) {
+                <p-button label="Faire une demande" icon="pi pi-arrow-right" iconPos="right"
+                    (onClick)="goToForm()"></p-button>
+                } @else {
+                <p-message severity="warn"
+                    text="Vous avez atteint votre limite d'avance. Aucune nouvelle demande possible."></p-message>
+                }
+            </div>
+        </div>
+    </p-card>
+    }
+
+    <!-- Étape 2: Formulaire de demande -->
+    @if (currentStep() === 2) {
+    <p-card header="Étape 3: Saisie de la demande" styleClass="step-card">
+        <div class="form-section">
+            <!-- Rappel du montant disponible -->
+            <div class="available-reminder">
+                <i class="pi pi-info-circle"></i>
+                <span>Montant maximum disponible: <strong>{{ formatMontant(montantDisponible()) }}</strong></span>
+            </div>
+
+            <form [formGroup]="demandeForm" (ngSubmit)="submitDemande()" class="demande-form">
+                <!-- Montant -->
+                <div class="p-field">
+                    <label for="amount">Montant demandé (GNF) *</label>
+                    <p-inputNumber id="amount" formControlName="amount" [min]="1" [max]="montantDisponible()"
+                        mode="decimal" [useGrouping]="true" placeholder="Entrez le montant" [style]="{ width: '100%' }"
+                        [inputStyle]="{ width: '100%' }" (onInput)="onAmountChange($event)"></p-inputNumber>
+                    @if (demandeForm.get('amount')?.touched && demandeForm.get('amount')?.invalid) {
+                    <small class="p-error">
+                        @if (demandeForm.get('amount')?.errors?.['required']) {
+                        Le montant est obligatoire
+                        }
+                        @if (demandeForm.get('amount')?.errors?.['min']) {
+                        Le montant doit être supérieur à 0
+                        }
+                    </small>
+                    }
+                    @if (demandeForm.get('amount')?.value > montantDisponible()) {
+                    <small class="p-error">
+                        Le montant ne peut pas dépasser {{ formatMontant(montantDisponible()) }}
+                    </small>
+                    }
+                </div>
+
+                <!-- Numéro de compte - OBLIGATOIRE -->
+                <div class="p-field">
+                    <label for="numeroCompte">Numéro de compte (11 chiffres) *</label>
+                    <div class="p-inputgroup">
+                        <span class="p-inputgroup-addon">
+                            <i class="pi pi-credit-card"></i>
+                        </span>
+                        <input type="text" pInputText id="numeroCompte" formControlName="numeroCompte"
+                            placeholder="Ex: 12345678901" maxlength="11" [style]="{ width: '100%' }"
+                            (input)="onNumeroCompteInput($event)" />
+                        @if (isNumeroCompteValid()) {
+                        <span class="p-inputgroup-addon valid-icon">
+                            <i class="pi pi-check-circle" style="color: var(--green-500)"></i>
+                        </span>
+                        }
+                    </div>
+
+                    <!-- Compteur de caractères -->
+                    <div class="char-counter">
+                        <span [class.valid]="demandeForm.get('numeroCompte')?.value?.length === 11"
+                            [class.invalid]="demandeForm.get('numeroCompte')?.value?.length > 0 && demandeForm.get('numeroCompte')?.value?.length !== 11">
+                            {{ demandeForm.get('numeroCompte')?.value?.length || 0 }} / 11 caractères
+                        </span>
+                    </div>
+
+                    <!-- Messages d'erreur -->
+                    @if (demandeForm.get('numeroCompte')?.touched && demandeForm.get('numeroCompte')?.invalid) {
+                    <small class="p-error">
+                        @if (demandeForm.get('numeroCompte')?.errors?.['required']) {
+                        Le numéro de compte est obligatoire
+                        } @else if (demandeForm.get('numeroCompte')?.errors?.['minlength'] ||
+                        demandeForm.get('numeroCompte')?.errors?.['maxlength']) {
+                        Le numéro de compte doit contenir exactement 11 chiffres
+                        } @else if (demandeForm.get('numeroCompte')?.errors?.['pattern']) {
+                        Le numéro de compte ne doit contenir que des chiffres
+                        }
+                    </small>
+                    }
+
+                    <!-- Info si numéro de compte existant -->
+                    @if (hasNumeroCompte() && personnelInfo()?.numeroCompte) {
+                    <small class="p-hint">
+                        <i class="pi pi-info-circle"></i>
+                        Numéro de compte enregistré: {{ personnelInfo()?.numeroCompte }}
+                    </small>
+                    }
+                </div>
+
+                <!-- Résumé -->
+                <div class="summary-box">
+                    <h4>Récapitulatif</h4>
+                    <div class="summary-grid">
+                        <div class="summary-item">
+                            <span class="label">Matricule:</span>
+                            <span class="value">{{ matricule() }}</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="label">Nom:</span>
+                            <span class="value">{{ nomComplet() }}</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="label">Montant demandé:</span>
+                            <span class="value highlight">{{ formatMontant(demandeForm.get('amount')?.value) }}</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="label">N° Compte:</span>
+                            <span class="value" [class.valid]="isNumeroCompteValid()"
+                                [class.invalid]="!isNumeroCompteValid()">
+                                {{ demandeForm.get('numeroCompte')?.value || '-' }}
+                                @if (isNumeroCompteValid()) {
+                                <i class="pi pi-check-circle" style="color: var(--green-500); margin-left: 0.5rem;"></i>
+                                }
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Validation status -->
+                <div class="validation-status">
+                    <div class="validation-item"
+                        [class.valid]="demandeForm.get('amount')?.valid && demandeForm.get('amount')?.value <= montantDisponible()">
+                        <i
+                            [class]="demandeForm.get('amount')?.valid && demandeForm.get('amount')?.value <= montantDisponible() ? 'pi pi-check-circle' : 'pi pi-circle'"></i>
+                        <span>Montant valide</span>
+                    </div>
+                    <div class="validation-item" [class.valid]="isNumeroCompteValid()">
+                        <i [class]="isNumeroCompteValid() ? 'pi pi-check-circle' : 'pi pi-circle'"></i>
+                        <span>Numéro de compte valide (11 chiffres)</span>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="form-actions">
+                    <p-button label="Retour" icon="pi pi-arrow-left" severity="secondary" [outlined]="true"
+                        (onClick)="currentStep.set(1)" [disabled]="isSubmitting()"></p-button>
+
+                    <p-button type="submit" label="Soumettre la demande" icon="pi pi-check" [loading]="isSubmitting()"
+                        [disabled]="!canSubmit()"></p-button>
+                </div>
+            </form>
+        </div>
+    </p-card>
+    }
+
+    <!-- Étape 3: Confirmation -->
+    @if (currentStep() === 3) {
+    <p-card styleClass="step-card confirmation-card">
+        <div class="confirmation-section">
+            <div class="success-icon">
+                <i class="pi pi-check-circle"></i>
+            </div>
+            <h2>Demande envoyée avec succès !</h2>
+            <p>Votre demande d'avance sur salaire a été enregistrée et est en cours de traitement.</p>
+
+            <div class="confirmation-details">
+                <div class="detail-item">
+                    <span class="label">Matricule:</span>
+                    <span class="value">{{ matricule() }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="label">Montant:</span>
+                    <span class="value">{{ formatMontant(demandeForm.get('amount')?.value) }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="label">Statut:</span>
+                    <p-tag value="ENCOURS" severity="info"></p-tag>
+                </div>
+            </div>
+
+            <p class="next-steps">
+                <i class="pi pi-info-circle"></i>
+                Vous recevrez une notification lorsque votre demande sera traitée.
+            </p>
+
+            <div class="confirmation-actions">
+                <p-button label="Nouvelle demande" icon="pi pi-plus" (onClick)="reset()"></p-button>
+                <p-button label="Voir mes demandes" icon="pi pi-list" severity="secondary" [outlined]="true"
+                    (onClick)="goToMesDemandes()"></p-button>
+            </div>
+        </div>
+    </p-card>
+    }
+    }
+</div>
+}

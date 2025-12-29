@@ -2,7 +2,7 @@ import { IResponse } from '@/interface/response';
 import { IUser } from '@/interface/user';
 import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, inject, signal, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -18,20 +18,58 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { Table, TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
+import { DropdownModule } from 'primeng/dropdown';
+import { MultiSelectModule } from 'primeng/multiselect';
+import { CalendarModule } from 'primeng/calendar';
+import { CardModule } from 'primeng/card';
+import { BadgeModule } from 'primeng/badge';
+import { AvatarModule } from 'primeng/avatar';
+import { SkeletonModule } from 'primeng/skeleton';
+import { ChipModule } from 'primeng/chip';
+
+interface FilterOption {
+    label: string;
+    value: string;
+}
 
 @Component({
     selector: 'app-admin',
-    imports: [CommonModule, TableModule, InputTextModule, ProgressBarModule, ButtonModule, IconField, InputIcon, TagModule, FormsModule, InputSwitchModule, TooltipModule, DividerModule, ProgressSpinnerModule],
+    imports: [
+        CommonModule,
+        TableModule,
+        InputTextModule,
+        ProgressBarModule,
+        ButtonModule,
+        IconField,
+        InputIcon,
+        TagModule,
+        FormsModule,
+        InputSwitchModule,
+        TooltipModule,
+        DividerModule,
+        ProgressSpinnerModule,
+        DropdownModule,
+        MultiSelectModule,
+        CalendarModule,
+        CardModule,
+        BadgeModule,
+        AvatarModule,
+        SkeletonModule,
+        ChipModule
+    ],
     templateUrl: './admin.component.html',
+    styleUrl: './admin.component.scss',
     providers: [ConfirmationService]
 })
 export class AdminComponent {
+    @ViewChild('dtUsers') dtUsers!: Table;
+    @ViewChild('dtAgents') dtAgents!: Table;
+
     state = signal<{
         users?: IUser[];
         loading: boolean;
         message: string | undefined;
         error: string | any;
-        // État pour la gestion des agents crédit
         agentCredits?: IUser[];
         loadingAgentCredits: boolean;
         updatingAuthorization: number | null;
@@ -42,6 +80,35 @@ export class AdminComponent {
         loadingAgentCredits: false,
         updatingAuthorization: null
     });
+
+    // Options de filtrage
+    roleOptions: FilterOption[] = [
+        { label: 'Super Admin', value: 'SUPER_ADMIN' },
+        { label: 'Admin', value: 'ADMIN' },
+        { label: 'Agent Crédit', value: 'AGENT_CREDIT' },
+        { label: 'Agent Caisse', value: 'AGENT_CAISSE' },
+        { label: 'Utilisateur', value: 'USER' }
+    ];
+
+    statusOptions: FilterOption[] = [
+        { label: 'Actif', value: 'true' },
+        { label: 'Inactif', value: 'false' }
+    ];
+
+    authorizationOptions: FilterOption[] = [
+        { label: 'Autorisé', value: 'true' },
+        { label: 'Non autorisé', value: 'false' }
+    ];
+
+    serviceOptions: FilterOption[] = [
+        { label: 'Crédit', value: 'CREDIT' },
+        { label: 'Caisse', value: 'CAISSE' },
+        { label: 'Administration', value: 'ADMIN' }
+    ];
+
+    // Variables pour les filtres globaux
+    globalFilterUsers: string = '';
+    globalFilterAgents: string = '';
 
     private router = inject(Router);
     private destroyRef = inject(DestroyRef);
@@ -78,16 +145,36 @@ export class AdminComponent {
                     }));
                     this.messageService.add({
                         severity: 'error',
-                        summary: 'Error',
-                        detail: 'Failed to load users',
+                        summary: 'Erreur',
+                        detail: 'Impossible de charger les utilisateurs',
                         life: 3000
                     });
                 }
             });
     }
 
-    onGlobalFilter(table: Table, event: Event): void {
-        table.filterGlobal((event.target as HTMLInputElement).value, 'contains');
+    // Filtre global pour le tableau des utilisateurs
+    onGlobalFilterUsers(event: Event): void {
+        const value = (event.target as HTMLInputElement).value;
+        this.dtUsers?.filterGlobal(value, 'contains');
+    }
+
+    // Filtre global pour le tableau des agents
+    onGlobalFilterAgents(event: Event): void {
+        const value = (event.target as HTMLInputElement).value;
+        this.dtAgents?.filterGlobal(value, 'contains');
+    }
+
+    // Effacer tous les filtres du tableau utilisateurs
+    clearFiltersUsers(): void {
+        this.dtUsers?.clear();
+        this.globalFilterUsers = '';
+    }
+
+    // Effacer tous les filtres du tableau agents
+    clearFiltersAgents(): void {
+        this.dtAgents?.clear();
+        this.globalFilterAgents = '';
     }
 
     navigateToCreateUser(): void {
@@ -99,56 +186,51 @@ export class AdminComponent {
     }
 
     deleteUser(user: IUser): void {
-        // this.confirmationService.confirm({
-        //     message: `Are you sure you want to delete user ${user.firstName} ${user.lastName}?`,
-        //     header: 'Confirm Delete',
-        //     icon: 'pi pi-exclamation-triangle',
-        //     accept: () => {
-        //         this.state.set({ ...this.state(), loading: true });
-        //         this.userService.deleteUser$(user.userId).subscribe({
-        //             next: (response) => {
-        //                 this.messageService.add({
-        //                     severity: 'success',
-        //                     summary: 'Success',
-        //                     detail: 'User deleted successfully',
-        //                     life: 3000
-        //                 });
-        //                 this.loadUsers();
-        //             },
-        //             error: (error) => {
-        //                 this.state.set({ ...this.state(), loading: false });
-        //                 this.messageService.add({
-        //                     severity: 'error',
-        //                     summary: 'Error',
-        //                     detail: 'Failed to delete user',
-        //                     life: 3000
-        //                 });
-        //             }
-        //         });
-        //     }
-        // });
+        this.confirmationService.confirm({
+            message: `Êtes-vous sûr de vouloir supprimer l'utilisateur ${user.firstName} ${user.lastName}?`,
+            header: 'Confirmation de suppression',
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Oui, supprimer',
+            rejectLabel: 'Annuler',
+            acceptButtonStyleClass: 'p-button-danger',
+            accept: () => {
+                // Logique de suppression
+                this.messageService.add({
+                    severity: 'info',
+                    summary: 'Info',
+                    detail: 'Fonctionnalité en cours de développement',
+                    life: 3000
+                });
+            }
+        });
     }
 
-    getRoleSeverity(role: string): 'success' | 'info' | 'warn' | 'danger' {
+    getRoleSeverity(role: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
         switch (role) {
             case 'SUPER_ADMIN':
                 return 'danger';
             case 'ADMIN':
                 return 'warn';
-            case 'USER':
+            case 'AGENT_CREDIT':
                 return 'info';
-            default:
+            case 'AGENT_CAISSE':
                 return 'success';
+            case 'USER':
+                return 'secondary';
+            default:
+                return 'info';
         }
+    }
+
+    getRoleLabel(role: string): string {
+        const found = this.roleOptions.find((r) => r.value === role);
+        return found ? found.label : role;
     }
 
     // ========================================
     // GESTION DES AUTORISATIONS AGENT CRÉDIT
     // ========================================
 
-    /**
-     * Charger la liste des agents crédit
-     */
     loadAgentCredits(): void {
         this.state.update((state) => ({ ...state, loadingAgentCredits: true }));
 
@@ -180,14 +262,8 @@ export class AdminComponent {
             });
     }
 
-    /**
-     * Basculer l'autorisation d'un agent crédit
-     * Note: ngModel a déjà mis à jour user.isAuthorized avec la nouvelle valeur
-     */
     toggleAuthorization(user: IUser): void {
-        // La nouvelle valeur est déjà dans user.authorized grâce au ngModel
         const newAuthStatus = user.authorized ?? false;
-        // Garder l'ancienne valeur pour pouvoir revenir en arrière en cas d'erreur
         const previousStatus = !newAuthStatus;
 
         this.state.update((state) => ({ ...state, updatingAuthorization: user.userId }));
@@ -198,7 +274,6 @@ export class AdminComponent {
             .subscribe({
                 next: (response: IResponse) => {
                     console.log('Autorisation mise à jour:', response);
-                    // Mettre à jour l'état local pour synchroniser
                     this.state.update((state) => ({
                         ...state,
                         updatingAuthorization: null,
@@ -214,7 +289,6 @@ export class AdminComponent {
                 },
                 error: (error) => {
                     console.error("Erreur lors de la mise à jour de l'autorisation:", error);
-                    // Revenir à l'état précédent en cas d'erreur
                     this.state.update((state) => ({
                         ...state,
                         updatingAuthorization: null,
@@ -230,10 +304,24 @@ export class AdminComponent {
             });
     }
 
-    /**
-     * Vérifier si un agent est en cours de mise à jour
-     */
     isUpdatingAuthorization(userId: number): boolean {
         return this.state().updatingAuthorization === userId;
+    }
+
+    // Statistiques calculées
+    get totalUsers(): number {
+        return this.state().users?.length || 0;
+    }
+
+    get activeUsers(): number {
+        return this.state().users?.filter((u) => u.enabled).length || 0;
+    }
+
+    get totalAgents(): number {
+        return this.state().agentCredits?.length || 0;
+    }
+
+    get authorizedAgents(): number {
+        return this.state().agentCredits?.filter((a) => a.authorized).length || 0;
     }
 }

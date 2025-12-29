@@ -18,11 +18,13 @@ public class UserRequest {
     @NotEmpty(message = "Email cannot be empty or null")
     @Email(message = "Invalid email address")
     private String email;
-    @NotEmpty(message = "Username cannot be empty or null")
+    // Username est optionnel - si non fourni, il sera généré automatiquement (prénom + nom + chiffres)
     private String username;
     @NotEmpty(message = "Password cannot be empty or null")
     private String password;
     private String bio;
     private String phone;
     private String address;
+    // Matricule du personnel (optionnel, pour lier l'utilisateur à info_personnel)
+    private String matricule;
 }
