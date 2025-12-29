@@ -1059,7 +1059,7 @@ export class UserService {
     importAvanceSalaire(file: File): Observable<IResponse> {
         const formData = new FormData();
         formData.append('file', file);
-        return this.http.post<IResponse>(`${this.server}/salaire/ecredit/import/avance-salaire`, formData);
+        return this.http.post<IResponse>(`${this.server}/ecredit/salaire/import/avance-salaire`, formData);
     }
 
     /**
