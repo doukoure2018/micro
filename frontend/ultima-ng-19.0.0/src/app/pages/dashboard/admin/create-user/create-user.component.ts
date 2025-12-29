@@ -113,17 +113,11 @@ export class CreateUserComponent {
     }
 
     private setupUsernameValidation(): void {
-        this.usernameSubject
-            .pipe(
-                debounceTime(500), // Wait 500ms after user stops typing
-                distinctUntilChanged(),
-                takeUntilDestroyed(this.destroyRef)
-            )
-            .subscribe((username) => {
-                if (username && this.shouldValidateUsername()) {
-                    this.validateUsername(username);
-                }
-            });
+        this.usernameSubject.pipe(debounceTime(500), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef)).subscribe((username) => {
+            if (username && this.shouldValidateUsername()) {
+                this.validateUsername(username);
+            }
+        });
     }
 
     private loadRolesUsers(): void {
@@ -202,7 +196,6 @@ export class CreateUserComponent {
     // Handle username input change
     onUsernameChange(username: string): void {
         if (this.shouldValidateUsername()) {
-            // Reset validation state while typing
             this.state.update((state) => ({
                 ...state,
                 usernameValidation: {
@@ -212,7 +205,6 @@ export class CreateUserComponent {
                 }
             }));
 
-            // Trigger debounced validation
             this.usernameSubject.next(username);
         }
     }
@@ -257,7 +249,6 @@ export class CreateUserComponent {
                             }
                         }));
 
-                        // Show user feedback
                         if (isActive) {
                             this.messageService.add({
                                 severity: 'success',
@@ -274,7 +265,6 @@ export class CreateUserComponent {
                             });
                         }
                     } else {
-                        // User not found
                         this.state.update((state) => ({
                             ...state,
                             usernameValidation: {
@@ -317,18 +307,77 @@ export class CreateUserComponent {
             });
     }
 
-    // Validate email format
+    /**
+     * Validate email format - Version très flexible
+     * Accepte tous les formats d'email valides incluant:
+     * - Emails simples: nom@domain.com
+     * - Emails avec points multiples: nom.prenom.service@domain.com
+     * - Emails avec plusieurs niveaux: salifou.doukoure.manager.ra@creditruralgn.com
+     * - Emails avec sous-domaines: nom@mail.domain.co.gn
+     * - Emails avec caractères spéciaux autorisés: nom+tag@domain.com
+     */
     validateEmail(email: string): boolean {
         if (!email) return false;
 
-        // Regex pattern that accepts both professional emails (xxx.xxx@domain.com) and standard emails
-        // This pattern allows:
-        // - Dots in the local part (before @)
-        // - Alphanumeric characters, dots, hyphens, and underscores
-        // - Various domain extensions
-        const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        // Trim whitespace
+        email = email.trim();
 
-        return emailPattern.test(email);
+        // Pattern très flexible qui accepte:
+        // - Partie locale: lettres, chiffres, points, tirets, underscores, +
+        //   (peut avoir plusieurs points consécutifs ou non)
+        // - @ obligatoire
+        // - Domaine: lettres, chiffres, tirets, points
+        // - Extension: au moins 2 caractères
+
+        // Option 1: Pattern flexible
+        const flexiblePattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+        // Option 2: Pattern encore plus permissif (accepte presque tout)
+        // Vérifie simplement: quelquechose@quelquechose.quelquechose
+        const permissivePattern = /^.+@.+\..+$/;
+
+        // Option 3: Pattern très détaillé pour les emails professionnels
+        // Accepte: nom.prenom.service.role@domaine.sous-domaine.extension
+        const professionalPattern = /^[a-zA-Z0-9]([a-zA-Z0-9._+-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$/;
+
+        // Utiliser le pattern permissif pour accepter le maximum de formats valides
+        // Vous pouvez changer pour flexiblePattern ou professionalPattern si besoin
+        return permissivePattern.test(email);
+    }
+
+    /**
+     * Alternative: Validation email basique
+     * Vérifie seulement la structure minimale d'un email
+     */
+    validateEmailBasic(email: string): boolean {
+        if (!email) return false;
+
+        email = email.trim();
+
+        // Vérifications basiques
+        // 1. Contient exactement un @
+        const atCount = (email.match(/@/g) || []).length;
+        if (atCount !== 1) return false;
+
+        // 2. Le @ n'est pas au début ou à la fin
+        if (email.startsWith('@') || email.endsWith('@')) return false;
+
+        // 3. Il y a quelque chose avant et après le @
+        const [localPart, domainPart] = email.split('@');
+        if (!localPart || !domainPart) return false;
+
+        // 4. Le domaine contient au moins un point
+        if (!domainPart.includes('.')) return false;
+
+        // 5. Le domaine ne commence pas et ne finit pas par un point
+        if (domainPart.startsWith('.') || domainPart.endsWith('.')) return false;
+
+        // 6. L'extension a au moins 2 caractères
+        const lastDotIndex = domainPart.lastIndexOf('.');
+        const extension = domainPart.substring(lastDotIndex + 1);
+        if (extension.length < 2) return false;
+
+        return true;
     }
 
     // Check if form can be submitted
@@ -336,30 +385,24 @@ export class CreateUserComponent {
         const validation = this.state().usernameValidation;
 
         if (this.shouldValidateUsername()) {
-            // For AGENT_CREDIT, username must be validated and active
             return !!validation?.checked && !!validation?.isActive;
         }
 
-        // For other roles (including CAISSE and AGENT_CORRECTEUR), no username validation needed
         return true;
     }
 
-    // Check if role requires location fields (delegation at minimum)
+    // Check if role requires location fields
     shouldShowLocationFields(roleName: string): boolean {
         return roleName === 'AGENT_CREDIT' || roleName === 'CAISSE' || roleName === 'AGENT_CORRECTEUR' || roleName === 'DA' || roleName === 'DR' || roleName === 'RA';
     }
 
     // Check if role requires agence field
     shouldShowAgenceField(roleName: string): boolean {
-        // DR only needs delegation, not agence
-        // AGENT_CREDIT, CAISSE, AGENT_CORRECTEUR, DA and RA need agence
         return roleName === 'AGENT_CREDIT' || roleName === 'CAISSE' || roleName === 'AGENT_CORRECTEUR' || roleName === 'DA' || roleName === 'RA';
     }
 
     // Check if role requires point vente field
     shouldShowPointVenteField(roleName: string): boolean {
-        // AGENT_CREDIT, CAISSE and AGENT_CORRECTEUR need point de vente
-        // DA and RA do NOT need point de vente
         return roleName === 'AGENT_CREDIT' || roleName === 'CAISSE' || roleName === 'AGENT_CORRECTEUR';
     }
 
@@ -416,14 +459,12 @@ export class CreateUserComponent {
             selectedPointVenteId: undefined
         }));
 
-        // Reset dependent selections
         this.selectedAgence = null;
         this.selectedPointVente = null;
 
         console.log('Selected Delegation:', delegation);
         console.log('Delegation ID:', delegationId);
 
-        // Only load agences if the role requires it (not for DR)
         if (this.state().selectedRole && this.shouldShowAgenceField(this.state().selectedRole?.name!)) {
             this.loadAgencesByDelegation(delegationId!);
         }
@@ -477,13 +518,11 @@ export class CreateUserComponent {
             selectedPointVenteId: undefined
         }));
 
-        // Reset point vente selection
         this.selectedPointVente = null;
 
         console.log('Selected Agence:', agence);
         console.log('Agence ID:', agenceId);
 
-        // Load point ventes for AGENT_CREDIT, CAISSE and AGENT_CORRECTEUR roles
         if (this.state().selectedRole && this.shouldShowPointVenteField(this.state().selectedRole?.name!)) {
             this.loadPointVentesByAgence(agenceId!);
         }
@@ -547,12 +586,12 @@ export class CreateUserComponent {
             return;
         }
 
-        // Validate email format
+        // Validate email format avec la nouvelle méthode flexible
         if (form.value.email && !this.validateEmail(form.value.email)) {
             this.messageService.add({
                 severity: 'error',
                 summary: 'Email invalide',
-                detail: 'Veuillez entrer une adresse email valide (ex: nom.prenom@creditruralgn.com ou nom@gmail.com)',
+                detail: 'Veuillez entrer une adresse email valide (ex: nom.prenom@domain.com)',
                 life: 5000
             });
             return;
@@ -584,13 +623,11 @@ export class CreateUserComponent {
             return;
         }
 
-        // Get IDs from the state or form values
         const delegationId = this.state().selectedDelegationId || this.selectedDelegation?.id || null;
         const agenceId = this.state().selectedAgenceId || this.selectedAgence?.id || null;
         const pointventeId = this.state().selectedPointVenteId || this.selectedPointVente?.id || null;
         const serviceValue = this.state().selectedServiceValue || this.selectedService?.value || null;
 
-        // Log the IDs for debugging
         console.log('Creating user with location IDs:', {
             delegationId,
             agenceId,
@@ -599,7 +636,6 @@ export class CreateUserComponent {
             role: selectedRole.name
         });
 
-        // Validate required location fields based on role
         const roleName = selectedRole.name;
         if (this.shouldShowLocationFields(roleName)) {
             if (!delegationId) {
@@ -636,19 +672,17 @@ export class CreateUserComponent {
             }
         }
 
-        // Create the user data object with proper IDs
         const userData = {
             username: form.value.username,
             firstName: form.value.firstName,
             lastName: form.value.lastName,
-            email: form.value.email,
+            email: form.value.email?.trim(), // Trim l'email avant envoi
             phone: form.value.phone,
             password: form.value.password,
             bio: form.value.bio,
             service: serviceValue,
             roleName: selectedRole.name,
             roleId: selectedRole.role_id,
-            // Add location-based IDs
             delegationId: delegationId,
             agenceId: agenceId,
             pointventeId: pointventeId
@@ -669,7 +703,6 @@ export class CreateUserComponent {
                     });
                     this.state.update((state) => ({ ...state, submitting: false }));
                     form.resetForm();
-                    // Reset selections
                     this.selectedDelegation = null;
                     this.selectedAgence = null;
                     this.selectedPointVente = null;
