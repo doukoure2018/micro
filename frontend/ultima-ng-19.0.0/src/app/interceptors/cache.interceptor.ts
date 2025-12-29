@@ -11,16 +11,19 @@ export const CacheInterceptor: HttpInterceptorFn = (request: HttpRequest<unknown
         return next(request);
     }
 
+    // ✅ IMPORTANT: Utiliser urlWithParams pour inclure les query parameters
+    const cacheKey = request.urlWithParams;
+
     // Check for a cached response
-    const cachedResponse = httpCache.get(request.url);
+    const cachedResponse = httpCache.get(cacheKey);
     if (cachedResponse) {
-        console.log(`Cache hit for URL: ${request.url}`);
+        console.log(`Cache hit for URL: ${cacheKey}`);
         httpCache.logCache();
         return of(cachedResponse);
     }
 
     // No cache hit, handle the request and cache the response
-    return handleAndCacheResponse(request, next, httpCache);
+    return handleAndCacheResponse(request, next, httpCache, cacheKey);
 };
 
 /**
@@ -29,13 +32,36 @@ export const CacheInterceptor: HttpInterceptorFn = (request: HttpRequest<unknown
  * @returns True if the cache should be bypassed, false otherwise.
  */
 function shouldBypassCache(request: HttpRequest<unknown>, httpCache: HttpCacheService): boolean {
-    const bypassUrls = ['verify', 'login', 'refresh', 'resetpassword'];
+    // ✅ URLs à ne jamais cacher
+    const bypassUrls = [
+        'verify',
+        'login',
+        'refresh',
+        'resetpassword',
+        // ✅ NOUVEAU: Exclure toutes les URLs salaire du cache
+        '/salaire/authorize',
+        '/salaire/info-personnel',
+        '/salaire/avance-salaire',
+        '/salaire/demande-salary',
+        '/demande-salary'
+    ];
+
     const isBypassUrl = bypassUrls.some((url) => request.url.includes(url));
 
+    // ✅ NOUVEAU: Bypass si le paramètre _t (timestamp) est présent
+    const hasTimestamp = request.params.has('_t');
+
     // Bypass cache for certain URLs or non-GET methods or download endpoints
-    if (isBypassUrl || request.method !== 'GET' || request.url.includes('download')) {
-        // Optionally evict all cache for non-GET requests
-        httpCache.evictAll();
+    if (isBypassUrl || request.method !== 'GET' || request.url.includes('download') || hasTimestamp) {
+        if (request.method !== 'GET') {
+            // Optionally evict all cache for non-GET requests
+            httpCache.evictAll();
+        }
+
+        if (isBypassUrl || hasTimestamp) {
+            console.log(`🚫 Cache SKIPPED for: ${request.url}`);
+        }
+
         return true;
     }
 
@@ -46,14 +72,20 @@ function shouldBypassCache(request: HttpRequest<unknown>, httpCache: HttpCacheSe
  * Handles the request and caches the response if applicable.
  * @param request The HttpRequest object.
  * @param next The HttpHandlerFn for forwarding the request.
+ * @param cacheKey The key to use for caching (urlWithParams).
  * @returns An Observable of HttpEvent.
  */
-function handleAndCacheResponse(request: HttpRequest<any>, next: HttpHandlerFn, httpCache: HttpCacheService): Observable<HttpEvent<any>> {
+function handleAndCacheResponse(
+    request: HttpRequest<any>,
+    next: HttpHandlerFn,
+    httpCache: HttpCacheService,
+    cacheKey: string // ✅ NOUVEAU: Utiliser la clé avec params
+): Observable<HttpEvent<any>> {
     return next(request).pipe(
         tap((event) => {
             if (event instanceof HttpResponse && request.method === 'GET') {
-                console.log(`Caching response for URL: ${request.url}`);
-                httpCache.put(request.url, event);
+                console.log(`💾 Caching response for URL: ${cacheKey}`);
+                httpCache.put(cacheKey, event); // ✅ Utiliser cacheKey au lieu de request.url
             }
         })
     );

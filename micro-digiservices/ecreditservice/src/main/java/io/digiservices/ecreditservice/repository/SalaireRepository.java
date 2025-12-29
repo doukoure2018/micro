@@ -7,6 +7,7 @@ import io.digiservices.ecreditservice.dto.InfoPersonnelDto;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -30,6 +31,31 @@ public interface SalaireRepository {
      * Récupérer tous les personnels
      */
     List<InfoPersonnelDto> findAllInfoPersonnel();
+
+    /**
+     * Récupérer les personnels actifs uniquement
+     */
+    List<InfoPersonnelDto> findActiveInfoPersonnel();
+
+    /**
+     * Compter les personnels par statut
+     */
+    Map<String, Long> countInfoPersonnelByStatut();
+
+    /**
+     * Mettre à jour le statut d'un personnel par matricule
+     */
+    int updateInfoPersonnelStatutByMatricule(String matricule, String statut);
+
+    /**
+     * Mettre à jour le statut d'un personnel
+     */
+    int updateInfoPersonnelStatut(Long id, String statut);
+
+    /**
+     * Récupérer les personnels par statut
+     */
+    List<InfoPersonnelDto> findInfoPersonnelByStatut(String statut);
 
     /**
      * Récupérer un personnel par matricule

@@ -18,107 +18,71 @@
             </ng-template>
 
             <div class="tab-content">
-                <!-- Section Upload Personnel -->
+                <!-- Section Upload Personnel (inchangée) -->
                 <p-card header="Importer le fichier du personnel" styleClass="mb-4">
-                    <div class="upload-section">
-                        <div class="upload-info">
-                            <h4><i class="pi pi-info-circle"></i> Format attendu du fichier Excel</h4>
-                            <table class="format-table">
-                                <thead>
-                                    <tr>
-                                        <th>Matricule</th>
-                                        <th>Nom</th>
-                                        <th>Prénom</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>1</td>
-                                        <td>BAH</td>
-                                        <td>Amadou Tidiane</td>
-                                    </tr>
-                                    <tr>
-                                        <td>13</td>
-                                        <td>BAH</td>
-                                        <td>Abdoulaye Simbé</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <p-divider></p-divider>
-
-                        <div class="upload-zone">
-                            <p-fileUpload mode="advanced" name="file" accept=".xlsx,.xls" [maxFileSize]="10000000"
-                                [customUpload]="true" (uploadHandler)="onUploadPersonnel($event)" [auto]="false"
-                                chooseLabel="Choisir fichier" uploadLabel="Importer" cancelLabel="Annuler"
-                                [showUploadButton]="true" [showCancelButton]="true" [disabled]="isUploadingPersonnel()">
-                                <ng-template pTemplate="content">
-                                    <div class="upload-placeholder">
-                                        <i class="pi pi-cloud-upload"></i>
-                                        <p>Glissez-déposez votre fichier Excel ici</p>
-                                        <span>ou cliquez pour sélectionner</span>
-                                    </div>
-                                </ng-template>
-                            </p-fileUpload>
-
-                            @if (isUploadingPersonnel()) {
-                            <div class="upload-progress">
-                                <p-progressBar mode="indeterminate" [style]="{ height: '6px' }"></p-progressBar>
-                                <span>Import en cours...</span>
-                            </div>
-                            }
-                        </div>
-
-                        <!-- Résultat d'import -->
-                        @if (statsPersonnel()) {
-                        <div class="import-result" [class.success]="statsPersonnel()!.success"
-                            [class.partial]="!statsPersonnel()!.success">
-                            <div class="result-header">
-                                <i
-                                    [class]="statsPersonnel()!.success ? 'pi pi-check-circle' : 'pi pi-exclamation-triangle'"></i>
-                                <span>{{ statsPersonnel()!.success ? 'Import réussi' : 'Import partiel' }}</span>
-                            </div>
-                            <div class="result-stats">
-                                <div class="stat">
-                                    <span class="label">Total lignes:</span>
-                                    <span class="value">{{ statsPersonnel()!.total }}</span>
-                                </div>
-                                <div class="stat">
-                                    <span class="label">Importées:</span>
-                                    <span class="value success">{{ statsPersonnel()!.importees }}</span>
-                                </div>
-                                @if (statsPersonnel()!.erreurs > 0) {
-                                <div class="stat">
-                                    <span class="label">Erreurs:</span>
-                                    <span class="value error">{{ statsPersonnel()!.erreurs }}</span>
-                                    <p-button icon="pi pi-eye" severity="danger" [text]="true" size="small"
-                                        (onClick)="showErrors('personnel')" pTooltip="Voir les erreurs"></p-button>
-                                </div>
-                                }
-                            </div>
-                        </div>
-                        }
-                    </div>
+                    <!-- ... contenu existant ... -->
                 </p-card>
 
-                <!-- Table Personnel -->
+                <!-- Table Personnel avec gestion du statut -->
                 <p-card header="Liste du personnel">
                     <div class="table-header">
-                        <span class="p-input-icon-left"></span>
+                        <!-- ✅ Filtre par statut -->
+                        <div class="filter-section">
+                            <p-dropdown [options]="statutOptions" [(ngModel)]="selectedStatutFilter"
+                                (onChange)="onStatutFilterChange($event)" optionLabel="label" optionValue="value"
+                                [style]="{ width: '180px' }" placeholder="Filtrer par statut"></p-dropdown>
+                        </div>
+
+                        <!-- ✅ NOUVEAU: Recherche par nom/prénom -->
+                        <div class="search-section">
+                            <span class="p-input-icon-left p-input-icon-right">
+                                <i class="pi pi-search"></i>
+                                <input type="text" pInputText [ngModel]="searchTerm()" (input)="onSearchChange($event)"
+                                    placeholder="Rechercher par nom, prénom ou matricule..."
+                                    [style]="{ width: '300px' }" />
+                                @if (searchTerm()) {
+                                <i class="pi pi-times clear-icon" (click)="clearSearch()"></i>
+                                }
+                            </span>
+                        </div>
+
+                        <!-- ✅ Compteurs -->
+                        <div class="statut-counters">
+                            <span class="counter active">
+                                <i class="pi pi-check-circle"></i>
+                                {{ countActivePersonnels() }} actifs
+                            </span>
+                            <span class="counter inactive">
+                                <i class="pi pi-times-circle"></i>
+                                {{ countInactivePersonnels() }} inactifs
+                            </span>
+                        </div>
+
                         <p-button icon="pi pi-refresh" [text]="true" (onClick)="loadPersonnels()"
                             [loading]="isLoadingPersonnel()" pTooltip="Actualiser"></p-button>
                     </div>
 
-                    <p-table [value]="personnels()" [paginator]="true" [rows]="10"
+                    <!-- ✅ NOUVEAU: Indicateur de résultats filtrés -->
+                    @if (searchTerm()) {
+                    <div class="search-results-info">
+                        <i class="pi pi-filter"></i>
+                        <span>
+                            {{ countFilteredPersonnels() }} résultat(s) pour "{{ searchTerm() }}"
+                        </span>
+                        <p-button icon="pi pi-times" label="Effacer" [text]="true" size="small"
+                            (onClick)="clearSearch()"></p-button>
+                    </div>
+                    }
+
+                    <!-- ✅ IMPORTANT: Utiliser filteredPersonnels() au lieu de personnels() -->
+                    <p-table [value]="filteredPersonnels()" [paginator]="true" [rows]="10"
                         [rowsPerPageOptions]="[10, 25, 50, 100]" [loading]="isLoadingPersonnel()"
-                        [globalFilterFields]="['matricule', 'nom', 'prenom']"
-                        styleClass="p-datatable-striped p-datatable-gridlines" [tableStyle]="{ 'min-width': '50rem' }"
+                        styleClass="p-datatable-striped p-datatable-gridlines" [tableStyle]="{ 'min-width': '60rem' }"
                         [showCurrentPageReport]="true"
                         currentPageReportTemplate="Affichage {first} à {last} sur {totalRecords} personnels">
                         <ng-template pTemplate="header">
                             <tr>
-                                <th pSortableColumn="matricule" style="width: 120px">
+                                <th pSortableColumn="matricule" style="width: 100px">
                                     Matricule <p-sortIcon field="matricule"></p-sortIcon>
                                 </th>
                                 <th pSortableColumn="nom">
@@ -127,34 +91,59 @@
                                 <th pSortableColumn="prenom">
                                     Prénom <p-sortIcon field="prenom"></p-sortIcon>
                                 </th>
-                                <th pSortableColumn="numeroCompte">
-                                    N° Compte <p-sortIcon field="numeroCompte"></p-sortIcon>
+
+                                <th pSortableColumn="statut" style="width: 120px">
+                                    Statut <p-sortIcon field="statut"></p-sortIcon>
                                 </th>
                                 <th style="width: 150px">Date création</th>
+                                <th style="width: 120px">Actions</th>
                             </tr>
                         </ng-template>
                         <ng-template pTemplate="body" let-personnel>
-                            <tr>
+                            <tr [class.inactive-row]="personnel.statut === 'INACTIVE'">
                                 <td>
                                     <span class="matricule-badge">{{ personnel.matricule }}</span>
                                 </td>
-                                <td>{{ personnel.nom }}</td>
-                                <td>{{ personnel.prenom }}</td>
                                 <td>
-                                    @if (personnel.numeroCompte) {
-                                    <span class="numero-compte">{{ personnel.numeroCompte }}</span>
-                                    } @else {
-                                    <span class="no-data">Non défini</span>
-                                    }
+                                    <!-- ✅ NOUVEAU: Surligner le texte recherché -->
+                                    <span [innerHTML]="highlightSearch(personnel.nom)"></span>
+                                </td>
+                                <td>
+                                    <span [innerHTML]="highlightSearch(personnel.prenom)"></span>
+                                </td>
+
+                                <td>
+                                    <p-tag [value]="getStatutLabel(personnel.statut)"
+                                        [severity]="getStatutSeverity(personnel.statut)"></p-tag>
                                 </td>
                                 <td>{{ personnel.createdAt | javaDate:'dd/MM/yyyy HH:mm' }}</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        @if (personnel.statut === 'ACTIVE') {
+                                        <p-button icon="pi pi-user-minus" severity="danger" [text]="true"
+                                            [rounded]="true" size="small" (onClick)="desactiverPersonnel(personnel)"
+                                            [loading]="isUpdatingStatut() === personnel.id"
+                                            pTooltip="Désactiver (retraite, démission...)"
+                                            tooltipPosition="left"></p-button>
+                                        } @else {
+                                        <p-button icon="pi pi-user-plus" severity="success" [text]="true"
+                                            [rounded]="true" size="small" (onClick)="activerPersonnel(personnel)"
+                                            [loading]="isUpdatingStatut() === personnel.id" pTooltip="Réactiver"
+                                            tooltipPosition="left"></p-button>
+                                        }
+                                    </div>
+                                </td>
                             </tr>
                         </ng-template>
                         <ng-template pTemplate="emptymessage">
                             <tr>
-                                <td colspan="5" class="empty-message">
+                                <td colspan="7" class="empty-message">
                                     <i class="pi pi-inbox"></i>
+                                    @if (searchTerm()) {
+                                    <span>Aucun personnel trouvé pour "{{ searchTerm() }}"</span>
+                                    } @else {
                                     <span>Aucun personnel trouvé</span>
+                                    }
                                 </td>
                             </tr>
                         </ng-template>

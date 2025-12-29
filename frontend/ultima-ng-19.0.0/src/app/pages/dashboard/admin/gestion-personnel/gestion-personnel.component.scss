@@ -481,3 +481,224 @@
         transform: translateY(0);
     }
 }
+
+// ==================== STATUT PERSONNEL ====================
+
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+
+    .filter-section {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .statut-counters {
+        display: flex;
+        gap: 1rem;
+
+        .counter {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+
+            &.active {
+                background: var(--green-100);
+                color: var(--green-700);
+
+                i {
+                    color: var(--green-500);
+                }
+            }
+
+            &.inactive {
+                background: var(--red-100);
+                color: var(--red-700);
+
+                i {
+                    color: var(--red-500);
+                }
+            }
+        }
+    }
+}
+
+// Ligne inactive (grisée)
+.inactive-row {
+    background-color: var(--surface-100) !important;
+    opacity: 0.7;
+
+    td {
+        color: var(--text-color-secondary);
+    }
+
+    .matricule-badge {
+        background: var(--surface-300);
+        color: var(--text-color-secondary);
+    }
+}
+
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 0.25rem;
+}
+
+// Style pour le tag statut
+:host ::ng-deep {
+    .p-tag {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+}
+
+// ==================== SEARCH SECTION ====================
+
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+
+    .filter-section {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    // ✅ NOUVEAU: Section recherche
+    .search-section {
+        flex: 1;
+        min-width: 250px;
+        max-width: 350px;
+
+        .p-input-icon-left {
+            width: 100%;
+
+            input {
+                width: 100%;
+                padding-right: 2.5rem;
+            }
+        }
+
+        .clear-icon {
+            cursor: pointer;
+            color: var(--text-color-secondary);
+            transition: color 0.2s;
+
+            &:hover {
+                color: var(--primary-color);
+            }
+        }
+    }
+
+    .statut-counters {
+        display: flex;
+        gap: 1rem;
+
+        .counter {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+
+            &.active {
+                background: var(--green-100);
+                color: var(--green-700);
+
+                i {
+                    color: var(--green-500);
+                }
+            }
+
+            &.inactive {
+                background: var(--red-100);
+                color: var(--red-700);
+
+                i {
+                    color: var(--red-500);
+                }
+            }
+        }
+    }
+}
+
+// ✅ NOUVEAU: Info résultats de recherche
+.search-results-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: var(--blue-50);
+    border: 1px solid var(--blue-200);
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    color: var(--blue-700);
+
+    i {
+        color: var(--blue-500);
+    }
+}
+
+// ✅ NOUVEAU: Surlignage du texte recherché
+:host ::ng-deep {
+    .highlight {
+        background-color: var(--yellow-200);
+        padding: 0.1rem 0.2rem;
+        border-radius: 3px;
+        font-weight: 600;
+    }
+}
+
+// Ligne inactive (grisée)
+.inactive-row {
+    background-color: var(--surface-100) !important;
+    opacity: 0.7;
+
+    td {
+        color: var(--text-color-secondary);
+    }
+
+    .matricule-badge {
+        background: var(--surface-300);
+        color: var(--text-color-secondary);
+    }
+}
+
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 0.25rem;
+}
+
+// Responsive
+@media (max-width: 768px) {
+    .table-header {
+        flex-direction: column;
+        align-items: stretch;
+
+        .search-section {
+            max-width: 100%;
+            order: -1; // Mettre la recherche en premier sur mobile
+        }
+
+        .statut-counters {
+            justify-content: center;
+        }
+    }
+}

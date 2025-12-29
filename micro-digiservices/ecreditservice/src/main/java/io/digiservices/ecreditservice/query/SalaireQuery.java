@@ -25,10 +25,10 @@ public class SalaireQuery {
      * Récupérer tous les personnels
      */
     public static final String SELECT_ALL_INFO_PERSONNEL = """
-        SELECT id, matricule, nom, prenom, numero_compte, created_at, updated_at
-        FROM info_personnel
-        ORDER BY nom, prenom
-        """;
+    SELECT id, matricule, nom, prenom, numero_compte, statut, created_at, updated_at
+    FROM info_personnel
+    ORDER BY nom, prenom
+    """;
 
     /**
      * Récupérer un personnel par matricule
@@ -589,6 +589,57 @@ public class SalaireQuery {
         updated_at = NOW()
     WHERE id = 1
     """;
+
+
+
+    /**
+     * Récupérer uniquement les personnels actifs
+     */
+    public static final String SELECT_ACTIVE_INFO_PERSONNEL = """
+    SELECT id, matricule, nom, prenom, numero_compte, statut, created_at, updated_at
+    FROM info_personnel
+    WHERE statut = 'ACTIVE'
+    ORDER BY nom, prenom
+    """;
+
+    /**
+     * Récupérer les personnels par statut
+     */
+    public static final String SELECT_INFO_PERSONNEL_BY_STATUT = """
+    SELECT id, matricule, nom, prenom, numero_compte, statut, created_at, updated_at
+    FROM info_personnel
+    WHERE statut = :statut
+    ORDER BY nom, prenom
+    """;
+
+    /**
+     * Mettre à jour le statut d'un personnel
+     */
+    public static final String UPDATE_INFO_PERSONNEL_STATUT = """
+    UPDATE info_personnel
+    SET statut = :statut, updated_at = NOW()
+    WHERE id = :id
+    """;
+
+    /**
+     * Mettre à jour le statut d'un personnel par matricule
+     */
+    public static final String UPDATE_INFO_PERSONNEL_STATUT_BY_MATRICULE = """
+    UPDATE info_personnel
+    SET statut = :statut, updated_at = NOW()
+    WHERE matricule = :matricule
+    """;
+
+    /**
+     * Compter les personnels par statut
+     */
+    public static final String COUNT_INFO_PERSONNEL_BY_STATUT = """
+    SELECT statut, COUNT(*) as count
+    FROM info_personnel
+    GROUP BY statut
+    """;
+
+
 
     private SalaireQuery() {
         // Classe utilitaire

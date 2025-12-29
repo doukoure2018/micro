@@ -71,17 +71,107 @@ public class SalaireResource {
     }
 
     /**
-     * Récupérer tous les personnels
+     * Récupérer tous les personnels avec filtre optionnel par statut
      */
     @GetMapping("/salaire/info-personnel")
-    public ResponseEntity<Response> getAllInfoPersonnel(HttpServletRequest request) {
-        log.info("API: Récupération de tous les personnels");
-        List<InfoPersonnelDto> personnels = salaireService.getAllInfoPersonnel();
+    public ResponseEntity<Response> getAllInfoPersonnel(
+            @RequestParam(name = "statut", required = false) String statut,
+            HttpServletRequest request) {
+
+        log.info("API: Récupération personnels avec statut: {}", statut);
+
+        List<InfoPersonnelDto> personnels;
+        if (statut != null && !statut.trim().isEmpty()) {
+            personnels = salaireService.getInfoPersonnelByStatut(statut);
+        } else {
+            personnels = salaireService.getAllInfoPersonnel();
+        }
+
+        Map<String, Long> counts = salaireService.countInfoPersonnelByStatut();
+
         return ResponseEntity.ok(getResponse(request, Map.of(
                 "personnels", personnels,
-                "count", personnels.size()
-        ), "Liste des personnels récupérée avec succès", OK));
+                "total", personnels.size(),
+                "countByStatut", counts
+        ), "Liste du personnel récupérée", OK));
     }
+
+    /**
+     * Récupérer uniquement les personnels actifs
+     */
+    @GetMapping("/salaire/info-personnel/active")
+    public ResponseEntity<Response> getActiveInfoPersonnel(HttpServletRequest request) {
+        log.info("API: Récupération personnels actifs");
+
+        List<InfoPersonnelDto> personnels = salaireService.getActiveInfoPersonnel();
+
+        return ResponseEntity.ok(getResponse(request, Map.of(
+                "personnels", personnels,
+                "total", personnels.size()
+        ), "Liste du personnel actif récupérée", OK));
+    }
+
+    /**
+     * Mettre à jour le statut d'un personnel (activer/désactiver)
+     */
+    @PutMapping("/salaire/info-personnel/{id}/statut")
+    public ResponseEntity<Response> updateInfoPersonnelStatut(
+            @PathVariable(name = "id") Long id,
+            @RequestParam(name = "statut") String statut,
+            HttpServletRequest request) {
+
+        log.info("API: Mise à jour statut personnel ID {}: {}", id, statut);
+
+        int updated = salaireService.updateInfoPersonnelStatut(id, statut);
+
+        if (updated == 0) {
+            return ResponseEntity.badRequest()
+                    .body(getResponse(request, null, "Personnel non trouvé", BAD_REQUEST));
+        }
+
+        String message = statut.equalsIgnoreCase("ACTIVE")
+                ? "Personnel activé avec succès"
+                : "Personnel désactivé avec succès";
+
+        return ResponseEntity.ok(getResponse(request, Map.of(
+                "updated", updated > 0,
+                "newStatut", statut.toUpperCase()
+        ), message, OK));
+    }
+
+
+    /**
+     * Activer un personnel
+     */
+    @PutMapping("/salaire/info-personnel/{id}/activate")
+    public ResponseEntity<Response> activateInfoPersonnel(
+            @PathVariable(name = "id") Long id,
+            HttpServletRequest request) {
+
+        log.info("API: Activation personnel ID {}", id);
+        int updated = salaireService.updateInfoPersonnelStatut(id, "ACTIVE");
+
+        return ResponseEntity.ok(getResponse(request, Map.of(
+                "updated", updated > 0
+        ), "Personnel activé avec succès", OK));
+    }
+
+    /**
+     * Désactiver un personnel
+     */
+    @PutMapping("/salaire/info-personnel/{id}/deactivate")
+    public ResponseEntity<Response> deactivateInfoPersonnel(
+            @PathVariable(name = "id") Long id,
+            HttpServletRequest request) {
+
+        log.info("API: Désactivation personnel ID {}", id);
+        int updated = salaireService.updateInfoPersonnelStatut(id, "INACTIVE");
+
+        return ResponseEntity.ok(getResponse(request, Map.of(
+                "updated", updated > 0
+        ), "Personnel désactivé avec succès", OK));
+    }
+
 
     /**
      * Récupérer un personnel par matricule

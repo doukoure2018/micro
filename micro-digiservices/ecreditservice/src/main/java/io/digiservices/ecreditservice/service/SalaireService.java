@@ -5,6 +5,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -24,6 +25,31 @@ public interface SalaireService {
      * Récupérer tous les personnels
      */
     List<InfoPersonnelDto> getAllInfoPersonnel();
+
+    /**
+     * Récupérer les personnels actifs
+     */
+    List<InfoPersonnelDto> getActiveInfoPersonnel();
+
+    /**
+     * Mettre à jour le statut d'un personnel par matricule
+     */
+    int updateInfoPersonnelStatutByMatricule(String matricule, String statut);
+
+    /**
+     * Mettre à jour le statut d'un personnel
+     */
+    int updateInfoPersonnelStatut(Long id, String statut);
+
+    /**
+     * Compter les personnels par statut
+     */
+    Map<String, Long> countInfoPersonnelByStatut();
+
+    /**
+     * Récupérer les personnels par statut
+     */
+    List<InfoPersonnelDto> getInfoPersonnelByStatut(String statut);
 
     /**
      * Récupérer un personnel par matricule

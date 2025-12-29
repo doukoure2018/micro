@@ -263,5 +263,6 @@ export interface IResponse {
         isAuthorized?: any;
         message?: any;
         authorize?: AuthorizeSalaireDto;
+        countByStatut?: any;
     };
 }

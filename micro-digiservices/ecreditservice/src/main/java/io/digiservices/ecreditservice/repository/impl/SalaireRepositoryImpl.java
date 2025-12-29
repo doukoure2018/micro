@@ -17,7 +17,9 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Repository
 @RequiredArgsConstructor
@@ -35,6 +37,7 @@ public class SalaireRepositoryImpl implements SalaireRepository {
                     .nom(rs.getString("nom"))
                     .prenom(rs.getString("prenom"))
                     .numeroCompte(rs.getString("numero_compte"))
+                    .statut(rs.getString("statut"))
                     .createdAt(toLocalDateTime(rs.getTimestamp("created_at")))
                     .updatedAt(toLocalDateTime(rs.getTimestamp("updated_at")))
                     .build();
@@ -88,9 +91,52 @@ public class SalaireRepositoryImpl implements SalaireRepository {
         return count;
     }
 
+
     @Override
     public List<InfoPersonnelDto> findAllInfoPersonnel() {
         return jdbcClient.sql(SalaireQuery.SELECT_ALL_INFO_PERSONNEL)
+                .query(INFO_PERSONNEL_ROW_MAPPER)
+                .list();
+    }
+
+    @Override
+    public List<InfoPersonnelDto> findActiveInfoPersonnel() {
+        return jdbcClient.sql(SalaireQuery.SELECT_ACTIVE_INFO_PERSONNEL)
+                .query(INFO_PERSONNEL_ROW_MAPPER)
+                .list();
+    }
+
+    @Override
+    public Map<String, Long> countInfoPersonnelByStatut() {
+        return jdbcClient.sql(SalaireQuery.COUNT_INFO_PERSONNEL_BY_STATUT)
+                .query((rs, rowNum) -> Map.entry(rs.getString("statut"), rs.getLong("count")))
+                .list()
+                .stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    @Override
+    @Transactional
+    public int updateInfoPersonnelStatutByMatricule(String matricule, String statut) {
+        return jdbcClient.sql(SalaireQuery.UPDATE_INFO_PERSONNEL_STATUT_BY_MATRICULE)
+                .param("matricule", matricule)
+                .param("statut", statut)
+                .update();
+    }
+
+    @Override
+    @Transactional
+    public int updateInfoPersonnelStatut(Long id, String statut) {
+        return jdbcClient.sql(SalaireQuery.UPDATE_INFO_PERSONNEL_STATUT)
+                .param("id", id)
+                .param("statut", statut)
+                .update();
+    }
+
+    @Override
+    public List<InfoPersonnelDto> findInfoPersonnelByStatut(String statut) {
+        return jdbcClient.sql(SalaireQuery.SELECT_INFO_PERSONNEL_BY_STATUT)
+                .param("statut", statut)
                 .query(INFO_PERSONNEL_ROW_MAPPER)
                 .list();
     }

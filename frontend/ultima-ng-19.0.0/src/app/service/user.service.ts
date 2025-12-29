@@ -975,10 +975,44 @@ export class UserService {
     }
 
     /**
-     * Récupérer tous les personnels
+     * Récupérer les personnels avec filtre optionnel par statut
      */
-    getAllInfoPersonnel(): Observable<IResponse> {
-        return this.http.get<IResponse>(`${this.server}/ecredit/salaire/info-personnel`).pipe(catchError(this.handleError));
+    getAllInfoPersonnel(statut?: string): Observable<IResponse> {
+        const timestamp = new Date().getTime();
+        let params = new HttpParams().set('_t', timestamp.toString());
+        if (statut) {
+            params = params.set('statut', statut);
+        }
+        return this.http.get<IResponse>(`${this.server}/ecredit/salaire/info-personnel`, { params });
+    }
+
+    /**
+     * Récupérer uniquement les personnels actifs
+     */
+    getActiveInfoPersonnel(): Observable<IResponse> {
+        return this.http.get<IResponse>(`${this.server}/ecredit/salaire/info-personnel/active`);
+    }
+
+    /**
+     * Mettre à jour le statut d'un personnel
+     */
+    updateInfoPersonnelStatut(id: number, statut: string): Observable<IResponse> {
+        const params = new HttpParams().set('statut', statut);
+        return this.http.put<IResponse>(`${this.server}/ecredit/salaire/info-personnel/${id}/statut`, null, { params });
+    }
+
+    /**
+     * Activer un personnel
+     */
+    activateInfoPersonnel(id: number): Observable<IResponse> {
+        return this.http.put<IResponse>(`${this.server}/ecredit/salaire/info-personnel/${id}/activate`, {});
+    }
+
+    /**
+     * Désactiver un personnel
+     */
+    deactivateInfoPersonnel(id: number): Observable<IResponse> {
+        return this.http.put<IResponse>(`${this.server}/ecredit/salaire/info-personnel/${id}/deactivate`, {});
     }
 
     /**
@@ -1025,23 +1059,24 @@ export class UserService {
     importAvanceSalaire(file: File): Observable<IResponse> {
         const formData = new FormData();
         formData.append('file', file);
-        return this.http.post<IResponse>(`${this.server}/ecredit/import/avance-salaire`, formData);
+        return this.http.post<IResponse>(`${this.server}/salaire/ecredit/import/avance-salaire`, formData);
     }
 
     /**
      * Récupérer toutes les avances salaire
      */
     getAllAvanceSalaire(): Observable<IResponse> {
-        return this.http.get<IResponse>(`${this.server}/ecredit/salaire/avance-salaire`).pipe(catchError(this.handleError));
+        const timestamp = new Date().getTime();
+        return this.http.get<IResponse>(`${this.server}/ecredit/salaire/avance-salaire?_t=${timestamp}`);
     }
 
     /**
      * Récupérer MON avance salaire (utilise le matricule du compte)
      */
     getMyAvanceSalaire(): Observable<IResponse> {
-        return this.http.get<IResponse>(`${this.server}/ecredit/salaire/avance-salaire/me`);
+        const timestamp = new Date().getTime();
+        return this.http.get<IResponse>(`${this.server}/ecredit/salaire/avance-salaire/me?_t=${timestamp}`);
     }
-
     /**
      * Récupérer les avances par utilisateur
      */
@@ -1135,7 +1170,8 @@ export class UserService {
      * Récupérer les demandes de salaire de l'utilisateur connecté
      */
     getMyDemandeSalary(): Observable<IResponse> {
-        return this.http.get<IResponse>(`${this.server}/ecredit/salaire/demande-salary/me`).pipe(catchError(this.handleError));
+        const timestamp = new Date().getTime();
+        return this.http.get<IResponse>(`${this.server}/ecredit/salaire/demande-salary/me?_t=${timestamp}`);
     }
 
     /**
@@ -1149,7 +1185,8 @@ export class UserService {
      * Récupérer demandes par statut
      */
     getDemandeSalaryByStatut(statut: string): Observable<IResponse> {
-        return this.http.get<IResponse>(`${this.server}/ecredit/salaire/demande-salary/statut/${statut}`).pipe(catchError(this.handleError));
+        const timestamp = new Date().getTime();
+        return this.http.get<IResponse>(`${this.server}/ecredit/salaire/demande-salary/statut/${statut}?_t=${timestamp}`);
     }
 
     /**
@@ -1203,8 +1240,10 @@ export class UserService {
     /**
      * Récupérer les demandes groupées par date
      */
-    getDemandesGroupedByDate(statut: string = 'ENCOURS'): Observable<IResponse> {
-        return this.http.get<IResponse>(`${this.server}/ecredit/salaire/demande-salary/grouped-by-date?statut=${statut}`);
+    getDemandesGroupedByDate(statut: string): Observable<IResponse> {
+        const timestamp = new Date().getTime();
+        const params = new HttpParams().set('statut', statut).set('_t', timestamp.toString());
+        return this.http.get<IResponse>(`${this.server}/ecredit/salaire/demande-salary/grouped-by-date`, { params });
     }
 
     /**
@@ -1238,7 +1277,6 @@ export class UserService {
      * Récupérer l'état d'autorisation des demandes
      */
     getAuthorizeSalaire(): Observable<IResponse> {
-        // ✅ Ajouter un timestamp pour éviter le cache
         const timestamp = new Date().getTime();
         return this.http.get<IResponse>(`${this.server}/ecredit/salaire/authorize?_t=${timestamp}`);
     }

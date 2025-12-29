@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -124,6 +125,56 @@ public class SalaireServiceImpl implements SalaireService {
     @Override
     public List<InfoPersonnelDto> getAllInfoPersonnel() {
         return salaireRepository.findAllInfoPersonnel();
+    }
+    @Override
+    public List<InfoPersonnelDto> getActiveInfoPersonnel() {
+        return salaireRepository.findActiveInfoPersonnel();
+    }
+
+    @Override
+    @Transactional
+    public int updateInfoPersonnelStatutByMatricule(String matricule, String statut) {
+        if (matricule == null || statut == null) {
+            throw new ApiException("Matricule et statut sont obligatoires");
+        }
+
+        String normalizedStatut = statut.toUpperCase();
+        if (!normalizedStatut.equals("ACTIVE") && !normalizedStatut.equals("INACTIVE")) {
+            throw new ApiException("Statut invalide. Valeurs acceptées: ACTIVE, INACTIVE");
+        }
+
+        log.info("Mise à jour statut personnel matricule {}: {}", matricule, normalizedStatut);
+        return salaireRepository.updateInfoPersonnelStatutByMatricule(matricule, normalizedStatut);
+    }
+
+    @Override
+    @Transactional
+    public int updateInfoPersonnelStatut(Long id, String statut) {
+        if (id == null || statut == null) {
+            throw new ApiException("ID et statut sont obligatoires");
+        }
+
+        String normalizedStatut = statut.toUpperCase();
+        if (!normalizedStatut.equals("ACTIVE") && !normalizedStatut.equals("INACTIVE")) {
+            throw new ApiException("Statut invalide. Valeurs acceptées: ACTIVE, INACTIVE");
+        }
+
+        log.info("Mise à jour statut personnel ID {}: {}", id, normalizedStatut);
+        return salaireRepository.updateInfoPersonnelStatut(id, normalizedStatut);
+    }
+
+
+    @Override
+    public Map<String, Long> countInfoPersonnelByStatut() {
+        return salaireRepository.countInfoPersonnelByStatut();
+    }
+
+    @Override
+    public List<InfoPersonnelDto> getInfoPersonnelByStatut(String statut) {
+        if (statut == null || statut.trim().isEmpty()) {
+            return salaireRepository.findAllInfoPersonnel();
+        }
+        return salaireRepository.findInfoPersonnelByStatut(statut.toUpperCase());
     }
 
     @Override
