@@ -193,6 +193,11 @@ public interface SalaireRepository {
      */
     BigDecimal getTotalDemandesActivesByMatricule(String matricule);
 
+    /**
+     * Vérifier si un matricule est déjà associé à un autre utilisateur
+     */
+    boolean isMatriculeAssignedToOtherUser(String matricule, Long currentUserId);
+
 
     /**
      * Vérifier que le matricule appartient à l'utilisateur
@@ -200,9 +205,24 @@ public interface SalaireRepository {
     boolean checkMatriculeBelongsToUser(Long userId, String matricule);
 
     /**
-     * Récupérer le matricule de l'utilisateur
+     * Récupérer le matricule d'un utilisateur
      */
     Optional<String> getUserMatricule(Long userId);
+
+    /**
+     * Vérifier si l'utilisateur a le rôle USER
+     */
+    boolean hasRoleUser(Long userId);
+
+    /**
+     * Récupérer les rôles d'un utilisateur
+     */
+    List<String> getUserRoles(Long userId);
+
+    /**
+     * Mettre à jour le matricule d'un utilisateur
+     */
+    int updateUserMatricule(Long userId, String matricule);
 
     /**
      * Récupérer l'avance salaire par matricule ET userId (sécurisé)

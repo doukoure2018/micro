@@ -505,10 +505,51 @@ public class SalaireRepositoryImpl implements SalaireRepository {
 
     @Override
     public Optional<String> getUserMatricule(Long userId) {
-        return jdbcClient.sql(SalaireQuery.GET_USER_MATRICULE)
+        try {
+            return jdbcClient.sql(SalaireQuery.SELECT_USER_MATRICULE)
+                    .param("userId", userId)
+                    .query(String.class)
+                    .optional();
+        } catch (Exception e) {
+            log.warn("Erreur lors de la récupération du matricule pour userId: {}", userId);
+            return Optional.empty();
+        }
+    }
+
+
+    @Override
+    public boolean hasRoleUser(Long userId) {
+        try {
+            return jdbcClient.sql(SalaireQuery.CHECK_USER_HAS_ROLE_USER)
+                    .param("userId", userId)
+                    .query(Boolean.class)
+                    .single();
+        } catch (Exception e) {
+            log.warn("Erreur lors de la vérification du rôle USER pour userId: {}", userId);
+            return false;
+        }
+    }
+
+    @Override
+    public List<String> getUserRoles(Long userId) {
+        try {
+            return jdbcClient.sql(SalaireQuery.SELECT_USER_ROLES)
+                    .param("userId", userId)
+                    .query(String.class)
+                    .list();
+        } catch (Exception e) {
+            log.warn("Erreur lors de la récupération des rôles pour userId: {}", userId);
+            return List.of();
+        }
+    }
+    @Override
+    @Transactional
+    public int updateUserMatricule(Long userId, String matricule) {
+        log.info("Mise à jour du matricule pour userId: {} avec matricule: {}", userId, matricule);
+        return jdbcClient.sql(SalaireQuery.UPDATE_USER_MATRICULE)
                 .param("userId", userId)
-                .query(String.class)
-                .optional();
+                .param("matricule", matricule)
+                .update();
     }
 
     @Override
@@ -518,6 +559,20 @@ public class SalaireRepositoryImpl implements SalaireRepository {
                 .param("userId", userId)
                 .query(AVANCE_SALAIRE_ROW_MAPPER)
                 .optional();
+    }
+
+    @Override
+    public boolean isMatriculeAssignedToOtherUser(String matricule, Long currentUserId) {
+        try {
+            return jdbcClient.sql(SalaireQuery.CHECK_MATRICULE_ASSIGNED_TO_OTHER)
+                    .param("matricule", matricule)
+                    .param("userId", currentUserId)
+                    .query(Boolean.class)
+                    .single();
+        } catch (Exception e) {
+            log.warn("Erreur lors de la vérification du matricule: {}", e.getMessage());
+            return false;
+        }
     }
 
     private static final RowMapper<AuthorizeSalaireDto> AUTHORIZE_SALAIRE_ROW_MAPPER = (rs, rowNum) ->

@@ -639,6 +639,50 @@ public class SalaireQuery {
     GROUP BY statut
     """;
 
+    /**
+     * Récupérer le matricule d'un utilisateur
+     */
+    public static final String SELECT_USER_MATRICULE = """
+    SELECT matricule FROM users WHERE user_id = :userId
+    """;
+
+    /**
+     * Vérifier si l'utilisateur a le rôle USER
+     */
+    public static final String CHECK_USER_HAS_ROLE_USER = """
+    SELECT EXISTS (
+        SELECT 1 FROM user_roles ur
+        JOIN roles r ON ur.role_id = r.role_id
+        WHERE ur.user_id = :userId AND r.name = 'USER'
+    )
+    """;
+
+    /**
+     * Récupérer les rôles d'un utilisateur
+     */
+    public static final String SELECT_USER_ROLES = """
+    SELECT r.name FROM user_roles ur
+    JOIN roles r ON ur.role_id = r.role_id
+    WHERE ur.user_id = :userId
+    """;
+
+    /**
+     * Vérifier si un matricule est déjà associé à un autre utilisateur
+     */
+    public static final String CHECK_MATRICULE_ASSIGNED_TO_OTHER = """
+    SELECT EXISTS (
+        SELECT 1 FROM users 
+        WHERE matricule = :matricule AND user_id != :userId
+    )
+    """;
+
+    /**
+     * Mettre à jour le matricule d'un utilisateur
+     */
+    public static final String UPDATE_USER_MATRICULE = """
+    UPDATE users SET matricule = :matricule, updated_at = NOW()
+    WHERE user_id = :userId
+    """;
 
 
     private SalaireQuery() {

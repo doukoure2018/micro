@@ -374,17 +374,48 @@ public class SalaireServiceImpl implements SalaireService {
     public DemandeSalaryDto createDemandeSalary(Long idUser, String matricule, BigDecimal amount, String numeroCompte) {
         log.info("Création demande salaire - userId: {}, matricule: {}, amount: {}", idUser, matricule, amount);
 
-        // ✅ SÉCURITÉ: Vérifier que le matricule appartient à l'utilisateur
-        if (!verifyUserMatricule(idUser, matricule)) {
-            throw new ApiException("Vous ne pouvez faire une demande que pour votre propre matricule.");
-        }
-
-        // Vérifier que le matricule existe dans info_personnel
+        // ✅ ÉTAPE 1: Vérifier que le matricule existe dans info_personnel
         if (!salaireRepository.existsMatricule(matricule)) {
             throw new ApiException("Matricule non trouvé dans la base du personnel.");
         }
 
-        // Récupérer la limite d'avance (50% du salaire)
+        // ✅ ÉTAPE 2: Gérer le matricule selon le type d'utilisateur
+        Optional<String> userMatriculeOpt = salaireRepository.getUserMatricule(idUser);
+        String userMatricule = userMatriculeOpt.orElse(null);
+
+        // Si l'utilisateur n'a pas de matricule OU si son matricule est vide
+        if (userMatricule == null || userMatricule.trim().isEmpty()) {
+            // Vérifier si l'utilisateur a le rôle USER
+            boolean hasRoleUser = salaireRepository.hasRoleUser(idUser);
+
+            if (hasRoleUser) {
+                // Les utilisateurs avec ROLE_USER ne peuvent pas saisir manuellement un matricule
+                throw new ApiException("Votre matricule n'est pas configuré. Contactez l'administrateur.");
+            } else {
+                // ✅ Pour les autres rôles (RH, DF, ADMIN, etc.), on associe le matricule saisi
+                log.info("Utilisateur sans matricule (rôle non-USER). Association du matricule {} à l'utilisateur {}", matricule, idUser);
+
+                // Vérifier que ce matricule n'est pas déjà associé à un autre utilisateur
+                if (isMatriculeAlreadyAssigned(matricule, idUser)) {
+                    throw new ApiException("Ce matricule est déjà associé à un autre utilisateur.");
+                }
+
+                // Mettre à jour le matricule dans la table users
+                int updated = salaireRepository.updateUserMatricule(idUser, matricule);
+                if (updated == 0) {
+                    throw new ApiException("Erreur lors de l'association du matricule à votre compte.");
+                }
+
+                log.info("✅ Matricule {} associé avec succès à l'utilisateur {}", matricule, idUser);
+            }
+        } else {
+            // ✅ L'utilisateur a déjà un matricule - vérifier que c'est le bon
+            if (!userMatricule.equals(matricule)) {
+                throw new ApiException("Vous ne pouvez faire une demande que pour votre propre matricule (" + userMatricule + ").");
+            }
+        }
+
+        // ✅ ÉTAPE 3: Récupérer la limite d'avance (50% du salaire)
         Optional<BigDecimal> limiteOpt = salaireRepository.getNetAmountLimitByMatricule(matricule);
         if (limiteOpt.isEmpty()) {
             throw new ApiException("Aucune donnée de salaire trouvée pour ce matricule. Contactez le service RH.");
@@ -392,10 +423,10 @@ public class SalaireServiceImpl implements SalaireService {
 
         BigDecimal limite = limiteOpt.get();
 
-        // Calculer le total des demandes actives (ENCOURS, VALIDER, CONFIRMER)
+        // ✅ ÉTAPE 4: Calculer le total des demandes actives (ENCOURS, VALIDER, CONFIRMER)
         BigDecimal totalActif = salaireRepository.getTotalDemandesActives(idUser);
 
-        // Vérifier que le montant demandé ne dépasse pas la limite
+        // ✅ ÉTAPE 5: Vérifier que le montant demandé ne dépasse pas la limite
         BigDecimal disponible = limite.subtract(totalActif);
         if (amount.compareTo(disponible) > 0) {
             throw new ApiException(String.format(
@@ -404,13 +435,19 @@ public class SalaireServiceImpl implements SalaireService {
             ));
         }
 
-        // Créer la demande
+        // ✅ ÉTAPE 6: Créer la demande
         Long demandeId = salaireRepository.saveDemandeSalary(idUser, matricule, amount, numeroCompte);
 
         return salaireRepository.findDemandeSalaryById(demandeId)
                 .orElseThrow(() -> new ApiException("Erreur lors de la création de la demande"));
     }
 
+    /**
+     * Vérifier si un matricule est déjà associé à un autre utilisateur
+     */
+    private boolean isMatriculeAlreadyAssigned(String matricule, Long currentUserId) {
+        return salaireRepository.isMatriculeAssignedToOtherUser(matricule, currentUserId);
+    }
     @Override
     public List<DemandeSalaryDto> getAllDemandeSalary() {
         return salaireRepository.findAllDemandeSalary();
