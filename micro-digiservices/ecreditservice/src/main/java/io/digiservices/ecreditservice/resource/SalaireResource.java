@@ -487,9 +487,9 @@ public class SalaireResource {
      */
     @PostMapping("/salaire/demande-salary")
     public ResponseEntity<Response> createDemandeSalary(
-            @RequestParam String matricule,
-            @RequestParam BigDecimal amount,
-            @RequestParam(required = false) String numeroCompte,
+            @RequestParam(name = "matricule") String matricule,
+            @RequestParam(name = "amount") BigDecimal amount,
+            @RequestParam(required = false,name = "numeroCompte") String numeroCompte,
             Authentication authentication,
             HttpServletRequest request) {
         
