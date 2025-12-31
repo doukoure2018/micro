@@ -205,6 +205,16 @@ public class ArreteCaisseServiceImpl implements ArreteCaisseService {
         return arreteCaisseRepository.countByUser(idUser);
     }
 
+    @Override
+    public List<ArreteCaisseDto> findLatestByPointvente() {
+        return arreteCaisseRepository.findLatestByPointvente();
+    }
+
+    @Override
+    public List<ArreteCaisseDto> findAllForSuivi() {
+        return arreteCaisseRepository.findAllForSuivi();
+    }
+
     private void validateInput(BigDecimal montant, LocalDate dateArreteCaisse) {
         if (montant == null || montant.compareTo(BigDecimal.ZERO) <= 0) {
             throw new ApiException("Le montant doit être supérieur à 0");

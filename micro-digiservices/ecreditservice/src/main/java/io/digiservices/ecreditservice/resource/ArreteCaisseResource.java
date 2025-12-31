@@ -121,7 +121,7 @@ public class ArreteCaisseResource {
     @PostMapping
     public ResponseEntity<Response> create(
             @RequestParam(name = "montant") BigDecimal montant,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateArreteCaisse,
+            @RequestParam(name = "dateArreteCaisse") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateArreteCaisse,
             Authentication authentication,
             HttpServletRequest request) {
 
@@ -245,5 +245,31 @@ public class ArreteCaisseResource {
 
         Map<String, Map<String, Object>> stats = arreteCaisseService.getStatsByUser(user.getUserId());
         return ResponseEntity.ok(getResponse(request, Map.of("stats", stats), "Mes statistiques récupérées", OK));
+    }
+
+    /**
+     * Récupérer le dernier arrêté de chaque point de vente (pour suivi)
+     */
+    @GetMapping("/suivi/latest")
+    public ResponseEntity<Response> getLatestByPointvente(HttpServletRequest request) {
+        log.info("API: Récupération derniers arrêtés par point de vente");
+        var arretes = arreteCaisseService.findLatestByPointvente();
+        return ResponseEntity.ok(getResponse(request, Map.of(
+                "arretes", arretes,
+                "total", arretes.size()
+        ), "Derniers arrêtés récupérés", OK));
+    }
+
+    /**
+     * Récupérer tous les arrêtés pour le suivi
+     */
+    @GetMapping("/suivi")
+    public ResponseEntity<Response> getAllForSuivi(HttpServletRequest request) {
+        log.info("API: Récupération tous les arrêtés pour suivi");
+        var arretes = arreteCaisseService.findAllForSuivi();
+        return ResponseEntity.ok(getResponse(request, Map.of(
+                "arretes", arretes,
+                "total", arretes.size()
+        ), "Arrêtés récupérés", OK));
     }
 }

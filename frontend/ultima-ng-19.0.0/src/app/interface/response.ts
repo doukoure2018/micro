@@ -82,6 +82,7 @@ import { InfoPersonnelDto } from './info.personnel';
 import { AvanceSalaireDto } from './salary';
 import { DemandeSalaryDto } from './demande.salary';
 import { AuthorizeSalaireDto } from './authorize-salaire.dto';
+import { ArreteCaisse, ArreteCaisseStats } from './arrete-caisse';
 export interface IResponse {
     time: Date | string;
     code: number;
@@ -264,5 +265,9 @@ export interface IResponse {
         message?: any;
         authorize?: AuthorizeSalaireDto;
         countByStatut?: any;
+        arretes?: ArreteCaisse[];
+        arrete?: ArreteCaisse;
+        stats?: ArreteCaisseStats;
+        total?: number;
     };
 }

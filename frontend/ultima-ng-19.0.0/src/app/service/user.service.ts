@@ -18,6 +18,7 @@ import { CreateStockDto } from '@/interface/CreateStockDto';
 import { DemandeIndividuel } from '@/interface/demande-individuel.interface';
 import { Avis } from '@/interface/avis';
 import { PersonnePhysique } from '@/interface/personnePhysique';
+import { ArreteCaisse } from '@/interface/arrete-caisse';
 
 @Injectable()
 export class UserService {
@@ -1304,5 +1305,71 @@ export class UserService {
      */
     disableAuthorizeSalaire(): Observable<IResponse> {
         return this.http.put<IResponse>(`${this.server}/ecredit/salaire/authorize/disable`, {});
+    }
+
+    /**
+     * Récupérer tous les arrêtés pour le suivi
+     */
+    getAllArretesForSuivi$(): Observable<IResponse> {
+        return this.http.get<IResponse>(`${this.server}/ecredit/arrete-caisse/suivi`);
+    }
+
+    /**
+     * Récupérer le dernier arrêté de chaque point de vente
+     */
+    getLatestArretesByPointvente$(): Observable<IResponse> {
+        return this.http.get<IResponse>(`${this.server}/ecredit/arrete-caisse/suivi/latest`);
+    }
+
+    /**
+     * Helper: Parser une date (String ISO ou Array Java)
+     */
+    parseDate(date: string | number[] | null): Date | null {
+        if (!date) return null;
+
+        if (Array.isArray(date)) {
+            // Format Java: [year, month, day, hour?, min?, sec?, nano?]
+            const [year, month, day, hour = 0, minute = 0, second = 0] = date;
+            return new Date(year, month - 1, day, hour, minute, second);
+        }
+
+        return new Date(date);
+    }
+
+    /**
+     * Helper: Formater une date pour affichage
+     */
+    formatDate(date: string | number[] | null): string {
+        const parsed = this.parseDate(date);
+        if (!parsed) return '-';
+
+        const day = parsed.getDate().toString().padStart(2, '0');
+        const month = (parsed.getMonth() + 1).toString().padStart(2, '0');
+        const year = parsed.getFullYear();
+
+        return `${day}/${month}/${year}`;
+    }
+
+    /**
+     * Helper: Formater datetime pour affichage
+     */
+    formatDateTime(date: string | number[] | null): string {
+        const parsed = this.parseDate(date);
+        if (!parsed) return '-';
+
+        const day = parsed.getDate().toString().padStart(2, '0');
+        const month = (parsed.getMonth() + 1).toString().padStart(2, '0');
+        const year = parsed.getFullYear();
+        const hour = parsed.getHours().toString().padStart(2, '0');
+        const minute = parsed.getMinutes().toString().padStart(2, '0');
+
+        return `${day}/${month}/${year} ${hour}:${minute}`;
+    }
+
+    /**
+     * Helper: Formater montant
+     */
+    formatMontant(montant: number): string {
+        return new Intl.NumberFormat('fr-FR').format(montant) + ' GNF';
     }
 }

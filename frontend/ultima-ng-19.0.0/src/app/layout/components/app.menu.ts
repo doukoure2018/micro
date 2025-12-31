@@ -145,6 +145,11 @@ export class AppMenu {
                                             label: 'Mes avances de salaire',
                                             icon: 'pi pi-fw pi-list',
                                             routerLink: ['/dashboards/mes-demandes-salaire']
+                                        },
+                                        {
+                                            label: 'suivi des Arrete de caisse',
+                                            icon: 'pi pi-fw pi-money-bill',
+                                            routerLink: ['/dashboards/suivi-arrete-caisse']
                                         }
                                     ]
                                   : this.user?.service === 'Logistique'

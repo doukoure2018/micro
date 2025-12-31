@@ -32,4 +32,14 @@ public interface ArreteCaisseRepository {
 
     Map<String, Map<String, Object>> countByStatut();
     Map<String, Map<String, Object>> countByUser(Long idUser);
+
+    /**
+     * Récupérer le dernier arrêté de chaque point de vente
+     */
+    List<ArreteCaisseDto> findLatestByPointvente();
+
+    /**
+     * Récupérer tous les arrêtés pour le suivi
+     */
+    List<ArreteCaisseDto> findAllForSuivi();
 }

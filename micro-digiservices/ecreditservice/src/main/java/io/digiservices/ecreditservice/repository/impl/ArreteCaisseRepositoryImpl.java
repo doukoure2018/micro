@@ -190,4 +190,18 @@ public class ArreteCaisseRepositoryImpl implements ArreteCaisseRepository {
                 .stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
+
+    @Override
+    public List<ArreteCaisseDto> findLatestByPointvente() {
+        return jdbcClient.sql(ArreteCaisseQuery.SELECT_LATEST_BY_POINTVENTE)
+                .query(ArreteCaisseDto.class)
+                .list();
+    }
+
+    @Override
+    public List<ArreteCaisseDto> findAllForSuivi() {
+        return jdbcClient.sql(ArreteCaisseQuery.SELECT_ALL_FOR_SUIVI)
+                .query(ArreteCaisseDto.class)
+                .list();
+    }
 }

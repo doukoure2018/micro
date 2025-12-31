@@ -220,5 +220,10 @@ export default [
         path: 'gestion-personnel',
         data: { breadcrumb: 'Gestion Personnel' },
         loadComponent: () => import('./admin/gestion-personnel/gestion-personnel.component').then((c) => c.GestionPersonnelComponent)
+    },
+    {
+        path: 'suivi-arrete-caisse',
+        data: { breadcrumb: 'Suivi des Arretes de Caisse' },
+        loadComponent: () => import('./admin/de/suivi-arrete-caisse/suivi-arrete-caisse.component').then((c) => c.SuiviArreteCaisseComponent)
     }
 ] as Routes;

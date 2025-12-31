@@ -30,4 +30,14 @@ public interface ArreteCaisseService {
 
     Map<String, Map<String, Object>> getStatsByStatut();
     Map<String, Map<String, Object>> getStatsByUser(Long idUser);
+
+    /**
+     * Récupérer le dernier arrêté de chaque point de vente
+     */
+    List<ArreteCaisseDto> findLatestByPointvente();
+
+    /**
+     * Récupérer tous les arrêtés pour le suivi
+     */
+    List<ArreteCaisseDto> findAllForSuivi();
 }
