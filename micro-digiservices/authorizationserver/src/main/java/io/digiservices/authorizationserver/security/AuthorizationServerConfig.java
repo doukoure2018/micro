@@ -52,6 +52,7 @@ import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import jakarta.servlet.http.Cookie;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -151,37 +152,50 @@ public class AuthorizationServerConfig {
                 .loginPage("/login")
                 .loginProcessingUrl("/login")
                 .successHandler((request, response, authentication) -> {
-                    HttpSession session = request.getSession(false);
-
                     log.info("========================================");
                     log.info("🎉 Login Success Handler");
                     log.info("User: {}", authentication.getName());
-                    log.info("Session ID: {}", session != null ? session.getId() : "null");
 
-                    if (session != null) {
-                        // Vérifier si c'est une auth mobile
-                        Boolean isMobileAuth = (Boolean) session.getAttribute("IS_MOBILE_AUTH");
-                        String mobileOAuthUrl = (String) session.getAttribute("MOBILE_OAUTH_URL");
+                    // Chercher le cookie mobile
+                    String mobileOAuthUrl = null;
+                    Cookie[] cookies = request.getCookies();
+                    if (cookies != null) {
+                        for (Cookie cookie : cookies) {
+                            if ("MOBILE_OAUTH_URL".equals(cookie.getName())) {
+                                mobileOAuthUrl = java.net.URLDecoder.decode(
+                                        cookie.getValue(),
+                                        java.nio.charset.StandardCharsets.UTF_8
+                                );
+                                log.info("📱 Found mobile OAuth cookie: {}", mobileOAuthUrl);
 
-                        log.info("Is Mobile Auth: {}", isMobileAuth);
-                        log.info("Mobile OAuth URL: {}", mobileOAuthUrl);
-
-                        // Priorité 1: Redirection mobile
-                        if (Boolean.TRUE.equals(isMobileAuth) && mobileOAuthUrl != null) {
-                            log.info("📱 Redirecting to mobile OAuth URL: {}", mobileOAuthUrl);
-                            session.removeAttribute("IS_MOBILE_AUTH");
-                            session.removeAttribute("MOBILE_OAUTH_URL");
-                            response.sendRedirect(mobileOAuthUrl);
-                            return;
+                                // Supprimer le cookie
+                                Cookie clearCookie = new Cookie("MOBILE_OAUTH_URL", "");
+                                clearCookie.setPath("/");
+                                clearCookie.setMaxAge(0);
+                                response.addCookie(clearCookie);
+                                break;
+                            }
                         }
+                    }
 
-                        // Priorité 2: Saved Request standard
+                    log.info("Mobile OAuth URL: {}", mobileOAuthUrl);
+
+                    // Priorité 1: Redirection mobile via cookie
+                    if (mobileOAuthUrl != null && !mobileOAuthUrl.isEmpty()) {
+                        log.info("📱 Redirecting to mobile OAuth URL");
+                        response.sendRedirect(mobileOAuthUrl);
+                        return;
+                    }
+
+                    // Priorité 2: Saved Request standard
+                    HttpSession session = request.getSession(false);
+                    if (session != null) {
                         SavedRequest savedRequest = (SavedRequest) session.getAttribute("SPRING_SECURITY_SAVED_REQUEST");
                         if (savedRequest != null) {
                             String redirectUrl = savedRequest.getRedirectUrl();
                             log.info("📋 Found saved request: {}", redirectUrl);
                             if (redirectUrl.contains("/oauth2/authorize")) {
-                                log.info("➡️ Redirecting to OAuth2 flow: {}", redirectUrl);
+                                log.info("➡️ Redirecting to OAuth2 flow");
                                 response.sendRedirect(redirectUrl);
                                 return;
                             }
@@ -191,12 +205,12 @@ public class AuthorizationServerConfig {
                     // Vérifier MFA
                     if (authentication.getAuthorities().stream()
                             .anyMatch(a -> a.getAuthority().equals("MFA_REQUIRED"))) {
-                        log.info("🔐 MFA required, redirecting to /mfa");
+                        log.info("🔐 MFA required");
                         response.sendRedirect("/mfa");
                         return;
                     }
 
-                    // Redirection par défaut vers l'UI web
+                    // Redirection par défaut
                     log.info("🌐 Default redirect to: {}", uiAppUrl);
                     response.sendRedirect(uiAppUrl);
                 })
