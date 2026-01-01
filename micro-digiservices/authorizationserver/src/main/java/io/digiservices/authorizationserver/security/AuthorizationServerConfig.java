@@ -41,7 +41,6 @@ import org.springframework.security.oauth2.server.authorization.settings.ClientS
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.springframework.security.oauth2.server.authorization.token.*;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
@@ -151,38 +150,60 @@ public class AuthorizationServerConfig {
         http.formLogin(login -> login
                 .loginPage("/login")
                 .loginProcessingUrl("/login")
-                .successHandler(new SavedRequestAwareAuthenticationSuccessHandler() {
-                    @Override
-                    public void onAuthenticationSuccess(HttpServletRequest request,
-                                                        HttpServletResponse response, Authentication authentication)
-                            throws IOException, ServletException {
+                .successHandler((request, response, authentication) -> {
+                    HttpSession session = request.getSession(false);
 
-                        // Vérifier s'il y a une redirection OAuth2 en attente
-                        HttpSession session = request.getSession(false);
-                        if (session != null) {
-                            SavedRequest savedRequest = (SavedRequest) session.getAttribute("SPRING_SECURITY_SAVED_REQUEST");
-                            if (savedRequest != null && savedRequest.getRedirectUrl().contains("/oauth2/authorize")) {
-                                // Continuer le flow OAuth2
-                                getRedirectStrategy().sendRedirect(request, response, savedRequest.getRedirectUrl());
-                                return;
-                            }
-                        }
+                    log.info("========================================");
+                    log.info("🎉 Login Success Handler");
+                    log.info("User: {}", authentication.getName());
+                    log.info("Session ID: {}", session != null ? session.getId() : "null");
 
-                        // Vérifier MFA
-                        if (authentication.getAuthorities().stream()
-                                .anyMatch(a -> a.getAuthority().equals("MFA_REQUIRED"))) {
-                            getRedirectStrategy().sendRedirect(request, response, "/mfa");
+                    if (session != null) {
+                        // Vérifier si c'est une auth mobile
+                        Boolean isMobileAuth = (Boolean) session.getAttribute("IS_MOBILE_AUTH");
+                        String mobileOAuthUrl = (String) session.getAttribute("MOBILE_OAUTH_URL");
+
+                        log.info("Is Mobile Auth: {}", isMobileAuth);
+                        log.info("Mobile OAuth URL: {}", mobileOAuthUrl);
+
+                        // Priorité 1: Redirection mobile
+                        if (Boolean.TRUE.equals(isMobileAuth) && mobileOAuthUrl != null) {
+                            log.info("📱 Redirecting to mobile OAuth URL: {}", mobileOAuthUrl);
+                            session.removeAttribute("IS_MOBILE_AUTH");
+                            session.removeAttribute("MOBILE_OAUTH_URL");
+                            response.sendRedirect(mobileOAuthUrl);
                             return;
                         }
 
-                        // Redirection par défaut
-                        getRedirectStrategy().sendRedirect(request, response, uiAppUrl);
+                        // Priorité 2: Saved Request standard
+                        SavedRequest savedRequest = (SavedRequest) session.getAttribute("SPRING_SECURITY_SAVED_REQUEST");
+                        if (savedRequest != null) {
+                            String redirectUrl = savedRequest.getRedirectUrl();
+                            log.info("📋 Found saved request: {}", redirectUrl);
+                            if (redirectUrl.contains("/oauth2/authorize")) {
+                                log.info("➡️ Redirecting to OAuth2 flow: {}", redirectUrl);
+                                response.sendRedirect(redirectUrl);
+                                return;
+                            }
+                        }
                     }
+
+                    // Vérifier MFA
+                    if (authentication.getAuthorities().stream()
+                            .anyMatch(a -> a.getAuthority().equals("MFA_REQUIRED"))) {
+                        log.info("🔐 MFA required, redirecting to /mfa");
+                        response.sendRedirect("/mfa");
+                        return;
+                    }
+
+                    // Redirection par défaut vers l'UI web
+                    log.info("🌐 Default redirect to: {}", uiAppUrl);
+                    response.sendRedirect(uiAppUrl);
                 })
                 .failureHandler(new SimpleUrlAuthenticationFailureHandler("/login?error")));
 
         http.logout(logout -> logout
-                .logoutSuccessUrl(uiAppUrl)  // Utiliser la variable uiAppUrl
+                .logoutSuccessUrl(uiAppUrl)
                 .addLogoutHandler(new CookieClearingLogoutHandler("JSESSIONID")));
 
         return http.build();
