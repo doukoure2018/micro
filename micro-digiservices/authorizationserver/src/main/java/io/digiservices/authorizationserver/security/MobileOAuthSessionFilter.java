@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
@@ -41,7 +42,6 @@ public class MobileOAuthSessionFilter implements Filter {
             log.info("🔐 OAuth2 Authorize Request");
             log.info("Client ID: {}", clientId);
             log.info("Redirect URI: {}", redirectUri);
-            log.info("========================================");
 
             // Détecter requête mobile
             boolean isMobileRequest = MOBILE_CLIENT_ID.equals(clientId) ||
@@ -50,34 +50,60 @@ public class MobileOAuthSessionFilter implements Filter {
             if (isMobileRequest) {
                 log.info("📱 MOBILE REQUEST DETECTED");
 
-                // Construire l'URL OAuth2 complète
-                String fullOAuthUrl = httpRequest.getRequestURL().toString();
-                String queryString = httpRequest.getQueryString();
-                if (queryString != null) {
-                    fullOAuthUrl += "?" + queryString;
+                // IMPORTANT: Vérifier si l'utilisateur est DÉJÀ authentifié
+                Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
+                boolean isAlreadyAuthenticated = currentAuth != null
+                        && currentAuth.isAuthenticated()
+                        && !"anonymousUser".equals(currentAuth.getPrincipal().toString())
+                        && currentAuth.getPrincipal() != null;
+
+                log.info("🔍 Current auth: {}", currentAuth);
+                log.info("🔍 Is already authenticated: {}", isAlreadyAuthenticated);
+
+                if (isAlreadyAuthenticated) {
+                    // L'utilisateur est déjà connecté - laisser passer le flux OAuth2
+                    log.info("✅ User already authenticated - continuing OAuth2 flow");
+
+                    // Supprimer le cookie car on n'en a plus besoin
+                    Cookie clearCookie = new Cookie(MOBILE_AUTH_COOKIE, "");
+                    clearCookie.setPath("/");
+                    clearCookie.setMaxAge(0);
+                    httpResponse.addCookie(clearCookie);
+
+                } else {
+                    // L'utilisateur n'est PAS authentifié - sauvegarder l'URL et forcer le login
+                    log.info("🔒 User not authenticated - saving OAuth URL for after login");
+
+                    // Construire l'URL OAuth2 complète
+                    String fullOAuthUrl = httpRequest.getRequestURL().toString();
+                    String queryString = httpRequest.getQueryString();
+                    if (queryString != null) {
+                        fullOAuthUrl += "?" + queryString;
+                    }
+                    log.info("📎 Saving OAuth URL to cookie: {}", fullOAuthUrl);
+
+                    // Sauvegarder dans un COOKIE
+                    String encodedUrl = URLEncoder.encode(fullOAuthUrl, StandardCharsets.UTF_8);
+                    Cookie mobileAuthCookie = new Cookie(MOBILE_AUTH_COOKIE, encodedUrl);
+                    mobileAuthCookie.setPath("/");
+                    mobileAuthCookie.setMaxAge(300); // 5 minutes
+                    mobileAuthCookie.setHttpOnly(true);
+                    mobileAuthCookie.setSecure(true);
+                    httpResponse.addCookie(mobileAuthCookie);
+
+                    // Effacer le contexte de sécurité pour forcer un nouveau login
+                    SecurityContextHolder.clearContext();
+
+                    // Effacer l'authentification de la session existante
+                    HttpSession session = httpRequest.getSession(false);
+                    if (session != null) {
+                        session.removeAttribute("SPRING_SECURITY_CONTEXT");
+                    }
+
+                    log.info("✅ Mobile auth cookie set - will redirect to login");
                 }
-                log.info("📎 Saving OAuth URL to cookie: {}", fullOAuthUrl);
-
-                // Sauvegarder dans un COOKIE (survit au changement de session)
-                String encodedUrl = URLEncoder.encode(fullOAuthUrl, StandardCharsets.UTF_8);
-                Cookie mobileAuthCookie = new Cookie(MOBILE_AUTH_COOKIE, encodedUrl);
-                mobileAuthCookie.setPath("/");
-                mobileAuthCookie.setMaxAge(300); // 5 minutes
-                mobileAuthCookie.setHttpOnly(true);
-                mobileAuthCookie.setSecure(true); // HTTPS
-                httpResponse.addCookie(mobileAuthCookie);
-
-                // Effacer le contexte de sécurité
-                SecurityContextHolder.clearContext();
-
-                // Effacer l'authentification de la session existante
-                HttpSession session = httpRequest.getSession(false);
-                if (session != null) {
-                    session.removeAttribute("SPRING_SECURITY_CONTEXT");
-                }
-
-                log.info("✅ Mobile auth cookie set");
             }
+            log.info("========================================");
         }
 
         chain.doFilter(request, response);
