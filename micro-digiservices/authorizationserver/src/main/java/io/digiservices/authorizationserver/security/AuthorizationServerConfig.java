@@ -166,13 +166,7 @@ public class AuthorizationServerConfig {
                                         cookie.getValue(),
                                         java.nio.charset.StandardCharsets.UTF_8
                                 );
-                                log.info("📱 Found mobile OAuth cookie: {}", mobileOAuthUrl);
-
-                                // Supprimer le cookie
-                                Cookie clearCookie = new Cookie("MOBILE_OAUTH_URL", "");
-                                clearCookie.setPath("/");
-                                clearCookie.setMaxAge(0);
-                                response.addCookie(clearCookie);
+                                log.info("📱 Found mobile OAuth cookie");
                                 break;
                             }
                         }
@@ -183,6 +177,15 @@ public class AuthorizationServerConfig {
                     // Priorité 1: Redirection mobile via cookie
                     if (mobileOAuthUrl != null && !mobileOAuthUrl.isEmpty()) {
                         log.info("📱 Redirecting to mobile OAuth URL");
+
+                        // IMPORTANT: Ajouter un cookie pour indiquer que le login est fait
+                        Cookie loginDoneCookie = new Cookie("MOBILE_LOGIN_DONE", "true");
+                        loginDoneCookie.setPath("/");
+                        loginDoneCookie.setMaxAge(60); // 1 minute
+                        loginDoneCookie.setHttpOnly(true);
+                        loginDoneCookie.setSecure(true);
+                        response.addCookie(loginDoneCookie);
+
                         response.sendRedirect(mobileOAuthUrl);
                         return;
                     }
