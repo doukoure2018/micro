@@ -47,7 +47,8 @@ public class SelectionResource {
     public ResponseEntity<Response> addSelectionInd(@NotNull Authentication authentication,
                                                     @PathVariable(name = "demandeindividuelId") Long demandeindividuelId,
                                                     @RequestParam("image") MultipartFile image,
-                                                    HttpServletRequest request) {
+                                                    HttpServletRequest request)
+    {
 
         // Add debugging logs
         log.info("🔥 CONTROLLER DEBUG:");

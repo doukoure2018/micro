@@ -20,6 +20,7 @@ import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -560,6 +561,21 @@ public class CorrectionRepositoryImpl implements CorrectionRepository {
                     .list();
         } catch (DataAccessException e) {
             log.error("Erreur lors de la récupération des statistiques de correction par délégation", e);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    public List<CorrectionDelegationStat> getCorrectionStatsByDelegationWithPeriod(LocalDate dateDebut, LocalDate dateFin) {
+        log.debug("Récupération des statistiques de correction par délégation pour la période du {} au {}", dateDebut, dateFin);
+        try {
+            return jdbcClient.sql(CORRECTION_STATS_BY_DELEGATION_WITH_PERIOD)
+                    .param("dateDebut", dateDebut)
+                    .param("dateFin", dateFin)
+                    .query(CORRECTION_STATS_ROW_MAPPER)
+                    .list();
+        } catch (DataAccessException e) {
+            log.error("Erreur lors de la récupération des statistiques de correction par délégation avec période", e);
             return Collections.emptyList();
         }
     }

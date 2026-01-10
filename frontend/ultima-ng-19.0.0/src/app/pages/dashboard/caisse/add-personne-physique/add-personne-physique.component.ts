@@ -14,11 +14,12 @@ import { DestroyRef } from '@angular/core';
 import { ReferenceData } from '@/interface/reference-data.interface';
 import { FicheSignaletique } from '@/interface/ficheSignaletique';
 import { PersonnePhysique } from '@/interface/personnePhysique';
+import { TextareaModule } from 'primeng/textarea';
 
-@Component({
+@Component({    
     selector: 'app-add-personne-physique',
     standalone: true,
-    imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, CalendarModule, DropdownModule, InputNumberModule, ToastModule],
+    imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, CalendarModule, DropdownModule, InputNumberModule, ToastModule,TextareaModule],
     templateUrl: './add-personne-physique.component.html',
     styleUrl: './add-personne-physique.component.scss',
     providers: [MessageService]
@@ -122,6 +123,7 @@ export class AddPersonnePhysiqueComponent implements OnInit {
         this.personneForm.get('codProvincia')?.valueChanges.subscribe((provinceCode) => {
             if (provinceCode) {
                 this.loadCantons(provinceCode);
+                this.personneForm.get('codCanton')?.enable();
                 // Reset canton and district when province changes
                 this.personneForm.patchValue({
                     codCanton: '',
@@ -130,6 +132,8 @@ export class AddPersonnePhysiqueComponent implements OnInit {
             } else {
                 this.cantonOptions = [];
                 this.districtOptions = [];
+                this.personneForm.get('codCanton')?.disable();
+                this.personneForm.get('district')?.disable();
             }
         });
 
@@ -138,12 +142,14 @@ export class AddPersonnePhysiqueComponent implements OnInit {
             const provinceCode = this.personneForm.get('codProvincia')?.value;
             if (provinceCode && cantonCode) {
                 this.loadDistricts(provinceCode, cantonCode);
+                this.personneForm.get('district')?.enable();
                 // Reset district when canton changes (unless it's being set from ficheData)
                 if (!this.isPopulatingFromFiche) {
                     this.personneForm.patchValue({ district: '' });
                 }
             } else {
                 this.districtOptions = [];
+                this.personneForm.get('district')?.disable();
             }
         });
     }
@@ -204,8 +210,8 @@ export class AddPersonnePhysiqueComponent implements OnInit {
             // Adresse
             detDireccion: [''],
             codProvincia: [''],
-            codCanton: [''], // Nouveau champ
-            district: [''],
+            codCanton: [{ value: '', disabled: true }], // Disabled until province is selected
+            district: [{ value: '', disabled: true }], // Disabled until canton is selected
             agence: [''],
             codeAgence: [''],
 
@@ -314,6 +320,7 @@ export class AddPersonnePhysiqueComponent implements OnInit {
         // Load cantons and districts if province is set
         if (formData.codProvincia) {
             this.loadCantons(formData.codProvincia);
+            this.personneForm.get('codCanton')?.enable();
 
             // Extract canton and district for later setting
             const { codCanton, district, ...formDataWithoutCantonDistrict } = formData;
@@ -329,6 +336,7 @@ export class AddPersonnePhysiqueComponent implements OnInit {
 
                     // Load districts for the canton
                     this.loadDistricts(formData.codProvincia, codCanton);
+                    this.personneForm.get('district')?.enable();
 
                     // Set district after district options are loaded
                     if (district) {
@@ -377,7 +385,8 @@ export class AddPersonnePhysiqueComponent implements OnInit {
 
         this.loading.set(true);
 
-        const formValue = this.personneForm.value;
+        // Use getRawValue() to include disabled fields
+        const formValue = this.personneForm.getRawValue();
 
         // Format dates for backend
         const personnePhysique: PersonnePhysique = {

@@ -10,6 +10,7 @@ import { SelectButtonModule } from 'primeng/selectbutton';
 import { FormsModule } from '@angular/forms';
 import { TooltipModule } from 'primeng/tooltip';
 import { TagModule } from 'primeng/tag';
+import { DatePickerModule } from 'primeng/datepicker';
 import { UserService } from '@/service/user.service';
 import { CorrectionDelegationStats } from '@/interface/correction-delegation-stats';
 import { CorrectionAgenceStats } from '@/interface/correction-agence-stats';
@@ -21,7 +22,7 @@ import { SocietariatByPsComponent } from './societariat-by-ps/societariat-by-ps.
 
 @Component({
     selector: 'app-societariat',
-    imports: [CommonModule, CardModule, TableModule, ProgressSpinnerModule, ButtonModule, ChartModule, SelectButtonModule, FormsModule, TooltipModule, TagModule, SocietariatByAgenceComponent, SocietariatByPsComponent],
+    imports: [CommonModule, CardModule, TableModule, ProgressSpinnerModule, ButtonModule, ChartModule, SelectButtonModule, FormsModule, TooltipModule, TagModule, DatePickerModule, SocietariatByAgenceComponent, SocietariatByPsComponent],
     templateUrl: './societariat.component.html',
     styleUrl: './societariat.component.scss'
 })
@@ -29,6 +30,12 @@ export class SocietariatComponent implements OnInit {
     @Input() user?: IUser;
 
     private userService = inject(UserService);
+
+    // Date range for period filter
+    dateDebut: Date | null = null;
+    dateFin: Date | null = null;
+    maxDate: Date = new Date();
+    usePeriodFilter = false;
 
     // Chart period options
     chartPeriodOptions = [
@@ -291,24 +298,75 @@ export class SocietariatComponent implements OnInit {
 
     loadStats(): void {
         this.state.update((s) => ({ ...s, loading: true, error: undefined }));
-        this.userService.getCorrectionStatsByDelegation$().subscribe({
-            next: (response) => {
-                const stats = response.data?.correctionStats || [];
-                this.state.update((s) => ({
-                    ...s,
-                    stats,
-                    loading: false,
-                    selectedDelegation: null,
-                    selectedAgence: null,
-                    agences: [],
-                    points: []
-                }));
-            },
-            error: (err: HttpErrorResponse) => {
-                const message = err.error?.message || 'Erreur lors du chargement des statistiques.';
-                this.state.update((s) => ({ ...s, loading: false, error: message }));
+
+        // Use period filter if dates are set
+        if (this.usePeriodFilter && this.dateDebut && this.dateFin) {
+            const dateDebutStr = this.formatDateForApi(this.dateDebut);
+            const dateFinStr = this.formatDateForApi(this.dateFin);
+
+            this.userService.getCorrectionStatsByDelegationWithPeriod$(dateDebutStr, dateFinStr).subscribe({
+                next: (response) => {
+                    const stats = response.data?.correctionStats || [];
+                    this.state.update((s) => ({
+                        ...s,
+                        stats,
+                        loading: false,
+                        selectedDelegation: null,
+                        selectedAgence: null,
+                        agences: [],
+                        points: []
+                    }));
+                },
+                error: (err: HttpErrorResponse) => {
+                    const message = err.error?.message || 'Erreur lors du chargement des statistiques.';
+                    this.state.update((s) => ({ ...s, loading: false, error: message }));
+                }
+            });
+        } else {
+            this.userService.getCorrectionStatsByDelegation$().subscribe({
+                next: (response) => {
+                    const stats = response.data?.correctionStats || [];
+                    this.state.update((s) => ({
+                        ...s,
+                        stats,
+                        loading: false,
+                        selectedDelegation: null,
+                        selectedAgence: null,
+                        agences: [],
+                        points: []
+                    }));
+                },
+                error: (err: HttpErrorResponse) => {
+                    const message = err.error?.message || 'Erreur lors du chargement des statistiques.';
+                    this.state.update((s) => ({ ...s, loading: false, error: message }));
+                }
+            });
+        }
+    }
+
+    formatDateForApi(date: Date): string {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    onApplyPeriodFilter(): void {
+        if (this.dateDebut && this.dateFin) {
+            if (this.dateDebut > this.dateFin) {
+                this.state.update((s) => ({ ...s, error: 'La date de début doit être antérieure à la date de fin.' }));
+                return;
             }
-        });
+            this.usePeriodFilter = true;
+            this.loadStats();
+        }
+    }
+
+    onClearPeriodFilter(): void {
+        this.dateDebut = null;
+        this.dateFin = null;
+        this.usePeriodFilter = false;
+        this.loadStats();
     }
 
     loadChartData(): void {

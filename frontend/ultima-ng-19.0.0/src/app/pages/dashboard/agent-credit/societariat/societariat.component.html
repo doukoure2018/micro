@@ -212,6 +212,38 @@
             [disabled]="isLoading()" class="p-button-outlined"></button>
     </div>
 
+    <!-- Period Filter Section -->
+    <div class="period-filter">
+        <div class="period-filter-inputs">
+            <div class="field">
+                <label for="dateDebut">Date début</label>
+                <p-datepicker [(ngModel)]="dateDebut" [maxDate]="maxDate" dateFormat="dd/mm/yy" 
+                    [showIcon]="true" inputId="dateDebut" placeholder="Sélectionner..." 
+                    appendTo="body"></p-datepicker>
+            </div>
+            <div class="field">
+                <label for="dateFin">Date fin</label>
+                <p-datepicker [(ngModel)]="dateFin" [maxDate]="maxDate" dateFormat="dd/mm/yy" 
+                    [showIcon]="true" inputId="dateFin" placeholder="Sélectionner..." 
+                    appendTo="body"></p-datepicker>
+            </div>
+            <div class="field-buttons">
+                <button pButton type="button" icon="pi pi-search" label="Appliquer" 
+                    (click)="onApplyPeriodFilter()" [disabled]="!dateDebut || !dateFin || isLoading()"
+                    class="p-button-primary"></button>
+                <button pButton type="button" icon="pi pi-times" label="Effacer" 
+                    (click)="onClearPeriodFilter()" [disabled]="!usePeriodFilter || isLoading()"
+                    class="p-button-outlined p-button-secondary"></button>
+            </div>
+        </div>
+        @if (usePeriodFilter && dateDebut && dateFin) {
+        <div class="period-active-badge">
+            <i class="pi pi-filter"></i>
+            <span>Période: {{ dateDebut | date:'dd/MM/yyyy' }} - {{ dateFin | date:'dd/MM/yyyy' }}</span>
+        </div>
+        }
+    </div>
+
     @if (error()) {
     <div class="error">
         {{ error() }}
@@ -223,23 +255,23 @@
         <p-progressSpinner></p-progressSpinner>
     </div>
     } @else {
-    <p-table [value]="stats()" [tableStyle]="{'min-width': '100%'}">
+    <p-table [value]="stats()" [tableStyle]="{'min-width': '100%'}" styleClass="stats-table">
         <ng-template pTemplate="header">
             <tr>
-                <th>Délégation</th>
-                <th>En attente</th>
-                <th>Rejeté</th>
-                <th>Validé</th>
-                <th>Total</th>
+                <th style="width: 40%">Délégation</th>
+                <th style="width: 15%; text-align: center">En attente</th>
+                <th style="width: 15%; text-align: center">Rejeté</th>
+                <th style="width: 15%; text-align: center">Validé</th>
+                <th style="width: 15%; text-align: center">Total</th>
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-row>
             <tr (click)="onSelectDelegation(row)" class="clickable">
                 <td>{{ row.delegationLibele || 'Non renseignée' }}</td>
-                <td class="number en-attente">{{ row.enAttente }}</td>
-                <td class="number rejete">{{ row.rejete }}</td>
-                <td class="number valide">{{ row.valide }}</td>
-                <td class="number total">{{ row.total }}</td>
+                <td class="number en-attente" style="text-align: center">{{ row.enAttente }}</td>
+                <td class="number rejete" style="text-align: center">{{ row.rejete }}</td>
+                <td class="number valide" style="text-align: center">{{ row.valide }}</td>
+                <td class="number total" style="text-align: center">{{ row.total }}</td>
             </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">

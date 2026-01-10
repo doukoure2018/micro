@@ -199,13 +199,23 @@
                     </div>
 
                     <div class="col-12 md:col-3">
-                        <label for="district">District</label>
-                        <p-dropdown id="district" [options]="districtOptions" formControlName="district"
-                            placeholder="Sélectionner d'abord une province" [disabled]="!districtOptions.length"
-                            [filter]="true" filterPlaceholder="Rechercher..." styleClass="w-full">
+                        <label for="codCanton">Canton</label>
+                        <p-dropdown id="codCanton" [options]="cantonOptions" formControlName="codCanton"
+                            placeholder="Sélectionner d'abord une province" [filter]="true" 
+                            filterPlaceholder="Rechercher..." styleClass="w-full">
                         </p-dropdown>
                     </div>
 
+                    <div class="col-12 md:col-3">
+                        <label for="district">District</label>
+                        <p-dropdown id="district" [options]="districtOptions" formControlName="district"
+                            placeholder="Sélectionner d'abord un canton" [filter]="true" 
+                            filterPlaceholder="Rechercher..." styleClass="w-full">
+                        </p-dropdown>
+                    </div>
+                </div>
+
+                <div class="grid mt-3">
                     <div class="col-12 md:col-3">
                         <label for="codeAgence">Code Agence</label>
                         <input id="codeAgence" type="text" pInputText formControlName="codeAgence" class="w-full" />
@@ -215,9 +225,10 @@
                 <div class="grid mt-3">
                     <div class="col-12">
                         <label for="detDireccion">Adresse Complète</label>
-                        <textarea id="detDireccion" pInputTextarea formControlName="detDireccion" rows="3"
+                        <textarea pTextarea id="detDireccion"  formControlName="detDireccion" rows="3"
                             class="w-full">
                     </textarea>
+                   
                     </div>
                 </div>
             </div>

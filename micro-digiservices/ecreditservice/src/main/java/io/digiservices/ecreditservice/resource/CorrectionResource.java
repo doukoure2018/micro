@@ -27,6 +27,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -835,6 +836,47 @@ public class CorrectionResource {
                             OK));
         } catch (Exception e) {
             log.error("Erreur lors de la récupération des statistiques de correction par délégation", e);
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR)
+                    .body(getResponse(request,
+                            Map.of("error", "Erreur lors de la récupération des statistiques"),
+                            "Erreur interne du serveur",
+                            INTERNAL_SERVER_ERROR));
+        }
+    }
+
+    /**
+     * Statistiques des corrections par délégation avec filtre par période
+     * @param dateDebut Date de début de la période (format: yyyy-MM-dd)
+     * @param dateFin Date de fin de la période (format: yyyy-MM-dd)
+     */
+    @GetMapping("/corrections/stats/delegations/period")
+    public ResponseEntity<Response> getCorrectionStatsByDelegationWithPeriod(
+            @RequestParam("dateDebut") LocalDate dateDebut,
+            @RequestParam("dateFin") LocalDate dateFin,
+            HttpServletRequest request) {
+        try {
+            log.info("Récupération des statistiques de correction par délégation pour la période du {} au {}", dateDebut, dateFin);
+            
+            // Validation des dates
+            if (dateDebut.isAfter(dateFin)) {
+                return ResponseEntity.badRequest()
+                        .body(getResponse(request,
+                                Map.of("error", "La date de début doit être antérieure à la date de fin"),
+                                "Erreur de validation",
+                                BAD_REQUEST));
+            }
+            
+            List<CorrectionDelegationStat> stats = correctionService.getCorrectionStatsByDelegationWithPeriod(dateDebut, dateFin);
+            
+            return ResponseEntity.ok(
+                    getResponse(request,
+                            Map.of("correctionStats", stats,
+                                   "dateDebut", dateDebut.toString(),
+                                   "dateFin", dateFin.toString()),
+                            "Statistiques de correction par délégation récupérées avec succès",
+                            OK));
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des statistiques de correction par délégation avec période", e);
             return ResponseEntity.status(INTERNAL_SERVER_ERROR)
                     .body(getResponse(request,
                             Map.of("error", "Erreur lors de la récupération des statistiques"),

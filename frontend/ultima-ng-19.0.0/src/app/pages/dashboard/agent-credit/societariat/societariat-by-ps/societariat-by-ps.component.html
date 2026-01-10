@@ -13,27 +13,27 @@
     @if (loading) {
     <div class="loading">Chargement...</div>
     } @else {
-    <p-table [value]="stats" [tableStyle]="{'min-width':'100%'}">
+    <p-table [value]="stats" [tableStyle]="{'min-width':'100%'}" styleClass="stats-table">
         <ng-template pTemplate="header">
             <tr>
-                <th>Point de vente</th>
-                <th>Code</th>
-                <th>En attente</th>
-                <th>Rejeté</th>
-                <th>Validé</th>
-                <th>Total</th>
-                <th>Détails</th>
+                <th style="width: 25%">Point de vente</th>
+                <th style="width: 10%; text-align: center">Code</th>
+                <th style="width: 13%; text-align: center">En attente</th>
+                <th style="width: 13%; text-align: center">Rejeté</th>
+                <th style="width: 13%; text-align: center">Validé</th>
+                <th style="width: 13%; text-align: center">Total</th>
+                <th style="width: 13%; text-align: center">Détails</th>
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-row>
             <tr>
                 <td>{{ row.pointVenteLibele || 'Non renseigné' }}</td>
-                <td>{{ row.pointVenteCode || '-' }}</td>
-                <td class="number en-attente">{{ row.enAttente }}</td>
-                <td class="number rejete">{{ row.rejete }}</td>
-                <td class="number valide">{{ row.valide }}</td>
-                <td class="number total">{{ row.total }}</td>
-                <td>
+                <td style="text-align: center">{{ row.pointVenteCode || '-' }}</td>
+                <td class="number en-attente" style="text-align: center">{{ row.enAttente }}</td>
+                <td class="number rejete" style="text-align: center">{{ row.rejete }}</td>
+                <td class="number valide" style="text-align: center">{{ row.valide }}</td>
+                <td class="number total" style="text-align: center">{{ row.total }}</td>
+                <td style="text-align: center">
                     <button pButton type="button" label="Voir" class="p-button-text p-0"
                         [routerLink]="['/dashboards/agent-credit/societariat/detail-ps']"
                         [queryParams]="{ code: row.pointVenteCode, libele: row.pointVenteLibele }"></button>

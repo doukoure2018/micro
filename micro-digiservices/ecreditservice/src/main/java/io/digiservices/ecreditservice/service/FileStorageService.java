@@ -20,7 +20,7 @@ import java.util.*;
 @Slf4j
 public class FileStorageService {
 
-    @Value("${file.upload-dir:uploads}")
+    @Value("${file.upload-dir:C:/Users/DELL/IdeaProjects/micro/uploads}")
     private String uploadDir;
 
     @Value("${file.base-url:http://localhost:8087/ecredit/files}")

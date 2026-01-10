@@ -230,6 +230,25 @@ public class CorrectionQuery {
         ORDER BY delegation_libele NULLS LAST
         """;
 
+    /**
+     * Statistiques des corrections par délégation avec filtre par période
+     */
+    public static final String CORRECTION_STATS_BY_DELEGATION_WITH_PERIOD = """
+        SELECT
+            d.id AS delegation_id,
+            COALESCE(d.libele, 'Non renseignée') AS delegation_libele,
+            COALESCE(SUM(CASE WHEN pp.correction_statut = 'EN_ATTENTE' THEN 1 ELSE 0 END), 0) AS en_attente,
+            COALESCE(SUM(CASE WHEN pp.correction_statut = 'REJETE' THEN 1 ELSE 0 END), 0) AS rejete,
+            COALESCE(SUM(CASE WHEN pp.correction_statut = 'VALIDE' THEN 1 ELSE 0 END), 0) AS valide,
+            COUNT(pp.id) AS total
+        FROM personne_physique pp
+        LEFT JOIN pointvente pv ON pv.code = pp.code_agence
+        LEFT JOIN delegation d ON d.id = pv.delegation_id
+        WHERE pp.created_at >= :dateDebut AND pp.created_at < :dateFin + INTERVAL '1 day'
+        GROUP BY d.id, d.libele
+        ORDER BY delegation_libele NULLS LAST
+        """;
+
     public static final String CORRECTION_STATS_BY_AGENCE = """
         SELECT
             a.id AS agence_id,

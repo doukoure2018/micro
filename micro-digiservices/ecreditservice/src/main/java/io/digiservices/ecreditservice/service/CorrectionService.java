@@ -7,6 +7,7 @@ import io.digiservices.ecreditservice.dto.CorrectionAgenceStat;
 import io.digiservices.ecreditservice.dto.CorrectionPointVenteStat;
 import io.digiservices.ecreditservice.dto.CorrectionEvolutionStat;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,6 +34,8 @@ public interface CorrectionService {
     Optional<MotifCorrection> getMotifCorrectionByPersonneLast(Long personnePhysiqueId);
 
     List<CorrectionDelegationStat> getCorrectionStatsByDelegation();
+
+    List<CorrectionDelegationStat> getCorrectionStatsByDelegationWithPeriod(LocalDate dateDebut, LocalDate dateFin);
 
     List<CorrectionAgenceStat> getCorrectionStatsByAgence(Long delegationId);
 

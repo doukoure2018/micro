@@ -13,25 +13,25 @@
     @if (loading) {
     <div class="loading">Chargement...</div>
     } @else {
-    <p-table [value]="stats" [tableStyle]="{'min-width':'100%'}">
+    <p-table [value]="stats" [tableStyle]="{'min-width':'100%'}" styleClass="stats-table">
         <ng-template pTemplate="header">
             <tr>
-                <th>Agence</th>
-                <th>Code</th>
-                <th>En attente</th>
-                <th>Rejeté</th>
-                <th>Validé</th>
-                <th>Total</th>
+                <th style="width: 30%">Agence</th>
+                <th style="width: 10%; text-align: center">Code</th>
+                <th style="width: 15%; text-align: center">En attente</th>
+                <th style="width: 15%; text-align: center">Rejeté</th>
+                <th style="width: 15%; text-align: center">Validé</th>
+                <th style="width: 15%; text-align: center">Total</th>
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-row>
             <tr (click)="onSelect(row)" class="clickable">
                 <td>{{ row.agenceLibele || 'Non renseignée' }}</td>
-                <td>{{ row.agenceCode || '-' }}</td>
-                <td class="number en-attente">{{ row.enAttente }}</td>
-                <td class="number rejete">{{ row.rejete }}</td>
-                <td class="number valide">{{ row.valide }}</td>
-                <td class="number total">{{ row.total }}</td>
+                <td style="text-align: center">{{ row.agenceCode || '-' }}</td>
+                <td class="number en-attente" style="text-align: center">{{ row.enAttente }}</td>
+                <td class="number rejete" style="text-align: center">{{ row.rejete }}</td>
+                <td class="number valide" style="text-align: center">{{ row.valide }}</td>
+                <td class="number total" style="text-align: center">{{ row.total }}</td>
             </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">

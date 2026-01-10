@@ -15,7 +15,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +27,7 @@ import static org.springframework.web.servlet.support.ServletUriComponentsBuilde
 @Slf4j
 public class SelectionRepositoryImpl implements SelectionRepository {
     private final JdbcClient jdbcClient;
+    private final FileStorageConfig fileStorageConfig;
 
 
     @Override
@@ -137,8 +137,8 @@ public class SelectionRepositoryImpl implements SelectionRepository {
                 return;
             }
 
-            // Construct full file path using your existing FILE_STORAGE_LOCATION
-            Path filePath = FILE_STORAGE_LOCATION.resolve(filename);
+            // Construct full file path using the configured storage location
+            Path filePath = fileStorageConfig.getFileStorageLocation().resolve(filename);
 
             log.info("🔍 Attempting to delete file: {}", filePath.toAbsolutePath());
 
@@ -166,10 +166,9 @@ public class SelectionRepositoryImpl implements SelectionRepository {
      */
     private String extractFilenameFromUrl(String docUrl) {
         try {
-            // Handle your URL format: http://172.30.144.1:8087/ecredit/docs/filename.ext
-            if (docUrl.contains("/ecredit/docs/")) {
-                return docUrl.substring(docUrl.lastIndexOf('/') + 1);
-            } else if (docUrl.contains("/docs/")) {
+            // Handle URL formats: /ecredit/files/, /ecredit/docs/, /files/, /docs/
+            if (docUrl.contains("/ecredit/files/") || docUrl.contains("/ecredit/docs/") 
+                    || docUrl.contains("/files/") || docUrl.contains("/docs/")) {
                 return docUrl.substring(docUrl.lastIndexOf('/') + 1);
             } else {
                 log.warn("⚠️ Unrecognized URL format: {}", docUrl);
@@ -190,11 +189,10 @@ public class SelectionRepositoryImpl implements SelectionRepository {
         return jdbcClient.sql(COUNT_DEMANDE_INDIVIDUEL_BY_ID_QUERY).param("demandeindividuel_id",demandeindividuel_id).query(Integer.class).single();
     }
 
-
-
     private void saveImage(String saveImageUrl, MultipartFile file) {
         try {
-            log.info("🔍 TARGET SAVE LOCATION: {}", FILE_STORAGE_LOCATION.toAbsolutePath());
+            Path storageLocation = fileStorageConfig.getFileStorageLocation();
+            log.info("🔍 TARGET SAVE LOCATION: {}", storageLocation.toAbsolutePath());
             log.info("📄 File type: {}", file.getContentType());
             log.info("📄 Original filename: {}", file.getOriginalFilename());
 
@@ -204,14 +202,14 @@ public class SelectionRepositoryImpl implements SelectionRepository {
             }
 
             // Ensure directory exists
-            if (!Files.exists(FILE_STORAGE_LOCATION)) {
-                Files.createDirectories(FILE_STORAGE_LOCATION);
-                log.info("✅ Created directories: {}", FILE_STORAGE_LOCATION);
+            if (!Files.exists(storageLocation)) {
+                Files.createDirectories(storageLocation);
+                log.info("✅ Created directories: {}", storageLocation);
             }
 
             // Get the correct file extension
             String fileExtension = getFileExtension(file);
-            Path targetLocation = FILE_STORAGE_LOCATION.resolve(saveImageUrl + fileExtension);
+            Path targetLocation = storageLocation.resolve(saveImageUrl + fileExtension);
 
             log.info("🎯 SAVING FILE TO: {}", targetLocation.toAbsolutePath());
 
@@ -254,14 +252,13 @@ public class SelectionRepositoryImpl implements SelectionRepository {
         return false;
     }
 
+
     private String setSelectionDocUrl(String randomString, MultipartFile file) {
         String fileExtension = getFileExtension(file);
-        String url = fromCurrentContextPath().path("/ecredit/docs/" + randomString + fileExtension).toUriString();
+        String url = fromCurrentContextPath().path("/ecredit/files/" + randomString + fileExtension).toUriString();
         log.info("🔗 Generated file URL: {}", url);
         return url;
     }
-
-    private static final Path FILE_STORAGE_LOCATION = FileStorageConfig.FILE_STORAGE_LOCATION;
 
     private String getFileExtension(MultipartFile file) {
         String originalFilename = file.getOriginalFilename();
@@ -293,7 +290,7 @@ public class SelectionRepositoryImpl implements SelectionRepository {
         Path targetPath;
         do {
             randomString = generateRandomString();
-            targetPath = FILE_STORAGE_LOCATION.resolve(randomString + ".png");
+            targetPath = fileStorageConfig.getFileStorageLocation().resolve(randomString + ".png");
         } while (Files.exists(targetPath));
 
         return randomString;

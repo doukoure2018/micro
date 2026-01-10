@@ -14,6 +14,7 @@ import org.apache.kafka.common.errors.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -223,6 +224,12 @@ public class CorrectionServiceImpl implements CorrectionService {
     public List<CorrectionDelegationStat> getCorrectionStatsByDelegation() {
         log.info("Service - Récupération des statistiques de correction par délégation");
         return correctionRepository.getCorrectionStatsByDelegation();
+    }
+
+    @Override
+    public List<CorrectionDelegationStat> getCorrectionStatsByDelegationWithPeriod(LocalDate dateDebut, LocalDate dateFin) {
+        log.info("Service - Récupération des statistiques de correction par délégation pour la période du {} au {}", dateDebut, dateFin);
+        return correctionRepository.getCorrectionStatsByDelegationWithPeriod(dateDebut, dateFin);
     }
 
     @Override

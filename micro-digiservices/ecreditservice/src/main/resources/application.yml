@@ -43,7 +43,7 @@ spring:
       enabled: true
 
 file:
-  upload-dir: uploads
+  upload-dir: C:/Users/DELL/IdeaProjects/micro/uploads
   base-url: http://localhost:8087/ecredit/files
 
   jpa:

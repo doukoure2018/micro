@@ -28,8 +28,30 @@
 }
 
 .number {
-    text-align: right;
+    text-align: center;
     font-weight: 700;
+}
+
+// Stats table specific styling
+::ng-deep .stats-table {
+    .p-datatable-thead > tr > th {
+        background: #f8fafc;
+        border-bottom: 2px solid #e2e8f0;
+        padding: 0.75rem;
+        font-weight: 600;
+        color: #475569;
+        font-size: 0.875rem;
+    }
+
+    .p-datatable-tbody > tr > td {
+        padding: 0.625rem 0.75rem;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.875rem;
+    }
+
+    .p-datatable-tbody > tr:hover {
+        background: #f8fafc;
+    }
 }
 
 .en-attente {

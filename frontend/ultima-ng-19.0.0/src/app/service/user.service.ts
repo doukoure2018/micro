@@ -725,6 +725,9 @@ export class UserService {
 
     getCorrectionStatsByDelegation$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/corrections/stats/delegations`).pipe(tap(console.log), catchError(this.handleError));
 
+    getCorrectionStatsByDelegationWithPeriod$ = (dateDebut: string, dateFin: string) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/corrections/stats/delegations/period?dateDebut=${dateDebut}&dateFin=${dateFin}`).pipe(tap(console.log), catchError(this.handleError));
+
     getCorrectionStatsByAgence$ = (delegationId: number) => this.http.get<IResponse>(`${this.server}/ecredit/corrections/stats/delegations/${delegationId}/by-agency`).pipe(tap(console.log), catchError(this.handleError));
 
     getCorrectionStatsByPointVente$ = (agenceId: number) => this.http.get<IResponse>(`${this.server}/ecredit/corrections/stats/by-agency/${agenceId}/by-point`).pipe(tap(console.log), catchError(this.handleError));
