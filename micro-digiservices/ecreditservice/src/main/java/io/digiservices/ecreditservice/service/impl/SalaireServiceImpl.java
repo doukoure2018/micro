@@ -713,14 +713,16 @@ public class SalaireServiceImpl implements SalaireService {
             totalStyle.setDataFormat(format.getFormat("#,##0"));
             totalValueCell.setCellStyle(totalStyle);
 
-            // Ajuster la largeur des colonnes
-            for (int i = 0; i < columns.length; i++) {
-                sheet.autoSizeColumn(i);
+            // Définir une largeur fixe pour les colonnes (évite autoSizeColumn qui peut échouer en prod)
+            int[] columnWidths = {2000, 4000, 5000, 5000, 5000, 4000, 5000, 5000}; // en unités de 1/256 caractère
+            for (int i = 0; i < columnWidths.length; i++) {
+                sheet.setColumnWidth(i, columnWidths[i]);
             }
 
             // Écrire dans ByteArrayOutputStream
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             workbook.write(outputStream);
+            log.info("Fichier Excel généré avec succès: {} lignes, {} bytes", rowNum - 1, outputStream.size());
             return outputStream.toByteArray();
         }
     }

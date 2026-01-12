@@ -378,6 +378,28 @@ export class DfComponent implements OnInit {
 
         exportObservable.subscribe({
             next: (blob) => {
+                // Vérifier si c'est une réponse d'erreur JSON
+                if (blob.type === 'application/json') {
+                    blob.text().then((text) => {
+                        try {
+                            const errorResponse = JSON.parse(text);
+                            this.messageService.add({
+                                severity: 'warn',
+                                summary: 'Attention',
+                                detail: errorResponse.message || 'Aucune donnée à exporter'
+                            });
+                        } catch {
+                            this.messageService.add({
+                                severity: 'error',
+                                summary: 'Erreur',
+                                detail: "Impossible d'exporter le fichier"
+                            });
+                        }
+                        this.isExporting.set(false);
+                    });
+                    return;
+                }
+
                 const filename = `avances_salaire_${new Date().toISOString().split('T')[0]}.xlsx`;
                 this.downloadFile(blob, filename);
 
@@ -390,11 +412,31 @@ export class DfComponent implements OnInit {
             },
             error: (error) => {
                 console.error('Erreur export:', error);
-                this.messageService.add({
-                    severity: 'error',
-                    summary: 'Erreur',
-                    detail: "Impossible d'exporter le fichier"
-                });
+                // Essayer de lire le message d'erreur du blob
+                if (error.error instanceof Blob) {
+                    error.error.text().then((text: string) => {
+                        try {
+                            const errorResponse = JSON.parse(text);
+                            this.messageService.add({
+                                severity: 'error',
+                                summary: 'Erreur',
+                                detail: errorResponse.message || "Impossible d'exporter le fichier"
+                            });
+                        } catch {
+                            this.messageService.add({
+                                severity: 'error',
+                                summary: 'Erreur',
+                                detail: "Impossible d'exporter le fichier"
+                            });
+                        }
+                    });
+                } else {
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Erreur',
+                        detail: error.error?.message || "Impossible d'exporter le fichier"
+                    });
+                }
                 this.isExporting.set(false);
             }
         });
@@ -405,6 +447,28 @@ export class DfComponent implements OnInit {
 
         this.salaireService.exportAllConfirmedDemandesExcel().subscribe({
             next: (blob) => {
+                // Vérifier si c'est une réponse d'erreur JSON
+                if (blob.type === 'application/json') {
+                    blob.text().then((text) => {
+                        try {
+                            const errorResponse = JSON.parse(text);
+                            this.messageService.add({
+                                severity: 'warn',
+                                summary: 'Attention',
+                                detail: errorResponse.message || 'Aucune donnée à exporter'
+                            });
+                        } catch {
+                            this.messageService.add({
+                                severity: 'error',
+                                summary: 'Erreur',
+                                detail: "Impossible d'exporter le fichier"
+                            });
+                        }
+                        this.isExporting.set(false);
+                    });
+                    return;
+                }
+
                 const filename = `avances_salaire_confirmees_${new Date().toISOString().split('T')[0]}.xlsx`;
                 this.downloadFile(blob, filename);
 
@@ -417,11 +481,31 @@ export class DfComponent implements OnInit {
             },
             error: (error) => {
                 console.error('Erreur export:', error);
-                this.messageService.add({
-                    severity: 'error',
-                    summary: 'Erreur',
-                    detail: "Impossible d'exporter le fichier"
-                });
+                // Essayer de lire le message d'erreur du blob
+                if (error.error instanceof Blob) {
+                    error.error.text().then((text: string) => {
+                        try {
+                            const errorResponse = JSON.parse(text);
+                            this.messageService.add({
+                                severity: 'error',
+                                summary: 'Erreur',
+                                detail: errorResponse.message || "Impossible d'exporter le fichier"
+                            });
+                        } catch {
+                            this.messageService.add({
+                                severity: 'error',
+                                summary: 'Erreur',
+                                detail: "Impossible d'exporter le fichier"
+                            });
+                        }
+                    });
+                } else {
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Erreur',
+                        detail: error.error?.message || "Impossible d'exporter le fichier"
+                    });
+                }
                 this.isExporting.set(false);
             }
         });

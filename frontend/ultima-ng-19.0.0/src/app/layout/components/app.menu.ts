@@ -148,7 +148,7 @@ export class AppMenu {
                                         },
                                         {
                                             label: 'suivi des Arrete de caisse',
-                                            icon: 'pi pi-fw pi-money-bill',
+                                            icon: 'pi pi-fw pi-mo',
                                             routerLink: ['/dashboards/suivi-arrete-caisse']
                                         }
                                     ]
@@ -169,51 +169,68 @@ export class AppMenu {
                                                   routerLink: ['/dashboards/mes-demandes-salaire']
                                               }
                                           ]
-                                        : []
-                              : this.user?.role === 'AGENT_CORRECTEUR'
+                                        : this.user?.service === 'DF'
+                                          ? [
+                                                {
+                                                    label: 'Confirmation Avances (DF)',
+                                                    icon: 'pi pi-fw pi-building',
+                                                    routerLink: ['/dashboards']
+                                                },
+                                                {
+                                                    label: 'Mes avances de salaire',
+                                                    icon: 'pi pi-fw pi-list',
+                                                    routerLink: ['/dashboards/mes-demandes-salaire']
+                                                }
+                                            ]
+                                          : []
+                              : this.user?.role === 'DF' || this.user?.service === 'DF'
                                 ? [
                                       {
-                                          label: 'Correction P. Physique',
-                                          icon: 'pi pi-fw pi-hourglass',
-                                          routerLink: ['/dashboards/correction-physique']
+                                          label: 'Confirmation Avances (DF)',
+                                          icon: 'pi pi-fw pi-building',
+                                          routerLink: ['/dashboards/admin/df']
+                                      },
+                                      {
+                                          label: 'Mes avances de salaire',
+                                          icon: 'pi pi-fw pi-list',
+                                          routerLink: ['/dashboards/mes-demandes-salaire']
                                       }
                                   ]
-                                : // :
-                                  // this.user?.role === 'DR'
-                                  //   ? [
-                                  //         {
-                                  //             label: 'Suivi Societariat',
-                                  //             icon: 'pi pi-fw pi-hourglass',
-                                  //             routerLink: ['/dashboards/suivi-societariat']
-                                  //         }
-                                  //     ]
-                                  this.user?.role === 'DR'
+                                : this.user?.role === 'AGENT_CORRECTEUR'
                                   ? [
                                         {
-                                            label: 'Suivi Societariat',
+                                            label: 'Correction P. Physique',
                                             icon: 'pi pi-fw pi-hourglass',
-                                            routerLink: ['/dashboards/suivi-societariat']
-                                        },
-                                        {
-                                            label: 'Mes avances de salaire',
-                                            icon: 'pi pi-fw pi-list',
-                                            routerLink: ['/dashboards/mes-demandes-salaire']
+                                            routerLink: ['/dashboards/correction-physique']
                                         }
                                     ]
-                                  : this.user?.role === 'USER' && this.user?.service === 'Personnel'
+                                  : this.user?.role === 'DR'
                                     ? [
                                           {
-                                              label: 'Demande Avance Salaire',
-                                              icon: 'pi pi-fw pi-wallet',
-                                              routerLink: ['/dashboards/demande-avance-salaire']
+                                              label: 'Suivi Societariat',
+                                              icon: 'pi pi-fw pi-hourglass',
+                                              routerLink: ['/dashboards/suivi-societariat']
                                           },
                                           {
-                                              label: 'Mes Demandes',
+                                              label: 'Mes avances de salaire',
                                               icon: 'pi pi-fw pi-list',
                                               routerLink: ['/dashboards/mes-demandes-salaire']
                                           }
                                       ]
-                                    : [])
+                                    : this.user?.role === 'USER' && this.user?.service === 'Personnel'
+                                      ? [
+                                            {
+                                                label: 'Demande Avance Salaire',
+                                                icon: 'pi pi-fw pi-wallet',
+                                                routerLink: ['/dashboards/demande-avance-salaire']
+                                            },
+                                            {
+                                                label: 'Mes Demandes',
+                                                icon: 'pi pi-fw pi-list',
+                                                routerLink: ['/dashboards/mes-demandes-salaire']
+                                            }
+                                        ]
+                                      : [])
                 ]
             }
         ];

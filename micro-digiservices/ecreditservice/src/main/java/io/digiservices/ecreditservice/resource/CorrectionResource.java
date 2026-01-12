@@ -853,7 +853,8 @@ public class CorrectionResource {
     public ResponseEntity<Response> getCorrectionStatsByDelegationWithPeriod(
             @RequestParam("dateDebut") LocalDate dateDebut,
             @RequestParam("dateFin") LocalDate dateFin,
-            HttpServletRequest request) {
+            HttpServletRequest request)
+    {
         try {
             log.info("Récupération des statistiques de correction par délégation pour la période du {} au {}", dateDebut, dateFin);
             

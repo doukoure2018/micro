@@ -856,13 +856,20 @@ public class SalaireResource {
      * @param ids Liste optionnelle des IDs à exporter. Si vide, exporte toutes les confirmées.
      */
     @PostMapping("/salaire/demande-salary/export-excel")
-    public ResponseEntity<byte[]> exportDemandesExcel(
-            @RequestBody(required = false) List<Long> ids) {
+    public ResponseEntity<?> exportDemandesExcel(
+            @RequestBody(required = false) List<Long> ids,
+            HttpServletRequest request) {
 
         log.info("API: Export Excel des demandes. IDs: {}", ids);
 
         try {
             byte[] excelBytes = salaireService.exportDemandesConfirmeesToExcel(ids);
+
+            if (excelBytes == null || excelBytes.length == 0) {
+                log.warn("Export Excel: aucune donnée à exporter pour les IDs: {}", ids);
+                return ResponseEntity.status(NOT_FOUND)
+                        .body(getResponse(request, Map.of(), "Aucune demande à exporter", NOT_FOUND));
+            }
 
             String filename = "avances_salaire_" +
                     java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd")) +
@@ -872,14 +879,19 @@ public class SalaireResource {
             headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
             headers.setContentDispositionFormData("attachment", filename);
             headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
+            headers.setContentLength(excelBytes.length);
+
+            log.info("Export Excel réussi: {} bytes générés pour {} IDs", excelBytes.length, ids != null ? ids.size() : "tous");
 
             return ResponseEntity.ok()
                     .headers(headers)
                     .body(excelBytes);
 
         } catch (Exception e) {
-            log.error("Erreur lors de l'export Excel", e);
-            return ResponseEntity.status(INTERNAL_SERVER_ERROR).body(null);
+            log.error("Erreur lors de l'export Excel: {}", e.getMessage(), e);
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR)
+                    .body(getResponse(request, Map.of("error", e.getMessage()), 
+                            "Erreur lors de l'export Excel: " + e.getMessage(), INTERNAL_SERVER_ERROR));
         }
     }
 
@@ -887,12 +899,18 @@ public class SalaireResource {
      * Exporter toutes les demandes confirmées en Excel (GET simple)
      */
     @GetMapping("/salaire/demande-salary/export-excel/confirmer")
-    public ResponseEntity<byte[]> exportAllConfirmedDemandesExcel() {
+    public ResponseEntity<?> exportAllConfirmedDemandesExcel(HttpServletRequest request) {
 
         log.info("API: Export Excel de toutes les demandes confirmées");
 
         try {
             byte[] excelBytes = salaireService.exportDemandesConfirmeesToExcel(null);
+
+            if (excelBytes == null || excelBytes.length == 0) {
+                log.warn("Export Excel: aucune donnée à exporter");
+                return ResponseEntity.status(NOT_FOUND)
+                        .body(getResponse(request, Map.of(), "Aucune demande confirmée à exporter", NOT_FOUND));
+            }
 
             String filename = "avances_salaire_confirmees_" +
                     java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd")) +
@@ -902,14 +920,19 @@ public class SalaireResource {
             headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
             headers.setContentDispositionFormData("attachment", filename);
             headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
+            headers.setContentLength(excelBytes.length);
+
+            log.info("Export Excel réussi: {} bytes générés", excelBytes.length);
 
             return ResponseEntity.ok()
                     .headers(headers)
                     .body(excelBytes);
 
         } catch (Exception e) {
-            log.error("Erreur lors de l'export Excel", e);
-            return ResponseEntity.status(INTERNAL_SERVER_ERROR).body(null);
+            log.error("Erreur lors de l'export Excel: {}", e.getMessage(), e);
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR)
+                    .body(getResponse(request, Map.of("error", e.getMessage()), 
+                            "Erreur lors de l'export Excel: " + e.getMessage(), INTERNAL_SERVER_ERROR));
         }
     }
 
