@@ -172,43 +172,15 @@
                     <div class="mb-6 col-span-12">
                         <label for="username" class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">
                             Nom d'utilisateur *
-                            @if(shouldValidateUsername()) {
-                            <span class="text-blue-500 text-sm">(Validation SAF requise)</span>
-                            }
                         </label>
-                        <div class="relative">
-                            <input #usernameInput pInputText ngModel name="username" id="username" type="text" required
-                                [disabled]="state().submitting" class="w-full"
-                                (input)="onUsernameChange(usernameInput.value)"
-                                placeholder="Entrez le nom d'utilisateur" />
-                            @if(state().usernameValidation?.isLoading) {
-                            <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                <i class="pi pi-spin pi-spinner text-blue-500"></i>
-                            </div>
-                            }
-                        </div>
-
-                        <!-- Username validation messages -->
-                        @if(shouldValidateUsername() && state().usernameValidation?.checked) {
-                        @if(state().usernameValidation?.isActive) {
-                        <p-message severity="success" [text]="state().usernameValidation?.message"
-                            styleClass="mt-2 w-full"></p-message>
-                        } @else {
-                        <p-message severity="warn" [text]="state().usernameValidation?.message"
-                            styleClass="mt-2 w-full"></p-message>
-                        }
-                        }
+                        <input pInputText ngModel name="username" id="username" type="text" required
+                            [disabled]="state().submitting" class="w-full"
+                            placeholder="Entrez le nom d'utilisateur" />
 
                         <!-- Standard username validation -->
                         @if(userForm.controls['username'] && userForm.controls['username'].invalid &&
                         userForm.controls['username'].touched) {
                         <p-message severity="error" text="Username is required" styleClass="mt-2 w-full"></p-message>
-                        }
-
-                        <!-- SAF validation requirement for AGENT_CREDIT -->
-                        @if(shouldValidateUsername() && !state().usernameValidation?.checked) {
-                        <p-message severity="info" text="Veuillez entrer un nom d'utilisateur pour validation SAF"
-                            styleClass="mt-2 w-full"></p-message>
                         }
                     </div>
 
@@ -280,19 +252,12 @@
                         <div class="flex gap-3">
                             <button pButton pRipple type="submit" label="Enregister" icon="pi pi-save"
                                 [loading]="state().submitting"
-                                [disabled]="userForm && userForm.invalid || state().submitting || !canSubmitForm()"
+                                [disabled]="userForm && userForm.invalid || state().submitting"
                                 class="w-auto mt-3"></button>
                             <button pButton pRipple type="button" label="Annuler" icon="pi pi-times"
                                 (click)="userForm.resetForm(); selectedService = null" [disabled]="state().submitting"
                                 class="p-button-secondary w-auto mt-3"></button>
                         </div>
-
-                        <!-- Additional message for AGENT_CREDIT validation -->
-                        @if(shouldValidateUsername() && !canSubmitForm()) {
-                        <p-message severity="warn"
-                            text="La validation du nom d'utilisateur SAF est requise avant de pouvoir créer le compte"
-                            styleClass="mt-3 w-full"></p-message>
-                        }
 
                         <!-- Debug info (remove in production) -->
                         @if(state().selectedRole) {

@@ -3,7 +3,6 @@ import { Delegation } from '@/interface/delegation';
 import { PointVente } from '@/interface/point.vente';
 import { IResponse } from '@/interface/response';
 import { IRole } from '@/interface/role';
-import { SG_USUARIOS } from '@/interface/sg_usuarios';
 import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
@@ -21,7 +20,6 @@ import { PasswordModule } from 'primeng/password';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { RippleModule } from 'primeng/ripple';
 import { TextareaModule } from 'primeng/textarea';
-import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 
 // Service interface
 interface Service {
@@ -66,14 +64,6 @@ export class CreateUserComponent {
         selectedAgenceId?: number;
         selectedPointVenteId?: number;
         selectedServiceValue?: string;
-        usuario?: SG_USUARIOS;
-        usernameValidation?: {
-            isValid: boolean;
-            isActive: boolean;
-            isLoading: boolean;
-            message: string;
-            checked: boolean;
-        };
         loading: boolean;
         submitting: boolean;
         loadingDelegations: boolean;
@@ -89,14 +79,7 @@ export class CreateUserComponent {
         loadingPointVentes: false,
         message: undefined,
         error: undefined,
-        selectedServiceValue: undefined,
-        usernameValidation: {
-            isValid: false,
-            isActive: false,
-            isLoading: false,
-            message: '',
-            checked: false
-        }
+        selectedServiceValue: undefined
     });
 
     private router = inject(Router);
@@ -104,20 +87,8 @@ export class CreateUserComponent {
     private userService = inject(UserService);
     private messageService = inject(MessageService);
 
-    // Subject for debouncing username input
-    private usernameSubject = new Subject<string>();
-
     ngOnInit(): void {
         this.loadRolesUsers();
-        this.setupUsernameValidation();
-    }
-
-    private setupUsernameValidation(): void {
-        this.usernameSubject.pipe(debounceTime(500), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef)).subscribe((username) => {
-            if (username && this.shouldValidateUsername()) {
-                this.validateUsername(username);
-            }
-        });
     }
 
     private loadRolesUsers(): void {
@@ -172,14 +143,7 @@ export class CreateUserComponent {
             pointVentes: undefined,
             selectedDelegationId: undefined,
             selectedAgenceId: undefined,
-            selectedPointVenteId: undefined,
-            usernameValidation: {
-                isValid: false,
-                isActive: false,
-                isLoading: false,
-                message: '',
-                checked: false
-            }
+            selectedPointVenteId: undefined
         }));
 
         // Reset form selections
@@ -191,120 +155,6 @@ export class CreateUserComponent {
         if (this.shouldShowLocationFields(selectedRole.name!)) {
             this.loadDelegations();
         }
-    }
-
-    // Handle username input change
-    onUsernameChange(username: string): void {
-        if (this.shouldValidateUsername()) {
-            this.state.update((state) => ({
-                ...state,
-                usernameValidation: {
-                    ...state.usernameValidation!,
-                    checked: false,
-                    message: ''
-                }
-            }));
-
-            this.usernameSubject.next(username);
-        }
-    }
-
-    // Check if username validation is needed (only for AGENT_CREDIT)
-    public shouldValidateUsername(): boolean {
-        const roleName = this.state().selectedRole?.name;
-        return roleName === 'AGENT_CREDIT';
-    }
-
-    // Validate username against SAF backend
-    private validateUsername(username: string): void {
-        this.state.update((state) => ({
-            ...state,
-            usernameValidation: {
-                ...state.usernameValidation!,
-                isLoading: true,
-                message: 'Vérification en cours...'
-            }
-        }));
-
-        this.userService
-            .getUserSaf$(username)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: (response: IResponse) => {
-                    console.log('Username validation response:', response);
-
-                    if (response.data?.usuario) {
-                        const usuario: SG_USUARIOS = response.data.usuario;
-                        const isActive = usuario.indActivo === 'A';
-
-                        this.state.update((state) => ({
-                            ...state,
-                            usuario,
-                            usernameValidation: {
-                                isValid: true,
-                                isActive: isActive,
-                                isLoading: false,
-                                message: isActive ? 'Utilisateur validé et actif' : 'Utilisateur existe mais non actif',
-                                checked: true
-                            }
-                        }));
-
-                        if (isActive) {
-                            this.messageService.add({
-                                severity: 'success',
-                                summary: 'Validation réussie',
-                                detail: 'Utilisateur validé et actif',
-                                life: 3000
-                            });
-                        } else {
-                            this.messageService.add({
-                                severity: 'warn',
-                                summary: 'Utilisateur non actif',
-                                detail: 'Utilisateur existe mais non actif',
-                                life: 5000
-                            });
-                        }
-                    } else {
-                        this.state.update((state) => ({
-                            ...state,
-                            usernameValidation: {
-                                isValid: false,
-                                isActive: false,
-                                isLoading: false,
-                                message: 'Utilisateur non trouvé',
-                                checked: true
-                            }
-                        }));
-
-                        this.messageService.add({
-                            severity: 'error',
-                            summary: 'Utilisateur non trouvé',
-                            detail: 'Aucun utilisateur trouvé avec ce nom',
-                            life: 3000
-                        });
-                    }
-                },
-                error: (error) => {
-                    console.error('Error validating username:', error);
-                    this.state.update((state) => ({
-                        ...state,
-                        usernameValidation: {
-                            isValid: false,
-                            isActive: false,
-                            isLoading: false,
-                            message: 'Erreur lors de la validation',
-                            checked: true
-                        }
-                    }));
-
-                    this.messageService.add({
-                        severity: 'error',
-                        summary: 'Erreur de validation',
-                        detail: "Impossible de valider le nom d'utilisateur",
-                        life: 3000
-                    });
-                }
-            });
     }
 
     /**
@@ -382,12 +232,6 @@ export class CreateUserComponent {
 
     // Check if form can be submitted
     canSubmitForm(): boolean {
-        const validation = this.state().usernameValidation;
-
-        if (this.shouldValidateUsername()) {
-            return !!validation?.checked && !!validation?.isActive;
-        }
-
         return true;
     }
 
@@ -593,17 +437,6 @@ export class CreateUserComponent {
                 summary: 'Email invalide',
                 detail: 'Veuillez entrer une adresse email valide (ex: nom.prenom@domain.com)',
                 life: 5000
-            });
-            return;
-        }
-
-        // Check username validation for AGENT_CREDIT only
-        if (!this.canSubmitForm()) {
-            this.messageService.add({
-                severity: 'error',
-                summary: 'Validation Error',
-                detail: 'Username validation is required for AGENT_CREDIT role',
-                life: 3000
             });
             return;
         }
