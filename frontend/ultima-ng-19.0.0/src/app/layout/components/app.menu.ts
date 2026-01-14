@@ -230,7 +230,25 @@ export class AppMenu {
                                                 routerLink: ['/dashboards/mes-demandes-salaire']
                                             }
                                         ]
-                                      : [])
+                                      : this.user?.role === 'RA'
+                                        ? [
+                                              {
+                                                  label: 'Mes avances de salaire',
+                                                  icon: 'pi pi-fw pi-list',
+                                                  routerLink: ['/dashboards/mes-demandes-salaire']
+                                              },
+                                              {
+                                                  label: 'Suivi Societariat',
+                                                  icon: 'pi pi-fw pi-hourglass',
+                                                  routerLink: ['/dashboards/suivi-societariat']
+                                              },
+                                              {
+                                                  label: 'suivi des Arrete de caisse',
+                                                  icon: 'pi pi-fw pi-money-bill',
+                                                  routerLink: ['/dashboards/suivi-arrete-caisse']
+                                              }
+                                          ]
+                                        : [])
                 ]
             }
         ];

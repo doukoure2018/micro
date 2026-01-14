@@ -378,7 +378,6 @@ export class DfComponent implements OnInit {
 
         exportObservable.subscribe({
             next: (blob) => {
-                // Vérifier si c'est une réponse d'erreur JSON
                 if (blob.type === 'application/json') {
                     blob.text().then((text) => {
                         try {
