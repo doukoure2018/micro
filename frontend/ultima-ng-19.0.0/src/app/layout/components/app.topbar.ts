@@ -435,7 +435,7 @@ export class AppTopbar {
     private router = inject(Router);
     private destroyRef = inject(DestroyRef);
     layoutService = inject(LayoutService);
-    elementRef: any;
+    private elementRef = inject(ElementRef);
 
     // Fermer le menu au clic extérieur
     @HostListener('document:click', ['$event'])
