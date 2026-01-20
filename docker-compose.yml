@@ -279,6 +279,7 @@ services:
     volumes:
       - ./keys:/app/keys
       - ./logs/ecreditservice:/var/log/ecreditservice
+      - ./uploads:/app/uploads
     networks:
       - spring
     depends_on:
