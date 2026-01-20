@@ -110,28 +110,47 @@ import { PointVente } from '@/interface/point.vente';
                                         <i class="pi pi-bell !align-middle"></i>
                                     </p-overlay-badge>
                                 </a>
-                                <div class="hidden">
-                                    <ul class="list-none p-0 m-0">
-                                        <li class="px-4 py-1">
-                                            <span
-                                                >Vous avez <b>{{ state().demandeAttentes!.length }}</b> nouvelle(s) demandes</span
+                                <div class="hidden notification-dropdown">
+                                    <!-- Header fixe -->
+                                    <div class="notification-header px-4 py-3 border-b border-surface">
+                                        <span class="font-semibold">
+                                            Vous avez <b class="text-primary">{{ state().demandeAttentes!.length }}</b> nouvelle(s) demande(s)
+                                        </span>
+                                    </div>
+
+                                    <!-- Liste scrollable -->
+                                    <ul class="list-none p-0 m-0 notification-list">
+                                        @for (demande of state().demandeAttentes!.slice(0, 10); track demande.demandeIndividuelId; let i = $index) {
+                                            <li
+                                                class="notification-item p-3 hover:bg-emphasis cursor-pointer transition-colors duration-150 border-b border-surface"
+                                                [routerLink]="['/dashboards/credit/individuel/detail', demande.demandeIndividuelId]"
                                             >
-                                        </li>
-                                        @for (demande of state().demandeAttentes; track demande.demandeIndividuelId) {
-                                            <li class="p-4">
-                                                <div class="flex items-center">
-                                                    <div class="flex flex-col ml-4 flex-1">
-                                                        <div class="flex items-center justify-between mb-1">
-                                                            <span class="font-bold">{{ demande.nom }} {{ demande.prenom }}</span>
-                                                            <small>{{ demande.createdAt | date: 'short' }}</small>
-                                                        </div>
+                                                <div class="flex items-center gap-3">
+                                                    <div class="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                                        <i class="pi pi-user text-primary"></i>
                                                     </div>
+                                                    <div class="flex flex-col flex-1 min-w-0">
+                                                        <span class="font-semibold text-sm truncate"> {{ demande.nom }} {{ demande.prenom }} </span>
+                                                        <small class="text-muted-color text-xs">
+                                                            {{ demande.createdAt | date: 'dd/MM/yyyy à HH:mm' }}
+                                                        </small>
+                                                    </div>
+                                                    <i class="pi pi-chevron-right text-muted-color text-xs"></i>
                                                 </div>
                                             </li>
                                         }
+
+                                        @if (state().demandeAttentes!.length > 10) {
+                                            <li class="p-3 text-center text-muted-color text-sm">
+                                                <i class="pi pi-info-circle mr-1"></i>
+                                                {{ state().demandeAttentes!.length - 10 }} autre(s) demande(s) non affichée(s)
+                                            </li>
+                                        }
                                     </ul>
-                                    <div class="p-3 text-center">
-                                        <p-button label="Voir Toutes les demandes" class="p-button-link" [routerLink]="['/dashboards/credit/individuel/attente']" />
+
+                                    <!-- Footer fixe avec bouton -->
+                                    <div class="notification-footer p-3 border-t border-surface bg-surface-ground">
+                                        <p-button label="Voir toutes les demandes" icon="pi pi-external-link" styleClass="w-full" severity="secondary" [outlined]="true" [routerLink]="['/dashboards/credit/individuel/attente']" />
                                     </div>
                                 </div>
                             </li>
@@ -270,6 +289,65 @@ import { PointVente } from '@/interface/point.vente';
         .layout-topbar-logo img,
         .layout-topbar-logo svg {
             vertical-align: middle;
+        }
+
+        /* Notification Dropdown */
+        .notification-dropdown {
+            width: 360px;
+            max-width: 90vw;
+            display: flex;
+            flex-direction: column;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .notification-header {
+            background: var(--surface-ground);
+            flex-shrink: 0;
+        }
+
+        .notification-list {
+            max-height: 320px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        /* Custom scrollbar */
+        .notification-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .notification-list::-webkit-scrollbar-track {
+            background: var(--surface-ground);
+        }
+
+        .notification-list::-webkit-scrollbar-thumb {
+            background: var(--surface-400);
+            border-radius: 3px;
+        }
+
+        .notification-list::-webkit-scrollbar-thumb:hover {
+            background: var(--surface-500);
+        }
+
+        .notification-footer {
+            flex-shrink: 0;
+        }
+
+        .notification-item:last-of-type {
+            border-bottom: none;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 480px) {
+            .notification-dropdown {
+                width: 300px;
+            }
+
+            .notification-list {
+                max-height: 250px;
+            }
         }
     `
 })
