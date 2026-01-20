@@ -1,4 +1,4 @@
-import { Component, DestroyRef, ElementRef, inject, Input, OnInit, signal, SimpleChanges, ViewChild } from '@angular/core';
+import { Component, DestroyRef, ElementRef, HostListener, inject, Input, OnInit, signal, SimpleChanges, ViewChild } from '@angular/core';
 import { MegaMenuItem } from 'primeng/api';
 import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -105,54 +105,53 @@ import { PointVente } from '@/interface/point.vente';
                     @if (user?.role === 'DA') {
                         @if (state().demandeAttentes && state().demandeAttentes!.length > 0) {
                             <li>
-                                <a pStyleClass="@next" enterFromClass="hidden" enterActiveClass="animate-scalein" leaveToClass="hidden" leaveActiveClass="animate-fadeout" [hideOnOutsideClick]="true">
+                                <a (click)="toggleNotificationMenu()">
                                     <p-overlay-badge severity="warn" [value]="state().demandeAttentes!.length.toString()">
                                         <i class="pi pi-bell !align-middle"></i>
                                     </p-overlay-badge>
                                 </a>
-                                <div class="hidden notification-dropdown">
-                                    <!-- Header fixe -->
-                                    <div class="notification-header px-4 py-3 border-b border-surface">
-                                        <span class="font-semibold">
-                                            Vous avez <b class="text-primary">{{ state().demandeAttentes!.length }}</b> nouvelle(s) demande(s)
-                                        </span>
-                                    </div>
+                                @if (notificationMenuVisible()) {
+                                    <div class="notification-dropdown" (clickOutside)="closeNotificationMenu()">
+                                        <!-- Header fixe -->
+                                        <div class="notification-header px-4 py-3 border-b border-surface">
+                                            <span class="font-semibold">
+                                                Vous avez <b class="text-primary">{{ state().demandeAttentes!.length }}</b> nouvelle(s) demande(s)
+                                            </span>
+                                        </div>
 
-                                    <!-- Liste scrollable -->
-                                    <ul class="list-none p-0 m-0 notification-list">
-                                        @for (demande of state().demandeAttentes!.slice(0, 10); track demande.demandeIndividuelId; let i = $index) {
-                                            <li
-                                                class="notification-item p-3 hover:bg-emphasis cursor-pointer transition-colors duration-150 border-b border-surface"
-                                                [routerLink]="['/dashboards/credit/individuel/detail', demande.demandeIndividuelId]"
-                                            >
-                                                <div class="flex items-center gap-3">
-                                                    <div class="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                                        <i class="pi pi-user text-primary"></i>
+                                        <!-- Liste scrollable -->
+                                        <ul class="list-none p-0 m-0 notification-list">
+                                            @for (demande of state().demandeAttentes!.slice(0, 10); track demande.demandeIndividuelId) {
+                                                <li class="notification-item p-3 hover:bg-emphasis cursor-pointer transition-colors duration-150 border-b border-surface" (click)="viewDetailDemandeAttente(demande.demandeIndividuelId!)">
+                                                    <div class="flex items-center gap-3">
+                                                        <div class="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                                            <i class="pi pi-user text-primary"></i>
+                                                        </div>
+                                                        <div class="flex flex-col flex-1 min-w-0">
+                                                            <span class="font-semibold text-sm truncate"> {{ demande.nom }} {{ demande.prenom }} </span>
+                                                            <small class="text-muted-color text-xs">
+                                                                {{ demande.createdAt | date: 'dd/MM/yyyy à HH:mm' }}
+                                                            </small>
+                                                        </div>
+                                                        <i class="pi pi-chevron-right text-muted-color text-xs"></i>
                                                     </div>
-                                                    <div class="flex flex-col flex-1 min-w-0">
-                                                        <span class="font-semibold text-sm truncate"> {{ demande.nom }} {{ demande.prenom }} </span>
-                                                        <small class="text-muted-color text-xs">
-                                                            {{ demande.createdAt | date: 'dd/MM/yyyy à HH:mm' }}
-                                                        </small>
-                                                    </div>
-                                                    <i class="pi pi-chevron-right text-muted-color text-xs"></i>
-                                                </div>
-                                            </li>
-                                        }
+                                                </li>
+                                            }
 
-                                        @if (state().demandeAttentes!.length > 10) {
-                                            <li class="p-3 text-center text-muted-color text-sm">
-                                                <i class="pi pi-info-circle mr-1"></i>
-                                                {{ state().demandeAttentes!.length - 10 }} autre(s) demande(s) non affichée(s)
-                                            </li>
-                                        }
-                                    </ul>
+                                            @if (state().demandeAttentes!.length > 10) {
+                                                <li class="p-3 text-center text-muted-color text-sm">
+                                                    <i class="pi pi-info-circle mr-1"></i>
+                                                    {{ state().demandeAttentes!.length - 10 }} autre(s) demande(s) non affichée(s)
+                                                </li>
+                                            }
+                                        </ul>
 
-                                    <!-- Footer fixe avec bouton -->
-                                    <div class="notification-footer p-3 border-t border-surface bg-surface-ground">
-                                        <p-button label="Voir toutes les demandes" icon="pi pi-external-link" styleClass="w-full" severity="secondary" [outlined]="true" [routerLink]="['/dashboards/credit/individuel/attente']" />
+                                        <!-- Footer fixe avec bouton -->
+                                        <div class="notification-footer p-3 border-t border-surface bg-surface-ground">
+                                            <p-button label="Voir toutes les demandes" icon="pi pi-external-link" styleClass="w-full" severity="secondary" [outlined]="true" (onClick)="viewAllDemandes()" />
+                                        </div>
                                     </div>
-                                </div>
+                                }
                             </li>
                         } @else {
                             <li>
@@ -349,10 +348,84 @@ import { PointVente } from '@/interface/point.vente';
                 max-height: 250px;
             }
         }
+
+        .notification-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            width: 360px;
+            max-width: 90vw;
+            display: flex;
+            flex-direction: column;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            background: var(--surface-overlay);
+            z-index: 1000;
+            animation: scaleIn 0.12s ease-out;
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .notification-header {
+            background: var(--surface-ground);
+            flex-shrink: 0;
+        }
+
+        .notification-list {
+            max-height: 320px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .notification-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .notification-list::-webkit-scrollbar-track {
+            background: var(--surface-ground);
+        }
+
+        .notification-list::-webkit-scrollbar-thumb {
+            background: var(--surface-400);
+            border-radius: 3px;
+        }
+
+        .notification-list::-webkit-scrollbar-thumb:hover {
+            background: var(--surface-500);
+        }
+
+        .notification-footer {
+            flex-shrink: 0;
+        }
+
+        .notification-item:last-of-type {
+            border-bottom: none;
+        }
+
+        @media (max-width: 480px) {
+            .notification-dropdown {
+                width: 300px;
+            }
+
+            .notification-list {
+                max-height: 250px;
+            }
+        }
     `
 })
 export class AppTopbar {
     @Input() user?: IUser;
+    notificationMenuVisible = signal(false);
     state = signal<{ pointVente?: PointVente; agence?: Agence; demandeAttentes?: DemandeIndividuel[]; loading: boolean; message: string | undefined; error: string | any }>({
         loading: false,
         message: undefined,
@@ -362,6 +435,42 @@ export class AppTopbar {
     private router = inject(Router);
     private destroyRef = inject(DestroyRef);
     layoutService = inject(LayoutService);
+    elementRef: any;
+
+    // Fermer le menu au clic extérieur
+    @HostListener('document:click', ['$event'])
+    onDocumentClick(event: MouseEvent): void {
+        const target = event.target as HTMLElement;
+        const notificationDropdown = this.elementRef.nativeElement.querySelector('.notification-dropdown');
+        const bellIcon = this.elementRef.nativeElement.querySelector('.pi-bell')?.closest('a');
+
+        if (notificationDropdown && bellIcon) {
+            const clickedInsideDropdown = notificationDropdown.contains(target);
+            const clickedOnBell = bellIcon.contains(target);
+
+            if (!clickedInsideDropdown && !clickedOnBell) {
+                this.closeNotificationMenu();
+            }
+        }
+    }
+
+    toggleNotificationMenu(): void {
+        this.notificationMenuVisible.update((v) => !v);
+    }
+
+    closeNotificationMenu(): void {
+        this.notificationMenuVisible.set(false);
+    }
+
+    viewDetailDemandeAttente(demandeIndividuelId: number): void {
+        this.closeNotificationMenu();
+        this.router.navigate(['/dashboards/credit/individuel/attente/detail/', demandeIndividuelId]);
+    }
+
+    viewAllDemandes(): void {
+        this.closeNotificationMenu();
+        this.router.navigate(['/dashboards/credit/individuel/attente']);
+    }
 
     @ViewChild('searchInput') searchInput!: ElementRef<HTMLInputElement>;
     @ViewChild('menuButton') menuButton!: ElementRef<HTMLButtonElement>;
