@@ -199,10 +199,19 @@ public class UserRepositoryImpl implements UserRepository {
                                 password, token, phone, bio,service,delegationId, agenceId))
                         .update();
 
+            } else if (roleName.equalsIgnoreCase("DR")){
+                // Validate required parameters for DR
+                if(delegationId == null) {
+                    throw new ApiException("DR role requires delegation selection");
+                }
+                log.info("Creating DR account");
+                jdbcClient.sql(CREATE_ACCOUNT_DR_STORED_PROCEDURE)
+                        .paramSource(getParamSourceAccountDR(firstName, lastName, email, username,
+                                password, token, phone, bio, service, delegationId))
+                        .update();
             }else {
                 throw new ApiException("Invalid role for location-based account creation: " + roleName);
             }
-
             log.info("Location-based account created successfully with token: {}", token);
             return token;
 
@@ -218,6 +227,25 @@ public class UserRepositoryImpl implements UserRepository {
             log.error("Error creating location-based account: {}", e.getMessage());
             throw new ApiException("An error occurred please try again");
         }
+    }
+
+    private SqlParameterSource getParamSourceAccountDR(String firstName, String lastName, String email,
+                                                       String username, String password, String token, String phone, String bio,
+                                                       String service, Long delegationId) {
+        return new MapSqlParameterSource()
+                .addValue("userUuid", randomUUUID.get())
+                .addValue("firstName", firstName)
+                .addValue("lastName", lastName)
+                .addValue("email", email)
+                .addValue("username", username)
+                .addValue("password", password)
+                .addValue("credentialUuid", randomUUUID.get())
+                .addValue("token", token)
+                .addValue("memberId", memberId.get(), VARCHAR)
+                .addValue("delegationId", delegationId)
+                .addValue("phone", phone)
+                .addValue("bio", bio)
+                .addValue("service", service);
     }
 
     @Override
