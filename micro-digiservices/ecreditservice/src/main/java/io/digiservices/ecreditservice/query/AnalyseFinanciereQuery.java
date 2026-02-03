@@ -418,6 +418,7 @@ public class AnalyseFinanciereQuery {
             facteur_cycle as "facteurCycle",
             type_cdr as "typeCdr",
             valeur_garantie as "valeurGarantie",
+            COALESCE(total_valeur_emprunte, 0) as "totalValeurEmprunte",
             montant_demande as "montantDemande",
             duree_demande as "dureeDemande",
             nombre_echeance as "nombreEcheance",
@@ -468,6 +469,7 @@ public class AnalyseFinanciereQuery {
             af.facteur_cycle as "facteurCycle",
             af.type_cdr as "typeCdr",
             af.valeur_garantie as "valeurGarantie",
+            COALESCE(gar.total_valeur_emprunte, 0) as "totalValeurEmprunte",
 
             -- ══════ DEMANDE DE CRÉDIT ══════
             d.montant_demande as "montantDemande",
@@ -637,10 +639,11 @@ public class AnalyseFinanciereQuery {
                  THEN (bilN.total_dettes + COALESCE(d.montant_propose, 0)) / (bilN.total_actif + COALESCE(d.montant_propose, 0)) ELSE NULL END as "calcR4Propose",
             CASE WHEN (COALESCE(rentN.resultat_exploitation, 0) + COALESCE(rentN.autres_revenus_hors_activite, 0)) > 0
                  THEN rentN.autres_revenus_hors_activite / (rentN.resultat_exploitation + rentN.autres_revenus_hors_activite) ELSE NULL END as "calcR5",
+            -- R.6 = SUM(garantie_propose.valeur_emprunte) / montant_demande
             CASE WHEN COALESCE(d.montant_demande, 0) > 0
-                 THEN af.valeur_garantie / d.montant_demande ELSE NULL END as "calcR6Sollicite",
+                 THEN COALESCE(gar.total_valeur_emprunte, 0) / d.montant_demande ELSE NULL END as "calcR6Sollicite",
             CASE WHEN COALESCE(d.montant_propose, 0) > 0
-                 THEN af.valeur_garantie / d.montant_propose ELSE NULL END as "calcR6Propose"
+                 THEN COALESCE(gar.total_valeur_emprunte, 0) / d.montant_propose ELSE NULL END as "calcR6Propose"
 
         FROM analyse_financiere af
         JOIN demandeindividuel d ON d.demandeindividuel_id = af.demandeindividuel_id
@@ -651,6 +654,12 @@ public class AnalyseFinanciereQuery {
         LEFT JOIN v_rentabilite_complete rentNplus1 ON rentNplus1.analyse_id = af.analyse_id AND rentNplus1.type_periode = 'N_PLUS_1'
         LEFT JOIN v_besoin_credit_complet bc ON bc.analyse_id = af.analyse_id
         LEFT JOIN analyse_besoin_credit bcRaw ON bcRaw.analyse_id = af.analyse_id
+        -- Sous-requête pour SUM(valeur_emprunte) des garanties
+        LEFT JOIN (
+            SELECT demandeindividuel_id, SUM(COALESCE(valeur_emprunte, 0)) as total_valeur_emprunte
+            FROM garantie_propose
+            GROUP BY demandeindividuel_id
+        ) gar ON gar.demandeindividuel_id = af.demandeindividuel_id
         WHERE af.demandeindividuel_id = :demandeindividuelId
         """;
 

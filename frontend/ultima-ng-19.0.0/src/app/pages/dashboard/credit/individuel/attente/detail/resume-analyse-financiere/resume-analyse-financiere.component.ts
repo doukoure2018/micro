@@ -338,6 +338,14 @@ export class ResumeAnalyseFinanciereComponent {
         return role === 'MANAGER' || role === 'DA' || role === 'DR' || role === 'RA';
     }
 
+    /**
+     * Vérifie si le montant proposé existe et est > 0
+     */
+    hasMontantPropose(): boolean {
+        const montant = this.state().synthese?.montantPropose;
+        return montant !== null && montant !== undefined && montant > 0;
+    }
+
     // ========================================
     // Méthodes de formatage
     // ========================================

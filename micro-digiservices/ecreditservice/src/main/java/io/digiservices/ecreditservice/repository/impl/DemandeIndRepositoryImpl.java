@@ -705,7 +705,7 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
             setIntOrNull(stmt, 38, demandeIndividuel.getTipCredito());
             stmt.setString(39, demandeIndividuel.getCodUsuarios());
             stmt.setString(40, defaultIfNull(demandeIndividuel.getStatutDemande(), "EN_ATTENTE"));
-            stmt.setString(41, defaultIfNull(demandeIndividuel.getValidationState(), "SELECTION"));
+            stmt.setString(41, defaultIfNull(demandeIndividuel.getValidationState(), "NOUVEAU"));
             stmt.setString(42, demandeIndividuel.getCurrentActivite());
 
             // ===== Paramètres 43-44: Nature client =====

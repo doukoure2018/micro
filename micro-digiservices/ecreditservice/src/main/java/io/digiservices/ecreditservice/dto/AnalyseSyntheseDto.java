@@ -23,6 +23,7 @@ public class AnalyseSyntheseDto {
     private Integer facteurCycle;
     private String typeCdr;
     private BigDecimal valeurGarantie;
+    private BigDecimal totalValeurEmprunte;  // SUM des garanties.valeurEmprunte pour R.6
 
     // ══════════════════════════════════════════════════════════════════════════
     // DEMANDE DE CRÉDIT
