@@ -1,0 +1,862 @@
+<div class="container-fluid p-4">
+    <!-- Header -->
+    <div class="flex flex-wrap gap-2 items-center justify-between mb-4">
+        <div>
+            <h2 class="text-2xl font-bold text-900 m-0">Résumé de l'Analyse Financière</h2>
+            <p class="text-600 m-0 mt-1">Bilan d'activité saisi par l'agent de crédit</p>
+        </div>
+        <p-button label="Retour" icon="pi pi-arrow-left" outlined (onClick)="retour()"></p-button>
+    </div>
+
+    <!-- Loading State -->
+    @if (state().loading) {
+    <div class="flex justify-center items-center p-8">
+        <p-progressSpinner></p-progressSpinner>
+    </div>
+    }
+
+    <!-- Error State -->
+    @if (state().error && !state().loading) {
+    <p-card>
+        <div class="text-center p-4">
+            <i class="pi pi-exclamation-triangle text-6xl text-red-500 mb-3"></i>
+            <h3 class="text-red-600">Erreur lors du chargement</h3>
+            <p class="text-600">{{ state().error }}</p>
+            <p-button label="Réessayer" icon="pi pi-refresh" (onClick)="chargerSynthese()"></p-button>
+        </div>
+    </p-card>
+    }
+
+    <!-- Main Content -->
+    @if (state().synthese && !state().loading) {
+
+    <!-- ══════════════════════════════════════════════════════════════════════════ -->
+    <!-- SECTION 0: RATIOS DE DÉCISION - EN HAUT (MANAGER/DA/DR/RA uniquement)     -->
+    <!-- ══════════════════════════════════════════════════════════════════════════ -->
+    @if (canViewRatios()) {
+    <div
+        style="background: #fff; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <!-- Titre section gris -->
+        <div
+            style="background-color: #d9d9d9; padding: 12px 16px; border-bottom: 1px solid #ccc; border-radius: 8px 8px 0 0;">
+            <span style="font-weight: bold; font-size: 16px;">4. Ratios de décision</span>
+        </div>
+
+        <div style="padding: 16px;">
+            <!-- Zone Proposition - simulation en haut à droite -->
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
+                <table style="border-collapse: collapse; border: 2px solid #333; min-width: 400px;">
+                    <!-- Header Proposition -->
+                    <tr>
+                        <td colspan="2"
+                            style="background-color: #f5f5f5; padding: 8px 12px; text-align: right; font-weight: 600; border-bottom: 1px solid #333;">
+                            Proposition - simulation
+                        </td>
+                    </tr>
+                    <!-- Montant -->
+                    <tr>
+                        <td style="padding: 8px 12px; text-align: right; width: 100px; border-bottom: 1px solid #ccc;">
+                            Montant :</td>
+                        <td
+                            style="padding: 8px 12px; text-align: center; background-color: #c6efce; font-weight: bold; border-bottom: 1px solid #ccc;">
+                            {{ formatCurrency(state().synthese?.montantPropose) }}
+                        </td>
+                    </tr>
+                    <!-- Durée -->
+                    <tr>
+                        <td style="padding: 8px 12px; text-align: right; border-bottom: 1px solid #ccc;">Durée :</td>
+                        <td style="padding: 8px 12px; border-bottom: 1px solid #ccc;">
+                            <div style="display: flex;">
+                                <span style="background-color: #c6efce; padding: 4px 12px; font-style: italic;">{{
+                                    state().synthese?.dureeProposee || 0 }} mois</span>
+                                <span style="padding: 4px 12px; border-left: 1px solid #ccc;">Nbre d'éch. : <strong>{{
+                                        state().synthese?.nombreEcheancePropose || 0 }}</strong></span>
+                            </div>
+                        </td>
+                    </tr>
+                    <!-- Échéance -->
+                    <tr>
+                        <td style="padding: 8px 12px; text-align: right;">Échéance :</td>
+                        <td
+                            style="padding: 8px 12px; text-align: center; background-color: #c6efce; font-weight: bold;">
+                            {{ formatCurrency(state().synthese?.echeanceProposee) }}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Tableau des Ratios style Excel -->
+            <table style="width: 100%; border-collapse: collapse; border: 2px solid #000;">
+                <thead>
+                    <tr style="background-color: #f9f9f9;">
+                        <!-- Colonne Ratio -->
+                        <th style="border: 1px solid #000; width: 35%; padding: 8px;"></th>
+                        <!-- Colonne Norme -->
+                        <th
+                            style="border: 1px solid #000; width: 8%; padding: 8px; text-align: center; font-weight: bold;">
+                            Norme
+                        </th>
+                        <!-- Colonne Sollicité -->
+                        <th
+                            style="border: 1px solid #000; width: 22%; padding: 8px; text-align: center; vertical-align: bottom; height: 100px;">
+                            <div
+                                style="writing-mode: vertical-rl; transform: rotate(180deg); display: inline-block; font-size: 11px; font-weight: normal;">
+                                Ratios calculés en fonction du montant sollicité
+                            </div>
+                        </th>
+                        <!-- Colonne Proposé -->
+                        <th
+                            style="border: 1px solid #000; width: 22%; padding: 8px; text-align: center; vertical-align: bottom; height: 100px;">
+                            <div
+                                style="writing-mode: vertical-rl; transform: rotate(180deg); display: inline-block; font-size: 11px; font-weight: normal;">
+                                Ratios associés au montant proposé
+                            </div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- R.1 Capacité de remboursement -->
+                    <tr>
+                        <td style="border: 1px solid #000; padding: 10px;">
+                            <div style="font-weight: bold;">R.1 Capacité de remboursement calculée</div>
+                            <div style="font-size: 12px; color: #666; margin-top: 4px;">(Cash Flow + Autres revenus) /
+                                Traite</div>
+                        </td>
+                        <td style="border: 1px solid #000; padding: 10px; text-align: center; font-weight: bold;">
+                            ≥ 200%
+                        </td>
+                        <td style="border: 1px solid #000; padding: 10px; text-align: center;">
+                            <div
+                                style="border: 1px solid #ccc; padding: 10px; border-radius: 4px; display: inline-block; min-width: 100px; background: #fafafa;">
+                                @if (state().synthese?.calcR1Sollicite !== null && state().synthese?.calcR1Sollicite !==
+                                undefined) {
+                                <div style="font-weight: bold; font-size: 16px;">{{
+                                    formatPercent(state().synthese?.calcR1Sollicite) }}</div>
+                                <div style="margin-top: 6px;">
+                                    <p-tag [value]="getStatutRatio(state().synthese?.calcR1Sollicite, 2, true)"
+                                        [severity]="getSeveriteRatio(state().synthese?.calcR1Sollicite, 2, true)"
+                                        size="small"></p-tag>
+                                </div>
+                                } @else {
+                                <span style="color: #888; font-size: 12px;">Information<br>manquante</span>
+                                }
+                            </div>
+                        </td>
+                        <td style="border: 1px solid #000; padding: 10px; text-align: center;">
+                            <div
+                                style="border: 1px solid #ccc; padding: 10px; border-radius: 4px; display: inline-block; min-width: 100px; background: #fafafa;">
+                                @if (state().synthese?.calcR1Propose !== null && state().synthese?.calcR1Propose !==
+                                undefined) {
+                                <div style="font-weight: bold; font-size: 16px;">{{
+                                    formatPercent(state().synthese?.calcR1Propose) }}</div>
+                                <div style="margin-top: 6px;">
+                                    <p-tag [value]="getStatutRatio(state().synthese?.calcR1Propose, 2, true)"
+                                        [severity]="getSeveriteRatio(state().synthese?.calcR1Propose, 2, true)"
+                                        size="small"></p-tag>
+                                </div>
+                                } @else {
+                                <span style="color: #888; font-size: 12px;">Information<br>manquante</span>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- R.2 Solvabilité -->
+                    <tr>
+                        <td style="border: 1px solid #000; padding: 10px;">
+                            <div style="font-weight: bold;">R.2 Ratio de solvabilité</div>
+                            <div style="font-size: 12px; color: #666; margin-top: 4px;">Capitaux propres / Total Actif
+                            </div>
+                        </td>
+                        <td style="border: 1px solid #000; padding: 10px; text-align: center; font-weight: bold;">
+                            ≥ 35%
+                        </td>
+                        <td style="border: 1px solid #000; padding: 10px; text-align: center;">
+                            <div
+                                style="border: 1px solid #ccc; padding: 10px; border-radius: 4px; display: inline-block; min-width: 100px; background: #fafafa;">
+                                @if (state().synthese?.calcR2 !== null && state().synthese?.calcR2 !== undefined) {
+                                <div style="font-weight: bold; font-size: 16px;">{{
+                                    formatPercent(state().synthese?.calcR2) }}</div>
+                                <div style="margin-top: 6px;">
+                                    <p-tag [value]="getStatutRatio(state().synthese?.calcR2, 0.35, true)"
+                                        [severity]="getSeveriteRatio(state().synthese?.calcR2, 0.35, true)"
+                                        size="small"></p-tag>
+                                </div>
+                                } @else {
+                                <span style="color: #888; font-size: 12px;">Information<br>manquante</span>
+                                }
+                            </div>
+                        </td>
+                        <td style="border: 1px solid #000; padding: 10px; text-align: center;">
+                            <div
+                                style="border: 1px solid #ccc; padding: 10px; border-radius: 4px; display: inline-block; min-width: 100px; background: #fafafa;">
+                                @if (state().synthese?.calcR2 !== null && state().synthese?.calcR2 !== undefined) {
+                                <div style="font-weight: bold; font-size: 16px;">{{
+                                    formatPercent(state().synthese?.calcR2) }}</div>
+                                <div style="margin-top: 6px;">
+                                    <p-tag [value]="getStatutRatio(state().synthese?.calcR2, 0.35, true)"
+                                        [severity]="getSeveriteRatio(state().synthese?.calcR2, 0.35, true)"
+                                        size="small"></p-tag>
+                                </div>
+                                } @else {
+                                <span style="color: #888; font-size: 12px;">Information<br>manquante</span>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- R.3 Liquidité -->
+                    <tr>
+                        <td style="border: 1px solid #000; padding: 10px;">
+                            <div style="font-weight: bold;">R.3 Ratio de liquidité à échéance</div>
+                            <div style="font-size: 12px; color: #666; margin-top: 4px;">(Créances+Trésorerie) / Dettes à
+                                court terme</div>
+                        </td>
+                        <td style="border: 1px solid #000; padding: 10px; text-align: center; font-weight: bold;">
+                            ≥ 100%
+                        </td>
+                        <td style="border: 1px solid #000; padding: 10px; text-align: center;">
+                            <div
+                                style="border: 1px solid #ccc; padding: 10px; border-radius: 4px; display: inline-block; min-width: 100px; background: #fafafa;">
+                                @if (state().synthese?.calcR3 !== null && state().synthese?.calcR3 !== undefined) {
+                                <div style="font-weight: bold; font-size: 16px;">{{
+                                    formatPercent(state().synthese?.calcR3) }}</div>
+                                <div style="margin-top: 6px;">
+                                    <p-tag [value]="getStatutRatio(state().synthese?.calcR3, 1, true)"
+                                        [severity]="getSeveriteRatio(state().synthese?.calcR3, 1, true)"
+                                        size="small"></p-tag>
+                                </div>
+                                } @else {
+                                <span style="color: #888; font-size: 12px;">Information<br>manquante</span>
+                                }
+                            </div>
+                        </td>
+                        <td style="border: 1px solid #000; padding: 10px; text-align: center;">
+                            <div
+                                style="border: 1px solid #ccc; padding: 10px; border-radius: 4px; display: inline-block; min-width: 100px; background: #fafafa;">
+                                @if (state().synthese?.calcR3 !== null && state().synthese?.calcR3 !== undefined) {
+                                <div style="font-weight: bold; font-size: 16px;">{{
+                                    formatPercent(state().synthese?.calcR3) }}</div>
+                                <div style="margin-top: 6px;">
+                                    <p-tag [value]="getStatutRatio(state().synthese?.calcR3, 1, true)"
+                                        [severity]="getSeveriteRatio(state().synthese?.calcR3, 1, true)"
+                                        size="small"></p-tag>
+                                </div>
+                                } @else {
+                                <span style="color: #888; font-size: 12px;">Information<br>manquante</span>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- R.4 Endettement -->
+                    <tr>
+                        <td style="border: 1px solid #000; padding: 10px;">
+                            <div style="font-weight: bold;">R.4 Ratio d'endettement</div>
+                            <div style="font-size: 12px; color: #666; margin-top: 4px;">(Dettes totales + Crédit) /
+                                (Total Actif + Crédit)</div>
+                        </td>
+                        <td style="border: 1px solid #000; padding: 10px; text-align: center; font-weight: bold;">
+                            &lt; 50%
+                        </td>
+                        <td style="border: 1px solid #000; padding: 10px; text-align: center;">
+                            <div
+                                style="border: 1px solid #ccc; padding: 10px; border-radius: 4px; display: inline-block; min-width: 100px; background: #fafafa;">
+                                @if (state().synthese?.calcR4Sollicite !== null && state().synthese?.calcR4Sollicite !==
+                                undefined) {
+                                <div style="font-weight: bold; font-size: 16px;">{{
+                                    formatPercent(state().synthese?.calcR4Sollicite) }}</div>
+                                <div style="margin-top: 6px;">
+                                    <p-tag [value]="getStatutRatio(state().synthese?.calcR4Sollicite, 0.5, false)"
+                                        [severity]="getSeveriteRatio(state().synthese?.calcR4Sollicite, 0.5, false)"
+                                        size="small"></p-tag>
+                                </div>
+                                } @else {
+                                <span style="color: #888; font-size: 12px;">Information<br>manquante</span>
+                                }
+                            </div>
+                        </td>
+                        <td style="border: 1px solid #000; padding: 10px; text-align: center;">
+                            <div
+                                style="border: 1px solid #ccc; padding: 10px; border-radius: 4px; display: inline-block; min-width: 100px; background: #fafafa;">
+                                @if (state().synthese?.calcR4Propose !== null && state().synthese?.calcR4Propose !==
+                                undefined) {
+                                <div style="font-weight: bold; font-size: 16px;">{{
+                                    formatPercent(state().synthese?.calcR4Propose) }}</div>
+                                <div style="margin-top: 6px;">
+                                    <p-tag [value]="getStatutRatio(state().synthese?.calcR4Propose, 0.5, false)"
+                                        [severity]="getSeveriteRatio(state().synthese?.calcR4Propose, 0.5, false)"
+                                        size="small"></p-tag>
+                                </div>
+                                } @else {
+                                <span style="color: #888; font-size: 12px;">Information<br>manquante</span>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- R.5 Dépendance -->
+                    <tr>
+                        <td style="border: 1px solid #000; padding: 10px;">
+                            <div style="font-weight: bold;">R.5 Ratio de dépendance</div>
+                            <div style="font-size: 12px; color: #666; margin-top: 4px;">Autres revenus / Revenus totaux
+                            </div>
+                        </td>
+                        <td style="border: 1px solid #000; padding: 10px; text-align: center; font-weight: bold;">
+                            &lt; 50%
+                        </td>
+                        <td style="border: 1px solid #000; padding: 10px; text-align: center;">
+                            <div
+                                style="border: 1px solid #ccc; padding: 10px; border-radius: 4px; display: inline-block; min-width: 100px; background: #fafafa;">
+                                @if (state().synthese?.calcR5 !== null && state().synthese?.calcR5 !== undefined) {
+                                <div style="font-weight: bold; font-size: 16px;">{{
+                                    formatPercent(state().synthese?.calcR5) }}</div>
+                                <div style="margin-top: 6px;">
+                                    <p-tag [value]="getStatutRatio(state().synthese?.calcR5, 0.5, false)"
+                                        [severity]="getSeveriteRatio(state().synthese?.calcR5, 0.5, false)"
+                                        size="small"></p-tag>
+                                </div>
+                                } @else {
+                                <span style="color: #888; font-size: 12px;">Information<br>manquante</span>
+                                }
+                            </div>
+                        </td>
+                        <td style="border: 1px solid #000; padding: 10px; text-align: center;">
+                            <div
+                                style="border: 1px solid #ccc; padding: 10px; border-radius: 4px; display: inline-block; min-width: 100px; background: #fafafa;">
+                                @if (state().synthese?.calcR5 !== null && state().synthese?.calcR5 !== undefined) {
+                                <div style="font-weight: bold; font-size: 16px;">{{
+                                    formatPercent(state().synthese?.calcR5) }}</div>
+                                <div style="margin-top: 6px;">
+                                    <p-tag [value]="getStatutRatio(state().synthese?.calcR5, 0.5, false)"
+                                        [severity]="getSeveriteRatio(state().synthese?.calcR5, 0.5, false)"
+                                        size="small"></p-tag>
+                                </div>
+                                } @else {
+                                <span style="color: #888; font-size: 12px;">Information<br>manquante</span>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- R.6 Couverture Garantie -->
+                    <tr>
+                        <td style="border: 1px solid #000; padding: 10px;">
+                            <div style="font-weight: bold;">R.6 Ratio de couverture de la garantie</div>
+                            <div style="font-size: 12px; color: #666; margin-top: 4px;">Valeur de la garantie / Crédit
+                            </div>
+                        </td>
+                        <td style="border: 1px solid #000; padding: 10px; text-align: center; font-weight: bold;">
+                            &gt; 150%
+                        </td>
+                        <td style="border: 1px solid #000; padding: 10px; text-align: center;">
+                            <div
+                                style="border: 1px solid #ccc; padding: 10px; border-radius: 4px; display: inline-block; min-width: 100px; background: #fafafa;">
+                                @if (state().synthese?.calcR6Sollicite !== null && state().synthese?.calcR6Sollicite !==
+                                undefined) {
+                                <div style="font-weight: bold; font-size: 16px;">{{
+                                    formatPercent(state().synthese?.calcR6Sollicite) }}</div>
+                                <div style="margin-top: 6px;">
+                                    <p-tag [value]="getStatutRatio(state().synthese?.calcR6Sollicite, 1.5, true)"
+                                        [severity]="getSeveriteRatio(state().synthese?.calcR6Sollicite, 1.5, true)"
+                                        size="small"></p-tag>
+                                </div>
+                                } @else {
+                                <span style="color: #888; font-size: 12px;">Information<br>manquante</span>
+                                }
+                            </div>
+                        </td>
+                        <td style="border: 1px solid #000; padding: 10px; text-align: center;">
+                            <div
+                                style="border: 1px solid #ccc; padding: 10px; border-radius: 4px; display: inline-block; min-width: 100px; background: #fafafa;">
+                                @if (state().synthese?.calcR6Propose !== null && state().synthese?.calcR6Propose !==
+                                undefined) {
+                                <div style="font-weight: bold; font-size: 16px;">{{
+                                    formatPercent(state().synthese?.calcR6Propose) }}</div>
+                                <div style="margin-top: 6px;">
+                                    <p-tag [value]="getStatutRatio(state().synthese?.calcR6Propose, 1.5, true)"
+                                        [severity]="getSeveriteRatio(state().synthese?.calcR6Propose, 1.5, true)"
+                                        size="small"></p-tag>
+                                </div>
+                                } @else {
+                                <span style="color: #888; font-size: 12px;">Information<br>manquante</span>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Résumé conformité -->
+            <div style="display: flex; gap: 20px; margin-top: 16px;">
+                <div style="flex: 1; padding: 12px; border-radius: 6px; text-align: center; font-weight: 500;"
+                    [style.background-color]="getNbRatiosConformesSollicite() === 6 ? '#d4edda' : '#f8d7da'"
+                    [style.color]="getNbRatiosConformesSollicite() === 6 ? '#155724' : '#721c24'">
+                    <i class="pi" [class.pi-check-circle]="getNbRatiosConformesSollicite() === 6"
+                        [class.pi-times-circle]="getNbRatiosConformesSollicite() !== 6" style="margin-right: 8px;"></i>
+                    <strong>Sollicité :</strong> {{ getNbRatiosConformesSollicite() }}/6 conformes
+                </div>
+                <div style="flex: 1; padding: 12px; border-radius: 6px; text-align: center; font-weight: 500;"
+                    [style.background-color]="getNbRatiosConformesPropose() === 6 ? '#d4edda' : '#f8d7da'"
+                    [style.color]="getNbRatiosConformesPropose() === 6 ? '#155724' : '#721c24'">
+                    <i class="pi" [class.pi-check-circle]="getNbRatiosConformesPropose() === 6"
+                        [class.pi-times-circle]="getNbRatiosConformesPropose() !== 6" style="margin-right: 8px;"></i>
+                    <strong>Proposé :</strong> {{ getNbRatiosConformesPropose() }}/6 conformes
+                </div>
+            </div>
+        </div>
+    </div>
+    }
+
+    <!-- ══════════════════════════════════════════════════════════════════════════ -->
+    <!-- SECTION 1: DEMANDE DE CRÉDIT - COMPACT (2 lignes)                          -->
+    <!-- ══════════════════════════════════════════════════════════════════════════ -->
+    <div
+        style="background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+            <i class="pi pi-file" style="color: #2196F3;"></i>
+            <span style="font-weight: bold; color: #1565C0;">Demande de Crédit</span>
+        </div>
+        <!-- Ligne 1 -->
+        <div style="display: flex; flex-wrap: wrap; gap: 24px; margin-bottom: 8px;">
+            <div>
+                <span style="color: #666; font-size: 13px;">Montant sollicité:</span>
+                <span style="font-weight: bold; margin-left: 6px;">{{ formatCurrency(state().synthese?.montantDemande)
+                    }}</span>
+            </div>
+            <div>
+                <span style="color: #666; font-size: 13px;">Durée:</span>
+                <span style="font-weight: bold; margin-left: 6px;">{{ state().synthese?.dureeDemande || 0 }} mois</span>
+            </div>
+            <div>
+                <span style="color: #666; font-size: 13px;">Nbre éch.:</span>
+                <span style="font-weight: bold; margin-left: 6px;">{{ state().synthese?.nombreEcheance || 0 }}</span>
+            </div>
+            <div>
+                <span style="color: #666; font-size: 13px;">Échéance:</span>
+                <span style="font-weight: bold; margin-left: 6px;">{{ formatCurrency(state().synthese?.echeance)
+                    }}</span>
+            </div>
+            <div>
+                <span style="color: #666; font-size: 13px;">Périodicité:</span>
+                <span style="margin-left: 6px;">{{ state().synthese?.periodiciteRemboursement || '-' }}</span>
+            </div>
+        </div>
+        <!-- Ligne 2 -->
+        <div>
+            <span style="color: #666; font-size: 13px;">Objet du crédit:</span>
+            <span style="margin-left: 6px;">{{ state().synthese?.objectCredit || '-' }}</span>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════════════ -->
+    <!-- SECTION 2: PARAMÈTRES D'ANALYSE - COMPACT (1-2 lignes)                     -->
+    <!-- ══════════════════════════════════════════════════════════════════════════ -->
+    <div
+        style="background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+            <i class="pi pi-cog" style="color: #9C27B0;"></i>
+            <span style="font-weight: bold; color: #7B1FA2;">Paramètres d'Analyse</span>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 24px;">
+            <div>
+                <span style="color: #666; font-size: 13px;">Date évaluation:</span>
+                <span style="font-weight: bold; margin-left: 6px;">{{ state().synthese?.dateEvaluation || '-' }}</span>
+            </div>
+            <div>
+                <span style="color: #666; font-size: 13px;">Cycle d'affaires:</span>
+                <span style="margin-left: 6px;">{{ state().synthese?.cycleAffaires || '-' }}</span>
+            </div>
+            <div>
+                <span style="color: #666; font-size: 13px;">Facteur cycle:</span>
+                <span style="font-weight: bold; margin-left: 6px;">{{ state().synthese?.facteurCycle || 0 }}</span>
+            </div>
+            <div>
+                <span style="color: #666; font-size: 13px;">Type CDR:</span>
+                <span style="margin-left: 6px;">{{ state().synthese?.typeCdr || '-' }}</span>
+            </div>
+            <div>
+                <span style="color: #666; font-size: 13px;">Valeur Garantie:</span>
+                <span style="font-weight: bold; margin-left: 6px; color: #2E7D32;">{{
+                    formatCurrency(state().synthese?.valeurGarantie) }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid">
+        <!-- ══════════════════════════════════════════════════════════════════════════ -->
+        <!-- SECTION 3: BILAN (Multi-colonnes: Éléments | N | N-1) -->
+        <!-- ══════════════════════════════════════════════════════════════════════════ -->
+        <div class="col-12">
+            <h3 class="text-xl font-bold text-green-700 mb-3 mt-2">
+                <i class="pi pi-chart-bar mr-2"></i>
+                1. BILAN
+            </h3>
+        </div>
+
+        <!-- ACTIF -->
+        <div class="col-12">
+            <p-card>
+                <ng-template pTemplate="header">
+                    <div class="flex items-center gap-2 p-3 bg-green-50">
+                        <i class="pi pi-building text-green-600 text-xl"></i>
+                        <h4 class="m-0 text-green-800">ACTIF</h4>
+                    </div>
+                </ng-template>
+
+                <!-- Actif Immobilisé -->
+                <h5 class="text-green-700 mb-2 mt-0">Actif Immobilisé</h5>
+                <p-table [value]="getBilanActifImmobiliseData()" [tableStyle]="{'min-width': '100%'}"
+                    styleClass="p-datatable-sm p-datatable-striped">
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th class="w-5">Éléments</th>
+                            <th class="text-right">Évaluation actuelle (N)</th>
+                            <th class="text-right">Évaluation précédente (N-1)</th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-item>
+                        <tr [ngClass]="{'bg-green-100 font-bold': item.isTotal}">
+                            <td [ngClass]="{'text-green-700 font-bold': item.isTotal}">{{ item.label }}</td>
+                            <td class="text-right" [ngClass]="{'text-green-700 font-bold': item.isTotal}">{{ item.valueN
+                                }}</td>
+                            <td class="text-right" [ngClass]="{'text-green-700 font-bold': item.isTotal}">{{
+                                item.valueN1 }}</td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+
+                <!-- Actif Circulant -->
+                <h5 class="text-green-700 mb-2 mt-4">Actif Circulant</h5>
+                <p-table [value]="getBilanActifCirculantData()" [tableStyle]="{'min-width': '100%'}"
+                    styleClass="p-datatable-sm p-datatable-striped">
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th class="w-5">Éléments</th>
+                            <th class="text-right">Évaluation actuelle (N)</th>
+                            <th class="text-right">Évaluation précédente (N-1)</th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-item>
+                        <tr [ngClass]="{'bg-green-100 font-bold': item.isTotal}">
+                            <td [ngClass]="{'text-green-700 font-bold': item.isTotal}">{{ item.label }}</td>
+                            <td class="text-right" [ngClass]="{'text-green-700 font-bold': item.isTotal}">{{ item.valueN
+                                }}</td>
+                            <td class="text-right" [ngClass]="{'text-green-700 font-bold': item.isTotal}">{{
+                                item.valueN1 }}</td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+
+                <!-- Total Actif -->
+                <div class="mt-3">
+                    <p-table [value]="getBilanTotalActifData()" [tableStyle]="{'min-width': '100%'}"
+                        styleClass="p-datatable-sm">
+                        <ng-template pTemplate="body" let-item>
+                            <tr class="bg-green-200">
+                                <td class="w-5 font-bold text-green-800 text-lg">{{ item.label }}</td>
+                                <td class="text-right font-bold text-green-800 text-lg">{{ item.valueN }}</td>
+                                <td class="text-right font-bold text-green-800 text-lg">{{ item.valueN1 }}</td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+                </div>
+            </p-card>
+        </div>
+
+        <!-- PASSIF -->
+        <div class="col-12">
+            <p-card>
+                <ng-template pTemplate="header">
+                    <div class="flex items-center gap-2 p-3 bg-red-50">
+                        <i class="pi pi-wallet text-red-600 text-xl"></i>
+                        <h4 class="m-0 text-red-800">PASSIF</h4>
+                    </div>
+                </ng-template>
+
+                <p-table [value]="getBilanPassifData()" [tableStyle]="{'min-width': '100%'}"
+                    styleClass="p-datatable-sm p-datatable-striped">
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th class="w-5">Éléments</th>
+                            <th class="text-right">Évaluation actuelle (N)</th>
+                            <th class="text-right">Évaluation précédente (N-1)</th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-item>
+                        <tr [ngClass]="{
+                            'bg-gray-100': item.isHeader,
+                            'bg-red-100': item.isTotal
+                        }">
+                            <td [ngClass]="{
+                                'text-800 font-bold': item.isHeader,
+                                'text-red-700 font-bold': item.isTotal
+                            }">{{ item.label }}</td>
+                            <td class="text-right" [ngClass]="{'text-red-700 font-bold': item.isTotal}">{{ item.valueN
+                                }}</td>
+                            <td class="text-right" [ngClass]="{'text-red-700 font-bold': item.isTotal}">{{ item.valueN1
+                                }}</td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+            </p-card>
+        </div>
+
+        <!-- Indicateurs Financiers du Bilan -->
+        <div class="col-12">
+            <p-card>
+                <ng-template pTemplate="header">
+                    <div class="flex items-center gap-2 p-3 bg-blue-50">
+                        <i class="pi pi-chart-line text-blue-600 text-xl"></i>
+                        <h4 class="m-0 text-blue-800">Indicateurs Financiers</h4>
+                    </div>
+                </ng-template>
+
+                <p-table [value]="getBilanIndicateursData()" [tableStyle]="{'min-width': '100%'}"
+                    styleClass="p-datatable-sm p-datatable-striped">
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th class="w-5">Indicateur</th>
+                            <th class="text-right">Période N</th>
+                            <th class="text-right">Période N-1</th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-item>
+                        <tr>
+                            <td class="font-semibold text-600">{{ item.label }}</td>
+                            <td class="text-right text-900">{{ item.valueN }}</td>
+                            <td class="text-right text-900">{{ item.valueN1 }}</td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+            </p-card>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════════════════════════ -->
+        <!-- SECTION 4: RENTABILITÉ (Multi-colonnes: Éléments | N | N-1 | N+1) -->
+        <!-- ══════════════════════════════════════════════════════════════════════════ -->
+        <div class="col-12">
+            <h3 class="text-xl font-bold text-orange-700 mb-3 mt-4">
+                <i class="pi pi-chart-line mr-2"></i>
+                2. RENTABILITÉ DE L'ACTIVITÉ
+            </h3>
+        </div>
+
+        <!-- Produits et Marge Brute -->
+        <div class="col-12">
+            <p-card>
+                <ng-template pTemplate="header">
+                    <div class="flex items-center gap-2 p-3 bg-teal-50">
+                        <i class="pi pi-dollar text-teal-600 text-xl"></i>
+                        <h4 class="m-0 text-teal-800">Produits</h4>
+                    </div>
+                </ng-template>
+
+                <p-table [value]="getRentabiliteProduitsData()" [tableStyle]="{'min-width': '100%'}"
+                    styleClass="p-datatable-sm p-datatable-striped">
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th class="w-4">Éléments</th>
+                            <th class="text-right">Montant (N)</th>
+                            <th class="text-right">Montant (N-1)</th>
+                            <th class="text-right">Montant (N+1)</th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-item>
+                        <tr [ngClass]="{'bg-teal-100 font-bold': item.isTotal}">
+                            <td [ngClass]="{'text-teal-700 font-bold': item.isTotal}">{{ item.label }}</td>
+                            <td class="text-right" [ngClass]="{'text-teal-700 font-bold': item.isTotal}">{{ item.valueN
+                                }}</td>
+                            <td class="text-right" [ngClass]="{'text-teal-700 font-bold': item.isTotal}">{{ item.valueN1
+                                }}</td>
+                            <td class="text-right" [ngClass]="{'text-teal-700 font-bold': item.isTotal}">{{
+                                item.valueNplus1 }}</td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+            </p-card>
+        </div>
+
+        <!-- Charges d'Exploitation -->
+        <div class="col-12">
+            <p-card>
+                <ng-template pTemplate="header">
+                    <div class="flex items-center gap-2 p-3 bg-orange-50">
+                        <i class="pi pi-minus-circle text-orange-600 text-xl"></i>
+                        <h4 class="m-0 text-orange-800">Charges d'Exploitation</h4>
+                    </div>
+                </ng-template>
+
+                <p-table [value]="getRentabiliteChargesData()" [tableStyle]="{'min-width': '100%'}"
+                    styleClass="p-datatable-sm p-datatable-striped">
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th class="w-4">Éléments</th>
+                            <th class="text-right">Montant (N)</th>
+                            <th class="text-right">Montant (N-1)</th>
+                            <th class="text-right">Montant (N+1)</th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-item>
+                        <tr [ngClass]="{'bg-orange-100 font-bold': item.isTotal}">
+                            <td [ngClass]="{'text-orange-700 font-bold': item.isTotal}">{{ item.label }}</td>
+                            <td class="text-right" [ngClass]="{'text-orange-700 font-bold': item.isTotal}">{{
+                                item.valueN }}</td>
+                            <td class="text-right" [ngClass]="{'text-orange-700 font-bold': item.isTotal}">{{
+                                item.valueN1 }}</td>
+                            <td class="text-right" [ngClass]="{'text-orange-700 font-bold': item.isTotal}">{{
+                                item.valueNplus1 }}</td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+            </p-card>
+        </div>
+
+        <!-- Résultats -->
+        <div class="col-12">
+            <p-card>
+                <ng-template pTemplate="header">
+                    <div class="flex items-center gap-2 p-3 bg-indigo-50">
+                        <i class="pi pi-calculator text-indigo-600 text-xl"></i>
+                        <h4 class="m-0 text-indigo-800">Résultats</h4>
+                    </div>
+                </ng-template>
+
+                <p-table [value]="getRentabiliteResultatsData()" [tableStyle]="{'min-width': '100%'}"
+                    styleClass="p-datatable-sm p-datatable-striped">
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th class="w-4">Éléments</th>
+                            <th class="text-right">Montant (N)</th>
+                            <th class="text-right">Montant (N-1)</th>
+                            <th class="text-right">Montant (N+1)</th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-item>
+                        <tr [ngClass]="{'bg-indigo-100 font-bold': item.isTotal}">
+                            <td [ngClass]="{'text-indigo-700 font-bold': item.isTotal}">{{ item.label }}</td>
+                            <td class="text-right" [ngClass]="{'text-indigo-700 font-bold': item.isTotal}">{{
+                                item.valueN }}</td>
+                            <td class="text-right" [ngClass]="{'text-indigo-700 font-bold': item.isTotal}">{{
+                                item.valueN1 }}</td>
+                            <td class="text-right" [ngClass]="{'text-indigo-700 font-bold': item.isTotal}">{{
+                                item.valueNplus1 }}</td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+            </p-card>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════════════════════════ -->
+        <!-- SECTION 5: BESOIN EN CRÉDIT -->
+        <!-- ══════════════════════════════════════════════════════════════════════════ -->
+        <div class="col-12">
+            <h3 class="text-xl font-bold text-cyan-700 mb-3 mt-4">
+                <i class="pi pi-money-bill mr-2"></i>
+                3. ÉVALUATION DU BESOIN RÉEL EN CRÉDIT
+            </h3>
+        </div>
+
+        <!-- Besoin en Investissement -->
+        <div class="col-12 lg:col-6">
+            <p-card>
+                <ng-template pTemplate="header">
+                    <div class="flex items-center gap-2 p-3 bg-cyan-50">
+                        <i class="pi pi-briefcase text-cyan-600 text-xl"></i>
+                        <h4 class="m-0 text-cyan-800">Besoin en Investissement</h4>
+                    </div>
+                </ng-template>
+
+                <p-table [value]="getBesoinInvestissementData()" [tableStyle]="{'min-width': '100%'}"
+                    styleClass="p-datatable-sm p-datatable-striped">
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th class="w-5">Éléments</th>
+                            <th class="text-right">Montant</th>
+                            <th class="text-right">Ajustement</th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-item>
+                        <tr [ngClass]="{'bg-cyan-100 font-bold': item.isTotal}">
+                            <td [ngClass]="{'text-cyan-700 font-bold': item.isTotal}">{{ item.label }}</td>
+                            <td class="text-right" [ngClass]="{'text-cyan-700 font-bold': item.isTotal}">{{ item.montant
+                                }}</td>
+                            <td class="text-right" [ngClass]="{'text-cyan-700 font-bold': item.isTotal}">{{
+                                item.ajustement }}</td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+            </p-card>
+        </div>
+
+        <!-- Besoin en Exploitation -->
+        <div class="col-12 lg:col-6">
+            <p-card>
+                <ng-template pTemplate="header">
+                    <div class="flex items-center gap-2 p-3 bg-cyan-50">
+                        <i class="pi pi-shopping-cart text-cyan-600 text-xl"></i>
+                        <h4 class="m-0 text-cyan-800">Besoin en Exploitation</h4>
+                    </div>
+                </ng-template>
+
+                <p-table [value]="getBesoinExploitationData()" [tableStyle]="{'min-width': '100%'}"
+                    styleClass="p-datatable-sm p-datatable-striped">
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th class="w-5">Éléments</th>
+                            <th class="text-right">Montant</th>
+                            <th class="text-right">Ajustement</th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-item>
+                        <tr [ngClass]="{'bg-cyan-100 font-bold': item.isTotal}">
+                            <td [ngClass]="{'text-cyan-700 font-bold': item.isTotal}">{{ item.label }}</td>
+                            <td class="text-right" [ngClass]="{'text-cyan-700 font-bold': item.isTotal}">{{ item.montant
+                                }}</td>
+                            <td class="text-right" [ngClass]="{'text-cyan-700 font-bold': item.isTotal}">{{
+                                item.ajustement }}</td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+            </p-card>
+        </div>
+
+        <!-- Message pour l'agent de crédit -->
+        @if (isAgentCredit()) {
+        <div class="col-12 mt-3">
+            <div style="padding: 16px; background-color: #e3f2fd; border-radius: 8px; border: 1px solid #90caf9;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <i class="pi pi-info-circle" style="color: #1976d2; font-size: 20px;"></i>
+                    <div>
+                        <div style="font-weight: 600; color: #1565c0;">Information</div>
+                        <div style="font-size: 14px; color: #1976d2;">
+                            Les ratios financiers seront calculés et visibles par le comité de crédit après validation
+                            de votre saisie.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        }
+    </div>
+
+    <!-- Actions Footer -->
+    <div class="flex justify-content-center mt-4">
+        <p-button label="Retour à la demande" icon="pi pi-arrow-left" (onClick)="retour()"></p-button>
+    </div>
+    }
+
+    <!-- Empty State -->
+    @if (!state().synthese && !state().loading && !state().error) {
+    <p-card>
+        <div class="text-center p-8">
+            <i class="pi pi-info-circle text-6xl text-blue-500 mb-3"></i>
+            <h3 class="text-600">Aucune donnée disponible</h3>
+            <p class="text-500">L'analyse financière n'a pas encore été effectuée pour cette demande.</p>
+            <p-button label="Retour" icon="pi pi-arrow-left" outlined (onClick)="retour()"></p-button>
+        </div>
+    </p-card>
+    }
+</div>
+
+<p-toast></p-toast>

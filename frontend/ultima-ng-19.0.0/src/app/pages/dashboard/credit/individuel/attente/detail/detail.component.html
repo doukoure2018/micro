@@ -1,1146 +1,744 @@
-<div class="min-h-screen bg-gray-100">
+<div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
     <p-toast></p-toast>
     <p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
 
     <!-- Loading Spinner -->
-    <div *ngIf="state().loading" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white p-8 rounded-xl shadow-lg">
-            <p-progressSpinner></p-progressSpinner>
-            <p class="text-center mt-4 text-gray-700">Chargement en cours...</p>
+    <div *ngIf="state().loading"
+        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl">
+            <p-progressSpinner strokeWidth="4"></p-progressSpinner>
+            <p class="text-center mt-4 text-gray-700 font-medium">Chargement en cours...</p>
         </div>
     </div>
 
     <!-- Error Message -->
     <div *ngIf="state().error" class="container mx-auto px-6 py-4">
-        <div class="bg-red-50 border border-red-400 rounded p-4">
+        <div class="bg-red-50 border-l-4 border-red-500 rounded-r-lg p-4 shadow-sm">
             <div class="flex items-center gap-3">
-                <i class="pi pi-exclamation-triangle text-red-500"></i>
-                <span class="text-red-700">{{ state().error }}</span>
+                <i class="pi pi-exclamation-triangle text-red-500 text-xl"></i>
+                <span class="text-red-700 font-medium">{{ state().error }}</span>
             </div>
         </div>
     </div>
 
     <!-- Main Content -->
-    <div *ngIf="state().demandeIndividuel" class="container mx-auto px-4 py-6 max-w-6xl">
-        <div class="mb-4">
-            <button pButton type="button" (click)="goBack()" icon="pi pi-arrow-left" label="Retour"
-                class="p-button-secondary">
-            </button>
-        </div>
-        <!-- Document Header -->
-        <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
-            <div class="bg-gray-800 text-white text-center py-3">
-                <h1 class="text-xl font-bold uppercase tracking-wider">DEMANDE DE CRÉDIT - GROS DOSSIER</h1>
-            </div>
+    <div *ngIf="state().demandeIndividuel" class="container mx-auto px-4 py-4 max-w-7xl">
 
-            <!-- Agency and Date Info -->
-            <div class="grid grid-cols-2 gap-4 p-4 bg-gray-50 border-b-2 border-gray-300">
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <!-- HEADER STICKY - Navigation + Statut + Actions rapides                  -->
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <div class="sticky top-0 z-40 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg mb-4 p-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <!-- Left: Back + Dossier Info -->
+                <div class="flex items-center gap-4">
+                    <button pButton type="button" (click)="goBack()" icon="pi pi-arrow-left"
+                        class="p-button-text p-button-rounded p-button-secondary" pTooltip="Retour"></button>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                            <i class="pi pi-file-edit text-blue-600"></i>
+                            Dossier N° {{ state().demandeIndividuel?.demandeIndividuelId }}
+                        </h1>
+                        <p class="text-sm text-gray-500">
+                            {{ state().demandeIndividuel?.nom }} {{ state().demandeIndividuel?.prenom }} •
+                            {{ state().demandeIndividuel?.createdAt | date:'dd/MM/yyyy' }}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Center: Status Tags -->
                 <div class="flex items-center gap-2">
-                    <span class="font-semibold">Date de la demande :</span>
-                    <span class="bg-green-100 px-3 py-1 rounded">
-                        {{ state().demandeIndividuel?.createdAt | date:'dd/MM/yyyy' }}
-                    </span>
+                    <p-tag [value]="state().demandeIndividuel?.statutDemande"
+                        [severity]="state().demandeIndividuel?.statutDemande === 'EN_ATTENTE' ? 'warn' : 'success'"
+                        [rounded]="true"></p-tag>
+                    <p-tag [value]="state().demandeIndividuel?.validationState" severity="info"
+                        [rounded]="true"></p-tag>
                 </div>
+
+                <!-- Right: Quick Actions -->
                 <div class="flex items-center gap-2">
-                    <span class="font-semibold">Agence de crédit :</span>
-                    <span class="bg-green-100 px-3 py-1 rounded">
-                        {{ state().pointVente?.libele || 'Non assigné' }}
-                    </span>
+                    <button pButton type="button" (click)="imprimerDossierComplet()" icon="pi pi-print"
+                        class="p-button-sm p-button-success p-button-rounded" pTooltip="Imprimer"></button>
+                    <button pButton type="button" (click)="previsualiserDossier()" icon="pi pi-eye"
+                        class="p-button-sm p-button-info p-button-rounded" pTooltip="Prévisualiser"></button>
+                    <button pButton type="button" (click)="exporterPDF()" icon="pi pi-file-pdf"
+                        class="p-button-sm p-button-danger p-button-rounded" pTooltip="Export PDF"></button>
+                    <button pButton type="button"
+                        (click)="navigateTo('/dashboards/agent-credit/selection/' + state().demandeIndividuel?.demandeIndividuelId)"
+                        icon="pi pi-folder-open" class="p-button-sm p-button-secondary p-button-rounded"
+                        pTooltip="Documents"></button>
                 </div>
             </div>
         </div>
 
-        <!-- Section Impression du Dossier Complet -->
-        <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
-            <div class="bg-green-600 text-white px-4 py-3">
-                <h2 class="font-bold flex items-center gap-2">
-                    <i class="pi pi-print"></i>
-                    IMPRESSION DU DOSSIER
-                </h2>
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <!-- RÉSUMÉ DE LA DEMANDE - Tableau simple                                  -->
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8">
+            <div class="bg-gray-600 text-white px-6 py-4 flex items-center gap-3">
+                <i class="pi pi-info-circle text-xl"></i>
+                <span class="font-bold text-lg uppercase tracking-wide">Résumé de la Demande</span>
             </div>
-
-            <div class="p-6 bg-green-50">
-                <div class="text-center">
-                    <p class="text-gray-700 mb-4">
-                        <i class="pi pi-info-circle text-blue-600 mr-2"></i>
-                        Générer et imprimer le dossier complet de demande de crédit
-                    </p>
-
-                    <div class="flex justify-center gap-3 flex-wrap">
-                        <button pButton type="button" (click)="imprimerDossierComplet()"
-                            class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-bold shadow-lg"
-                            icon="pi pi-print" label="Imprimer le Dossier Complet">
-                        </button>
-
-                        <button pButton type="button" (click)="previsualiserDossier()"
-                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold shadow-lg"
-                            icon="pi pi-eye" label="Prévisualiser">
-                        </button>
-
-                        <button pButton type="button" (click)="exporterPDF()"
-                            class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold shadow-lg"
-                            icon="pi pi-file-pdf" label="Exporter en PDF">
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Section 1: INFORMATIONS SUR LE MEMBRE/CLIENT -->
-        <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
-            <div class="bg-gray-700 text-white px-4 py-2">
-                <h2 class="font-bold">1. INFORMATIONS SUR LE MEMBRE/CLIENT</h2>
-            </div>
-
-            <div class="p-6 bg-green-50">
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div class="flex items-center border-b border-gray-300 pb-2">
-                        <label class="font-semibold min-w-[180px]">Nom et Prénoms :</label>
-                        <span class="bg-white px-3 py-1 rounded border border-gray-300 flex-1">
-                            {{ state().demandeIndividuel?.nom }} {{ state().demandeIndividuel?.prenom }}
-                        </span>
-                    </div>
-                    <div class="flex items-center border-b border-gray-300 pb-2">
-                        <label class="font-semibold min-w-[140px]">Numéro/membre :</label>
-                        <span class="bg-white px-3 py-1 rounded border border-gray-300 flex-1">
-                            {{ state().demandeIndividuel?.numeroMembre }}
-                        </span>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div class="flex items-center border-b border-gray-300 pb-2">
-                        <label class="font-semibold min-w-[180px]">Type de pièce d'identité :</label>
-                        <span class="bg-yellow-100 px-3 py-1 rounded border border-gray-300 flex-1">
-                            {{ state().demandeIndividuel?.typePiece }}
-                        </span>
-                    </div>
-                    <div class="flex items-center border-b border-gray-300 pb-2">
-                        <label class="font-semibold min-w-[140px]">Référence :</label>
-                        <span class="bg-yellow-100 px-3 py-1 rounded border border-gray-300 flex-1">
-                            {{ state().demandeIndividuel?.numId }}
-                        </span>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-3 gap-4 mb-4">
-                    <div class="flex items-center border-b border-gray-300 pb-2">
-                        <label class="font-semibold min-w-[150px]">Date et lieu de naissance :</label>
-                        <span class="bg-white px-3 py-1 rounded border border-gray-300">
-                            {{ state().demandeIndividuel?.dateNaissance | date:'dd/MM/yyyy' }}
-                        </span>
-                    </div>
-                    <div class="flex items-center border-b border-gray-300 pb-2">
-                        <label class="font-semibold">à</label>
-                        <span class="bg-white px-3 py-1 rounded border border-gray-300 ml-2 flex-1">
-                            {{ state().demandeIndividuel?.lieuxNaissance }}
-                        </span>
-                    </div>
-                    <div class="flex items-center border-b border-gray-300 pb-2">
-                        <label class="font-semibold min-w-[60px]">Genre :</label>
-                        <span class="bg-white px-3 py-1 rounded border border-gray-300 flex-1">
-                            {{ state().demandeIndividuel?.genre }}
-                        </span>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-3 gap-4 mb-4">
-                    <div class="flex items-center border-b border-gray-300 pb-2">
-                        <label class="font-semibold">Situation matrimoniale :</label>
-                        <span class="bg-white px-3 py-1 rounded border border-gray-300 ml-2">
-                            {{ state().demandeIndividuel?.situationMatrimoniale }}
-                        </span>
-                    </div>
-                    <div class="flex items-center border-b border-gray-300 pb-2">
-                        <label class="font-semibold">Personnes à charge :</label>
-                        <span class="bg-white px-3 py-1 rounded border border-gray-300 ml-2">
-                            {{ state().demandeIndividuel?.nombrePersonneEnCharge }}
-                        </span>
-                    </div>
-                    <div class="flex items-center border-b border-gray-300 pb-2">
-                        <label class="font-semibold">Enfants scolarisés :</label>
-                        <span class="bg-white px-3 py-1 rounded border border-gray-300 ml-2">
-                            {{ state().demandeIndividuel?.nombrePersonneScolarise }}
-                        </span>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 gap-4 mb-4">
-                    <div class="flex items-center border-b border-gray-300 pb-2">
-                        <label class="font-semibold min-w-[180px]">Adresse de domicile et Contact :</label>
-                        <span class="bg-green-100 px-3 py-1 rounded border border-gray-300 flex-1">
-                            {{ state().demandeIndividuel?.addresseDomicileContact }}
-                        </span>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="flex items-center border-b border-gray-300 pb-2">
-                        <label class="font-semibold min-w-[180px]">Nombre d'années à l'adresse :</label>
-                        <span class="bg-yellow-100 px-3 py-1 rounded border border-gray-300">
-                            {{ state().demandeIndividuel?.nombreAnneeHabitation }} ans
-                        </span>
-                    </div>
-                    <div class="flex items-center border-b border-gray-300 pb-2">
-                        <label class="font-semibold min-w-[140px]">Type de propriété :</label>
-                        <span class="bg-white px-3 py-1 rounded border border-gray-300 flex-1">
-                            {{ state().demandeIndividuel?.typePropriete }}
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Section 2: ACTIVITÉS -->
-        <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
-            <div class="bg-gray-700 text-white px-4 py-2">
-                <h2 class="font-bold">2. ACTIVITÉS</h2>
-            </div>
-
-            <div class="p-6 bg-green-50">
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div class="flex items-center border-b border-gray-300 pb-2">
-                        <label class="font-semibold min-w-[120px]">Type d'activité :</label>
-                        <span class="bg-white px-3 py-1 rounded border border-gray-300 flex-1">
-                            {{ state().demandeIndividuel?.currentActivite }}
-                        </span>
-                    </div>
-                    <div class="flex items-center border-b border-gray-300 pb-2">
-                        <label class="font-semibold min-w-[120px]">Sous-activité :</label>
-                        <span class="bg-white px-3 py-1 rounded border border-gray-300 flex-1">
-                            {{ state().demandeIndividuel?.descriptionActivite }}
-                        </span>
-                    </div>
-                </div>
-
-                <div class="mb-4">
-                    <label class="font-semibold block mb-2">Description de l'activité :</label>
-                    <div class="bg-green-100 p-3 rounded border border-gray-300">
-                        {{ state().demandeIndividuel?.descriptionActivite }}
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div class="flex items-center border-b border-gray-300 pb-2">
-                        <label class="font-semibold">Nombre d'années dans l'activité :</label>
-                        <span class="bg-white px-3 py-1 rounded border border-gray-300 ml-2">
-                            {{ state().demandeIndividuel?.nombreAnneeActivite }} ans
-                        </span>
-                    </div>
-                    <div class="flex items-center border-b border-gray-300 pb-2">
-                        <label class="font-semibold">Adresse du lieu d'activité :</label>
-                        <span class="bg-white px-3 py-1 rounded border border-gray-300 ml-2 flex-1">
-                            {{ state().demandeIndividuel?.adresseLieuActivite }}
-                        </span>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="flex items-center border-b border-gray-300 pb-2">
-                        <label class="font-semibold">Autres activités :</label>
-                        <span class="bg-yellow-100 px-3 py-1 rounded border border-gray-300 ml-2 flex-1">
-                            {{ state().demandeIndividuel?.autreActivite || 'Aucune' }}
-                        </span>
-                    </div>
-                    <div class="flex items-center border-b border-gray-300 pb-2">
-                        <label class="font-semibold">Lieu de l'activité :</label>
-                        <span class="bg-yellow-100 px-3 py-1 rounded border border-gray-300 ml-2 flex-1">
-                            {{ state().demandeIndividuel?.lieuActivite || 'N/A' }}
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Section 3: MODALITÉS DE LA DEMANDE -->
-        <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
-            <div class="bg-gray-700 text-white px-4 py-2">
-                <h2 class="font-bold">3. MODALITÉS DE LA DEMANDE</h2>
-            </div>
-
-            <div class="p-6 bg-green-50">
-                <div class="grid grid-cols-3 gap-4 mb-4">
-                    <div class="flex items-center border-b border-gray-300 pb-2">
-                        <label class="font-semibold">Montant demandé :</label>
-                        <span class="bg-yellow-100 px-3 py-1 rounded border border-gray-300 ml-2 font-bold">
-                            {{ state().demandeIndividuel?.montantDemande | currency:'GNF':'':'1.0-0' }}
-                        </span>
-                    </div>
-                    <div class="flex items-center border-b border-gray-300 pb-2">
-                        <label class="font-semibold">Durée demandée :</label>
-                        <span class="bg-white px-3 py-1 rounded border border-gray-300 ml-2">
-                            {{ state().demandeIndividuel?.dureeDemande }} Mois
-                        </span>
-                    </div>
-                    <div class="flex items-center border-b border-gray-300 pb-2">
-                        <label class="font-semibold">Périodicité :</label>
-                        <span class="bg-white px-3 py-1 rounded border border-gray-300 ml-2">
-                            {{ state().demandeIndividuel?.periodiciteRemboursement }}
-                        </span>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-3 gap-4 mb-4">
-                    <div class="flex items-center border-b border-gray-300 pb-2">
-                        <label class="font-semibold">Taux d'intérêts :</label>
-                        <span class="bg-yellow-100 px-3 py-1 rounded border border-gray-300 ml-2">
-                            {{ state().demandeIndividuel?.tauxInteret }}%
-                        </span>
-                    </div>
-                    <div class="flex items-center border-b border-gray-300 pb-2">
-                        <label class="font-semibold">Période de différé :</label>
-                        <span class="bg-white px-3 py-1 rounded border border-gray-300 ml-2">
-                            {{ state().demandeIndividuel?.periodeDiffere }} Mois
-                        </span>
-                    </div>
-                    <div class="flex items-center border-b border-gray-300 pb-2">
-                        <label class="font-semibold">Nombre d'échéance :</label>
-                        <span class="bg-white px-3 py-1 rounded border border-gray-300 ml-2">
-                            {{ state().demandeIndividuel?.nombreEcheance }}
-                        </span>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div class="flex items-center border-b border-gray-300 pb-2">
-                        <label class="font-semibold">Échéance :</label>
-                        <span class="bg-yellow-100 px-3 py-1 rounded border border-gray-300 ml-2 font-bold">
-                            {{ state().demandeIndividuel?.echeance | currency:'GNF':'':'1.0-0' }}
-                        </span>
-                    </div>
-                    <div class="flex items-center border-b border-gray-300 pb-2">
-                        <label class="font-semibold">Objet du crédit sollicité :</label>
-                        <span class="bg-white px-3 py-1 rounded border border-gray-300 ml-2 flex-1">
-                            {{ state().demandeIndividuel?.objectCredit }}
-                        </span>
-                    </div>
-                </div>
-
-                <div class="mb-4">
-                    <label class="font-semibold block mb-2">Détail de l'objet de crédit :</label>
-                    <div class="bg-white p-3 rounded border border-gray-300">
-                        {{ state().demandeIndividuel?.detailObjectCredit }}
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-3 gap-4">
-                    <div class="flex items-center">
-                        <label class="font-semibold">Nouveau crédit :</label>
-                        <span class="ml-2">
-                            <input type="checkbox" [checked]="state().demandeIndividuel?.statutCredit === 'Nouveau'"
-                                disabled>
-                        </span>
-                    </div>
-                    <div class="flex items-center">
-                        <label class="font-semibold">Renouvellement :</label>
-                        <span class="ml-2">
-                            <input type="checkbox"
-                                [checked]="state().demandeIndividuel?.statutCredit === 'Renouvellement'" disabled>
-                        </span>
-                    </div>
-                    <div class="flex items-center border-b border-gray-300 pb-2">
-                        <label class="font-semibold">Rang de crédit :</label>
-                        <span class="bg-white px-3 py-1 rounded border border-gray-300 ml-2">
-                            {{ state().demandeIndividuel?.rangCredit }}
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Section 4: GARANTIES PROPOSÉES -->
-        <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
-            <div class="bg-gray-700 text-white px-4 py-2">
-                <h2 class="font-bold">4. GARANTIES PROPOSÉES</h2>
-            </div>
-
             <div class="p-6">
-                <table class="w-full border-collapse border border-gray-400">
-                    <thead>
-                        <tr class="bg-gray-200">
-                            <th class="border border-gray-400 px-4 py-2 text-left font-bold">Type de Garantie</th>
-                            <th class="border border-gray-400 px-4 py-2 text-left font-bold">Nature / Description des
-                                garanties</th>
-                            <th class="border border-gray-400 px-4 py-2 text-right font-bold">Valeur de la garantie</th>
-                            <th class="border border-gray-400 px-4 py-2 text-right font-bold">Valeur d'emprunt</th>
-                        </tr>
-                    </thead>
+                <table class="w-full">
                     <tbody>
-                        <tr *ngFor="let garantie of state().demandeIndividuel?.garanties" class="hover:bg-gray-50">
-                            <td class="border border-gray-400 px-4 py-2">{{ garantie.typeGarantie }}</td>
-                            <td class="border border-gray-400 px-4 py-2">{{ garantie.descriptionGarantie }}</td>
-                            <td class="border border-gray-400 px-4 py-2 text-right font-semibold">
-                                {{ garantie.valeurGarantie | currency:'':'':'1.0-0' }}
-                            </td>
-                            <td class="border border-gray-400 px-4 py-2 text-right font-semibold">
-                                {{ garantie.valeurEmprunte | currency:'':'':'1.0-0' }}
-                            </td>
+                        <tr class="border-b border-gray-200">
+                            <td class="py-3 px-4 text-gray-600 font-medium w-1/4">Montant Sollicité</td>
+                            <td class="py-3 px-4 font-bold text-lg text-gray-800">{{ state().demandeIndividuel?.montantDemande | currency:'GNF':'symbol':'1.0-0' }}</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium w-1/4">Échéance</td>
+                            <td class="py-3 px-4 font-bold text-lg text-green-600">{{ state().demandeIndividuel?.echeance | currency:'GNF':'symbol':'1.0-0' }}</td>
                         </tr>
-                        <tr class="bg-gray-100 font-bold">
-                            <td colspan="2" class="border border-gray-400 px-4 py-2 text-right">Total</td>
-                            <td class="border border-gray-400 px-4 py-2 text-right">
-                                {{ getTotalGaranties() | currency:'':'':'1.0-0' }}
-                            </td>
-                            <td class="border border-gray-400 px-4 py-2 text-right">
-                                {{ getTotalEmprunte() | currency:'':'':'1.0-0' }}
-                            </td>
+                        <tr class="border-b border-gray-200">
+                            <td class="py-3 px-4 text-gray-600 font-medium">Durée</td>
+                            <td class="py-3 px-4 font-bold text-lg text-blue-600">{{ state().demandeIndividuel?.dureeDemande }} mois</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Taux d'intérêt</td>
+                            <td class="py-3 px-4 font-bold text-lg text-purple-600">{{ state().demandeIndividuel?.tauxInteret }}%</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Agence</td>
+                            <td class="py-3 px-4 font-semibold text-gray-800" colspan="3">{{ state().pointVente?.libele || 'Non assigné' }}</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- Section de rejet pour le DA uniquement -->
-        <div *ngIf="state().user?.role === 'DA' && state().demandeIndividuel?.validationState !== 'REJECTED' 
-               && !state().hasDemandeCredit && !state().hasDossierCredit"
-            class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
-            <div class="bg-red-600 text-white px-4 py-3">
-                <h2 class="font-bold flex items-center gap-2">
-                    <i class="pi pi-ban"></i>
-                    ACTION DE REJET - DIRECTEUR D'AGENCE
-                </h2>
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <!-- SECTION 1: INFORMATIONS CLIENT - Tableau simple                        -->
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8">
+            <div class="bg-blue-600 text-white px-6 py-4 flex items-center gap-3">
+                <i class="pi pi-user text-xl"></i>
+                <span class="font-bold text-lg uppercase tracking-wide">1. Informations Client</span>
             </div>
+            <div class="p-6">
+                <table class="w-full">
+                    <tbody>
+                        <tr class="border-b border-gray-200">
+                            <td class="py-3 px-4 text-gray-600 font-medium w-1/4">Nom complet</td>
+                            <td class="py-3 px-4 font-semibold text-gray-800">{{ state().demandeIndividuel?.nom }} {{ state().demandeIndividuel?.prenom }}</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium w-1/4">N° Membre</td>
+                            <td class="py-3 px-4 font-mono">{{ state().demandeIndividuel?.numeroMembre }}</td>
+                        </tr>
+                        <tr class="border-b border-gray-200">
+                            <td class="py-3 px-4 text-gray-600 font-medium">Type de pièce</td>
+                            <td class="py-3 px-4">{{ state().demandeIndividuel?.typePiece }}</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium">N° Pièce</td>
+                            <td class="py-3 px-4 font-mono">{{ state().demandeIndividuel?.numId }}</td>
+                        </tr>
+                        <tr class="border-b border-gray-200">
+                            <td class="py-3 px-4 text-gray-600 font-medium">Date de naissance</td>
+                            <td class="py-3 px-4">{{ state().demandeIndividuel?.dateNaissance | date:'dd/MM/yyyy' }}</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Lieu de naissance</td>
+                            <td class="py-3 px-4">{{ state().demandeIndividuel?.lieuxNaissance }}</td>
+                        </tr>
+                        <tr class="border-b border-gray-200">
+                            <td class="py-3 px-4 text-gray-600 font-medium">Genre</td>
+                            <td class="py-3 px-4">{{ state().demandeIndividuel?.genre }}</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Situation matrimoniale</td>
+                            <td class="py-3 px-4">{{ state().demandeIndividuel?.situationMatrimoniale }}</td>
+                        </tr>
+                        <tr class="border-b border-gray-200">
+                            <td class="py-3 px-4 text-gray-600 font-medium">Personnes à charge</td>
+                            <td class="py-3 px-4 font-bold text-blue-600">{{ state().demandeIndividuel?.nombrePersonneEnCharge }}</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Personnes scolarisées</td>
+                            <td class="py-3 px-4 font-bold text-blue-600">{{ state().demandeIndividuel?.nombrePersonneScolarise }}</td>
+                        </tr>
+                        <tr class="border-b border-gray-200">
+                            <td class="py-3 px-4 text-gray-600 font-medium">Adresse & Contact</td>
+                            <td class="py-3 px-4" colspan="3">{{ state().demandeIndividuel?.addresseDomicileContact }}</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Années à l'adresse</td>
+                            <td class="py-3 px-4">{{ state().demandeIndividuel?.nombreAnneeHabitation }} ans</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Type de propriété</td>
+                            <td class="py-3 px-4">{{ state().demandeIndividuel?.typePropriete }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-            <div class="p-6 bg-red-50">
-                <div class="bg-white p-4 rounded border-2 border-red-300 mb-4">
-                    <p class="text-gray-700 font-medium mb-3">
-                        <i class="pi pi-info-circle text-red-600 mr-2"></i>
-                        En tant que Directeur d'Agence, vous avez le pouvoir de rejeter cette demande si elle ne répond
-                        pas aux critères d'acceptation.
-                    </p>
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <!-- SECTION 2: ACTIVITÉS - Tableau simple                                  -->
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8">
+            <div class="bg-emerald-600 text-white px-6 py-4 flex items-center gap-3">
+                <i class="pi pi-briefcase text-xl"></i>
+                <span class="font-bold text-lg uppercase tracking-wide">2. Activités</span>
+            </div>
+            <div class="p-6">
+                <table class="w-full">
+                    <tbody>
+                        <tr class="border-b border-gray-200">
+                            <td class="py-3 px-4 text-gray-600 font-medium w-1/4">Type d'activité</td>
+                            <td class="py-3 px-4 font-semibold text-emerald-700">{{ state().demandeIndividuel?.currentActivite }}</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium w-1/4">Expérience</td>
+                            <td class="py-3 px-4 font-bold text-emerald-600">{{ state().demandeIndividuel?.nombreAnneeActivite }} ans</td>
+                        </tr>
+                        <tr class="border-b border-gray-200">
+                            <td class="py-3 px-4 text-gray-600 font-medium">Description</td>
+                            <td class="py-3 px-4" colspan="3">{{ state().demandeIndividuel?.descriptionActivite }}</td>
+                        </tr>
+                        <tr class="border-b border-gray-200">
+                            <td class="py-3 px-4 text-gray-600 font-medium">Lieu d'activité</td>
+                            <td class="py-3 px-4">{{ state().demandeIndividuel?.lieuActivite || 'N/A' }}</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Adresse</td>
+                            <td class="py-3 px-4">{{ state().demandeIndividuel?.adresseLieuActivite }}</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Autres activités</td>
+                            <td class="py-3 px-4" colspan="3">{{ state().demandeIndividuel?.autreActivite || 'Aucune' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-                    <div class="bg-yellow-50 border border-yellow-300 rounded p-3 mb-4">
-                        <p class="text-sm text-yellow-800">
-                            <strong>⚠️ Attention :</strong> Le rejet d'une demande est une action définitive.
-                            Assurez-vous d'avoir examiné tous les éléments du dossier avant de prendre cette décision.
-                        </p>
-                    </div>
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <!-- SECTION 3: MODALITÉS DE LA DEMANDE - Tableau simple                   -->
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8">
+            <div class="bg-amber-500 text-white px-6 py-4 flex items-center gap-3">
+                <i class="pi pi-money-bill text-xl"></i>
+                <span class="font-bold text-lg uppercase tracking-wide">3. Modalités de la Demande</span>
+            </div>
+            <div class="p-6">
+                <table class="w-full">
+                    <tbody>
+                        <tr class="border-b border-gray-200">
+                            <td class="py-3 px-4 text-gray-600 font-medium w-1/4">Périodicité</td>
+                            <td class="py-3 px-4">{{ state().demandeIndividuel?.periodiciteRemboursement }}</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium w-1/4">Période de différé</td>
+                            <td class="py-3 px-4">{{ state().demandeIndividuel?.periodeDiffere }} mois</td>
+                        </tr>
+                        <tr class="border-b border-gray-200">
+                            <td class="py-3 px-4 text-gray-600 font-medium">Nombre d'échéances</td>
+                            <td class="py-3 px-4 font-semibold">{{ state().demandeIndividuel?.nombreEcheance }}</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Type de crédit</td>
+                            <td class="py-3 px-4">
+                                <span class="flex items-center gap-2">
+                                    <i *ngIf="state().demandeIndividuel?.statutCredit === 'Nouveau'" class="pi pi-check-circle text-green-500"></i>
+                                    {{ state().demandeIndividuel?.statutCredit }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr class="border-b border-gray-200">
+                            <td class="py-3 px-4 text-gray-600 font-medium">Rang du crédit</td>
+                            <td class="py-3 px-4">{{ state().demandeIndividuel?.rangCredit }}</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Objet du crédit</td>
+                            <td class="py-3 px-4 font-semibold text-amber-700">{{ state().demandeIndividuel?.objectCredit }}</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Détail de l'objet</td>
+                            <td class="py-3 px-4" colspan="3">{{ state().demandeIndividuel?.detailObjectCredit }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-                    <div class="space-y-2 text-sm text-gray-600 mb-4">
-                        <p><strong>Critères de rejet possibles :</strong></p>
-                        <ul class="list-disc list-inside ml-4 space-y-1">
-                            <li>Demande de crédit Incohérente </li>
-                            <li>Garanties insuffisantes ou inappropriées</li>
-                            <li>Capacité de remboursement douteuse</li>
-                            <li>Documents manquants ou falsifiés</li>
-                            <li>Historique de crédit défavorable</li>
-                            <li>Activité non viable ou à haut risque</li>
-                        </ul>
-                    </div>
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <!-- SECTION 4: GARANTIES PROPOSÉES                                         -->
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8">
+            <div class="bg-indigo-600 text-white px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <i class="pi pi-shield text-xl"></i>
+                    <span class="font-bold text-lg uppercase tracking-wide">4. Garanties Proposées</span>
                 </div>
-
-                <div class="flex justify-center gap-4">
-                    <!-- Bouton Rejeter -->
-                    <button pButton type="button" (click)="rejectDemande()" [disabled]="state().loading"
-                        class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300"
-                        icon="pi pi-times-circle" label="REJETER CETTE DEMANDE">
-                    </button>
-
-                    <!-- Bouton Voir l'Analyse - Ouvre dans un nouvel onglet -->
-                    <button pButton type="button" (click)="openInNewTab('/dashboards/credit/analyse-credit')"
-                        [disabled]="state().loading"
-                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300"
-                        icon="pi pi-chart-line" label="ANALYSER SON ANCIEN CRÉDIT">
-                    </button>
+                <div class="flex gap-8">
+                    <span class="text-base">Total: <strong class="text-yellow-300 text-lg">{{ getTotalGaranties() |
+                            currency:'GNF':'symbol':'1.0-0' }}</strong></span>
+                    <span class="text-base">Empruntable: <strong class="text-green-300 text-lg">{{ getTotalEmprunte() |
+                            currency:'GNF':'symbol':'1.0-0' }}</strong></span>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="text-left p-4 font-semibold rounded-tl-lg">Type</th>
+                                <th class="text-left p-4 font-semibold">Description</th>
+                                <th class="text-right p-4 font-semibold">Valeur Garantie</th>
+                                <th class="text-right p-4 font-semibold rounded-tr-lg">Valeur Emprunt</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let garantie of state().demandeIndividuel?.garanties; let i = index"
+                                class="border-b border-gray-100 hover:bg-indigo-50/50 transition-colors"
+                                [class.bg-gray-50]="i % 2 === 0">
+                                <td class="p-4">
+                                    <p-tag [value]="garantie.typeGarantie"
+                                        [severity]="getGarantieSeverity(garantie.typeGarantie!)"></p-tag>
+                                </td>
+                                <td class="p-4">{{ garantie.descriptionGarantie }}</td>
+                                <td class="p-4 text-right font-mono font-semibold text-indigo-700">
+                                    {{ garantie.valeurGarantie | currency:'GNF':'symbol':'1.0-0' }}
+                                </td>
+                                <td class="p-4 text-right font-mono font-semibold text-green-700">
+                                    {{ garantie.valeurEmprunte | currency:'GNF':'symbol':'1.0-0' }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
 
-        <div *ngIf="state().user?.role === 'AGENT_CREDIT'" class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
-            <div class="p-6 bg-red-50">
-                <div class="flex justify-center gap-4">
-                    <button pButton type="button" (click)="openInNewTab('/dashboards/credit/analyse-credit')"
-                        [disabled]="state().loading"
-                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300"
-                        icon="pi pi-chart-line" label="ANALYSER SON ANCIEN CRÉDIT">
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Section de traitement de la demande -->
-        <!-- Section de traitement de la demande -->
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <!-- SECTION TRAITEMENT DE LA DEMANDE (Assignment)                          -->
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
         <div *ngIf="state().demandeIndividuel?.validationState !== 'SELECTION'"
-            class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
-            <div class="bg-orange-600 text-white px-4 py-3">
-                <h2 class="font-bold">TRAITEMENT DE LA DEMANDE</h2>
+            class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-orange-300 mb-8">
+            <div class="bg-orange-500 text-white px-6 py-4 flex items-center gap-3">
+                <i class="pi pi-send text-xl"></i>
+                <span class="font-bold text-lg uppercase tracking-wide">Traitement de la Demande</span>
             </div>
 
-            <div class="p-6 bg-orange-50">
-                <!-- Description de l'action -->
-                <div class="mb-6">
-                    <div class="bg-white p-4 rounded border-2 border-orange-300">
-                        <p class="text-gray-700 font-medium">
-                            <i class="pi pi-info-circle text-orange-600 mr-2"></i>
-                            Rediriger la demande vers un agent pour l'analyse de son crédit
-                        </p>
-                    </div>
+            <div class="p-6">
+                <div class="bg-orange-50 border-l-4 border-orange-400 rounded-r-lg p-5 mb-8">
+                    <i class="pi pi-info-circle text-orange-600 mr-2 text-xl"></i>
+                    <span class="text-base font-medium text-orange-800">Rediriger la demande vers un agent pour l'analyse de son crédit</span>
                 </div>
 
                 <form [formGroup]="updateForm" (ngSubmit)="onSubmit()">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <!-- Point de Service -->
                         <div>
-                            <label class="block font-semibold mb-2">Point de Service :</label>
-                            <p-dropdown formControlName="code" [options]="state().pointVentes || []"
-                                optionLabel="libele" placeholder="Sélectionner..." [showClear]="true"
-                                styleClass="w-full" (onChange)="onPointVenteChange($event)">
+                            <label class="block text-sm font-semibold text-gray-700 mb-3">
+                                <i class="pi pi-map-marker mr-2 text-blue-500"></i>Point de Service <span class="text-red-500">*</span>
+                            </label>
+                            <p-dropdown formControlName="code"
+                                [options]="state().pointVentes || []"
+                                optionLabel="libele"
+                                optionValue="code"
+                                placeholder="-- Sélectionner un point de service --"
+                                [showClear]="true"
+                                [filter]="true"
+                                filterPlaceholder="Rechercher..."
+                                [style]="{'width': '100%'}"
+                                appendTo="body"
+                                (onChange)="onPointVenteChange($event)">
                             </p-dropdown>
-                            <small
-                                *ngIf="updateForm.get('code')?.hasError('required') && updateForm.get('code')?.touched"
-                                class="text-red-500">
-                                Point de service obligatoire
-                            </small>
                         </div>
 
-                        <!-- Code Agent - Champ de saisie avec validation SAF -->
+                        <!-- Code Agent -->
                         <div>
-                            <label class="block font-semibold mb-2">
-                                Code Agent de Crédit :
-                                <span class="text-blue-500 text-sm ml-1">(Validation SAF)</span>
+                            <label class="block text-sm font-semibold text-gray-700 mb-3">
+                                <i class="pi pi-user mr-2 text-blue-500"></i>Code Agent
+                                <span class="text-blue-500 text-sm ml-1">(SAF)</span> <span class="text-red-500">*</span>
                             </label>
                             <div class="relative">
-                                <input pInputText formControlName="codAgent" placeholder="Ex: AGCR001" class="w-full"
-                                    [ngClass]="{
-                                   'border-red-500': state().agentValidation.checked && !state().agentValidation.isActive,
-                                   'border-green-500': state().agentValidation.checked && state().agentValidation.isActive
-                               }" (input)="onAgentCodeChange($any($event.target).value)"
-                                    [disabled]="!updateForm.get('code')?.value" style="text-transform: uppercase;" />
-
-                                <!-- Icône de chargement -->
-                                <div *ngIf="state().agentValidation.isLoading"
-                                    class="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                    <i class="pi pi-spin pi-spinner text-blue-500"></i>
-                                </div>
-
-                                <!-- Icône de succès -->
-                                <div *ngIf="state().agentValidation.checked && state().agentValidation.isActive"
-                                    class="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                    <i class="pi pi-check-circle text-green-500"></i>
-                                </div>
-
-                                <!-- Icône d'erreur -->
-                                <div *ngIf="state().agentValidation.checked && !state().agentValidation.isValid"
-                                    class="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                    <i class="pi pi-times-circle text-red-500"></i>
+                                <input pInputText formControlName="codAgent" placeholder="Ex: AGCR001"
+                                    class="w-full uppercase" [ngClass]="{
+                                        'border-red-500': state().agentValidation.checked && !state().agentValidation.isActive,
+                                        'border-green-500': state().agentValidation.checked && state().agentValidation.isActive
+                                    }" (input)="onAgentCodeChange($any($event.target).value)"
+                                    [disabled]="!updateForm.get('code')?.value" />
+                                <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                    <i *ngIf="state().agentValidation.isLoading"
+                                        class="pi pi-spin pi-spinner text-blue-500"></i>
+                                    <i *ngIf="state().agentValidation.checked && state().agentValidation.isActive"
+                                        class="pi pi-check-circle text-green-500 text-xl"></i>
+                                    <i *ngIf="state().agentValidation.checked && !state().agentValidation.isValid"
+                                        class="pi pi-times-circle text-red-500 text-xl"></i>
                                 </div>
                             </div>
-
-                            <!-- Messages de validation -->
-                            <div class="mt-2">
-                                <!-- Champ requis -->
-                                <small
-                                    *ngIf="updateForm.get('codAgent')?.hasError('required') && updateForm.get('codAgent')?.touched"
-                                    class="text-red-500 block">
-                                    Code agent obligatoire
-                                </small>
-
-                                <!-- Message de succès -->
-                                <p-message *ngIf="state().agentValidation.checked && state().agentValidation.isActive"
-                                    severity="success" [text]="state().agentValidation.message" styleClass="w-full">
-                                </p-message>
-
-                                <!-- Message d'avertissement (existe mais non actif) -->
-                                <p-message
-                                    *ngIf="state().agentValidation.checked && state().agentValidation.isValid && !state().agentValidation.isActive"
-                                    severity="warn" [text]="state().agentValidation.message" styleClass="w-full">
-                                </p-message>
-
-                                <!-- Message d'erreur (non trouvé) -->
-                                <p-message *ngIf="state().agentValidation.checked && !state().agentValidation.isValid"
-                                    severity="error" [text]="state().agentValidation.message" styleClass="w-full">
-                                </p-message>
-                            </div>
-
-                            <!-- Agent trouvé - Détails -->
-                            <div *ngIf="state().agentValidation.isActive && state().foundAgent"
-                                class="mt-2 p-3 bg-green-50 border border-green-300 rounded-lg">
-                                <div class="flex items-center gap-2">
-                                    <i class="pi pi-user text-green-600 text-xl"></i>
-                                    <div>
-                                        <span class="text-green-700 font-bold block">
-                                            {{ state().foundAgent?.nom_USUARIO }}
-                                        </span>
-                                        <span class="text-green-600 text-sm">
-                                            Code: {{ state().foundAgent?.usariosPKId?.codUsuarios }}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Indication si point de service non sélectionné -->
-                            <small *ngIf="!updateForm.get('code')?.value" class="text-gray-500 block mt-1">
-                                <i class="pi pi-info-circle mr-1"></i>
-                                Sélectionnez d'abord un point de service
+                            <!-- Message si pas de point de service sélectionné -->
+                            <small *ngIf="!updateForm.get('code')?.value" class="text-gray-500 mt-2 block">
+                                <i class="pi pi-info-circle mr-1"></i>Sélectionnez d'abord un point de service
                             </small>
+                            <!-- Agent trouvé -->
+                            <div *ngIf="state().agentValidation.isActive && state().foundAgent"
+                                class="mt-3 p-4 bg-green-50 border border-green-300 rounded-lg">
+                                <i class="pi pi-user text-green-600 mr-2"></i>
+                                <span class="text-green-700 font-semibold">{{ state().foundAgent?.nom_USUARIO }}</span>
+                            </div>
                         </div>
 
                         <!-- Statut -->
                         <div>
-                            <label class="block font-semibold mb-2">Statut :</label>
+                            <label class="block text-sm font-semibold text-gray-700 mb-3">
+                                <i class="pi pi-tag mr-2 text-blue-500"></i>Action <span class="text-red-500">*</span>
+                            </label>
                             <p-dropdown formControlName="statut" [options]="state().statusOptions" optionLabel="label"
-                                optionValue="value" placeholder="Sélectionner..." styleClass="w-full">
+                                optionValue="value" placeholder="-- Sélectionner une action --" [style]="{'width': '100%'}" appendTo="body">
                             </p-dropdown>
-                            <small
-                                *ngIf="updateForm.get('statut')?.hasError('required') && updateForm.get('statut')?.touched"
-                                class="text-red-500">
-                                Statut obligatoire
-                            </small>
                         </div>
                     </div>
 
-                    <!-- Bouton de soumission -->
                     <div class="mt-6 text-center">
                         <button pButton type="submit" [disabled]="!canSubmitForm() || state().loading"
-                            class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded font-bold shadow-lg"
-                            [ngClass]="{'opacity-50 cursor-not-allowed': !canSubmitForm()}">
-                            <i *ngIf="!state().loading" class="pi pi-check mr-2"></i>
-                            <i *ngIf="state().loading" class="pi pi-spinner pi-spin mr-2"></i>
-                            {{
-                            updateForm.get('statut')?.value === 'VALIDATION' ? 'VALIDER POUR OCTROI' : 'VALIDER POUR
-                            SÉLECTION'
-                            }}
+                            class="px-10 py-3 font-bold shadow-lg text-base"
+                            [ngClass]="canSubmitForm() ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gray-400'">
+                            <i class="pi mr-2" [ngClass]="state().loading ? 'pi-spinner pi-spin' : 'pi-check'"></i>
+                            {{ updateForm.get('statut')?.value === 'VALIDATION' ? 'VALIDER POUR OCTROI' : 'VALIDER POUR SÉLECTION' }}
                         </button>
-                    </div>
-
-                    <!-- Message d'avertissement si validation requise -->
-                    <div *ngIf="!canSubmitForm() && updateForm.get('codAgent')?.value" class="mt-4">
-                        <p-message severity="warn"
-                            text="La validation du code agent SAF est requise avant de pouvoir traiter la demande"
-                            styleClass="w-full">
-                        </p-message>
                     </div>
                 </form>
             </div>
         </div>
 
-
-        <!-- ============================================= -->
-        <!-- SECTION COMPLÈTE ANALYSE ET AVIS -->
-        <!-- ============================================= -->
-
-        <!-- SECTION POUR AGENT DE CRÉDIT -->
-        <div *ngIf="state().user?.role === 'AGENT_CREDIT'" class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
-            <div class="bg-blue-600 text-white px-4 py-3">
-                <h2 class="font-bold">ACTIONS DE L'AGENT DE CRÉDIT</h2>
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <!-- SECTION REJET - DA uniquement                                          -->
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <div *ngIf="state().user?.role === 'DA' && state().demandeIndividuel?.validationState !== 'REJECTED'
+               && !state().hasDemandeCredit && !state().hasDossierCredit"
+            class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-red-200 mb-8">
+            <div class="bg-red-500 text-white px-6 py-4 flex items-center gap-3">
+                <i class="pi pi-ban text-xl"></i>
+                <span class="font-bold text-lg uppercase tracking-wide">Action de Rejet - Directeur d'Agence</span>
             </div>
-
-            <div class="p-6 bg-blue-50">
-                <div class="bg-white p-4 rounded border-2 border-blue-300">
-
-                    <!-- 1. ANALYSE BILAN ACTIVITÉ -->
-                    <div class="mb-6">
-                        <h3 class="text-lg font-semibold mb-3 text-gray-700">
-                            <i class="pi pi-chart-bar mr-2"></i>1. Analyse Bilan Activité
-                        </h3>
-
-                        <!-- Si bilan non fait -->
-                        <div *ngIf="!state().hasDemandeCredit">
-                            <p class="text-gray-600 mb-3">
-                                <i class="pi pi-info-circle text-blue-500 mr-2"></i>
-                                Le bilan d'activité n'a pas encore été renseigné pour cette demande
-                            </p>
-                            <button type="button"
-                                (click)="navigateTo('/dashboards/credit/individuel/detail/analyse-bilan-activite/' + state().demandeIndividuel?.demandeIndividuelId)"
-                                class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
-                                <i class="pi pi-pencil mr-2"></i>
-                                Renseigner le bilan d'activité client
-                            </button>
-                        </div>
-
-                        <!-- Si bilan fait -->
-                        <div *ngIf="state().hasDemandeCredit">
-                            <div class="bg-green-50 border border-green-300 rounded-lg p-4">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <i class="pi pi-check-circle text-green-600 text-xl mr-2"></i>
-                                        <span class="font-semibold text-green-700">Bilan d'activité complété</span>
-                                        <div class="text-sm text-gray-600 mt-1">
-                                            Montant: {{ state().demandeIndividuel?.montantDemande |
-                                            currency:'GNF':'symbol':'1.0-0' }}
-                                            | Durée: {{ state().demandeIndividuel?.dureeDemande }} mois
-                                        </div>
-                                    </div>
-                                    <a [routerLink]="['/dashboards/credit', state().user?.userId, 'resume-credit', state().demande_credit?.demandeCreditId]"
-                                        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors duration-200">
-                                        <i class="pi pi-eye mr-2"></i>
-                                        Visualiser l'analyse
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <p-divider />
-
-                    <!-- 2. ANALYSE FLUX DE TRÉSORERIE -->
-                    <div class="mb-6">
-                        <h3 class="text-lg font-semibold mb-3 text-gray-700">
-                            <i class="pi pi-money-bill mr-2"></i>2. Analyse Flux de Trésorerie
-                        </h3>
-                        <!-- Si flux non fait -->
-                        <div *ngIf="!state().hasDossierCredit">
-                            <p class="text-gray-600 mb-3">
-                                <i class="pi pi-info-circle text-orange-500 mr-2"></i>
-                                L'analyse des flux de trésorerie n'a pas encore été effectuée
-                            </p>
-                            <button type="button"
-                                (click)="navigateTo('/dashboards/credit/individuel/detail/analyse-flux-tresorerie/' + state().demandeIndividuel?.demandeIndividuelId)"
-                                class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
-                                <i class="pi pi-pencil mr-2"></i>
-                                Saisir les informations de flux de trésorerie
-                            </button>
-                        </div>
-
-                        <!-- Si flux fait -->
-                        <div *ngIf="state().hasDossierCredit">
-                            <div class="bg-green-50 border border-green-300 rounded-lg p-4">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <i class="pi pi-check-circle text-green-600 text-xl mr-2"></i>
-                                        <span class="font-semibold text-green-700">Flux de trésorerie analysé</span>
-                                    </div>
-                                    <a [routerLink]="['/dashboards/credit/individuel/detail/analyse-flux-tresorerie/' + state().demandeIndividuel?.demandeIndividuelId]"
-                                        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors duration-200">
-                                        <i class="pi pi-eye mr-2"></i>
-                                        Visualiser l'analyse
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <p-divider />
-
-                    <!-- 3. TÉLÉVERSER DOCUMENTS -->
-                    <div class="mb-6">
-                        <h3 class="text-lg font-semibold mb-3 text-gray-700">
-                            <i class="pi pi-upload mr-2"></i>3. Documents du Dossier
-                        </h3>
-                        <button type="button"
-                            (click)="navigateTo('/dashboards/agent-credit/selection/' + state().demandeIndividuel?.demandeIndividuelId)"
-                            class="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
-                            <i class="pi pi-folder-open mr-2"></i>
-                            Gérer les documents du dossier
-                        </button>
-                    </div>
-
-                    <!-- Indicateur de progression -->
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="font-semibold text-gray-700">Progression du dossier</span>
-
-                            <span class="text-sm text-gray-600">
-                                {{ (state().hasDemandeCredit ? 1 : 0) + (state().hasDossierCredit ? 1 : 0) }}/2 analyses
-                                complétées
-                            </span>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-2">
-                            <div class="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                                [style.width.%]="((state().hasDemandeCredit ? 1 : 0) + (state().hasDossierCredit ? 1 : 0)) * 50">
-                            </div>
-                        </div>
-                    </div>
+            <div class="p-6">
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 rounded-r-lg p-5 mb-6">
+                    <i class="pi pi-exclamation-triangle text-yellow-600 mr-2 text-lg"></i>
+                    <span class="font-medium">Le rejet d'une demande est une action définitive.</span>
+                </div>
+                <div class="flex justify-center gap-5">
+                    <button pButton type="button" (click)="rejectDemande()" [disabled]="state().loading"
+                        class="bg-red-600 hover:bg-red-700" icon="pi pi-times-circle" label="REJETER">
+                    </button>
+                    <button pButton type="button" (click)="openInNewTab('/dashboards/credit/analyse-credit')"
+                        class="bg-blue-600 hover:bg-blue-700" icon="pi pi-chart-line"
+                        label="ANALYSER ANCIEN CRÉDIT">
+                    </button>
                 </div>
             </div>
         </div>
 
-        <!-- SECTION POUR DA, DR, MANAGER -->
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <!-- SECTION ANALYSE - AGENT DE CRÉDIT                                      -->
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <div *ngIf="state().user?.role === 'AGENT_CREDIT'"
+            class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-blue-200 mb-8">
+            <div class="bg-blue-600 text-white px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <i class="pi pi-chart-bar text-xl"></i>
+                    <span class="font-bold text-lg uppercase tracking-wide">Actions de l'Agent de Crédit</span>
+                </div>
+                <!-- Progress Badge -->
+                <span class="px-4 py-2 rounded-full font-semibold"
+                    [ngClass]="((state().hasAnalyseFinanciere ? 1 : 0) + (state().hasDossierCredit ? 1 : 0)) === 2 ? 'bg-green-500' : 'bg-blue-400'">
+                    {{ (state().hasAnalyseFinanciere ? 1 : 0) + (state().hasDossierCredit ? 1 : 0) }}/2 analyses
+                </span>
+            </div>
+
+            <div class="p-6">
+                <!-- Progress Bar -->
+                <div class="w-full bg-gray-200 rounded-full h-3 mb-6">
+                    <div class="h-full rounded-full transition-all duration-500"
+                        [ngClass]="((state().hasAnalyseFinanciere ? 1 : 0) + (state().hasDossierCredit ? 1 : 0)) === 2 ? 'bg-gradient-to-r from-green-400 to-emerald-500' : 'bg-gradient-to-r from-blue-400 to-indigo-500'"
+                        [style.width.%]="((state().hasAnalyseFinanciere ? 1 : 0) + (state().hasDossierCredit ? 1 : 0)) * 50">
+                    </div>
+                </div>
+
+                <!-- Grid des 2 analyses -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- 1. Bilan d'Activité -->
+                    <div class="border-2 rounded-xl p-5 transition-all hover:shadow-md"
+                        [ngClass]="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'border-green-300 bg-green-50' :
+                                   state().analyseStatut === 'BROUILLON' ? 'border-yellow-300 bg-yellow-50' : 'border-blue-300 bg-blue-50'">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white"
+                                [ngClass]="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'bg-green-500' :
+                                           state().analyseStatut === 'BROUILLON' ? 'bg-yellow-500' : 'bg-blue-500'">
+                                <i class="pi text-lg" [ngClass]="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'pi-check' :
+                                           state().analyseStatut === 'BROUILLON' ? 'pi-clock' : 'pi-chart-bar'"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold text-base text-gray-800">1. Bilan d'Activité</div>
+                                <div class="text-sm font-medium"
+                                    [ngClass]="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'text-green-600' :
+                                               state().analyseStatut === 'BROUILLON' ? 'text-yellow-600' : 'text-blue-600'">
+                                    {{ state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? '✓
+                                    Complété' :
+                                    state().analyseStatut === 'BROUILLON' ? '⏳ En cours' : '○ À renseigner' }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <a *ngIf="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE'"
+                            [routerLink]="['/dashboards/credit/individuel/detail/resume-analyse', state().demandeIndividuel?.demandeIndividuelId]"
+                            class="block w-full text-center bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-medium transition-colors">
+                            <i class="pi pi-eye mr-2"></i>Visualiser
+                        </a>
+                        <a *ngIf="state().analyseStatut === 'BROUILLON'"
+                            [routerLink]="['/dashboards/credit/individuel/detail/analyse-bilan-activite', state().demandeIndividuel?.demandeIndividuelId]"
+                            class="block w-full text-center bg-yellow-600 hover:bg-yellow-700 text-white py-3 px-4 rounded-lg font-medium transition-colors">
+                            <i class="pi pi-pencil mr-2"></i>Continuer
+                        </a>
+                        <button *ngIf="!state().hasAnalyseFinanciere"
+                            (click)="navigateTo('/dashboards/credit/individuel/detail/analyse-bilan-activite/' + state().demandeIndividuel?.demandeIndividuelId)"
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors">
+                            <i class="pi pi-plus mr-2"></i>Renseigner
+                        </button>
+                    </div>
+
+                    <!-- 2. Flux de Trésorerie -->
+                    <div class="border-2 rounded-xl p-5 transition-all hover:shadow-md"
+                        [ngClass]="state().hasDossierCredit ? 'border-green-300 bg-green-50' : 'border-orange-300 bg-orange-50'">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white"
+                                [ngClass]="state().hasDossierCredit ? 'bg-green-500' : 'bg-orange-500'">
+                                <i class="pi text-lg" [ngClass]="state().hasDossierCredit ? 'pi-check' : 'pi-money-bill'"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold text-base text-gray-800">2. Flux de Trésorerie</div>
+                                <div class="text-sm font-medium"
+                                    [ngClass]="state().hasDossierCredit ? 'text-green-600' : 'text-orange-600'">
+                                    {{ state().hasDossierCredit ? '✓ Complété' : '○ À renseigner' }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <a *ngIf="state().hasDossierCredit"
+                            [routerLink]="['/dashboards/credit/individuel/detail/analyse-flux-tresorerie/' + state().demandeIndividuel?.demandeIndividuelId]"
+                            class="block w-full text-center bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-medium transition-colors">
+                            <i class="pi pi-eye mr-2"></i>Visualiser
+                        </a>
+                        <button *ngIf="!state().hasDossierCredit"
+                            (click)="navigateTo('/dashboards/credit/individuel/detail/analyse-flux-tresorerie/' + state().demandeIndividuel?.demandeIndividuelId)"
+                            class="w-full bg-orange-600 hover:bg-orange-700 text-white py-3 px-4 rounded-lg font-medium transition-colors">
+                            <i class="pi pi-plus mr-2"></i>Renseigner
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Bouton Ancien Crédit -->
+                <div class="text-center mt-4">
+                    <button pButton type="button" (click)="openInNewTab('/dashboards/credit/analyse-credit')"
+                        class="p-button-outlined p-button-secondary" icon="pi pi-chart-line"
+                        label="Analyser son ancien crédit">
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <!-- SECTION CONSULTATION - DA/DR/MANAGER                                   -->
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
         <div *ngIf="state().user?.role === 'DA' || state().user?.role === 'DR' || state().user?.role === 'MANAGER'"
-            class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
-
-            <div class="bg-indigo-600 text-white px-4 py-3">
-                <h2 class="font-bold">
-                    CONSULTATION DES ANALYSES -
-                    <span *ngIf="state().user?.role === 'DA'">DIRECTEUR D'AGENCE</span>
-                    <span *ngIf="state().user?.role === 'DR'">DIRECTEUR RÉGIONAL</span>
-                    <span *ngIf="state().user?.role === 'MANAGER'">MANAGER</span>
-                </h2>
+            class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-indigo-200 mb-8">
+            <div class="bg-indigo-600 text-white px-6 py-4 flex items-center gap-3">
+                <i class="pi pi-eye text-xl"></i>
+                <span class="font-bold text-lg uppercase tracking-wide">
+                    Consultation des Analyses - {{ getRoleLabel(state().user?.role!) }}
+                </span>
             </div>
 
-            <div class="p-6 bg-indigo-50">
-                <div class="bg-white p-4 rounded border-2 border-indigo-300">
-
-                    <!-- 1. BILAN ACTIVITÉ -->
-                    <div class="mb-6">
-                        <h3 class="text-lg font-semibold mb-3 text-gray-700">
-                            <i class="pi pi-chart-bar mr-2"></i>1. Bilan d'Activité
-                        </h3>
-
-                        <!-- Si bilan non disponible -->
-                        <div *ngIf="!state().hasDemandeCredit">
-                            <div class="bg-amber-50 border border-amber-300 rounded-lg p-4">
-                                <i class="pi pi-clock text-amber-600 text-xl mr-2"></i>
-                                <span class="text-amber-800">L'agent de crédit n'a pas encore effectué l'analyse du
-                                    bilan d'activité</span>
-                            </div>
-                        </div>
-
-                        <!-- Si bilan disponible -->
-                        <div *ngIf="state().hasDemandeCredit">
-                            <div class="bg-green-50 border border-green-300 rounded-lg p-4">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <i class="pi pi-check-circle text-green-600 text-xl mr-2"></i>
-                                        <span class="font-semibold text-green-700">Bilan d'activité disponible</span>
-                                        <div class="text-sm text-gray-600 mt-1">
-                                            Montant: {{ state().demandeIndividuel?.montantDemande |
-                                            currency:'GNF':'symbol':'1.0-0' }}
-                                            | Durée: {{ state().demandeIndividuel?.dureeDemande }} mois
-                                        </div>
-                                    </div>
-                                    <a [routerLink]="['/dashboards/credit', state().user?.userId, 'resume-credit', state().demande_credit?.demandeCreditId]"
-                                        class="inline-flex items-center bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border-2 border-white/20 animate-pulse hover:animate-none">
-                                        <i class="pi pi-eye text-lg mr-2"></i>
-                                        <span class="text-base">Visualiser l'analyse</span>
-                                        <i class="pi pi-arrow-right ml-2"></i>
-                                    </a>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Bilan d'Activité -->
+                    <div class="border-2 rounded-xl p-5 flex items-center justify-between"
+                        [ngClass]="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'border-green-300 bg-green-50' :
+                                   state().analyseStatut === 'BROUILLON' ? 'border-yellow-300 bg-yellow-50' : 'border-gray-300 bg-gray-50'">
+                        <div class="flex items-center gap-4">
+                            <i class="pi pi-chart-bar text-3xl"
+                                [ngClass]="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'text-green-500' :
+                                           state().analyseStatut === 'BROUILLON' ? 'text-yellow-500' : 'text-gray-400'"></i>
+                            <div>
+                                <div class="font-bold text-lg">Bilan d'Activité</div>
+                                <div class="font-medium"
+                                    [ngClass]="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'text-green-600' :
+                                               state().analyseStatut === 'BROUILLON' ? 'text-yellow-600' : 'text-gray-500'">
+                                    {{ state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? '✓ Disponible' :
+                                    state().analyseStatut === 'BROUILLON' ? '⏳ En cours' : '○ Non renseigné' }}
                                 </div>
                             </div>
                         </div>
+                        <a *ngIf="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE'"
+                            [routerLink]="['/dashboards/credit/individuel/detail/resume-analyse', state().demandeIndividuel?.demandeIndividuelId]"
+                            class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-semibold text-base transition-all shadow-lg border-2 border-indigo-700">
+                            <i class="pi pi-eye text-lg"></i>
+                            <span>Voir</span>
+                        </a>
                     </div>
 
-                    <p-divider />
-
-                    <!-- 2. FLUX DE TRÉSORERIE -->
-                    <div class="mb-6">
-                        <h3 class="text-lg font-semibold mb-3 text-gray-700">
-                            <i class="pi pi-money-bill mr-2"></i>2. Flux de Trésorerie
-                        </h3>
-
-                        <!-- Si flux non disponible -->
-                        <div *ngIf="!state().hasDossierCredit">
-                            <div class="bg-amber-50 border border-amber-300 rounded-lg p-4">
-                                <i class="pi pi-clock text-amber-600 text-xl mr-2"></i>
-                                <span class="text-amber-800">L'agent de crédit n'a pas encore effectué l'analyse sur le
-                                    flux de trésorerie</span>
-                            </div>
-                        </div>
-
-                        <!-- Si flux disponible -->
-                        <div *ngIf="state().hasDossierCredit">
-                            <div class="bg-green-50 border border-green-300 rounded-lg p-4">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <i class="pi pi-check-circle text-green-600 text-xl mr-2"></i>
-                                        <span class="font-semibold text-green-700">Analyse des flux disponible</span>
-                                    </div>
-                                    <a [routerLink]="['/dashboards/credit/individuel/detail/analyse-flux-tresorerie/' + state().demandeIndividuel?.demandeIndividuelId]"
-                                        class="inline-flex items-center bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border-2 border-white/20 animate-pulse hover:animate-none">
-                                        <i class="pi pi-eye text-lg mr-2"></i>
-                                        <span class="text-base">Visualiser l'analyse</span>
-                                        <i class="pi pi-arrow-right ml-2"></i>
-                                    </a>
+                    <!-- Flux de Trésorerie -->
+                    <div class="border-2 rounded-xl p-5 flex items-center justify-between"
+                        [ngClass]="state().hasDossierCredit ? 'border-green-300 bg-green-50' : 'border-gray-300 bg-gray-50'">
+                        <div class="flex items-center gap-4">
+                            <i class="pi pi-money-bill text-3xl"
+                                [ngClass]="state().hasDossierCredit ? 'text-green-500' : 'text-gray-400'"></i>
+                            <div>
+                                <div class="font-bold text-lg">Flux de Trésorerie</div>
+                                <div class="font-medium"
+                                    [ngClass]="state().hasDossierCredit ? 'text-green-600' : 'text-gray-500'">
+                                    {{ state().hasDossierCredit ? '✓ Disponible' : '○ Non renseigné' }}
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <p-divider />
-
-                    <!-- 3. DOCUMENTS -->
-                    <div class="mb-6">
-                        <h3 class="text-lg font-semibold mb-3 text-gray-700">
-                            <i class="pi pi-folder mr-2"></i>3. Documents du Dossier
-                        </h3>
-                        <button type="button"
-                            (click)="navigateTo('/dashboards/agent-credit/selection/' + state().demandeIndividuel?.demandeIndividuelId)"
-                            class="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
-                            <i class="pi pi-folder-open mr-2"></i>
-                            Consulter les documents du dossier
-                        </button>
+                        <a *ngIf="state().hasDossierCredit"
+                            [routerLink]="['/dashboards/credit/individuel/detail/analyse-flux-tresorerie/' + state().demandeIndividuel?.demandeIndividuelId]"
+                            class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-semibold text-base transition-all shadow-lg border-2 border-indigo-700">
+                            <i class="pi pi-eye text-lg"></i>
+                            <span>Voir</span>
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- ============================================= -->
-        <!-- SECTION AVIS - AGENT DE CRÉDIT (après flux) -->
-        <!-- ============================================= -->
-        <div *ngIf="state().user?.role === 'AGENT_CREDIT' && state().hasDossierCredit" class="mt-6">
-            <p-divider />
-
-            <div class="mb-4">
-                <h3 class="text-xl font-semibold flex items-center gap-2">
-                    <i class="pi pi-comments text-primary"></i>
-                    Mon Avis sur le Dossier
-                    <span *ngIf="!state().userHasAvis"
-                        class="text-sm bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full ml-2">
-                        <i class="pi pi-exclamation-triangle mr-1"></i>
-                        Requis avant approbation
-                    </span>
-                </h3>
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <!-- SECTION AVIS - AGENT DE CRÉDIT (après flux)                            -->
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <div *ngIf="state().user?.role === 'AGENT_CREDIT' && state().hasDossierCredit"
+            class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-teal-200 mb-8 mt-10">
+            <div class="bg-teal-500 text-white px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <i class="pi pi-comments text-xl"></i>
+                    <span class="font-bold text-lg uppercase tracking-wide">Mon Avis sur le Dossier</span>
+                </div>
+                <span *ngIf="!state().userHasAvis"
+                    class="bg-yellow-400 text-yellow-900 px-4 py-2 rounded-full font-semibold">
+                    <i class="pi pi-exclamation-triangle mr-1"></i>Requis
+                </span>
             </div>
 
-            <!-- Formulaire d'avis pour l'agent -->
-            <div *ngIf="!state().userHasAvis || state().editingAvis" class="mb-6 avis-form-section">
-                <p-card [style]="{'background-color': state().editingAvis ? '#fef3c7' : '#f8f9fa'}">
-                    <ng-template pTemplate="header">
-                        <div class="px-4 pt-3">
-                            <h4 class="text-lg font-medium flex items-center gap-2">
-                                <p-avatar
-                                    [label]="state().user?.firstName?.charAt(0)! + state().user?.lastName?.charAt(0)!"
-                                    shape="circle"
-                                    [style]="{'background-color': state().editingAvis ? '#f59e0b' : '#6366f1', 'color': 'white'}" />
-                                <span *ngIf="!state().editingAvis">
-                                    Donner votre avis professionnel sur ce dossier
-                                </span>
-                                <span *ngIf="state().editingAvis" class="flex items-center gap-2">
-                                    <i class="pi pi-pencil"></i>
-                                    Modifier votre avis
-                                </span>
-                            </h4>
-                        </div>
-                    </ng-template>
-
+            <div class="p-6">
+                <!-- Formulaire d'avis -->
+                <div *ngIf="!state().userHasAvis || state().editingAvis" class="avis-form-section">
                     <form [formGroup]="avisForm" (ngSubmit)="submitAvis()">
-                        <div class="mb-3">
-                            <p-chip label="Agent de Crédit" icon="pi pi-user"
-                                [style]="{'background-color': '#e0e7ff', 'color': '#4338ca'}" />
-                        </div>
-
-                        <div class="field">
-                            <label for="avis" class="block text-sm font-medium text-gray-700 mb-2">
+                        <div class="mb-4">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
                                 Votre analyse et recommandation <span class="text-red-500">*</span>
                             </label>
-                            <textarea pTextarea id="avis" formControlName="libele" rows="5" class="w-full"
-                                placeholder="Donnez votre avis professionnel sur la solvabilité du client, la viabilité de son activité, et votre recommandation finale..."
-                                [autoResize]="true">
-                    </textarea>
-
-                            <small *ngIf="avisForm.get('libele')?.invalid && avisForm.get('libele')?.touched"
-                                class="p-error block mt-1">
-                                <span *ngIf="avisForm.get('libele')?.errors?.['required']">
-                                    L'avis est obligatoire avant l'approbation
-                                </span>
-                                <span *ngIf="avisForm.get('libele')?.errors?.['minlength']">
-                                    L'avis doit contenir au moins 10 caractères
-                                </span>
-                            </small>
-
-                            <div class="text-right mt-1">
-                                <small class="text-gray-500">
-                                    {{ avisForm.get('libele')?.value?.length || 0 }} / 1000 caractères
+                            <textarea pTextarea formControlName="libele" rows="4" class="w-full"
+                                placeholder="Donnez votre avis professionnel..." [autoResize]="true">
+                            </textarea>
+                            <div class="flex justify-between mt-2">
+                                <small *ngIf="avisForm.get('libele')?.invalid && avisForm.get('libele')?.touched"
+                                    class="text-red-500">
+                                    Minimum 10 caractères requis
                                 </small>
+                                <small class="text-gray-500">{{ avisForm.get('libele')?.value?.length || 0 }} /
+                                    1000</small>
                             </div>
                         </div>
-
-                        <div class="flex justify-end gap-2 mt-4">
-                            <p-button label="Annuler" icon="pi pi-times" severity="secondary" [outlined]="true"
-                                type="button" (click)="state().editingAvis ? cancelEdit() : avisForm.reset()" />
-
-                            <p-button [label]="state().editingAvis ? 'Modifier l\'avis' : 'Soumettre mon avis'"
-                                [icon]="state().editingAvis ? 'pi pi-pencil' : 'pi pi-send'" type="submit"
-                                [severity]="state().editingAvis ? 'warn' : 'primary'" [loading]="state().submittingAvis"
-                                [disabled]="avisForm.invalid || state().submittingAvis" />
-                        </div>
-                    </form>
-                </p-card>
-            </div>
-
-            <!-- Affichage de l'avis de l'agent s'il existe -->
-            <div *ngIf="state().userHasAvis && !state().editingAvis" class="mb-6">
-                <p-card class="current-user-avis"
-                    [style]="{'background-color': '#eff6ff', 'border': '1px solid #3b82f6'}">
-                    <ng-template pTemplate="header">
-                        <div class="px-4 pt-3 flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <p-avatar
-                                    [label]="state().user?.firstName?.charAt(0)! + state().user?.lastName?.charAt(0)!"
-                                    shape="circle" [style]="{'background-color': '#3b82f6', 'color': 'white'}" />
-                                <div>
-                                    <p class="font-semibold">Mon avis professionnel</p>
-                                    <p class="text-sm text-gray-600">Agent de Crédit</p>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <p-badge label="Avis soumis" severity="success" />
-                                <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="warn"
-                                    pTooltip="Modifier mon avis" tooltipPosition="left"
-                                    (onClick)="editAvis(state().currentUserAvis!)" />
-                            </div>
-                        </div>
-                    </ng-template>
-
-                    <p class="whitespace-pre-wrap">{{ state().currentUserAvis?.libele }}</p>
-
-                    <ng-template pTemplate="footer">
-                        <div class="text-sm text-gray-500">
-                            <i class="pi pi-calendar mr-1"></i>
-                            Soumis le {{ formatDate(state().currentUserAvis?.dateCreation) }}
-                            <span
-                                *ngIf="state().currentUserAvis?.updatedDate && state().currentUserAvis?.updatedDate !== state().currentUserAvis?.dateCreation">
-                                | Modifié le {{ formatDate(state().currentUserAvis?.updatedDate) }}
-                            </span>
-                        </div>
-                    </ng-template>
-                </p-card>
-            </div>
-
-            <!-- Bouton d'approbation finale -->
-            <div class="text-center mt-6 p-6 bg-green-50 rounded-lg border-2 border-green-300">
-                <h4 class="font-semibold text-lg mb-3">Approbation Finale</h4>
-                <p class="mb-4 text-gray-700">
-                    <i class="pi pi-info-circle text-blue-600 mr-2"></i>
-                    Après avoir complété toutes les analyses et donné votre avis, vous pouvez approuver définitivement
-                    cette demande
-                </p>
-                <button (click)="approvedDemande(state().demandeIndividuel!)" pButton pRipple
-                    [disabled]="!state().userHasAvis"
-                    class="font-semibold bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 border-0 px-8 py-3 text-white shadow-lg hover:shadow-xl transition-all duration-300"
-                    icon="pi pi-check-circle" label="APPROUVER LA DEMANDE DE CRÉDIT">
-                </button>
-                <p *ngIf="!state().userHasAvis" class="text-sm text-red-600 mt-2">
-                    <i class="pi pi-exclamation-triangle mr-1"></i>
-                    Vous devez d'abord donner votre avis avant de pouvoir approuver
-                </p>
-            </div>
-        </div>
-
-        <!-- ============================================= -->
-        <!-- SECTION AVIS - DA, DR, MANAGER (après approbation) -->
-        <!-- ============================================= -->
-        <div *ngIf="(state().user?.role === 'DA' || state().user?.role === 'DR' || state().user?.role === 'MANAGER') 
-            && state().demandeIndividuel?.validationState === 'APPROVED'" class="mt-6">
-            <p-divider />
-
-            <div class="mb-4">
-                <h3 class="text-xl font-semibold flex items-center gap-2">
-                    <i class="pi pi-comments text-primary"></i>
-                    Avis et Recommandations
-                    <p-badge [value]="state().avisList.length.toString()" severity="info" />
-                </h3>
-                <p class="text-sm text-green-600 mt-2">
-                    <i class="pi pi-check-circle mr-1"></i>
-                    Cette demande a été approuvée par l'agent de crédit. Vous pouvez donner votre avis.
-                </p>
-            </div>
-
-            <!-- Formulaire d'avis -->
-            <div *ngIf="(!state().userHasAvis && state().showAvisForm) || state().editingAvis" class="mb-6">
-                <p-card [style]="{'background-color': state().editingAvis ? '#fef3c7' : '#f8f9fa'}">
-                    <ng-template pTemplate="header">
-                        <div class="px-4 pt-3">
-                            <h4 class="text-lg font-medium flex items-center gap-2">
-                                <p-avatar
-                                    [label]="state().user?.firstName?.charAt(0)! + state().user?.lastName?.charAt(0)!"
-                                    shape="circle" [style]="{'background-color': '#6366f1', 'color': 'white'}" />
-                                <span>
-                                    Donner votre avis en tant que {{ getRoleLabel(state().user?.role!) }}
-                                </span>
-                            </h4>
-                        </div>
-                    </ng-template>
-
-                    <form [formGroup]="avisForm" (ngSubmit)="submitAvis()">
-                        <div class="mb-3">
-                            <p-chip [label]="getRoleLabel(state().user?.role!)" icon="pi pi-user"
-                                [style]="{'background-color': '#e0e7ff', 'color': '#4338ca'}" />
-                        </div>
-
-                        <div class="field">
-                            <label for="avis" class="block text-sm font-medium text-gray-700 mb-2">
-                                Votre avis et recommandations <span class="text-red-500">*</span>
-                            </label>
-                            <textarea pTextarea id="avis" formControlName="libele" rows="5" class="w-full"
-                                placeholder="Partagez votre avis sur cette demande de crédit approuvée..."
-                                [autoResize]="true">
-                    </textarea>
-
-                            <small *ngIf="avisForm.get('libele')?.invalid && avisForm.get('libele')?.touched"
-                                class="p-error block mt-1">
-                                L'avis est obligatoire
-                            </small>
-
-                            <div class="text-right mt-1">
-                                <small class="text-gray-500">
-                                    {{ avisForm.get('libele')?.value?.length || 0 }} / 1000 caractères
-                                </small>
-                            </div>
-                        </div>
-
-                        <div class="flex justify-end gap-2 mt-4">
-                            <p-button label="Annuler" icon="pi pi-times" severity="secondary" [outlined]="true"
-                                type="button" (click)="cancelEdit()" />
-
-                            <p-button label="Soumettre mon avis" icon="pi pi-send" type="submit"
+                        <div class="flex justify-end gap-3">
+                            <p-button *ngIf="state().editingAvis" label="Annuler" icon="pi pi-times"
+                                severity="secondary" [outlined]="true" (onClick)="cancelEdit()"></p-button>
+                            <p-button [label]="getSubmitButtonLabel()" [icon]="getSubmitButtonIcon()" type="submit"
                                 [loading]="state().submittingAvis"
-                                [disabled]="avisForm.invalid || state().submittingAvis" />
+                                [disabled]="avisForm.invalid"></p-button>
                         </div>
                     </form>
-                </p-card>
-            </div>
-
-            <!-- Liste des avis existants -->
-            <div class="mt-6">
-                <h4 class="font-semibold mb-3">Historique des avis</h4>
-
-                <div *ngIf="state().avisList.length === 0" class="text-center py-8 text-gray-500">
-                    <i class="pi pi-comments text-4xl mb-3 block"></i>
-                    <p>Aucun avis n'a encore été donné</p>
                 </div>
 
-                <div *ngIf="state().avisList.length > 0" class="space-y-4">
-                    <p-timeline [value]="state().avisList" align="left">
-                        <ng-template pTemplate="marker" let-avis>
-                            <span class="flex w-10 h-10 items-center justify-center text-white rounded-full shadow-lg"
-                                [style]="{'background-color': avis.idUser === state().user?.userId ? '#3b82f6' : '#6b7280'}">
-                                <i class="pi pi-comment"></i>
-                            </span>
-                        </ng-template>
+                <!-- Avis existant -->
+                <div *ngIf="state().userHasAvis && !state().editingAvis"
+                    class="bg-blue-50 border border-blue-200 rounded-xl p-5">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-3 mb-3">
+                                <p-badge value="Mon avis" severity="info"></p-badge>
+                                <span class="text-gray-500">{{ formatDate(state().currentUserAvis?.dateCreation) }}</span>
+                            </div>
+                            <p class="text-gray-700 whitespace-pre-wrap">{{ state().currentUserAvis?.libele }}</p>
+                        </div>
+                        <button pButton icon="pi pi-pencil" class="p-button-text p-button-warning"
+                            (click)="editAvis(state().currentUserAvis!)" pTooltip="Modifier"></button>
+                    </div>
+                </div>
 
-                        <ng-template pTemplate="content" let-avis>
-                            <p-card [style]="{'margin-bottom': '1rem'}">
-                                <ng-template pTemplate="header">
-                                    <div class="px-4 pt-3">
-                                        <div class="flex items-center justify-between">
-                                            <div class="flex items-center gap-3">
-                                                <p-avatar
-                                                    [label]="(avis.userFullName || 'U').substring(0, 2).toUpperCase()"
-                                                    shape="circle"
-                                                    [style]="{'background-color': '#6366f1', 'color': 'white'}" />
-                                                <div>
-                                                    <p class="font-semibold">
-                                                        {{ avis.userFullName || 'Utilisateur' }}
-                                                        <span *ngIf="avis.idUser === state().user?.userId"
-                                                            class="ml-2 text-sm text-blue-600">(Vous)</span>
-                                                    </p>
-                                                    <p class="text-sm text-gray-600">
-                                                        {{ formatDate(avis.dateCreation) }}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </ng-template>
+                <!-- Bouton Approbation -->
+                <div class="mt-6 text-center p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border-2 border-green-200">
+                    <button pButton (click)="approvedDemande(state().demandeIndividuel!)"
+                        [disabled]="!state().userHasAvis" class="px-10 py-3 font-bold shadow-lg text-base"
+                        [ngClass]="state().userHasAvis ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gray-400'"
+                        icon="pi pi-check-circle" label="APPROUVER LA DEMANDE">
+                    </button>
+                    <p *ngIf="!state().userHasAvis" class="text-red-600 mt-4 font-medium">
+                        <i class="pi pi-exclamation-triangle mr-2"></i>Donnez d'abord votre avis
+                    </p>
+                </div>
+            </div>
+        </div>
 
-                                <div class="whitespace-pre-wrap text-gray-700">
-                                    {{ avis.libele }}
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <!-- SECTION AVIS - DA/DR/MANAGER (après approbation)                       -->
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <div *ngIf="(state().user?.role === 'DA' || state().user?.role === 'DR' || state().user?.role === 'MANAGER')
+            && state().demandeIndividuel?.validationState === 'APPROVED'"
+            class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-teal-200 mb-8 mt-10">
+            <div class="bg-teal-500 text-white px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <i class="pi pi-comments text-xl"></i>
+                    <span class="font-bold text-lg uppercase tracking-wide">Avis et Recommandations</span>
+                </div>
+                <p-badge [value]="state().avisList.length.toString()" severity="contrast"></p-badge>
+            </div>
+
+            <div class="p-6">
+                <!-- Formulaire -->
+                <div *ngIf="(!state().userHasAvis && state().showAvisForm) || state().editingAvis" class="mb-6">
+                    <form [formGroup]="avisForm" (ngSubmit)="submitAvis()" class="bg-gray-50 rounded-xl p-5">
+                        <div class="mb-4">
+                            <p-chip [label]="getRoleLabel(state().user?.role!)" icon="pi pi-user"></p-chip>
+                        </div>
+                        <textarea pTextarea formControlName="libele" rows="4" class="w-full mb-4"
+                            placeholder="Partagez votre avis..." [autoResize]="true">
+                        </textarea>
+                        <div class="flex justify-end gap-4">
+                            <p-button label="Annuler" icon="pi pi-times" severity="secondary"
+                                [outlined]="true" (onClick)="cancelEdit()"></p-button>
+                            <p-button label="Soumettre" icon="pi pi-send" type="submit"
+                                [loading]="state().submittingAvis" [disabled]="avisForm.invalid"></p-button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Liste des avis -->
+                <div *ngIf="state().avisList.length > 0" class="space-y-6">
+                    <div *ngFor="let avis of state().avisList"
+                        class="border rounded-xl p-5 transition-all hover:shadow-md"
+                        [ngClass]="avis.idUser === state().user?.userId ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-white'">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-center gap-4">
+                                <p-avatar [label]="(avis.userFullName || 'U').substring(0, 2).toUpperCase()"
+                                    shape="circle" size="large"
+                                    [style]="{'background-color': '#6366f1', 'color': 'white'}"></p-avatar>
+                                <div>
+                                    <p class="font-semibold text-base">
+                                        {{ avis.userFullName || 'Utilisateur' }}
+                                        <span *ngIf="avis.idUser === state().user?.userId"
+                                            class="text-blue-600">(Vous)</span>
+                                    </p>
+                                    <p class="text-gray-500">{{ formatDate(avis.dateCreation) }}</p>
                                 </div>
-                            </p-card>
-                        </ng-template>
-                    </p-timeline>
+                            </div>
+                            <div *ngIf="canEditAvis(avis)" class="flex gap-2">
+                                <button pButton icon="pi pi-pencil" class="p-button-text p-button-warning"
+                                    (click)="editAvis(avis)"></button>
+                                <button pButton icon="pi pi-trash" class="p-button-text p-button-danger"
+                                    (click)="deleteAvis(avis)"></button>
+                            </div>
+                        </div>
+                        <p class="mt-4 text-gray-700 whitespace-pre-wrap">{{ avis.libele }}</p>
+                    </div>
+                </div>
+
+                <div *ngIf="state().avisList.length === 0" class="text-center py-10 text-gray-500">
+                    <i class="pi pi-comments text-5xl mb-4 block opacity-50"></i>
+                    <p class="text-lg">Aucun avis n'a encore été donné</p>
                 </div>
             </div>
         </div>
 
-        <!-- Message si la demande n'est pas encore approuvée -->
-        <div *ngIf="(state().user?.role === 'DA' || state().user?.role === 'DR' || state().user?.role === 'MANAGER') 
-            && state().demandeIndividuel?.validationState !== 'APPROVED'" class="mt-6">
-            <p-divider />
-
-            <div class="bg-gray-50 border border-gray-300 rounded-lg p-6 text-center">
-                <i class="pi pi-lock text-gray-500 text-3xl mb-3"></i>
-                <h4 class="font-semibold text-gray-700 mb-2">Section Avis Non Disponible</h4>
-                <p class="text-gray-600">
-                    Les avis seront disponibles uniquement après que l'agent de crédit ait approuvé la demande.
-                </p>
-                <div class="mt-4">
-                    <span class="inline-block bg-gray-200 px-4 py-2 rounded-full text-gray-700">
-                        <i class="pi pi-info-circle mr-2"></i>
-                        Statut actuel: {{ state().demandeIndividuel?.validationState || 'En cours d\'analyse' }}
-                    </span>
-                </div>
-            </div>
+        <!-- Message si demande non approuvée (pour DA/DR/MANAGER) -->
+        <div *ngIf="(state().user?.role === 'DA' || state().user?.role === 'DR' || state().user?.role === 'MANAGER')
+            && state().demandeIndividuel?.validationState !== 'APPROVED'"
+            class="bg-gray-100 border border-gray-300 rounded-xl p-8 text-center mb-8">
+            <i class="pi pi-lock text-gray-400 text-5xl mb-4"></i>
+            <h4 class="font-semibold text-gray-600 text-lg mb-3">Section Avis Non Disponible</h4>
+            <p class="text-gray-500 mb-4">
+                Les avis seront disponibles après l'approbation par l'agent de crédit.
+            </p>
+            <span class="inline-block bg-gray-200 px-5 py-2 rounded-full text-gray-700 font-medium">
+                Statut: {{ state().demandeIndividuel?.validationState || 'En cours' }}
+            </span>
         </div>
+
+    </div>
+</div>

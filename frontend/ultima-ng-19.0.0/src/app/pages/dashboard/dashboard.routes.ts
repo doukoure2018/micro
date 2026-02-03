@@ -171,6 +171,11 @@ export default [
         loadComponent: () => import('./credit/individuel/attente/detail/analyse-bilan-activite/analyse-bilan-activite.component').then((c) => c.AnalyseBilanActiviteComponent)
     },
     {
+        path: 'credit/individuel/detail/resume-analyse/:demandeId',
+        data: { breadcrumb: 'Résumé Analyse Financière' },
+        loadComponent: () => import('./credit/individuel/attente/detail/resume-analyse-financiere/resume-analyse-financiere.component').then((c) => c.ResumeAnalyseFinanciereComponent)
+    },
+    {
         path: 'credit/individuel/detail/analyse-flux-tresorerie/:demandeindividuelId',
         data: { breadcrumb: 'Analyse Flux de Tresorerie' },
         loadComponent: () => import('./credit/individuel/attente/detail/analyse-flux-tresorerie/analyse-flux-tresorerie.component').then((c) => c.AnalyseFluxTresorerieComponent)

@@ -149,7 +149,7 @@ export class StartCreditComponent {
 
                             // Check if response.data and response.data.demandeIndividuel exist
                             if (response.data && response.data.demandeIndividuel) {
-                                const montant = response.data.demandeIndividuel.montant || 0;
+                                const montant = response.data.demandeIndividuel.montantDemande || 0;
 
                                 if (montant <= 25000000) {
                                     // Mise en place pour le petit credit
@@ -160,7 +160,7 @@ export class StartCreditComponent {
                                 }
                             } else {
                                 // If demandeIndividuel is not available in the response, use the one from state
-                                const montant = this.state().demandeIndividuel?.montant || 0;
+                                const montant = this.state().demandeIndividuel?.montantDemande || 0;
 
                                 if (montant <= 25000000) {
                                     this.router.navigate(['/dashboards/agent-credit/process-credit', numeroMembre]);

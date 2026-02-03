@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["tabledemo.ts"],
+  "sourcesContent": ["\n        .p-datatable-frozen-tbody {\n            font-weight: bold;\n        }\n\n        .p-datatable-scrollable .p-frozen-column {\n            font-weight: bold;\n        }\n    "],
+  "mappings": ";AACQ,CAAA;AACI,eAAA;;AAGJ,CAAA,uBAAA,CAAA;AACI,eAAA;;",
+  "names": []
+}

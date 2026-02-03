@@ -1,26 +1,28 @@
 import { Agence } from '@/interface/agence';
 import { Delegation } from '@/interface/delegation';
 import { PointVente } from '@/interface/point.vente';
-import { CommonModule, CurrencyPipe } from '@angular/common';
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { CommonModule, CurrencyPipe, DecimalPipe, registerLocaleData } from '@angular/common';
+import localeFr from '@angular/common/locales/fr';
+import { Component, DestroyRef, inject, signal, computed, LOCALE_ID } from '@angular/core';
+
+// Register French locale
+registerLocaleData(localeFr, 'fr-FR');
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
 import { StepsModule } from 'primeng/steps';
 import { ToastModule } from 'primeng/toast';
-import { IResponse } from '@/interface/response';
 import { TextareaModule } from 'primeng/textarea';
 import { InputGroupModule } from 'primeng/inputgroup';
 import { TagModule } from 'primeng/tag';
 import { BadgeModule } from 'primeng/badge';
-import { ListboxModule } from 'primeng/listbox';
-import { AccordionModule } from 'primeng/accordion';
 import { TableModule } from 'primeng/table';
 import { PanelModule } from 'primeng/panel';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { DividerModule } from 'primeng/divider';
+import { TooltipModule } from 'primeng/tooltip';
+import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MenuItem, MessageService } from 'primeng/api';
-import { DemandeCreditCompleteDTO } from '@/interface/demandeCreditComplete';
 import { Personnecaution } from '@/interface/personnecaution';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UserService } from '@/service/user.service';
@@ -28,6 +30,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin } from 'rxjs';
 import { DatePickerModule } from 'primeng/datepicker';
 import { SelectModule } from 'primeng/select';
+import { HttpClient } from '@angular/common/http';
+import { environment } from 'src/environments/environment';
 
 interface ComponentState {
     loading: boolean;
@@ -38,7 +42,20 @@ interface ComponentState {
     filteredPointsVente: PointVente[];
     demandeIndividuel: any;
     userId: number | null;
-    natureClient: 'Individuel' | 'Entreprise';
+    analyseId: number | null;
+    analyseExiste: boolean;
+}
+
+interface RatioInfo {
+    code: string;
+    nom: string;
+    operateur: string;
+    norme: number;
+    normeDisplay: string;
+    sollicite: number | null;
+    propose: number | null;
+    conformeSollicite: boolean;
+    conformePropose: boolean;
 }
 
 @Component({
@@ -57,25 +74,29 @@ interface ComponentState {
         ToastModule,
         TagModule,
         BadgeModule,
-        ListboxModule,
-        AccordionModule,
         CurrencyPipe,
+        DecimalPipe,
         TableModule,
         PanelModule,
+        DividerModule,
+        TooltipModule,
         DatePickerModule,
         SelectModule
     ],
     templateUrl: './analyse-bilan-activite.component.html',
     styleUrl: './analyse-bilan-activite.component.scss',
-    providers: [MessageService]
+    providers: [MessageService, { provide: LOCALE_ID, useValue: 'fr-FR' }]
 })
 export class AnalyseBilanActiviteComponent {
     private fb = inject(FormBuilder);
     private router = inject(Router);
     private messageService = inject(MessageService);
     private destroyRef = inject(DestroyRef);
-    private analyseCreditService = inject(UserService);
+    private userService = inject(UserService);
+    private http = inject(HttpClient);
     private route = inject(ActivatedRoute);
+
+    private apiUrl = environment.apiBaseUrl;
 
     state = signal<ComponentState>({
         loading: false,
@@ -86,45 +107,404 @@ export class AnalyseBilanActiviteComponent {
         filteredPointsVente: [],
         demandeIndividuel: null,
         userId: null,
-        natureClient: 'Individuel' // Default value
+        analyseId: null,
+        analyseExiste: false
     });
 
     activeIndex = signal<number>(0);
     items = signal<MenuItem[]>([]);
     loading = signal<boolean>(false);
+    savingBilan = signal<boolean>(false);
+    savingRentabilite = signal<boolean>(false);
+    savingBesoinCredit = signal<boolean>(false);
+    calculatingRatios = signal<boolean>(false);
 
-    // Forms for each step
-    infoBaseForm!: FormGroup;
-    bilanEntrepriseForm!: FormGroup;
-    bilanPersonnelForm!: FormGroup;
-    resultatActuelForm!: FormGroup;
-    resultatPrevisionnelForm!: FormGroup;
-    chargesActuellesForm!: FormGroup;
-    chargesPrevisionellesForm!: FormGroup;
+    // Forms
+    bilanNForm!: FormGroup; // Bilan année N
+    bilanN1Form!: FormGroup; // Bilan année N-1
+    rentabiliteNForm!: FormGroup; // Rentabilité année N
+    rentabiliteN1Form!: FormGroup; // Rentabilité année N-1
+    rentabiliteN2Form!: FormGroup; // Rentabilité prévisionnel N+1
+    besoinCreditForm!: FormGroup;
+    propositionForm!: FormGroup;
     demandeCreditForm!: FormGroup;
     personnecautionForm!: FormGroup;
 
-    formeJuridiques = [
-        { label: 'SARL', value: 'SARL' },
-        { label: 'SA', value: 'SA' },
-        { label: 'EI', value: 'EI' },
-        { label: 'EIRL', value: 'EIRL' },
-        { label: 'SNC', value: 'SNC' }
-    ];
+    // Ratios data
+    ratiosData = signal<RatioInfo[]>([]);
 
     personnecautions: Personnecaution[] = [];
-    resumeData: any = {};
     demandeIndividuelId: number | null = null;
 
+    // Periodicités disponibles
+    periodicites = [
+        { label: 'Mensuelle', value: 'MENSUELLE', facteur: 1 },
+        { label: 'Bimestrielle', value: 'BIMESTRIELLE', facteur: 2 },
+        { label: 'Trimestrielle', value: 'TRIMESTRIELLE', facteur: 3 },
+        { label: 'Quadrimestrielle', value: 'QUADRIMESTRIELLE', facteur: 4 },
+        { label: 'Semestrielle', value: 'SEMESTRIELLE', facteur: 6 },
+        { label: 'Annuelle', value: 'ANNUELLE', facteur: 12 },
+        { label: 'Unique', value: 'UNIQUE', facteur: 1 }
+    ];
+
+    // ============== COMPUTED VALUES FOR BILAN ==============
+
+    // Bilan N - ACTIF
+    totalActifImmobiliseN = computed(() => {
+        const form = this.bilanNForm;
+        if (!form) return 0;
+        return (
+            (form.get('terrains')?.value || 0) +
+            (form.get('constructions')?.value || 0) +
+            (form.get('installationsTechniques')?.value || 0) +
+            (form.get('materielTransport')?.value || 0) +
+            (form.get('materielBureau')?.value || 0) +
+            (form.get('autresImmobilisations')?.value || 0) +
+            (form.get('immobilisationsEnCours')?.value || 0) +
+            (form.get('immobilisationsFinancieres')?.value || 0)
+        );
+    });
+
+    totalActifCirculantN = computed(() => {
+        const form = this.bilanNForm;
+        if (!form) return 0;
+        return (form.get('stocks')?.value || 0) + (form.get('creances')?.value || 0) + (form.get('tresorerieActif')?.value || 0);
+    });
+
+    totalActifN = computed(() => this.totalActifImmobiliseN() + this.totalActifCirculantN());
+
+    // Bilan N - PASSIF
+    capitauxPropresN = computed(() => {
+        // Si capitauxPropre est saisi, utiliser cette valeur, sinon calculer
+        const capitauxPropreSaisi = this.bilanNForm?.get('capitauxPropre')?.value || 0;
+        if (capitauxPropreSaisi > 0) {
+            return capitauxPropreSaisi;
+        }
+        // Capitaux propres = Total Actif - Dettes
+        const totalDettes = (this.bilanNForm?.get('dettesLongTerme')?.value || 0) + (this.bilanNForm?.get('dettesCourtTerme')?.value || 0) + (this.bilanNForm?.get('tresoreriePassif')?.value || 0);
+        return this.totalActifN() - totalDettes;
+    });
+
+    totalPassifN = computed(() => {
+        const form = this.bilanNForm;
+        if (!form) return 0;
+        return this.capitauxPropresN() + (form.get('dettesLongTerme')?.value || 0) + (form.get('dettesCourtTerme')?.value || 0) + (form.get('tresoreriePassif')?.value || 0);
+    });
+
+    fondsRoulementN = computed(() => {
+        return this.capitauxPropresN() + (this.bilanNForm?.get('dettesLongTerme')?.value || 0) - this.totalActifImmobiliseN();
+    });
+
+    besoinFondsRoulementN = computed(() => {
+        const stocks = this.bilanNForm?.get('stocks')?.value || 0;
+        const creances = this.bilanNForm?.get('creances')?.value || 0;
+        const dettesCourtTerme = this.bilanNForm?.get('dettesCourtTerme')?.value || 0;
+        return stocks + creances - dettesCourtTerme;
+    });
+
+    tresorerieNetteN = computed(() => {
+        return this.fondsRoulementN() - this.besoinFondsRoulementN();
+    });
+
+    // ============== COMPUTED VALUES FOR BILAN N-1 ==============
+
+    // Bilan N-1 - ACTIF
+    totalActifImmobiliseN1 = computed(() => {
+        const form = this.bilanN1Form;
+        if (!form) return 0;
+        return (
+            (form.get('terrains')?.value || 0) +
+            (form.get('constructions')?.value || 0) +
+            (form.get('installationsTechniques')?.value || 0) +
+            (form.get('materielTransport')?.value || 0) +
+            (form.get('materielBureau')?.value || 0) +
+            (form.get('autresImmobilisations')?.value || 0) +
+            (form.get('immobilisationsEnCours')?.value || 0) +
+            (form.get('immobilisationsFinancieres')?.value || 0)
+        );
+    });
+
+    totalActifCirculantN1 = computed(() => {
+        const form = this.bilanN1Form;
+        if (!form) return 0;
+        return (form.get('stocks')?.value || 0) + (form.get('creances')?.value || 0) + (form.get('tresorerieActif')?.value || 0);
+    });
+
+    totalActifN1 = computed(() => this.totalActifImmobiliseN1() + this.totalActifCirculantN1());
+
+    // Bilan N-1 - PASSIF
+    capitauxPropresN1 = computed(() => {
+        // Si capitauxPropre est saisi, utiliser cette valeur, sinon calculer
+        const capitauxPropreSaisi = this.bilanN1Form?.get('capitauxPropre')?.value || 0;
+        if (capitauxPropreSaisi > 0) {
+            return capitauxPropreSaisi;
+        }
+        const totalDettes = (this.bilanN1Form?.get('dettesLongTerme')?.value || 0) + (this.bilanN1Form?.get('dettesCourtTerme')?.value || 0) + (this.bilanN1Form?.get('tresoreriePassif')?.value || 0);
+        return this.totalActifN1() - totalDettes;
+    });
+
+    totalPassifN1 = computed(() => {
+        const form = this.bilanN1Form;
+        if (!form) return 0;
+        return this.capitauxPropresN1() + (form.get('dettesLongTerme')?.value || 0) + (form.get('dettesCourtTerme')?.value || 0) + (form.get('tresoreriePassif')?.value || 0);
+    });
+
+    fondsRoulementN1 = computed(() => {
+        return this.capitauxPropresN1() + (this.bilanN1Form?.get('dettesLongTerme')?.value || 0) - this.totalActifImmobiliseN1();
+    });
+
+    besoinFondsRoulementN1 = computed(() => {
+        const stocks = this.bilanN1Form?.get('stocks')?.value || 0;
+        const creances = this.bilanN1Form?.get('creances')?.value || 0;
+        const dettesCourtTerme = this.bilanN1Form?.get('dettesCourtTerme')?.value || 0;
+        return stocks + creances - dettesCourtTerme;
+    });
+
+    tresorerieNetteN1 = computed(() => {
+        return this.fondsRoulementN1() - this.besoinFondsRoulementN1();
+    });
+
+    // ============== COMPUTED VALUES FOR RENTABILITE ==============
+
+    // Rentabilité N
+    margeBruteN = computed(() => {
+        const ca = this.rentabiliteNForm?.get('chiffreAffaires')?.value || 0;
+        const coutAchats = this.rentabiliteNForm?.get('coutAchats')?.value || 0;
+        return ca - coutAchats;
+    });
+
+    totalChargesN = computed(() => {
+        const form = this.rentabiliteNForm;
+        if (!form) return 0;
+        return (
+            (form.get('salaires')?.value || 0) +
+            (form.get('chargesSociales')?.value || 0) +
+            (form.get('loyer')?.value || 0) +
+            (form.get('electricite')?.value || 0) +
+            (form.get('eau')?.value || 0) +
+            (form.get('telephone')?.value || 0) +
+            (form.get('transport')?.value || 0) +
+            (form.get('entretien')?.value || 0) +
+            (form.get('assurances')?.value || 0) +
+            (form.get('impotsTaxes')?.value || 0) +
+            (form.get('fraisFinanciers')?.value || 0) +
+            (form.get('autresCharges')?.value || 0) +
+            (form.get('dotationAmortissement')?.value || 0)
+        );
+    });
+
+    resultatExploitationN = computed(() => {
+        const margeBrute = this.margeBruteN();
+        const totalCharges = this.totalChargesN();
+        const autresRevenus = this.rentabiliteNForm?.get('autresRevenus')?.value || 0;
+        return margeBrute - totalCharges + autresRevenus;
+    });
+
+    cashFlowN = computed(() => {
+        return this.resultatExploitationN() + (this.rentabiliteNForm?.get('dotationAmortissement')?.value || 0);
+    });
+
+    tauxMargeBruteN = computed(() => {
+        const ca = this.rentabiliteNForm?.get('chiffreAffaires')?.value || 0;
+        if (ca === 0) return 0;
+        return (this.margeBruteN() / ca) * 100;
+    });
+
+    // ============== COMPUTED VALUES FOR RENTABILITE N-1 ==============
+
+    margeBruteN1 = computed(() => {
+        const ca = this.rentabiliteN1Form?.get('chiffreAffaires')?.value || 0;
+        const coutAchats = this.rentabiliteN1Form?.get('coutAchats')?.value || 0;
+        return ca - coutAchats;
+    });
+
+    totalChargesN1 = computed(() => {
+        const form = this.rentabiliteN1Form;
+        if (!form) return 0;
+        return (
+            (form.get('salaires')?.value || 0) +
+            (form.get('chargesSociales')?.value || 0) +
+            (form.get('loyer')?.value || 0) +
+            (form.get('electricite')?.value || 0) +
+            (form.get('eau')?.value || 0) +
+            (form.get('telephone')?.value || 0) +
+            (form.get('transport')?.value || 0) +
+            (form.get('entretien')?.value || 0) +
+            (form.get('assurances')?.value || 0) +
+            (form.get('impotsTaxes')?.value || 0) +
+            (form.get('fraisFinanciers')?.value || 0) +
+            (form.get('autresCharges')?.value || 0) +
+            (form.get('dotationAmortissement')?.value || 0)
+        );
+    });
+
+    resultatExploitationN1 = computed(() => {
+        const margeBrute = this.margeBruteN1();
+        const totalCharges = this.totalChargesN1();
+        const autresRevenus = this.rentabiliteN1Form?.get('autresRevenus')?.value || 0;
+        return margeBrute - totalCharges + autresRevenus;
+    });
+
+    cashFlowN1 = computed(() => {
+        return this.resultatExploitationN1() + (this.rentabiliteN1Form?.get('dotationAmortissement')?.value || 0);
+    });
+
+    // Rentabilité N+1 (Prévisionnel)
+    margeBruteN2 = computed(() => {
+        const ca = this.rentabiliteN2Form?.get('chiffreAffaires')?.value || 0;
+        const coutAchats = this.rentabiliteN2Form?.get('coutAchats')?.value || 0;
+        return ca - coutAchats;
+    });
+
+    totalChargesN2 = computed(() => {
+        const form = this.rentabiliteN2Form;
+        if (!form) return 0;
+        return (
+            (form.get('salaires')?.value || 0) +
+            (form.get('chargesSociales')?.value || 0) +
+            (form.get('loyer')?.value || 0) +
+            (form.get('electricite')?.value || 0) +
+            (form.get('eau')?.value || 0) +
+            (form.get('telephone')?.value || 0) +
+            (form.get('transport')?.value || 0) +
+            (form.get('entretien')?.value || 0) +
+            (form.get('assurances')?.value || 0) +
+            (form.get('impotsTaxes')?.value || 0) +
+            (form.get('fraisFinanciers')?.value || 0) +
+            (form.get('autresCharges')?.value || 0) +
+            (form.get('dotationAmortissement')?.value || 0)
+        );
+    });
+
+    resultatExploitationN2 = computed(() => {
+        const margeBrute = this.margeBruteN2();
+        const totalCharges = this.totalChargesN2();
+        const autresRevenus = this.rentabiliteN2Form?.get('autresRevenus')?.value || 0;
+        return margeBrute - totalCharges + autresRevenus;
+    });
+
+    cashFlowN2 = computed(() => {
+        return this.resultatExploitationN2() + (this.rentabiliteN2Form?.get('dotationAmortissement')?.value || 0);
+    });
+
+    // ============== COMPUTED VALUES FOR BESOIN CREDIT ==============
+
+    // INVESTISSEMENT - Colonnes Montant
+    investissementCoutEquipement = computed(() => this.besoinCreditForm?.get('coutEquipement')?.value || 0);
+    investissementDepensesRattachees = computed(() => this.besoinCreditForm?.get('depensesRattachees')?.value || 0);
+    investissementApportPersonnel = computed(() => this.besoinCreditForm?.get('apportPersonnel')?.value || 0);
+
+    // INVESTISSEMENT - Colonnes Ajustement
+    investissementAjustCoutEquipement = computed(() => this.besoinCreditForm?.get('ajustCoutEquipement')?.value || 0);
+    investissementAjustDepensesRattachees = computed(() => this.besoinCreditForm?.get('ajustDepensesRattachees')?.value || 0);
+    investissementAjustApportPersonnel = computed(() => this.besoinCreditForm?.get('ajustApportPersonnel')?.value || 0);
+
+    // INVESTISSEMENT - Colonnes Montant effectif (Montant + Ajustement)
+    effCoutEquipement = computed(() => this.investissementCoutEquipement() + this.investissementAjustCoutEquipement());
+    effDepensesRattachees = computed(() => this.investissementDepensesRattachees() + this.investissementAjustDepensesRattachees());
+    effApportPersonnel = computed(() => this.investissementApportPersonnel() + this.investissementAjustApportPersonnel());
+
+    // INVESTISSEMENT - Totaux
+    totalInvestissementMontant = computed(() => this.investissementCoutEquipement() + this.investissementDepensesRattachees());
+    totalInvestissementAjuste = computed(() => this.investissementAjustCoutEquipement() + this.investissementAjustDepensesRattachees());
+    totalInvestissementEffectif = computed(() => this.effCoutEquipement() + this.effDepensesRattachees());
+
+    // INVESTISSEMENT - Besoin réel = Total invest - Apport personnel
+    besoinReelInvestissementMontant = computed(() => this.totalInvestissementMontant() - this.investissementApportPersonnel());
+    besoinReelInvestissementAjuste = computed(() => this.totalInvestissementAjuste() - this.investissementAjustApportPersonnel());
+    besoinReelInvestissementFinal = computed(() => this.totalInvestissementEffectif() - this.effApportPersonnel());
+
+    // EXPLOITATION - Colonnes Montant
+    exploitationCoutAchatCycle = computed(() => this.besoinCreditForm?.get('coutAchatCycle')?.value || 0);
+    exploitationNbreCycles = computed(() => this.besoinCreditForm?.get('nbreCycleFinancer')?.value || 1);
+    exploitationTresorerieDispo = computed(() => this.besoinCreditForm?.get('tresorerieDisponible')?.value || 0);
+    exploitationStockActuel = computed(() => this.besoinCreditForm?.get('stockActuel')?.value || 0);
+    exploitationComptesRecevoir = computed(() => this.besoinCreditForm?.get('comptesRecevoir')?.value || 0);
+    exploitationDettesFournisseurs = computed(() => this.besoinCreditForm?.get('dettesFournisseurs')?.value || 0);
+    exploitationCreditFournisseur = computed(() => this.besoinCreditForm?.get('creditFournisseur')?.value || 0);
+
+    // EXPLOITATION - Colonnes Ajustement
+    exploitationAjustCoutAchat = computed(() => this.besoinCreditForm?.get('ajustCoutAchatCycle')?.value || 0);
+    exploitationAjustTresorerie = computed(() => this.besoinCreditForm?.get('ajustTresorerieDispo')?.value || 0);
+    exploitationAjustStock = computed(() => this.besoinCreditForm?.get('ajustStockActuel')?.value || 0);
+    exploitationAjustComptes = computed(() => this.besoinCreditForm?.get('ajustComptesRecevoir')?.value || 0);
+    exploitationAjustDettes = computed(() => this.besoinCreditForm?.get('ajustDettesFournisseurs')?.value || 0);
+    exploitationAjustCredit = computed(() => this.besoinCreditForm?.get('ajustCreditFournisseur')?.value || 0);
+
+    // EXPLOITATION - Montants effectifs
+    effCoutAchatCycle = computed(() => this.exploitationCoutAchatCycle() + this.exploitationAjustCoutAchat());
+    effTresorerieDispo = computed(() => this.exploitationTresorerieDispo() + this.exploitationAjustTresorerie());
+    effStockActuel = computed(() => this.exploitationStockActuel() + this.exploitationAjustStock());
+    effComptesRecevoir = computed(() => this.exploitationComptesRecevoir() + this.exploitationAjustComptes());
+    effDettesFournisseurs = computed(() => this.exploitationDettesFournisseurs() + this.exploitationAjustDettes());
+    effCreditFournisseur = computed(() => this.exploitationCreditFournisseur() + this.exploitationAjustCredit());
+
+    // EXPLOITATION - Besoin brut = Coût achat × Nbre cycles
+    besoinBrutExploitationMontant = computed(() => this.exploitationCoutAchatCycle() * this.exploitationNbreCycles());
+    besoinBrutExploitationAjuste = computed(() => this.exploitationAjustCoutAchat() * this.exploitationNbreCycles());
+    besoinBrutExploitationEffectif = computed(() => this.effCoutAchatCycle() * this.exploitationNbreCycles());
+
+    // EXPLOITATION - Ressources disponibles = Trésorerie + Stock + Comptes à recevoir
+    ressourcesDisponiblesMontant = computed(() => this.exploitationTresorerieDispo() + this.exploitationStockActuel() + this.exploitationComptesRecevoir());
+    ressourcesDisponiblesAjuste = computed(() => this.exploitationAjustTresorerie() + this.exploitationAjustStock() + this.exploitationAjustComptes());
+    ressourcesDisponiblesEffectif = computed(() => this.effTresorerieDispo() + this.effStockActuel() + this.effComptesRecevoir());
+
+    // EXPLOITATION - Dettes = Dettes fournisseurs + Crédit fournisseur
+    totalDettesMontant = computed(() => this.exploitationDettesFournisseurs() + this.exploitationCreditFournisseur());
+    totalDettesAjuste = computed(() => this.exploitationAjustDettes() + this.exploitationAjustCredit());
+    totalDettesEffectif = computed(() => this.effDettesFournisseurs() + this.effCreditFournisseur());
+
+    // EXPLOITATION - Besoin réel = Besoin brut - Ressources + Dettes
+    besoinReelExploitationMontant = computed(() => this.besoinBrutExploitationMontant() - this.ressourcesDisponiblesMontant() + this.totalDettesMontant());
+    besoinReelExploitationAjuste = computed(() => this.besoinBrutExploitationAjuste() - this.ressourcesDisponiblesAjuste() + this.totalDettesAjuste());
+    besoinReelExploitationFinal = computed(() => this.besoinBrutExploitationEffectif() - this.ressourcesDisponiblesEffectif() + this.totalDettesEffectif());
+
+    // TOTAL FINANCEMENT = Besoin investissement + Besoin exploitation
+    besoinTotalFinancementMontant = computed(() => this.besoinReelInvestissementMontant() + this.besoinReelExploitationMontant());
+    besoinTotalFinancementAjuste = computed(() => this.besoinReelInvestissementAjuste() + this.besoinReelExploitationAjuste());
+    besoinTotalFinancementFinal = computed(() => this.besoinReelInvestissementFinal() + this.besoinReelExploitationFinal());
+
+    // ============== COMPUTED FOR PROPOSITION (Echeance) ==============
+
+    echeanceMensuelle = computed(() => {
+        const montant = this.propositionForm?.get('montantPropose')?.value || 0;
+        const duree = this.propositionForm?.get('dureeProposee')?.value || 12;
+        const taux = this.propositionForm?.get('tauxPropose')?.value || 0;
+        const periodicite = this.propositionForm?.get('periodiciteProposee')?.value;
+
+        if (montant <= 0 || duree <= 0) return 0;
+
+        const facteurPeriodicite = this.getFacteurPeriodicite(periodicite);
+        const nombreEcheances = Math.ceil(duree / facteurPeriodicite);
+        const tauxPeriodique = ((taux / 100) * facteurPeriodicite) / 12;
+
+        if (tauxPeriodique === 0) {
+            return montant / nombreEcheances;
+        }
+
+        // Formule d'annuité constante
+        const echeance = (montant * (tauxPeriodique * Math.pow(1 + tauxPeriodique, nombreEcheances))) / (Math.pow(1 + tauxPeriodique, nombreEcheances) - 1);
+
+        return echeance;
+    });
+
+    capaciteRemboursementProposee = computed(() => {
+        const cashFlow = this.cashFlowN2();
+        const echeance = this.echeanceMensuelle();
+        if (echeance === 0) return 0;
+        // Cash-flow annuel / Echéance annualisée
+        const periodicite = this.propositionForm?.get('periodiciteProposee')?.value;
+        const facteur = this.getFacteurPeriodicite(periodicite);
+        const echeanceAnnuelle = echeance * (12 / facteur);
+        return cashFlow / echeanceAnnuelle;
+    });
+
     ngOnInit() {
-        // Initialize forms FIRST - before any data loading
         this.initForms();
         this.initStepItems();
 
-        // Extract demandeIndividuelId from route
         this.route.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
             this.demandeIndividuelId = params['demandeindividuelId'] ? parseInt(params['demandeindividuelId'], 10) : null;
-            console.log('DemandeIndividuel ID from route:', this.demandeIndividuelId);
 
             if (!this.demandeIndividuelId) {
                 this.messageService.add({
@@ -143,17 +523,13 @@ export class AnalyseBilanActiviteComponent {
     private loadAllData(): void {
         this.state.update((state) => ({ ...state, loading: true }));
 
-        // Load both initial data and demande individuelle
         forkJoin({
-            initialData: this.analyseCreditService.startNewDemandeInd$(),
-            demandeData: this.analyseCreditService.getDemandeWithGaranties$(this.demandeIndividuelId!)
+            initialData: this.userService.startNewDemandeInd$(),
+            demandeData: this.userService.getDemandeWithGaranties$(this.demandeIndividuelId!)
         })
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (responses) => {
-                    console.log('All data loaded:', responses);
-
-                    // Process initial data
                     if (responses.initialData?.data) {
                         this.state.update((state) => ({
                             ...state,
@@ -163,25 +539,19 @@ export class AnalyseBilanActiviteComponent {
                         }));
                     }
 
-                    // Process demande data
                     if (responses.demandeData?.data) {
                         const demandeIndividuel = responses.demandeData.data.demandeIndividuel;
                         const userId = responses.demandeData.data.user?.userId!;
-                        const natureClient: 'Individuel' | 'Entreprise' = demandeIndividuel.natureClient === 'Entreprise' ? 'Entreprise' : 'Individuel';
 
                         this.state.update((state) => ({
                             ...state,
                             demandeIndividuel,
                             userId,
-                            natureClient,
                             loading: false
                         }));
 
-                        // Update form validators based on nature client
-                        this.updateFormValidators(natureClient);
-
-                        // Prefill forms with demande data
                         this.prefillFormsWithDemande(demandeIndividuel);
+                        this.loadExistingAnalyse();
                     }
                 },
                 error: (error) => {
@@ -197,85 +567,198 @@ export class AnalyseBilanActiviteComponent {
             });
     }
 
-    private updateFormValidators(natureClient: string): void {
-        if (natureClient === 'Individuel') {
-            // Remove validators for enterprise fields
-            this.infoBaseForm.get('nomEntreprise')?.clearValidators();
-            this.infoBaseForm.get('nomEntreprise')?.updateValueAndValidity();
+    private loadExistingAnalyse(): void {
+        this.http
+            .get<any>(`${this.apiUrl}/ecredit/bilan_finance/analyse/demande/${this.demandeIndividuelId}`)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    const analyse = response?.data?.analyse;
+                    // Backend returns analyseId, not id
+                    const analyseIdValue = analyse?.analyseId || analyse?.id;
+                    if (analyse && analyseIdValue) {
+                        this.state.update((state) => ({
+                            ...state,
+                            analyseId: analyseIdValue,
+                            analyseExiste: true
+                        }));
+                        this.loadAnalyseDetails(analyseIdValue);
+                    } else {
+                        this.state.update((state) => ({ ...state, analyseExiste: false }));
+                    }
+                },
+                error: () => {
+                    // Analyse n'existe pas encore, c'est normal
+                    this.state.update((state) => ({ ...state, analyseExiste: false }));
+                }
+            });
+    }
 
-            // Disable enterprise fields
-            this.infoBaseForm.get('nomEntreprise')?.disable();
-            this.infoBaseForm.get('formeJuridique')?.disable();
-            this.infoBaseForm.get('dateCreation')?.disable();
-            this.infoBaseForm.get('numeroRegistre')?.disable();
-            this.infoBaseForm.get('adresseEntreprise')?.disable();
-            this.infoBaseForm.get('telephoneEntreprise')?.disable();
-            this.infoBaseForm.get('emailEntreprise')?.disable();
-        } else {
-            // Enable enterprise fields for 'Entreprise' type
-            this.infoBaseForm.get('nomEntreprise')?.setValidators([Validators.required]);
-            this.infoBaseForm.get('nomEntreprise')?.updateValueAndValidity();
-
-            this.infoBaseForm.get('nomEntreprise')?.enable();
-            this.infoBaseForm.get('formeJuridique')?.enable();
-            this.infoBaseForm.get('dateCreation')?.enable();
-            this.infoBaseForm.get('numeroRegistre')?.enable();
-            this.infoBaseForm.get('adresseEntreprise')?.enable();
-            this.infoBaseForm.get('telephoneEntreprise')?.enable();
-            this.infoBaseForm.get('emailEntreprise')?.enable();
+    private loadAnalyseDetails(analyseId: number): void {
+        // Vérifier que analyseId est défini avant de faire les appels API
+        if (!analyseId || analyseId === undefined || analyseId === null) {
+            console.warn('loadAnalyseDetails called with invalid analyseId:', analyseId);
+            return;
         }
+
+        // Charger bilans
+        this.http
+            .get<any>(`${this.apiUrl}/ecredit/bilan_finance/bilan/analyse/${analyseId}`)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    if (response?.data?.bilans) {
+                        response.data.bilans.forEach((bilan: any) => {
+                            if (bilan.typePeriode === 'N') {
+                                this.patchBilanForm(this.bilanNForm, bilan);
+                            } else if (bilan.typePeriode === 'N-1') {
+                                this.patchBilanForm(this.bilanN1Form, bilan);
+                            }
+                        });
+                    }
+                }
+            });
+
+        // Charger rentabilités
+        this.http
+            .get<any>(`${this.apiUrl}/ecredit/bilan_finance/rentabilite/analyse/${analyseId}`)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    if (response?.data?.rentabilites) {
+                        response.data.rentabilites.forEach((rent: any) => {
+                            if (rent.typePeriode === 'N') {
+                                this.patchRentabiliteForm(this.rentabiliteNForm, rent);
+                            } else if (rent.typePeriode === 'N-1') {
+                                this.patchRentabiliteForm(this.rentabiliteN1Form, rent);
+                            } else if (rent.typePeriode === 'N+1') {
+                                this.patchRentabiliteForm(this.rentabiliteN2Form, rent);
+                            }
+                        });
+                    }
+                }
+            });
+
+        // Charger besoin crédit
+        this.http
+            .get<any>(`${this.apiUrl}/ecredit/bilan_finance/besoin-credit/analyse/${analyseId}`)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    if (response?.data?.besoinCredit) {
+                        this.patchBesoinCreditForm(response.data.besoinCredit);
+                    }
+                }
+            });
+
+        // Charger proposition
+        this.http
+            .get<any>(`${this.apiUrl}/ecredit/bilan_finance/proposition/${this.demandeIndividuelId}`)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    if (response?.data?.proposition) {
+                        this.patchPropositionForm(response.data.proposition);
+                    }
+                }
+            });
+
+        // Charger ratios
+        this.loadRatios(analyseId);
+    }
+
+    private loadRatios(analyseId: number): void {
+        if (!analyseId) {
+            console.warn('loadRatios called with invalid analyseId:', analyseId);
+            return;
+        }
+        this.http
+            .get<any>(`${this.apiUrl}/ecredit/bilan_finance/ratios/analyse/${analyseId}`)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    if (response?.data?.ratios) {
+                        this.updateRatiosData(response.data.ratios);
+                    }
+                }
+            });
+    }
+
+    private updateRatiosData(ratios: any): void {
+        const ratiosList: RatioInfo[] = [
+            {
+                code: 'R1',
+                nom: 'Capacité de remboursement',
+                operateur: '>=',
+                norme: 2.0,
+                normeDisplay: '200%',
+                sollicite: ratios.r1Sollicite,
+                propose: ratios.r1Propose,
+                conformeSollicite: ratios.r1ConformeSollicite || false,
+                conformePropose: ratios.r1ConformePropose || false
+            },
+            {
+                code: 'R2',
+                nom: 'Solvabilité',
+                operateur: '>=',
+                norme: 0.35,
+                normeDisplay: '35%',
+                sollicite: ratios.r2Sollicite,
+                propose: ratios.r2Propose,
+                conformeSollicite: ratios.r2ConformeSollicite || false,
+                conformePropose: ratios.r2ConformePropose || false
+            },
+            {
+                code: 'R3',
+                nom: 'Liquidité à échéance',
+                operateur: '>=',
+                norme: 1.0,
+                normeDisplay: '100%',
+                sollicite: ratios.r3Sollicite,
+                propose: ratios.r3Propose,
+                conformeSollicite: ratios.r3ConformeSollicite || false,
+                conformePropose: ratios.r3ConformePropose || false
+            },
+            {
+                code: 'R4',
+                nom: 'Endettement',
+                operateur: '<',
+                norme: 0.5,
+                normeDisplay: '< 50%',
+                sollicite: ratios.r4Sollicite,
+                propose: ratios.r4Propose,
+                conformeSollicite: ratios.r4ConformeSollicite || false,
+                conformePropose: ratios.r4ConformePropose || false
+            },
+            {
+                code: 'R5',
+                nom: 'Dépendance',
+                operateur: '<',
+                norme: 0.5,
+                normeDisplay: '< 50%',
+                sollicite: ratios.r5Sollicite,
+                propose: ratios.r5Propose,
+                conformeSollicite: ratios.r5ConformeSollicite || false,
+                conformePropose: ratios.r5ConformePropose || false
+            },
+            {
+                code: 'R6',
+                nom: 'Couverture garantie',
+                operateur: '>',
+                norme: 1.5,
+                normeDisplay: '> 150%',
+                sollicite: ratios.r6Sollicite,
+                propose: ratios.r6Propose,
+                conformeSollicite: ratios.r6ConformeSollicite || false,
+                conformePropose: ratios.r6ConformePropose || false
+            }
+        ];
+
+        this.ratiosData.set(ratiosList);
     }
 
     private prefillFormsWithDemande(demande: any): void {
         if (!demande) return;
-
-        // Add safety check for forms
-        if (!this.infoBaseForm || !this.bilanPersonnelForm || !this.demandeCreditForm) {
-            console.error('Forms not initialized');
-            return;
-        }
-
-        // Convert date array to Date object
-        const convertDateArray = (dateArray: number[]): Date | null => {
-            if (!dateArray || dateArray.length < 3) return null;
-            return new Date(dateArray[0], dateArray[1] - 1, dateArray[2]);
-        };
-
-        // Prefill info base form
-        this.infoBaseForm.patchValue({
-            nomPromoteur: demande.nom,
-            prenomPromoteur: demande.prenom,
-            dateNaissance: convertDateArray(demande.dateNaissance),
-            numeroIdentite: demande.numId,
-            adressePromoteur: demande.addresseDomicileContact,
-            telephonePromoteur: demande.telephone,
-            secteurActivite: demande.descriptionActivite,
-            adresseEntreprise: demande.adresseLieuActivite
-        });
-
-        // Disable prefilled fields
-        this.infoBaseForm.get('nomPromoteur')?.disable();
-        this.infoBaseForm.get('prenomPromoteur')?.disable();
-        this.infoBaseForm.get('dateNaissance')?.disable();
-        this.infoBaseForm.get('numeroIdentite')?.disable();
-        this.infoBaseForm.get('telephonePromoteur')?.disable();
-        this.infoBaseForm.get('secteurActivite')?.disable();
-
-        // Calculate guarantee values
-        if (demande.garanties && demande.garanties.length > 0) {
-            const totalValeurGarantie = demande.garanties.reduce((sum: number, g: any) => sum + (g.valeurGarantie || 0), 0);
-            const totalValeurEmprunte = demande.garanties.reduce((sum: number, g: any) => sum + (g.valeurEmprunte || 0), 0);
-            const libeleGarantie = demande.garanties
-                .map((g: any) => g.descriptionGarantie)
-                .filter((d: string) => d)
-                .join(', ');
-
-            this.bilanPersonnelForm.patchValue({
-                valeurBiensDurables: totalValeurGarantie,
-                libeleGarantie: libeleGarantie,
-                montantGarantie: totalValeurEmprunte
-            });
-        }
 
         // Prefill demande credit form
         this.demandeCreditForm.patchValue({
@@ -284,14 +767,21 @@ export class AnalyseBilanActiviteComponent {
             objetFinancement: demande.detailObjectCredit
         });
 
-        // Set delegation, agence, and point vente
+        // Prefill proposition with demande values
+        this.propositionForm.patchValue({
+            montantSollicite: demande.montantDemande,
+            dureeSollicitee: demande.dureeDemande,
+            montantPropose: demande.montantDemande,
+            dureeProposee: demande.dureeDemande
+        });
+
+        // Set delegation, agence, point vente
         if (demande.delegation) {
             const delegation = this.state().allDelegations.find((d) => d.id === demande.delegation);
             if (delegation) {
                 this.demandeCreditForm.patchValue({ delegation });
                 this.onDelegationChange({ value: delegation });
 
-                // Set agence after delegation is set
                 setTimeout(() => {
                     if (demande.agence) {
                         const agence = this.state().filteredAgences.find((a) => a.id === demande.agence);
@@ -299,7 +789,6 @@ export class AnalyseBilanActiviteComponent {
                             this.demandeCreditForm.patchValue({ agence });
                             this.onAgenceChange({ value: agence });
 
-                            // Set point vente after agence is set
                             setTimeout(() => {
                                 if (demande.pos) {
                                     const pointVente = this.state().filteredPointsVente.find((p) => p.id === demande.pos);
@@ -321,97 +810,241 @@ export class AnalyseBilanActiviteComponent {
         this.demandeCreditForm.get('pointVente')?.disable();
     }
 
+    private patchBilanForm(form: FormGroup, bilan: any): void {
+        form.patchValue({
+            terrains: bilan.terrains || bilan.terrain || 0,
+            constructions: bilan.constructions || bilan.batimentMagasin || 0,
+            installationsTechniques: bilan.installationsTechniques || bilan.installationAgencement || 0,
+            materielTransport: bilan.materielTransport || 0,
+            materielBureau: bilan.materielBureau || bilan.mobilierBureau || 0,
+            autresImmobilisations: bilan.autresImmobilisations || bilan.autreImmobilisation || 0,
+            immobilisationsEnCours: bilan.immobilisationsEnCours || 0,
+            immobilisationsFinancieres: bilan.immobilisationsFinancieres || 0,
+            stocks: bilan.stocks || 0,
+            creances: bilan.creances || bilan.creancesClients || 0,
+            tresorerieActif: bilan.tresorerieActif || bilan.tresorerieCaisseBanque || 0,
+            capitauxPropre: bilan.capitauxPropre || 0,
+            dettesLongTerme: bilan.dettesLongTerme || bilan.empruntLongTerme || 0,
+            dettesCourtTerme: bilan.dettesCourtTerme || bilan.empruntCourtTerme || 0,
+            tresoreriePassif: bilan.tresoreriePassif || bilan.autresDettes || 0
+        });
+    }
+
+    private patchRentabiliteForm(form: FormGroup, rent: any): void {
+        form.patchValue({
+            chiffreAffaires: rent.chiffreAffaires || 0,
+            coutAchats: rent.coutAchats || 0,
+            salaires: rent.salaires || 0,
+            chargesSociales: rent.chargesSociales || 0,
+            loyer: rent.loyer || 0,
+            electricite: rent.electricite || 0,
+            eau: rent.eau || 0,
+            telephone: rent.telephone || 0,
+            transport: rent.transport || 0,
+            entretien: rent.entretien || 0,
+            assurances: rent.assurances || 0,
+            impotsTaxes: rent.impotsTaxes || 0,
+            fraisFinanciers: rent.fraisFinanciers || 0,
+            autresCharges: rent.autresCharges || 0,
+            dotationAmortissement: rent.dotationAmortissement || 0,
+            autresRevenus: rent.autresRevenus || 0
+        });
+    }
+
+    private patchBesoinCreditForm(besoin: any): void {
+        this.besoinCreditForm.patchValue({
+            // INVESTISSEMENT - Montants
+            coutEquipement: besoin.coutEquipement || 0,
+            depensesRattachees: besoin.depensesRattachees || 0,
+            apportPersonnel: besoin.apportPersonnel || 0,
+            // INVESTISSEMENT - Ajustements
+            ajustCoutEquipement: besoin.ajustCoutEquipement || 0,
+            ajustDepensesRattachees: besoin.ajustDepensesRattachees || 0,
+            ajustApportPersonnel: besoin.ajustApportPersonnel || 0,
+            // EXPLOITATION - Montants
+            coutAchatCycle: besoin.coutAchatCycle || 0,
+            nbreCycleFinancer: besoin.nbreCycleFinancer || 1,
+            tresorerieDisponible: besoin.tresorerieDisponible || 0,
+            stockActuel: besoin.stockActuel || 0,
+            comptesRecevoir: besoin.comptesRecevoir || 0,
+            dettesFournisseurs: besoin.dettesFournisseurs || 0,
+            creditFournisseur: besoin.creditFournisseur || 0,
+            // EXPLOITATION - Ajustements
+            ajustCoutAchatCycle: besoin.ajustCoutAchatCycle || 0,
+            ajustTresorerieDispo: besoin.ajustTresorerieDispo || 0,
+            ajustStockActuel: besoin.ajustStockActuel || 0,
+            ajustComptesRecevoir: besoin.ajustComptesRecevoir || 0,
+            ajustDettesFournisseurs: besoin.ajustDettesFournisseurs || 0,
+            ajustCreditFournisseur: besoin.ajustCreditFournisseur || 0
+        });
+    }
+
+    private patchPropositionForm(prop: any): void {
+        this.propositionForm.patchValue({
+            montantSollicite: prop.montantSollicite || 0,
+            dureeSollicitee: prop.dureeSollicitee || 0,
+            montantPropose: prop.montantPropose || 0,
+            dureeProposee: prop.dureeProposee || 0,
+            tauxPropose: prop.tauxPropose || 0,
+            periodiciteProposee: prop.periodiciteProposee || 'MENSUELLE',
+            commentaireOrientation: prop.commentaireOrientation || ''
+        });
+    }
+
     initStepItems() {
         this.items.set([
-            { label: 'Informations de base', command: () => this.onStepChange(0) },
-            { label: 'Bilan entreprise', command: () => this.onStepChange(1) },
-            { label: 'Bilan personnel', command: () => this.onStepChange(2) },
-            { label: 'Résultats actuels', command: () => this.onStepChange(3) },
-            { label: 'Résultats prévisionnels', command: () => this.onStepChange(4) },
-            { label: 'Charges actuelles', command: () => this.onStepChange(5) },
-            { label: 'Charges prévisionnelles', command: () => this.onStepChange(6) },
-            { label: 'Demande de crédit', command: () => this.onStepChange(7) },
-            { label: 'Personnes caution', command: () => this.onStepChange(8) },
-            { label: 'Résumé', command: () => this.onStepChange(9) }
+            { label: 'Bilan', command: () => this.onStepChange(0) },
+            { label: 'Rentabilité', command: () => this.onStepChange(1) },
+            { label: 'Personnes caution', command: () => this.onStepChange(2) },
+            { label: 'Synthèse', command: () => this.onStepChange(3) },
+            { label: 'Besoin Crédit', command: () => this.onStepChange(4) }
         ]);
     }
 
     initForms() {
-        // Info base form - email not required anymore
-        this.infoBaseForm = this.fb.group({
-            nomPromoteur: [''],
-            prenomPromoteur: [''],
-            dateNaissance: [null],
-            numeroIdentite: [''],
-            adressePromoteur: [''],
-            telephonePromoteur: [''],
-            emailPromoteur: [''], // No email validation required
-            nomEntreprise: ['', Validators.required], // Will be updated based on natureClient
-            formeJuridique: [''],
-            secteurActivite: [''],
-            dateCreation: [null],
-            numeroRegistre: [''],
-            adresseEntreprise: [''],
-            telephoneEntreprise: [''],
-            emailEntreprise: [''] // No email validation required
+        // Bilan N
+        this.bilanNForm = this.fb.group({
+            // Actif immobilisé
+            terrains: [0],
+            constructions: [0],
+            installationsTechniques: [0],
+            materielTransport: [0],
+            materielBureau: [0],
+            autresImmobilisations: [0],
+            immobilisationsEnCours: [0],
+            immobilisationsFinancieres: [0],
+            // Actif circulant
+            stocks: [0],
+            creances: [0],
+            tresorerieActif: [0],
+            // Passif - Capitaux propres
+            capitauxPropre: [0],
+            // Passif - Dettes
+            dettesLongTerme: [0],
+            dettesCourtTerme: [0],
+            tresoreriePassif: [0]
         });
 
-        // Bilan entreprise
-        this.bilanEntrepriseForm = this.fb.group({
-            liquidites: [0],
-            creancesClients: [0],
-            valeurStocks: [0],
-            valeurEquipements: [0],
+        // Bilan N-1
+        this.bilanN1Form = this.fb.group({
+            terrains: [0],
+            constructions: [0],
+            installationsTechniques: [0],
+            materielTransport: [0],
+            materielBureau: [0],
+            autresImmobilisations: [0],
+            immobilisationsEnCours: [0],
+            immobilisationsFinancieres: [0],
+            stocks: [0],
+            creances: [0],
+            tresorerieActif: [0],
+            // Passif - Capitaux propres
+            capitauxPropre: [0],
+            // Passif - Dettes
+            dettesLongTerme: [0],
+            dettesCourtTerme: [0],
+            tresoreriePassif: [0]
+        });
+
+        // Rentabilité N
+        this.rentabiliteNForm = this.fb.group({
+            chiffreAffaires: [0],
+            coutAchats: [0],
+            salaires: [0],
+            chargesSociales: [0],
+            loyer: [0],
+            electricite: [0],
+            eau: [0],
+            telephone: [0],
+            transport: [0],
+            entretien: [0],
+            assurances: [0],
+            impotsTaxes: [0],
+            fraisFinanciers: [0],
+            autresCharges: [0],
+            dotationAmortissement: [0],
+            autresRevenus: [0]
+        });
+
+        // Rentabilité N-1
+        this.rentabiliteN1Form = this.fb.group({
+            chiffreAffaires: [0],
+            coutAchats: [0],
+            salaires: [0],
+            chargesSociales: [0],
+            loyer: [0],
+            electricite: [0],
+            eau: [0],
+            telephone: [0],
+            transport: [0],
+            entretien: [0],
+            assurances: [0],
+            impotsTaxes: [0],
+            fraisFinanciers: [0],
+            autresCharges: [0],
+            dotationAmortissement: [0],
+            autresRevenus: [0]
+        });
+
+        // Rentabilité N+1 (Prévisionnel)
+        this.rentabiliteN2Form = this.fb.group({
+            chiffreAffaires: [0],
+            coutAchats: [0],
+            salaires: [0],
+            chargesSociales: [0],
+            loyer: [0],
+            electricite: [0],
+            eau: [0],
+            telephone: [0],
+            transport: [0],
+            entretien: [0],
+            assurances: [0],
+            impotsTaxes: [0],
+            fraisFinanciers: [0],
+            autresCharges: [0],
+            dotationAmortissement: [0],
+            autresRevenus: [0]
+        });
+
+        // Besoin crédit - Conforme à la table analyse_besoin_credit et Excel
+        this.besoinCreditForm = this.fb.group({
+            // INVESTISSEMENT - Montants
+            coutEquipement: [0],
+            depensesRattachees: [0],
+            apportPersonnel: [0],
+            // INVESTISSEMENT - Ajustements
+            ajustCoutEquipement: [0],
+            ajustDepensesRattachees: [0],
+            ajustApportPersonnel: [0],
+            // EXPLOITATION - Montants
+            coutAchatCycle: [0],
+            nbreCycleFinancer: [1],
+            tresorerieDisponible: [0],
+            stockActuel: [0],
+            comptesRecevoir: [0],
             dettesFournisseurs: [0],
-            emprunts: [0],
-            capitalPropre: [0]
+            creditFournisseur: [0],
+            // EXPLOITATION - Ajustements
+            ajustCoutAchatCycle: [0],
+            ajustTresorerieDispo: [0],
+            ajustStockActuel: [0],
+            ajustComptesRecevoir: [0],
+            ajustDettesFournisseurs: [0],
+            ajustCreditFournisseur: [0]
         });
 
-        // Bilan personnel
-        this.bilanPersonnelForm = this.fb.group({
-            epargnes: [0],
-            valeurBiensDurables: [0],
-            libeleGarantie: [''],
-            montantGarantie: [0]
+        // Proposition
+        this.propositionForm = this.fb.group({
+            montantSollicite: [0],
+            dureeSollicitee: [12],
+            montantPropose: [0],
+            dureeProposee: [12],
+            tauxPropose: [0],
+            periodiciteProposee: ['MENSUELLE'],
+            commentaireOrientation: ['']
         });
 
-        // Résultats actuels
-        this.resultatActuelForm = this.fb.group({
-            chiffreAffaires: [0],
-            autresRevenus: [0],
-            coutMarchandises: [0]
-        });
-
-        // Résultats prévisionnels
-        this.resultatPrevisionnelForm = this.fb.group({
-            chiffreAffaires: [0],
-            autresRevenus: [0],
-            coutMarchandises: [0]
-        });
-
-        // Charges actuelles
-        this.chargesActuellesForm = this.fb.group({
-            coutTransportProduction: [0],
-            fraisTransportPersonnel: [0],
-            fraisManutention: [0],
-            montantAideExterne: [0],
-            fraisHebergementRestauration: [0],
-            impots: [0],
-            loyers: [0]
-        });
-
-        // Charges prévisionnelles
-        this.chargesPrevisionellesForm = this.fb.group({
-            coutTransportProduction: [0],
-            fraisTransportPersonnel: [0],
-            fraisManutention: [0],
-            montantAideExterne: [0],
-            fraisHebergementRestauration: [0],
-            impots: [0],
-            loyers: [0]
-        });
-
-        // Demande credit form
+        // Demande credit
         this.demandeCreditForm = this.fb.group({
             montantDemande: [0],
             dureeMois: [12],
@@ -421,7 +1054,7 @@ export class AnalyseBilanActiviteComponent {
             pointVente: [null]
         });
 
-        // Personne caution form
+        // Personne caution
         this.personnecautionForm = this.fb.group({
             nom: [''],
             prenom: [''],
@@ -433,28 +1066,12 @@ export class AnalyseBilanActiviteComponent {
     }
 
     onStepChange(index: number) {
-        if (!this.validateCurrentForm()) {
-            return;
-        }
-
-        if (index === 9) {
-            this.prepareSummary();
-        }
-
         this.activeIndex.set(index);
     }
 
     nextStep() {
         const currentIndex = this.activeIndex();
-
-        if (!this.validateCurrentForm()) {
-            return;
-        }
-
         if (currentIndex < this.items().length - 1) {
-            if (currentIndex === 8) {
-                this.prepareSummary();
-            }
             this.activeIndex.set(currentIndex + 1);
         }
     }
@@ -464,52 +1081,6 @@ export class AnalyseBilanActiviteComponent {
         if (currentIndex > 0) {
             this.activeIndex.set(currentIndex - 1);
         }
-    }
-
-    validateCurrentForm(): boolean {
-        const currentIndex = this.activeIndex();
-        const natureClient = this.state().natureClient;
-
-        switch (currentIndex) {
-            case 0: // Info base
-                // Only validate enterprise name if natureClient is 'Entreprise'
-                if (natureClient === 'Entreprise' && this.infoBaseForm.get('nomEntreprise')?.invalid) {
-                    this.messageService.add({
-                        severity: 'error',
-                        summary: 'Erreur',
-                        detail: "Le nom de l'entreprise est requis."
-                    });
-                    return false;
-                }
-                this.saveInfoBaseToResume();
-                break;
-            case 1:
-                this.saveBilanEntrepriseToResume();
-                break;
-            case 2:
-                this.saveBilanPersonnelToResume();
-                break;
-            case 3:
-                this.saveResultatActuelToResume();
-                break;
-            case 4:
-                this.saveResultatPrevisionnelToResume();
-                break;
-            case 5:
-                this.saveChargesActuellesToResume();
-                break;
-            case 6:
-                this.saveChargesPrevisionellesToResume();
-                break;
-            case 7:
-                this.saveDemandeCreditToResume();
-                break;
-            case 8:
-                // Personnes caution - optional
-                break;
-        }
-
-        return true;
     }
 
     onDelegationChange(event: any): void {
@@ -551,7 +1122,7 @@ export class AnalyseBilanActiviteComponent {
         }
 
         const agenceId = agence.id;
-        const filteredPointsVente = this.state().allPointsVente?.filter((pointVente) => pointVente.agence_id === agenceId) || [];
+        const filteredPointsVente = this.state().allPointsVente?.filter((pv) => pv.agence_id === agenceId) || [];
 
         this.state.update((state) => ({
             ...state,
@@ -559,9 +1130,7 @@ export class AnalyseBilanActiviteComponent {
         }));
 
         if (!this.demandeCreditForm.get('agence')?.disabled) {
-            this.demandeCreditForm.patchValue({
-                pointVente: null
-            });
+            this.demandeCreditForm.patchValue({ pointVente: null });
         }
     }
 
@@ -594,464 +1163,545 @@ export class AnalyseBilanActiviteComponent {
         });
     }
 
-    saveInfoBaseToResume() {
-        const getValue = (controlName: string) => {
-            const control = this.infoBaseForm.get(controlName);
-            return control?.disabled ? control.value : control?.value;
-        };
+    // ============== API CALLS ==============
 
-        this.resumeData.promoteur = {
-            nom: getValue('nomPromoteur') || '',
-            prenom: getValue('prenomPromoteur') || '',
-            date_naissance: this.formatDate(getValue('dateNaissance')),
-            numero_identite: getValue('numeroIdentite') || '',
-            adresse: getValue('adressePromoteur') || '',
-            telephone: getValue('telephonePromoteur') || '',
-            email: getValue('emailPromoteur') || ''
-        };
-
-        // Only save enterprise data if natureClient is 'Entreprise'
-        if (this.state().natureClient === 'Entreprise') {
-            this.resumeData.entreprise = {
-                nom: getValue('nomEntreprise') || '',
-                forme_juridique: this.getFormeJuridiqueValue() || '',
-                secteur_activite: getValue('secteurActivite') || '',
-                date_creation: this.formatDate(getValue('dateCreation')),
-                numero_registre: getValue('numeroRegistre') || '',
-                adresse: getValue('adresseEntreprise') || '',
-                telephone: getValue('telephoneEntreprise') || '',
-                email: getValue('emailEntreprise') || ''
-            };
-        } else {
-            this.resumeData.entreprise = null;
+    createOrUpdateAnalyse(): void {
+        if (this.state().analyseExiste) {
+            return; // Déjà créée
         }
+
+        const request = {
+            demandeindividuelId: this.demandeIndividuelId,
+            nombreCycles: 12,
+            hypothese: 'CROISSANCE_MODEREE'
+        };
+
+        this.http
+            .post<any>(`${this.apiUrl}/ecredit/bilan_finance/analyse`, request)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    const analyse = response?.data?.analyse;
+                    if (analyse) {
+                        // Backend returns analyseId, not id
+                        const newAnalyseId = analyse.analyseId || analyse.id;
+                        this.state.update((state) => ({
+                            ...state,
+                            analyseId: newAnalyseId,
+                            analyseExiste: true
+                        }));
+                        this.messageService.add({
+                            severity: 'success',
+                            summary: 'Succès',
+                            detail: 'Analyse créée avec succès'
+                        });
+                    }
+                },
+                error: (error) => {
+                    console.error('Error creating analyse:', error);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Erreur',
+                        detail: error?.error?.message || "Impossible de créer l'analyse"
+                    });
+                }
+            });
     }
 
-    // Rest of the save methods remain the same...
-    saveBilanEntrepriseToResume() {
-        this.resumeData.bilanEntreprise = {
-            liquidites: this.bilanEntrepriseForm.get('liquidites')?.value || 0,
-            creances_clients: this.bilanEntrepriseForm.get('creancesClients')?.value || 0,
-            valeur_stocks: this.bilanEntrepriseForm.get('valeurStocks')?.value || 0,
-            valeur_equipements: this.bilanEntrepriseForm.get('valeurEquipements')?.value || 0,
-            dettes_fournisseurs: this.bilanEntrepriseForm.get('dettesFournisseurs')?.value || 0,
-            emprunts: this.bilanEntrepriseForm.get('emprunts')?.value || 0,
-            capital_propre: this.bilanEntrepriseForm.get('capitalPropre')?.value || 0
+    saveBilan(typePeriode: 'N' | 'N-1'): void {
+        const analyseId = this.state().analyseId;
+        if (!analyseId) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Attention',
+                detail: "Veuillez d'abord créer l'analyse"
+            });
+            return;
+        }
+
+        this.savingBilan.set(true);
+        const form = typePeriode === 'N' ? this.bilanNForm : this.bilanN1Form;
+
+        // Map frontend form fields to backend DTO fields
+        const request = {
+            analyseId: analyseId,
+            typePeriode: typePeriode,
+            // ACTIF - Immobilisations
+            terrain: form.get('terrains')?.value || 0,
+            batimentMagasin: form.get('constructions')?.value || 0,
+            installationAgencement: form.get('installationsTechniques')?.value || 0,
+            materielIndustriel: 0,
+            mobilierBureau: form.get('materielBureau')?.value || 0,
+            materielInformatique: 0,
+            materielTransport: form.get('materielTransport')?.value || 0,
+            autreImmobilisation: (form.get('autresImmobilisations')?.value || 0) + (form.get('immobilisationsEnCours')?.value || 0) + (form.get('immobilisationsFinancieres')?.value || 0),
+            // ACTIF - Circulant
+            stocks: form.get('stocks')?.value || 0,
+            creancesClients: form.get('creances')?.value || 0,
+            tresorerieCaisseBanque: form.get('tresorerieActif')?.value || 0,
+            // PASSIF - Capitaux propres
+            capitauxPropre: form.get('capitauxPropre')?.value || 0,
+            // PASSIF - Dettes
+            empruntLongTerme: form.get('dettesLongTerme')?.value || 0,
+            empruntCourtTerme: form.get('dettesCourtTerme')?.value || 0,
+            autresDettes: form.get('tresoreriePassif')?.value || 0
+        };
+
+        this.http
+            .post<any>(`${this.apiUrl}/ecredit/bilan_finance/bilan`, request)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.savingBilan.set(false);
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Succès',
+                        detail: `Bilan ${typePeriode} enregistré avec succès`
+                    });
+                },
+                error: (error) => {
+                    this.savingBilan.set(false);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Erreur',
+                        detail: error?.error?.message || "Impossible d'enregistrer le bilan"
+                    });
+                }
+            });
+    }
+
+    saveBilanAll(): void {
+        const analyseId = this.state().analyseId;
+        if (!analyseId) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Attention',
+                detail: "Veuillez d'abord créer l'analyse"
+            });
+            return;
+        }
+
+        this.savingBilan.set(true);
+
+        const requestN = this.mapBilanFormToRequest(this.bilanNForm, analyseId, 'N');
+        const requestN1 = this.mapBilanFormToRequest(this.bilanN1Form, analyseId, 'N-1');
+
+        forkJoin({
+            bilanN: this.http.post<any>(`${this.apiUrl}/ecredit/bilan_finance/bilan`, requestN),
+            bilanN1: this.http.post<any>(`${this.apiUrl}/ecredit/bilan_finance/bilan`, requestN1)
+        })
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.savingBilan.set(false);
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Succès',
+                        detail: 'Bilans N et N-1 enregistrés avec succès'
+                    });
+                },
+                error: (error) => {
+                    this.savingBilan.set(false);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Erreur',
+                        detail: error?.error?.message || "Impossible d'enregistrer les bilans"
+                    });
+                }
+            });
+    }
+
+    // Convertit le format frontend (N-1, N+1) vers le format backend (N_MOINS_1, N_PLUS_1)
+    private convertPeriodeToBackend(periode: string): string {
+        const mapping: { [key: string]: string } = {
+            N: 'N',
+            'N-1': 'N_MOINS_1',
+            'N+1': 'N_PLUS_1'
+        };
+        return mapping[periode] || periode;
+    }
+
+    private mapBilanFormToRequest(form: FormGroup, analyseId: number, typePeriode: string): any {
+        return {
+            analyseId: analyseId,
+            typePeriode: this.convertPeriodeToBackend(typePeriode),
+            // ACTIF - Immobilisations
+            terrain: form.get('terrains')?.value || 0,
+            batimentMagasin: form.get('constructions')?.value || 0,
+            installationAgencement: form.get('installationsTechniques')?.value || 0,
+            materielIndustriel: 0,
+            mobilierBureau: form.get('materielBureau')?.value || 0,
+            materielInformatique: 0,
+            materielTransport: form.get('materielTransport')?.value || 0,
+            autreImmobilisation: (form.get('autresImmobilisations')?.value || 0) + (form.get('immobilisationsEnCours')?.value || 0) + (form.get('immobilisationsFinancieres')?.value || 0),
+            // ACTIF - Circulant
+            stocks: form.get('stocks')?.value || 0,
+            creancesClients: form.get('creances')?.value || 0,
+            tresorerieCaisseBanque: form.get('tresorerieActif')?.value || 0,
+            // PASSIF - Capitaux propres
+            capitauxPropre: form.get('capitauxPropre')?.value || 0,
+            // PASSIF - Dettes
+            empruntLongTerme: form.get('dettesLongTerme')?.value || 0,
+            empruntCourtTerme: form.get('dettesCourtTerme')?.value || 0,
+            autresDettes: form.get('tresoreriePassif')?.value || 0
         };
     }
 
-    saveBilanPersonnelToResume() {
-        this.resumeData.bilanPersonnel = {
-            epargnes: this.bilanPersonnelForm.get('epargnes')?.value || 0,
-            valeur_biens_durables: this.bilanPersonnelForm.get('valeurBiensDurables')?.value || 0,
-            libele_garantie: this.bilanPersonnelForm.get('libeleGarantie')?.value || '',
-            montant_garantie: this.bilanPersonnelForm.get('montantGarantie')?.value || 0
+    saveRentabilite(typePeriode: 'N' | 'N-1' | 'N+1'): void {
+        const analyseId = this.state().analyseId;
+        if (!analyseId) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Attention',
+                detail: "Veuillez d'abord créer l'analyse"
+            });
+            return;
+        }
+
+        this.savingRentabilite.set(true);
+        let form: FormGroup;
+        if (typePeriode === 'N') form = this.rentabiliteNForm;
+        else if (typePeriode === 'N-1') form = this.rentabiliteN1Form;
+        else form = this.rentabiliteN2Form;
+
+        const request = this.mapRentabiliteFormToRequest(form, analyseId, typePeriode);
+
+        this.http
+            .post<any>(`${this.apiUrl}/ecredit/bilan_finance/rentabilite`, request)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.savingRentabilite.set(false);
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Succès',
+                        detail: `Rentabilité ${typePeriode} enregistrée avec succès`
+                    });
+                },
+                error: (error) => {
+                    this.savingRentabilite.set(false);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Erreur',
+                        detail: error?.error?.message || "Impossible d'enregistrer la rentabilité"
+                    });
+                }
+            });
+    }
+
+    private mapRentabiliteFormToRequest(form: FormGroup, analyseId: number, typePeriode: string): any {
+        const ca = form.get('chiffreAffaires')?.value || 0;
+        const coutAchats = form.get('coutAchats')?.value || 0;
+        return {
+            analyseId: analyseId,
+            typePeriode: this.convertPeriodeToBackend(typePeriode),
+            // Revenue
+            chiffreAffaires: ca,
+            coutAchatMarchandises: coutAchats,
+            margeBrute: ca - coutAchats,
+            // 13 Charges posts
+            salaires: form.get('salaires')?.value || 0,
+            prelevementEntrepreneur: form.get('chargesSociales')?.value || 0,
+            loyers: form.get('loyer')?.value || 0,
+            transport: form.get('transport')?.value || 0,
+            electriciteEauTelephone: (form.get('electricite')?.value || 0) + (form.get('eau')?.value || 0) + (form.get('telephone')?.value || 0),
+            fournituresAutresBesoins: 0,
+            entretienReparation: form.get('entretien')?.value || 0,
+            carburantLubrifiants: 0,
+            publicitePromotion: 0,
+            impotsTaxes: form.get('impotsTaxes')?.value || 0,
+            fraisBancairesInterets: form.get('fraisFinanciers')?.value || 0,
+            echeanceAutreCredit: 0,
+            diversesCharges: (form.get('assurances')?.value || 0) + (form.get('autresCharges')?.value || 0),
+            amortissementsProvisions: form.get('dotationAmortissement')?.value || 0,
+            autresRevenusHorsActivite: form.get('autresRevenus')?.value || 0
         };
     }
 
-    saveResultatActuelToResume() {
-        this.resumeData.resultatActuel = {
-            chiffre_affaires: this.resultatActuelForm.get('chiffreAffaires')?.value || 0,
-            autres_revenus: this.resultatActuelForm.get('autresRevenus')?.value || 0,
-            cout_marchandises: this.resultatActuelForm.get('coutMarchandises')?.value || 0
-        };
+    saveRentabiliteAll(): void {
+        const analyseId = this.state().analyseId;
+        if (!analyseId) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Attention',
+                detail: "Veuillez d'abord créer l'analyse"
+            });
+            return;
+        }
+
+        this.savingRentabilite.set(true);
+
+        const requestN = this.mapRentabiliteFormToRequest(this.rentabiliteNForm, analyseId, 'N');
+        const requestN1 = this.mapRentabiliteFormToRequest(this.rentabiliteN1Form, analyseId, 'N-1');
+        const requestN2 = this.mapRentabiliteFormToRequest(this.rentabiliteN2Form, analyseId, 'N+1');
+
+        forkJoin({
+            rentabiliteN: this.http.post<any>(`${this.apiUrl}/ecredit/bilan_finance/rentabilite`, requestN),
+            rentabiliteN1: this.http.post<any>(`${this.apiUrl}/ecredit/bilan_finance/rentabilite`, requestN1),
+            rentabiliteN2: this.http.post<any>(`${this.apiUrl}/ecredit/bilan_finance/rentabilite`, requestN2)
+        })
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.savingRentabilite.set(false);
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Succès',
+                        detail: 'Rentabilités N, N-1 et N+1 enregistrées avec succès'
+                    });
+                },
+                error: (error) => {
+                    this.savingRentabilite.set(false);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Erreur',
+                        detail: error?.error?.message || "Impossible d'enregistrer les rentabilités"
+                    });
+                }
+            });
     }
 
-    saveResultatPrevisionnelToResume() {
-        this.resumeData.resultatPrevisionnel = {
-            chiffre_affaires: this.resultatPrevisionnelForm.get('chiffreAffaires')?.value || 0,
-            autres_revenus: this.resultatPrevisionnelForm.get('autresRevenus')?.value || 0,
-            cout_marchandises: this.resultatPrevisionnelForm.get('coutMarchandises')?.value || 0
+    saveBesoinCredit(): void {
+        const analyseId = this.state().analyseId;
+        if (!analyseId) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Attention',
+                detail: "Veuillez d'abord créer l'analyse"
+            });
+            return;
+        }
+
+        this.savingBesoinCredit.set(true);
+
+        const form = this.besoinCreditForm;
+        const request = {
+            analyseId: analyseId,
+            // INVESTISSEMENT - Montants
+            coutEquipement: form.get('coutEquipement')?.value || 0,
+            depensesRattachees: form.get('depensesRattachees')?.value || 0,
+            apportPersonnel: form.get('apportPersonnel')?.value || 0,
+            // INVESTISSEMENT - Ajustements
+            ajustCoutEquipement: form.get('ajustCoutEquipement')?.value || 0,
+            ajustDepensesRattachees: form.get('ajustDepensesRattachees')?.value || 0,
+            ajustApportPersonnel: form.get('ajustApportPersonnel')?.value || 0,
+            // EXPLOITATION - Montants
+            coutAchatCycle: form.get('coutAchatCycle')?.value || 0,
+            nbreCycleFinancer: form.get('nbreCycleFinancer')?.value || 1,
+            tresorerieDisponible: form.get('tresorerieDisponible')?.value || 0,
+            stockActuel: form.get('stockActuel')?.value || 0,
+            comptesRecevoir: form.get('comptesRecevoir')?.value || 0,
+            dettesFournisseurs: form.get('dettesFournisseurs')?.value || 0,
+            creditFournisseur: form.get('creditFournisseur')?.value || 0,
+            // EXPLOITATION - Ajustements
+            ajustCoutAchatCycle: form.get('ajustCoutAchatCycle')?.value || 0,
+            ajustTresorerieDispo: form.get('ajustTresorerieDispo')?.value || 0,
+            ajustStockActuel: form.get('ajustStockActuel')?.value || 0,
+            ajustComptesRecevoir: form.get('ajustComptesRecevoir')?.value || 0,
+            ajustDettesFournisseurs: form.get('ajustDettesFournisseurs')?.value || 0,
+            ajustCreditFournisseur: form.get('ajustCreditFournisseur')?.value || 0
         };
+
+        this.http
+            .post<any>(`${this.apiUrl}/ecredit/bilan_finance/besoin-credit`, request)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.savingBesoinCredit.set(false);
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Succès',
+                        detail: 'Besoin en crédit enregistré avec succès'
+                    });
+                },
+                error: (error) => {
+                    this.savingBesoinCredit.set(false);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Erreur',
+                        detail: error?.error?.message || "Impossible d'enregistrer le besoin en crédit"
+                    });
+                }
+            });
     }
 
-    saveChargesActuellesToResume() {
-        this.resumeData.chargesActuelles = {
-            cout_transport_production: this.chargesActuellesForm.get('coutTransportProduction')?.value || 0,
-            frais_transport_personnel: this.chargesActuellesForm.get('fraisTransportPersonnel')?.value || 0,
-            frais_manutention: this.chargesActuellesForm.get('fraisManutention')?.value || 0,
-            montant_aide_externe: this.chargesActuellesForm.get('montantAideExterne')?.value || 0,
-            frais_hebergement_restauration: this.chargesActuellesForm.get('fraisHebergementRestauration')?.value || 0,
-            impots: this.chargesActuellesForm.get('impots')?.value || 0,
-            loyers: this.chargesActuellesForm.get('loyers')?.value || 0
-        };
-    }
+    saveProposition(): void {
+        this.loading.set(true);
 
-    saveChargesPrevisionellesToResume() {
-        this.resumeData.chargesPrevisionnelles = {
-            cout_transport_production: this.chargesPrevisionellesForm.get('coutTransportProduction')?.value || 0,
-            frais_transport_personnel: this.chargesPrevisionellesForm.get('fraisTransportPersonnel')?.value || 0,
-            frais_manutention: this.chargesPrevisionellesForm.get('fraisManutention')?.value || 0,
-            montant_aide_externe: this.chargesPrevisionellesForm.get('montantAideExterne')?.value || 0,
-            frais_hebergement_restauration: this.chargesPrevisionellesForm.get('fraisHebergementRestauration')?.value || 0,
-            impots: this.chargesPrevisionellesForm.get('impots')?.value || 0,
-            loyers: this.chargesPrevisionellesForm.get('loyers')?.value || 0
-        };
-    }
-
-    saveDemandeCreditToResume() {
-        const getValue = (controlName: string) => {
-            const control = this.demandeCreditForm.get(controlName);
-            return control?.disabled ? control.value : control?.value;
+        const request = {
+            montantSollicite: this.propositionForm.get('montantSollicite')?.value,
+            dureeSollicitee: this.propositionForm.get('dureeSollicitee')?.value,
+            montantPropose: this.propositionForm.get('montantPropose')?.value,
+            dureeProposee: this.propositionForm.get('dureeProposee')?.value,
+            tauxPropose: this.propositionForm.get('tauxPropose')?.value,
+            periodiciteProposee: this.propositionForm.get('periodiciteProposee')?.value
         };
 
-        this.resumeData.demandeCredit = {
-            montant_demande: getValue('montantDemande') || 0,
-            duree_mois: getValue('dureeMois') || 0,
-            objet_financement: getValue('objetFinancement') || '',
-            delegation: getValue('delegation')?.libele || '',
-            agence: getValue('agence')?.libele || '',
-            point_vente: getValue('pointVente')?.libele || ''
-        };
+        this.http
+            .put<any>(`${this.apiUrl}/ecredit/bilan_finance/proposition/${this.demandeIndividuelId}`, request)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.loading.set(false);
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Succès',
+                        detail: 'Proposition enregistrée avec succès'
+                    });
+                },
+                error: (error) => {
+                    this.loading.set(false);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Erreur',
+                        detail: error?.error?.message || "Impossible d'enregistrer la proposition"
+                    });
+                }
+            });
     }
 
-    prepareSummary() {
-        this.saveInfoBaseToResume();
-        this.saveBilanEntrepriseToResume();
-        this.saveBilanPersonnelToResume();
-        this.saveResultatActuelToResume();
-        this.saveResultatPrevisionnelToResume();
-        this.saveChargesActuellesToResume();
-        this.saveChargesPrevisionellesToResume();
-        this.saveDemandeCreditToResume();
+    calculateRatios(): void {
+        const analyseId = this.state().analyseId;
+        if (!analyseId) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Attention',
+                detail: "Veuillez d'abord créer et sauvegarder l'analyse"
+            });
+            return;
+        }
+
+        this.calculatingRatios.set(true);
+
+        this.http
+            .post<any>(`${this.apiUrl}/ecredit/bilan_finance/ratios/calculer/${analyseId}`, {})
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    this.calculatingRatios.set(false);
+                    if (response?.data?.ratios) {
+                        this.updateRatiosData(response.data.ratios);
+                        this.messageService.add({
+                            severity: 'success',
+                            summary: 'Succès',
+                            detail: 'Ratios calculés avec succès'
+                        });
+                    }
+                },
+                error: (error) => {
+                    this.calculatingRatios.set(false);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Erreur',
+                        detail: error?.error?.message || 'Impossible de calculer les ratios'
+                    });
+                }
+            });
     }
 
-    finaliserDemande() {
-        if (!this.demandeIndividuelId) {
+    submitAnalyse(): void {
+        const analyseId = this.state().analyseId;
+        if (!analyseId) {
             this.messageService.add({
                 severity: 'error',
                 summary: 'Erreur',
-                detail: 'ID de la demande individuelle non disponible',
-                life: 3000
+                detail: "L'analyse n'existe pas encore. Veuillez d'abord enregistrer le bilan et la rentabilité."
             });
             return;
         }
 
         this.loading.set(true);
 
-        const currentYear = new Date().getFullYear();
-        const dateDebutActuel = new Date(currentYear - 1, 0, 1);
-        const dateFinActuel = new Date(currentYear - 1, 11, 31);
-        const dateDebutPrevisionnel = new Date(currentYear, 0, 1);
-        const dateFinPrevisionnel = new Date(currentYear, 11, 31);
-
-        const formatDateSafe = (date: Date): string => {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
+        const request = {
+            analyseId: analyseId,
+            forcerSoumission: false
         };
 
-        const getFormValue = (form: FormGroup, field: string, defaultValue: any = '') => {
-            const control = form.get(field);
-            return control?.disabled ? control.value : control?.value || defaultValue;
-        };
-
-        const natureClient = this.state().natureClient;
-
-        // Créer un nom d'entreprise par défaut pour les clients individuels
-        let nomEntreprise: string;
-        let formeJuridique: string;
-
-        const prenomPromoteur = getFormValue(this.infoBaseForm, 'prenomPromoteur', '');
-        const nomPromoteur = getFormValue(this.infoBaseForm, 'nomPromoteur', '');
-
-        if (natureClient === 'Individuel') {
-            nomEntreprise = `Entreprise de ${prenomPromoteur} ${nomPromoteur}`.trim();
-            if (nomEntreprise === 'Entreprise de ') {
-                nomEntreprise = 'Entreprise Individuelle';
-            }
-            formeJuridique = 'EI';
-        } else {
-            nomEntreprise = getFormValue(this.infoBaseForm, 'nomEntreprise', 'Entreprise');
-            formeJuridique = this.getFormeJuridiqueValue() || 'EI';
-        }
-
-        const demandeComplete: DemandeCreditCompleteDTO = {
-            demandeIndividuelId: this.demandeIndividuelId,
-
-            // Promoteur
-            nomPromoteur: nomPromoteur || 'Non spécifié',
-            prenomPromoteur: prenomPromoteur || 'Non spécifié',
-            dateNaissancePromoteur: this.formatDate(getFormValue(this.infoBaseForm, 'dateNaissance')) || formatDateSafe(new Date(1980, 0, 1)),
-            numeroIdentitePromoteur: getFormValue(this.infoBaseForm, 'numeroIdentite', ''),
-            adressePromoteur: getFormValue(this.infoBaseForm, 'adressePromoteur', ''),
-            telephonePromoteur: getFormValue(this.infoBaseForm, 'telephonePromoteur', ''),
-            emailPromoteur: getFormValue(this.infoBaseForm, 'emailPromoteur', '') || null,
-
-            // Entreprise - JAMAIS null ou undefined
-            nomEntreprise: nomEntreprise,
-            formeJuridique: formeJuridique,
-            secteurActivite: getFormValue(this.infoBaseForm, 'secteurActivite', 'Commerce'),
-            dateCreationEntreprise: this.formatDate(getFormValue(this.infoBaseForm, 'dateCreation')) || '',
-            numeroRegistre: getFormValue(this.infoBaseForm, 'numeroRegistre', '') || null,
-            adresseEntreprise: getFormValue(this.infoBaseForm, 'adresseEntreprise', '') || getFormValue(this.infoBaseForm, 'adressePromoteur', '') || null,
-            telephoneEntreprise: getFormValue(this.infoBaseForm, 'telephoneEntreprise', '') || null,
-            emailEntreprise: getFormValue(this.infoBaseForm, 'emailEntreprise', '') || null,
-
-            // Bilan entreprise
-            liquidites: this.bilanEntrepriseForm.get('liquidites')?.value || 0,
-            creancesClients: this.bilanEntrepriseForm.get('creancesClients')?.value || 0,
-            valeurStocks: this.bilanEntrepriseForm.get('valeurStocks')?.value || 0,
-            valeurEquipements: this.bilanEntrepriseForm.get('valeurEquipements')?.value || 0,
-            dettesFournisseurs: this.bilanEntrepriseForm.get('dettesFournisseurs')?.value || 0,
-            emprunts: this.bilanEntrepriseForm.get('emprunts')?.value || 0,
-            capitalPropre: this.bilanEntrepriseForm.get('capitalPropre')?.value || 0,
-
-            // Bilan personnel
-            epargnes: this.bilanPersonnelForm.get('epargnes')?.value || 0,
-            valeurBiensDurables: this.bilanPersonnelForm.get('valeurBiensDurables')?.value || 0,
-            libeleGarantie: this.bilanPersonnelForm.get('libeleGarantie')?.value || '',
-            montantGarantie: this.bilanPersonnelForm.get('montantGarantie')?.value || 0,
-
-            // Dates
-            dateDebutPeriodeActuel: formatDateSafe(dateDebutActuel),
-            dateFinPeriodeActuel: formatDateSafe(dateFinActuel),
-            dateDebutPeriodePrevisionnel: formatDateSafe(dateDebutPrevisionnel),
-            dateFinPeriodePrevisionnel: formatDateSafe(dateFinPrevisionnel),
-
-            // Exploitation actuelle
-            chiffreAffairesActuel: this.resultatActuelForm.get('chiffreAffaires')?.value || 0,
-            autresRevenusActuel: this.resultatActuelForm.get('autresRevenus')?.value || 0,
-            coutMarchandisesActuel: this.resultatActuelForm.get('coutMarchandises')?.value || 0,
-            coutTransportProductionActuel: this.chargesActuellesForm.get('coutTransportProduction')?.value || 0,
-            fraisTransportPersonnelActuel: this.chargesActuellesForm.get('fraisTransportPersonnel')?.value || 0,
-            fraisManutentionActuel: this.chargesActuellesForm.get('fraisManutention')?.value || 0,
-            montantAideExterneActuel: this.chargesActuellesForm.get('montantAideExterne')?.value || 0,
-            fraisHebergementRestaurationActuel: this.chargesActuellesForm.get('fraisHebergementRestauration')?.value || 0,
-            impotsActuel: this.chargesActuellesForm.get('impots')?.value || 0,
-            loyersActuel: this.chargesActuellesForm.get('loyers')?.value || 0,
-
-            // Exploitation prévisionnelle
-            chiffreAffairesPrevisionnel: this.resultatPrevisionnelForm.get('chiffreAffaires')?.value || 0,
-            autresRevenusPrevisionnel: this.resultatPrevisionnelForm.get('autresRevenus')?.value || 0,
-            coutMarchandisesPrevisionnel: this.resultatPrevisionnelForm.get('coutMarchandises')?.value || 0,
-            coutTransportProductionPrevisionnel: this.chargesPrevisionellesForm.get('coutTransportProduction')?.value || 0,
-            fraisTransportPersonnelPrevisionnel: this.chargesPrevisionellesForm.get('fraisTransportPersonnel')?.value || 0,
-            fraisManutentionPrevisionnel: this.chargesPrevisionellesForm.get('fraisManutention')?.value || 0,
-            montantAideExternePrevisionnel: this.chargesPrevisionellesForm.get('montantAideExterne')?.value || 0,
-            fraisHebergementRestaurationPrevisionnel: this.chargesPrevisionellesForm.get('fraisHebergementRestauration')?.value || 0,
-            impotsPrevisionnel: this.chargesPrevisionellesForm.get('impots')?.value || 0,
-            loyersPrevisionnel: this.chargesPrevisionellesForm.get('loyers')?.value || 0,
-
-            // Demande crédit
-            montantDemande: getFormValue(this.demandeCreditForm, 'montantDemande', 60000000),
-            dureeMois: getFormValue(this.demandeCreditForm, 'dureeMois', 12),
-            objetFinancement: getFormValue(this.demandeCreditForm, 'objetFinancement', 'Fond commerce'),
-
-            // Personnecautions
-            personnecautions: this.personnecautions || [],
-
-            // Location IDs - Correction importante ici
-            // Location IDs - Valeurs dynamiques avec fallback
-            delegationId: getFormValue(this.demandeCreditForm, 'delegation', null)?.id ?? this.state().demandeIndividuel?.delegation ?? 1,
-            agenceId: getFormValue(this.demandeCreditForm, 'agence', null)?.id ?? this.state().demandeIndividuel?.agence ?? 1,
-            pointVenteId: getFormValue(this.demandeCreditForm, 'pointVente', null)?.id ?? this.state().demandeIndividuel?.pos ?? 1,
-            userId: this.state().userId || 3
-        };
-
-        // Debug complet
-        console.log('=== DONNÉES ENVOYÉES ===');
-        console.log('Nature client:', natureClient);
-        console.log('Nom entreprise:', demandeComplete.nomEntreprise);
-        console.log('Forme juridique:', demandeComplete.formeJuridique);
-        console.log('Personnecautions:', JSON.stringify(demandeComplete.personnecautions));
-        console.log('Demande complète:', JSON.stringify(demandeComplete, null, 2));
-
-        this.analyseCreditService
-            .submitCompleteDemande$(demandeComplete)
+        // Appel API pour soumettre l'analyse via la procédure stockée fn_soumettre_analyse
+        this.http
+            .post<any>(`${this.apiUrl}/ecredit/bilan_finance/analyse/soumettre`, request)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
-                next: (response: any) => {
+                next: (response) => {
                     this.loading.set(false);
+                    const soumission = response?.data?.soumission;
 
-                    // Debug de la réponse
-                    console.log('=== RÉPONSE REÇUE ===');
-                    console.log('Response complète:', response);
-                    console.log('Response.data:', response?.data);
-                    console.log('Response.data.demande:', response?.data?.demande);
-                    console.log('Response.data.demande.success:', response?.data?.demande?.success);
-
-                    // Vérifier la bonne structure de réponse
-                    const isSuccess = response?.data?.demande?.success === true || response?.success === true || response?.data?.success === true || response?.code === 0 || response?.statusCode === 200;
-
-                    if (isSuccess) {
+                    if (soumission?.succes) {
                         this.messageService.add({
                             severity: 'success',
                             summary: 'Succès',
-                            detail: response?.data?.demande?.message || 'Votre demande de crédit a été soumise avec succès!',
-                            life: 3000
+                            detail: 'Analyse soumise avec succès'
                         });
 
-                        // Redirection après 2 secondes vers la page de détail
-                        const redirectUrl = `/dashboards/credit/individuel/attente/detail/${this.demandeIndividuelId}`;
-                        console.log('Redirection vers', redirectUrl, 'dans 2 secondes...');
                         setTimeout(() => {
-                            console.log('Redirection en cours...');
-                            this.router.navigate(['/dashboards/credit/individuel/attente/detail', this.demandeIndividuelId]).then(
-                                (success) => console.log('Navigation réussie:', success),
-                                (error) => console.error('Erreur de navigation:', error)
-                            );
+                            this.router.navigate(['/dashboards/credit/individuel/attente/detail', this.demandeIndividuelId]);
                         }, 2000);
                     } else {
-                        // Gestion de l'échec
-                        console.log('Réponse non-succès:', response);
-                        const errorMessage = response?.data?.demande?.message || response?.data?.error || response?.message || 'La demande a été traitée mais nécessite une vérification';
+                        // Afficher les erreurs de validation
+                        const erreurs = soumission?.erreurs || [];
+                        const message = erreurs.length > 0 ? erreurs.join('\n') : 'La soumission a échoué. Vérifiez les données saisies.';
 
                         this.messageService.add({
                             severity: 'warn',
-                            summary: 'Attention',
-                            detail: errorMessage,
-                            life: 5000
+                            summary: 'Validation échouée',
+                            detail: message,
+                            life: 10000
                         });
                     }
                 },
-                error: (error: any) => {
+                error: (error) => {
                     this.loading.set(false);
+                    const soumission = error?.error?.data?.soumission;
+                    const erreurs = soumission?.erreurs || [];
 
-                    console.error('=== ERREUR ===');
-                    console.error('Erreur complète:', error);
-                    console.error('Error.error:', error?.error);
-                    console.error('Error.message:', error?.message);
-
-                    const errorMessage = error?.error?.message || error?.error?.data?.error || error?.message || 'Erreur lors de la soumission de la demande';
-
-                    this.messageService.add({
-                        severity: 'error',
-                        summary: 'Erreur',
-                        detail: errorMessage,
-                        life: 5000
-                    });
+                    if (erreurs.length > 0) {
+                        this.messageService.add({
+                            severity: 'warn',
+                            summary: 'Validation échouée',
+                            detail: erreurs.join('\n'),
+                            life: 10000
+                        });
+                    } else {
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: 'Erreur',
+                            detail: error?.error?.message || "Impossible de soumettre l'analyse"
+                        });
+                    }
                 }
             });
     }
 
-    // Calculation methods remain the same...
-    calculerRevenusTotauxActuel(): number {
-        const chiffreAffaires = this.resultatActuelForm.get('chiffreAffaires')?.value || 0;
-        const autresRevenus = this.resultatActuelForm.get('autresRevenus')?.value || 0;
-        return chiffreAffaires + autresRevenus;
+    // ============== HELPERS ==============
+
+    // Helper to get FormControl from form - used in template
+    getControl(form: FormGroup, name: string): FormControl {
+        return form.get(name) as FormControl;
     }
 
-    calculerRevenusTotauxPrevisionnel(): number {
-        const chiffreAffaires = this.resultatPrevisionnelForm.get('chiffreAffaires')?.value || 0;
-        const autresRevenus = this.resultatPrevisionnelForm.get('autresRevenus')?.value || 0;
-        return chiffreAffaires + autresRevenus;
+    getFacteurPeriodicite(periodicite: string): number {
+        const found = this.periodicites.find((p) => p.value === periodicite);
+        return found?.facteur || 1;
     }
 
-    calculerTotalActif(): number {
-        const liquidites = this.bilanEntrepriseForm.get('liquidites')?.value || 0;
-        const creancesClients = this.bilanEntrepriseForm.get('creancesClients')?.value || 0;
-        const valeurStocks = this.bilanEntrepriseForm.get('valeurStocks')?.value || 0;
-        const valeurEquipements = this.bilanEntrepriseForm.get('valeurEquipements')?.value || 0;
-        return liquidites + creancesClients + valeurStocks + valeurEquipements;
+    formatRatioValue(value: number | null): string {
+        if (value === null || value === undefined) return '-';
+        return (value * 100).toFixed(1) + '%';
     }
 
-    calculerTotalPassif(): number {
-        const dettesFournisseurs = this.bilanEntrepriseForm.get('dettesFournisseurs')?.value || 0;
-        const emprunts = this.bilanEntrepriseForm.get('emprunts')?.value || 0;
-        const capitalPropre = this.bilanEntrepriseForm.get('capitalPropre')?.value || 0;
-        return dettesFournisseurs + emprunts + capitalPropre;
+    getRatioSeverity(conforme: boolean): 'success' | 'danger' {
+        return conforme ? 'success' : 'danger';
     }
 
-    calculerTotalChargesActuelles(): number {
-        const coutTransportProduction = this.chargesActuellesForm.get('coutTransportProduction')?.value || 0;
-        const fraisTransportPersonnel = this.chargesActuellesForm.get('fraisTransportPersonnel')?.value || 0;
-        const fraisManutention = this.chargesActuellesForm.get('fraisManutention')?.value || 0;
-        const montantAideExterne = this.chargesActuellesForm.get('montantAideExterne')?.value || 0;
-        const fraisHebergementRestauration = this.chargesActuellesForm.get('fraisHebergementRestauration')?.value || 0;
-        const impots = this.chargesActuellesForm.get('impots')?.value || 0;
-        const loyers = this.chargesActuellesForm.get('loyers')?.value || 0;
-        return coutTransportProduction + fraisTransportPersonnel + fraisManutention + montantAideExterne + fraisHebergementRestauration + impots + loyers;
+    getRatioLabel(conforme: boolean): string {
+        return conforme ? 'Conforme' : 'Non conforme';
     }
 
-    calculerTotalChargesPrevisionnelles(): number {
-        const coutTransportProduction = this.chargesPrevisionellesForm.get('coutTransportProduction')?.value || 0;
-        const fraisTransportPersonnel = this.chargesPrevisionellesForm.get('fraisTransportPersonnel')?.value || 0;
-        const fraisManutention = this.chargesPrevisionellesForm.get('fraisManutention')?.value || 0;
-        const montantAideExterne = this.chargesPrevisionellesForm.get('montantAideExterne')?.value || 0;
-        const fraisHebergementRestauration = this.chargesPrevisionellesForm.get('fraisHebergementRestauration')?.value || 0;
-        const impots = this.chargesPrevisionellesForm.get('impots')?.value || 0;
-        const loyers = this.chargesPrevisionellesForm.get('loyers')?.value || 0;
-        return coutTransportProduction + fraisTransportPersonnel + fraisManutention + montantAideExterne + fraisHebergementRestauration + impots + loyers;
+    allRatiosConformesSollicite(): boolean {
+        return this.ratiosData().every((r) => r.conformeSollicite);
     }
 
-    getFormeJuridiqueValue(): string {
-        const value = this.infoBaseForm.get('formeJuridique')?.value;
-        if (!value) return '';
-        if (typeof value === 'object' && value.value) {
-            return value.value;
-        }
-        return value;
-    }
-
-    formatDateForDisplay(date: Date | string | null): string {
-        if (!date) return '';
-        let dateObj: Date;
-        if (typeof date === 'string') {
-            dateObj = new Date(date);
-            if (isNaN(dateObj.getTime())) {
-                return date;
-            }
-        } else if (date instanceof Date) {
-            dateObj = date;
-        } else {
-            return '';
-        }
-        return dateObj.toLocaleDateString('fr-FR');
-    }
-
-    formatDate(date: Date | string | null | undefined): string {
-        if (!date) {
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            const day = String(today.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        }
-
-        let dateObj: Date;
-        if (typeof date === 'string') {
-            if (date.trim() === '') {
-                const today = new Date();
-                const year = today.getFullYear();
-                const month = String(today.getMonth() + 1).padStart(2, '0');
-                const day = String(today.getDate()).padStart(2, '0');
-                return `${year}-${month}-${day}`;
-            }
-            dateObj = new Date(date);
-            if (isNaN(dateObj.getTime())) {
-                const today = new Date();
-                const year = today.getFullYear();
-                const month = String(today.getMonth() + 1).padStart(2, '0');
-                const day = String(today.getDate()).padStart(2, '0');
-                return `${year}-${month}-${day}`;
-            }
-        } else if (date instanceof Date) {
-            dateObj = date;
-            if (isNaN(dateObj.getTime())) {
-                const today = new Date();
-                const year = today.getFullYear();
-                const month = String(today.getMonth() + 1).padStart(2, '0');
-                const day = String(today.getDate()).padStart(2, '0');
-                return `${year}-${month}-${day}`;
-            }
-        } else {
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            const day = String(today.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        }
-
-        const year = dateObj.getFullYear();
-        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-        const day = String(dateObj.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    }
-
-    // Helper method to check if enterprise section should be shown
-    isEnterpriseSection(): boolean {
-        return this.state().natureClient === 'Entreprise';
+    allRatiosConformesPropose(): boolean {
+        return this.ratiosData().every((r) => r.conformePropose);
     }
 }

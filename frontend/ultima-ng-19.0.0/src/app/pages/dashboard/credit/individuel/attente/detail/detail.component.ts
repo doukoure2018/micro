@@ -95,6 +95,9 @@ export class DetailComponent {
         pdfBlobUrl: string | null;
         hasDemandeCredit?: boolean;
         hasDossierCredit?: boolean;
+        hasAnalyseFinanciere?: boolean;
+        analyseStatut?: string;
+        analyseFinanciere?: any;
         avisList: Avis[];
         loadingAvis: boolean;
         showAvisForm: boolean;
@@ -361,14 +364,18 @@ export class DetailComponent {
                             statusOptions.push({ label: 'Validation', value: 'VALIDATION' });
                         }
 
+                        const responseData = response.data as any;
                         this.state.update((s) => ({
                             ...s,
                             demandeIndividuel: demandeData,
                             statusOptions: statusOptions,
-                            user: response.data.user,
-                            demande_credit: response.data.demande_credit,
-                            hasDemandeCredit: response.data.hasDemandeCredit,
-                            hasDossierCredit: response.data.hasDossierCredit,
+                            user: responseData.user,
+                            demande_credit: responseData.demande_credit,
+                            hasDemandeCredit: responseData.hasDemandeCredit,
+                            hasDossierCredit: responseData.hasDossierCredit,
+                            hasAnalyseFinanciere: responseData.hasAnalyseFinanciere,
+                            analyseStatut: responseData.analyseStatut,
+                            analyseFinanciere: responseData.analyseFinanciere,
                             loading: false,
                             message: `Demande chargée avec ${demandeData.garanties?.length || 0} garantie(s)`,
                             error: undefined
@@ -1089,7 +1096,10 @@ export class DetailComponent {
     // nouvelle méthode pour approuver la demande avec confirmation
     approvedDemande(demandeIndividuel: DemandeIndividuel): void {
         console.log('Demande à approuver:', demandeIndividuel);
-        if (!demandeIndividuel.demandeIndividuelId || !demandeIndividuel?.codUsuarios) {
+        const currentUser = this.state().user;
+        const codUsuarios = currentUser?.username;
+
+        if (!demandeIndividuel.demandeIndividuelId || !codUsuarios) {
             this.messageService.add({
                 severity: 'error',
                 summary: 'Error',
@@ -1106,7 +1116,7 @@ export class DetailComponent {
                 this.state.update((s) => ({ ...s, loading: true }));
 
                 this.userService
-                    .updateDemandeIndividuel$('APPROVED', demandeIndividuel?.codUsuarios!, demandeIndividuel.demandeIndividuelId!)
+                    .updateDemandeIndividuel$('APPROVED', codUsuarios, demandeIndividuel.demandeIndividuelId!)
                     .pipe(takeUntilDestroyed(this.destroyRef))
                     .subscribe({
                         next: (response: IResponse) => {

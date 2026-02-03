@@ -2,7 +2,6 @@ import { Agence } from '@/interface/agence';
 import { Delegation } from '@/interface/delegation';
 import { DemandeIndividuel, GarantiePropose } from '@/interface/demande-individuel.interface';
 import { PointVente } from '@/interface/point.vente';
-
 import { TypeCreditDto } from '@/interface/typeCredit.model';
 import { Activite, CreditActiviteData, SousActivite, SousSousActivite, TypeCredit } from '@/service/credit-activite.model';
 import { UserService } from '@/service/user.service';
@@ -65,12 +64,12 @@ import { ToastModule } from 'primeng/toast';
     providers: [MessageService]
 })
 export class DemandeIndComponent implements OnInit {
-    // Propriétés manquantes ajoutées
+    // Propriétés existantes
     today: Date = new Date();
     currentUser: any = null;
     selectedAgence: Agence | null = null;
 
-    // Nouvelles propriétés pour les activités
+    // Propriétés pour les activités
     typesCredit: TypeCredit[] = CreditActiviteData.TYPES_CREDIT;
     activites: Activite[] = CreditActiviteData.ACTIVITES;
     sousActivites: SousActivite[] = [];
@@ -81,51 +80,99 @@ export class DemandeIndComponent implements OnInit {
     selectedSousActivite: SousActivite | null = null;
     selectedSousSousActivite: SousSousActivite | null = null;
     selectedTypeCredit: TypeCredit | null = null;
+
     // FormData initialisé avec les valeurs par défaut
-    formData: Partial<DemandeIndividuel> = {
+    formData: Partial<DemandeIndividuel> & {
+        email?: string;
+        dateAdhesion?: Date | null;
+        sigle?: string;
+        titreDirecteur?: string;
+        numeroDemande?: string;
+        numeroCredit?: string;
+        prefectureActivite?: string;
+        sousPrefectureActivite?: string;
+        // Activités - utiliser number | undefined pour correspondre aux options dropdown
+        selectedTypeActivite?: number;
+        selectedSousActivite?: number;
+        selectedSousSousActivite?: number;
+    } = {
+        // Informations de base
         nom: '',
         prenom: '',
+        sernom: '',
         telephone: '',
         numeroMembre: '',
-        typePiece: "Carte nationale d'identite" as any,
+
+        // Localisation administrative - OBJETS pour les dropdowns
+        delegation: undefined,
+        agence: undefined,
+        pos: undefined,
+        prefecture: '',
+        sousPrefecture: '',
+
+        // Nature client
+        natureClient: 'Demande credit Pour Particulier',
+        nomPersonneMorale: '',
+        sigle: '',
+        titreDirecteur: '',
+
+        // Informations personnelles
+        typePiece: "Carte nationale d'identite",
         numId: '',
         dateNaissance: undefined,
         lieuxNaissance: '',
-        genre: 'Masculin' as any,
-        situationMatrimoniale: 'Celebataire' as any,
+        genre: 'Masculin',
+        situationMatrimoniale: 'Celebataire',
         nombrePersonneEnCharge: 0,
         nombrePersonneScolarise: 0,
+        nomPere: '',
+        nomMere: '',
+        nomConjoint: '',
         addresseDomicileContact: '',
         typePropriete: '',
         nombreAnneeHabitation: 0,
-        natureClient: 'Individuel',
-        nomPersonneMorale: '', // NOUVEAU CHAMP
-        delegation: 0,
-        agence: 0,
-        pos: 0,
+
+        // Activité - codes numériques pour les dropdowns
+        categorie: '',
         typeActivite: '',
         sousActivite: '',
         sousSousActivite: '',
+        selectedTypeActivite: undefined,
+        selectedSousActivite: undefined,
+        selectedSousSousActivite: undefined,
         descriptionActivite: '',
         nombreAnneeActivite: 0,
         adresseLieuActivite: '',
         autreActivite: '',
         lieuActivite: '',
+        natureActivite: '',
         currentActivite: '',
+        prefectureActivite: '',
+        sousPrefectureActivite: '',
+
+        // Modalités de crédit
         montantDemande: 0,
-        dureeDemande: 0,
-        periodiciteRemboursement: 'Mensuelle' as any,
-        tauxInteret: 0,
+        dureeDemande: 12,
+        periodiciteRemboursement: 'Mensuelle',
+        tauxInteret: 3,
         periodeDiffere: 0,
-        nombreEcheance: 0,
+        nombreEcheance: 12,
         echeance: 0,
-        objectCredit: 'Fond de roulement' as any,
+        objectCredit: 'Fond de roulement',
         detailObjectCredit: '',
-        statutCredit: 'Nouveau' as any,
+        statutCredit: 'Nouveau',
         rangCredit: 1,
-        tipCredito: 0,
+        tipCredito: undefined,
+
+        // Système
         statutDemande: 'EN_ATTENTE',
-        validationState: 'NOUVEAU'
+        validationState: 'SELECTION',
+
+        // Champs supplémentaires
+        email: '',
+        dateAdhesion: null,
+        numeroDemande: '',
+        numeroCredit: ''
     };
 
     // État du composant
@@ -161,20 +208,19 @@ export class DemandeIndComponent implements OnInit {
         editingGarantieIndex: undefined
     });
 
-    // Options pour nature client - NOUVEAU
+    // Options pour nature client
     natureClientOptions = [
-        { label: 'Individuel', value: 'Individuel', icon: 'pi pi-user' },
-        { label: 'PME', value: 'PME', icon: 'pi pi-building' },
-        { label: 'Groupe Solidaire', value: 'Groupe Solidaire', icon: 'pi pi-users' },
-        { label: 'Autre', value: 'Autre', icon: 'pi pi-question-circle' }
+        { label: 'Demande crédit Pour Particulier', value: 'Demande credit Pour Particulier' },
+        { label: 'Demande de Crédit Pour PME/PMI', value: 'Demande de Credit Pour PME/PMI' },
+        { label: 'Demande de crédit Pour Professionnels', value: 'Demande de credit Pour Professionnels' }
     ];
-    // Options modifiées pour les dropdowns
-    activiteOptions: any[] = [];
-    sousActiviteOptions: any[] = [];
-    sousSousActiviteOptions: any[] = [];
-    typeCreditOptions: any[] = [];
 
-    // Options pour les dropdowns
+    // Options pour les dropdowns d'activités - value doit être number
+    activiteOptions: { label: string; value: number; data: Activite }[] = [];
+    sousActiviteOptions: { label: string; value: number; data: SousActivite }[] = [];
+    sousSousActiviteOptions: { label: string; value: number; data: SousSousActivite }[] = [];
+    typeCreditOptions: { label: string; value: number; data: TypeCredit }[] = [];
+
     typePieceOptions = [
         { label: "Carte nationale d'identité", value: "Carte nationale d'identite" },
         { label: "Carte d'identité Biométrique", value: "Carte d'identite Biometrique" },
@@ -225,8 +271,8 @@ export class DemandeIndComponent implements OnInit {
 
     typeGarantieOptions = [
         { label: 'Caution Solidaire', value: 'Caution Solidaire' },
-        { label: 'Garantie Financière', value: 'Garantie Financiere' }, // Changé
-        { label: 'Garantie Matérielle', value: 'Garantie Materielle' }, // Changé
+        { label: 'Garantie Financière', value: 'Garantie Financiere' },
+        { label: 'Garantie Matérielle', value: 'Garantie Materielle' },
         { label: 'Autre Garantie', value: 'Autre Garantie' }
     ];
 
@@ -241,40 +287,26 @@ export class DemandeIndComponent implements OnInit {
         this.initializeOptions();
     }
 
-    // Nouvelle méthode pour gérer le changement de nature client
+    // ======================== GESTION NATURE CLIENT ========================
+
     onNatureClientChange(event: any): void {
         const natureClient = event.value;
 
-        // Réinitialiser le champ nom_personne_morale si on passe à Individuel
-        if (natureClient === 'Individuel') {
+        if (natureClient !== 'Demande de Credit Pour PME/PMI') {
             this.formData.nomPersonneMorale = '';
-        }
-
-        // Adapter certains champs en fonction de la nature du client
-        if (natureClient === 'PME') {
-            // Pour les PME, on pourrait adapter certains libellés ou validations
-            this.messageService.add({
-                severity: 'info',
-                summary: 'Information',
-                detail: "Formulaire adapté pour les PME. Veuillez renseigner le nom de l'entreprise.",
-                life: 5000
-            });
-        } else if (natureClient === 'Groupe Solidaire') {
-            // Pour les groupes solidaires, informer l'utilisateur
-            this.messageService.add({
-                severity: 'info',
-                summary: 'Information',
-                detail: 'Pour un groupe solidaire, veuillez renseigner le nom du groupe et les informations du représentant.',
-                life: 5000
-            });
+            this.formData.sigle = '';
+            this.formData.titreDirecteur = '';
         }
 
         this.formData.natureClient = natureClient;
     }
 
-    /**
-     * Initialiser les options des dropdowns
-     */
+    isPME(): boolean {
+        return this.formData.natureClient === 'Demande de Credit Pour PME/PMI';
+    }
+
+    // ======================== INITIALISATION ========================
+
     private initializeOptions(): void {
         // Types de crédit
         this.typeCreditOptions = this.typesCredit.map((tc) => ({
@@ -283,128 +315,17 @@ export class DemandeIndComponent implements OnInit {
             data: tc
         }));
 
-        // Activités
+        // Activités - value est le code (number)
         this.activiteOptions = this.activites.map((a) => ({
             label: a.libelle,
             value: a.code,
             data: a
         }));
-    }
 
-    /**
-     * Gérer le changement d'activité
-     */
-    onActiviteChange(event: any): void {
-        const codeActivite = event.value;
-
-        if (!codeActivite) {
-            // Réinitialiser les sous-activités et sous-sous-activités
-            this.sousActivites = [];
-            this.sousSousActivites = [];
-            this.sousActiviteOptions = [];
-            this.sousSousActiviteOptions = [];
-            this.selectedActivite = null;
-            this.selectedSousActivite = null;
-            this.selectedSousSousActivite = null;
-            this.formData.sousActivite = '';
-            this.formData.sousSousActivite = '';
-            return;
-        }
-
-        // Trouver l'activité sélectionnée
-        this.selectedActivite = CreditActiviteData.getActiviteByCode(codeActivite) || null;
-
-        // Charger les sous-activités correspondantes
-        this.sousActivites = CreditActiviteData.getSousActivitesByActivite(codeActivite);
-        this.sousActiviteOptions = this.sousActivites.map((sa) => ({
-            label: sa.libelle,
-            value: sa.code,
-            data: sa
-        }));
-
-        // Réinitialiser les sous-sous-activités
-        this.sousSousActivites = [];
-        this.sousSousActiviteOptions = [];
-        this.selectedSousActivite = null;
-        this.selectedSousSousActivite = null;
-        this.formData.sousActivite = '';
-        this.formData.sousSousActivite = '';
-
-        // Mettre à jour le formData avec le code
-        this.formData.typeActivite = codeActivite.toString();
-    }
-
-    /**
-     * Gérer le changement de sous-activité
-     */
-    onSousActiviteChange(event: any): void {
-        const codeSousActivite = event.value;
-
-        if (!codeSousActivite || !this.selectedActivite) {
-            this.sousSousActivites = [];
-            this.sousSousActiviteOptions = [];
-            this.selectedSousActivite = null;
-            this.selectedSousSousActivite = null;
-            this.formData.sousSousActivite = '';
-            return;
-        }
-
-        // Trouver la sous-activité sélectionnée
-        this.selectedSousActivite = CreditActiviteData.getSousActiviteByCode(this.selectedActivite.code, codeSousActivite) || null;
-
-        // Charger les sous-sous-activités correspondantes
-        this.sousSousActivites = CreditActiviteData.getSousSousActivites(this.selectedActivite.code, codeSousActivite);
-
-        this.sousSousActiviteOptions = this.sousSousActivites.map((ssa) => ({
-            label: ssa.libelle,
-            value: ssa.code,
-            data: ssa
-        }));
-
-        // Réinitialiser la sous-sous-activité
-        this.selectedSousSousActivite = null;
-        this.formData.sousSousActivite = '';
-
-        // Mettre à jour le formData avec le code
-        this.formData.sousActivite = codeSousActivite.toString();
-    }
-
-    /**
-     * Gérer le changement de sous-sous-activité
-     */
-    onSousSousActiviteChange(event: any): void {
-        const codeSousSousActivite = event.value;
-
-        if (!codeSousSousActivite) {
-            this.selectedSousSousActivite = null;
-            this.formData.sousSousActivite = '';
-            return;
-        }
-
-        // Trouver la sous-sous-activité sélectionnée
-        this.selectedSousSousActivite = this.sousSousActivites.find((ssa) => ssa.code === codeSousSousActivite) || null;
-
-        // Mettre à jour le formData avec le code
-        this.formData.sousSousActivite = codeSousSousActivite.toString();
-    }
-
-    /**
-     * Gérer le changement de type de crédit
-     */
-    onTypeCreditChange(event: any): void {
-        const tipCredito = event.value;
-
-        if (!tipCredito) {
-            this.selectedTypeCredit = null;
-            this.formData.tipCredito = 0;
-            return;
-        }
-
-        // Trouver le type de crédit sélectionné
-        this.selectedTypeCredit = CreditActiviteData.getTypeCreditById(tipCredito) || null;
-
-        // Mettre à jour le formData
-        this.formData.tipCredito = tipCredito;
+        console.log('Options initialisées:', {
+            activites: this.activiteOptions,
+            typesCredit: this.typeCreditOptions.length
+        });
     }
 
     private loadInitialData(): void {
@@ -416,12 +337,18 @@ export class DemandeIndComponent implements OnInit {
             .subscribe({
                 next: (response) => {
                     if (response.data) {
+                        const delegations = response.data.delegations || [];
+                        const agences = response.data.agences || [];
+                        const pointVentes = response.data.pointVentes || [];
+
+                        console.log('Données chargées:', { delegations: delegations.length, agences: agences.length, pointVentes: pointVentes.length });
+
                         this.state.update((state) => ({
                             ...state,
                             loading: false,
-                            allDelegations: response.data.delegations || [],
-                            allAgences: response.data.agences || [],
-                            allPointsVente: response.data.pointVentes || [],
+                            allDelegations: delegations,
+                            allAgences: agences,
+                            allPointsVente: pointVentes,
                             typeCreditos: response.data.typeCreditos || []
                         }));
                     }
@@ -439,79 +366,184 @@ export class DemandeIndComponent implements OnInit {
             });
     }
 
-    private loadClientData(codeClient: string): void {
-        this.creditService
-            .searchClientes$(codeClient)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: (response) => {
-                    if (response.data && response.data.clientes) {
-                        this.state.update((state) => ({
-                            ...state,
-                            clientData: response.data.clientes
-                        }));
-
-                        // Pré-remplir le numéro membre si disponible
-                        if (response.data.clientes.clientesPKId?.codCliente) {
-                            this.formData.numeroMembre = response.data.clientes.clientesPKId.codCliente;
-                        }
-                    }
-                },
-                error: (error) => {
-                    console.error('Error loading client data:', error);
-                    this.messageService.add({
-                        severity: 'error',
-                        summary: 'Erreur',
-                        detail: 'Impossible de charger les données du client',
-                        life: 3000
-                    });
-                }
-            });
-    }
+    // ======================== CASCADE: DÉLÉGATION → AGENCE → POINT DE SERVICE ========================
 
     onDelegationChange(event: any): void {
         const delegation = event.value;
+        console.log('=== Délégation sélectionnée ===', delegation);
+
+        // Reset agence et point de vente
+        this.formData.agence = undefined;
+        this.formData.pos = undefined;
+        this.selectedAgence = null;
+
         if (!delegation || !delegation.id) {
-            this.state.update((state) => ({
-                ...state,
-                filteredAgences: [],
-                filteredPointsVente: []
-            }));
-            this.selectedAgence = null;
+            this.state.update((state) => ({ ...state, filteredAgences: [], filteredPointsVente: [] }));
             return;
         }
 
-        const filteredAgences = this.state().allAgences?.filter((agence) => agence.delegation_id === delegation.id) || [];
+        const allAgences = this.state().allAgences || [];
+        const filteredAgences = allAgences.filter((agence: any) => {
+            const agenceDelegationId = agence.delegation_id || agence.delegationId || agence.delegation?.id || agence.idDelegation;
+            return agenceDelegationId === delegation.id;
+        });
 
-        this.state.update((state) => ({
-            ...state,
-            filteredAgences,
-            filteredPointsVente: []
-        }));
-        this.selectedAgence = null;
+        console.log('Agences filtrées:', filteredAgences.length);
+        this.state.update((state) => ({ ...state, filteredAgences, filteredPointsVente: [] }));
     }
 
     onAgenceChange(event: any): void {
         const agence = event.value;
+        console.log('=== Agence sélectionnée ===', agence);
+
+        this.formData.pos = undefined;
+
         if (!agence || !agence.id) {
-            this.state.update((state) => ({
-                ...state,
-                filteredPointsVente: []
-            }));
             this.selectedAgence = null;
+            this.state.update((state) => ({ ...state, filteredPointsVente: [] }));
             return;
         }
 
         this.selectedAgence = agence;
-        const filteredPointsVente = this.state().allPointsVente?.filter((pv) => pv.agence_id === agence.id) || [];
+        const allPointsVente = this.state().allPointsVente || [];
+        const filteredPointsVente = allPointsVente.filter((pv: any) => {
+            const pvAgenceId = pv.agence_id || pv.agenceId || pv.agence?.id || pv.idAgence;
+            return pvAgenceId === agence.id;
+        });
 
-        this.state.update((state) => ({
-            ...state,
-            filteredPointsVente
-        }));
+        console.log('Points de vente filtrés:', filteredPointsVente.length);
+        this.state.update((state) => ({ ...state, filteredPointsVente }));
     }
 
-    // Gestion des garanties
+    // ======================== CASCADE: ACTIVITÉ → SOUS-ACTIVITÉ → FILIÈRE ========================
+
+    /**
+     * Gère le changement d'activité - charge les sous-activités correspondantes
+     */
+    onActiviteChange(event: any): void {
+        const codeActivite = event.value as number;
+        console.log('=== Activité sélectionnée ===', 'code:', codeActivite, 'type:', typeof codeActivite);
+
+        // Reset sous-activité et filière
+        this.formData.selectedSousActivite = undefined;
+        this.formData.selectedSousSousActivite = undefined;
+        this.formData.sousActivite = '';
+        this.formData.sousSousActivite = '';
+        this.selectedSousActivite = null;
+        this.selectedSousSousActivite = null;
+        this.sousActiviteOptions = [];
+        this.sousSousActiviteOptions = [];
+        this.sousActivites = [];
+        this.sousSousActivites = [];
+
+        if (!codeActivite) {
+            this.selectedActivite = null;
+            this.formData.selectedTypeActivite = undefined;
+            this.formData.typeActivite = '';
+            return;
+        }
+
+        // Stocker le code
+        this.formData.selectedTypeActivite = codeActivite;
+        this.formData.typeActivite = codeActivite.toString();
+
+        // Trouver l'activité par son code
+        this.selectedActivite = CreditActiviteData.getActiviteByCode(codeActivite) || null;
+        console.log('Activité trouvée:', this.selectedActivite);
+
+        if (this.selectedActivite) {
+            // Charger les sous-activités
+            this.sousActivites = CreditActiviteData.getSousActivitesByActivite(codeActivite);
+            console.log('Sous-activités trouvées:', this.sousActivites);
+
+            this.sousActiviteOptions = this.sousActivites.map((sa) => ({
+                label: sa.libelle,
+                value: sa.code,
+                data: sa
+            }));
+            console.log('Options sous-activités:', this.sousActiviteOptions);
+        }
+    }
+
+    /**
+     * Gère le changement de sous-activité - charge les filières
+     */
+    onSousActiviteChange(event: any): void {
+        const codeSousActivite = event.value as number;
+        console.log('=== Sous-activité sélectionnée ===', 'code:', codeSousActivite);
+
+        // Reset filière
+        this.formData.selectedSousSousActivite = undefined;
+        this.formData.sousSousActivite = '';
+        this.selectedSousSousActivite = null;
+        this.sousSousActiviteOptions = [];
+        this.sousSousActivites = [];
+
+        if (!codeSousActivite || !this.selectedActivite) {
+            this.selectedSousActivite = null;
+            this.formData.selectedSousActivite = undefined;
+            this.formData.sousActivite = '';
+            return;
+        }
+
+        // Stocker le code
+        this.formData.selectedSousActivite = codeSousActivite;
+        this.formData.sousActivite = codeSousActivite.toString();
+
+        // Trouver la sous-activité
+        this.selectedSousActivite = this.sousActivites.find((sa) => sa.code === codeSousActivite) || null;
+        console.log('Sous-activité trouvée:', this.selectedSousActivite);
+
+        if (this.selectedSousActivite && this.selectedActivite) {
+            // Charger les filières (sous-sous-activités)
+            this.sousSousActivites = CreditActiviteData.getSousSousActivites(this.selectedActivite.code, codeSousActivite);
+            console.log('Filières trouvées:', this.sousSousActivites);
+
+            this.sousSousActiviteOptions = this.sousSousActivites.map((ssa) => ({
+                label: ssa.libelle,
+                value: ssa.code,
+                data: ssa
+            }));
+            console.log('Options filières:', this.sousSousActiviteOptions);
+        }
+    }
+
+    /**
+     * Gère le changement de filière
+     */
+    onSousSousActiviteChange(event: any): void {
+        const codeSousSousActivite = event.value as number;
+        console.log('=== Filière sélectionnée ===', 'code:', codeSousSousActivite);
+
+        if (!codeSousSousActivite) {
+            this.selectedSousSousActivite = null;
+            this.formData.selectedSousSousActivite = undefined;
+            this.formData.sousSousActivite = '';
+            return;
+        }
+
+        this.formData.selectedSousSousActivite = codeSousSousActivite;
+        this.formData.sousSousActivite = codeSousSousActivite.toString();
+        this.selectedSousSousActivite = this.sousSousActivites.find((ssa) => ssa.code === codeSousSousActivite) || null;
+    }
+
+    // ======================== TYPE DE CRÉDIT ========================
+
+    onTypeCreditChange(event: any): void {
+        const tipCredito = event.value;
+
+        if (!tipCredito) {
+            this.selectedTypeCredit = null;
+            this.formData.tipCredito = undefined;
+            return;
+        }
+
+        this.selectedTypeCredit = this.typesCredit.find((tc) => tc.tip_CREDITO === tipCredito) || null;
+        this.formData.tipCredito = tipCredito;
+    }
+
+    // ======================== GESTION DES GARANTIES ========================
+
     createEmptyGarantie(): GarantiePropose {
         return {
             typeGarantie: 'Caution Solidaire',
@@ -552,9 +584,7 @@ export class DemandeIndComponent implements OnInit {
             return;
         }
 
-        // Calculer la valeur empruntable (75%)
         garantie.valeurEmprunte = garantie.valeurGarantie * 0.75;
-
         const garanties = [...currentState.garanties];
 
         if (currentState.editingGarantieIndex !== undefined) {
@@ -587,42 +617,47 @@ export class DemandeIndComponent implements OnInit {
     }
 
     calculateTotalGaranties(): number {
-        return this.state().garanties.reduce((sum, g) => sum + g.valeurGarantie, 0);
+        return this.state().garanties.reduce((sum, g) => sum + (g.valeurGarantie || 0), 0);
     }
 
     calculateTotalEmpruntable(): number {
         return this.state().garanties.reduce((sum, g) => sum + (g.valeurEmprunte || 0), 0);
     }
 
-    // Calcul de l'échéance
-    // calculateEcheance(form: NgForm): void {
-    //     const montant = form.value.montantDemande || this.formData.montantDemande;
-    //     const duree = form.value.dureeDemande || this.formData.dureeDemande;
-    //     const taux = form.value.tauxInteret || this.formData.tauxInteret;
+    getGarantiesByType(...types: string[]): GarantiePropose[] {
+        return this.state().garanties.filter((g) => types.includes(g.typeGarantie!));
+    }
 
-    //     if (montant && duree && taux) {
-    //         const tauxMensuel = taux / 100 / 12;
-    //         const echeance = (montant * tauxMensuel) / (1 - Math.pow(1 + tauxMensuel, -duree));
-    //         this.formData.echeance = Math.round(echeance * 100) / 100;
+    deleteGarantieByRef(garantie: GarantiePropose): void {
+        const index = this.state().garanties.indexOf(garantie);
+        if (index > -1) {
+            this.state.update((state) => ({
+                ...state,
+                garanties: state.garanties.filter((_, i) => i !== index)
+            }));
+            this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Garantie supprimée', life: 2000 });
+        }
+    }
 
-    //         // Mettre à jour le contrôle du formulaire si disponible
-    //         if (form.controls && form.controls['echeance']) {
-    //             form.controls['echeance'].setValue(this.formData.echeance);
-    //         }
-    //     }
-    // }
+    // ======================== SOUMISSION DU FORMULAIRE ========================
 
-    // Soumission du formulaire
     createDemande(form: NgForm): void {
         if (form.invalid) {
-            Object.keys(form.controls).forEach((key) => {
-                form.controls[key].markAsTouched();
-            });
-
+            Object.keys(form.controls).forEach((key) => form.controls[key].markAsTouched());
             this.messageService.add({
                 severity: 'error',
                 summary: 'Erreur',
                 detail: 'Veuillez remplir correctement tous les champs obligatoires',
+                life: 5000
+            });
+            return;
+        }
+
+        if (this.isPME() && (!this.formData.nomPersonneMorale || this.formData.nomPersonneMorale.trim() === '')) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Erreur',
+                detail: "Le nom de l'entreprise est obligatoire pour une demande PME/PMI",
                 life: 5000
             });
             return;
@@ -640,91 +675,76 @@ export class DemandeIndComponent implements OnInit {
 
         this.state.update((state) => ({ ...state, submitting: true }));
 
-        // Préparer les données avec natureClient
+        const delegationValue = this.formData.delegation as any;
+        const agenceValue = this.formData.agence as any;
+        const posValue = this.formData.pos as any;
+
         const demandeData: DemandeIndividuel = {
             ...this.formData,
             ...form.value,
-            // Extraire les IDs des objets sélectionnés
-            delegation: form.value.delegation?.id || this.formData.delegation,
-            agence: form.value.agence?.id || this.formData.agence,
-            pos: form.value.pos?.id || this.formData.pos,
-
-            // Nature du client
-            // Nature du client et nom personne morale
-            natureClient: this.formData.natureClient || 'Individuel',
-            nomPersonneMorale: this.formData.nomPersonneMorale || '', // NOUVEAU
-
-            // Activités
-            typeActivite: this.selectedActivite ? this.selectedActivite.code.toString() : this.formData.typeActivite,
-            sousActivite: this.selectedSousActivite ? this.selectedSousActivite.code.toString() : this.formData.sousActivite,
-            sousSousActivite: this.selectedSousSousActivite ? this.selectedSousSousActivite.code.toString() : '',
-
-            // Type de crédit
-            tipCredito: this.selectedTypeCredit ? this.selectedTypeCredit.tip_CREDITO : this.formData.tipCredito,
-
-            // Description de l'activité
+            delegation: delegationValue?.id || delegationValue,
+            agence: agenceValue?.id || agenceValue,
+            pos: posValue?.id || posValue,
+            natureClient: this.formData.natureClient || 'Demande credit Pour Particulier',
+            nomPersonneMorale: this.isPME() ? this.formData.nomPersonneMorale : '',
+            sigle: this.isPME() ? this.formData.sigle : '',
+            sernom: this.formData.sernom || '',
+            categorie: this.formData.categorie || '',
+            nomPere: this.formData.nomPere || '',
+            nomMere: this.formData.nomMere || '',
+            nomConjoint: this.formData.nomConjoint || '',
+            natureActivite: this.formData.natureActivite || '',
+            prefecture: this.formData.prefecture || '',
+            sousPrefecture: this.formData.sousPrefecture || '',
+            email: this.formData.email || '',
+            typeActivite: this.formData.typeActivite || '',
+            sousActivite: this.formData.sousActivite || '',
+            sousSousActivite: this.formData.sousSousActivite || '',
+            tipCredito: this.formData.tipCredito,
             descriptionActivite: this.getDescriptionActiviteComplete() || form.value.descriptionActivite,
-
-            // Garanties avec les nouveaux types
             garanties: this.state().garanties.map((g) => ({
                 ...g,
-                // Conversion des anciens types si nécessaire
                 typeGarantie: this.convertTypeGarantie(g.typeGarantie!)
             })),
-
-            // Valeurs par défaut
             statutDemande: 'EN_ATTENTE',
-            validationState: 'NOUVEAU',
+            validationState: 'SELECTION',
             currentActivite: this.getActiviteLibelle(),
-            //createdAt: new Date().toISOString(),
             codUsuarios: ''
         } as DemandeIndividuel;
 
-        console.log('Données de la demande à envoyer:', demandeData);
+        console.log('Données de la demande:', demandeData);
 
         this.creditService
             .addDemandeIndWithGaranties$(demandeData)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (response) => {
-                    console.log('Réponse du serveur:', response);
-
+                    console.log('Réponse:', response);
                     this.messageService.add({
                         severity: 'success',
                         summary: 'Succès',
-                        detail: `Demande de crédit créée avec succès. ID: ${response.data?.demandeId || 'N/A'}`,
+                        detail: `Demande créée avec succès. ID: ${response.data?.demandeId || 'N/A'}`,
                         life: 5000
                     });
-
-                    this.state.update((state) => ({
-                        ...state,
-                        submitting: false,
-                        garanties: [],
-                        filteredAgences: [],
-                        filteredPointsVente: []
-                    }));
-
+                    this.state.update((state) => ({ ...state, submitting: false, garanties: [], filteredAgences: [], filteredPointsVente: [] }));
                     form.resetForm();
-                    this.formData = this.getInitialFormData();
-
-                    setTimeout(() => {
-                        this.router.navigate(['/']);
-                    }, 2000);
+                    this.resetForm();
+                    setTimeout(() => this.router.navigate(['/']), 2000);
                 },
                 error: (error) => {
-                    console.error('Erreur lors de la création de la demande:', error);
-
+                    console.error('Erreur:', error);
                     this.messageService.add({
                         severity: 'error',
                         summary: 'Erreur',
-                        detail: error.message || error || 'Échec de la soumission de la demande',
+                        detail: error.message || error || 'Échec de la soumission',
                         life: 7000
                     });
-
                     this.state.update((state) => ({ ...state, submitting: false }));
                 }
             });
     }
+
+    // ======================== MÉTHODES UTILITAIRES ========================
 
     private convertTypeGarantie(type: string): string {
         const conversions: { [key: string]: string } = {
@@ -736,35 +756,18 @@ export class DemandeIndComponent implements OnInit {
         return conversions[type] || type;
     }
 
-    /**
-     * Obtenir la description complète de l'activité
-     */
     private getDescriptionActiviteComplete(): string {
         let description = '';
-
-        if (this.selectedActivite) {
-            description = this.selectedActivite.libelle;
-        }
-
-        if (this.selectedSousActivite) {
-            description += ' - ' + this.selectedSousActivite.libelle;
-        }
-
-        if (this.selectedSousSousActivite) {
-            description += ' - ' + this.selectedSousSousActivite.libelle;
-        }
-
+        if (this.selectedActivite) description = this.selectedActivite.libelle;
+        if (this.selectedSousActivite) description += ' - ' + this.selectedSousActivite.libelle;
+        if (this.selectedSousSousActivite) description += ' - ' + this.selectedSousSousActivite.libelle;
         return description;
     }
 
-    /**
-     * Obtenir le libellé de l'activité principale
-     */
     private getActiviteLibelle(): string {
         return this.selectedActivite ? this.selectedActivite.libelle : '';
     }
 
-    // Méthode pour réinitialiser les sélections d'activité
     resetActiviteSelections(): void {
         this.selectedActivite = null;
         this.selectedSousActivite = null;
@@ -776,54 +779,85 @@ export class DemandeIndComponent implements OnInit {
         this.formData.typeActivite = '';
         this.formData.sousActivite = '';
         this.formData.sousSousActivite = '';
+        this.formData.selectedTypeActivite = undefined;
+        this.formData.selectedSousActivite = undefined;
+        this.formData.selectedSousSousActivite = undefined;
     }
 
-    // Méthode pour obtenir les valeurs initiales du formulaire
-    private getInitialFormData(): Partial<DemandeIndividuel> {
+    private resetForm(): void {
+        this.formData = this.getInitialFormData();
+        this.resetActiviteSelections();
+        this.selectedAgence = null;
+    }
+
+    private getInitialFormData(): Partial<DemandeIndividuel> & {
+        email?: string;
+        dateAdhesion?: Date | null;
+        sigle?: string;
+        titreDirecteur?: string;
+        selectedTypeActivite?: number;
+        selectedSousActivite?: number;
+        selectedSousSousActivite?: number;
+    } {
         return {
             nom: '',
             prenom: '',
+            sernom: '',
             telephone: '',
             numeroMembre: '',
-            typePiece: "Carte nationale d'identite" as any,
+            typePiece: "Carte nationale d'identite",
             numId: '',
             dateNaissance: undefined,
             lieuxNaissance: '',
-            genre: 'Masculin' as any,
-            situationMatrimoniale: 'Celebataire' as any,
+            genre: 'Masculin',
+            situationMatrimoniale: 'Celebataire',
             nombrePersonneEnCharge: 0,
             nombrePersonneScolarise: 0,
+            nomPere: '',
+            nomMere: '',
+            nomConjoint: '',
             addresseDomicileContact: '',
             typePropriete: '',
             nombreAnneeHabitation: 0,
-            natureClient: 'Individuel',
-            nomPersonneMorale: '', // NOUVEAU
-            delegation: 0,
-            agence: 0,
-            pos: 0,
+            natureClient: 'Demande credit Pour Particulier',
+            nomPersonneMorale: '',
+            sigle: '',
+            titreDirecteur: '',
+            categorie: '',
+            delegation: undefined,
+            agence: undefined,
+            pos: undefined,
+            prefecture: '',
+            sousPrefecture: '',
             typeActivite: '',
             sousActivite: '',
             sousSousActivite: '',
+            selectedTypeActivite: undefined,
+            selectedSousActivite: undefined,
+            selectedSousSousActivite: undefined,
             descriptionActivite: '',
             nombreAnneeActivite: 0,
             adresseLieuActivite: '',
             autreActivite: '',
             lieuActivite: '',
+            natureActivite: '',
             currentActivite: '',
             montantDemande: 0,
-            dureeDemande: 0,
-            periodiciteRemboursement: 'Mensuelle' as any,
-            tauxInteret: 0,
+            dureeDemande: 12,
+            periodiciteRemboursement: 'Mensuelle',
+            tauxInteret: 3,
             periodeDiffere: 0,
-            nombreEcheance: 0,
+            nombreEcheance: 12,
             echeance: 0,
-            objectCredit: 'Fond de roulement' as any,
+            objectCredit: 'Fond de roulement',
             detailObjectCredit: '',
-            statutCredit: 'Nouveau' as any,
+            statutCredit: 'Nouveau',
             rangCredit: 1,
-            tipCredito: 0,
+            tipCredito: undefined,
             statutDemande: 'EN_ATTENTE',
-            validationState: 'NOUVEAU'
+            validationState: 'SELECTION',
+            email: '',
+            dateAdhesion: null
         };
     }
 }

@@ -357,6 +357,79 @@ public class DemandeIndQuery {
             """;
 
     /**
+     * Requête pour appeler la procédure stockée d'insertion de demande avec garanties
+     * Version 3 - Ajout de 8 nouveaux paramètres (paramètres 45-52)
+     * Total: 53 paramètres (52 champs + 1 tableau de garanties)
+     */
+    public static final String CALL_INSERT_DEMANDE_WITH_GARANTIES_PROC_V3 =
+            """
+            SELECT * FROM insert_demande_with_garanties(
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?,
+                ?::garantie_input[]
+            )
+            """;
+
+    /**
+     * Appel de la procédure stockée insert_demande_with_garanties
+     * Version V80 avec 55 paramètres (incluant email et sigle)
+     *
+     * Paramètres:
+     * 1-4: nom, prenom, telephone, numero_membre
+     * 5-7: delegation, agence, pos
+     * 8-9: type_piece, numid
+     * 10-18: date_naissance, lieux_naissance, genre, situation_matrimoniale,
+     *        nombre_personne_en_charge, nombre_personne_scolarise,
+     *        addresse_domicile_contact, type_propriete, nombre_annee_habitation
+     * 19-26: type_activite, sous_activite, sous_sous_activite, description_activite,
+     *        nombre_annee_activite, adresse_lieu_activite, autre_activite, lieu_activite
+     * 27-35: montant_demande, duree_demande, periodicite_remboursement, taux_interet,
+     *        periode_differe, nombre_echeance, echeance, object_credit, detail_object_credit
+     * 36-42: statut_credit, rang_credit, tip_credito, cod_usuarios,
+     *        statut_demande, validation_state, current_activite
+     * 43-44: nature_client, nom_personne_morale
+     * 45-52: sernom, categorie, nom_pere, nom_mere, nom_conjoint,
+     *        nature_activite, prefecture, sous_prefecture
+     * 53-54: email, sigle (NOUVEAUX V80)
+     * 55: garanties (array)
+     */
+    public static final String CALL_INSERT_DEMANDE_WITH_GARANTIES_PROC_V4 =
+            "SELECT * FROM insert_demande_with_garanties(" +
+                    "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " +  // 1-10
+                    "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " +  // 11-20
+                    "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " +  // 21-30
+                    "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " +  // 31-40
+                    "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " +  // 41-50
+                    "?, ?, ?, ?, ?)";                    // 51-55
+
+    /**
+     * Requête pour récupérer une demande avec ses garanties
+     */
+    public static final String SELECT_DEMANDE_WITH_GARANTIES =
+            "SELECT d.*, " +
+                    "g.garantie_propose_id, g.type_garantie, g.description_garantie, " +
+                    "g.valeur_garantie, g.valeur_emprunte " +
+                    "FROM demandeindividuel d " +
+                    "LEFT JOIN garantie_propose g ON d.demandeindividuel_id = g.demandeindividuel_id " +
+                    "WHERE d.demandeindividuel_id = ?";
+
+    /**
+     * Requête pour rechercher des demandes par email
+     */
+    public static final String SELECT_DEMANDE_BY_EMAIL =
+            "SELECT * FROM demandeindividuel WHERE email = ?";
+
+    /**
+     * Requête pour rechercher des demandes PME/PMI par sigle
+     */
+    public static final String SELECT_DEMANDE_BY_SIGLE =
+            "SELECT * FROM demandeindividuel WHERE sigle ILIKE ? AND nature_client = 'Demande de Credit Pour PME/PMI'";
+
+
+    /**
      * Appel de la fonction pour récupérer une demande avec ses garanties
      */
     public static final String CALL_GET_DEMANDE_WITH_GARANTIES_FUNC =

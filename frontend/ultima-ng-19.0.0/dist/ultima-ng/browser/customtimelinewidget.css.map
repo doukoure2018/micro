@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["customtimelinewidget.ts"],
+  "sourcesContent": ["\n        :host ::ng-deep {\n            .p-timeline-event-opposite {\n                flex: 0;\n                padding: 0 !important;\n            }\n            .p-card {\n                box-shadow: none;\n            }\n        }\n    "],
+  "mappings": ";AAEY,MAAA,UAAA,CAAA;AACI,QAAA;AACA,WAAA;;AAEJ,MAAA,UAAA,CAAA;AACI,cAAA;;",
+  "names": []
+}

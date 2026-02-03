@@ -1,0 +1,270 @@
+import {
+  BaseComponent,
+  BaseStyle,
+  SharedModule
+} from "./chunk-NQNBRQ7H.js";
+import {
+  CommonModule
+} from "./chunk-SQQPVFHK.js";
+import {
+  Component,
+  Injectable,
+  Input,
+  NgModule,
+  inject,
+  setClassMetadata,
+  ɵɵInheritDefinitionFeature,
+  ɵɵProvidersFeature,
+  ɵɵattribute,
+  ɵɵclassMap,
+  ɵɵdefineComponent,
+  ɵɵdefineInjectable,
+  ɵɵdefineInjector,
+  ɵɵdefineNgModule,
+  ɵɵgetInheritedFactory,
+  ɵɵprojection,
+  ɵɵprojectionDef,
+  ɵɵstyleMap
+} from "./chunk-ZKKMBKIA.js";
+
+// node_modules/primeng/fesm2022/primeng-inputgroup.mjs
+var _c0 = ["*"];
+var theme = ({
+  dt
+}) => `
+.p-inputgroup,
+.p-inputgroup .p-floatlabel,
+.p-inputgroup .p-iftalabel {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+}
+
+.p-inputgroup .p-inputtext,
+.p-inputgroup .p-inputwrapper {
+    flex: 1 1 auto;
+    width: 1%;
+}
+
+.p-inputgroupaddon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: ${dt("inputgroup.addon.padding")};
+    background: ${dt("inputgroup.addon.background")};
+    color: ${dt("inputgroup.addon.color")};
+    border-block-start: 1px solid ${dt("inputgroup.addon.border.color")};
+    border-block-end: 1px solid ${dt("inputgroup.addon.border.color")};
+    min-width: ${dt("inputgroup.addon.min.width")};
+}
+
+.p-inputgroupaddon:first-child,
+.p-inputgroupaddon + .p-inputgroupaddon {
+    border-inline-start: 1px solid ${dt("inputgroup.addon.border.color")};
+}
+
+.p-inputgroupaddon:last-child {
+    border-inline-end: 1px solid ${dt("inputgroup.addon.border.color")};
+}
+
+.p-inputgroupaddon:has(.p-button) {
+    padding: 0;
+    overflow: hidden;
+}
+
+.p-inputgroupaddon .p-button {
+    border-radius: 0;
+}
+
+.p-inputgroup > .p-component,
+.p-inputgroup > .p-inputwrapper > .p-component,
+.p-inputgroup:first-child > p-button > .p-button,
+.p-inputgroup > .p-floatlabel > .p-component,
+.p-inputgroup > .p-floatlabel > .p-inputwrapper > .p-component,
+.p-inputgroup > .p-iftalabel > .p-component,
+.p-inputgroup > .p-iftalabel > .p-inputwrapper > .p-component {
+    border-radius: 0;
+    margin: 0;
+}
+
+.p-inputgroupaddon:first-child,
+.p-inputgroup > .p-component:first-child,
+.p-inputgroup > .p-inputwrapper:first-child > .p-component,
+.p-inputgroup > .p-floatlabel:first-child > .p-component,
+.p-inputgroup > .p-floatlabel:first-child > .p-inputwrapper > .p-component,
+.p-inputgroup > .p-iftalabel:first-child > .p-component,
+.p-inputgroup > .p-iftalabel:first-child > .p-inputwrapper > .p-component {
+    border-start-start-radius: ${dt("inputgroup.addon.border.radius")};
+    border-end-start-radius: ${dt("inputgroup.addon.border.radius")};
+}
+
+.p-inputgroupaddon:last-child,
+.p-inputgroup > .p-component:last-child,
+.p-inputgroup > .p-inputwrapper:last-child > .p-component,
+.p-inputgroup > .p-floatlabel:last-child > .p-component,
+.p-inputgroup > .p-floatlabel:last-child > .p-inputwrapper > .p-component,
+.p-inputgroup > .p-iftalabel:last-child > .p-component,
+.p-inputgroup > .p-iftalabel:last-child > .p-inputwrapper > .p-component {
+    border-start-end-radius: ${dt("inputgroup.addon.border.radius")};
+    border-end-end-radius: ${dt("inputgroup.addon.border.radius")};
+}
+
+.p-inputgroup .p-component:focus,
+.p-inputgroup .p-component.p-focus,
+.p-inputgroup .p-inputwrapper-focus,
+.p-inputgroup .p-component:focus ~ label,
+.p-inputgroup .p-component.p-focus ~ label,
+.p-inputgroup .p-inputwrapper-focus ~ label {
+    z-index: 1;
+}
+
+.p-inputgroup > .p-button:not(.p-button-icon-only) {
+    width: auto;
+}
+
+/*For PrimeNG*/
+
+.p-inputgroup p-button:first-child, .p-inputgroup p-button:last-child {
+    display: inline-flex;
+}
+
+.p-inputgroup:has(> p-button:first-child) .p-button{
+    border-start-start-radius: ${dt("inputgroup.addon.border.radius")};
+    border-end-start-radius: ${dt("inputgroup.addon.border.radius")};
+}
+
+.p-inputgroup:has(> p-button:last-child) .p-button {
+    border-start-end-radius: ${dt("inputgroup.addon.border.radius")};
+    border-end-end-radius: ${dt("inputgroup.addon.border.radius")};
+}
+`;
+var classes = {
+  root: ({
+    props
+  }) => ["p-inputgroup", {
+    "p-inputgroup-fluid": props.fluid
+  }]
+};
+var InputGroupStyle = class _InputGroupStyle extends BaseStyle {
+  name = "inputgroup";
+  theme = theme;
+  classes = classes;
+  static \u0275fac = /* @__PURE__ */ (() => {
+    let \u0275InputGroupStyle_BaseFactory;
+    return function InputGroupStyle_Factory(__ngFactoryType__) {
+      return (\u0275InputGroupStyle_BaseFactory || (\u0275InputGroupStyle_BaseFactory = \u0275\u0275getInheritedFactory(_InputGroupStyle)))(__ngFactoryType__ || _InputGroupStyle);
+    };
+  })();
+  static \u0275prov = /* @__PURE__ */ \u0275\u0275defineInjectable({
+    token: _InputGroupStyle,
+    factory: _InputGroupStyle.\u0275fac
+  });
+};
+(() => {
+  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(InputGroupStyle, [{
+    type: Injectable
+  }], null, null);
+})();
+var InputGroupClasses;
+(function(InputGroupClasses2) {
+  InputGroupClasses2["root"] = "p-inputgroup";
+})(InputGroupClasses || (InputGroupClasses = {}));
+var InputGroup = class _InputGroup extends BaseComponent {
+  /**
+   * Inline style of the element.
+   * @group Props
+   */
+  style;
+  /**
+   * Class of the element.
+   * @group Props
+   */
+  styleClass;
+  _componentStyle = inject(InputGroupStyle);
+  static \u0275fac = /* @__PURE__ */ (() => {
+    let \u0275InputGroup_BaseFactory;
+    return function InputGroup_Factory(__ngFactoryType__) {
+      return (\u0275InputGroup_BaseFactory || (\u0275InputGroup_BaseFactory = \u0275\u0275getInheritedFactory(_InputGroup)))(__ngFactoryType__ || _InputGroup);
+    };
+  })();
+  static \u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({
+    type: _InputGroup,
+    selectors: [["p-inputgroup"], ["p-inputGroup"], ["p-input-group"]],
+    hostAttrs: [1, "p-inputgroup"],
+    hostVars: 5,
+    hostBindings: function InputGroup_HostBindings(rf, ctx) {
+      if (rf & 2) {
+        \u0275\u0275attribute("data-pc-name", "inputgroup");
+        \u0275\u0275styleMap(ctx.style);
+        \u0275\u0275classMap(ctx.styleClass);
+      }
+    },
+    inputs: {
+      style: "style",
+      styleClass: "styleClass"
+    },
+    features: [\u0275\u0275ProvidersFeature([InputGroupStyle]), \u0275\u0275InheritDefinitionFeature],
+    ngContentSelectors: _c0,
+    decls: 1,
+    vars: 0,
+    template: function InputGroup_Template(rf, ctx) {
+      if (rf & 1) {
+        \u0275\u0275projectionDef();
+        \u0275\u0275projection(0);
+      }
+    },
+    dependencies: [CommonModule, SharedModule],
+    encapsulation: 2
+  });
+};
+(() => {
+  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(InputGroup, [{
+    type: Component,
+    args: [{
+      selector: "p-inputgroup, p-inputGroup, p-input-group",
+      standalone: true,
+      imports: [CommonModule, SharedModule],
+      template: ` <ng-content></ng-content> `,
+      providers: [InputGroupStyle],
+      host: {
+        class: "p-inputgroup",
+        "[attr.data-pc-name]": '"inputgroup"',
+        "[class]": "styleClass",
+        "[style]": "style"
+      }
+    }]
+  }], null, {
+    style: [{
+      type: Input
+    }],
+    styleClass: [{
+      type: Input
+    }]
+  });
+})();
+var InputGroupModule = class _InputGroupModule {
+  static \u0275fac = function InputGroupModule_Factory(__ngFactoryType__) {
+    return new (__ngFactoryType__ || _InputGroupModule)();
+  };
+  static \u0275mod = /* @__PURE__ */ \u0275\u0275defineNgModule({
+    type: _InputGroupModule
+  });
+  static \u0275inj = /* @__PURE__ */ \u0275\u0275defineInjector({
+    imports: [InputGroup, SharedModule, SharedModule]
+  });
+};
+(() => {
+  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(InputGroupModule, [{
+    type: NgModule,
+    args: [{
+      imports: [InputGroup, SharedModule],
+      exports: [InputGroup, SharedModule]
+    }]
+  }], null, null);
+})();
+
+export {
+  InputGroup,
+  InputGroupModule
+};
+//# sourceMappingURL=chunk-GEBY3FYZ.js.map

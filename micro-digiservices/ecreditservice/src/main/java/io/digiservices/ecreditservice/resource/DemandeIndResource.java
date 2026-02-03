@@ -9,6 +9,7 @@ import io.digiservices.clients.domain.User;
 import io.digiservices.ecreditservice.domain.Response;
 import io.digiservices.ecreditservice.dto.*;
 import io.digiservices.ecreditservice.exception.ApiException;
+import io.digiservices.ecreditservice.exception.ValidationException;
 import io.digiservices.ecreditservice.service.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -16,9 +17,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ValidationException;
-import org.modelmapper.internal.bytebuddy.pool.TypePool;
-import org.modelmapper.spi.ErrorMessage;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -46,7 +45,34 @@ public class DemandeIndResource {
     private final EbankingClient ebankingClient;
     private final DemandeCreditService demandeCreditService;
     private final AnalyseService analyseService;
+    private final AnalyseFinanciereService analyseFinanciereService;
 
+
+    /**
+     * Valeurs autorisées pour la nature du client
+     */
+    private static final Set<String> VALID_NATURE_CLIENT = Set.of(
+            "Demande de credit Pour Professionnels",
+            "Demande de Credit Pour PME/PMI",
+            "Demande credit Pour Particulier"
+    );
+
+    /**
+     * Valeurs autorisées pour les types de garantie
+     */
+    private static final Set<String> VALID_TYPE_GARANTIE = Set.of(
+            "Caution Solidaire",
+            "Garantie Financiere",
+            "Garantie Materielle",
+            "Autre Garantie"
+    );
+
+
+    /**
+     * Endpoint pour créer une nouvelle demande individuelle avec garanties
+     * @param demandeIndividuel Objet contenant les données de la demande
+     * @return ResponseEntity avec le résultat de l'opération
+     */
     @PostMapping("/addDemandeInd")
     public ResponseEntity<Response> addDemandeIndWithGaranties(
             @Valid @RequestBody DemandeIndividuel demandeIndividuel) {
@@ -58,13 +84,20 @@ public class DemandeIndResource {
             // Validation des types de garanties
             validateGaranties(demandeIndividuel.getGaranties());
 
+            // Validation des nouveaux champs obligatoires selon la nature du client
+            validateNewFields(demandeIndividuel);
+
             DemandeResponse result = demandeIndService.addDemandeIndWithGaranties(demandeIndividuel);
 
             Map<String, Object> data = Map.of(
                     "demandeId", result.getDemandeId(),
                     "message", result.getMessage(),
                     "success", result.isSuccess(),
-                    "natureClient", demandeIndividuel.getNatureClient()
+                    "natureClient", demandeIndividuel.getNatureClient(),
+                    "prefecture", demandeIndividuel.getPrefecture() != null ?
+                            demandeIndividuel.getPrefecture() : "",
+                    "sousPrefecture", demandeIndividuel.getSousPrefecture() != null ?
+                            demandeIndividuel.getSousPrefecture() : ""
             );
 
             return ResponseEntity
@@ -100,52 +133,128 @@ public class DemandeIndResource {
         }
     }
 
-    private void validateNatureClient(DemandeIndividuel demande)
-    {
-        List<String> validNatures = Arrays.asList("Individuel", "PME", "Groupe Solidaire", "Autre");
+    /**
+     * Valide la nature du client
+     * @param demande La demande à valider
+     * @throws ValidationException Si la nature du client n'est pas valide
+     */
+    private void validateNatureClient(DemandeIndividuel demande) {
+        String natureClient = demande.getNatureClient();
 
-        if (demande.getNatureClient() == null || demande.getNatureClient().isEmpty()) {
-            demande.setNatureClient("Individuel"); // Valeur par défaut
-        } else if (!validNatures.contains(demande.getNatureClient())) {
-            List<ErrorMessage> errors = new ArrayList<>();
-            errors.add(new ErrorMessage("Nature client invalide: " + demande.getNatureClient()));
-            throw new ValidationException(errors);
+        if (natureClient == null || natureClient.isBlank()) {
+            // Valeur par défaut si non spécifiée
+            demande.setNatureClient("Demande credit Pour Particulier");
+            return;
+        }
+
+        if (!VALID_NATURE_CLIENT.contains(natureClient)) {
+            throw new ValidationException(
+                    "Nature de client invalide: '" + natureClient + "'. " +
+                            "Valeurs autorisées: " + String.join(", ", VALID_NATURE_CLIENT)
+            );
+        }
+
+        // Validation spécifique pour PME/PMI - le nom de la personne morale est obligatoire
+        if ("Demande de Credit Pour PME/PMI".equals(natureClient)) {
+            if (demande.getNomPersonneMorale() == null || demande.getNomPersonneMorale().isBlank()) {
+                throw new ValidationException(
+                        "Le nom de l'entreprise est obligatoire pour une demande PME/PMI"
+                );
+            }
         }
     }
 
-    private void validateGaranties(List<GarantiePropose> garanties)
-    {
+    /**
+     * Valide les garanties proposées
+     * @param garanties Liste des garanties à valider
+     * @throws ValidationException Si une garantie a un type invalide
+     */
+    private void validateGaranties(List<GarantiePropose> garanties) {
         if (garanties == null || garanties.isEmpty()) {
-            List<ErrorMessage> errors = new ArrayList<>();
-            errors.add(new ErrorMessage("Au moins une garantie est requise"));
-            throw new ValidationException(errors);
+            throw new ValidationException("Au moins une garantie est obligatoire");
         }
 
-        List<String> validTypes = Arrays.asList(
-                "Caution Solidaire",
-                "Garantie Financiere",
-                "Garantie Materielle",
-                "Autre Garantie"
-        );
+        for (int i = 0; i < garanties.size(); i++) {
+            GarantiePropose garantie = garanties.get(i);
 
-        for (GarantiePropose garantie : garanties) {
-            if (!validTypes.contains(garantie.getTypeGarantie())) {
-                List<ErrorMessage> errors = new ArrayList<>();
-                errors.add(new ErrorMessage("Type de garantie invalide: " + garantie.getTypeGarantie()));
-                throw new ValidationException(errors);
+            if (garantie.getTypeGarantie() == null || garantie.getTypeGarantie().isBlank()) {
+                throw new ValidationException(
+                        "Le type de garantie est obligatoire pour la garantie #" + (i + 1)
+                );
             }
 
-            if (garantie.getValeurGarantie() == null || garantie.getValeurGarantie().compareTo(BigDecimal.ZERO) <= 0) {
-                List<ErrorMessage> errors = new ArrayList<>();
-                errors.add(new ErrorMessage("La valeur de la garantie doit être positive"));
-                throw new ValidationException(errors);
+            if (!VALID_TYPE_GARANTIE.contains(garantie.getTypeGarantie())) {
+                throw new ValidationException(
+                        "Type de garantie invalide pour la garantie #" + (i + 1) + ": '" +
+                                garantie.getTypeGarantie() + "'. " +
+                                "Valeurs autorisées: " + String.join(", ", VALID_TYPE_GARANTIE)
+                );
             }
+
+            if (garantie.getDescriptionGarantie() == null || garantie.getDescriptionGarantie().isBlank()) {
+                throw new ValidationException(
+                        "La description est obligatoire pour la garantie #" + (i + 1)
+                );
+            }
+
+            if (garantie.getValeurGarantie() == null ||
+                    garantie.getValeurGarantie().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+                throw new ValidationException(
+                        "La valeur de la garantie #" + (i + 1) + " doit être supérieure à 0"
+                );
+            }
+        }
+    }
+
+    /**
+     * Valide les nouveaux champs ajoutés
+     * @param demande La demande à valider
+     * @throws ValidationException Si un champ obligatoire est manquant
+     */
+    private void validateNewFields(DemandeIndividuel demande) {
+        // La préfecture et sous-préfecture sont optionnelles mais si fournies,
+        // elles doivent avoir une longueur raisonnable
+        if (demande.getPrefecture() != null && demande.getPrefecture().length() > 255) {
+            throw new ValidationException("La préfecture ne doit pas dépasser 255 caractères");
+        }
+
+        if (demande.getSousPrefecture() != null && demande.getSousPrefecture().length() > 255) {
+            throw new ValidationException("La sous-préfecture ne doit pas dépasser 255 caractères");
+        }
+
+        // Validation du surnom (sernom) si fourni
+        if (demande.getSernom() != null && demande.getSernom().length() > 255) {
+            throw new ValidationException("Le surnom ne doit pas dépasser 255 caractères");
+        }
+
+        // Validation de la catégorie si fournie
+        if (demande.getCategorie() != null && demande.getCategorie().length() > 100) {
+            throw new ValidationException("La catégorie ne doit pas dépasser 100 caractères");
+        }
+
+        // Validation des noms de famille
+        if (demande.getNomPere() != null && demande.getNomPere().length() > 255) {
+            throw new ValidationException("Le nom du père ne doit pas dépasser 255 caractères");
+        }
+
+        if (demande.getNomMere() != null && demande.getNomMere().length() > 255) {
+            throw new ValidationException("Le nom de la mère ne doit pas dépasser 255 caractères");
+        }
+
+        if (demande.getNomConjoint() != null && demande.getNomConjoint().length() > 255) {
+            throw new ValidationException("Le nom du conjoint ne doit pas dépasser 255 caractères");
+        }
+
+        // Validation de la nature d'activité si fournie
+        if (demande.getNatureActivite() != null && demande.getNatureActivite().length() > 255) {
+            throw new ValidationException("La nature de l'activité ne doit pas dépasser 255 caractères");
         }
     }
 
     @GetMapping("/{demandeId}")
     public ResponseEntity<Response> getDemandeWithGaranties(@NotNull Authentication authentication,
-                                                            @PathVariable(name = "demandeId") Long demandeId) {
+                                                            @PathVariable(name = "demandeId") Long demandeId)
+    {
         try {
             DemandeIndividuel demandeIndividuel = demandeIndService.getDemandeWithGaranties(demandeId);
             //get Instance user connected
@@ -157,10 +266,27 @@ public class DemandeIndResource {
             //Get Information Dossier by demandeIndividuelId
             DossierCreditDto dossierCredit = analyseService.getDossierByDemandeIndividuelId(demandeId);
 
+            // Get Analyse Financiere status
+            AnalyseFinanciereDto analyseFinanciere = null;
+            try {
+                analyseFinanciere = analyseFinanciereService.getAnalyseByDemandeId(demandeId);
+            } catch (Exception e) {
+                log.debug("Aucune analyse financiere trouvée pour la demande {}", demandeId);
+            }
+
+            // Calculer la somme des valeurEmprunte des garanties pour R.6
+            BigDecimal totalValeurEmprunte = BigDecimal.ZERO;
+            if (demandeIndividuel.getGaranties() != null) {
+                totalValeurEmprunte = demandeIndividuel.getGaranties().stream()
+                        .map(g -> g.getValeurEmprunte() != null ? g.getValeurEmprunte() : BigDecimal.ZERO)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+            }
+
             // Créer la réponse avec ou sans demandeCredit
             Map<String, Object> responseData = new HashMap<>();
             responseData.put("demandeIndividuel", demandeIndividuel);
             responseData.put("user", user);
+            responseData.put("totalValeurEmprunte", totalValeurEmprunte);
 
             if (demande_credit != null) {
                 responseData.put("demande_credit", demande_credit);
@@ -176,6 +302,17 @@ public class DemandeIndResource {
             } else {
                 responseData.put("dossierCredit", null);
                 responseData.put("hasDossierCredit", false);
+            }
+
+            // Ajouter les informations de l'analyse financière
+            if (analyseFinanciere != null) {
+                responseData.put("analyseFinanciere", analyseFinanciere);
+                responseData.put("hasAnalyseFinanciere", true);
+                responseData.put("analyseStatut", analyseFinanciere.getStatut());
+            } else {
+                responseData.put("analyseFinanciere", null);
+                responseData.put("hasAnalyseFinanciere", false);
+                responseData.put("analyseStatut", null);
             }
 
             return ResponseEntity.ok(

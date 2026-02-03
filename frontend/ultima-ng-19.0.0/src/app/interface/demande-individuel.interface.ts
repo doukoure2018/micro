@@ -1,30 +1,51 @@
+/**
+ * Interface pour les garanties proposées
+ */
 export interface GarantiePropose {
     garantieProposeId?: number;
     demandeIndividuelId?: number;
     typeGarantie?: 'Caution Solidaire' | 'Garantie Financiere' | 'Garantie Materielle' | 'Autre Garantie';
     descriptionGarantie: string;
     valeurGarantie: number;
-    valeurEmprunte?: number; // Calculé automatiquement à 75% de valeurGarantie
+    valeurEmprunte?: number;
     createdAt?: Date;
     updatedAt?: Date;
 }
 
+/**
+ * Type pour la nature du client
+ */
+export type NatureClient = 'Demande de credit Pour Professionnels' | 'Demande de Credit Pour PME/PMI' | 'Demande credit Pour Particulier';
+
+/**
+ * Interface principale pour une demande individuelle
+ * Version V80 avec email et sigle
+ */
 export interface DemandeIndividuel {
     demandeIndividuelId?: number;
 
-    // Informations de base (conservées de l'ancienne structure)
+    // ==================== INFORMATIONS DE BASE ====================
     nom: string;
     prenom: string;
+    sernom?: string;
     telephone: string;
-    age?: number; // Rendu optionnel car on a dateNaissance maintenant
+    email?: string; // NOUVEAU V80
     numeroMembre: string;
+    age?: number;
+
+    // ==================== LOCALISATION ADMINISTRATIVE ====================
     delegation: number;
     agence: number;
     pos: number;
+    prefecture?: string;
+    sousPrefecture?: string;
 
-    natureClient?: string;
-    nomPersonneMorale?: string; // Nouveau champ pour le nom de la personne morale si applicable
-    // Nouveaux champs - Informations personnelles
+    // ==================== NATURE DU CLIENT ====================
+    natureClient?: NatureClient;
+    nomPersonneMorale?: string;
+    sigle?: string; // NOUVEAU V80: Sigle de l'entreprise (pour PME/PMI)
+
+    // ==================== INFORMATIONS PERSONNELLES ====================
     typePiece: "Carte nationale d'identite" | "Carte d'identite Biometrique" | "Possession d'état" | "Carte d'identite personnelle" | 'Passeport';
     numId: string;
     dateNaissance: Date | string;
@@ -33,114 +54,63 @@ export interface DemandeIndividuel {
     situationMatrimoniale: 'Celebataire' | 'Marie' | 'Fiance' | 'Divorce' | 'Veuf';
     nombrePersonneEnCharge: number;
     nombrePersonneScolarise: number;
+    nomPere?: string;
+    nomMere?: string;
+    nomConjoint?: string;
     addresseDomicileContact: string;
     typePropriete: string;
     nombreAnneeHabitation: number;
 
-    // Nouveaux champs - Activité
+    // ==================== ACTIVITÉ ====================
+    categorie?: string;
     typeActivite: string;
     sousActivite: string;
-    sousSousActivite?: string; // Optionnel
+    sousSousActivite?: string;
     descriptionActivite: string;
     nombreAnneeActivite: number;
     adresseLieuActivite: string;
-    autreActivite?: string; // Optionnel
-    lieuActivite?: string; // Optionnel
-    currentActivite: string; // Conservé de l'ancienne structure
+    autreActivite?: string;
+    lieuActivite?: string;
+    natureActivite?: string;
+    currentActivite: string;
 
-    // Nouveaux champs - Modalités de crédit
-    montantDemande: number; // Remplace 'montant'
+    // ==================== MODALITÉS DE CRÉDIT ====================
+    montantDemande: number;
+    montant?: number;
     dureeDemande: number;
-    periodiciteRemboursement: 'Mensuelle' | 'Bimestrielle' | 'Trimestrielle' | 'Quatrimestrielle' | 'Semestrielle' | 'Annuelle';
+    periodiciteRemboursement: PeriodiciteRemboursement;
     tauxInteret: number;
-    periodeDiffere?: number; // Optionnel
+    periodeDiffere?: number;
     nombreEcheance: number;
     echeance?: number;
-    objectCredit: 'Fond de roulement' | 'Investissement' | 'Invest+Fond de Roulement' | 'Bon de Commande';
+    objectCredit: ObjectCredit;
     detailObjectCredit: string;
     statutCredit: 'Nouveau' | 'Renouvellement';
-    rangCredit?: number; // Optionnel
+    rangCredit?: number;
 
-    // Champs système
+    // ==================== CHAMPS SYSTÈME ====================
     tipCredito: number;
-    codUsuarios?: string; // Rendu optionnel
+    codUsuarios?: string;
     statutDemande: string;
     validationState: string;
-    statutSelection?: string; // Optionnel
+    statutSelection?: string;
     createdAt?: Date | string;
 
-    // Garanties associées
+    // ==================== GARANTIES ====================
     garanties?: GarantiePropose[];
 
-    // Champs supprimés de l'ancienne structure mais qu'on peut garder pour compatibilité
-    // (à supprimer progressivement)
-    quartier?: string; // SUPPRIMÉ - mais gardé en optionnel pour migration
-    fonction?: string; // SUPPRIMÉ - mais gardé en optionnel pour migration
-    montant?: number; // SUPPRIMÉ - remplacé par montantDemande
-    activite?: string; // SUPPRIMÉ - remplacé par typeActivite
-    communeResidence?: string; // SUPPRIMÉ - mais gardé en optionnel pour migration
-    typeApport?: string; // SUPPRIMÉ - mais gardé en optionnel pour migration
-    raison?: string; // SUPPRIMÉ - mais gardé en optionnel pour migration
-    object?: string; // SUPPRIMÉ - remplacé par objectCredit et detailObjectCredit
-}
+    // ==================== CHAMPS POUR AFFICHAGE ====================
+    delegationLibele?: string;
+    agenceLibele?: string;
+    pointVenteLibele?: string;
 
-/**
- * Interface pour la réponse de création de demande
- */
-export interface DemandeResponse {
-    demandeId: number;
-    message: string;
-    success: boolean;
-}
-
-/**
- * Interface pour les statistiques de demandes
- */
-export interface DemandeStatistics {
-    totalDemandes: number;
-    demandesEnAttente: number;
-    demandesApprouvees: number;
-    demandesRejetees: number;
-    montantTotalDemande: number;
-    montantTotalGaranties: number;
-    repartitionParTypeCredit: Record<string, number>;
-    repartitionParTypeGarantie: Record<string, number>;
-}
-
-/**
- * Interface pour les critères de recherche
- */
-export interface DemandeCriteria {
-    numeroMembre?: string;
-    nom?: string;
-    prenom?: string;
-    telephone?: string;
-    delegation?: number;
-    agence?: number;
-    pos?: number;
-    statutDemande?: string;
-    validationState?: string;
-    typeActivite?: string;
-    montantMin?: number;
-    montantMax?: number;
-    dateDebut?: Date | string;
-    dateFin?: Date | string;
-    typeGarantie?: string;
-    statutCredit?: 'Nouveau' | 'Renouvellement';
-}
-
-/**
- * Interface pour l'historique d'une demande
- */
-export interface DemandeHistorique {
-    historiqueId: number;
-    demandeIndividuelId: number;
-    action: string;
-    ancienneValeur?: string;
-    nouvelleValeur?: string;
-    utilisateur: string;
-    dateAction: Date;
-    commentaire?: string;
+    // ==================== CHAMPS SUPPLÉMENTAIRES FORMULAIRE ====================
+    dateAdhesion?: Date | null;
+    titreDirecteur?: string; // Pour PME/PMI
+    numeroDemande?: string;
+    numeroCredit?: string;
+    prefectureActivite?: string;
+    sousPrefectureActivite?: string;
 }
 
 /**
@@ -159,6 +129,48 @@ export type TypeGarantie = 'Caution Solidaire' | 'Garantie Financiere' | 'Garant
 export type ObjectCredit = 'Fond de roulement' | 'Investissement' | 'Invest+Fond de Roulement' | 'Bon de Commande';
 
 /**
+ * Options pour le dropdown de nature client
+ */
+export const NATURE_CLIENT_OPTIONS = [
+    {
+        label: 'Particulier',
+        value: 'Demande credit Pour Particulier',
+        icon: 'pi pi-user',
+        description: 'Pour les particuliers souhaitant un crédit personnel'
+    },
+    {
+        label: 'PME/PMI',
+        value: 'Demande de Credit Pour PME/PMI',
+        icon: 'pi pi-building',
+        description: 'Pour les petites et moyennes entreprises'
+    },
+    {
+        label: 'Professionnels',
+        value: 'Demande de credit Pour Professionnels',
+        icon: 'pi pi-briefcase',
+        description: 'Pour les professionnels et artisans'
+    }
+] as const;
+
+/**
+ * Options pour les types de garantie
+ */
+export const TYPE_GARANTIE_OPTIONS = [
+    { label: 'Garantie Financière', value: 'Garantie Financiere' },
+    { label: 'Garantie Matérielle', value: 'Garantie Materielle' },
+    { label: 'Caution Solidaire', value: 'Caution Solidaire' },
+    { label: 'Autre Garantie', value: 'Autre Garantie' }
+] as const;
+
+/**
+ * Options pour le genre
+ */
+export const GENRE_OPTIONS = [
+    { label: 'Masculin', value: 'Masculin' },
+    { label: 'Féminin', value: 'Feminin' }
+] as const;
+
+/**
  * Enum pour les statuts de demande
  */
 export enum StatutDemande {
@@ -175,6 +187,7 @@ export enum StatutDemande {
  */
 export enum ValidationState {
     NOUVEAU = 'NOUVEAU',
+    SELECTION = 'SELECTION',
     EN_REVISION = 'EN_REVISION',
     APPROUVE = 'APPROUVE',
     REJETE = 'REJETE',

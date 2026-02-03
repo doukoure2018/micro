@@ -53,7 +53,7 @@
                         <div class="flex items-center">
                             <i class="pi pi-dollar mr-2 text-green-500"></i>
                             <span class="font-bold text-lg text-green-600 dark:text-green-400">
-                                {{ formatMontantGNF(state().demandeIndividuel?.montant) }}
+                                {{ formatMontantGNF(state().demandeIndividuel?.montantDemande) }}
                             </span>
                         </div>
                     </div>
@@ -97,10 +97,10 @@
 
         <!-- Message d'information -->
         <div class="mt-4 text-surface-500 dark:text-surface-400 text-sm">
-            <p *ngIf="state().demandeIndividuel?.montant">
+            <p *ngIf="state().demandeIndividuel?.montantDemande">
                 <i class="pi pi-info-circle mr-1"></i>
-                Montant {{ (state().demandeIndividuel?.montant || 0) <= 25000000 ? 'éligible pour traitement standard'
-                    : 'nécessitant un traitement spécialisé' }} </p>
+                Montant {{ (state().demandeIndividuel?.montantDemande || 0) <= 25000000
+                    ? 'éligible pour traitement standard' : 'nécessitant un traitement spécialisé' }} </p>
         </div>
     </div>
 </div>

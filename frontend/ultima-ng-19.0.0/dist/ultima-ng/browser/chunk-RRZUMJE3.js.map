@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/pages/dashboard/agent-credit/process-big-credit/process-big-credit.component.ts", "src/app/pages/dashboard/agent-credit/process-big-credit/process-big-credit.component.html"],
+  "sourcesContent": ["import { Component } from '@angular/core';\r\n\r\n@Component({\r\n    selector: 'app-process-big-credit',\r\n    imports: [],\r\n    templateUrl: './process-big-credit.component.html'\r\n})\r\nexport class ProcessBigCreditComponent {}\r\n", "<p>process-big-credit works!</p>\r\n"],
+  "mappings": ";;;;;;;;;;AAOM,IAAO,4BAAP,MAAO,2BAAyB;;qCAAzB,4BAAyB;EAAA;yEAAzB,4BAAyB,WAAA,CAAA,CAAA,wBAAA,CAAA,GAAA,OAAA,GAAA,MAAA,GAAA,UAAA,SAAA,mCAAA,IAAA,KAAA;AAAA,QAAA,KAAA,GAAA;ACPtC,MAAA,yBAAA,GAAA,GAAA;AAAG,MAAA,iBAAA,GAAA,2BAAA;AAAyB,MAAA,uBAAA;;;;;6EDOf,2BAAyB,EAAA,WAAA,6BAAA,UAAA,2FAAA,YAAA,EAAA,CAAA;AAAA,GAAA;",
+  "names": []
+}

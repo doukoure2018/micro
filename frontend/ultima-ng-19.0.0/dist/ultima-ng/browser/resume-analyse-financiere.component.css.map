@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/pages/dashboard/credit/individuel/attente/detail/resume-analyse-financiere/resume-analyse-financiere.component.scss"],
+  "sourcesContent": [":host {\n    display: block;\n}\n\n.container-fluid {\n    max-width: 1400px;\n    margin: 0 auto;\n}\n\n:host ::ng-deep {\n    .p-card {\n        margin-bottom: 1rem;\n\n        .p-card-header {\n            padding: 0;\n        }\n\n        .p-card-body {\n            padding: 1rem;\n        }\n    }\n\n    .p-datatable {\n        .p-datatable-thead > tr > th {\n            background: var(--surface-100);\n            font-weight: 600;\n        }\n\n        .p-datatable-tbody > tr > td {\n            padding: 0.75rem 1rem;\n        }\n    }\n}\n"],
+  "mappings": ";AAAA;AACI,WAAA;;AAGJ,CAAA;AACI,aAAA;AACA,UAAA,EAAA;;AAIA,MAAA,UAAA,CAAA;AACI,iBAAA;;AAEA,MAAA,UAAA,CAHJ,OAGI,CAAA;AACI,WAAA;;AAGJ,MAAA,UAAA,CAPJ,OAOI,CAAA;AACI,WAAA;;AAKJ,MAAA,UAAA,CAAA,YAAA,CAAA,kBAAA,EAAA,GAAA,EAAA;AACI,cAAA,IAAA;AACA,eAAA;;AAGJ,MAAA,UAAA,CALA,YAKA,CAAA,kBAAA,EAAA,GAAA,EAAA;AACI,WAAA,QAAA;;",
+  "names": []
+}

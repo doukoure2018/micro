@@ -198,6 +198,9 @@ export class UserService {
 
     obtenirResumeCredit$ = (demandeCreditId: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/resumeCredit/${demandeCreditId}`).pipe(tap(console.log), catchError(this.handleError));
 
+    // Synthèse de l'analyse financière (Bilan d'activité)
+    getSyntheseAnalyseFinanciere$ = (demandeIndividuelId: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/bilan_finance/synthese/demande/${demandeIndividuelId}`).pipe(tap(console.log), catchError(this.handleError));
+
     startNewDemandeInd$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/newDemandeInd`).pipe(tap(console.log), catchError(this.handleError));
 
     getInfoAdministrative$ = (delegationId: number, agenceId: number, pointVenteId: number) =>

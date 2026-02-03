@@ -252,6 +252,247 @@ export class ResumeCreditComponent {
     }
 
     // ========================================
+    // NOUVELLES MÉTHODES - DONNÉES PROPOSITION (demandeindividuel)
+    // ========================================
+
+    /**
+     * Montant proposé par l'analyste
+     */
+    getMontantPropose(): number {
+        return this.state().resumeCredit?.demande_credit?.montant_propose ?? 0;
+    }
+
+    /**
+     * Durée proposée en mois
+     */
+    getDureeProposee(): number {
+        return this.state().resumeCredit?.demande_credit?.duree_proposee ?? 0;
+    }
+
+    /**
+     * Nombre d'échéances proposé
+     */
+    getNbreEcheancePropose(): number {
+        return this.state().resumeCredit?.demande_credit?.nombre_echeance_propose ?? 0;
+    }
+
+    /**
+     * Échéance proposée (montant mensuel)
+     */
+    getEcheanceProposee(): number {
+        return this.state().resumeCredit?.demande_credit?.echeance_proposee ?? 0;
+    }
+
+    // ========================================
+    // NOUVELLES MÉTHODES - DONNÉES DEMANDE SOLLICITÉE
+    // ========================================
+
+    /**
+     * Montant demandé par le membre
+     */
+    getMontantDemande(): number {
+        return this.state().resumeCredit?.demande_credit?.montant_demande ?? 0;
+    }
+
+    /**
+     * Durée demandée en mois
+     */
+    getDureeDemande(): number {
+        return this.state().resumeCredit?.demande_credit?.duree_mois ?? 0;
+    }
+
+    /**
+     * Échéance sollicitée (calculée ou stockée)
+     */
+    getEcheanceDemande(): number {
+        return this.state().resumeCredit?.demande_credit?.echeance ?? this.calculerMensualite();
+    }
+
+    /**
+     * Nombre d'échéances de la demande
+     */
+    getNbreEcheanceDemande(): number {
+        return this.state().resumeCredit?.demande_credit?.nombre_echeance ?? this.getDureeDemande();
+    }
+
+    /**
+     * Objet du crédit
+     */
+    getObjetCredit(): string {
+        return this.state().resumeCredit?.demande_credit?.objet_financement || 'Non renseigné';
+    }
+
+    /**
+     * Statut de la demande
+     */
+    getStatutDemande(): string {
+        return this.state().resumeCredit?.demande_credit?.statut ?? 'INCONNU';
+    }
+
+    /**
+     * Périodicité de remboursement
+     */
+    getPeriodicite(): string {
+        return this.state().resumeCredit?.demande_credit?.periodicite_remboursement ?? 'Mensuelle';
+    }
+
+    // ========================================
+    // NOUVELLES MÉTHODES - RATIOS PROPOSÉS (R.1, R.4, R.6 dynamiques)
+    // ========================================
+
+    /**
+     * R.1 Proposé = Capacité de remboursement / Échéance proposée
+     * La capacité de remboursement ne change pas, seule l'échéance change
+     */
+    calculerR1Propose(): string {
+        const echeanceProposee = this.getEcheanceProposee();
+        if (echeanceProposee <= 0) return 'N/A';
+
+        const capaciteRemb = this.getCashFlow() + this.getAutresRevenus();
+        const ratio = (capaciteRemb / echeanceProposee) * 100;
+        return ratio.toFixed(1);
+    }
+
+    getStatutR1Propose(): string {
+        const val = parseFloat(this.calculerR1Propose());
+        if (isNaN(val)) return 'Info manquante';
+        return val >= 200 ? 'CONFORME' : 'NON CONFORME';
+    }
+
+    getSeveriteR1Propose(): PrimeSeverity {
+        const val = parseFloat(this.calculerR1Propose());
+        if (isNaN(val)) return 'warn';
+        return val >= 200 ? 'success' : 'danger';
+    }
+
+    /**
+     * R.4 Proposé = (Dettes totales + Montant proposé) / (Total Actif + Montant proposé)
+     */
+    calculerR4Propose(): string {
+        const montantPropose = this.getMontantPropose();
+        const totalActif = this.getTotalActif();
+        const dettesTotales = this.getDettesTotales();
+        const denominateur = totalActif + montantPropose;
+
+        if (denominateur <= 0) return 'N/A';
+
+        const ratio = ((dettesTotales + montantPropose) / denominateur) * 100;
+        return ratio.toFixed(1);
+    }
+
+    getStatutR4Propose(): string {
+        const val = parseFloat(this.calculerR4Propose());
+        if (isNaN(val)) return 'Info manquante';
+        return val < 50 ? 'CONFORME' : 'NON CONFORME';
+    }
+
+    getSeveriteR4Propose(): PrimeSeverity {
+        const val = parseFloat(this.calculerR4Propose());
+        if (isNaN(val)) return 'warn';
+        return val < 50 ? 'success' : 'danger';
+    }
+
+    /**
+     * R.6 Proposé = Valeur garantie / Montant proposé
+     */
+    calculerR6Propose(): string {
+        const montantPropose = this.getMontantPropose();
+        if (montantPropose <= 0) return 'N/A';
+
+        const valeurGarantie = this.getValeurGarantie();
+        const ratio = (valeurGarantie / montantPropose) * 100;
+        return ratio.toFixed(1);
+    }
+
+    getStatutR6Propose(): string {
+        const val = parseFloat(this.calculerR6Propose());
+        if (isNaN(val)) return 'Info manquante';
+        return val > 150 ? 'CONFORME' : 'NON CONFORME';
+    }
+
+    getSeveriteR6Propose(): PrimeSeverity {
+        const val = parseFloat(this.calculerR6Propose());
+        if (isNaN(val)) return 'warn';
+        return val > 150 ? 'success' : 'danger';
+    }
+
+    // ========================================
+    // NOUVELLES MÉTHODES - DETTES TOTALES (helper)
+    // ========================================
+
+    /**
+     * Dettes totales existantes (sans le crédit)
+     */
+    getDettesTotales(): number {
+        const bilan = this.state().resumeCredit?.bilan_entreprise;
+        if (!bilan) return 0;
+
+        return (bilan.dettes_fournisseurs ?? 0) + (bilan.emprunts ?? 0);
+    }
+
+    // ========================================
+    // NOUVELLES MÉTHODES - CONFORMITÉ GLOBALE
+    // ========================================
+
+    /**
+     * Nombre de seuils respectés pour le montant SOLLICITÉ
+     */
+    getNbSeuilsRespetesSollicite(): number {
+        let count = 0;
+        if (parseFloat(this.calculerR1Capacite()) >= 200) count++;
+        if (parseFloat(this.calculerR2Solvabilite()) >= 35) count++;
+        if (parseFloat(this.calculerR3Liquidite()) >= 100) count++;
+        if (parseFloat(this.calculerR4Endettement()) < 50) count++;
+        if (parseFloat(this.calculerR5Dependance()) < 50) count++;
+        if (parseFloat(this.calculerR6Couverture()) > 150) count++;
+        return count;
+    }
+
+    /**
+     * Nombre de seuils respectés pour le montant PROPOSÉ
+     */
+    getNbSeuilsRespetesPropose(): number {
+        let count = 0;
+
+        // R.1 Proposé (dynamique)
+        const r1Propose = parseFloat(this.calculerR1Propose());
+        if (!isNaN(r1Propose) && r1Propose >= 200) count++;
+
+        // R.2 Statique (même que sollicité)
+        if (parseFloat(this.calculerR2Solvabilite()) >= 35) count++;
+
+        // R.3 Statique (même que sollicité)
+        if (parseFloat(this.calculerR3Liquidite()) >= 100) count++;
+
+        // R.4 Proposé (dynamique)
+        const r4Propose = parseFloat(this.calculerR4Propose());
+        if (!isNaN(r4Propose) && r4Propose < 50) count++;
+
+        // R.5 Statique (même que sollicité)
+        if (parseFloat(this.calculerR5Dependance()) < 50) count++;
+
+        // R.6 Proposé (dynamique)
+        const r6Propose = parseFloat(this.calculerR6Propose());
+        if (!isNaN(r6Propose) && r6Propose > 150) count++;
+
+        return count;
+    }
+
+    /**
+     * Tous les ratios sont conformes pour le montant sollicité
+     */
+    allRatiosConformesSollicite(): boolean {
+        return this.getNbSeuilsRespetesSollicite() === 6;
+    }
+
+    /**
+     * Tous les ratios sont conformes pour le montant proposé
+     */
+    allRatiosConformesPropose(): boolean {
+        return this.getNbSeuilsRespetesPropose() === 6;
+    }
+
+    // ========================================
     // MÉTHODES DE CALCUL AVEC AUTRES REVENUS
     // ========================================
 
@@ -525,8 +766,6 @@ export class ResumeCreditComponent {
         }
     }
 
-    // credit/resume-credit/:demandeId
-
     // ========================================
     // MÉTHODES POUR LES DONNÉES DES TABLEAUX
     // ========================================
@@ -743,6 +982,7 @@ export class ResumeCreditComponent {
             }
         ];
     }
+
     // ========================================
     // MÉTHODES DE CALCUL DES RATIOS AVEC FORMULES EXACTES
     // ========================================
@@ -751,7 +991,7 @@ export class ResumeCreditComponent {
     // Formule: (Cash Flow + Autres revenus) / (Traite revenus)
 
     /**
-     * Calcule R1 - Capacité de remboursement
+     * Calcule R1 - Capacité de remboursement (SOLLICITÉ)
      */
     calculerR1Capacite(): string {
         const cashFlow = this.getCashFlow();
@@ -779,23 +1019,19 @@ export class ResumeCreditComponent {
     }
 
     getTraiteRevenus(): number {
-        // Traite = mensualité de remboursement
-        return this.calculerMensualite();
+        // Traite = mensualité de remboursement (échéance sollicitée)
+        return this.getEcheanceDemande();
     }
 
     getStatutR1(): string {
         const ratio = parseFloat(this.calculerR1Capacite());
-        if (ratio >= 150) return 'EXCELLENT';
-        if (ratio >= 120) return 'BON';
-        if (ratio >= 100) return 'ACCEPTABLE';
-        return 'RISQUE';
+        if (ratio >= 200) return 'CONFORME';
+        return 'NON CONFORME';
     }
 
     getSeveriteR1(): PrimeSeverity {
         const ratio = parseFloat(this.calculerR1Capacite());
-        if (ratio >= 150) return 'success';
-        if (ratio >= 120) return 'info';
-        if (ratio >= 100) return 'warn';
+        if (ratio >= 200) return 'success';
         return 'danger';
     }
 
@@ -826,17 +1062,13 @@ export class ResumeCreditComponent {
 
     getStatutR2(): string {
         const ratio = parseFloat(this.calculerR2Solvabilite());
-        if (ratio >= 25) return 'EXCELLENT';
-        if (ratio >= 15) return 'BON';
-        if (ratio >= 10) return 'ACCEPTABLE';
-        return 'RISQUE';
+        if (ratio >= 35) return 'CONFORME';
+        return 'NON CONFORME';
     }
 
     getSeveriteR2(): PrimeSeverity {
         const ratio = parseFloat(this.calculerR2Solvabilite());
-        if (ratio >= 25) return 'success';
-        if (ratio >= 15) return 'info';
-        if (ratio >= 10) return 'warn';
+        if (ratio >= 35) return 'success';
         return 'danger';
     }
 
@@ -877,17 +1109,13 @@ export class ResumeCreditComponent {
 
     getStatutR3(): string {
         const ratio = parseFloat(this.calculerR3Liquidite());
-        if (ratio >= 100) return 'EXCELLENT';
-        if (ratio >= 80) return 'BON';
-        if (ratio >= 60) return 'ACCEPTABLE';
-        return 'RISQUE';
+        if (ratio >= 100) return 'CONFORME';
+        return 'NON CONFORME';
     }
 
     getSeveriteR3(): PrimeSeverity {
         const ratio = parseFloat(this.calculerR3Liquidite());
         if (ratio >= 100) return 'success';
-        if (ratio >= 80) return 'info';
-        if (ratio >= 60) return 'warn';
         return 'danger';
     }
 
@@ -895,7 +1123,7 @@ export class ResumeCreditComponent {
     // Formule: (Dettes totales + Crédit) / (Total Actif + Crédit)
 
     /**
-     * Calcule R4 - Ratio d'endettement
+     * Calcule R4 - Ratio d'endettement (SOLLICITÉ)
      */
     calculerR4Endettement(): string {
         const dettesTotalesAvecCredit = this.getDettesTotalesAvecCredit();
@@ -927,17 +1155,13 @@ export class ResumeCreditComponent {
 
     getStatutR4(): string {
         const ratio = parseFloat(this.calculerR4Endettement());
-        if (ratio <= 70) return 'EXCELLENT';
-        if (ratio <= 80) return 'BON';
-        if (ratio <= 90) return 'ACCEPTABLE';
-        return 'RISQUE';
+        if (ratio < 50) return 'CONFORME';
+        return 'NON CONFORME';
     }
 
     getSeveriteR4(): PrimeSeverity {
         const ratio = parseFloat(this.calculerR4Endettement());
-        if (ratio <= 70) return 'success';
-        if (ratio <= 80) return 'info';
-        if (ratio <= 90) return 'warn';
+        if (ratio < 50) return 'success';
         return 'danger';
     }
 
@@ -963,17 +1187,13 @@ export class ResumeCreditComponent {
 
     getStatutR5(): string {
         const ratio = parseFloat(this.calculerR5Dependance());
-        if (ratio <= 30) return 'EXCELLENT';
-        if (ratio <= 40) return 'BON';
-        if (ratio <= 50) return 'ACCEPTABLE';
-        return 'RISQUE';
+        if (ratio < 50) return 'CONFORME';
+        return 'NON CONFORME';
     }
 
     getSeveriteR5(): PrimeSeverity {
         const ratio = parseFloat(this.calculerR5Dependance());
-        if (ratio <= 30) return 'success';
-        if (ratio <= 40) return 'info';
-        if (ratio <= 50) return 'warn';
+        if (ratio < 50) return 'success';
         return 'danger';
     }
 
@@ -981,7 +1201,7 @@ export class ResumeCreditComponent {
     // Formule: Valeur de la garantie / Crédit
 
     /**
-     * Calcule R6 - Ratio de couverture de la garantie
+     * Calcule R6 - Ratio de couverture de la garantie (SOLLICITÉ)
      */
     calculerR6Couverture(): string {
         const valeurGarantie = this.getValeurGarantie();
@@ -1023,17 +1243,13 @@ export class ResumeCreditComponent {
 
     getStatutR6(): string {
         const ratio = parseFloat(this.calculerR6Couverture());
-        if (ratio >= 120) return 'EXCELLENT';
-        if (ratio >= 100) return 'BON';
-        if (ratio >= 80) return 'ACCEPTABLE';
-        return 'RISQUE';
+        if (ratio > 150) return 'CONFORME';
+        return 'NON CONFORME';
     }
 
     getSeveriteR6(): PrimeSeverity {
         const ratio = parseFloat(this.calculerR6Couverture());
-        if (ratio >= 120) return 'success';
-        if (ratio >= 100) return 'info';
-        if (ratio >= 80) return 'warn';
+        if (ratio > 150) return 'success';
         return 'danger';
     }
 
@@ -1045,15 +1261,11 @@ export class ResumeCreditComponent {
      * Évaluation globale basée sur tous les ratios
      */
     getEvaluationGlobale(): string {
-        const statuts = [this.getStatutR1(), this.getStatutR2(), this.getStatutR3(), this.getStatutR4(), this.getStatutR5(), this.getStatutR6()];
+        const nbConformes = this.getNbSeuilsRespetes();
 
-        const nbExcellents = statuts.filter((s) => s === 'EXCELLENT').length;
-        const nbBons = statuts.filter((s) => s === 'BON').length;
-        const nbAcceptables = statuts.filter((s) => s === 'ACCEPTABLE').length;
-
-        if (nbExcellents >= 4) return 'EXCELLENT';
-        if (nbExcellents + nbBons >= 4) return 'BON';
-        if (nbExcellents + nbBons + nbAcceptables >= 4) return 'ACCEPTABLE';
+        if (nbConformes >= 6) return 'EXCELLENT';
+        if (nbConformes >= 5) return 'BON';
+        if (nbConformes >= 4) return 'ACCEPTABLE';
         return 'RISQUE';
     }
 
@@ -1077,12 +1289,10 @@ export class ResumeCreditComponent {
     }
 
     /**
-     * Nombre de seuils respectés
+     * Nombre de seuils respectés (version générique utilisée pour l'évaluation globale)
      */
     getNbSeuilsRespetes(): number {
-        const statuts = [this.getStatutR1(), this.getStatutR2(), this.getStatutR3(), this.getStatutR4(), this.getStatutR5(), this.getStatutR6()];
-
-        return statuts.filter((s) => s === 'EXCELLENT' || s === 'BON').length;
+        return this.getNbSeuilsRespetesSollicite();
     }
 
     // ========================================
@@ -1163,43 +1373,43 @@ export class ResumeCreditComponent {
 
         // Analyse R1 - Capacité de remboursement
         const r1 = parseFloat(this.calculerR1Capacite());
-        if (r1 < 150) {
-            recommendations.push('• Améliorer la capacité de remboursement (Cash Flow insuffisant)');
+        if (r1 < 200) {
+            recommendations.push('• Améliorer la capacité de remboursement (ratio < 200%)');
         }
 
         // Analyse R2 - Solvabilité
         const r2 = parseFloat(this.calculerR2Solvabilite());
-        if (r2 < 25) {
-            recommendations.push("• Renforcer les capitaux propres de l'entreprise");
+        if (r2 < 35) {
+            recommendations.push('• Renforcer les capitaux propres (ratio < 35%)');
         }
 
         // Analyse R3 - Liquidité
         const r3 = parseFloat(this.calculerR3Liquidite());
         if (r3 < 100) {
-            recommendations.push('• Améliorer la gestion de trésorerie et créances');
+            recommendations.push('• Améliorer la gestion de trésorerie (ratio < 100%)');
         }
 
         // Analyse R4 - Endettement
         const r4 = parseFloat(this.calculerR4Endettement());
-        if (r4 > 70) {
-            recommendations.push("• Réduire le niveau d'endettement global");
+        if (r4 >= 50) {
+            recommendations.push("• Réduire le niveau d'endettement (ratio >= 50%)");
         }
 
         // Analyse R5 - Dépendance
         const r5 = parseFloat(this.calculerR5Dependance());
-        if (r5 > 50) {
-            recommendations.push('• Diversifier les sources de revenus (trop de dépendance aux autres revenus)');
+        if (r5 >= 50) {
+            recommendations.push('• Diversifier les sources de revenus (ratio >= 50%)');
         }
 
         // Analyse R6 - Couverture
         const r6 = parseFloat(this.calculerR6Couverture());
-        if (r6 < 120) {
-            recommendations.push('• Renforcer les garanties ou réduire le montant demandé');
+        if (r6 <= 150) {
+            recommendations.push('• Renforcer les garanties ou réduire le montant (ratio <= 150%)');
         }
 
         // Si tous les ratios sont bons
         if (recommendations.length === 0) {
-            recommendations.push('✅ Tous les indicateurs sont dans les normes acceptables');
+            recommendations.push('✅ Tous les indicateurs sont dans les normes');
             recommendations.push('✅ Le profil de risque est satisfaisant');
             recommendations.push('✅ La demande de crédit peut être considérée favorablement');
         }
@@ -1220,17 +1430,23 @@ export class ResumeCreditComponent {
         const facteurs: string[] = [];
 
         // Identifier les facteurs de risque
-        if (parseFloat(this.calculerR1Capacite()) < 150) {
-            facteurs.push('Capacité de remboursement insuffisante');
+        if (parseFloat(this.calculerR1Capacite()) < 200) {
+            facteurs.push('Capacité de remboursement insuffisante (< 200%)');
         }
-        if (parseFloat(this.calculerR5Dependance()) > 50) {
-            facteurs.push('Forte dépendance aux autres revenus');
+        if (parseFloat(this.calculerR5Dependance()) >= 50) {
+            facteurs.push('Forte dépendance aux autres revenus (>= 50%)');
         }
-        if (parseFloat(this.calculerR4Endettement()) > 70) {
-            facteurs.push("Niveau d'endettement élevé");
+        if (parseFloat(this.calculerR4Endettement()) >= 50) {
+            facteurs.push("Niveau d'endettement élevé (>= 50%)");
         }
         if (parseFloat(this.calculerR3Liquidite()) < 100) {
-            facteurs.push('Liquidité insuffisante');
+            facteurs.push('Liquidité insuffisante (< 100%)');
+        }
+        if (parseFloat(this.calculerR2Solvabilite()) < 35) {
+            facteurs.push('Solvabilité insuffisante (< 35%)');
+        }
+        if (parseFloat(this.calculerR6Couverture()) <= 150) {
+            facteurs.push('Couverture de garantie insuffisante (<= 150%)');
         }
 
         if (facteurs.length === 0) {
@@ -1248,27 +1464,9 @@ export class ResumeCreditComponent {
      * Score de risque (0-100, 100 = meilleur)
      */
     getScoreRisque(): number {
-        const statuts = [this.getStatutR1(), this.getStatutR2(), this.getStatutR3(), this.getStatutR4(), this.getStatutR5(), this.getStatutR6()];
-
-        let score = 0;
-        statuts.forEach((statut) => {
-            switch (statut) {
-                case 'EXCELLENT':
-                    score += 100;
-                    break;
-                case 'BON':
-                    score += 75;
-                    break;
-                case 'ACCEPTABLE':
-                    score += 50;
-                    break;
-                case 'RISQUE':
-                    score += 25;
-                    break;
-            }
-        });
-
-        return Math.round(score / statuts.length);
+        // Calcul basé sur le nombre de seuils respectés
+        const nbConformes = this.getNbSeuilsRespetes();
+        return Math.round((nbConformes / 6) * 100);
     }
 
     /**
@@ -1285,11 +1483,11 @@ export class ResumeCreditComponent {
         const r6 = parseFloat(this.calculerR6Couverture());
 
         // Conseils spécifiques par ratio
-        if (r1 < 150) {
+        if (r1 < 200) {
             conseils.push('📈 Augmenter les revenus ou optimiser les charges pour améliorer le cash flow');
         }
 
-        if (r2 < 25) {
+        if (r2 < 35) {
             conseils.push('💰 Envisager un apport en capital ou réduire les distributions');
         }
 
@@ -1297,15 +1495,15 @@ export class ResumeCreditComponent {
             conseils.push('💧 Accélérer le recouvrement des créances et optimiser la trésorerie');
         }
 
-        if (r4 > 70) {
+        if (r4 >= 50) {
             conseils.push('📉 Planifier un désendettement progressif avant la nouvelle demande');
         }
 
-        if (r5 > 50) {
+        if (r5 >= 50) {
             conseils.push("🎯 Développer le chiffre d'affaires principal pour réduire la dépendance");
         }
 
-        if (r6 < 120) {
+        if (r6 <= 150) {
             conseils.push('🛡️ Constituer des garanties supplémentaires ou réduire le montant');
         }
 
@@ -1321,17 +1519,16 @@ export class ResumeCreditComponent {
         justification: string;
     } {
         const evaluation = this.getEvaluationGlobale();
-        const score = this.getScoreRisque();
         const nbSeuilsRespetes = this.getNbSeuilsRespetes();
 
-        if (evaluation === 'EXCELLENT' && nbSeuilsRespetes >= 5) {
+        if (nbSeuilsRespetes === 6) {
             return {
                 decision: 'ACCORDER',
-                justification: 'Profil de risque excellent, tous les indicateurs sont favorables'
+                justification: 'Tous les ratios sont conformes aux normes'
             };
         }
 
-        if (evaluation === 'BON' && nbSeuilsRespetes >= 4) {
+        if (nbSeuilsRespetes >= 5) {
             return {
                 decision: 'ACCORDER_AVEC_CONDITIONS',
                 conditions: ['Suivi trimestriel des ratios financiers', 'Maintien des garanties pendant toute la durée'],
@@ -1339,7 +1536,7 @@ export class ResumeCreditComponent {
             };
         }
 
-        if (evaluation === 'ACCEPTABLE' && nbSeuilsRespetes >= 3) {
+        if (nbSeuilsRespetes >= 4) {
             return {
                 decision: 'ETUDE_APPROFONDIE',
                 conditions: ['Audit financier complémentaire', "Plan d'amélioration des ratios défaillants", 'Garanties renforcées'],
@@ -1383,7 +1580,7 @@ export class ResumeCreditComponent {
         console.log('=== ANALYSE COMPLÈTE DES RATIOS ===');
 
         // Ratios individuels
-        console.log('\n1. RATIOS CALCULÉS:');
+        console.log('\n1. RATIOS SOLLICITÉS:');
         console.log('R1 - Capacité:', this.calculerR1Capacite() + '%', '(' + this.getStatutR1() + ')');
         console.log('R2 - Solvabilité:', this.calculerR2Solvabilite() + '%', '(' + this.getStatutR2() + ')');
         console.log('R3 - Liquidité:', this.calculerR3Liquidite() + '%', '(' + this.getStatutR3() + ')');
@@ -1391,26 +1588,32 @@ export class ResumeCreditComponent {
         console.log('R5 - Dépendance:', this.calculerR5Dependance() + '%', '(' + this.getStatutR5() + ')');
         console.log('R6 - Couverture:', this.calculerR6Couverture() + '%', '(' + this.getStatutR6() + ')');
 
+        console.log('\n2. RATIOS PROPOSÉS:');
+        console.log('R1 Proposé:', this.calculerR1Propose() + '%', '(' + this.getStatutR1Propose() + ')');
+        console.log('R4 Proposé:', this.calculerR4Propose() + '%', '(' + this.getStatutR4Propose() + ')');
+        console.log('R6 Proposé:', this.calculerR6Propose() + '%', '(' + this.getStatutR6Propose() + ')');
+
         // Évaluation globale
-        console.log('\n2. ÉVALUATION GLOBALE:');
+        console.log('\n3. ÉVALUATION GLOBALE:');
         console.log('Statut:', this.getEvaluationGlobale());
         console.log('Score de risque:', this.getScoreRisque() + '/100');
-        console.log('Seuils respectés:', this.getNbSeuilsRespetes() + '/6');
+        console.log('Seuils respectés Sollicité:', this.getNbSeuilsRespetesSollicite() + '/6');
+        console.log('Seuils respectés Proposé:', this.getNbSeuilsRespetesPropose() + '/6');
 
         // Recommandations
-        console.log('\n3. RECOMMANDATIONS:');
+        console.log('\n4. RECOMMANDATIONS:');
         this.getRecommandations().forEach((rec, index) => {
             console.log(`${index + 1}. ${rec}`);
         });
 
         // Analyse de risque
-        console.log('\n4. ANALYSE DE RISQUE:');
+        console.log('\n5. ANALYSE DE RISQUE:');
         const analyseRisque = this.getAnalyseRisque();
         console.log('Niveau:', analyseRisque.niveau);
         console.log('Facteurs de risque:', analyseRisque.facteurs);
 
         // Décision recommandée
-        console.log('\n5. DÉCISION RECOMMANDÉE:');
+        console.log('\n6. DÉCISION RECOMMANDÉE:');
         const decision = this.getRecommandationDecision();
         console.log('Décision:', decision.decision);
         console.log('Justification:', decision.justification);

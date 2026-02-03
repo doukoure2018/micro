@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["newproduct.ts"],
+  "sourcesContent": ["\n        :host ::ng-deep .p-fileupload-header {\n            display: none;\n        }\n\n        :host ::ng-deep .p-fileupload-file-list {\n            display: none;\n        }\n\n        :host ::ng-deep .p-fileupload-content {\n            height: 20rem;\n        }\n    "],
+  "mappings": ";AACQ,MAAA,UAAA,CAAA;AACI,WAAA;;AAGJ,MAAA,UAAA,CAAA;AACI,WAAA;;AAGJ,MAAA,UAAA,CAAA;AACI,UAAA;;",
+  "names": []
+}

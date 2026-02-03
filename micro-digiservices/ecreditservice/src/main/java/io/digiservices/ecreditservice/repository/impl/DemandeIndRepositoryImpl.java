@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.sql.*;
+import java.sql.Date;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -618,171 +619,235 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
         }
     }
 
-
+    /**
+     * Ajoute une nouvelle demande individuelle avec ses garanties
+     * Utilise la procédure stockée insert_demande_with_garanties V80 (55 paramètres)
+     *
+     * @param demandeIndividuel La demande à créer (contient les garanties)
+     * @return DemandeResponse avec l'ID de la demande créée
+     */
     @Override
-    @Transactional
-    public DemandeResponse addNewDemandeIndWithGaranties(DemandeIndividuel demande) {
+    public DemandeResponse addNewDemandeIndWithGaranties(DemandeIndividuel demandeIndividuel) {
+        log.info("Création d'une nouvelle demande pour: {} {} ({}), Nature: {}, Email: {}",
+                demandeIndividuel.getPrenom(),
+                demandeIndividuel.getNom(),
+                demandeIndividuel.getNumeroMembre(),
+                demandeIndividuel.getNatureClient(),
+                demandeIndividuel.getEmail());
+
         Connection connection = null;
-        PreparedStatement statement = null;
-        ResultSet resultSet = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
 
         try {
-            // Obtenir la connexion
             connection = jdbcTemplate.getDataSource().getConnection();
 
-            // Préparer la requête avec le nouveau paramètre
-            String sql = DemandeIndQuery.CALL_INSERT_DEMANDE_WITH_GARANTIES_PROC_V2;
-            statement = connection.prepareStatement(sql);
+            // Récupération des garanties depuis l'objet demande
+            List<GarantiePropose> garanties = demandeIndividuel.getGaranties();
 
-            // Définir les paramètres (1 à 43 maintenant)
-            int paramIndex = 1;
+            // Création du tableau de garanties PostgreSQL
+            Array garantiesArray = createGarantiesArray(connection, garanties);
 
-            // Informations personnelles
-            statement.setString(paramIndex++, demande.getNom());
-            statement.setString(paramIndex++, demande.getPrenom());
-            statement.setString(paramIndex++, demande.getTelephone());
-            statement.setString(paramIndex++, demande.getNumeroMembre());
-            statement.setInt(paramIndex++, demande.getDelegation());
-            statement.setInt(paramIndex++, demande.getAgence());
-            statement.setInt(paramIndex++, demande.getPos());
-            statement.setString(paramIndex++, demande.getTypePiece());
-            statement.setString(paramIndex++, demande.getNumId());
+            // Préparation de l'appel à la procédure stockée V80 (55 paramètres)
+            stmt = connection.prepareStatement(DemandeIndQuery.CALL_INSERT_DEMANDE_WITH_GARANTIES_PROC_V4);
 
-            statement.setDate(paramIndex++, demande.getDateNaissance() != null ?
-                    java.sql.Date.valueOf(demande.getDateNaissance()) : null);
-            statement.setString(paramIndex++, demande.getLieuxNaissance());
-            statement.setString(paramIndex++, demande.getGenre());
-            statement.setString(paramIndex++, demande.getSituationMatrimoniale());
-            statement.setInt(paramIndex++, demande.getNombrePersonneEnCharge());
-            statement.setInt(paramIndex++, demande.getNombrePersonneScolarise());
-            statement.setString(paramIndex++, demande.getAddresseDomicileContact());
-            statement.setString(paramIndex++, demande.getTypePropriete());
-            statement.setInt(paramIndex++, demande.getNombreAnneeHabitation());
+            // ===== Paramètres 1-4: Informations de base =====
+            stmt.setString(1, demandeIndividuel.getNom());
+            stmt.setString(2, demandeIndividuel.getPrenom());
+            stmt.setString(3, demandeIndividuel.getTelephone());
+            stmt.setString(4, demandeIndividuel.getNumeroMembre());
 
-            // Activité
-            statement.setString(paramIndex++, demande.getTypeActivite());
-            statement.setString(paramIndex++, demande.getSousActivite());
-            statement.setString(paramIndex++, demande.getSousSousActivite());
-            statement.setString(paramIndex++, demande.getDescriptionActivite());
-            statement.setInt(paramIndex++, demande.getNombreAnneeActivite());
-            statement.setString(paramIndex++, demande.getAdresseLieuActivite());
-            statement.setString(paramIndex++, demande.getAutreActivite());
-            statement.setString(paramIndex++, demande.getLieuActivite());
+            // ===== Paramètres 5-7: Localisation =====
+            setIntOrNull(stmt, 5, demandeIndividuel.getDelegation());
+            setIntOrNull(stmt, 6, demandeIndividuel.getAgence());
+            setIntOrNull(stmt, 7, demandeIndividuel.getPos());
 
-            // Modalités
-            statement.setBigDecimal(paramIndex++, demande.getMontantDemande());
-            statement.setInt(paramIndex++, demande.getDureeDemande());
-            statement.setString(paramIndex++, demande.getPeriodiciteRemboursement());
-            statement.setBigDecimal(paramIndex++, demande.getTauxInteret());
-            statement.setObject(paramIndex++, demande.getPeriodeDiffere(), Types.INTEGER);
-            statement.setInt(paramIndex++, demande.getNombreEcheance());
-            statement.setBigDecimal(paramIndex++, demande.getEcheance());
-            statement.setString(paramIndex++, demande.getObjectCredit());
-            statement.setString(paramIndex++, demande.getDetailObjectCredit());
-            statement.setString(paramIndex++, demande.getStatutCredit());
-            statement.setObject(paramIndex++, demande.getRangCredit(), Types.INTEGER);
+            // ===== Paramètres 8-9: Pièce d'identité =====
+            stmt.setString(8, demandeIndividuel.getTypePiece());
+            stmt.setString(9, demandeIndividuel.getNumId());
 
-            // Système
-            statement.setInt(paramIndex++, demande.getTipCredito());
-            statement.setString(paramIndex++, demande.getCodUsuarios());
-            statement.setString(paramIndex++, demande.getStatutDemande());
-            statement.setString(paramIndex++, demande.getValidationState());
-            statement.setString(paramIndex++, demande.getCurrentActivite());
+            // ===== Paramètres 10-18: Informations personnelles =====
+            stmt.setDate(10, demandeIndividuel.getDateNaissance() != null ?
+                    Date.valueOf(demandeIndividuel.getDateNaissance()) : null);
+            stmt.setString(11, demandeIndividuel.getLieuxNaissance());
+            stmt.setString(12, demandeIndividuel.getGenre());
+            stmt.setString(13, demandeIndividuel.getSituationMatrimoniale());
+            setIntOrZero(stmt, 14, demandeIndividuel.getNombrePersonneEnCharge());
+            setIntOrZero(stmt, 15, demandeIndividuel.getNombrePersonneScolarise());
+            stmt.setString(16, demandeIndividuel.getAddresseDomicileContact());
+            stmt.setString(17, demandeIndividuel.getTypePropriete());
+            setIntOrZero(stmt, 18, demandeIndividuel.getNombreAnneeHabitation());
 
-            // Nature client - NOUVEAU PARAMÈTRE (43)
-            statement.setString(paramIndex++, demande.getNatureClient() != null ?
-                    demande.getNatureClient() : "Individuel");
+            // ===== Paramètres 19-26: Activité =====
+            stmt.setString(19, demandeIndividuel.getTypeActivite());
+            stmt.setString(20, demandeIndividuel.getSousActivite());
+            stmt.setString(21, demandeIndividuel.getSousSousActivite());
+            stmt.setString(22, demandeIndividuel.getDescriptionActivite());
+            setIntOrZero(stmt, 23, demandeIndividuel.getNombreAnneeActivite());
+            stmt.setString(24, demandeIndividuel.getAdresseLieuActivite());
+            stmt.setString(25, demandeIndividuel.getAutreActivite());
+            stmt.setString(26, demandeIndividuel.getLieuActivite());
 
-            statement.setString(paramIndex++, demande.getNomPersonneMorale());
+            // ===== Paramètres 27-35: Modalités de crédit =====
+            stmt.setBigDecimal(27, demandeIndividuel.getMontantDemande());
+            setIntOrZero(stmt, 28, demandeIndividuel.getDureeDemande());
+            stmt.setString(29, demandeIndividuel.getPeriodiciteRemboursement());
+            stmt.setBigDecimal(30, demandeIndividuel.getTauxInteret());
+            setIntOrZero(stmt, 31, demandeIndividuel.getPeriodeDiffere());
+            setIntOrZero(stmt, 32, demandeIndividuel.getNombreEcheance());
+            stmt.setBigDecimal(33, demandeIndividuel.getEcheance());
+            stmt.setString(34, demandeIndividuel.getObjectCredit());
+            stmt.setString(35, demandeIndividuel.getDetailObjectCredit());
 
-            // Garanties - Paramètre 44
-            if (demande.getGaranties() != null && !demande.getGaranties().isEmpty()) {
-                Array garantiesArray = createGarantiesArray(connection, demande.getGaranties());
-                statement.setArray(paramIndex, garantiesArray);
-            } else {
-                statement.setNull(paramIndex, Types.ARRAY);
+            // ===== Paramètres 36-42: Système =====
+            stmt.setString(36, demandeIndividuel.getStatutCredit());
+            setIntOrOne(stmt, 37, demandeIndividuel.getRangCredit());
+            setIntOrNull(stmt, 38, demandeIndividuel.getTipCredito());
+            stmt.setString(39, demandeIndividuel.getCodUsuarios());
+            stmt.setString(40, defaultIfNull(demandeIndividuel.getStatutDemande(), "EN_ATTENTE"));
+            stmt.setString(41, defaultIfNull(demandeIndividuel.getValidationState(), "SELECTION"));
+            stmt.setString(42, demandeIndividuel.getCurrentActivite());
+
+            // ===== Paramètres 43-44: Nature client =====
+            stmt.setString(43, defaultIfNull(demandeIndividuel.getNatureClient(), "Demande credit Pour Particulier"));
+            stmt.setString(44, demandeIndividuel.getNomPersonneMorale());
+
+            // ===== Paramètres 45-52: Nouveaux champs V79 =====
+            stmt.setString(45, demandeIndividuel.getSernom());
+            stmt.setString(46, demandeIndividuel.getCategorie());
+            stmt.setString(47, demandeIndividuel.getNomPere());
+            stmt.setString(48, demandeIndividuel.getNomMere());
+            stmt.setString(49, demandeIndividuel.getNomConjoint());
+            stmt.setString(50, demandeIndividuel.getNatureActivite());
+            stmt.setString(51, demandeIndividuel.getPrefecture());
+            stmt.setString(52, demandeIndividuel.getSousPrefecture());
+
+            // ===== Paramètres 53-54: Nouveaux champs V80 =====
+            stmt.setString(53, demandeIndividuel.getEmail());
+            stmt.setString(54, demandeIndividuel.getSigle());
+
+            // ===== Paramètre 55: Garanties =====
+            stmt.setArray(55, garantiesArray);
+
+            // Exécution
+            rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                Long demandeId = rs.getLong("demande_id");
+                String message = rs.getString("message");
+                Boolean success = rs.getBoolean("success");
+
+                log.info("Résultat création demande - ID: {}, Success: {}, Message: {}",
+                        demandeId, success, message);
+
+                return DemandeResponse.builder()
+                        .demandeId(demandeId)
+                        .message(message)
+                        .success(success)
+                        .build();
             }
 
-            // Exécuter la requête
-            resultSet = statement.executeQuery();
-
-            // Traiter le résultat
-            if (resultSet.next()) {
-                DemandeResponse response = new DemandeResponse();
-                response.setDemandeId(resultSet.getLong("demande_id"));
-                response.setMessage(resultSet.getString("message"));
-                response.setSuccess(resultSet.getBoolean("success"));
-
-                if (!response.isSuccess()) {
-                    throw new ApiException(response.getMessage());
-                }
-
-                log.info("Demande créée avec succès - ID: {}, Nature client: {}",
-                        response.getDemandeId(), demande.getNatureClient());
-                return response;
-            } else {
-                throw new ApiException("Aucun résultat retourné par la procédure stockée");
-            }
+            return DemandeResponse.error("Aucun résultat retourné par la procédure");
 
         } catch (SQLException e) {
-            log.error("Erreur SQL lors de l'insertion de la demande: {}", e.getMessage(), e);
-            throw new ApiException("Erreur lors de la création de la demande: " + e.getMessage());
-        } catch (Exception e) {
-            log.error("Erreur lors de l'insertion de la demande: {}", e.getMessage(), e);
-            throw new ApiException("Erreur lors de la création de la demande: " + e.getMessage());
+            log.error("Erreur SQL lors de la création de la demande: {}", e.getMessage(), e);
+            return DemandeResponse.error("Erreur SQL: " + e.getMessage());
         } finally {
-            // Fermer les ressources
+            closeQuietly(rs);
+            closeQuietly(stmt);
+            closeQuietly(connection);
+        }
+    }
+
+
+    private void setIntOrNull(PreparedStatement stmt, int index, Integer value) throws SQLException {
+        if (value != null) {
+            stmt.setInt(index, value);
+        } else {
+            stmt.setNull(index, Types.INTEGER);
+        }
+    }
+
+    private void setIntOrZero(PreparedStatement stmt, int index, Integer value) throws SQLException {
+        stmt.setInt(index, value != null ? value : 0);
+    }
+
+    private void setIntOrOne(PreparedStatement stmt, int index, Integer value) throws SQLException {
+        stmt.setInt(index, value != null ? value : 1);
+    }
+
+    private String defaultIfNull(String value, String defaultValue) {
+        return value != null ? value : defaultValue;
+    }
+
+    /**
+     * Crée un tableau PostgreSQL de type garantie_input[]
+     */
+    private Array createGarantiesArray(Connection connection, List<GarantiePropose> garanties)
+            throws SQLException {
+        if (garanties == null || garanties.isEmpty()) {
+            return connection.createArrayOf("garantie_input", new Object[0]);
+        }
+
+        StringBuilder arrayLiteral = new StringBuilder("ARRAY[");
+        for (int i = 0; i < garanties.size(); i++) {
+            GarantiePropose g = garanties.get(i);
+            if (i > 0) arrayLiteral.append(",");
+            arrayLiteral.append("ROW(")
+                    .append("'").append(escapeSql(g.getTypeGarantie())).append("',")
+                    .append("'").append(escapeSql(g.getDescriptionGarantie())).append("',")
+                    .append(g.getValeurGarantie() != null ? g.getValeurGarantie() : 0)
+                    .append(")::garantie_input");
+        }
+        arrayLiteral.append("]::garantie_input[]");
+
+        try (PreparedStatement ps = connection.prepareStatement("SELECT " + arrayLiteral)) {
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getArray(1);
+            }
+        }
+
+        return connection.createArrayOf("garantie_input", new Object[0]);
+    }
+
+
+    private String escapeString(String value) {
+        if (value == null) return "";
+        return "\"" + value.replace("\"", "\\\"") + "\"";
+    }
+
+    private String escapeSql(String value) {
+        if (value == null) return "";
+        return value.replace("'", "''");
+    }
+
+    private void closeQuietly(AutoCloseable resource) {
+        if (resource != null) {
             try {
-                if (resultSet != null) resultSet.close();
-                if (statement != null) statement.close();
-                if (connection != null) connection.close();
-            } catch (SQLException e) {
-                log.error("Erreur lors de la fermeture des ressources: {}", e.getMessage());
+                resource.close();
+            } catch (Exception e) {
+                log.warn("Erreur lors de la fermeture de la ressource: {}", e.getMessage());
             }
         }
     }
-    /**
-     * Créer un tableau PostgreSQL de type garantie_input[]
-     */
-    private Array createGarantiesArray(Connection connection, List<GarantiePropose> garanties) throws SQLException {
-        // Créer les structs pour chaque garantie
-        String[] garantiesStrings = new String[garanties.size()];
-
-        for (int i = 0; i < garanties.size(); i++) {
-            GarantiePropose g = garanties.get(i);
-
-            // Formater chaque garantie comme un record PostgreSQL
-            // Format: (type_garantie, description_garantie, valeur_garantie)
-            String typeGarantie = escapeString(g.getTypeGarantie());
-            String description = escapeString(g.getDescriptionGarantie());
-            String valeur = g.getValeurGarantie().toString();
-
-            // Créer le record au format PostgreSQL
-            garantiesStrings[i] = String.format("(\"%s\",\"%s\",%s)",
-                    typeGarantie,
-                    description,
-                    valeur
-            );
-        }
-
-        // Créer l'array PostgreSQL
-        return connection.createArrayOf("garantie_input", garantiesStrings);
-    }
 
 
     /**
-     * Échapper les caractères spéciaux pour PostgreSQL
+     * Ferme les ressources JDBC de manière sécurisée
      */
-    private String escapeString(String value) {
-        if (value == null) {
-            return "";
+    private void closeResources(ResultSet resultSet, PreparedStatement statement, Connection connection) {
+        try {
+            if (resultSet != null) resultSet.close();
+            if (statement != null) statement.close();
+            if (connection != null) connection.close();
+        } catch (SQLException e) {
+            log.error("Erreur lors de la fermeture des ressources: {}", e.getMessage());
         }
-        // Échapper les guillemets doubles et les backslashes
-        return value
-                .replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("'", "''");
     }
+
+
+
     @Override
     public DemandeIndividuel getDemandeWithGaranties(Long demandeId) {
         try {
@@ -930,14 +995,15 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
 
     private DemandeIndividuel parseDemandeFromJson(String demandeJson, String garantiesJson) {
         try {
-            // Configurer ObjectMapper pour gérer les différents formats de noms
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            // Utiliser l'objectMapper injecté qui a JavaTimeModule configuré
+            // Créer une copie configurée pour snake_case
+            ObjectMapper localMapper = objectMapper.copy();
+            localMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
             // Configurer pour accepter les snake_case
-            objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+            localMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
 
             // Parser manuellement le JSON de la demande car les noms ne correspondent pas exactement
-            Map<String, Object> demandeMap = objectMapper.readValue(demandeJson, new TypeReference<Map<String, Object>>() {});
+            Map<String, Object> demandeMap = localMapper.readValue(demandeJson, new TypeReference<Map<String, Object>>() {});
 
             DemandeIndividuel demande = new DemandeIndividuel();
 
@@ -1013,8 +1079,8 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
                 log.debug("Parsing garanties JSON: {}", garantiesJson);
 
                 if (garantiesJson != null && !garantiesJson.equals("[]") && !garantiesJson.isEmpty()) {
-                    // Désactiver FAIL_ON_UNKNOWN_PROPERTIES pour les garanties aussi
-                    ObjectMapper garantieMapper = new ObjectMapper();
+                    // Utiliser l'objectMapper injecté qui a JavaTimeModule configuré
+                    ObjectMapper garantieMapper = objectMapper.copy();
                     garantieMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
                     // Parser directement en liste de GarantiePropose
@@ -1033,7 +1099,7 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
                 log.error("Error parsing garanties: {}", e.getMessage());
                 // En cas d'erreur, essayer le mapping manuel
                 try {
-                    List<Map<String, Object>> garantiesList = objectMapper.readValue(
+                    List<Map<String, Object>> garantiesList = localMapper.readValue(
                             garantiesJson,
                             new TypeReference<List<Map<String, Object>>>() {}
                     );

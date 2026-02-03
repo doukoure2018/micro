@@ -444,7 +444,7 @@ export class AttenteComponent implements OnInit {
         const demandes = this.state().demandeAttentes;
         if (!demandes || demandes.length === 0) return 0;
 
-        return demandes.reduce((total, d) => total + (d.montantDemande || d.montant || 0), 0);
+        return demandes.reduce((total, d) => total + (d.montantDemande || 0), 0);
     }
 
     /**

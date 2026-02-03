@@ -17,4 +17,15 @@ export interface DemandeCredit {
     point_vente_id?: number;
     user_id?: number;
     demandeIndividuelId?: number;
+
+    // Demande sollicitée
+    echeance?: number;
+    nombre_echeance?: number;
+    periodicite_remboursement?: string;
+
+    // Proposition de l'analyste
+    montant_propose?: number;
+    duree_proposee?: number;
+    nombre_echeance_propose?: number;
+    echeance_proposee?: number;
 }

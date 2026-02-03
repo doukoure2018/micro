@@ -8,24 +8,44 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 import java.util.List;
+
 
 @Getter
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DemandeIndividuel {
-    // Informations de base
+
+    // ==================== IDENTIFIANT ====================
     private Long demandeIndividuelId;
+
+    // ==================== INFORMATIONS DE BASE ====================
     private String nom;
     private String prenom;
+    private String sernom; // Surnom du demandeur
     private String telephone;
+    private String email; // NOUVEAU V80: Email du demandeur
     private String numeroMembre;
+
+    // ==================== LOCALISATION ADMINISTRATIVE ====================
     private Integer delegation;
     private Integer agence;
     private Integer pos;
+    private String prefecture; // Préfecture de résidence
+    private String sousPrefecture; // Sous-préfecture de résidence
 
-    // Informations personnelles
+    // ==================== NATURE DU CLIENT ====================
+    /**
+     * Nature du client - Valeurs possibles:
+     * - "Demande credit Pour Particulier" (par défaut)
+     * - "Demande de Credit Pour PME/PMI"
+     * - "Demande de credit Pour Professionnels"
+     */
+    private String natureClient = "Demande credit Pour Particulier";
+    private String nomPersonneMorale; // Nom de l'entreprise (obligatoire si PME/PMI)
+    private String sigle; // NOUVEAU V80: Sigle de l'entreprise (pour PME/PMI)
+
+    // ==================== INFORMATIONS PERSONNELLES ====================
     private String typePiece;
     private String numId;
     private LocalDate dateNaissance;
@@ -34,11 +54,15 @@ public class DemandeIndividuel {
     private String situationMatrimoniale;
     private Integer nombrePersonneEnCharge;
     private Integer nombrePersonneScolarise;
+    private String nomPere; // Nom du père
+    private String nomMere; // Nom de la mère
+    private String nomConjoint; // Nom du conjoint
     private String addresseDomicileContact;
     private String typePropriete;
     private Integer nombreAnneeHabitation;
 
-    // Activité
+    // ==================== ACTIVITÉ ====================
+    private String categorie; // Catégorie du demandeur
     private String typeActivite;
     private String sousActivite;
     private String sousSousActivite;
@@ -47,10 +71,9 @@ public class DemandeIndividuel {
     private String adresseLieuActivite;
     private String autreActivite;
     private String lieuActivite;
+    private String natureActivite; // Nature de l'activité
 
-    private String natureClient = "Individuel"; // Valeur par défaut
-    private String nomPersonneMorale;
-    // Modalités de crédit
+    // ==================== MODALITÉS DE CRÉDIT ====================
     private BigDecimal montantDemande;
     private Integer dureeDemande;
     private String periodiciteRemboursement;
@@ -63,24 +86,24 @@ public class DemandeIndividuel {
     private String statutCredit;
     private Integer rangCredit;
 
-    // Système
+    // ==================== CHAMPS SYSTÈME ====================
     private Integer tipCredito;
     private String codUsuarios;
     private String statutDemande;
     private String validationState;
     private String currentActivite;
     private String statutSelection;
+
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss.SSSSSS")
     private LocalDateTime createdAt;
+
     private Integer age;
 
-
-    // Liste des garanties
+    // ==================== GARANTIES ====================
     private List<GarantiePropose> garanties;
 
-    // ========== NOUVEAUX CHAMPS POUR LE GROUPEMENT PAR DELEGATION ==========
+    // ==================== CHAMPS POUR AFFICHAGE (libellés) ====================
     private String delegationLibele;
     private String agenceLibele;
     private String pointVenteLibele;
 }
-

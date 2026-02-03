@@ -11,16 +11,12 @@
                     }
                 </div>
                 <div class="flex gap-2 flex-wrap">
-                    <!-- Boutons d'impression -->
                     @if (peutImprimer()) {
                     <div class="print-buttons-group flex gap-2 mr-3">
-                        <!-- Bouton d'impression principal -->
                         <p-button label="Imprimer" icon="pi pi-print"
                             [style]="{'background': '#28a745', 'border-color': '#28a745'}" (onClick)="imprimerBilan()"
                             pTooltip="Imprimer le résumé complet" tooltipPosition="bottom">
                         </p-button>
-
-                        <!-- Menu déroulant pour options d'impression -->
                         <p-splitButton label="Options" icon="pi pi-download" (onClick)="previsualiserImpression()"
                             [model]="printMenuModel" severity="secondary" size="small">
                         </p-splitButton>
@@ -33,443 +29,12 @@
                         </p-button>
                     </div>
                     }
-
-                    <!-- Bouton retour existant -->
                     <p-button label="Retour" icon="pi pi-arrow-left" outlined (onClick)="retourListe()">
                     </p-button>
                 </div>
             </div>
         </div>
     </div>
-
-    @if (peutImprimer()) {
-    <div class="grid mb-3">
-        <div class="col-12">
-            <div class="print-info-banner p-2 bg-blue-50 border-round border-1 border-blue-200">
-                <div class="flex align-items-center justify-content-between text-sm">
-                    <div class="flex align-items-center gap-2">
-                        <i class="pi pi-info-circle text-blue-600"></i>
-                        <span class="text-blue-800">
-                            Document prêt pour l'impression - {{ getResumeImpression() }}
-                        </span>
-                    </div>
-                    <div class="flex gap-2">
-                        <p-button label="Aperçu" icon="pi pi-eye" size="small" outlined
-                            (onClick)="previsualiserImpression()">
-                        </p-button>
-                        <p-button label="Imprimer" icon="pi pi-print" size="small" (onClick)="imprimerBilan()">
-                        </p-button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    }
-
-    @if(state().user?.role === 'MANAGER' || state().user?.role === 'DA'){
-    <div class="grid mb-4">
-        <div class="col-12">
-            <p-card>
-                <ng-template pTemplate="header">
-                    <div class="flex align-items-center gap-2 p-3">
-                        <i class="pi pi-lightbulb text-yellow-600"></i>
-                        <h4 class="m-0">Recommandations et Analyse</h4>
-                    </div>
-                </ng-template>
-
-                <div class="grid">
-                    <div class="col-12 md:col-6">
-                        <h6 class="text-blue-700 mb-3">💡 Recommandations</h6>
-                        <div class="recommendation-list">
-                            @for (recommandation of getRecommandations(); track recommandation) {
-                            <div class="flex align-items-start mb-2">
-                                <div class="text-sm text-700">{{ recommandation }}</div>
-                            </div>
-                            }
-                        </div>
-                    </div>
-
-                    <!-- Analyse de risque -->
-                    <div class="col-12 md:col-6">
-                        <h6 class="text-orange-700 mb-3">⚠️ Analyse de Risque</h6>
-                        <div class="risk-analysis">
-                            <div class="mb-3">
-                                <div class="flex justify-content-between align-items-center mb-2">
-                                    <span class="text-sm font-semibold">Score de risque :</span>
-                                    <span class="text-lg font-bold" [class]="getCouleurEvaluationGlobale()">
-                                        {{ getScoreRisque() }}/100
-                                    </span>
-                                </div>
-                                <p-progressBar [value]="getScoreRisque()" [style]="{'height': '8px'}"
-                                    [class]="'progress-' + getEvaluationGlobale().toLowerCase()">
-                                </p-progressBar>
-                            </div>
-
-                            <div class="facteurs-risque">
-                                <small class="text-600 font-semibold mb-1 block">Facteurs identifiés :</small>
-                                @for (facteur of getAnalyseRisque().facteurs; track facteur) {
-                                <div class="text-xs text-700 mb-1">• {{ facteur }}</div>
-                                }
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Conseils d'amélioration -->
-                <p-divider></p-divider>
-                <div class="mt-3">
-                    <h6 class="text-green-700 mb-3">🎯 Conseils d'Amélioration</h6>
-                    <div class="grid">
-                        @for (conseil of getConseilsAmelioration(); track conseil) {
-                        <div class="col-12 md:col-6">
-                            <div class="conseil-item p-2 bg-green-50 border-round mb-2">
-                                <small class="text-green-800">{{ conseil }}</small>
-                            </div>
-                        </div>
-                        }
-                    </div>
-                </div>
-
-                <!-- Recommandation de décision (pour usage interne) -->
-                <p-divider></p-divider>
-                <div class="mt-3">
-                    <h6 class="text-purple-700 mb-3">⚖️ Recommandation de Décision</h6>
-                    <div class="decision-recommendation p-3 border-round"
-                        [ngClass]="'bg-' + getRecommandationDecision().decision.toLowerCase().replace('_', '-') + '-50'">
-
-                        <div class="flex justify-content-between align-items-center mb-2">
-                            <span class="font-bold text-purple-800">Décision recommandée :</span>
-                            <p-tag [value]="getRecommandationDecision().decision.replace('_', ' ')"
-                                [severity]="getDecisionSeverity()" class="font-semibold"></p-tag>
-                        </div>
-
-                        <div class="text-sm text-700 mb-3">
-                            <strong>Justification :</strong> {{ getRecommandationDecision().justification }}
-                        </div>
-
-                        @if (getRecommandationDecision().conditions) {
-                        <div class="conditions">
-                            <small class="font-semibold text-purple-700 block mb-1">Conditions recommandées :</small>
-                            @for (condition of getRecommandationDecision().conditions; track condition) {
-                            <div class="text-xs text-600 mb-1">• {{ condition }}</div>
-                            }
-                        </div>
-                        }
-                    </div>
-                </div>
-            </p-card>
-        </div>
-    </div>
-    }@else{
-
-    }
-    <!-- Section Indicateurs Clés avec Formules et Séparateurs -->
-    @if(state().user?.role === 'MANAGER' || state().user?.role === 'DA'){
-    <div class="grid mb-4">
-        <div class="col-12">
-            <h3 class="text-xl font-semibold text-900 mb-3">
-                <i class="pi pi-chart-bar mr-2 text-blue-600"></i>
-                Indicateurs Clés avec Formules de Calcul
-            </h3>
-        </div>
-
-        <!-- R1 - Capacité de remboursement -->
-        <div class="col-12 md:col-6 lg:col-4">
-            <div class="indicator-card-simple">
-                <div class="indicator-header">
-                    <div class="flex align-items-center mb-2">
-                        <i class="pi pi-credit-card text-blue-600 text-2xl mr-3"></i>
-                        <div>
-                            <h5 class="m-0 text-blue-800">R1 - Capacité de remboursement</h5>
-                            <small class="text-blue-600">(Cash Flow + Autres revenus) / (Traite revenus)</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="indicator-value text-3xl font-bold text-900 mb-2">
-                    {{ calculerR1Capacite() }}%
-                </div>
-                <div class="indicator-details">
-                    <div class="text-sm text-600 mb-1">
-                        <strong>Calcul :</strong> ({{ formatCurrency(getCashFlow() + getAutresRevenus()) }} + {{
-                        formatCurrency(getAutresRevenus()) }}) / {{ formatCurrency(getTraiteRevenus()) }}
-                    </div>
-                    <p-tag [value]="getStatutR1()" [severity]="getSeveriteR1()" class="font-semibold"></p-tag>
-                </div>
-            </div>
-        </div>
-
-        <!-- Séparateur vertical pour desktop -->
-        <div class="col-12 lg:col-12 separator-container">
-            <div class="indicator-separator"></div>
-        </div>
-
-        <!-- R2 - Ratio de solvabilité -->
-        <div class="col-12 md:col-6 lg:col-4">
-            <div class="indicator-card-simple">
-                <div class="indicator-header">
-                    <div class="flex align-items-center mb-2">
-                        <i class="pi pi-shield text-green-600 text-2xl mr-3"></i>
-                        <div>
-                            <h5 class="m-0 text-green-800">R2 - Ratio de solvabilité</h5>
-                            <small class="text-green-600">Capitaux propres / Total Actif</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="indicator-value text-3xl font-bold text-900 mb-2">
-                    {{ calculerR2Solvabilite() }}%
-                </div>
-                <div class="indicator-details">
-                    <div class="text-sm text-600 mb-1">
-                        <strong>Calcul :</strong> {{ formatCurrency(getCapitauxPropres()) }} / {{
-                        formatCurrency(getTotalActif()) }}
-                    </div>
-                    <p-tag [value]="getStatutR2()" [severity]="getSeveriteR2()" class="font-semibold"></p-tag>
-                </div>
-            </div>
-        </div>
-
-        <!-- Séparateur -->
-        <div class="col-12 lg:col-12 separator-container">
-            <div class="indicator-separator"></div>
-        </div>
-
-        <!-- R3 - Ratio de liquidité -->
-        <div class="col-12 md:col-6 lg:col-4">
-            <div class="indicator-card-simple">
-                <div class="indicator-header">
-                    <div class="flex align-items-center mb-2">
-                        <i class="pi pi-chart-line text-orange-600 text-2xl mr-3"></i>
-                        <div>
-                            <h5 class="m-0 text-orange-800">R3 - Ratio de liquidité</h5>
-                            <small class="text-orange-600">Créances + Trésorerie / Dettes court terme</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="indicator-value text-3xl font-bold text-900 mb-2">
-                    {{ calculerR3Liquidite() }}%
-                </div>
-                <div class="indicator-details">
-                    <div class="text-sm text-600 mb-1">
-                        <strong>Calcul :</strong> {{ formatCurrency(getCreancesEtTresorerie()) }} / {{
-                        formatCurrency(getDettesCourtTerme()) }}
-                    </div>
-                    <p-tag [value]="getStatutR3()" [severity]="getSeveriteR3()" class="font-semibold"></p-tag>
-                </div>
-            </div>
-        </div>
-
-        <!-- Séparateur -->
-        <div class="col-12 lg:col-12 separator-container">
-            <div class="indicator-separator"></div>
-        </div>
-
-        <!-- R4 - Ratio d'endettement -->
-        <div class="col-12 md:col-6 lg:col-4">
-            <div class="indicator-card-simple">
-                <div class="indicator-header">
-                    <div class="flex align-items-center mb-2">
-                        <i class="pi pi-exclamation-triangle text-red-600 text-2xl mr-3"></i>
-                        <div>
-                            <h5 class="m-0 text-red-800">R4 - Ratio d'endettement</h5>
-                            <small class="text-red-600">(Dettes totales + Crédit) / (Total Actif + Crédit)</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="indicator-value text-3xl font-bold text-900 mb-2">
-                    {{ calculerR4Endettement() }}%
-                </div>
-                <div class="indicator-details">
-                    <div class="text-sm text-600 mb-1">
-                        <strong>Calcul :</strong> {{ formatCurrency(getDettesTotalesAvecCredit()) }} / {{
-                        formatCurrency(getTotalActifAvecCredit()) }}
-                    </div>
-                    <p-tag [value]="getStatutR4()" [severity]="getSeveriteR4()" class="font-semibold"></p-tag>
-                </div>
-            </div>
-        </div>
-
-        <!-- Séparateur -->
-        <div class="col-12 lg:col-12 separator-container">
-            <div class="indicator-separator"></div>
-        </div>
-
-        <!-- R5 - Ratio de dépendance -->
-        <div class="col-12 md:col-6 lg:col-4">
-            <div class="indicator-card-simple">
-                <div class="indicator-header">
-                    <div class="flex align-items-center mb-2">
-                        <i class="pi pi-chart-pie text-purple-600 text-2xl mr-3"></i>
-                        <div>
-                            <h5 class="m-0 text-purple-800">R5 - Ratio de dépendance</h5>
-                            <small class="text-purple-600">Autres revenus / Revenus totaux</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="indicator-value text-3xl font-bold text-900 mb-2">
-                    {{ calculerR5Dependance() }}%
-                </div>
-                <div class="indicator-details">
-                    <div class="text-sm text-600 mb-1">
-                        <strong>Calcul :</strong> {{ formatCurrency(getAutresRevenus()) }} / {{
-                        formatCurrency(getRevenusTorauxPrevisionnel()) }}
-                    </div>
-                    <p-tag [value]="getStatutR5()" [severity]="getSeveriteR5()" class="font-semibold"></p-tag>
-                </div>
-            </div>
-        </div>
-
-        <!-- Séparateur -->
-        <div class="col-12 lg:col-12 separator-container">
-            <div class="indicator-separator"></div>
-        </div>
-
-        <!-- R6 - Ratio de couverture -->
-        <div class="col-12 md:col-6 lg:col-4">
-            <div class="indicator-card-simple">
-                <div class="indicator-header">
-                    <div class="flex align-items-center mb-2">
-                        <i class="pi pi-wallet text-indigo-600 text-2xl mr-3"></i>
-                        <div>
-                            <h5 class="m-0 text-indigo-800">R6 - Ratio de couverture de la Garantie</h5>
-                            <small class="text-indigo-600">Valeur de la garantie / Crédit</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="indicator-value text-3xl font-bold text-900 mb-2">
-                    {{ calculerR6Couverture() }}%
-                </div>
-                <div class="indicator-details">
-                    <div class="text-sm text-600 mb-1">
-                        <strong>Calcul :</strong> {{ formatCurrency(getValeurGarantie()) }} / {{
-                        formatCurrency(getMontantCredit()) }}
-                    </div>
-                    <p-tag [value]="getStatutR6()" [severity]="getSeveriteR6()" class="font-semibold"></p-tag>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Résumé des seuils - Version agrandie et centrée -->
-    <div class="grid mb-4">
-        <div class="col-12">
-            <p-card class="seuils-card-large">
-                <ng-template pTemplate="header">
-                    <div class="flex align-items-center justify-content-center gap-3 p-4">
-                        <i class="pi pi-info-circle text-blue-600 text-3xl"></i>
-                        <h4 class="m-0 text-2xl font-bold text-center">Seuils d'Évaluation des Ratios</h4>
-                    </div>
-                </ng-template>
-
-                <div class="seuils-content p-4">
-                    <div class="grid">
-                        <!-- Section Seuils Acceptables -->
-                        <div class="col-12 lg:col-6">
-                            <div class="seuils-section text-center">
-                                <h6 class="text-green-700 mb-4 text-xl font-bold">✅ Seuils Acceptables</h6>
-                                <div class="seuils-list bg-green-50 p-4 border-round">
-                                    <ul class="text-base text-700 list-none p-0 m-0">
-                                        <li class="mb-3 p-2 bg-white border-round shadow-1">
-                                            <strong class="text-green-800">R1 Capacité :</strong>
-                                            <span class="text-green-700 font-semibold ml-2">≥ 150%</span>
-                                        </li>
-                                        <li class="mb-3 p-2 bg-white border-round shadow-1">
-                                            <strong class="text-green-800">R2 Solvabilité :</strong>
-                                            <span class="text-green-700 font-semibold ml-2">≥ 25%</span>
-                                        </li>
-                                        <li class="mb-3 p-2 bg-white border-round shadow-1">
-                                            <strong class="text-green-800">R3 Liquidité :</strong>
-                                            <span class="text-green-700 font-semibold ml-2">≥ 100%</span>
-                                        </li>
-                                        <li class="mb-3 p-2 bg-white border-round shadow-1">
-                                            <strong class="text-green-800">R4 Endettement :</strong>
-                                            <span class="text-green-700 font-semibold ml-2">≤ 70%</span>
-                                        </li>
-                                        <li class="mb-3 p-2 bg-white border-round shadow-1">
-                                            <strong class="text-green-800">R5 Dépendance :</strong>
-                                            <span class="text-green-700 font-semibold ml-2">≤ 50%</span>
-                                            <!-- MODIFIÉ: de 30% à 50% -->
-                                        </li>
-                                        <li class="mb-3 p-2 bg-white border-round shadow-1">
-                                            <strong class="text-green-800">R6 Couverture :</strong>
-                                            <span class="text-green-700 font-semibold ml-2">≥ 120%</span>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Section Évaluation Globale -->
-                        <div class="col-12 lg:col-6">
-                            <div class="evaluation-section text-center">
-                                <h6 class="text-blue-700 mb-4 text-xl font-bold">📊 Évaluation Globale</h6>
-                                <div class="evaluation-box p-5 bg-blue-50 border-round border-2 border-blue-200">
-                                    <!-- Score principal -->
-                                    <div class="evaluation-main mb-4">
-                                        <div class="text-5xl font-bold mb-2" [class]="getCouleurEvaluationGlobale()">
-                                            {{ getEvaluationGlobale() }}
-                                        </div>
-                                        <div class="text-lg text-600 font-medium">
-                                            {{ getNbSeuilsRespetes() }}/6 seuils respectés
-                                        </div>
-                                    </div>
-
-                                    <!-- Barre de progression -->
-                                    <div class="progress-section mb-4">
-                                        <div class="text-sm text-600 mb-2 font-medium">Taux de conformité</div>
-                                        <p-progressBar [value]="(getNbSeuilsRespetes() / 6) * 100"
-                                            [style]="{'height': '12px'}"
-                                            [class]="'progress-' + getEvaluationGlobale().toLowerCase()">
-                                        </p-progressBar>
-                                        <div class="text-sm text-600 mt-1 font-medium">
-                                            {{ ((getNbSeuilsRespetes() / 6) * 100).toFixed(0) }}% des seuils respectés
-                                        </div>
-                                    </div>
-
-                                    <!-- Indicateur visuel -->
-                                    <div class="status-indicator">
-                                        <i [class]="getIconeEvaluation()" [ngClass]="getCouleurEvaluationGlobale()"
-                                            class="text-4xl"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Section récapitulatif centrée -->
-                    <div class="col-12 mt-4">
-                        <div class="recapitulatif-centre text-center p-4 bg-gray-50 border-round">
-                            <h6 class="text-gray-700 mb-3 text-lg font-bold">🎯 Résumé de l'Analyse</h6>
-                            <div class="flex justify-content-center align-items-center gap-4 flex-wrap">
-                                <div class="metric-item">
-                                    <div class="text-2xl font-bold text-blue-600">{{ getNbSeuilsRespetes() }}</div>
-                                    <small class="text-600">Seuils OK</small>
-                                </div>
-                                <div class="metric-separator">•</div>
-                                <div class="metric-item">
-                                    <div class="text-2xl font-bold text-orange-600">{{ 6 - getNbSeuilsRespetes() }}
-                                    </div>
-                                    <small class="text-600">À améliorer</small>
-                                </div>
-                                <div class="metric-separator">•</div>
-                                <div class="metric-item">
-                                    <div class="text-2xl font-bold" [class]="getCouleurEvaluationGlobale()">
-                                        {{ ((getNbSeuilsRespetes() / 6) * 100).toFixed(0) }}%
-                                    </div>
-                                    <small class="text-600">Score global</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </p-card>
-        </div>
-    </div>
-    }@else{
-
-    }
-
-
-
-
 
     <!-- Loading State -->
     @if (state().loading) {
@@ -498,609 +63,650 @@
     </div>
     }
 
-    <!-- Main Content -->
+    <!-- ============================================================== -->
+    <!-- MAIN CONTENT                                                    -->
+    <!-- ============================================================== -->
     @if (state().resumeCredit && !state().loading) {
-    <!-- Indicateurs Clés -->
-    @if(state().user?.role === 'MANAGER'){
+
+    <!-- ================================================================ -->
+    <!-- SECTION 1 : RATIOS DE DÉCISION (EN HAUT) — MANAGER / DA ONLY    -->
+    <!-- Layout fidèle à l'image Excel                                    -->
+    <!-- ================================================================ -->
+    @if (state().user?.role === 'MANAGER' || state().user?.role === 'DA') {
     <div class="grid mb-4">
         <div class="col-12">
-            <h3 class="text-xl font-semibold text-900 mb-3">Indicateurs Clés</h3>
-        </div>
-        @for (indicateur of getIndicateursCles(); track indicateur.label) {
-        <div class="col-12 md:col-6 lg:col-3">
-            <p-card class="h-full">
-                <div class="flex items-center gap-3">
-                    <div class="p-3 rounded-full" [ngClass]="'bg-' + indicateur.color + '-100'">
-                        <i [class]="indicateur.icon" [ngClass]="'text-' + indicateur.color + '-600 text-xl'"></i>
-                    </div>
-                    <div class="flex-1">
-                        <p class="text-600 text-sm m-0">{{ indicateur.label }}</p>
-                        <p class="text-900 text-xl font-semibold m-0">
-                            <p-tag [value]="indicateur.value" [severity]="indicateur.severity"></p-tag>
-                        </p>
-                    </div>
+            <div class="surface-card border-round shadow-1">
+                <!-- Titre section -->
+                <div class="p-3 border-bottom-1 surface-border" style="background-color: #d9d9d9;">
+                    <span class="font-bold text-lg">4. Ratios de décision</span>
                 </div>
-            </p-card>
-        </div>
-        }
-    </div>
-    }@else{
 
-    }
-
-
-    <!-- Informations Générales -->
-    <div class="grid mb-4">
-        <!-- Promoteur -->
-        <div class="col-12 lg:col-6">
-            <p-card>
-                <ng-template pTemplate="header">
-                    <div class="flex items-center gap-2 p-3">
-                        <i class="pi pi-user text-blue-600"></i>
-                        <h4 class="m-0">Informations du Promoteur</h4>
-                    </div>
-                </ng-template>
-                <p-table [value]="getPromoteurData()" [tableStyle]="{'min-width': '100%'}" styleClass="p-datatable-sm">
-                    <ng-template pTemplate="body" let-item>
-                        <tr>
-                            <td class="font-semibold text-600">{{ item.label }}</td>
-                            <td>{{ item.value }}</td>
-                        </tr>
-                    </ng-template>
-                </p-table>
-            </p-card>
-        </div>
-        <p-divider></p-divider>
-        <!-- Entreprise -->
-        <div class="col-12 lg:col-6">
-            <p-card>
-                <ng-template pTemplate="header">
-                    <div class="flex items-center gap-2 p-3">
-                        <i class="pi pi-building text-green-600"></i>
-                        <h4 class="m-0">Informations de l'Entreprise</h4>
-                    </div>
-                </ng-template>
-                <p-table [value]="getEntrepriseData()" [tableStyle]="{'min-width': '100%'}" styleClass="p-datatable-sm">
-                    <ng-template pTemplate="body" let-item>
-                        <tr>
-                            <td class="font-semibold text-600">{{ item.label }}</td>
-                            <td>{{ item.value }}</td>
-                        </tr>
-                    </ng-template>
-                </p-table>
-            </p-card>
-        </div>
-    </div>
-    <!-- Personnes Caution - NOUVELLE SECTION -->
-    <div class="grid mb-4">
-        <div class="col-12">
-            <p-card>
-                <ng-template pTemplate="header">
-                    <div class="flex items-center gap-2 p-3">
-                        <i class="pi pi-users text-teal-600"></i>
-                        <h4 class="m-0">Personnes Caution</h4>
-                        <p-badge [value]="getNombrePersonnesCaution().toString()"
-                            [severity]="getNombrePersonnesCaution() > 0 ? 'success' : 'warn'">
-                        </p-badge>
-                    </div>
-                </ng-template>
-
-                <!-- Si aucune personne caution -->
-                @if (!hasPersonnesCaution()) {
-                <div class="text-center p-4">
-                    <i class="pi pi-exclamation-triangle text-4xl text-orange-500 mb-3"></i>
-                    <h5 class="text-orange-600 mb-2">Aucune personne caution</h5>
-                    <p class="text-600 mb-3">
-                        Aucune garantie personnelle n'a été renseignée pour cette demande de crédit.
-                    </p>
-                    <p-tag value="ATTENTION : Risque de garantie insuffisant" severity="warn"></p-tag>
-                </div>
-                }
-
-                <!-- Si des personnes caution existent -->
-                @if (hasPersonnesCaution()) {
-                <div class="grid">
-                    <!-- Liste détaillée des personnes caution -->
-                    <div class="col-12 lg:col-8">
-                        <h5 class="text-teal-700 mb-3">
-                            <i class="pi pi-list mr-2"></i>
-                            Détails des Personnes Caution ({{ getNombrePersonnesCaution() }})
-                        </h5>
-                        <p-table [value]="getPersonnesCautionData()" [tableStyle]="{'min-width': '100%'}"
-                            styleClass="p-datatable-sm">
-                            <ng-template pTemplate="body" let-item>
-                                <tr
-                                    [ngClass]="{'border-top-2 border-teal-200 bg-teal-50': item.label.includes('Caution') && item.label.includes('Nom')}">
-                                    <td class="font-semibold text-600"
-                                        [ngClass]="{'text-teal-700 font-bold': item.label.includes('Caution') && item.label.includes('Nom')}">
-                                        {{ item.label }}
-                                    </td>
-                                    <td
-                                        [ngClass]="{'font-semibold': item.label.includes('Caution') && item.label.includes('Nom')}">
-                                        {{ item.value }}
-                                    </td>
-                                </tr>
-                            </ng-template>
-                        </p-table>
-                    </div>
-
-                    @if(state().user?.role === 'MANAGER' || state().user?.role === 'DA'){
-                    <!-- Analyse de la garantie personnelle -->
-                    <div class="col-12 lg:col-4">
-                        <div class="garantie-analysis-card">
-                            <h5 class="text-teal-700 mb-3">
-                                <i class="pi pi-shield mr-2"></i>
-                                Analyse de Garantie
-                            </h5>
-
-                            <div class="analysis-content p-3 bg-teal-50 border-round">
-                                <!-- Score de garantie -->
-                                <div class="score-section mb-3">
-                                    <div class="flex justify-content-between align-items-center mb-2">
-                                        <span class="text-sm font-semibold text-teal-800">Niveau :</span>
-                                        <p-tag [value]="getAnalyseGarantiePersonnelle().niveau"
-                                            [severity]="getAnalyseGarantiePersonnelle().niveau === 'EXCELLENT' ? 'success' : 
-                                                      getAnalyseGarantiePersonnelle().niveau === 'BON' ? 'info' :
-                                                      getAnalyseGarantiePersonnelle().niveau === 'MOYEN' ? 'warn' : 'danger'" class="font-semibold">
-                                        </p-tag>
-                                    </div>
-
-                                    <div class="flex justify-content-between align-items-center mb-2">
-                                        <span class="text-sm font-semibold text-teal-800">Score :</span>
-                                        <span class="text-lg font-bold text-teal-700">
-                                            {{ getAnalyseGarantiePersonnelle().score }}/100
-                                        </span>
-                                    </div>
-
-                                    <p-progressBar [value]="getAnalyseGarantiePersonnelle().score"
-                                        [style]="{'height': '8px'}"
-                                        [ngClass]="'progress-' + getAnalyseGarantiePersonnelle().niveau.toLowerCase()">
-                                    </p-progressBar>
-                                </div>
-
-                                <!-- Description -->
-                                <div class="description-section mb-3">
-                                    <small class="text-teal-700 font-semibold block mb-1">Description :</small>
-                                    <p class="text-sm text-teal-800 m-0">
-                                        {{ getAnalyseGarantiePersonnelle().description }}
-                                    </p>
-                                </div>
-
-                                <!-- Recommandations -->
-                                <div class="recommendations-section">
-                                    <small class="text-teal-700 font-semibold block mb-2">Recommandations :</small>
-                                    @for (recommandation of getAnalyseGarantiePersonnelle().recommendations; track
-                                    recommandation) {
-                                    <div class="recommendation-item mb-1 p-2 bg-white border-round shadow-1">
-                                        <small class="text-teal-800">• {{ recommandation }}</small>
-                                    </div>
-                                    }
+                <div class="p-3">
+                    <!-- Zone Proposition - simulation en haut à droite -->
+                    <div class="flex justify-content-end mb-3">
+                        <div class="border-1 surface-border" style="min-width: 400px;">
+                            <!-- Header Proposition -->
+                            <div class="text-right p-2 border-bottom-1 surface-border font-semibold">
+                                Proposition - simulation
+                            </div>
+                            <!-- Montant -->
+                            <div class="flex border-bottom-1 surface-border">
+                                <div class="p-2 text-right" style="width: 100px;">Montant :</div>
+                                <div class="p-2 flex-1 text-center" style="background-color: #c6efce;">
+                                    {{ formatCurrency(getMontantPropose()) || '-' }}
                                 </div>
                             </div>
-
-                            <!-- Résumé compact -->
-                            <div class="mt-3 p-2 bg-white border-round border-1 border-teal-200">
-                                <small class="text-teal-700 font-semibold block mb-1">Personnes identifiées :</small>
-                                @for (personne of getPersonnesCautionCompact(); track personne) {
-                                <div class="text-xs text-teal-600 mb-1">• {{ personne }}</div>
-                                }
+                            <!-- Durée -->
+                            <div class="flex border-bottom-1 surface-border">
+                                <div class="p-2 text-right" style="width: 100px;">Durée :</div>
+                                <div class="p-2 text-center" style="width: 80px; background-color: #c6efce;">
+                                    <em>{{ getDureeProposee() || '-' }} mois</em>
+                                </div>
+                                <div class="p-2 text-center flex-1">
+                                    Nbre d'éch. : <strong>{{ getNbreEcheancePropose() || '-' }}</strong>
+                                </div>
+                            </div>
+                            <!-- Échéance -->
+                            <div class="flex">
+                                <div class="p-2 text-right" style="width: 100px;">Échéance :</div>
+                                <div class="p-2 flex-1 text-center" style="background-color: #c6efce;">
+                                    {{ formatCurrency(getEcheanceProposee()) || '-' }}
+                                </div>
                             </div>
                         </div>
                     </div>
-                    }
 
-                </div>
-                }
-            </p-card>
-        </div>
-    </div>
-    <!-- Bilan Financier -->
-    <div class="grid mb-4">
-        <!-- Bilan Entreprise -->
-        <div class="col-12 lg:col-8">
-            <p-card>
-                <ng-template pTemplate="header">
-                    <div class="flex items-center gap-2 p-3">
-                        <i class="pi pi-chart-bar text-orange-600"></i>
-                        <h4 class="m-0">Bilan de l'Entreprise</h4>
-                    </div>
-                </ng-template>
-                <p-table [value]="getBilanEntrepriseData()" [tableStyle]="{'min-width': '100%'}"
-                    styleClass="p-datatable-sm">
-                    <ng-template pTemplate="body" let-item>
-                        <tr [ngClass]="{'font-bold bg-blue-50': item.isTotal}">
-                            <td class="font-semibold text-600">{{ item.label }}</td>
-                            <td>
-                                @if (item.isRatio) {
-                                <p-tag [value]="item.value" [severity]="item.severity"></p-tag>
-                                } @else {
-                                {{ item.value }}
-                                }
-                            </td>
-                        </tr>
-                    </ng-template>
-                </p-table>
-            </p-card>
-        </div>
-
-        <!-- Bilan Personnel -->
-        <div class="col-12 lg:col-4">
-            <p-card>
-                <ng-template pTemplate="header">
-                    <div class="flex items-center gap-2 p-3">
-                        <i class="pi pi-wallet text-purple-600"></i>
-                        <h4 class="m-0">Patrimoine Personnel</h4>
-                    </div>
-                </ng-template>
-                <p-table [value]="getBilanPersonnelData()" [tableStyle]="{'min-width': '100%'}"
-                    styleClass="p-datatable-sm">
-                    <ng-template pTemplate="body" let-item>
-                        <tr [ngClass]="{'font-bold bg-blue-50': item.isTotal}">
-                            <td class="font-semibold text-600">{{ item.label }}</td>
-                            <td>{{ item.value }}</td>
-                        </tr>
-                    </ng-template>
-                </p-table>
-            </p-card>
-        </div>
-    </div>
-
-    <!-- Exploitation -->
-    <div class="grid mb-4">
-        <!-- Exploitation Actuelle -->
-        <div class="col-12 lg:col-6">
-            <p-card>
-                <ng-template pTemplate="header">
-                    <div class="flex items-center gap-2 p-3">
-                        <i class="pi pi-calendar text-blue-600"></i>
-                        <h4 class="m-0">Exploitation Actuelle</h4>
-                    </div>
-                </ng-template>
-                <p-table [value]="getExploitationActuelleData()" [tableStyle]="{'min-width': '100%'}"
-                    styleClass="p-datatable-sm">
-                    <ng-template pTemplate="body" let-item>
-                        <tr [ngClass]="{'font-bold bg-blue-50': item.isTotal}">
-                            <td class="font-semibold text-600">{{ item.label }}</td>
-                            <td>
-                                @if (item.isRatio) {
-                                <p-tag [value]="item.value" [severity]="item.severity"></p-tag>
-                                } @else {
-                                {{ item.value }}
-                                }
-                            </td>
-                        </tr>
-                    </ng-template>
-                </p-table>
-
-                <!-- Détail des charges actuelles -->
-                <p-divider></p-divider>
-                <h5 class="text-lg font-semibold mb-3">Détail des Charges</h5>
-                <p-table [value]="getChargesData('actuelle')" [tableStyle]="{'min-width': '100%'}"
-                    styleClass="p-datatable-sm">
-                    <ng-template pTemplate="body" let-item>
-                        <tr [ngClass]="{'font-bold bg-green-50': item.isTotal}">
-                            <td class="font-semibold text-600">{{ item.label }}</td>
-                            <td>{{ item.value }}</td>
-                        </tr>
-                    </ng-template>
-                </p-table>
-            </p-card>
-        </div>
-
-        <p-divider> </p-divider>
-        <!-- Exploitation Prévisionnelle -->
-        <div class="col-12 lg:col-6">
-            <p-card>
-                <ng-template pTemplate="header">
-                    <div class="flex items-center gap-2 p-3">
-                        <i class="pi pi-chart-line text-green-600"></i>
-                        <h4 class="m-0">Exploitation Prévisionnelle</h4>
-                    </div>
-                </ng-template>
-                <p-table [value]="getExploitationPrevisionnelleData()" [tableStyle]="{'min-width': '100%'}"
-                    styleClass="p-datatable-sm">
-                    <ng-template pTemplate="body" let-item>
-                        <tr [ngClass]="{'font-bold bg-blue-50': item.isTotal}">
-                            <td class="font-semibold text-600">{{ item.label }}</td>
-                            <td>
-                                @if (item.isRatio) {
-                                <p-tag [value]="item.value" [severity]="item.severity"></p-tag>
-                                } @else {
-                                {{ item.value }}
-                                }
-                            </td>
-                        </tr>
-                    </ng-template>
-                </p-table>
-
-                <!-- Détail des charges prévisionnelles -->
-                <p-divider></p-divider>
-                <h5 class="text-lg font-semibold mb-3">Détail des Charges</h5>
-                <p-table [value]="getChargesData('previsionnelle')" [tableStyle]="{'min-width': '100%'}"
-                    styleClass="p-datatable-sm">
-                    <ng-template pTemplate="body" let-item>
-                        <tr [ngClass]="{'font-bold bg-green-50': item.isTotal}">
-                            <td class="font-semibold text-600">{{ item.label }}</td>
-                            <td>{{ item.value }}</td>
-                        </tr>
-                    </ng-template>
-                </p-table>
-            </p-card>
-        </div>
-    </div>
-
-    <!-- Section Demande de Crédit MISE À JOUR avec vraies données administratives -->
-    <div class="grid mb-4">
-        <div class="col-12">
-            <p-card>
-                <ng-template pTemplate="header">
-                    <div class="flex items-center gap-2 p-3">
-                        <i class="pi pi-credit-card text-red-600"></i>
-                        <h4 class="m-0">Détails de la Demande de Crédit</h4>
-                        @if (isLoadingInfoAdmin()) {
-                        <p-progressSpinner [style]="{'width': '20px', 'height': '20px'}"
-                            strokeWidth="4"></p-progressSpinner>
-                        }
-                    </div>
-                </ng-template>
-
-                <div class="grid">
-                    <!-- Informations principales de la demande -->
-                    <div class="col-12 lg:col-6">
-                        <h5 class="text-red-700 mb-3">
-                            <i class="pi pi-info-circle mr-2"></i>
-                            Informations Principales
-                        </h5>
-                        <p-table [value]="getDemandeCreditData().slice(0, 7)" [tableStyle]="{'min-width': '100%'}"
-                            styleClass="p-datatable-sm">
-                            <ng-template pTemplate="body" let-item>
-                                <tr>
-                                    <td class="font-semibold text-600">{{ item.label }}</td>
-                                    <td>
-                                        @if (item.isRatio) {
-                                        <p-tag [value]="item.value" [severity]="item.severity"></p-tag>
-                                        } @else if (item.isStatus) {
-                                        <p-tag [value]="item.value" [severity]="getStatutSeverity(item.value)"></p-tag>
-                                        } @else {
-                                        {{ item.value }}
-                                        }
-                                    </td>
-                                </tr>
-                            </ng-template>
-                        </p-table>
-                    </div>
-
-                    <div class="col-12 lg:col-6">
-                        <h5 class="text-blue-700 mb-3">
-                            <i class="pi pi-building mr-2"></i>
-                            Informations Administratives
-                            @if (hasInfoAdministrative()) {
-                            <i class="pi pi-check-circle text-green-500 ml-2" title="Données complètes chargées"></i>
-                            } @else if (isLoadingInfoAdmin()) {
-                            <i class="pi pi-spin pi-spinner text-blue-500 ml-2" title="Chargement en cours..."></i>
-                            } @else {
-                            <i class="pi pi-exclamation-triangle text-orange-500 ml-2" title="Données partielles"></i>
-                            }
-                        </h5>
-
-                        <!-- Affichage des données administratives -->
-                        @if (isLoadingInfoAdmin()) {
-                        <div class="loading-admin p-3 bg-blue-50 border-round text-center">
-                            <p-progressSpinner [style]="{'width': '30px', 'height': '30px'}"
-                                strokeWidth="4"></p-progressSpinner>
-                            <p class="text-sm text-blue-600 mt-2 mb-0">Chargement des informations détaillées...</p>
-                        </div>
-                        } @else {
-                        <p-table [value]="getDemandeCreditInfosComplementaires()" [tableStyle]="{'min-width': '100%'}"
-                            styleClass="p-datatable-sm">
-                            <ng-template pTemplate="body" let-item>
-                                <tr [ngClass]="{'bg-green-50': hasInfoAdministrative()}">
-                                    <td class="font-semibold text-600">{{ item.label }}</td>
-                                    <td class="text-700">
-                                        {{ item.value }}
-                                        @if (hasInfoAdministrative() && !item.value.startsWith('ID:')) {
-                                        <i class="pi pi-check text-green-500 ml-1 text-xs"
-                                            title="Information complète"></i>
-                                        }
-                                    </td>
-                                </tr>
-                            </ng-template>
-                        </p-table>
-                        }
-
-                        <!-- Résumé hiérarchique -->
-                        @if (hasInfoAdministrative()) {
-                        <div class="mt-3 p-2 bg-blue-50 border-round border-1 border-blue-200">
-                            <small class="text-blue-700 font-semibold block mb-1">Hiérarchie :</small>
-                            <div class="text-sm text-blue-800">{{ getResumeAdministratif() }}</div>
-                        </div>
-                        }
-
-                        <!-- Résumé financier existant -->
-                        <div class="mt-4">
-                            <h6 class="text-green-700 mb-3">
-                                <i class="pi pi-chart-bar mr-2"></i>
-                                Résumé Financier
-                            </h6>
-                            <div class="bg-green-50 p-3 border-round">
-                                <div class="grid gap-2 text-sm">
-                                    <div class="col-12 flex justify-content-between align-items-center">
-                                        <span class="text-600 font-medium">Total Actif:</span>
-                                        <span class="font-bold text-green-800">{{ formatCurrency(calculerTotalActif())
-                                            }}</span>
-                                    </div>
-                                    <div class="col-12 flex justify-content-between align-items-center">
-                                        <span class="text-600 font-medium">Total Passif:</span>
-                                        <span class="font-bold text-green-800">{{ formatCurrency(calculerTotalPassif())
-                                            }}</span>
-                                    </div>
-                                    <div class="col-12 flex justify-content-between align-items-center">
-                                        <span class="text-600 font-medium">Patrimoine Personnel:</span>
-                                        <span class="font-bold text-green-800">{{
-                                            formatCurrency(calculerPatrimoinePersonnel()) }}</span>
-                                    </div>
+                    <!-- Tableau des Ratios style Excel -->
+                    <table class="w-full" style="border-collapse: collapse; border: 1px solid #000;">
+                        <thead>
+                            <tr>
+                                <!-- Colonne Ratio (vide en header) -->
+                                <th style="border: 1px solid #000; width: 35%;"></th>
+                                <!-- Colonne Norme -->
+                                <th class="p-2 text-center font-bold" style="border: 1px solid #000; width: 10%;">
+                                    Norme
+                                </th>
+                                <!-- Colonne Sollicité avec texte vertical -->
+                                <th class="p-2 text-center"
+                                    style="border: 1px solid #000; width: 22%; position: relative;">
                                     <div
-                                        class="col-12 flex justify-content-between align-items-center border-top-1 border-green-200 pt-2">
-                                        <span class="text-600 font-medium">Garantie Totale:</span>
-                                        <span class="font-bold text-green-700">{{ formatCurrency(getValeurGarantie())
-                                            }}</span>
+                                        style="writing-mode: vertical-rl; transform: rotate(180deg); height: 120px; display: flex; align-items: center; justify-content: center; font-size: 11px;">
+                                        Ratios calculés en fonction du montant sollicité
                                     </div>
-                                    @if (getNombrePersonnesCaution() > 0) {
-                                    <div class="col-12">
-                                        <small class="text-green-600 italic">
-                                            (Inclut bonus {{ getNombrePersonnesCaution() }} personne(s) caution: +{{
-                                            (getNombrePersonnesCaution() * 10).toFixed(0) }}%)
-                                        </small>
+                                </th>
+                                <!-- Colonne Proposé avec texte vertical -->
+                                <th class="p-2 text-center"
+                                    style="border: 1px solid #000; width: 22%; position: relative;">
+                                    <div
+                                        style="writing-mode: vertical-rl; transform: rotate(180deg); height: 120px; display: flex; align-items: center; justify-content: center; font-size: 11px;">
+                                        Ratios associés au montant proposé
                                     </div>
-                                    }
-                                </div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- R.1 Capacité de remboursement -->
+                            <tr>
+                                <td class="p-2" style="border: 1px solid #000;">
+                                    <div class="font-bold">R.1 Capacité de remboursement calculée</div>
+                                    <div class="text-sm text-600">(Cash Flow + Autres revenus) / Traite</div>
+                                </td>
+                                <td class="p-2 text-center font-bold" style="border: 1px solid #000;">
+                                    ≥ 200%
+                                </td>
+                                <td class="p-2 text-center" style="border: 1px solid #000;">
+                                    <div class="border-1 surface-border p-2 border-round inline-block"
+                                        style="min-width: 100px;">
+                                        @if (calculerR1Capacite() !== '0.0') {
+                                        <span class="font-bold">{{ calculerR1Capacite() }}%</span>
+                                        <div class="mt-1">
+                                            <p-tag [value]="getStatutR1()" [severity]="getSeveriteR1()"
+                                                size="small"></p-tag>
+                                        </div>
+                                        } @else {
+                                        <span class="text-500">Information<br>manquante</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="p-2 text-center" style="border: 1px solid #000;">
+                                    <div class="border-1 surface-border p-2 border-round inline-block"
+                                        style="min-width: 100px;">
+                                        @if (calculerR1Propose() !== 'N/A' && calculerR1Propose() !== '0.0') {
+                                        <span class="font-bold">{{ calculerR1Propose() }}%</span>
+                                        <div class="mt-1">
+                                            <p-tag [value]="getStatutR1Propose()" [severity]="getSeveriteR1Propose()"
+                                                size="small"></p-tag>
+                                        </div>
+                                        } @else {
+                                        <span class="text-500">Information<br>manquante</span>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- R.2 Solvabilité -->
+                            <tr>
+                                <td class="p-2" style="border: 1px solid #000;">
+                                    <div class="font-bold">R.2 Ratio de solvabilité</div>
+                                    <div class="text-sm text-600">Capitaux propres / Total Actif</div>
+                                </td>
+                                <td class="p-2 text-center font-bold" style="border: 1px solid #000;">
+                                    ≥ 35%
+                                </td>
+                                <td class="p-2 text-center" style="border: 1px solid #000;">
+                                    <div class="border-1 surface-border p-2 border-round inline-block"
+                                        style="min-width: 100px;">
+                                        @if (calculerR2Solvabilite() !== '0.0') {
+                                        <span class="font-bold">{{ calculerR2Solvabilite() }}%</span>
+                                        <div class="mt-1">
+                                            <p-tag [value]="getStatutR2()" [severity]="getSeveriteR2()"
+                                                size="small"></p-tag>
+                                        </div>
+                                        } @else {
+                                        <span class="text-500">Information<br>manquante</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="p-2 text-center" style="border: 1px solid #000;">
+                                    <div class="border-1 surface-border p-2 border-round inline-block"
+                                        style="min-width: 100px;">
+                                        @if (calculerR2Solvabilite() !== '0.0') {
+                                        <span class="font-bold">{{ calculerR2Solvabilite() }}%</span>
+                                        <div class="mt-1">
+                                            <p-tag [value]="getStatutR2()" [severity]="getSeveriteR2()"
+                                                size="small"></p-tag>
+                                        </div>
+                                        } @else {
+                                        <span class="text-500">Information<br>manquante</span>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- R.3 Liquidité -->
+                            <tr>
+                                <td class="p-2" style="border: 1px solid #000;">
+                                    <div class="font-bold">R.3 Ratio de liquidité à échéance</div>
+                                    <div class="text-sm text-600">(Créances+Trésorerie) / Dettes à court terme</div>
+                                </td>
+                                <td class="p-2 text-center font-bold" style="border: 1px solid #000;">
+                                    ≥ 100%
+                                </td>
+                                <td class="p-2 text-center" style="border: 1px solid #000;">
+                                    <div class="border-1 surface-border p-2 border-round inline-block"
+                                        style="min-width: 100px;">
+                                        @if (calculerR3Liquidite() !== '0.0') {
+                                        <span class="font-bold">{{ calculerR3Liquidite() }}%</span>
+                                        <div class="mt-1">
+                                            <p-tag [value]="getStatutR3()" [severity]="getSeveriteR3()"
+                                                size="small"></p-tag>
+                                        </div>
+                                        } @else {
+                                        <span class="text-500">Information<br>manquante</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="p-2 text-center" style="border: 1px solid #000;">
+                                    <div class="border-1 surface-border p-2 border-round inline-block"
+                                        style="min-width: 100px;">
+                                        @if (calculerR3Liquidite() !== '0.0') {
+                                        <span class="font-bold">{{ calculerR3Liquidite() }}%</span>
+                                        <div class="mt-1">
+                                            <p-tag [value]="getStatutR3()" [severity]="getSeveriteR3()"
+                                                size="small"></p-tag>
+                                        </div>
+                                        } @else {
+                                        <span class="text-500">Information<br>manquante</span>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- R.4 Endettement -->
+                            <tr>
+                                <td class="p-2" style="border: 1px solid #000;">
+                                    <div class="font-bold">R.4 Ratio d'endettement</div>
+                                    <div class="text-sm text-600">(Dettes totales + Crédit) / (Total Actif + Crédit)
+                                    </div>
+                                </td>
+                                <td class="p-2 text-center font-bold" style="border: 1px solid #000;">
+                                    &lt; 50%
+                                </td>
+                                <td class="p-2 text-center" style="border: 1px solid #000;">
+                                    <div class="border-1 surface-border p-2 border-round inline-block"
+                                        style="min-width: 100px;">
+                                        @if (calculerR4Endettement() !== '0.0') {
+                                        <span class="font-bold">{{ calculerR4Endettement() }}%</span>
+                                        <div class="mt-1">
+                                            <p-tag [value]="getStatutR4()" [severity]="getSeveriteR4()"
+                                                size="small"></p-tag>
+                                        </div>
+                                        } @else {
+                                        <span class="text-500">Information<br>manquante</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="p-2 text-center" style="border: 1px solid #000;">
+                                    <div class="border-1 surface-border p-2 border-round inline-block"
+                                        style="min-width: 100px;">
+                                        @if (calculerR4Propose() !== 'N/A' && calculerR4Propose() !== '0.0') {
+                                        <span class="font-bold">{{ calculerR4Propose() }}%</span>
+                                        <div class="mt-1">
+                                            <p-tag [value]="getStatutR4Propose()" [severity]="getSeveriteR4Propose()"
+                                                size="small"></p-tag>
+                                        </div>
+                                        } @else {
+                                        <span class="text-500">Information<br>manquante</span>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- R.5 Dépendance -->
+                            <tr>
+                                <td class="p-2" style="border: 1px solid #000;">
+                                    <div class="font-bold">R.5 Ratio de dépendance</div>
+                                    <div class="text-sm text-600">Autres revenus / Revenus totaux</div>
+                                </td>
+                                <td class="p-2 text-center font-bold" style="border: 1px solid #000;">
+                                    &lt; 50%
+                                </td>
+                                <td class="p-2 text-center" style="border: 1px solid #000;">
+                                    <div class="border-1 surface-border p-2 border-round inline-block"
+                                        style="min-width: 100px;">
+                                        @if (calculerR5Dependance() !== '0.0') {
+                                        <span class="font-bold">{{ calculerR5Dependance() }}%</span>
+                                        <div class="mt-1">
+                                            <p-tag [value]="getStatutR5()" [severity]="getSeveriteR5()"
+                                                size="small"></p-tag>
+                                        </div>
+                                        } @else {
+                                        <span class="text-500">Information<br>manquante</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="p-2 text-center" style="border: 1px solid #000;">
+                                    <div class="border-1 surface-border p-2 border-round inline-block"
+                                        style="min-width: 100px;">
+                                        @if (calculerR5Dependance() !== '0.0') {
+                                        <span class="font-bold">{{ calculerR5Dependance() }}%</span>
+                                        <div class="mt-1">
+                                            <p-tag [value]="getStatutR5()" [severity]="getSeveriteR5()"
+                                                size="small"></p-tag>
+                                        </div>
+                                        } @else {
+                                        <span class="text-500">Information<br>manquante</span>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- R.6 Couverture Garantie -->
+                            <tr>
+                                <td class="p-2" style="border: 1px solid #000;">
+                                    <div class="font-bold">R.6 Ratio de couverture de la garantie</div>
+                                    <div class="text-sm text-600">Valeur de la garantie / Crédit</div>
+                                </td>
+                                <td class="p-2 text-center font-bold" style="border: 1px solid #000;">
+                                    &gt; 150%
+                                </td>
+                                <td class="p-2 text-center" style="border: 1px solid #000;">
+                                    <div class="border-1 surface-border p-2 border-round inline-block"
+                                        style="min-width: 100px;">
+                                        @if (calculerR6Couverture() !== '0.0') {
+                                        <span class="font-bold">{{ calculerR6Couverture() }}%</span>
+                                        <div class="mt-1">
+                                            <p-tag [value]="getStatutR6()" [severity]="getSeveriteR6()"
+                                                size="small"></p-tag>
+                                        </div>
+                                        } @else {
+                                        <span class="text-500">Information<br>manquante</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="p-2 text-center" style="border: 1px solid #000;">
+                                    <div class="border-1 surface-border p-2 border-round inline-block"
+                                        style="min-width: 100px;">
+                                        @if (calculerR6Propose() !== 'N/A' && calculerR6Propose() !== '0.0') {
+                                        <span class="font-bold">{{ calculerR6Propose() }}%</span>
+                                        <div class="mt-1">
+                                            <p-tag [value]="getStatutR6Propose()" [severity]="getSeveriteR6Propose()"
+                                                size="small"></p-tag>
+                                        </div>
+                                        } @else {
+                                        <span class="text-500">Information<br>manquante</span>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Résumé conformité -->
+                    <div class="grid mt-3">
+                        <div class="col-6">
+                            <div class="p-2 border-round text-center"
+                                [ngClass]="allRatiosConformesSollicite() ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
+                                <strong>Sollicité :</strong> {{ getNbSeuilsRespetesSollicite() }}/6 conformes
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-2 border-round text-center"
+                                [ngClass]="allRatiosConformesPropose() ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
+                                <strong>Proposé :</strong> {{ getNbSeuilsRespetesPropose() }}/6 conformes
                             </div>
                         </div>
                     </div>
-                </div>
-                <p-divider></p-divider>
-            </p-card>
-        </div>
-    </div>
-
-
-    <!-- SECTION DEBUG/TEST mise à jour -->
-    <div class="grid mb-4" *ngIf="false">
-        <div class="col-12">
-            <p-card>
-                <ng-template pTemplate="header">
-                    <div class="flex items-center gap-2 p-3">
-                        <i class="pi pi-bug text-red-600"></i>
-                        <h4 class="m-0">Section Debug - ACTIVÉE</h4>
-                    </div>
-                </ng-template>
-
-                <div class="flex flex-wrap gap-2 mb-3">
-
-                    <p-button label="Tester Info Administrative" icon="pi pi-building" outlined
-                        (onClick)="testerInfoAdministrative()">
-                    </p-button>
-                    <p-button label="Recharger Info Admin" icon="pi pi-refresh" outlined
-                        [disabled]="isLoadingInfoAdmin()" (onClick)="chargerInfoAdministrative()">
-                    </p-button>
-
-                </div>
-
-                <!-- État actuel en temps réel -->
-                <div class="debug-status p-3 bg-gray-100 border-round mb-3">
-                    <h6 class="text-gray-700 mb-2">📊 État Actuel en Temps Réel</h6>
-                    <div class="grid text-sm">
-                        <div class="col-12 md:col-4">
-                            <p><strong>Resume crédit chargé:</strong>
-                                <span [class]="state().resumeCredit ? 'text-green-600' : 'text-red-600'">
-                                    {{ state().resumeCredit ? 'OUI' : 'NON' }}
-                                </span>
-                            </p>
-                            <p><strong>Loading principal:</strong> {{ state().loading ? 'OUI' : 'NON' }}</p>
-                            <p><strong>Loading admin:</strong> {{ state().loadingAdmin ? 'OUI' : 'NON' }}</p>
-                        </div>
-                        <div class="col-12 md:col-4">
-                            <p><strong>Info admin disponible:</strong>
-                                <span [class]="hasInfoAdministrative() ? 'text-green-600' : 'text-red-600'">
-                                    {{ hasInfoAdministrative() ? 'OUI' : 'NON' }}
-                                </span>
-                            </p>
-                            <p><strong>Nb personnes caution:</strong> {{ getNombrePersonnesCaution() }}</p>
-                            <p><strong>Résumé admin:</strong> {{ getResumeAdministratif() }}</p>
-                        </div>
-                        <div class="col-12 md:col-4">
-                            @if (state().resumeCredit?.demande_credit) {
-                            <p><strong>IDs demande:</strong></p>
-                            <small>
-                                - Délégation: {{ state().resumeCredit?.demande_credit?.delegation_id! }}<br>
-                                - Agence: {{ state().resumeCredit?.demande_credit?.agence_id }}<br>
-                                - Point vente: {{ state().resumeCredit?.demande_credit?.point_vente_id }}<br>
-                                - User: {{ state().resumeCredit?.demande_credit?.user_id }}
-                            </small>
-                            }
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Données administratives brutes -->
-                @if (hasInfoAdministrative()) {
-                <div class="debug-data p-3 bg-green-50 border-round">
-                    <h6 class="text-green-700 mb-2">✅ Données Administratives Chargées</h6>
-                    <div class="grid text-sm">
-                        <div class="col-12 md:col-3">
-                            <strong>Délégation:</strong><br>
-                            ID: {{ state().infoAdministrative?.delegationDto?.id }}<br>
-                            Libellé: {{ state().infoAdministrative?.delegationDto?.libele }}
-                        </div>
-                        <div class="col-12 md:col-3">
-                            <strong>Agence:</strong><br>
-                            ID: {{ state().infoAdministrative?.agenceDto?.id }}<br>
-                            Libellé: {{ state().infoAdministrative?.agenceDto?.libele }}
-                        </div>
-                        <div class="col-12 md:col-3">
-                            <strong>Point de vente:</strong><br>
-                            ID: {{ state().infoAdministrative?.pointVenteDto?.id }}<br>
-                            Libellé: {{ state().infoAdministrative?.pointVenteDto?.libele }}<br>
-                            Code: {{ state().infoAdministrative?.pointVenteDto?.code }}
-                        </div>
-                        <div class="col-12 md:col-3">
-                            <strong>Utilisateur:</strong><br>
-                            ID: {{ state().infoAdministrative?.user?.userId }}<br>
-                            Nom: {{ state().infoAdministrative?.user?.firstName }} {{
-                            state().infoAdministrative?.user?.lastName }}<br>
-                        </div>
-                    </div>
-                </div>
-                } @else {
-                <div class="debug-data p-3 bg-orange-50 border-round">
-                    <h6 class="text-orange-700 mb-2">⚠️ Aucune Donnée Administrative</h6>
-                    <p class="text-sm text-orange-800 m-0">
-                        Les informations administratives n'ont pas été chargées ou ne sont pas disponibles.
-                        Cliquez sur "Debug Complet" pour analyser le problème.
-                    </p>
-                </div>
-                }
-            </p-card>
-        </div>
-    </div>
-
-    <!-- <div class="grid mb-4">
-        <div class="col-12">
-            <app-motif-analyse [motifs_analyses]="state().resumeCredit?.motifs_analyses!" [demandeCreditId]="demandeId"
-                [user]="state().user!">
-            </app-motif-analyse>
-        </div>
-    </div> -->
-
-    <!-- Actions Footer -->
-    <div class="grid">
-        <div class="col-12">
-            <div class="flex justify-content-between align-items-center gap-3 p-4 bg-gray-50 border-round">
-                <!-- Bouton Retour à gauche -->
-                <p-button label="Retour" icon="pi pi-arrow-left" outlined (onClick)="retourListe()">
-                </p-button>
-
-                <!-- Groupe de boutons d'impression au centre -->
-                @if (peutImprimer()) {
-                <div class="print-actions-group flex gap-2">
-                    <p-button label="Aperçu avant impression" icon="pi pi-eye" outlined size="small"
-                        (onClick)="previsualiserImpression()">
-                    </p-button>
-
-                    <p-button label="Imprimer le bilan" icon="pi pi-print"
-                        [style]="{'background': '#28a745', 'border-color': '#28a745'}" (onClick)="imprimerBilan()">
-                    </p-button>
-                </div>
-                }
-
-                <!-- Bouton analyse complète à droite (si nécessaire) -->
-                <div class="additional-actions">
-                    <!-- Remplacez par vos actions existantes si nécessaire -->
                 </div>
             </div>
         </div>
     </div>
-    }
+
+    <!-- Recommandations (MANAGER/DA) - Compact -->
+    <div class="grid mb-4">
+        <div class="col-12">
+            <p-card>
+                <ng-template pTemplate="header">
+                    <div class="flex align-items-center gap-2 p-3">
+                        <i class="pi pi-lightbulb text-yellow-600"></i>
+                        <h4 class="m-0">Recommandations et Analyse</h4>
+                    </div>
+                </ng-template>
+                <div class="grid">
+                    <div class="col-12 md:col-4">
+                        <h6 class="text-blue-700 mb-2">💡 Recommandations</h6>
+                        @for (recommandation of getRecommandations(); track recommandation) {
+                        <div class="text-sm text-700 mb-1">{{ recommandation }}</div>
+                        }
+                    </div>
+                    <div class="col-12 md:col-4">
+                        <h6 class="text-orange-700 mb-2">⚠️ Facteurs de Risque</h6>
+                        @for (facteur of getAnalyseRisque().facteurs; track facteur) {
+                        <div class="text-sm text-700 mb-1">• {{ facteur }}</div>
+                        }
+                    </div>
+                    <div class="col-12 md:col-4">
+                        <h6 class="text-purple-700 mb-2">⚖️ Décision</h6>
+                        <div class="flex align-items-center gap-2 mb-2">
+                            <p-tag [value]="getRecommandationDecision().decision.replace('_', ' ')"
+                                [severity]="getDecisionSeverity()"></p-tag>
+                        </div>
+                        <div class="text-sm text-700">{{ getRecommandationDecision().justification }}</div>
+                    </div>
+                </div>
+            </p-card>
+        </div>
+    </div>
+    } <!-- fin MANAGER/DA -->
+
+    <!-- ================================================================ -->
+    <!-- SECTION 2 : DEMANDE DE CRÉDIT (COMPACT - 2 LIGNES)               -->
+    <!-- ================================================================ -->
+    <div class="grid mb-3">
+        <div class="col-12">
+            <div class="surface-card p-3 border-round shadow-1">
+                <div class="flex align-items-center gap-2 mb-2">
+                    <i class="pi pi-credit-card text-red-600"></i>
+                    <span class="font-bold text-lg">Demande de Crédit</span>
+                </div>
+                <!-- Ligne 1 : Montant, Durée, Échéance, Nbre éch -->
+                <div class="grid">
+                    <div class="col-3">
+                        <span class="text-600 text-sm">Montant demandé:</span>
+                        <span class="font-bold ml-2">{{ formatCurrency(getMontantDemande()) }}</span>
+                    </div>
+                    <div class="col-2">
+                        <span class="text-600 text-sm">Durée:</span>
+                        <span class="font-bold ml-2">{{ getDureeDemande() }} mois</span>
+                    </div>
+                    <div class="col-2">
+                        <span class="text-600 text-sm">Échéance:</span>
+                        <span class="font-bold ml-2">{{ formatCurrency(getEcheanceDemande()) }}</span>
+                    </div>
+                    <div class="col-2">
+                        <span class="text-600 text-sm">Nbre éch.:</span>
+                        <span class="font-bold ml-2">{{ getNbreEcheanceDemande() }}</span>
+                    </div>
+                    <div class="col-3">
+                        <span class="text-600 text-sm">Statut:</span>
+                        <p-tag [value]="getStatutDemande()" [severity]="getStatutSeverity(getStatutDemande())"
+                            class="ml-2"></p-tag>
+                    </div>
+                </div>
+                <!-- Ligne 2 : Objet, Périodicité, Localisation -->
+                <div class="grid mt-2">
+                    <div class="col-4">
+                        <span class="text-600 text-sm">Objet:</span>
+                        <span class="ml-2">{{ getObjetCredit() }}</span>
+                    </div>
+                    <div class="col-2">
+                        <span class="text-600 text-sm">Périodicité:</span>
+                        <span class="ml-2">{{ getPeriodicite() }}</span>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-600 text-sm">Localisation:</span>
+                        <span class="ml-2">{{ getResumeAdministratif() }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- SECTION 3 : INFORMATIONS PROMOTEUR + ENTREPRISE (COMPACT)        -->
+    <!-- ================================================================ -->
+    <div class="grid mb-3">
+        <div class="col-12 lg:col-6">
+            <div class="surface-card p-3 border-round shadow-1 h-full">
+                <div class="flex align-items-center gap-2 mb-2">
+                    <i class="pi pi-user text-blue-600"></i>
+                    <span class="font-bold">Promoteur</span>
+                </div>
+                <div class="grid text-sm">
+                    @for (item of getPromoteurData().slice(0, 6); track item.label) {
+                    <div class="col-6 py-1">
+                        <span class="text-600">{{ item.label }}:</span>
+                        <span class="ml-1 font-medium">{{ item.value }}</span>
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-12 lg:col-6">
+            <div class="surface-card p-3 border-round shadow-1 h-full">
+                <div class="flex align-items-center gap-2 mb-2">
+                    <i class="pi pi-building text-green-600"></i>
+                    <span class="font-bold">Entreprise</span>
+                </div>
+                <div class="grid text-sm">
+                    @for (item of getEntrepriseData().slice(0, 6); track item.label) {
+                    <div class="col-6 py-1">
+                        <span class="text-600">{{ item.label }}:</span>
+                        <span class="ml-1 font-medium">{{ item.value }}</span>
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- SECTION 4 : PERSONNES CAUTION (COMPACT)                          -->
+    <!-- ================================================================ -->
+    <div class="grid mb-3">
+        <div class="col-12">
+            <div class="surface-card p-3 border-round shadow-1">
+                <div class="flex align-items-center gap-2 mb-2">
+                    <i class="pi pi-users text-teal-600"></i>
+                    <span class="font-bold">Personnes Caution</span>
+                    <p-badge [value]="getNombrePersonnesCaution().toString()"
+                        [severity]="getNombrePersonnesCaution() > 0 ? 'success' : 'warn'"></p-badge>
+                </div>
+                @if (!hasPersonnesCaution()) {
+                <div class="text-center text-orange-600 py-2">
+                    <i class="pi pi-exclamation-triangle mr-2"></i>
+                    Aucune personne caution renseignée
+                </div>
+                } @else {
+                <div class="grid text-sm">
+                    @for (personne of getPersonnesCautionCompact(); track personne) {
+                    <div class="col-12 md:col-4 py-1">
+                        <i class="pi pi-user text-teal-500 mr-1"></i>{{ personne }}
+                    </div>
+                    }
+                </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- SECTION 5 : BILAN (COMPACT)                                      -->
+    <!-- ================================================================ -->
+    <div class="grid mb-3">
+        <div class="col-12 lg:col-8">
+            <div class="surface-card p-3 border-round shadow-1 h-full">
+                <div class="flex align-items-center gap-2 mb-2">
+                    <i class="pi pi-chart-bar text-orange-600"></i>
+                    <span class="font-bold">Bilan Entreprise</span>
+                </div>
+                <div class="grid text-sm">
+                    @for (item of getBilanEntrepriseData(); track item.label) {
+                    <div class="col-6 md:col-4 py-1" [ngClass]="{'font-bold bg-blue-50 border-round': item.isTotal}">
+                        <span class="text-600">{{ item.label }}:</span>
+                        <span class="ml-1">
+                            @if (item.isRatio) {
+                            <p-tag [value]="item.value" [severity]="item.severity" size="small"></p-tag>
+                            } @else {
+                            {{ item.value }}
+                            }
+                        </span>
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-12 lg:col-4">
+            <div class="surface-card p-3 border-round shadow-1 h-full">
+                <div class="flex align-items-center gap-2 mb-2">
+                    <i class="pi pi-wallet text-purple-600"></i>
+                    <span class="font-bold">Patrimoine Personnel</span>
+                </div>
+                <div class="text-sm">
+                    @for (item of getBilanPersonnelData(); track item.label) {
+                    <div class="py-1" [ngClass]="{'font-bold bg-blue-50 border-round px-2': item.isTotal}">
+                        <span class="text-600">{{ item.label }}:</span>
+                        <span class="ml-1">{{ item.value }}</span>
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- SECTION 6 : EXPLOITATION (COMPACT)                               -->
+    <!-- ================================================================ -->
+    <div class="grid mb-3">
+        <div class="col-12 lg:col-6">
+            <div class="surface-card p-3 border-round shadow-1 h-full">
+                <div class="flex align-items-center gap-2 mb-2">
+                    <i class="pi pi-calendar text-blue-600"></i>
+                    <span class="font-bold">Exploitation Actuelle</span>
+                </div>
+                <div class="grid text-sm">
+                    @for (item of getExploitationActuelleData(); track item.label) {
+                    <div class="col-6 py-1" [ngClass]="{'font-bold bg-blue-50 border-round': item.isTotal}">
+                        <span class="text-600">{{ item.label }}:</span>
+                        <span class="ml-1">
+                            @if (item.isRatio) {
+                            <p-tag [value]="item.value" [severity]="item.severity" size="small"></p-tag>
+                            } @else {
+                            {{ item.value }}
+                            }
+                        </span>
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-12 lg:col-6">
+            <div class="surface-card p-3 border-round shadow-1 h-full">
+                <div class="flex align-items-center gap-2 mb-2">
+                    <i class="pi pi-chart-line text-green-600"></i>
+                    <span class="font-bold">Exploitation Prévisionnelle</span>
+                </div>
+                <div class="grid text-sm">
+                    @for (item of getExploitationPrevisionnelleData(); track item.label) {
+                    <div class="col-6 py-1" [ngClass]="{'font-bold bg-blue-50 border-round': item.isTotal}">
+                        <span class="text-600">{{ item.label }}:</span>
+                        <span class="ml-1">
+                            @if (item.isRatio) {
+                            <p-tag [value]="item.value" [severity]="item.severity" size="small"></p-tag>
+                            } @else {
+                            {{ item.value }}
+                            }
+                        </span>
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- SECTION 7 : RÉSUMÉ FINANCIER (COMPACT - 1 LIGNE)                 -->
+    <!-- ================================================================ -->
+    <div class="grid mb-3">
+        <div class="col-12">
+            <div class="surface-card p-3 border-round shadow-1">
+                <div class="flex align-items-center gap-2 mb-2">
+                    <i class="pi pi-chart-bar text-green-600"></i>
+                    <span class="font-bold">Résumé Financier</span>
+                </div>
+                <div class="grid text-sm">
+                    <div class="col-3 text-center">
+                        <span class="text-600">Total Actif:</span>
+                        <span class="font-bold text-green-700 ml-1">{{ formatCurrency(calculerTotalActif()) }}</span>
+                    </div>
+                    <div class="col-3 text-center">
+                        <span class="text-600">Total Passif:</span>
+                        <span class="font-bold text-green-700 ml-1">{{ formatCurrency(calculerTotalPassif()) }}</span>
+                    </div>
+                    <div class="col-3 text-center">
+                        <span class="text-600">Patrimoine:</span>
+                        <span class="font-bold text-green-700 ml-1">{{ formatCurrency(calculerPatrimoinePersonnel())
+                            }}</span>
+                    </div>
+                    <div class="col-3 text-center">
+                        <span class="text-600">Garantie:</span>
+                        <span class="font-bold text-blue-700 ml-1">{{ formatCurrency(getValeurGarantie()) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- ACTIONS FOOTER                                                    -->
+    <!-- ================================================================ -->
+    <div class="grid">
+        <div class="col-12">
+            <div class="flex justify-content-between align-items-center gap-3 p-3 bg-gray-50 border-round">
+                <p-button label="Retour" icon="pi pi-arrow-left" outlined (onClick)="retourListe()"></p-button>
+                @if (peutImprimer()) {
+                <div class="flex gap-2">
+                    <p-button label="Aperçu" icon="pi pi-eye" outlined size="small"
+                        (onClick)="previsualiserImpression()"></p-button>
+                    <p-button label="Imprimer" icon="pi pi-print"
+                        [style]="{'background': '#28a745', 'border-color': '#28a745'}"
+                        (onClick)="imprimerBilan()"></p-button>
+                </div>
+                }
+            </div>
+        </div>
+    </div>
+    } <!-- fin @if resumeCredit -->
 
     <!-- Empty State -->
     @if (!state().resumeCredit && !state().loading && !state().error) {
@@ -1119,5 +725,4 @@
     }
 </div>
 
-<!-- Toast Messages -->
 <p-toast></p-toast>

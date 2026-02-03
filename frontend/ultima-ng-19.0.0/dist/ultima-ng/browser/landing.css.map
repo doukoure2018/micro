@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["landing.ts"],
+  "sourcesContent": ["\n        ::placeholder {\n            color: #fff;\n        }\n    "],
+  "mappings": ";AACQ;AACI,SAAA;;",
+  "names": []
+}
