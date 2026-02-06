@@ -1,5 +1,7 @@
+import { Personnecaution } from '@/interface/personnecaution';
 import { IResponse } from '@/interface/response';
 import { IUser } from '@/interface/user';
+import { PrintService, PrintAnalyseData } from '@/service/PrintService';
 import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
@@ -253,11 +255,13 @@ export class ResumeAnalyseFinanciereComponent {
     state = signal<{
         user?: IUser;
         synthese?: AnalyseSynthese;
+        personnesCaution?: Personnecaution[];
         loading: boolean;
         error: string | null;
     }>({
         loading: false,
-        error: null
+        error: null,
+        personnesCaution: []
     });
 
     private router = inject(Router);
@@ -265,6 +269,7 @@ export class ResumeAnalyseFinanciereComponent {
     private messageService = inject(MessageService);
     private destroyRef = inject(DestroyRef);
     private userService = inject(UserService);
+    private printService = inject(PrintService);
 
     demandeId: number | null = null;
 
@@ -300,6 +305,7 @@ export class ResumeAnalyseFinanciereComponent {
                             ...s,
                             synthese: responseData.synthese,
                             user: responseData.user,
+                            personnesCaution: responseData.personnesCaution || [],
                             loading: false
                         }));
                     } else {
@@ -344,6 +350,24 @@ export class ResumeAnalyseFinanciereComponent {
     hasMontantPropose(): boolean {
         const montant = this.state().synthese?.montantPropose;
         return montant !== null && montant !== undefined && montant > 0;
+    }
+
+    /**
+     * Vérifie s'il y a des personnes caution
+     */
+    hasPersonnesCaution(): boolean {
+        const cautions = this.state().personnesCaution;
+        return cautions !== null && cautions !== undefined && cautions.length > 0;
+    }
+
+    /**
+     * Retourne le nom complet de la personne caution
+     */
+    getPersonneCautionFullName(pc: Personnecaution): string {
+        const parts = [];
+        if (pc.nom) parts.push(pc.nom);
+        if (pc.prenom) parts.push(pc.prenom);
+        return parts.join(' ') || '-';
     }
 
     // ========================================
@@ -594,6 +618,33 @@ export class ResumeAnalyseFinanciereComponent {
 
     retour(): void {
         this.router.navigate(['/dashboards/credit/individuel/attente/detail/', this.demandeId]);
+    }
+
+    // ========================================
+    // Impression
+    // ========================================
+
+    imprimerAnalyse(): void {
+        const synthese = this.state().synthese;
+        if (!synthese) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Attention',
+                detail: 'Aucune donnée à imprimer'
+            });
+            return;
+        }
+
+        const printData: PrintAnalyseData = {
+            synthese: synthese as any,
+            personnesCaution: this.state().personnesCaution || [],
+            showRatios: this.canViewRatios()
+        };
+
+        this.printService.imprimerAnalyseFinanciere(printData, {
+            includeRatios: this.canViewRatios(),
+            includeSignature: true
+        });
     }
 
     // ════════════════════════════════════════════════════════════════════════════════

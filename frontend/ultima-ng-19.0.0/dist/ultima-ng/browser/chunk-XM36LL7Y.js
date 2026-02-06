@@ -1,0 +1,1 @@
+import{Gb as s,Hb as i,cc as n,gb as o}from"./chunk-MKA3N2SS.js";import"./chunk-GAL4ENT6.js";var r=class t{static \u0275fac=function(e){return new(e||t)};static \u0275cmp=o({type:t,selectors:[["app-process-big-credit"]],decls:2,vars:0,template:function(e,p){e&1&&(s(0,"p"),n(1,"process-big-credit works!"),i())},encapsulation:2})};export{r as ProcessBigCreditComponent};

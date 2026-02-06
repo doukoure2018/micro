@@ -75,17 +75,21 @@
 
     // En-tête
     .header-row th {
-        background: linear-gradient(135deg, #343a40 0%, #495057 100%);
-        color: white;
-        font-weight: 600;
+        background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 0.95rem;
         text-align: center;
         position: sticky;
         top: 0;
         z-index: 20;
         padding: 0.75rem 0.5rem;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        letter-spacing: 0.5px;
 
         small {
-            font-weight: 400;
+            font-weight: 500;
+            color: #e0e7ff;
         }
     }
 
@@ -706,25 +710,32 @@
         cursor: default;
 
         .segment-label {
-            font-size: 10px;
-            font-weight: 600;
+            font-size: 11px;
+            font-weight: 700;
             color: white;
-            opacity: 0.9;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4);
         }
 
         &.segment-empty {
-            background: #e5e7eb;
+            background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
             .segment-label {
-                color: #9ca3af;
+                color: #ffffff;
+                text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
             }
         }
 
         &.segment-filled {
-            background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            .segment-label {
+                color: #ffffff;
+            }
         }
 
         &.segment-saved {
             background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            .segment-label {
+                color: #ffffff;
+            }
         }
 
         &:hover {

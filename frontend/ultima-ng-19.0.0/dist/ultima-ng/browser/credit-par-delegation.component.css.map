@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["src/app/pages/dashboard/admin/de/credit-par-delegation/credit-par-delegation.component.scss"],
-  "sourcesContent": ["// src/app/components/credit-par-delegation/credit-par-delegation.component.scss\r\n:host {\r\n    display: block;\r\n}\r\n\r\n.p-accordion-header-link {\r\n    padding: 1rem 1.25rem;\r\n}\r\n"],
-  "mappings": ";AACA;AACI,WAAA;;AAGJ,CAAA;AACI,WAAA,KAAA;;",
-  "names": []
-}

@@ -133,6 +133,9 @@ export class AnalyseBilanActiviteComponent {
     // Ratios data
     ratiosData = signal<RatioInfo[]>([]);
 
+    // Signal pour déclencher le recalcul des computed values quand le formulaire change
+    private formChangeCounter = signal<number>(0);
+
     personnecautions: Personnecaution[] = [];
     demandeIndividuelId: number | null = null;
 
@@ -148,9 +151,11 @@ export class AnalyseBilanActiviteComponent {
     ];
 
     // ============== COMPUTED VALUES FOR BILAN ==============
+    // Note: formChangeCounter force le recalcul quand le formulaire change
 
     // Bilan N - ACTIF
     totalActifImmobiliseN = computed(() => {
+        this.formChangeCounter(); // Dépendance pour forcer le recalcul
         const form = this.bilanNForm;
         if (!form) return 0;
         return (
@@ -166,15 +171,26 @@ export class AnalyseBilanActiviteComponent {
     });
 
     totalActifCirculantN = computed(() => {
+        this.formChangeCounter(); // Dépendance pour forcer le recalcul
         const form = this.bilanNForm;
         if (!form) return 0;
         return (form.get('stocks')?.value || 0) + (form.get('creances')?.value || 0) + (form.get('tresorerieActif')?.value || 0);
     });
 
-    totalActifN = computed(() => this.totalActifImmobiliseN() + this.totalActifCirculantN());
+    totalActifN = computed(() => {
+        this.formChangeCounter();
+        return this.totalActifImmobiliseN() + this.totalActifCirculantN();
+    });
+
+    // Total Bilan = Total Actif (Actif = Passif)
+    totalBilanN = computed(() => {
+        this.formChangeCounter();
+        return this.totalActifN();
+    });
 
     // Bilan N - PASSIF
     capitauxPropresN = computed(() => {
+        this.formChangeCounter();
         // Si capitauxPropre est saisi, utiliser cette valeur, sinon calculer
         const capitauxPropreSaisi = this.bilanNForm?.get('capitauxPropre')?.value || 0;
         if (capitauxPropreSaisi > 0) {
@@ -186,16 +202,19 @@ export class AnalyseBilanActiviteComponent {
     });
 
     totalPassifN = computed(() => {
+        this.formChangeCounter();
         const form = this.bilanNForm;
         if (!form) return 0;
         return this.capitauxPropresN() + (form.get('dettesLongTerme')?.value || 0) + (form.get('dettesCourtTerme')?.value || 0) + (form.get('tresoreriePassif')?.value || 0);
     });
 
     fondsRoulementN = computed(() => {
+        this.formChangeCounter();
         return this.capitauxPropresN() + (this.bilanNForm?.get('dettesLongTerme')?.value || 0) - this.totalActifImmobiliseN();
     });
 
     besoinFondsRoulementN = computed(() => {
+        this.formChangeCounter();
         const stocks = this.bilanNForm?.get('stocks')?.value || 0;
         const creances = this.bilanNForm?.get('creances')?.value || 0;
         const dettesCourtTerme = this.bilanNForm?.get('dettesCourtTerme')?.value || 0;
@@ -203,6 +222,7 @@ export class AnalyseBilanActiviteComponent {
     });
 
     tresorerieNetteN = computed(() => {
+        this.formChangeCounter();
         return this.fondsRoulementN() - this.besoinFondsRoulementN();
     });
 
@@ -210,6 +230,7 @@ export class AnalyseBilanActiviteComponent {
 
     // Bilan N-1 - ACTIF
     totalActifImmobiliseN1 = computed(() => {
+        this.formChangeCounter();
         const form = this.bilanN1Form;
         if (!form) return 0;
         return (
@@ -225,15 +246,26 @@ export class AnalyseBilanActiviteComponent {
     });
 
     totalActifCirculantN1 = computed(() => {
+        this.formChangeCounter();
         const form = this.bilanN1Form;
         if (!form) return 0;
         return (form.get('stocks')?.value || 0) + (form.get('creances')?.value || 0) + (form.get('tresorerieActif')?.value || 0);
     });
 
-    totalActifN1 = computed(() => this.totalActifImmobiliseN1() + this.totalActifCirculantN1());
+    totalActifN1 = computed(() => {
+        this.formChangeCounter();
+        return this.totalActifImmobiliseN1() + this.totalActifCirculantN1();
+    });
+
+    // Total Bilan N-1
+    totalBilanN1 = computed(() => {
+        this.formChangeCounter();
+        return this.totalActifN1();
+    });
 
     // Bilan N-1 - PASSIF
     capitauxPropresN1 = computed(() => {
+        this.formChangeCounter();
         // Si capitauxPropre est saisi, utiliser cette valeur, sinon calculer
         const capitauxPropreSaisi = this.bilanN1Form?.get('capitauxPropre')?.value || 0;
         if (capitauxPropreSaisi > 0) {
@@ -244,16 +276,19 @@ export class AnalyseBilanActiviteComponent {
     });
 
     totalPassifN1 = computed(() => {
+        this.formChangeCounter();
         const form = this.bilanN1Form;
         if (!form) return 0;
         return this.capitauxPropresN1() + (form.get('dettesLongTerme')?.value || 0) + (form.get('dettesCourtTerme')?.value || 0) + (form.get('tresoreriePassif')?.value || 0);
     });
 
     fondsRoulementN1 = computed(() => {
+        this.formChangeCounter();
         return this.capitauxPropresN1() + (this.bilanN1Form?.get('dettesLongTerme')?.value || 0) - this.totalActifImmobiliseN1();
     });
 
     besoinFondsRoulementN1 = computed(() => {
+        this.formChangeCounter();
         const stocks = this.bilanN1Form?.get('stocks')?.value || 0;
         const creances = this.bilanN1Form?.get('creances')?.value || 0;
         const dettesCourtTerme = this.bilanN1Form?.get('dettesCourtTerme')?.value || 0;
@@ -261,50 +296,78 @@ export class AnalyseBilanActiviteComponent {
     });
 
     tresorerieNetteN1 = computed(() => {
+        this.formChangeCounter();
         return this.fondsRoulementN1() - this.besoinFondsRoulementN1();
     });
 
     // ============== COMPUTED VALUES FOR RENTABILITE ==============
+    // Note: formChangeCounter() force le recalcul quand le formulaire change
 
     // Rentabilité N
     margeBruteN = computed(() => {
+        this.formChangeCounter(); // Dépendance pour forcer le recalcul
         const ca = this.rentabiliteNForm?.get('chiffreAffaires')?.value || 0;
-        const coutAchats = this.rentabiliteNForm?.get('coutAchats')?.value || 0;
+        const coutAchats = this.rentabiliteNForm?.get('coutAchatMarchandises')?.value || 0;
         return ca - coutAchats;
     });
 
+    // Total des 13 charges d'exploitation (sans amortissements)
     totalChargesN = computed(() => {
+        this.formChangeCounter();
         const form = this.rentabiliteNForm;
         if (!form) return 0;
         return (
             (form.get('salaires')?.value || 0) +
-            (form.get('chargesSociales')?.value || 0) +
-            (form.get('loyer')?.value || 0) +
-            (form.get('electricite')?.value || 0) +
-            (form.get('eau')?.value || 0) +
-            (form.get('telephone')?.value || 0) +
+            (form.get('prelevementEntrepreneur')?.value || 0) +
+            (form.get('loyers')?.value || 0) +
             (form.get('transport')?.value || 0) +
-            (form.get('entretien')?.value || 0) +
-            (form.get('assurances')?.value || 0) +
+            (form.get('electriciteEauTelephone')?.value || 0) +
+            (form.get('fournituresAutresBesoins')?.value || 0) +
+            (form.get('entretienReparation')?.value || 0) +
+            (form.get('carburantLubrifiants')?.value || 0) +
+            (form.get('publicitePromotion')?.value || 0) +
             (form.get('impotsTaxes')?.value || 0) +
-            (form.get('fraisFinanciers')?.value || 0) +
-            (form.get('autresCharges')?.value || 0) +
-            (form.get('dotationAmortissement')?.value || 0)
+            (form.get('fraisBancairesInterets')?.value || 0) +
+            (form.get('echeanceAutreCredit')?.value || 0) +
+            (form.get('diversesCharges')?.value || 0)
         );
     });
 
+    // Amortissements et provisions
+    amortissementsN = computed(() => {
+        this.formChangeCounter();
+        return this.rentabiliteNForm?.get('amortissementsProvisions')?.value || 0;
+    });
+
+    // Autres revenus hors activité
+    autresRevenusN = computed(() => {
+        this.formChangeCounter();
+        return this.rentabiliteNForm?.get('autresRevenusHorsActivite')?.value || 0;
+    });
+
     resultatExploitationN = computed(() => {
+        this.formChangeCounter();
         const margeBrute = this.margeBruteN();
         const totalCharges = this.totalChargesN();
-        const autresRevenus = this.rentabiliteNForm?.get('autresRevenus')?.value || 0;
-        return margeBrute - totalCharges + autresRevenus;
+        const amortissements = this.amortissementsN();
+        // Résultat = Marge brute - Charges - Amortissements (autres revenus ajoutés après cash-flow)
+        return margeBrute - totalCharges - amortissements;
     });
 
     cashFlowN = computed(() => {
-        return this.resultatExploitationN() + (this.rentabiliteNForm?.get('dotationAmortissement')?.value || 0);
+        this.formChangeCounter();
+        // Cash-flow = Résultat d'exploitation + Amortissements
+        return this.resultatExploitationN() + this.amortissementsN();
+    });
+
+    // Résultat net (après autres revenus) - affiché après Cash-flow
+    resultatNetN = computed(() => {
+        this.formChangeCounter();
+        return this.cashFlowN() + this.autresRevenusN();
     });
 
     tauxMargeBruteN = computed(() => {
+        this.formChangeCounter();
         const ca = this.rentabiliteNForm?.get('chiffreAffaires')?.value || 0;
         if (ca === 0) return 0;
         return (this.margeBruteN() / ca) * 100;
@@ -313,78 +376,122 @@ export class AnalyseBilanActiviteComponent {
     // ============== COMPUTED VALUES FOR RENTABILITE N-1 ==============
 
     margeBruteN1 = computed(() => {
+        this.formChangeCounter();
         const ca = this.rentabiliteN1Form?.get('chiffreAffaires')?.value || 0;
-        const coutAchats = this.rentabiliteN1Form?.get('coutAchats')?.value || 0;
+        const coutAchats = this.rentabiliteN1Form?.get('coutAchatMarchandises')?.value || 0;
         return ca - coutAchats;
     });
 
+    // Total des 13 charges d'exploitation N-1 (sans amortissements)
     totalChargesN1 = computed(() => {
+        this.formChangeCounter();
         const form = this.rentabiliteN1Form;
         if (!form) return 0;
         return (
             (form.get('salaires')?.value || 0) +
-            (form.get('chargesSociales')?.value || 0) +
-            (form.get('loyer')?.value || 0) +
-            (form.get('electricite')?.value || 0) +
-            (form.get('eau')?.value || 0) +
-            (form.get('telephone')?.value || 0) +
+            (form.get('prelevementEntrepreneur')?.value || 0) +
+            (form.get('loyers')?.value || 0) +
             (form.get('transport')?.value || 0) +
-            (form.get('entretien')?.value || 0) +
-            (form.get('assurances')?.value || 0) +
+            (form.get('electriciteEauTelephone')?.value || 0) +
+            (form.get('fournituresAutresBesoins')?.value || 0) +
+            (form.get('entretienReparation')?.value || 0) +
+            (form.get('carburantLubrifiants')?.value || 0) +
+            (form.get('publicitePromotion')?.value || 0) +
             (form.get('impotsTaxes')?.value || 0) +
-            (form.get('fraisFinanciers')?.value || 0) +
-            (form.get('autresCharges')?.value || 0) +
-            (form.get('dotationAmortissement')?.value || 0)
+            (form.get('fraisBancairesInterets')?.value || 0) +
+            (form.get('echeanceAutreCredit')?.value || 0) +
+            (form.get('diversesCharges')?.value || 0)
         );
     });
 
+    // Amortissements N-1
+    amortissementsN1 = computed(() => {
+        this.formChangeCounter();
+        return this.rentabiliteN1Form?.get('amortissementsProvisions')?.value || 0;
+    });
+
+    // Autres revenus N-1
+    autresRevenusN1 = computed(() => {
+        this.formChangeCounter();
+        return this.rentabiliteN1Form?.get('autresRevenusHorsActivite')?.value || 0;
+    });
+
     resultatExploitationN1 = computed(() => {
+        this.formChangeCounter();
         const margeBrute = this.margeBruteN1();
         const totalCharges = this.totalChargesN1();
-        const autresRevenus = this.rentabiliteN1Form?.get('autresRevenus')?.value || 0;
-        return margeBrute - totalCharges + autresRevenus;
+        const amortissements = this.amortissementsN1();
+        return margeBrute - totalCharges - amortissements;
     });
 
     cashFlowN1 = computed(() => {
-        return this.resultatExploitationN1() + (this.rentabiliteN1Form?.get('dotationAmortissement')?.value || 0);
+        this.formChangeCounter();
+        return this.resultatExploitationN1() + this.amortissementsN1();
+    });
+
+    resultatNetN1 = computed(() => {
+        this.formChangeCounter();
+        return this.cashFlowN1() + this.autresRevenusN1();
     });
 
     // Rentabilité N+1 (Prévisionnel)
     margeBruteN2 = computed(() => {
+        this.formChangeCounter(); // Dépendance pour forcer le recalcul
         const ca = this.rentabiliteN2Form?.get('chiffreAffaires')?.value || 0;
-        const coutAchats = this.rentabiliteN2Form?.get('coutAchats')?.value || 0;
+        const coutAchats = this.rentabiliteN2Form?.get('coutAchatMarchandises')?.value || 0;
         return ca - coutAchats;
     });
 
+    // Total des 13 charges d'exploitation N+1 (sans amortissements)
     totalChargesN2 = computed(() => {
+        this.formChangeCounter();
         const form = this.rentabiliteN2Form;
         if (!form) return 0;
         return (
             (form.get('salaires')?.value || 0) +
-            (form.get('chargesSociales')?.value || 0) +
-            (form.get('loyer')?.value || 0) +
-            (form.get('electricite')?.value || 0) +
-            (form.get('eau')?.value || 0) +
-            (form.get('telephone')?.value || 0) +
+            (form.get('prelevementEntrepreneur')?.value || 0) +
+            (form.get('loyers')?.value || 0) +
             (form.get('transport')?.value || 0) +
-            (form.get('entretien')?.value || 0) +
-            (form.get('assurances')?.value || 0) +
+            (form.get('electriciteEauTelephone')?.value || 0) +
+            (form.get('fournituresAutresBesoins')?.value || 0) +
+            (form.get('entretienReparation')?.value || 0) +
+            (form.get('carburantLubrifiants')?.value || 0) +
+            (form.get('publicitePromotion')?.value || 0) +
             (form.get('impotsTaxes')?.value || 0) +
-            (form.get('fraisFinanciers')?.value || 0) +
-            (form.get('autresCharges')?.value || 0) +
-            (form.get('dotationAmortissement')?.value || 0)
+            (form.get('fraisBancairesInterets')?.value || 0) +
+            (form.get('echeanceAutreCredit')?.value || 0) +
+            (form.get('diversesCharges')?.value || 0)
         );
     });
 
+    // Amortissements N+1
+    amortissementsN2 = computed(() => {
+        this.formChangeCounter();
+        return this.rentabiliteN2Form?.get('amortissementsProvisions')?.value || 0;
+    });
+
+    // Autres revenus N+1
+    autresRevenusN2 = computed(() => {
+        this.formChangeCounter();
+        return this.rentabiliteN2Form?.get('autresRevenusHorsActivite')?.value || 0;
+    });
+
     resultatExploitationN2 = computed(() => {
+        this.formChangeCounter();
         const margeBrute = this.margeBruteN2();
         const totalCharges = this.totalChargesN2();
-        const autresRevenus = this.rentabiliteN2Form?.get('autresRevenus')?.value || 0;
-        return margeBrute - totalCharges + autresRevenus;
+        const amortissements = this.amortissementsN2();
+        return margeBrute - totalCharges - amortissements;
     });
 
     cashFlowN2 = computed(() => {
-        return this.resultatExploitationN2() + (this.rentabiliteN2Form?.get('dotationAmortissement')?.value || 0);
+        this.formChangeCounter();
+        return this.resultatExploitationN2() + this.amortissementsN2();
+    });
+
+    resultatNetN2 = computed(() => {
+        this.formChangeCounter();
+        return this.cashFlowN2() + this.autresRevenusN2();
     });
 
     // ============== COMPUTED VALUES FOR BESOIN CREDIT ==============
@@ -833,21 +940,24 @@ export class AnalyseBilanActiviteComponent {
     private patchRentabiliteForm(form: FormGroup, rent: any): void {
         form.patchValue({
             chiffreAffaires: rent.chiffreAffaires || 0,
-            coutAchats: rent.coutAchats || 0,
+            coutAchatMarchandises: rent.coutAchatMarchandises || 0,
+            // 13 charges d'exploitation
             salaires: rent.salaires || 0,
-            chargesSociales: rent.chargesSociales || 0,
-            loyer: rent.loyer || 0,
-            electricite: rent.electricite || 0,
-            eau: rent.eau || 0,
-            telephone: rent.telephone || 0,
+            prelevementEntrepreneur: rent.prelevementEntrepreneur || 0,
+            loyers: rent.loyers || 0,
             transport: rent.transport || 0,
-            entretien: rent.entretien || 0,
-            assurances: rent.assurances || 0,
+            electriciteEauTelephone: rent.electriciteEauTelephone || 0,
+            fournituresAutresBesoins: rent.fournituresAutresBesoins || 0,
+            entretienReparation: rent.entretienReparation || 0,
+            carburantLubrifiants: rent.carburantLubrifiants || 0,
+            publicitePromotion: rent.publicitePromotion || 0,
             impotsTaxes: rent.impotsTaxes || 0,
-            fraisFinanciers: rent.fraisFinanciers || 0,
-            autresCharges: rent.autresCharges || 0,
-            dotationAmortissement: rent.dotationAmortissement || 0,
-            autresRevenus: rent.autresRevenus || 0
+            fraisBancairesInterets: rent.fraisBancairesInterets || 0,
+            echeanceAutreCredit: rent.echeanceAutreCredit || 0,
+            diversesCharges: rent.diversesCharges || 0,
+            // Amortissements et autres revenus
+            amortissementsProvisions: rent.amortissementsProvisions || 0,
+            autresRevenusHorsActivite: rent.autresRevenusHorsActivite || 0
         });
     }
 
@@ -946,64 +1056,73 @@ export class AnalyseBilanActiviteComponent {
             tresoreriePassif: [0]
         });
 
-        // Rentabilité N
+        // Rentabilité N - 13 charges selon la table analyse_rentabilite
         this.rentabiliteNForm = this.fb.group({
             chiffreAffaires: [0],
-            coutAchats: [0],
+            coutAchatMarchandises: [0],
+            // 13 charges d'exploitation
             salaires: [0],
-            chargesSociales: [0],
-            loyer: [0],
-            electricite: [0],
-            eau: [0],
-            telephone: [0],
+            prelevementEntrepreneur: [0],
+            loyers: [0],
             transport: [0],
-            entretien: [0],
-            assurances: [0],
+            electriciteEauTelephone: [0],
+            fournituresAutresBesoins: [0],
+            entretienReparation: [0],
+            carburantLubrifiants: [0],
+            publicitePromotion: [0],
             impotsTaxes: [0],
-            fraisFinanciers: [0],
-            autresCharges: [0],
-            dotationAmortissement: [0],
-            autresRevenus: [0]
+            fraisBancairesInterets: [0],
+            echeanceAutreCredit: [0],
+            diversesCharges: [0],
+            // Amortissements et autres revenus
+            amortissementsProvisions: [0],
+            autresRevenusHorsActivite: [0]
         });
 
-        // Rentabilité N-1
+        // Rentabilité N-1 - 13 charges selon la table analyse_rentabilite
         this.rentabiliteN1Form = this.fb.group({
             chiffreAffaires: [0],
-            coutAchats: [0],
+            coutAchatMarchandises: [0],
+            // 13 charges d'exploitation
             salaires: [0],
-            chargesSociales: [0],
-            loyer: [0],
-            electricite: [0],
-            eau: [0],
-            telephone: [0],
+            prelevementEntrepreneur: [0],
+            loyers: [0],
             transport: [0],
-            entretien: [0],
-            assurances: [0],
+            electriciteEauTelephone: [0],
+            fournituresAutresBesoins: [0],
+            entretienReparation: [0],
+            carburantLubrifiants: [0],
+            publicitePromotion: [0],
             impotsTaxes: [0],
-            fraisFinanciers: [0],
-            autresCharges: [0],
-            dotationAmortissement: [0],
-            autresRevenus: [0]
+            fraisBancairesInterets: [0],
+            echeanceAutreCredit: [0],
+            diversesCharges: [0],
+            // Amortissements et autres revenus
+            amortissementsProvisions: [0],
+            autresRevenusHorsActivite: [0]
         });
 
-        // Rentabilité N+1 (Prévisionnel)
+        // Rentabilité N+1 (Prévisionnel) - 13 charges selon la table analyse_rentabilite
         this.rentabiliteN2Form = this.fb.group({
             chiffreAffaires: [0],
-            coutAchats: [0],
+            coutAchatMarchandises: [0],
+            // 13 charges d'exploitation
             salaires: [0],
-            chargesSociales: [0],
-            loyer: [0],
-            electricite: [0],
-            eau: [0],
-            telephone: [0],
+            prelevementEntrepreneur: [0],
+            loyers: [0],
             transport: [0],
-            entretien: [0],
-            assurances: [0],
+            electriciteEauTelephone: [0],
+            fournituresAutresBesoins: [0],
+            entretienReparation: [0],
+            carburantLubrifiants: [0],
+            publicitePromotion: [0],
             impotsTaxes: [0],
-            fraisFinanciers: [0],
-            autresCharges: [0],
-            dotationAmortissement: [0],
-            autresRevenus: [0]
+            fraisBancairesInterets: [0],
+            echeanceAutreCredit: [0],
+            diversesCharges: [0],
+            // Amortissements et autres revenus
+            amortissementsProvisions: [0],
+            autresRevenusHorsActivite: [0]
         });
 
         // Besoin crédit - Conforme à la table analyse_besoin_credit et Excel
@@ -1062,6 +1181,35 @@ export class AnalyseBilanActiviteComponent {
             activite: [''],
             age: [null],
             profession: ['']
+        });
+
+        // Subscribe to form valueChanges to trigger computed values recalculation
+        this.bilanNForm.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+            this.formChangeCounter.update(v => v + 1);
+        });
+
+        this.bilanN1Form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+            this.formChangeCounter.update(v => v + 1);
+        });
+
+        this.rentabiliteNForm.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+            this.formChangeCounter.update(v => v + 1);
+        });
+
+        this.rentabiliteN1Form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+            this.formChangeCounter.update(v => v + 1);
+        });
+
+        this.rentabiliteN2Form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+            this.formChangeCounter.update(v => v + 1);
+        });
+
+        this.besoinCreditForm.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+            this.formChangeCounter.update(v => v + 1);
+        });
+
+        this.propositionForm.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+            this.formChangeCounter.update(v => v + 1);
         });
     }
 
@@ -1391,7 +1539,7 @@ export class AnalyseBilanActiviteComponent {
 
     private mapRentabiliteFormToRequest(form: FormGroup, analyseId: number, typePeriode: string): any {
         const ca = form.get('chiffreAffaires')?.value || 0;
-        const coutAchats = form.get('coutAchats')?.value || 0;
+        const coutAchats = form.get('coutAchatMarchandises')?.value || 0;
         return {
             analyseId: analyseId,
             typePeriode: this.convertPeriodeToBackend(typePeriode),
@@ -1399,22 +1547,23 @@ export class AnalyseBilanActiviteComponent {
             chiffreAffaires: ca,
             coutAchatMarchandises: coutAchats,
             margeBrute: ca - coutAchats,
-            // 13 Charges posts
+            // 13 Charges d'exploitation
             salaires: form.get('salaires')?.value || 0,
-            prelevementEntrepreneur: form.get('chargesSociales')?.value || 0,
-            loyers: form.get('loyer')?.value || 0,
+            prelevementEntrepreneur: form.get('prelevementEntrepreneur')?.value || 0,
+            loyers: form.get('loyers')?.value || 0,
             transport: form.get('transport')?.value || 0,
-            electriciteEauTelephone: (form.get('electricite')?.value || 0) + (form.get('eau')?.value || 0) + (form.get('telephone')?.value || 0),
-            fournituresAutresBesoins: 0,
-            entretienReparation: form.get('entretien')?.value || 0,
-            carburantLubrifiants: 0,
-            publicitePromotion: 0,
+            electriciteEauTelephone: form.get('electriciteEauTelephone')?.value || 0,
+            fournituresAutresBesoins: form.get('fournituresAutresBesoins')?.value || 0,
+            entretienReparation: form.get('entretienReparation')?.value || 0,
+            carburantLubrifiants: form.get('carburantLubrifiants')?.value || 0,
+            publicitePromotion: form.get('publicitePromotion')?.value || 0,
             impotsTaxes: form.get('impotsTaxes')?.value || 0,
-            fraisBancairesInterets: form.get('fraisFinanciers')?.value || 0,
-            echeanceAutreCredit: 0,
-            diversesCharges: (form.get('assurances')?.value || 0) + (form.get('autresCharges')?.value || 0),
-            amortissementsProvisions: form.get('dotationAmortissement')?.value || 0,
-            autresRevenusHorsActivite: form.get('autresRevenus')?.value || 0
+            fraisBancairesInterets: form.get('fraisBancairesInterets')?.value || 0,
+            echeanceAutreCredit: form.get('echeanceAutreCredit')?.value || 0,
+            diversesCharges: form.get('diversesCharges')?.value || 0,
+            // Amortissements et autres revenus
+            amortissementsProvisions: form.get('amortissementsProvisions')?.value || 0,
+            autresRevenusHorsActivite: form.get('autresRevenusHorsActivite')?.value || 0
         };
     }
 
@@ -1612,9 +1761,20 @@ export class AnalyseBilanActiviteComponent {
 
         this.loading.set(true);
 
+        // Préparer les personnes caution pour l'envoi
+        const personnesCautionData = this.personnecautions.map(pc => ({
+            nom: pc.nom || '',
+            prenom: pc.prenom || '',
+            telephone: pc.telephone || '',
+            activite: pc.activite || '',
+            age: pc.age || null,
+            profession: pc.profession || ''
+        }));
+
         const request = {
             analyseId: analyseId,
-            forcerSoumission: false
+            forcerSoumission: false,
+            personnesCaution: personnesCautionData
         };
 
         // Appel API pour soumettre l'analyse via la procédure stockée fn_soumettre_analyse
@@ -1627,10 +1787,11 @@ export class AnalyseBilanActiviteComponent {
                     const soumission = response?.data?.soumission;
 
                     if (soumission?.succes) {
+                        const nbCautions = this.personnecautions.length;
                         this.messageService.add({
                             severity: 'success',
                             summary: 'Succès',
-                            detail: 'Analyse soumise avec succès'
+                            detail: `Analyse soumise avec succès${nbCautions > 0 ? ' avec ' + nbCautions + ' personne(s) caution' : ''}`
                         });
 
                         setTimeout(() => {

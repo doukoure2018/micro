@@ -359,7 +359,7 @@ export class DetailComponent {
                     if (demandeData) {
                         const statusOptions: { label: string; value: string }[] = [];
                         if (demandeData.statutDemande === 'EN_ATTENTE' && demandeData.validationState === 'NOUVEAU') {
-                            statusOptions.push({ label: 'Selection', value: 'SELECTION' });
+                            statusOptions.push({ label: 'AFFECTATION', value: 'SELECTION' });
                         } else {
                             statusOptions.push({ label: 'Validation', value: 'VALIDATION' });
                         }
@@ -1291,6 +1291,16 @@ export class DetailComponent {
     }
 
     /**
+     * Obtenir le libellé de la nature du client
+     */
+    getNatureClientLabel(natureClient?: string): string {
+        if (!natureClient) return 'Particulier';
+        if (natureClient.includes('PME')) return 'Entreprise (PME/PMI)';
+        if (natureClient.includes('Professionnel')) return 'Professionnel';
+        return 'Particulier';
+    }
+
+    /**
      * Générer le HTML complet du dossier
      */
     private genererHTMLDossierComplet(isPreview: boolean = false): string {
@@ -1302,6 +1312,8 @@ export class DetailComponent {
             hour: '2-digit',
             minute: '2-digit'
         });
+
+        const natureClientLabel = this.getNatureClientLabel(demande?.natureClient);
 
         return `
         <!DOCTYPE html>
@@ -1316,10 +1328,10 @@ export class DetailComponent {
         <body>
             <div class="print-container">
                 ${isPreview ? this.genererBoutonsPreview() : ''}
-                
+
                 <!-- En-tête du document -->
                 <div class="header">
-                    <h1>DEMANDE DE CRÉDIT - GROS DOSSIER</h1>
+                    <h1>DEMANDE DE CRÉDIT - ${natureClientLabel.toUpperCase()}</h1>
                     <div class="header-info">
                         <div>
                             <strong>N° Dossier:</strong> ${demande?.demandeIndividuelId}<br>
@@ -1327,12 +1339,37 @@ export class DetailComponent {
                             <strong>Date d'impression:</strong> ${dateImpression}
                         </div>
                         <div>
+                            <strong>Nature du client:</strong> ${natureClientLabel}<br>
                             <strong>Agence:</strong> ${this.state().pointVente?.libele || 'Non assigné'}<br>
-                            <strong>Statut:</strong> ${demande?.statutDemande}<br>
-                            <strong>État de validation:</strong> ${demande?.validationState}
+                            <strong>Statut:</strong> ${demande?.statutDemande}
                         </div>
                     </div>
                 </div>
+
+                ${
+                    demande?.natureClient?.includes('PME') && demande?.nomPersonneMorale
+                        ? `
+                <!-- Section Entreprise (PME) -->
+                <div class="section pme-section">
+                    <h2>INFORMATIONS ENTREPRISE</h2>
+                    <table class="info-table">
+                        <tr>
+                            <td class="label">Raison sociale:</td>
+                            <td class="value">${demande.nomPersonneMorale}</td>
+                            <td class="label">Sigle:</td>
+                            <td class="value">${demande.sigle || 'N/A'}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Catégorie:</td>
+                            <td class="value">${demande.categorie || 'N/A'}</td>
+                            <td class="label">Titre du Directeur:</td>
+                            <td class="value">${demande.titreDirecteur || 'N/A'}</td>
+                        </tr>
+                    </table>
+                </div>
+                `
+                        : ''
+                }
 
                 <!-- Section 1: Informations sur le membre/client -->
                 <div class="section">
@@ -1368,9 +1405,49 @@ export class DetailComponent {
                             <td class="label">Enfants scolarisés:</td>
                             <td class="value">${demande?.nombrePersonneScolarise}</td>
                         </tr>
+                        ${
+                            demande?.nomPere || demande?.nomMere
+                                ? `
+                        <tr>
+                            <td class="label">Nom du père:</td>
+                            <td class="value">${demande?.nomPere || 'Non renseigné'}</td>
+                            <td class="label">Nom de la mère:</td>
+                            <td class="value">${demande?.nomMere || 'Non renseigné'}</td>
+                        </tr>
+                        `
+                                : ''
+                        }
+                        ${
+                            demande?.nomConjoint
+                                ? `
+                        <tr>
+                            <td class="label">Nom du conjoint:</td>
+                            <td class="value" colspan="3">${demande?.nomConjoint}</td>
+                        </tr>
+                        `
+                                : ''
+                        }
                         <tr>
                             <td class="label">Adresse:</td>
                             <td class="value" colspan="3">${demande?.addresseDomicileContact}</td>
+                        </tr>
+                        ${
+                            demande?.email
+                                ? `
+                        <tr>
+                            <td class="label">Email:</td>
+                            <td class="value">${demande?.email}</td>
+                            <td class="label">Téléphone:</td>
+                            <td class="value">${demande?.telephone}</td>
+                        </tr>
+                        `
+                                : ''
+                        }
+                        <tr>
+                            <td class="label">Préfecture:</td>
+                            <td class="value">${demande?.prefecture || 'N/A'}</td>
+                            <td class="label">Sous-Préfecture:</td>
+                            <td class="value">${demande?.sousPrefecture || 'N/A'}</td>
                         </tr>
                         <tr>
                             <td class="label">Années à l'adresse:</td>
@@ -1697,6 +1774,19 @@ export class DetailComponent {
             font-size: 14px;
             margin-bottom: 10px;
             border: 1px solid #ddd;
+        }
+
+        .pme-section {
+            border: 2px solid #7c3aed;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .pme-section h2 {
+            background: #7c3aed;
+            color: white;
+            border: none;
+            border-radius: 6px 6px 0 0;
         }
 
         .info-table {

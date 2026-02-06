@@ -5,7 +5,11 @@
             <h2 class="text-2xl font-bold text-900 m-0">Résumé de l'Analyse Financière</h2>
             <p class="text-600 m-0 mt-1">Bilan d'activité saisi par l'agent de crédit</p>
         </div>
-        <p-button label="Retour" icon="pi pi-arrow-left" outlined (onClick)="retour()"></p-button>
+        <div class="flex gap-2">
+            <p-button label="Imprimer" icon="pi pi-print" severity="secondary" (onClick)="imprimerAnalyse()"
+                [disabled]="!state().synthese"></p-button>
+            <p-button label="Retour" icon="pi pi-arrow-left" outlined (onClick)="retour()"></p-button>
+        </div>
     </div>
 
     <!-- Loading State -->
@@ -35,11 +39,11 @@
     <!-- ══════════════════════════════════════════════════════════════════════════ -->
     @if (canViewRatios()) {
     <div
-        style="background: #fff; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        style="background: #fff; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 32px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
         <!-- Titre section gris -->
         <div
             style="background-color: #d9d9d9; padding: 12px 16px; border-bottom: 1px solid #ccc; border-radius: 8px 8px 0 0;">
-            <span style="font-weight: bold; font-size: 16px;">4. Ratios de décision</span>
+            <span style="font-weight: bold; font-size: 16px;">Ratios de décision</span>
         </div>
 
         <div style="padding: 16px;">
@@ -146,8 +150,10 @@
                             <div
                                 style="border: 1px solid #ccc; padding: 10px; border-radius: 4px; display: inline-block; min-width: 100px; background: #fafafa;">
                                 @if (!hasMontantPropose()) {
-                                <span style="color: #888; font-size: 11px;">Information Manquante:<br>Ratios associés au<br>montant proposé</span>
-                                } @else if (state().synthese?.calcR1Propose !== null && state().synthese?.calcR1Propose !==
+                                <span style="color: #888; font-size: 11px;">Information Manquante:<br>Ratios associés
+                                    au<br>montant proposé</span>
+                                } @else if (state().synthese?.calcR1Propose !== null && state().synthese?.calcR1Propose
+                                !==
                                 undefined) {
                                 <div style="font-weight: bold; font-size: 16px;">{{
                                     formatPercent(state().synthese?.calcR1Propose) }}</div>
@@ -193,8 +199,10 @@
                             <div
                                 style="border: 1px solid #ccc; padding: 10px; border-radius: 4px; display: inline-block; min-width: 100px; background: #fafafa;">
                                 @if (!hasMontantPropose()) {
-                                <span style="color: #888; font-size: 11px;">Information Manquante:<br>Ratios associés au<br>montant proposé</span>
-                                } @else if (state().synthese?.calcR2 !== null && state().synthese?.calcR2 !== undefined) {
+                                <span style="color: #888; font-size: 11px;">Information Manquante:<br>Ratios associés
+                                    au<br>montant proposé</span>
+                                } @else if (state().synthese?.calcR2 !== null && state().synthese?.calcR2 !== undefined)
+                                {
                                 <div style="font-weight: bold; font-size: 16px;">{{
                                     formatPercent(state().synthese?.calcR2) }}</div>
                                 <div style="margin-top: 6px;">
@@ -239,8 +247,10 @@
                             <div
                                 style="border: 1px solid #ccc; padding: 10px; border-radius: 4px; display: inline-block; min-width: 100px; background: #fafafa;">
                                 @if (!hasMontantPropose()) {
-                                <span style="color: #888; font-size: 11px;">Information Manquante:<br>Ratios associés au<br>montant proposé</span>
-                                } @else if (state().synthese?.calcR3 !== null && state().synthese?.calcR3 !== undefined) {
+                                <span style="color: #888; font-size: 11px;">Information Manquante:<br>Ratios associés
+                                    au<br>montant proposé</span>
+                                } @else if (state().synthese?.calcR3 !== null && state().synthese?.calcR3 !== undefined)
+                                {
                                 <div style="font-weight: bold; font-size: 16px;">{{
                                     formatPercent(state().synthese?.calcR3) }}</div>
                                 <div style="margin-top: 6px;">
@@ -286,8 +296,10 @@
                             <div
                                 style="border: 1px solid #ccc; padding: 10px; border-radius: 4px; display: inline-block; min-width: 100px; background: #fafafa;">
                                 @if (!hasMontantPropose()) {
-                                <span style="color: #888; font-size: 11px;">Information Manquante:<br>Ratios associés au<br>montant proposé</span>
-                                } @else if (state().synthese?.calcR4Propose !== null && state().synthese?.calcR4Propose !==
+                                <span style="color: #888; font-size: 11px;">Information Manquante:<br>Ratios associés
+                                    au<br>montant proposé</span>
+                                } @else if (state().synthese?.calcR4Propose !== null && state().synthese?.calcR4Propose
+                                !==
                                 undefined) {
                                 <div style="font-weight: bold; font-size: 16px;">{{
                                     formatPercent(state().synthese?.calcR4Propose) }}</div>
@@ -333,8 +345,10 @@
                             <div
                                 style="border: 1px solid #ccc; padding: 10px; border-radius: 4px; display: inline-block; min-width: 100px; background: #fafafa;">
                                 @if (!hasMontantPropose()) {
-                                <span style="color: #888; font-size: 11px;">Information Manquante:<br>Ratios associés au<br>montant proposé</span>
-                                } @else if (state().synthese?.calcR5 !== null && state().synthese?.calcR5 !== undefined) {
+                                <span style="color: #888; font-size: 11px;">Information Manquante:<br>Ratios associés
+                                    au<br>montant proposé</span>
+                                } @else if (state().synthese?.calcR5 !== null && state().synthese?.calcR5 !== undefined)
+                                {
                                 <div style="font-weight: bold; font-size: 16px;">{{
                                     formatPercent(state().synthese?.calcR5) }}</div>
                                 <div style="margin-top: 6px;">
@@ -380,8 +394,10 @@
                             <div
                                 style="border: 1px solid #ccc; padding: 10px; border-radius: 4px; display: inline-block; min-width: 100px; background: #fafafa;">
                                 @if (!hasMontantPropose()) {
-                                <span style="color: #888; font-size: 11px;">Information Manquante:<br>Ratios associés au<br>montant proposé</span>
-                                } @else if (state().synthese?.calcR6Propose !== null && state().synthese?.calcR6Propose !==
+                                <span style="color: #888; font-size: 11px;">Information Manquante:<br>Ratios associés
+                                    au<br>montant proposé</span>
+                                } @else if (state().synthese?.calcR6Propose !== null && state().synthese?.calcR6Propose
+                                !==
                                 undefined) {
                                 <div style="font-weight: bold; font-size: 16px;">{{
                                     formatPercent(state().synthese?.calcR6Propose) }}</div>
@@ -424,7 +440,7 @@
     <!-- SECTION 1: DEMANDE DE CRÉDIT - COMPACT (2 lignes)                          -->
     <!-- ══════════════════════════════════════════════════════════════════════════ -->
     <div
-        style="background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+        style="background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
             <i class="pi pi-file" style="color: #2196F3;"></i>
             <span style="font-weight: bold; color: #1565C0;">Demande de Crédit</span>
@@ -465,7 +481,7 @@
     <!-- SECTION 2: PARAMÈTRES D'ANALYSE - COMPACT (1-2 lignes)                     -->
     <!-- ══════════════════════════════════════════════════════════════════════════ -->
     <div
-        style="background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+        style="background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
             <i class="pi pi-cog" style="color: #9C27B0;"></i>
             <span style="font-weight: bold; color: #7B1FA2;">Paramètres d'Analyse</span>
@@ -500,14 +516,14 @@
         <!-- SECTION 3: BILAN (Multi-colonnes: Éléments | N | N-1) -->
         <!-- ══════════════════════════════════════════════════════════════════════════ -->
         <div class="col-12">
-            <h3 class="text-xl font-bold text-green-700 mb-3 mt-2">
+            <h3 class="text-xl font-bold text-green-700 mb-4 mt-3">
                 <i class="pi pi-chart-bar mr-2"></i>
                 1. BILAN
             </h3>
         </div>
 
         <!-- ACTIF -->
-        <div class="col-12">
+        <div class="col-12 mb-3">
             <p-card>
                 <ng-template pTemplate="header">
                     <div class="flex items-center gap-2 p-3 bg-green-50">
@@ -577,7 +593,7 @@
         </div>
 
         <!-- PASSIF -->
-        <div class="col-12">
+        <div class="col-12 mb-3">
             <p-card>
                 <ng-template pTemplate="header">
                     <div class="flex items-center gap-2 p-3 bg-red-50">
@@ -647,15 +663,15 @@
         <!-- ══════════════════════════════════════════════════════════════════════════ -->
         <!-- SECTION 4: RENTABILITÉ (Multi-colonnes: Éléments | N | N-1 | N+1) -->
         <!-- ══════════════════════════════════════════════════════════════════════════ -->
-        <div class="col-12">
-            <h3 class="text-xl font-bold text-orange-700 mb-3 mt-4">
+        <div class="col-12 mt-5">
+            <h3 class="text-xl font-bold text-orange-700 mb-4">
                 <i class="pi pi-chart-line mr-2"></i>
                 2. RENTABILITÉ DE L'ACTIVITÉ
             </h3>
         </div>
 
         <!-- Produits et Marge Brute -->
-        <div class="col-12">
+        <div class="col-12 mb-3">
             <p-card>
                 <ng-template pTemplate="header">
                     <div class="flex items-center gap-2 p-3 bg-teal-50">
@@ -690,7 +706,7 @@
         </div>
 
         <!-- Charges d'Exploitation -->
-        <div class="col-12">
+        <div class="col-12 mb-3">
             <p-card>
                 <ng-template pTemplate="header">
                     <div class="flex items-center gap-2 p-3 bg-orange-50">
@@ -762,8 +778,8 @@
         <!-- ══════════════════════════════════════════════════════════════════════════ -->
         <!-- SECTION 5: BESOIN EN CRÉDIT -->
         <!-- ══════════════════════════════════════════════════════════════════════════ -->
-        <div class="col-12">
-            <h3 class="text-xl font-bold text-cyan-700 mb-3 mt-4">
+        <div class="col-12 mt-5">
+            <h3 class="text-xl font-bold text-cyan-700 mb-4">
                 <i class="pi pi-money-bill mr-2"></i>
                 3. ÉVALUATION DU BESOIN RÉEL EN CRÉDIT
             </h3>
@@ -833,9 +849,62 @@
             </p-card>
         </div>
 
+        <!-- ══════════════════════════════════════════════════════════════════════════ -->
+        <!-- SECTION 6: PERSONNES CAUTION -->
+        <!-- ══════════════════════════════════════════════════════════════════════════ -->
+        @if (hasPersonnesCaution()) {
+        <div class="col-12 mt-5">
+            <h3 class="text-xl font-bold text-purple-700 mb-4">
+                <i class="pi pi-users mr-2"></i>
+                4. PERSONNES CAUTION
+            </h3>
+        </div>
+
+        <div class="col-12">
+            <p-card>
+                <ng-template pTemplate="header">
+                    <div class="flex items-center gap-2 p-3 bg-purple-50">
+                        <i class="pi pi-user-plus text-purple-600 text-xl"></i>
+                        <h4 class="m-0 text-purple-800">Liste des personnes caution ({{ state().personnesCaution?.length
+                            || 0 }})</h4>
+                    </div>
+                </ng-template>
+
+                <p-table [value]="state().personnesCaution || []" [tableStyle]="{'min-width': '100%'}"
+                    styleClass="p-datatable-sm p-datatable-striped">
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th>Nom complet</th>
+                            <th>Téléphone</th>
+                            <th>Activité</th>
+                            <th>Profession</th>
+                            <th class="text-center">Âge</th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-pc>
+                        <tr>
+                            <td class="font-semibold text-purple-700">{{ getPersonneCautionFullName(pc) }}</td>
+                            <td>{{ pc.telephone || '-' }}</td>
+                            <td>{{ pc.activite || '-' }}</td>
+                            <td>{{ pc.profession || '-' }}</td>
+                            <td class="text-center">{{ pc.age || '-' }}</td>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="emptymessage">
+                        <tr>
+                            <td colspan="5" class="text-center text-gray-500 p-4">
+                                Aucune personne caution enregistrée
+                            </td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+            </p-card>
+        </div>
+        }
+
         <!-- Message pour l'agent de crédit -->
         @if (isAgentCredit()) {
-        <div class="col-12 mt-3">
+        <div class="col-12 mt-5">
             <div style="padding: 16px; background-color: #e3f2fd; border-radius: 8px; border: 1px solid #90caf9;">
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <i class="pi pi-info-circle" style="color: #1976d2; font-size: 20px;"></i>

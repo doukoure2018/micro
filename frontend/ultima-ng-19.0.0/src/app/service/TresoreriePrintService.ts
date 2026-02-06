@@ -122,11 +122,11 @@ export class TresoreriePrintService {
     }
 
     /**
-     * Génère le tableau principal avec tous les mois (dynamique)
+     * Génère le tableau principal avec toutes les périodes (dynamique)
      */
     private genererTableauPrincipal(donneesMois: any[], totauxAnnuels: any, nombreMois: number): string {
-        // Générer les labels des mois dynamiquement (M0 à M{nombreMois})
-        const moisLabels = Array.from({ length: nombreMois + 1 }, (_, i) => (i === 0 ? 'M0' : `M${i}`));
+        // Générer les labels des périodes dynamiquement (P0 à P{nombreMois})
+        const moisLabels = Array.from({ length: nombreMois + 1 }, (_, i) => `P${i}`);
         const nombreColonnes = nombreMois + 3; // Libellé + mois + Total
 
         return `
@@ -320,7 +320,7 @@ export class TresoreriePrintService {
         return `
       <div class="analysis-grid">
         <div class="analysis-block">
-          <h3>📊 INDICATEURS CLÉS (${nombreMois} mois)</h3>
+          <h3>📊 INDICATEURS CLÉS (${nombreMois} périodes)</h3>
           <div class="indicators">
             <div class="indicator">
               <span class="indicator-label">Cash Flow moyen mensuel:</span>
@@ -335,7 +335,7 @@ export class TresoreriePrintService {
               <span class="indicator-value ${ratioRemboursement <= 30 ? 'positive' : ratioRemboursement <= 50 ? 'warning' : 'negative'}">${ratioRemboursement.toFixed(1)}%</span>
             </div>
             <div class="indicator">
-              <span class="indicator-label">Solde final (Mois ${nombreMois}):</span>
+              <span class="indicator-label">Solde final (Période ${nombreMois}):</span>
               <span class="indicator-value ${soldeFinal >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(soldeFinal)}</span>
             </div>
           </div>
@@ -348,13 +348,13 @@ export class TresoreriePrintService {
                 moisDeficitaires.length > 0
                     ? `
               <div class="alert alert-danger">
-                <strong>Mois déficitaires identifiés (${moisDeficitaires.length}/${nombreMois}):</strong>
-                ${moisDeficitaires.map((item) => `M${item.mois} (${this.formatCurrency(item.deficit)})`).join(', ')}
+                <strong>Périodes déficitaires identifiées (${moisDeficitaires.length}/${nombreMois}):</strong>
+                ${moisDeficitaires.map((item) => `P${item.mois} (${this.formatCurrency(item.deficit)})`).join(', ')}
               </div>
             `
                     : `
               <div class="alert alert-success">
-                <strong>✓ Aucun déficit mensuel identifié sur les ${nombreMois} mois</strong>
+                <strong>✓ Aucun déficit identifié sur les ${nombreMois} périodes</strong>
               </div>
             `
             }
@@ -392,7 +392,7 @@ export class TresoreriePrintService {
         </div>
 
         <div class="analysis-block">
-          <h3>💰 SYNTHÈSE FINANCIÈRE (${nombreMois} mois)</h3>
+          <h3>💰 SYNTHÈSE FINANCIÈRE (${nombreMois} périodes)</h3>
           <div class="synthesis">
             <p><strong>Total revenus sur la période:</strong> ${this.formatCurrency(totauxAnnuels.totalEncaissements)}</p>
             <p><strong>Total charges sur la période:</strong> ${this.formatCurrency(totauxAnnuels.totalDecaissements)}</p>
@@ -598,16 +598,17 @@ export class TresoreriePrintService {
       }
 
       .month-header {
-        background: #34495e;
-        color: white;
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+        color: #ffffff;
         font-weight: bold;
         width: ${columnWidth};
         font-size: ${headerFontSize};
+        text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
         ${isLongDuration ? 'writing-mode: vertical-rl; text-orientation: mixed;' : ''}
       }
 
       .month-start {
-        background: #1a5276;
+        background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
       }
 
       .total-header {

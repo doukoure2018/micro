@@ -47,6 +47,13 @@ public interface AnalyseFinanciereRepository {
     AnalyseSyntheseDto getSyntheseByAnalyse(Long analyseId);
     AnalyseSyntheseDto getSyntheseByDemande(Long demandeindividuelId);
 
+    // Personnes Caution
+    List<Personnecaution> getPersonnesCautionByDemande(Long demandeindividuelId);
+
     // Soumission
     SoumissionResultDto soumettreAnalyse(Long analyseId, String codUsuario, String nomAnalyste, Boolean forcerSoumission);
+
+    // Soumission avec personnes caution
+    SoumissionResultDto soumettreAnalyse(Long analyseId, String codUsuario, String nomAnalyste, Boolean forcerSoumission,
+                                          List<SoumissionRequest.PersonneCautionInput> personnesCaution);
 }

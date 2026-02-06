@@ -495,12 +495,69 @@ public class AnalyseFinanciereRepositoryImpl implements AnalyseFinanciereReposit
         }
     }
 
+    // ==================== PERSONNES CAUTION ====================
+
+    @Override
+    public List<Personnecaution> getPersonnesCautionByDemande(Long demandeindividuelId) {
+        return jdbcClient.sql(SELECT_PERSONNES_CAUTION_BY_DEMANDE)
+                .param("demandeindividuelId", demandeindividuelId)
+                .query(Personnecaution.class)
+                .list();
+    }
+
     // ==================== SOUMISSION ====================
 
     @Override
     public SoumissionResultDto soumettreAnalyse(Long analyseId, String codUsuario, String nomAnalyste, Boolean forcerSoumission) {
+        return soumettreAnalyse(analyseId, codUsuario, nomAnalyste, forcerSoumission, null);
+    }
+
+    @Override
+    public SoumissionResultDto soumettreAnalyse(Long analyseId, String codUsuario, String nomAnalyste, Boolean forcerSoumission,
+                                                 List<SoumissionRequest.PersonneCautionInput> personnesCaution) {
         try {
-            return jdbcClient.sql(SOUMETTRE_ANALYSE)
+            // Construire le tableau de personnes caution pour PostgreSQL
+            String personnesCautionArray = buildPersonnesCautionArray(personnesCaution);
+
+            String sql = """
+                SELECT
+                    succes,
+                    analyse_id as "analyseId",
+                    demandeindividuel_id as "demandeindividuelId",
+                    statut,
+                    date_soumission as "dateSoumission",
+                    nombre_erreurs as "nombreErreurs",
+                    erreurs,
+                    r1_sollicite as "r1Sollicite",
+                    r2_sollicite as "r2Sollicite",
+                    r3_sollicite as "r3Sollicite",
+                    r4_sollicite as "r4Sollicite",
+                    r5_sollicite as "r5Sollicite",
+                    r6_sollicite as "r6Sollicite",
+                    conformite_sollicite as "conformiteSollicite",
+                    r1_propose as "r1Propose",
+                    r2_propose as "r2Propose",
+                    r3_propose as "r3Propose",
+                    r4_propose as "r4Propose",
+                    r5_propose as "r5Propose",
+                    r6_propose as "r6Propose",
+                    conformite_propose as "conformitePropose",
+                    total_actif as "totalActif",
+                    capitaux_propres as "capitauxPropres",
+                    cash_flow as "cashFlow",
+                    capacite_remboursement as "capaciteRemboursement",
+                    besoin_reel_investissement as "besoinReelInvestissement",
+                    besoin_reel_exploitation as "besoinReelExploitation"
+                FROM fn_soumettre_analyse(
+                    :analyseId,
+                    :codUsuario,
+                    :nomAnalyste,
+                    :forcerSoumission,
+                    %s
+                )
+                """.formatted(personnesCautionArray);
+
+            return jdbcClient.sql(sql)
                     .param("analyseId", analyseId)
                     .param("codUsuario", codUsuario)
                     .param("nomAnalyste", nomAnalyste)
@@ -542,6 +599,42 @@ public class AnalyseFinanciereRepositoryImpl implements AnalyseFinanciereReposit
             log.error("Error submitting analyse: {}", e.getMessage(), e);
             throw new ApiException("Erreur lors de la soumission de l'analyse: " + e.getMessage());
         }
+    }
+
+    /**
+     * Construit la représentation PostgreSQL du tableau de personnes caution
+     */
+    private String buildPersonnesCautionArray(List<SoumissionRequest.PersonneCautionInput> personnesCaution) {
+        if (personnesCaution == null || personnesCaution.isEmpty()) {
+            return "NULL::t_personne_caution_input[]";
+        }
+
+        StringBuilder sb = new StringBuilder("ARRAY[");
+        for (int i = 0; i < personnesCaution.size(); i++) {
+            SoumissionRequest.PersonneCautionInput pc = personnesCaution.get(i);
+            if (i > 0) sb.append(",");
+            sb.append("ROW(");
+            sb.append(escapeString(pc.getNom())).append(",");
+            sb.append(escapeString(pc.getPrenom())).append(",");
+            sb.append(escapeString(pc.getTelephone())).append(",");
+            sb.append(escapeString(pc.getActivite())).append(",");
+            sb.append(pc.getAge() != null ? pc.getAge() : "NULL").append(",");
+            sb.append(escapeString(pc.getProfession()));
+            sb.append(")::t_personne_caution_input");
+        }
+        sb.append("]::t_personne_caution_input[]");
+        return sb.toString();
+    }
+
+    /**
+     * Échappe une chaîne pour PostgreSQL
+     */
+    private String escapeString(String value) {
+        if (value == null) {
+            return "NULL";
+        }
+        // Échapper les apostrophes simples
+        return "'" + value.replace("'", "''") + "'";
     }
 
     private List<String> convertArrayToList(java.sql.Array sqlArray) {

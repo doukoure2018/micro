@@ -429,21 +429,21 @@
                                     <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'chiffreAffaires')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
-                                <td class="p-1 border-1 surface-border"></td>
+                                <td class="p-1 border-1 surface-border text-xs">Hyp. Moy.</td>
                             </tr>
 
                             <tr>
                                 <td class="p-2 border-1 surface-border">Coût d'achats des marchandises vendues</td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteNForm, 'coutAchats')"
+                                    <p-inputNumber [formControl]="getControl(rentabiliteNForm, 'coutAchatMarchandises')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'coutAchats')"
+                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'coutAchatMarchandises')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'coutAchats')"
+                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'coutAchatMarchandises')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border"></td>
@@ -466,14 +466,15 @@
                                 <td class="p-2 text-right border-1 surface-border font-bold text-green-700">
                                     {{ margeBruteN2() | currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
                                 </td>
-                                <td class="p-2 border-1 surface-border text-xs">Auto.</td>
+                                <td class="p-2 border-1 surface-border text-xs">% Recom.</td>
                             </tr>
 
-                            <!-- Autres charges header -->
+                            <!-- Autres charges header - 13 charges -->
                             <tr class="bg-red-50">
                                 <td class="p-2 font-bold border-1 surface-border" colspan="5">Autres charges</td>
                             </tr>
 
+                            <!-- 1. Salaires -->
                             <tr>
                                 <td class="p-2 pl-4 border-1 surface-border">Salaires</td>
                                 <td class="p-1 border-1 surface-border">
@@ -491,40 +492,43 @@
                                 <td class="p-1 border-1 surface-border"></td>
                             </tr>
 
+                            <!-- 2. Prélèvement de l'entrepreneur -->
                             <tr>
                                 <td class="p-2 pl-4 border-1 surface-border">Prélèvement de l'entrepreneur</td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteNForm, 'chargesSociales')"
+                                    <p-inputNumber [formControl]="getControl(rentabiliteNForm, 'prelevementEntrepreneur')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'chargesSociales')"
+                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'prelevementEntrepreneur')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'chargesSociales')"
+                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'prelevementEntrepreneur')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border"></td>
                             </tr>
 
+                            <!-- 3. Loyers -->
                             <tr>
                                 <td class="p-2 pl-4 border-1 surface-border">Loyers</td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteNForm, 'loyer')" mode="decimal"
+                                    <p-inputNumber [formControl]="getControl(rentabiliteNForm, 'loyers')" mode="decimal"
                                         [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'loyer')" mode="decimal"
+                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'loyers')" mode="decimal"
                                         [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'loyer')" mode="decimal"
+                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'loyers')" mode="decimal"
                                         [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border"></td>
                             </tr>
 
+                            <!-- 4. Transport -->
                             <tr>
                                 <td class="p-2 pl-4 border-1 surface-border">Transport</td>
                                 <td class="p-1 border-1 surface-border">
@@ -542,42 +546,99 @@
                                 <td class="p-1 border-1 surface-border"></td>
                             </tr>
 
+                            <!-- 5. Électricité, eau, téléphone -->
                             <tr>
                                 <td class="p-2 pl-4 border-1 surface-border">Électricité, eau, téléphone</td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteNForm, 'electricite')"
+                                    <p-inputNumber [formControl]="getControl(rentabiliteNForm, 'electriciteEauTelephone')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'electricite')"
+                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'electriciteEauTelephone')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'electricite')"
+                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'electriciteEauTelephone')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border"></td>
                             </tr>
 
+                            <!-- 6. Fournitures et autres besoins -->
                             <tr>
                                 <td class="p-2 pl-4 border-1 surface-border">Fournitures et autres besoins</td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteNForm, 'entretien')"
+                                    <p-inputNumber [formControl]="getControl(rentabiliteNForm, 'fournituresAutresBesoins')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'entretien')"
+                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'fournituresAutresBesoins')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'entretien')"
+                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'fournituresAutresBesoins')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border"></td>
                             </tr>
 
+                            <!-- 7. Entretien et réparation -->
                             <tr>
-                                <td class="p-2 pl-4 border-1 surface-border">Impôts et taxes</td>
+                                <td class="p-2 pl-4 border-1 surface-border">Entretien et réparation</td>
+                                <td class="p-1 border-1 surface-border">
+                                    <p-inputNumber [formControl]="getControl(rentabiliteNForm, 'entretienReparation')"
+                                        mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
+                                </td>
+                                <td class="p-1 border-1 surface-border">
+                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'entretienReparation')"
+                                        mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
+                                </td>
+                                <td class="p-1 border-1 surface-border">
+                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'entretienReparation')"
+                                        mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
+                                </td>
+                                <td class="p-1 border-1 surface-border"></td>
+                            </tr>
+
+                            <!-- 8. Carburant et lubrifiants -->
+                            <tr>
+                                <td class="p-2 pl-4 border-1 surface-border">Carburant et lubrifiants</td>
+                                <td class="p-1 border-1 surface-border">
+                                    <p-inputNumber [formControl]="getControl(rentabiliteNForm, 'carburantLubrifiants')"
+                                        mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
+                                </td>
+                                <td class="p-1 border-1 surface-border">
+                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'carburantLubrifiants')"
+                                        mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
+                                </td>
+                                <td class="p-1 border-1 surface-border">
+                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'carburantLubrifiants')"
+                                        mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
+                                </td>
+                                <td class="p-1 border-1 surface-border"></td>
+                            </tr>
+
+                            <!-- 9. Frais de publicité et promotion -->
+                            <tr>
+                                <td class="p-2 pl-4 border-1 surface-border">Frais de publicité et promotion</td>
+                                <td class="p-1 border-1 surface-border">
+                                    <p-inputNumber [formControl]="getControl(rentabiliteNForm, 'publicitePromotion')"
+                                        mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
+                                </td>
+                                <td class="p-1 border-1 surface-border">
+                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'publicitePromotion')"
+                                        mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
+                                </td>
+                                <td class="p-1 border-1 surface-border">
+                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'publicitePromotion')"
+                                        mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
+                                </td>
+                                <td class="p-1 border-1 surface-border"></td>
+                            </tr>
+
+                            <!-- 10. Redevance, impôts et taxes -->
+                            <tr>
+                                <td class="p-2 pl-4 border-1 surface-border">Redevance, impôts et taxes</td>
                                 <td class="p-1 border-1 surface-border">
                                     <p-inputNumber [formControl]="getControl(rentabiliteNForm, 'impotsTaxes')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
@@ -593,62 +654,63 @@
                                 <td class="p-1 border-1 surface-border"></td>
                             </tr>
 
+                            <!-- 11. Frais bancaires, Intérêts payés -->
                             <tr>
-                                <td class="p-2 pl-4 border-1 surface-border">Frais financiers</td>
+                                <td class="p-2 pl-4 border-1 surface-border">Frais bancaires, Intérêts payés</td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteNForm, 'fraisFinanciers')"
+                                    <p-inputNumber [formControl]="getControl(rentabiliteNForm, 'fraisBancairesInterets')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'fraisFinanciers')"
+                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'fraisBancairesInterets')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'fraisFinanciers')"
+                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'fraisBancairesInterets')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border"></td>
                             </tr>
 
+                            <!-- 12. Échéance autre crédit -->
                             <tr>
-                                <td class="p-2 pl-4 border-1 surface-border">Dotation amortissement</td>
+                                <td class="p-2 pl-4 border-1 surface-border">Échéance autre crédit</td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteNForm, 'dotationAmortissement')"
+                                    <p-inputNumber [formControl]="getControl(rentabiliteNForm, 'echeanceAutreCredit')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber
-                                        [formControl]="getControl(rentabiliteN1Form, 'dotationAmortissement')"
+                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'echeanceAutreCredit')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber
-                                        [formControl]="getControl(rentabiliteN2Form, 'dotationAmortissement')"
+                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'echeanceAutreCredit')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border"></td>
                             </tr>
 
+                            <!-- 13. Diverses charges -->
                             <tr>
-                                <td class="p-2 pl-4 border-1 surface-border">Autres charges diverses</td>
+                                <td class="p-2 pl-4 border-1 surface-border">Diverses charges</td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteNForm, 'autresCharges')"
+                                    <p-inputNumber [formControl]="getControl(rentabiliteNForm, 'diversesCharges')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'autresCharges')"
+                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'diversesCharges')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'autresCharges')"
+                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'diversesCharges')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border"></td>
                             </tr>
 
-                            <!-- Total Charges -->
+                            <!-- Total Autres Charges d'exploitation -->
                             <tr class="bg-red-100">
-                                <td class="p-2 font-bold border-1 surface-border">Total Charges</td>
+                                <td class="p-2 font-bold border-1 surface-border">Total autres charges d'exploitation</td>
                                 <td class="p-2 text-right border-1 surface-border font-bold text-red-700">
                                     {{ totalChargesN() | currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
                                 </td>
@@ -658,35 +720,30 @@
                                 <td class="p-2 text-right border-1 surface-border font-bold text-red-700">
                                     {{ totalChargesN2() | currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
                                 </td>
-                                <td class="p-2 border-1 surface-border"></td>
+                                <td class="p-2 border-1 surface-border text-xs">Auto.</td>
                             </tr>
 
-                            <!-- Autres Revenus -->
-                            <tr>
-                                <td class="p-2 font-semibold border-1 surface-border">Autres revenus</td>
+                            <!-- Amortissements et provisions (en gras, après Total Charges) -->
+                            <tr class="bg-orange-50">
+                                <td class="p-2 pl-4 font-bold border-1 surface-border">Amortissements et Provisions</td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteNForm, 'autresRevenus')"
+                                    <p-inputNumber [formControl]="getControl(rentabiliteNForm, 'amortissementsProvisions')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'autresRevenus')"
+                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'amortissementsProvisions')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'autresRevenus')"
+                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'amortissementsProvisions')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border"></td>
                             </tr>
 
-                            <!-- Separator -->
-                            <tr>
-                                <td colspan="5" class="p-2"></td>
-                            </tr>
-
-                            <!-- Résultat -->
+                            <!-- Résultat d'exploitation de l'activité -->
                             <tr class="bg-blue-100">
-                                <td class="p-2 font-bold border-1 surface-border">Résultat d'exploitation</td>
+                                <td class="p-2 font-bold border-1 surface-border">Résultat d'exploitation de l'activité</td>
                                 <td class="p-2 text-right border-1 surface-border font-bold"
                                     [ngClass]="resultatExploitationN() >= 0 ? 'text-green-700' : 'text-red-700'">
                                     {{ resultatExploitationN() | currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
@@ -699,12 +756,17 @@
                                     [ngClass]="resultatExploitationN2() >= 0 ? 'text-green-700' : 'text-red-700'">
                                     {{ resultatExploitationN2() | currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
                                 </td>
-                                <td class="p-2 border-1 surface-border text-xs">Auto.</td>
+                                <td class="p-2 border-1 surface-border text-xs">MB - Charges - Amort.</td>
                             </tr>
 
-                            <!-- Cash-Flow -->
+                            <!-- Separator -->
+                            <tr>
+                                <td colspan="5" class="p-1"></td>
+                            </tr>
+
+                            <!-- Cash-Flow (Excédent de trésorerie) -->
                             <tr class="bg-purple-100">
-                                <td class="p-2 font-bold border-1 surface-border">Cash-Flow</td>
+                                <td class="p-2 font-bold border-1 surface-border">Cash-flow (Excédent de trésorerie)</td>
                                 <td class="p-2 text-right border-1 surface-border font-bold text-purple-700">
                                     {{ cashFlowN() | currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
                                 </td>
@@ -715,6 +777,52 @@
                                     {{ cashFlowN2() | currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
                                 </td>
                                 <td class="p-2 border-1 surface-border text-xs">Résultat + Amort.</td>
+                            </tr>
+
+                            <!-- Separator -->
+                            <tr>
+                                <td colspan="5" class="p-1"></td>
+                            </tr>
+
+                            <!-- Autres revenus net hors activité -->
+                            <tr>
+                                <td class="p-2 font-semibold border-1 surface-border">Autres revenus net hors activité</td>
+                                <td class="p-1 border-1 surface-border">
+                                    <p-inputNumber [formControl]="getControl(rentabiliteNForm, 'autresRevenusHorsActivite')"
+                                        mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
+                                </td>
+                                <td class="p-1 border-1 surface-border">
+                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'autresRevenusHorsActivite')"
+                                        mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
+                                </td>
+                                <td class="p-1 border-1 surface-border">
+                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'autresRevenusHorsActivite')"
+                                        mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
+                                </td>
+                                <td class="p-1 border-1 surface-border"></td>
+                            </tr>
+
+                            <!-- Separator -->
+                            <tr>
+                                <td colspan="5" class="p-1"></td>
+                            </tr>
+
+                            <!-- Capacité de remboursement calculée (= Cash-flow + Autres revenus) -->
+                            <tr class="bg-green-200">
+                                <td class="p-2 font-bold border-1 surface-border">Capacité de remboursement calculée</td>
+                                <td class="p-2 text-right border-1 surface-border font-bold"
+                                    [ngClass]="resultatNetN() >= 0 ? 'text-green-800' : 'text-red-700'">
+                                    {{ resultatNetN() | currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
+                                </td>
+                                <td class="p-2 text-right border-1 surface-border font-bold"
+                                    [ngClass]="resultatNetN1() >= 0 ? 'text-green-800' : 'text-red-700'">
+                                    {{ resultatNetN1() | currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
+                                </td>
+                                <td class="p-2 text-right border-1 surface-border font-bold"
+                                    [ngClass]="resultatNetN2() >= 0 ? 'text-green-800' : 'text-red-700'">
+                                    {{ resultatNetN2() | currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
+                                </td>
+                                <td class="p-2 border-1 surface-border text-xs">CF + Autres rev.</td>
                             </tr>
                         </tbody>
                     </table>

@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["listdemo.ts"],
-  "sourcesContent": ["\n        ::ng-deep {\n            .p-orderlist-list-container {\n                width: 100%;\n            }\n        }\n    "],
-  "mappings": ";AAEY,UAAA,CAAA;AACI,SAAA;;",
-  "names": []
-}

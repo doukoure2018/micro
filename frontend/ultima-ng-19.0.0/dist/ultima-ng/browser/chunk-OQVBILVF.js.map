@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["src/app/apps/mail/mail-trash.ts"],
-  "sourcesContent": ["import { Component, OnDestroy } from '@angular/core';\nimport { Subscription } from 'rxjs';\nimport { MailService } from './service/mail.service';\nimport { MailTableComponent } from './mail-table';\nimport { Mail } from '@/types/mail';\n\n@Component({\n    template: `<app-mail-table [mails]=\"trashMails\"></app-mail-table>`,\n    standalone: true,\n    imports: [MailTableComponent]\n})\nexport class MailTrashComponent implements OnDestroy {\n    trashMails: Mail[] = [];\n\n    subscription: Subscription;\n\n    constructor(private mailService: MailService) {\n        this.subscription = this.mailService.mails$.subscribe((data) => {\n            this.trashMails = data.filter((d) => d.trash);\n        });\n    }\n\n    ngOnDestroy() {\n        this.subscription.unsubscribe();\n    }\n}\n"],
-  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;AAWM,IAAO,qBAAP,MAAO,oBAAkB;EAKP;EAJpB,aAAqB,CAAA;EAErB;EAEA,YAAoB,aAAwB;AAAxB,SAAA,cAAA;AAChB,SAAK,eAAe,KAAK,YAAY,OAAO,UAAU,CAAC,SAAQ;AAC3D,WAAK,aAAa,KAAK,OAAO,CAAC,MAAM,EAAE,KAAK;IAChD,CAAC;EACL;EAEA,cAAW;AACP,SAAK,aAAa,YAAW;EACjC;;qCAbS,qBAAkB,4BAAA,WAAA,CAAA;EAAA;yEAAlB,qBAAkB,WAAA,CAAA,CAAA,cAAA,CAAA,GAAA,OAAA,GAAA,MAAA,GAAA,QAAA,CAAA,CAAA,GAAA,OAAA,CAAA,GAAA,UAAA,SAAA,4BAAA,IAAA,KAAA;AAAA,QAAA,KAAA,GAAA;AAJhB,MAAA,oBAAA,GAAA,kBAAA,CAAA;;;AAAgB,MAAA,qBAAA,SAAA,IAAA,UAAA;;oBAEjB,kBAAkB,GAAA,eAAA,EAAA,CAAA;;;6EAEnB,oBAAkB,EAAA,WAAA,sBAAA,UAAA,mCAAA,YAAA,GAAA,CAAA;AAAA,GAAA;",
-  "names": []
-}

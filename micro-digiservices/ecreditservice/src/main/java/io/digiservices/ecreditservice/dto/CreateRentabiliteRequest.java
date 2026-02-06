@@ -22,7 +22,7 @@ public class CreateRentabiliteRequest {
     private BigDecimal coutAchatMarchandises;
     private BigDecimal margeBrute;
 
-    // 13 Charges posts
+    // 13 Charges d'exploitation (sans amortissements)
     private BigDecimal salaires;
     private BigDecimal prelevementEntrepreneur;
     private BigDecimal loyers;

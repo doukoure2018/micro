@@ -275,7 +275,7 @@ export class AttenteComponent implements OnInit {
         if (statutDemande === 'EN_ATTENTE' && validationState === 'NOUVEAU') {
             return 'NOUVELLE DEMANDE';
         } else if (statutDemande === 'EN_ATTENTE' && validationState === 'SELECTION') {
-            return 'SELECTION';
+            return 'AFFECTATION';
         } else if (statutDemande === 'EN_ATTENTE' && validationState === 'APPROVED') {
             return 'APPROUVÉE';
         }

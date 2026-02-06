@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["uploader.ts"],
-  "sourcesContent": ["\n        :host ::ng-deep .p-fileupload-header {\n            display: none;\n        }\n\n        :host ::ng-deep .p-fileupload {\n            border: none;\n        }\n\n        :host ::ng-deep .p-fileupload-file-list {\n            display: none;\n        }\n    "],
-  "mappings": ";AACQ,MAAA,UAAA,CAAA;AACI,WAAA;;AAGJ,MAAA,UAAA,CAAA;AACI,UAAA;;AAGJ,MAAA,UAAA,CAAA;AACI,WAAA;;",
-  "names": []
-}

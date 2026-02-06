@@ -147,6 +147,8 @@ export class DemandeIndComponent implements OnInit {
         lieuActivite: '',
         natureActivite: '',
         currentActivite: '',
+        profession: '',
+        secteurActivite: '',
         prefectureActivite: '',
         sousPrefectureActivite: '',
 
@@ -298,11 +300,28 @@ export class DemandeIndComponent implements OnInit {
             this.formData.titreDirecteur = '';
         }
 
+        // Reset champs Particulier si on quitte Particulier
+        if (natureClient !== 'Demande credit Pour Particulier') {
+            this.formData.profession = '';
+            this.formData.secteurActivite = '';
+        }
+
+        // Reset champs activite cascade si on passe a Particulier
+        if (natureClient === 'Demande credit Pour Particulier') {
+            this.formData.natureActivite = '';
+            this.formData.categorie = '';
+            this.resetActiviteSelections();
+        }
+
         this.formData.natureClient = natureClient;
     }
 
     isPME(): boolean {
         return this.formData.natureClient === 'Demande de Credit Pour PME/PMI';
+    }
+
+    isParticulier(): boolean {
+        return this.formData.natureClient === 'Demande credit Pour Particulier';
     }
 
     // ======================== INITIALISATION ========================
@@ -584,7 +603,8 @@ export class DemandeIndComponent implements OnInit {
             return;
         }
 
-        garantie.valeurEmprunte = garantie.valeurGarantie * 0.75;
+        // Autre Garantie (ex: apport financier) => 100%, sinon 75%
+        garantie.valeurEmprunte = garantie.typeGarantie === 'Autre Garantie' ? garantie.valeurGarantie : garantie.valeurGarantie * 0.75;
         const garanties = [...currentState.garanties];
 
         if (currentState.editingGarantieIndex !== undefined) {
@@ -689,17 +709,21 @@ export class DemandeIndComponent implements OnInit {
             nomPersonneMorale: this.isPME() ? this.formData.nomPersonneMorale : '',
             sigle: this.isPME() ? this.formData.sigle : '',
             sernom: this.formData.sernom || '',
-            categorie: this.formData.categorie || '',
+            // Champs activite: vides pour Particulier
+            categorie: this.isParticulier() ? '' : this.formData.categorie || '',
+            natureActivite: this.isParticulier() ? '' : this.formData.natureActivite || '',
+            typeActivite: this.isParticulier() ? '' : this.formData.typeActivite || '',
+            sousActivite: this.isParticulier() ? '' : this.formData.sousActivite || '',
+            sousSousActivite: this.isParticulier() ? '' : this.formData.sousSousActivite || '',
+            // Champs Particulier: vides pour PME/Professionnels
+            profession: this.isParticulier() ? this.formData.profession || '' : '',
+            secteurActivite: this.isParticulier() ? this.formData.secteurActivite || '' : '',
             nomPere: this.formData.nomPere || '',
             nomMere: this.formData.nomMere || '',
             nomConjoint: this.formData.nomConjoint || '',
-            natureActivite: this.formData.natureActivite || '',
             prefecture: this.formData.prefecture || '',
             sousPrefecture: this.formData.sousPrefecture || '',
             email: this.formData.email || '',
-            typeActivite: this.formData.typeActivite || '',
-            sousActivite: this.formData.sousActivite || '',
-            sousSousActivite: this.formData.sousSousActivite || '',
             tipCredito: this.formData.tipCredito,
             descriptionActivite: this.getDescriptionActiviteComplete() || form.value.descriptionActivite,
             garanties: this.state().garanties.map((g) => ({
@@ -707,7 +731,7 @@ export class DemandeIndComponent implements OnInit {
                 typeGarantie: this.convertTypeGarantie(g.typeGarantie!)
             })),
             statutDemande: 'EN_ATTENTE',
-            validationState: 'SELECTION',
+            validationState: 'NOUVEAU',
             currentActivite: this.getActiviteLibelle(),
             codUsuarios: ''
         } as DemandeIndividuel;
@@ -842,6 +866,8 @@ export class DemandeIndComponent implements OnInit {
             lieuActivite: '',
             natureActivite: '',
             currentActivite: '',
+            profession: '',
+            secteurActivite: '',
             montantDemande: 0,
             dureeDemande: 12,
             periodiciteRemboursement: 'Mensuelle',

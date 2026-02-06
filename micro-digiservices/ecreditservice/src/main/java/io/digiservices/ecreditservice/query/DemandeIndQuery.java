@@ -376,6 +376,19 @@ public class DemandeIndQuery {
     /**
      * Appel de la procédure stockée insert_demande_with_garanties
      * Version V80 avec 55 paramètres (incluant email et sigle)
+     */
+    public static final String CALL_INSERT_DEMANDE_WITH_GARANTIES_PROC_V4 =
+            "SELECT * FROM insert_demande_with_garanties(" +
+                    "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " +  // 1-10
+                    "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " +  // 11-20
+                    "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " +  // 21-30
+                    "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " +  // 31-40
+                    "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " +  // 41-50
+                    "?, ?, ?, ?, ?)";                    // 51-55
+
+    /**
+     * Appel de la procédure stockée insert_demande_with_garanties
+     * Version V94 avec 57 paramètres (incluant profession et secteur_activite)
      *
      * Paramètres:
      * 1-4: nom, prenom, telephone, numero_membre
@@ -393,17 +406,18 @@ public class DemandeIndQuery {
      * 43-44: nature_client, nom_personne_morale
      * 45-52: sernom, categorie, nom_pere, nom_mere, nom_conjoint,
      *        nature_activite, prefecture, sous_prefecture
-     * 53-54: email, sigle (NOUVEAUX V80)
-     * 55: garanties (array)
+     * 53-54: email, sigle
+     * 55-56: profession, secteur_activite (NOUVEAUX V94)
+     * 57: garanties (array)
      */
-    public static final String CALL_INSERT_DEMANDE_WITH_GARANTIES_PROC_V4 =
+    public static final String CALL_INSERT_DEMANDE_WITH_GARANTIES_PROC_V5 =
             "SELECT * FROM insert_demande_with_garanties(" +
                     "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " +  // 1-10
                     "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " +  // 11-20
                     "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " +  // 21-30
                     "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " +  // 31-40
                     "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " +  // 41-50
-                    "?, ?, ?, ?, ?)";                    // 51-55
+                    "?, ?, ?, ?, ?, ?, ?)";              // 51-57
 
     /**
      * Requête pour récupérer une demande avec ses garanties

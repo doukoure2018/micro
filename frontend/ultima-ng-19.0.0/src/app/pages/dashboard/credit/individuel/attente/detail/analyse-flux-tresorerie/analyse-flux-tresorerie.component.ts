@@ -251,10 +251,35 @@ export class AnalyseFluxTresorerieComponent {
     }
 
     /**
-     * Obtenir le label du mois pour le tableau
+     * Obtenir le préfixe de période basé sur periodiciteRemboursement
+     */
+    getPeriodPrefix(): string {
+        return 'P'; // Période au lieu de Mois
+    }
+
+    /**
+     * Obtenir le label de période pour le tableau (P0, P1, P2...)
      */
     getTableMoisLabel(mois: number): string {
-        return mois === 0 ? 'M0' : `M${mois}`;
+        const prefix = this.getPeriodPrefix();
+        return `${prefix}${mois}`;
+    }
+
+    /**
+     * Obtenir le libellé de la périodicité
+     */
+    getPeriodiciteLabel(): string {
+        const demande = this.demandeIndividuel();
+        const periodicite = demande?.periodiciteRemboursement || 'Mensuelle';
+        const labels: { [key: string]: string } = {
+            'Mensuelle': 'mois',
+            'Bimestrielle': 'bimestre',
+            'Trimestrielle': 'trimestre',
+            'Quatrimestrielle': 'quadrimestre',
+            'Semestrielle': 'semestre',
+            'Annuelle': 'année'
+        };
+        return labels[periodicite] || 'période';
     }
 
     /**
@@ -295,7 +320,7 @@ export class AnalyseFluxTresorerieComponent {
             this.messageService.add({
                 severity: 'warn',
                 summary: 'Attention',
-                detail: 'Aucun mois suivant disponible pour la copie'
+                detail: 'Aucune période suivante disponible pour la copie'
             });
             return;
         }
@@ -311,10 +336,11 @@ export class AnalyseFluxTresorerieComponent {
         // Recalculer tous les mois
         this.calculateAllMonths();
 
+        const prefix = this.getPeriodPrefix();
         this.messageService.add({
             severity: 'info',
             summary: 'Copié',
-            detail: `Valeur "${this.formatMontant(value || 0)}" copiée de M${fromMois} vers M${fromMois + 1} à M${duree} (${copiedCount} mois)`
+            detail: `Valeur "${this.formatMontant(value || 0)}" copiée de ${prefix}${fromMois} vers ${prefix}${fromMois + 1} à ${prefix}${duree} (${copiedCount} périodes)`
         });
     }
 
@@ -341,10 +367,11 @@ export class AnalyseFluxTresorerieComponent {
 
         this.calculateAllMonths();
 
+        const prefix = this.getPeriodPrefix();
         this.messageService.add({
             severity: 'info',
             summary: 'Copié',
-            detail: `Valeur copiée vers ${copiedCount} mois (M${fromMois + 1} à M${maxMois})`
+            detail: `Valeur copiée vers ${copiedCount} périodes (${prefix}${fromMois + 1} à ${prefix}${maxMois})`
         });
     }
 
@@ -641,7 +668,7 @@ export class AnalyseFluxTresorerieComponent {
                     this.messageService.add({
                         severity: 'success',
                         summary: 'Prévisions chargées',
-                        detail: `${previsions.length} mois chargés`
+                        detail: `${previsions.length} périodes chargées`
                     });
                 }
 
@@ -954,7 +981,7 @@ export class AnalyseFluxTresorerieComponent {
                     this.messageService.add({
                         severity: 'success',
                         summary: 'Prévisions chargées',
-                        detail: `${previsions.length} mois de prévisions chargés avec succès`
+                        detail: `${previsions.length} périodes de prévisions chargées avec succès`
                     });
                 } else {
                     this.messageService.add({
@@ -2052,7 +2079,7 @@ export class AnalyseFluxTresorerieComponent {
                 this.messageService.add({
                     severity: 'success',
                     summary: 'Succès',
-                    detail: `Remboursements appliqués aux mois 1 à ${duree}`
+                    detail: `Remboursements appliqués aux périodes 1 à ${duree}`
                 });
             }
         });
@@ -2690,7 +2717,7 @@ export class AnalyseFluxTresorerieComponent {
             this.messageService.add({
                 severity: 'warn',
                 summary: 'Attention',
-                detail: 'Aucune donnée à sauvegarder pour ce mois'
+                detail: 'Aucune donnée à sauvegarder pour cette période'
             });
             return;
         }
@@ -2707,7 +2734,7 @@ export class AnalyseFluxTresorerieComponent {
                 this.messageService.add({
                     severity: 'success',
                     summary: 'Succès',
-                    detail: `Mois ${currentMonth} sauvegardé avec succès`
+                    detail: `Période ${currentMonth} sauvegardée avec succès`
                 });
             },
             error: (error) => {
@@ -2716,7 +2743,7 @@ export class AnalyseFluxTresorerieComponent {
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Erreur',
-                    detail: error.error?.message || 'Impossible de sauvegarder le mois'
+                    detail: error.error?.message || 'Impossible de sauvegarder la période'
                 });
             }
         });
@@ -3017,9 +3044,9 @@ export class AnalyseFluxTresorerieComponent {
         return this.tresorerieState.getMonthStatus(mois);
     }
 
-    // Obtenir le label d'un mois
+    // Obtenir le label d'une période
     getMoisLabel(mois: number): string {
-        return mois === 0 ? 'Mois 0 (Démarrage)' : `Mois ${mois}`;
+        return mois === 0 ? 'Période 0 (Démarrage)' : `Période ${mois}`;
     }
 
     // Basculer entre les vues
@@ -3113,7 +3140,7 @@ export class AnalyseFluxTresorerieComponent {
                 if (moisData.excedentDeficit < remboursementTotal) {
                     this.messageService.add({
                         severity: 'warn',
-                        summary: `Mois ${mois}`,
+                        summary: `Période ${mois}`,
                         detail: "L'excédent ne couvre pas les remboursements"
                     });
                     return false;
@@ -3168,7 +3195,7 @@ export class AnalyseFluxTresorerieComponent {
             this.messageService.add({
                 severity: 'warn',
                 summary: 'Attention',
-                detail: "Veuillez saisir au moins un mois de données avant d'imprimer"
+                detail: "Veuillez saisir au moins une période de données avant d'imprimer"
             });
             return;
         }
@@ -3268,7 +3295,7 @@ export class AnalyseFluxTresorerieComponent {
             this.messageService.add({
                 severity: 'error',
                 summary: 'Données insuffisantes',
-                detail: 'Veuillez saisir au moins un mois de données'
+                detail: 'Veuillez saisir au moins une période de données'
             });
             return false;
         }

@@ -72,6 +72,8 @@ public class DemandeIndividuel {
     private String autreActivite;
     private String lieuActivite;
     private String natureActivite; // Nature de l'activité
+    private String profession; // Profession (pour Particulier uniquement)
+    private String secteurActivite; // Secteur d'activité (pour Particulier uniquement)
 
     // ==================== MODALITÉS DE CRÉDIT ====================
     private BigDecimal montantDemande;

@@ -225,7 +225,7 @@
                             <p-tag severity="danger" value="Dossier requis" icon="pi pi-lock"></p-tag>
                             }
                             <p-tag *ngIf="getTableMonthsWithData() > 0 && hasDossierCredit()" severity="info"
-                                [value]="getTableMonthsWithData() + '/' + (nombreMois() + 1) + ' mois'"
+                                [value]="getTableMonthsWithData() + '/' + (nombreMois() + 1) + ' périodes'"
                                 icon="pi pi-calendar">
                             </p-tag>
                             <p-tag *ngIf="tresorerieState.hasUnsavedChanges() && hasDossierCredit()" severity="warn" value="Modifications"
@@ -294,7 +294,7 @@
                 <div class="flex align-items-center justify-content-between mb-2">
                     <span class="font-semibold text-gray-700">
                         <i class="pi pi-chart-line mr-2"></i>
-                        Progression: {{ getTableMonthsWithData() }}/{{ nombreMois() + 1 }} mois
+                        Progression: {{ getTableMonthsWithData() }}/{{ nombreMois() + 1 }} périodes
                     </span>
                     <span [ngClass]="{
                             'text-red-500': (getCellValue('soldeFin', dernierMois()) ?? 0) < 0,
@@ -311,7 +311,7 @@
                         [class.segment-empty]="!checkIfMoisHasData(getMoisFormGroup(mois).getRawValue())"
                         [class.segment-filled]="checkIfMoisHasData(getMoisFormGroup(mois).getRawValue()) && !moisSauvegardes().has(mois)"
                         [class.segment-saved]="moisSauvegardes().has(mois)"
-                        [pTooltip]="'M' + mois + (moisSauvegardes().has(mois) ? ' ✓' : '')" tooltipPosition="top">
+                        [pTooltip]="'P' + mois + (moisSauvegardes().has(mois) ? ' ✓' : '')" tooltipPosition="top">
                         <span class="segment-label">{{ mois }}</span>
                     </div>
                     }
@@ -341,7 +341,7 @@
                 'bg-red-50 border-red-200': (getCellValue('soldeFin', dernierMois()) ?? 0) < 0
             }">
             <div>
-                <span class="text-sm">Solde final prévu (Mois {{ dernierMois() }}):</span>
+                <span class="text-sm">Solde final prévu (Période {{ dernierMois() }}):</span>
             </div>
             <div>
                 <span class="font-bold text-2xl" [ngClass]="{
@@ -409,7 +409,7 @@
                                 <!-- @if (ligne.editable) {
                                 <button pButton type="button" icon="pi pi-copy"
                                     class="p-button-text p-button-sm p-button-rounded copy-btn"
-                                    [pTooltip]="'Copier M0 vers M1-M' + nombreMois()" tooltipPosition="right"
+                                    [pTooltip]="'Copier P0 vers P1-P' + nombreMois()" tooltipPosition="right"
                                     (click)="copyToFollowingMonths(ligne.id, 0)">
                                 </button>
                                 } -->
@@ -440,7 +440,7 @@
                                     getCellValue(ligne.id, mois) !==0) { <button pButton type="button"
                                     icon="pi pi-arrow-right"
                                     class="copy-cell-btn p-button-text p-button-sm p-button-rounded"
-                                    [pTooltip]="'Copier vers M' + (mois + 1) + ' à M' + nombreMois()"
+                                    [pTooltip]="'Copier vers P' + (mois + 1) + ' à P' + nombreMois()"
                                     tooltipPosition="top"
                                     (click)="copyToFollowingMonths(ligne.id, mois); $event.stopPropagation()">
                                     </button>
@@ -480,7 +480,7 @@
                         </span>
                         } @else if (tresorerieState.hasUnsavedChanges()) {
                         <span class="text-orange-500">
-                            {{ getTableMonthsWithData() }} mois renseignés - Modifications non sauvegardées
+                            {{ getTableMonthsWithData() }} périodes renseignées - Modifications non sauvegardées
                         </span>
                         } @else {
                         <span class="text-green-600">

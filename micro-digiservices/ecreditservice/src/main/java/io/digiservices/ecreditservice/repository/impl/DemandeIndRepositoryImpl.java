@@ -648,8 +648,8 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
             // Création du tableau de garanties PostgreSQL
             Array garantiesArray = createGarantiesArray(connection, garanties);
 
-            // Préparation de l'appel à la procédure stockée V80 (55 paramètres)
-            stmt = connection.prepareStatement(DemandeIndQuery.CALL_INSERT_DEMANDE_WITH_GARANTIES_PROC_V4);
+            // Préparation de l'appel à la procédure stockée V94 (57 paramètres)
+            stmt = connection.prepareStatement(DemandeIndQuery.CALL_INSERT_DEMANDE_WITH_GARANTIES_PROC_V5);
 
             // ===== Paramètres 1-4: Informations de base =====
             stmt.setString(1, demandeIndividuel.getNom());
@@ -726,8 +726,12 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
             stmt.setString(53, demandeIndividuel.getEmail());
             stmt.setString(54, demandeIndividuel.getSigle());
 
-            // ===== Paramètre 55: Garanties =====
-            stmt.setArray(55, garantiesArray);
+            // ===== Paramètres 55-56: Nouveaux champs V94 =====
+            stmt.setString(55, demandeIndividuel.getProfession());
+            stmt.setString(56, demandeIndividuel.getSecteurActivite());
+
+            // ===== Paramètre 57: Garanties =====
+            stmt.setArray(57, garantiesArray);
 
             // Exécution
             rs = stmt.executeQuery();
@@ -1066,6 +1070,22 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
             demande.setValidationState((String) demandeMap.get("validation_state"));
             demande.setCurrentActivite((String) demandeMap.get("current_activite"));
             demande.setStatutSelection((String) demandeMap.get("statut_selection"));
+
+            // Nature du client et informations PME
+            demande.setNatureClient((String) demandeMap.get("nature_client"));
+            demande.setNomPersonneMorale((String) demandeMap.get("nom_personne_morale"));
+            demande.setSigle((String) demandeMap.get("sigle"));
+
+            // Informations personnelles supplémentaires
+            demande.setSernom((String) demandeMap.get("sernom"));
+            demande.setCategorie((String) demandeMap.get("categorie"));
+            demande.setNomPere((String) demandeMap.get("nom_pere"));
+            demande.setNomMere((String) demandeMap.get("nom_mere"));
+            demande.setNomConjoint((String) demandeMap.get("nom_conjoint"));
+            demande.setNatureActivite((String) demandeMap.get("nature_activite"));
+            demande.setPrefecture((String) demandeMap.get("prefecture"));
+            demande.setSousPrefecture((String) demandeMap.get("sous_prefecture"));
+            demande.setEmail((String) demandeMap.get("email"));
 
             // Timestamp
             if (demandeMap.get("createdat") != null) {

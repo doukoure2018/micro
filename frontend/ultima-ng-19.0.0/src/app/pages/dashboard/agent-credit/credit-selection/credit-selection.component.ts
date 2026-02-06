@@ -105,7 +105,7 @@ export class CreditSelectionComponent {
         if (statutDemande === 'EN_ATTENTE' && validationState === 'NOUVEAU') {
             return 'NOUVELLE DEMANDE';
         } else if (statutDemande === 'EN_ATTENTE' && validationState === 'SELECTION') {
-            return 'SELECTION';
+            return 'AFFECTATION';
         } else if (statutDemande === 'EN_ATTENTE' && validationState === 'APPROVED') {
             return 'EN COURS DE VALIDATION PAR DA';
         }

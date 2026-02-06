@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["src/app/pages/service/member.service.ts"],
-  "sourcesContent": ["import { HttpClient } from '@angular/common/http';\nimport { Injectable } from '@angular/core';\nimport { Member } from '@/types/member';\n\n@Injectable({\n    providedIn: 'root'\n})\nexport class MemberService {\n    constructor(private http: HttpClient) {}\n\n    getMembers() {\n        return this.http\n            .get<any>('/demo/data/members.json')\n            .toPromise()\n            .then((res) => res.data as Member[])\n            .then((data) => data);\n    }\n}\n"],
-  "mappings": ";;;;;;;;;AAOM,IAAO,gBAAP,MAAO,eAAa;EACF;EAApB,YAAoB,MAAgB;AAAhB,SAAA,OAAA;EAAmB;EAEvC,aAAU;AACN,WAAO,KAAK,KACP,IAAS,yBAAyB,EAClC,UAAS,EACT,KAAK,CAAC,QAAQ,IAAI,IAAgB,EAClC,KAAK,CAAC,SAAS,IAAI;EAC5B;;qCATS,gBAAa,mBAAA,UAAA,CAAA;EAAA;4EAAb,gBAAa,SAAb,eAAa,WAAA,YAFV,OAAM,CAAA;;",
-  "names": []
-}

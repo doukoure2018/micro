@@ -10,6 +10,7 @@ import lombok.Setter;
 public class Personnecaution {
     private Long personnecautionId;
     private Long entrepriseId;
+    private Long demandeindividuelId;
     private String nom;
     private String prenom;
     private String telephone;

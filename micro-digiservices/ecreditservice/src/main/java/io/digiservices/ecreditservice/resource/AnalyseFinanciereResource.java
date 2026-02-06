@@ -320,8 +320,9 @@ public class AnalyseFinanciereResource {
 
         var result = analyseService.getSyntheseByDemande(demandeId);
         var user = userClient.getUserByUuid(authentication.getName());
+        var personnesCaution = analyseService.getPersonnesCautionByDemande(demandeId);
         return ResponseEntity.ok(
-                getResponse(httpRequest, Map.of("synthese", result, "user", user),
+                getResponse(httpRequest, Map.of("synthese", result, "user", user, "personnesCaution", personnesCaution),
                         "Synthese recuperee", OK));
     }
 

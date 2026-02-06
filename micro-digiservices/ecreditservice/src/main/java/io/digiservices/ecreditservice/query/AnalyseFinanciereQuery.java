@@ -263,8 +263,8 @@ public class AnalyseFinanciereQuery {
             transport = :transport, electricite_eau_telephone = :electriciteEauTelephone,
             fournitures_autres_besoins = :fournituresAutresBesoins,
             entretien_reparation = :entretienReparation, carburant_lubrifiants = :carburantLubrifiants,
-            publicite_promotion = :publicitePromotion, impots_taxes = :impotsTaxes,
-            frais_bancaires_interets = :fraisBancairesInterets,
+            publicite_promotion = :publicitePromotion,
+            impots_taxes = :impotsTaxes, frais_bancaires_interets = :fraisBancairesInterets,
             echeance_autre_credit = :echeanceAutreCredit, diverses_charges = :diversesCharges,
             amortissements_provisions = :amortissementsProvisions,
             autres_revenus_hors_activite = :autresRevenusHorsActivite
@@ -727,5 +727,23 @@ public class AnalyseFinanciereQuery {
             nombre_erreurs as "nombreErreurs",
             erreurs
         FROM fn_valider_analyse(:analyseId)
+        """;
+
+    // ==================== PERSONNES CAUTION ====================
+
+    public static final String SELECT_PERSONNES_CAUTION_BY_DEMANDE = """
+        SELECT
+            personnecaution_id as "personnecautionId",
+            entreprise_id as "entrepriseId",
+            demandeindividuel_id as "demandeindividuelId",
+            nom,
+            prenom,
+            telephone,
+            activite,
+            age,
+            profession
+        FROM personnecaution
+        WHERE demandeindividuel_id = :demandeindividuelId
+        ORDER BY personnecaution_id
         """;
 }

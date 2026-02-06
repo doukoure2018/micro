@@ -74,6 +74,10 @@ export interface DemandeIndividuel {
     natureActivite?: string;
     currentActivite: string;
 
+    // ==================== CHAMPS PARTICULIER ====================
+    profession?: string; // Profession (pour Particulier uniquement)
+    secteurActivite?: string; // Secteur d'activité (pour Particulier uniquement)
+
     // ==================== MODALITÉS DE CRÉDIT ====================
     montantDemande: number;
     montant?: number;

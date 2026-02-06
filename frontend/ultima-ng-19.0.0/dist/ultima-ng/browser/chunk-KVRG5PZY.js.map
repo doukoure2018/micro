@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["src/app/apps/blog/blog.routes.ts"],
-  "sourcesContent": ["import { Routes } from '@angular/router';\n\nexport default [\n    {\n        path: 'list',\n        loadComponent: () => import('./list').then((c) => c.List),\n        data: { breadcrumb: 'List' }\n    },\n    {\n        path: 'detail',\n        loadComponent: () => import('./detail').then((c) => c.Detail),\n        data: { breadcrumb: 'Detail' }\n    },\n    {\n        path: 'edit',\n        loadComponent: () => import('./edit').then((c) => c.Edit),\n        data: { breadcrumb: 'Edit' }\n    }\n] as Routes;\n"],
-  "mappings": ";;;AAEA,IAAA,sBAAe;EACX;IACI,MAAM;IACN,eAAe,MAAM,OAAO,qBAAQ,EAAE,KAAK,CAAC,MAAM,EAAE,IAAI;IACxD,MAAM,EAAE,YAAY,OAAM;;EAE9B;IACI,MAAM;IACN,eAAe,MAAM,OAAO,qBAAU,EAAE,KAAK,CAAC,MAAM,EAAE,MAAM;IAC5D,MAAM,EAAE,YAAY,SAAQ;;EAEhC;IACI,MAAM;IACN,eAAe,MAAM,OAAO,qBAAQ,EAAE,KAAK,CAAC,MAAM,EAAE,IAAI;IACxD,MAAM,EAAE,YAAY,OAAM;;;",
-  "names": []
-}

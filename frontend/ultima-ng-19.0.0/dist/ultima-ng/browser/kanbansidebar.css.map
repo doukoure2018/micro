@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["kanbansidebar.ts"],
-  "sourcesContent": ["\n        :host ::ng-deep {\n            .p-drawer {\n                .p-drawer-content {\n                    padding: 0;\n                    display: flex;\n                    flex-direction: column;\n                    justify-content: space-between;\n                    height: 100%;\n                    overflow: auto;\n                }\n            }\n            .p-autocomplete {\n                .p-autocomplete-chip-item {\n                    display: flex;\n                }\n            }\n\n            div.p-inplace-display {\n                padding-left: 0 !important;\n            }\n        }\n    "],
-  "mappings": ";AAGgB,MAAA,UAAA,CAAA,SAAA,CAAA;AACI,WAAA;AACA,WAAA;AACA,kBAAA;AACA,mBAAA;AACA,UAAA;AACA,YAAA;;AAIJ,MAAA,UAAA,CAAA,eAAA,CAAA;AACI,WAAA;;AAIR,MAAA,UAAA,GAAA,CAAA;AACI,gBAAA;;",
-  "names": []
-}

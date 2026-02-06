@@ -168,12 +168,32 @@
                                 [disabled]="state().submitting" required>
                             </p-dropdown>
                         </td>
+                        @if (!isParticulier()) {
                         <td class="label-cell">Catégories</td>
                         <td>
                             <input pInputText [(ngModel)]="formData.categorie" name="categorie" class="w-full"
                                 [disabled]="state().submitting">
                         </td>
+                        } @else {
+                        <td class="label-cell highlight-yellow">Profession *</td>
+                        <td>
+                            <input pInputText [(ngModel)]="formData.profession" name="profession" class="w-full"
+                                [disabled]="state().submitting" required placeholder="Ex: Commerçant, Enseignant...">
+                        </td>
+                        }
                     </tr>
+
+                    <!-- Secteur d'activité (Particulier uniquement) -->
+                    @if (isParticulier()) {
+                    <tr>
+                        <td class="label-cell highlight-yellow">Secteur d'activité *</td>
+                        <td colspan="5">
+                            <input pInputText [(ngModel)]="formData.secteurActivite" name="secteurActivite"
+                                class="w-full" [disabled]="state().submitting" required
+                                placeholder="Ex: Commerce, Agriculture, Services...">
+                        </td>
+                    </tr>
+                    }
 
                     <!-- Nature et numéro de la pièce d'identité -->
                     <tr>
@@ -290,7 +310,8 @@
                         </td>
                     </tr>
 
-                    <!-- Nature de l'activité ou de l'entreprise -->
+                    <!-- Nature de l'activité ou de l'entreprise (PME/Professionnels uniquement) -->
+                    @if (!isParticulier()) {
                     <tr>
                         <td class="label-cell highlight-yellow">Nature de l'activité ou de l'entreprise</td>
                         <td colspan="5">
@@ -299,7 +320,7 @@
                         </td>
                     </tr>
 
-                    <!-- Type d'activité, Sous-activité, Filière -->
+                    <!-- Type d'activité, Sous-activité, Filière (PME/Professionnels uniquement) -->
                     <tr>
                         <td class="label-cell">Type d'activité *</td>
                         <td>
@@ -327,6 +348,7 @@
                             </p-dropdown>
                         </td>
                     </tr>
+                    }
 
                     <!-- Nombre d'années d'expérience dans cette activité -->
                     <tr>
@@ -436,13 +458,13 @@
 
                     <!-- Montant à rembourser par échéance, Autres (à préciser) -->
                     <tr>
-                        <td class="label-cell">Montant à rembourser par échéance</td>
+                        <td class="label-cell">Echéance</td>
                         <td>
                             <p-inputNumber [(ngModel)]="formData.echeance" name="echeance" mode="currency"
                                 currency="GNF" locale="fr-FR" styleClass="w-full" [disabled]="state().submitting">
                             </p-inputNumber>
                         </td>
-                        <td class="label-cell" colspan="3">Autres (à préciser) *</td>
+                        <td class="label-cell" colspan="3">Object du crédit *</td>
                         <td colspan="2">
                             <input pInputText [(ngModel)]="formData.detailObjectCredit" name="detailObjectCredit"
                                 class="w-full" [disabled]="state().submitting" required>

@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["src/app/pages/auth/auth.component.ts", "src/app/pages/auth/auth.component.html"],
-  "sourcesContent": ["import { Topbar } from '@/pages/landing/components/topbar';\r\nimport { Component } from '@angular/core';\r\nimport { RouterOutlet } from '@angular/router';\r\n\r\n@Component({\r\n    selector: 'app-auth',\r\n    imports: [RouterOutlet, Topbar],\r\n    templateUrl: './auth.component.html'\r\n})\r\nexport class AuthComponent {}\r\n", "<div class=\"layout-content-wrapper\">\r\n    <topbar />\r\n    <div class=\"layout-content\">\r\n        <router-outlet></router-outlet>\r\n    </div>\r\n</div>"],
-  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;AASM,IAAO,gBAAP,MAAO,eAAa;;qCAAb,gBAAa;EAAA;yEAAb,gBAAa,WAAA,CAAA,CAAA,UAAA,CAAA,GAAA,OAAA,GAAA,MAAA,GAAA,QAAA,CAAA,CAAA,GAAA,wBAAA,GAAA,CAAA,GAAA,gBAAA,CAAA,GAAA,UAAA,SAAA,uBAAA,IAAA,KAAA;AAAA,QAAA,KAAA,GAAA;ACT1B,MAAA,yBAAA,GAAA,OAAA,CAAA;AACI,MAAA,oBAAA,GAAA,QAAA;AACA,MAAA,yBAAA,GAAA,OAAA,CAAA;AACI,MAAA,oBAAA,GAAA,eAAA;AACJ,MAAA,uBAAA,EAAM;;oBDEI,cAAc,MAAM,GAAA,eAAA,EAAA,CAAA;;;6EAGrB,eAAa,EAAA,WAAA,iBAAA,UAAA,wCAAA,YAAA,GAAA,CAAA;AAAA,GAAA;",
-  "names": []
-}

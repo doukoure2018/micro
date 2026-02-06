@@ -71,6 +71,69 @@
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <!-- NATURE DU CLIENT - Affichage prominent en haut                         -->
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <div class="nature-client-card"
+            [ngClass]="{
+                'nature-pme': state().demandeIndividuel?.natureClient?.includes('PME'),
+                'nature-professionnel': state().demandeIndividuel?.natureClient?.includes('Professionnel'),
+                'nature-particulier': !state().demandeIndividuel?.natureClient?.includes('PME') && !state().demandeIndividuel?.natureClient?.includes('Professionnel')
+            }">
+            <div class="nature-client-header">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="nature-icon-wrapper">
+                            <i [ngClass]="{
+                                    'pi pi-building': state().demandeIndividuel?.natureClient?.includes('PME'),
+                                    'pi pi-briefcase': state().demandeIndividuel?.natureClient?.includes('Professionnel'),
+                                    'pi pi-user': !state().demandeIndividuel?.natureClient?.includes('PME') && !state().demandeIndividuel?.natureClient?.includes('Professionnel')
+                                }"></i>
+                        </div>
+                        <div>
+                            <p class="nature-label">Nature du Client</p>
+                            <h2 class="nature-title">
+                                {{ state().demandeIndividuel?.natureClient?.includes('PME') ? 'Entreprise (PME/PMI)' :
+                                   state().demandeIndividuel?.natureClient?.includes('Professionnel') ? 'Professionnel' :
+                                   'Particulier' }}
+                            </h2>
+                            <!-- Affichage conditionnel pour PME -->
+                            <p *ngIf="state().demandeIndividuel?.natureClient?.includes('PME') && state().demandeIndividuel?.nomPersonneMorale"
+                                class="nature-subtitle">
+                                <span *ngIf="state().demandeIndividuel?.sigle" class="font-bold">{{ state().demandeIndividuel?.sigle }} - </span>
+                                {{ state().demandeIndividuel?.nomPersonneMorale }}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="nature-category">
+                        <p class="category-label">Catégorie</p>
+                        <p class="category-value">{{ state().demandeIndividuel?.categorie || 'Non spécifiée' }}</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Informations supplémentaires selon la nature -->
+            <div class="nature-client-details" *ngIf="state().demandeIndividuel?.email || state().demandeIndividuel?.prefecture || state().demandeIndividuel?.sousPrefecture || (state().demandeIndividuel?.natureClient?.includes('PME') && state().demandeIndividuel?.titreDirecteur)">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="detail-item" *ngIf="state().demandeIndividuel?.email">
+                        <span class="detail-label">Email</span>
+                        <span class="detail-value">{{ state().demandeIndividuel?.email }}</span>
+                    </div>
+                    <div class="detail-item" *ngIf="state().demandeIndividuel?.prefecture">
+                        <span class="detail-label">Préfecture</span>
+                        <span class="detail-value">{{ state().demandeIndividuel?.prefecture }}</span>
+                    </div>
+                    <div class="detail-item" *ngIf="state().demandeIndividuel?.sousPrefecture">
+                        <span class="detail-label">Sous-Préfecture</span>
+                        <span class="detail-value">{{ state().demandeIndividuel?.sousPrefecture }}</span>
+                    </div>
+                    <div class="detail-item" *ngIf="state().demandeIndividuel?.natureClient?.includes('PME') && state().demandeIndividuel?.titreDirecteur">
+                        <span class="detail-label">Titre du Directeur</span>
+                        <span class="detail-value">{{ state().demandeIndividuel?.titreDirecteur }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
         <!-- RÉSUMÉ DE LA DEMANDE - Tableau simple                                  -->
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
         <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8">
@@ -83,19 +146,24 @@
                     <tbody>
                         <tr class="border-b border-gray-200">
                             <td class="py-3 px-4 text-gray-600 font-medium w-1/4">Montant Sollicité</td>
-                            <td class="py-3 px-4 font-bold text-lg text-gray-800">{{ state().demandeIndividuel?.montantDemande | currency:'GNF':'symbol':'1.0-0' }}</td>
+                            <td class="py-3 px-4 font-bold text-lg text-gray-800">{{
+                                state().demandeIndividuel?.montantDemande | currency:'GNF':'symbol':'1.0-0' }}</td>
                             <td class="py-3 px-4 text-gray-600 font-medium w-1/4">Échéance</td>
-                            <td class="py-3 px-4 font-bold text-lg text-green-600">{{ state().demandeIndividuel?.echeance | currency:'GNF':'symbol':'1.0-0' }}</td>
+                            <td class="py-3 px-4 font-bold text-lg text-green-600">{{
+                                state().demandeIndividuel?.echeance | currency:'GNF':'symbol':'1.0-0' }}</td>
                         </tr>
                         <tr class="border-b border-gray-200">
                             <td class="py-3 px-4 text-gray-600 font-medium">Durée</td>
-                            <td class="py-3 px-4 font-bold text-lg text-blue-600">{{ state().demandeIndividuel?.dureeDemande }} mois</td>
+                            <td class="py-3 px-4 font-bold text-lg text-blue-600">{{
+                                state().demandeIndividuel?.dureeDemande }} mois</td>
                             <td class="py-3 px-4 text-gray-600 font-medium">Taux d'intérêt</td>
-                            <td class="py-3 px-4 font-bold text-lg text-purple-600">{{ state().demandeIndividuel?.tauxInteret }}%</td>
+                            <td class="py-3 px-4 font-bold text-lg text-purple-600">{{
+                                state().demandeIndividuel?.tauxInteret }}%</td>
                         </tr>
                         <tr>
                             <td class="py-3 px-4 text-gray-600 font-medium">Agence</td>
-                            <td class="py-3 px-4 font-semibold text-gray-800" colspan="3">{{ state().pointVente?.libele || 'Non assigné' }}</td>
+                            <td class="py-3 px-4 font-semibold text-gray-800" colspan="3">{{ state().pointVente?.libele
+                                || 'Non assigné' }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -115,7 +183,8 @@
                     <tbody>
                         <tr class="border-b border-gray-200">
                             <td class="py-3 px-4 text-gray-600 font-medium w-1/4">Nom complet</td>
-                            <td class="py-3 px-4 font-semibold text-gray-800">{{ state().demandeIndividuel?.nom }} {{ state().demandeIndividuel?.prenom }}</td>
+                            <td class="py-3 px-4 font-semibold text-gray-800">{{ state().demandeIndividuel?.nom }} {{
+                                state().demandeIndividuel?.prenom }}</td>
                             <td class="py-3 px-4 text-gray-600 font-medium w-1/4">N° Membre</td>
                             <td class="py-3 px-4 font-mono">{{ state().demandeIndividuel?.numeroMembre }}</td>
                         </tr>
@@ -127,7 +196,8 @@
                         </tr>
                         <tr class="border-b border-gray-200">
                             <td class="py-3 px-4 text-gray-600 font-medium">Date de naissance</td>
-                            <td class="py-3 px-4">{{ state().demandeIndividuel?.dateNaissance | date:'dd/MM/yyyy' }}</td>
+                            <td class="py-3 px-4">{{ state().demandeIndividuel?.dateNaissance | date:'dd/MM/yyyy' }}
+                            </td>
                             <td class="py-3 px-4 text-gray-600 font-medium">Lieu de naissance</td>
                             <td class="py-3 px-4">{{ state().demandeIndividuel?.lieuxNaissance }}</td>
                         </tr>
@@ -139,19 +209,34 @@
                         </tr>
                         <tr class="border-b border-gray-200">
                             <td class="py-3 px-4 text-gray-600 font-medium">Personnes à charge</td>
-                            <td class="py-3 px-4 font-bold text-blue-600">{{ state().demandeIndividuel?.nombrePersonneEnCharge }}</td>
+                            <td class="py-3 px-4 font-bold text-blue-600">{{
+                                state().demandeIndividuel?.nombrePersonneEnCharge }}</td>
                             <td class="py-3 px-4 text-gray-600 font-medium">Personnes scolarisées</td>
-                            <td class="py-3 px-4 font-bold text-blue-600">{{ state().demandeIndividuel?.nombrePersonneScolarise }}</td>
+                            <td class="py-3 px-4 font-bold text-blue-600">{{
+                                state().demandeIndividuel?.nombrePersonneScolarise }}</td>
                         </tr>
                         <tr class="border-b border-gray-200">
                             <td class="py-3 px-4 text-gray-600 font-medium">Adresse & Contact</td>
-                            <td class="py-3 px-4" colspan="3">{{ state().demandeIndividuel?.addresseDomicileContact }}</td>
+                            <td class="py-3 px-4" colspan="3">{{ state().demandeIndividuel?.addresseDomicileContact }}
+                            </td>
                         </tr>
-                        <tr>
+                        <tr class="border-b border-gray-200">
                             <td class="py-3 px-4 text-gray-600 font-medium">Années à l'adresse</td>
                             <td class="py-3 px-4">{{ state().demandeIndividuel?.nombreAnneeHabitation }} ans</td>
                             <td class="py-3 px-4 text-gray-600 font-medium">Type de propriété</td>
                             <td class="py-3 px-4">{{ state().demandeIndividuel?.typePropriete }}</td>
+                        </tr>
+                        <!-- Informations familiales -->
+                        <tr class="border-b border-gray-200"
+                            *ngIf="state().demandeIndividuel?.nomPere || state().demandeIndividuel?.nomMere">
+                            <td class="py-3 px-4 text-gray-600 font-medium">Nom du père</td>
+                            <td class="py-3 px-4">{{ state().demandeIndividuel?.nomPere || 'Non renseigné' }}</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Nom de la mère</td>
+                            <td class="py-3 px-4">{{ state().demandeIndividuel?.nomMere || 'Non renseigné' }}</td>
+                        </tr>
+                        <tr *ngIf="state().demandeIndividuel?.nomConjoint">
+                            <td class="py-3 px-4 text-gray-600 font-medium">Nom du conjoint</td>
+                            <td class="py-3 px-4" colspan="3">{{ state().demandeIndividuel?.nomConjoint }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -171,9 +256,11 @@
                     <tbody>
                         <tr class="border-b border-gray-200">
                             <td class="py-3 px-4 text-gray-600 font-medium w-1/4">Type d'activité</td>
-                            <td class="py-3 px-4 font-semibold text-emerald-700">{{ state().demandeIndividuel?.currentActivite }}</td>
+                            <td class="py-3 px-4 font-semibold text-emerald-700">{{
+                                state().demandeIndividuel?.currentActivite }}</td>
                             <td class="py-3 px-4 text-gray-600 font-medium w-1/4">Expérience</td>
-                            <td class="py-3 px-4 font-bold text-emerald-600">{{ state().demandeIndividuel?.nombreAnneeActivite }} ans</td>
+                            <td class="py-3 px-4 font-bold text-emerald-600">{{
+                                state().demandeIndividuel?.nombreAnneeActivite }} ans</td>
                         </tr>
                         <tr class="border-b border-gray-200">
                             <td class="py-3 px-4 text-gray-600 font-medium">Description</td>
@@ -187,7 +274,8 @@
                         </tr>
                         <tr>
                             <td class="py-3 px-4 text-gray-600 font-medium">Autres activités</td>
-                            <td class="py-3 px-4" colspan="3">{{ state().demandeIndividuel?.autreActivite || 'Aucune' }}</td>
+                            <td class="py-3 px-4" colspan="3">{{ state().demandeIndividuel?.autreActivite || 'Aucune' }}
+                            </td>
                         </tr>
                     </tbody>
                 </table>
@@ -217,7 +305,8 @@
                             <td class="py-3 px-4 text-gray-600 font-medium">Type de crédit</td>
                             <td class="py-3 px-4">
                                 <span class="flex items-center gap-2">
-                                    <i *ngIf="state().demandeIndividuel?.statutCredit === 'Nouveau'" class="pi pi-check-circle text-green-500"></i>
+                                    <i *ngIf="state().demandeIndividuel?.statutCredit === 'Nouveau'"
+                                        class="pi pi-check-circle text-green-500"></i>
                                     {{ state().demandeIndividuel?.statutCredit }}
                                 </span>
                             </td>
@@ -226,7 +315,8 @@
                             <td class="py-3 px-4 text-gray-600 font-medium">Rang du crédit</td>
                             <td class="py-3 px-4">{{ state().demandeIndividuel?.rangCredit }}</td>
                             <td class="py-3 px-4 text-gray-600 font-medium">Objet du crédit</td>
-                            <td class="py-3 px-4 font-semibold text-amber-700">{{ state().demandeIndividuel?.objectCredit }}</td>
+                            <td class="py-3 px-4 font-semibold text-amber-700">{{
+                                state().demandeIndividuel?.objectCredit }}</td>
                         </tr>
                         <tr>
                             <td class="py-3 px-4 text-gray-600 font-medium">Détail de l'objet</td>
@@ -299,7 +389,8 @@
             <div class="p-6">
                 <div class="bg-orange-50 border-l-4 border-orange-400 rounded-r-lg p-5 mb-8">
                     <i class="pi pi-info-circle text-orange-600 mr-2 text-xl"></i>
-                    <span class="text-base font-medium text-orange-800">Rediriger la demande vers un agent pour l'analyse de son crédit</span>
+                    <span class="text-base font-medium text-orange-800">Rediriger la demande vers un agent pour
+                        l'analyse de son crédit</span>
                 </div>
 
                 <form [formGroup]="updateForm" (ngSubmit)="onSubmit()">
@@ -307,18 +398,13 @@
                         <!-- Point de Service -->
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-3">
-                                <i class="pi pi-map-marker mr-2 text-blue-500"></i>Point de Service <span class="text-red-500">*</span>
+                                <i class="pi pi-map-marker mr-2 text-blue-500"></i>Point de Service <span
+                                    class="text-red-500">*</span>
                             </label>
-                            <p-dropdown formControlName="code"
-                                [options]="state().pointVentes || []"
-                                optionLabel="libele"
-                                optionValue="code"
-                                placeholder="-- Sélectionner un point de service --"
-                                [showClear]="true"
-                                [filter]="true"
-                                filterPlaceholder="Rechercher..."
-                                [style]="{'width': '100%'}"
-                                appendTo="body"
+                            <p-dropdown formControlName="code" [options]="state().pointVentes || []"
+                                optionLabel="libele" optionValue="code"
+                                placeholder="-- Sélectionner un point de service --" [showClear]="true" [filter]="true"
+                                filterPlaceholder="Rechercher..." [style]="{'width': '100%'}" appendTo="body"
                                 (onChange)="onPointVenteChange($event)">
                             </p-dropdown>
                         </div>
@@ -327,7 +413,8 @@
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-3">
                                 <i class="pi pi-user mr-2 text-blue-500"></i>Code Agent
-                                <span class="text-blue-500 text-sm ml-1">(SAF)</span> <span class="text-red-500">*</span>
+                                <span class="text-blue-500 text-sm ml-1">(SAF)</span> <span
+                                    class="text-red-500">*</span>
                             </label>
                             <div class="relative">
                                 <input pInputText formControlName="codAgent" placeholder="Ex: AGCR001"
@@ -363,7 +450,8 @@
                                 <i class="pi pi-tag mr-2 text-blue-500"></i>Action <span class="text-red-500">*</span>
                             </label>
                             <p-dropdown formControlName="statut" [options]="state().statusOptions" optionLabel="label"
-                                optionValue="value" placeholder="-- Sélectionner une action --" [style]="{'width': '100%'}" appendTo="body">
+                                optionValue="value" placeholder="-- Sélectionner une action --"
+                                [style]="{'width': '100%'}" appendTo="body">
                             </p-dropdown>
                         </div>
                     </div>
@@ -373,7 +461,8 @@
                             class="px-10 py-3 font-bold shadow-lg text-base"
                             [ngClass]="canSubmitForm() ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gray-400'">
                             <i class="pi mr-2" [ngClass]="state().loading ? 'pi-spinner pi-spin' : 'pi-check'"></i>
-                            {{ updateForm.get('statut')?.value === 'VALIDATION' ? 'VALIDER POUR OCTROI' : 'VALIDER POUR SÉLECTION' }}
+                            {{ updateForm.get('statut')?.value === 'VALIDATION' ? 'VALIDER POUR OCTROI' : 'VALIDER POUR
+                            SÉLECTION' }}
                         </button>
                     </div>
                 </form>
@@ -400,8 +489,7 @@
                         class="bg-red-600 hover:bg-red-700" icon="pi pi-times-circle" label="REJETER">
                     </button>
                     <button pButton type="button" (click)="openInNewTab('/dashboards/credit/analyse-credit')"
-                        class="bg-blue-600 hover:bg-blue-700" icon="pi pi-chart-line"
-                        label="ANALYSER ANCIEN CRÉDIT">
+                        class="bg-blue-600 hover:bg-blue-700" icon="pi pi-chart-line" label="ANALYSER ANCIEN CRÉDIT">
                     </button>
                 </div>
             </div>
@@ -436,10 +524,10 @@
                 <!-- Grid des 2 analyses -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <!-- 1. Bilan d'Activité -->
-                    <div class="border-2 rounded-xl p-5 transition-all hover:shadow-md"
+                    <div class="border-2 rounded-xl p-5 transition-all hover:shadow-md overflow-visible"
                         [ngClass]="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'border-green-300 bg-green-50' :
                                    state().analyseStatut === 'BROUILLON' ? 'border-yellow-300 bg-yellow-50' : 'border-blue-300 bg-blue-50'">
-                        <div class="flex items-center gap-3 mb-3">
+                        <div class="flex items-center gap-3 mb-4">
                             <div class="w-10 h-10 rounded-full flex items-center justify-center text-white"
                                 [ngClass]="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'bg-green-500' :
                                            state().analyseStatut === 'BROUILLON' ? 'bg-yellow-500' : 'bg-blue-500'">
@@ -451,32 +539,38 @@
                                 <div class="text-sm font-medium"
                                     [ngClass]="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'text-green-600' :
                                                state().analyseStatut === 'BROUILLON' ? 'text-yellow-600' : 'text-blue-600'">
-                                    {{ state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? '✓
-                                    Complété' :
-                                    state().analyseStatut === 'BROUILLON' ? '⏳ En cours' : '○ À renseigner' }}
+                                    {{ state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? '✓ Complété' :
+                                       state().analyseStatut === 'BROUILLON' ? '⏳ En cours' : '○ À renseigner' }}
                                 </div>
                             </div>
                         </div>
 
-                        <a *ngIf="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE'"
-                            [routerLink]="['/dashboards/credit/individuel/detail/resume-analyse', state().demandeIndividuel?.demandeIndividuelId]"
-                            class="block w-full text-center bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-medium transition-colors">
-                            <i class="pi pi-eye mr-2"></i>Visualiser
-                        </a>
-                        <a *ngIf="state().analyseStatut === 'BROUILLON'"
-                            [routerLink]="['/dashboards/credit/individuel/detail/analyse-bilan-activite', state().demandeIndividuel?.demandeIndividuelId]"
-                            class="block w-full text-center bg-yellow-600 hover:bg-yellow-700 text-white py-3 px-4 rounded-lg font-medium transition-colors">
-                            <i class="pi pi-pencil mr-2"></i>Continuer
-                        </a>
-                        <button *ngIf="!state().hasAnalyseFinanciere"
-                            (click)="navigateTo('/dashboards/credit/individuel/detail/analyse-bilan-activite/' + state().demandeIndividuel?.demandeIndividuelId)"
-                            class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors">
-                            <i class="pi pi-plus mr-2"></i>Renseigner
-                        </button>
+                        <!-- Boutons d'action -->
+                        <div class="mt-4">
+                            <!-- Bouton Visualiser - quand complété -->
+                            <a *ngIf="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE'"
+                                [routerLink]="['/dashboards/credit/individuel/detail/resume-analyse', state().demandeIndividuel?.demandeIndividuelId]"
+                                class="flex items-center justify-center w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors no-underline">
+                                <i class="pi pi-eye mr-2"></i>Visualiser
+                            </a>
+                            <!-- Bouton Continuer - quand en brouillon -->
+                            <a *ngIf="state().analyseStatut === 'BROUILLON'"
+                                [routerLink]="['/dashboards/credit/individuel/detail/analyse-bilan-activite', state().demandeIndividuel?.demandeIndividuelId]"
+                                class="flex items-center justify-center w-full bg-yellow-600 hover:bg-yellow-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors no-underline">
+                                <i class="pi pi-pencil mr-2"></i>Continuer
+                            </a>
+                            <!-- Bouton Renseigner - quand pas d'analyse -->
+                            <a *ngIf="state().analyseStatut !== 'SOUMISE' && state().analyseStatut !== 'VALIDEE' && state().analyseStatut !== 'BROUILLON'"
+                                [routerLink]="['/dashboards/credit/individuel/detail/analyse-bilan-activite', state().demandeIndividuel?.demandeIndividuelId]"
+                                class="flex items-center justify-center w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors no-underline cursor-pointer"
+                                style="display: flex !important; visibility: visible !important;">
+                                <i class="pi pi-plus mr-2"></i>Renseigner
+                            </a>
+                        </div>
                     </div>
 
                     <!-- 2. Flux de Trésorerie -->
-                    <div class="border-2 rounded-xl p-5 transition-all hover:shadow-md"
+                    <div class="border-2 rounded-xl p-5 transition-all hover:shadow-md overflow-visible"
                         [ngClass]="state().hasDossierCredit ? 'border-green-300 bg-green-50' : 'border-orange-300 bg-orange-50'">
                         <div class="flex items-center gap-3 mb-4">
                             <div class="w-10 h-10 rounded-full flex items-center justify-center text-white"
@@ -492,16 +586,22 @@
                             </div>
                         </div>
 
-                        <a *ngIf="state().hasDossierCredit"
-                            [routerLink]="['/dashboards/credit/individuel/detail/analyse-flux-tresorerie/' + state().demandeIndividuel?.demandeIndividuelId]"
-                            class="block w-full text-center bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-medium transition-colors">
-                            <i class="pi pi-eye mr-2"></i>Visualiser
-                        </a>
-                        <button *ngIf="!state().hasDossierCredit"
-                            (click)="navigateTo('/dashboards/credit/individuel/detail/analyse-flux-tresorerie/' + state().demandeIndividuel?.demandeIndividuelId)"
-                            class="w-full bg-orange-600 hover:bg-orange-700 text-white py-3 px-4 rounded-lg font-medium transition-colors">
-                            <i class="pi pi-plus mr-2"></i>Renseigner
-                        </button>
+                        <!-- Boutons d'action -->
+                        <div class="mt-4">
+                            <!-- Bouton Visualiser - quand complété -->
+                            <a *ngIf="state().hasDossierCredit"
+                                [routerLink]="['/dashboards/credit/individuel/detail/analyse-flux-tresorerie', state().demandeIndividuel?.demandeIndividuelId]"
+                                class="flex items-center justify-center w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors no-underline">
+                                <i class="pi pi-eye mr-2"></i>Visualiser
+                            </a>
+                            <!-- Bouton Renseigner - quand pas de dossier crédit -->
+                            <a *ngIf="!state().hasDossierCredit"
+                                [routerLink]="['/dashboards/credit/individuel/detail/analyse-flux-tresorerie', state().demandeIndividuel?.demandeIndividuelId]"
+                                class="flex items-center justify-center w-full bg-orange-600 hover:bg-orange-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors no-underline cursor-pointer"
+                                style="display: flex !important; visibility: visible !important;">
+                                <i class="pi pi-plus mr-2"></i>Renseigner
+                            </a>
+                        </div>
                     </div>
                 </div>
 
@@ -542,7 +642,8 @@
                                 <div class="font-medium"
                                     [ngClass]="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'text-green-600' :
                                                state().analyseStatut === 'BROUILLON' ? 'text-yellow-600' : 'text-gray-500'">
-                                    {{ state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? '✓ Disponible' :
+                                    {{ state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? '✓
+                                    Disponible' :
                                     state().analyseStatut === 'BROUILLON' ? '⏳ En cours' : '○ Non renseigné' }}
                                 </div>
                             </div>
@@ -620,8 +721,7 @@
                             <p-button *ngIf="state().editingAvis" label="Annuler" icon="pi pi-times"
                                 severity="secondary" [outlined]="true" (onClick)="cancelEdit()"></p-button>
                             <p-button [label]="getSubmitButtonLabel()" [icon]="getSubmitButtonIcon()" type="submit"
-                                [loading]="state().submittingAvis"
-                                [disabled]="avisForm.invalid"></p-button>
+                                [loading]="state().submittingAvis" [disabled]="avisForm.invalid"></p-button>
                         </div>
                     </form>
                 </div>
@@ -633,7 +733,8 @@
                         <div class="flex-1">
                             <div class="flex items-center gap-3 mb-3">
                                 <p-badge value="Mon avis" severity="info"></p-badge>
-                                <span class="text-gray-500">{{ formatDate(state().currentUserAvis?.dateCreation) }}</span>
+                                <span class="text-gray-500">{{ formatDate(state().currentUserAvis?.dateCreation)
+                                    }}</span>
                             </div>
                             <p class="text-gray-700 whitespace-pre-wrap">{{ state().currentUserAvis?.libele }}</p>
                         </div>
@@ -643,7 +744,8 @@
                 </div>
 
                 <!-- Bouton Approbation -->
-                <div class="mt-6 text-center p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border-2 border-green-200">
+                <div
+                    class="mt-6 text-center p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border-2 border-green-200">
                     <button pButton (click)="approvedDemande(state().demandeIndividuel!)"
                         [disabled]="!state().userHasAvis" class="px-10 py-3 font-bold shadow-lg text-base"
                         [ngClass]="state().userHasAvis ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gray-400'"
@@ -681,8 +783,8 @@
                             placeholder="Partagez votre avis..." [autoResize]="true">
                         </textarea>
                         <div class="flex justify-end gap-4">
-                            <p-button label="Annuler" icon="pi pi-times" severity="secondary"
-                                [outlined]="true" (onClick)="cancelEdit()"></p-button>
+                            <p-button label="Annuler" icon="pi pi-times" severity="secondary" [outlined]="true"
+                                (onClick)="cancelEdit()"></p-button>
                             <p-button label="Soumettre" icon="pi pi-send" type="submit"
                                 [loading]="state().submittingAvis" [disabled]="avisForm.invalid"></p-button>
                         </div>

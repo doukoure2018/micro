@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["src/app/utils/fileutils.ts"],
-  "sourcesContent": ["export const server = 'http://localhost:8000';\r\n\r\nexport const authorizationServer = 'http://localhost:8080';\r\n\r\nexport const getFormData = (formValue: any, files?: File[]): FormData => {\r\n    const formData = new FormData();\r\n    for (const property in formValue) {\r\n        formData.append(property, formValue[property]);\r\n    }\r\n\r\n    if (files && files.length > 0) {\r\n        files.forEach((file) => formData.append('files', file, file.name));\r\n    }\r\n\r\n    return formData;\r\n};\r\n"],
-  "mappings": ";AAIO,IAAM,cAAc,CAAC,WAAgB,UAA4B;AACpE,QAAM,WAAW,IAAI,SAAQ;AAC7B,aAAW,YAAY,WAAW;AAC9B,aAAS,OAAO,UAAU,UAAU,QAAQ,CAAC;EACjD;AAEA,MAAI,SAAS,MAAM,SAAS,GAAG;AAC3B,UAAM,QAAQ,CAAC,SAAS,SAAS,OAAO,SAAS,MAAM,KAAK,IAAI,CAAC;EACrE;AAEA,SAAO;AACX;",
-  "names": []
-}

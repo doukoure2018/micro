@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -18,4 +20,20 @@ public class SoumissionRequest {
     private Long analyseId;
 
     private Boolean forcerSoumission;
+
+    private List<PersonneCautionInput> personnesCaution;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class PersonneCautionInput {
+        private String nom;
+        private String prenom;
+        private String telephone;
+        private String activite;
+        private Long age;
+        private String profession;
+    }
 }
