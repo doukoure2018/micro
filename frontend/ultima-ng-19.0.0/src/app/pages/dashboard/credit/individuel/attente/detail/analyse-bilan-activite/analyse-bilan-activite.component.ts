@@ -119,6 +119,11 @@ export class AnalyseBilanActiviteComponent {
     savingBesoinCredit = signal<boolean>(false);
     calculatingRatios = signal<boolean>(false);
 
+    // Flags pour savoir si les données ont été enregistrées (pour afficher Modifier)
+    bilanSaved = signal<boolean>(false);
+    rentabiliteSaved = signal<boolean>(false);
+    besoinCreditSaved = signal<boolean>(false);
+
     // Forms
     bilanNForm!: FormGroup; // Bilan année N
     bilanN1Form!: FormGroup; // Bilan année N-1
@@ -497,14 +502,14 @@ export class AnalyseBilanActiviteComponent {
     // ============== COMPUTED VALUES FOR BESOIN CREDIT ==============
 
     // INVESTISSEMENT - Colonnes Montant
-    investissementCoutEquipement = computed(() => this.besoinCreditForm?.get('coutEquipement')?.value || 0);
-    investissementDepensesRattachees = computed(() => this.besoinCreditForm?.get('depensesRattachees')?.value || 0);
-    investissementApportPersonnel = computed(() => this.besoinCreditForm?.get('apportPersonnel')?.value || 0);
+    investissementCoutEquipement = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('coutEquipement')?.value || 0; });
+    investissementDepensesRattachees = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('depensesRattachees')?.value || 0; });
+    investissementApportPersonnel = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('apportPersonnel')?.value || 0; });
 
     // INVESTISSEMENT - Colonnes Ajustement
-    investissementAjustCoutEquipement = computed(() => this.besoinCreditForm?.get('ajustCoutEquipement')?.value || 0);
-    investissementAjustDepensesRattachees = computed(() => this.besoinCreditForm?.get('ajustDepensesRattachees')?.value || 0);
-    investissementAjustApportPersonnel = computed(() => this.besoinCreditForm?.get('ajustApportPersonnel')?.value || 0);
+    investissementAjustCoutEquipement = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('ajustCoutEquipement')?.value || 0; });
+    investissementAjustDepensesRattachees = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('ajustDepensesRattachees')?.value || 0; });
+    investissementAjustApportPersonnel = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('ajustApportPersonnel')?.value || 0; });
 
     // INVESTISSEMENT - Colonnes Montant effectif (Montant + Ajustement)
     effCoutEquipement = computed(() => this.investissementCoutEquipement() + this.investissementAjustCoutEquipement());
@@ -522,21 +527,21 @@ export class AnalyseBilanActiviteComponent {
     besoinReelInvestissementFinal = computed(() => this.totalInvestissementEffectif() - this.effApportPersonnel());
 
     // EXPLOITATION - Colonnes Montant
-    exploitationCoutAchatCycle = computed(() => this.besoinCreditForm?.get('coutAchatCycle')?.value || 0);
-    exploitationNbreCycles = computed(() => this.besoinCreditForm?.get('nbreCycleFinancer')?.value || 1);
-    exploitationTresorerieDispo = computed(() => this.besoinCreditForm?.get('tresorerieDisponible')?.value || 0);
-    exploitationStockActuel = computed(() => this.besoinCreditForm?.get('stockActuel')?.value || 0);
-    exploitationComptesRecevoir = computed(() => this.besoinCreditForm?.get('comptesRecevoir')?.value || 0);
-    exploitationDettesFournisseurs = computed(() => this.besoinCreditForm?.get('dettesFournisseurs')?.value || 0);
-    exploitationCreditFournisseur = computed(() => this.besoinCreditForm?.get('creditFournisseur')?.value || 0);
+    exploitationCoutAchatCycle = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('coutAchatCycle')?.value || 0; });
+    exploitationNbreCycles = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('nbreCycleFinancer')?.value || 1; });
+    exploitationTresorerieDispo = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('tresorerieDisponible')?.value || 0; });
+    exploitationStockActuel = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('stockActuel')?.value || 0; });
+    exploitationComptesRecevoir = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('comptesRecevoir')?.value || 0; });
+    exploitationDettesFournisseurs = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('dettesFournisseurs')?.value || 0; });
+    exploitationCreditFournisseur = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('creditFournisseur')?.value || 0; });
 
     // EXPLOITATION - Colonnes Ajustement
-    exploitationAjustCoutAchat = computed(() => this.besoinCreditForm?.get('ajustCoutAchatCycle')?.value || 0);
-    exploitationAjustTresorerie = computed(() => this.besoinCreditForm?.get('ajustTresorerieDispo')?.value || 0);
-    exploitationAjustStock = computed(() => this.besoinCreditForm?.get('ajustStockActuel')?.value || 0);
-    exploitationAjustComptes = computed(() => this.besoinCreditForm?.get('ajustComptesRecevoir')?.value || 0);
-    exploitationAjustDettes = computed(() => this.besoinCreditForm?.get('ajustDettesFournisseurs')?.value || 0);
-    exploitationAjustCredit = computed(() => this.besoinCreditForm?.get('ajustCreditFournisseur')?.value || 0);
+    exploitationAjustCoutAchat = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('ajustCoutAchatCycle')?.value || 0; });
+    exploitationAjustTresorerie = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('ajustTresorerieDispo')?.value || 0; });
+    exploitationAjustStock = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('ajustStockActuel')?.value || 0; });
+    exploitationAjustComptes = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('ajustComptesRecevoir')?.value || 0; });
+    exploitationAjustDettes = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('ajustDettesFournisseurs')?.value || 0; });
+    exploitationAjustCredit = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('ajustCreditFournisseur')?.value || 0; });
 
     // EXPLOITATION - Montants effectifs
     effCoutAchatCycle = computed(() => this.exploitationCoutAchatCycle() + this.exploitationAjustCoutAchat());
@@ -722,6 +727,9 @@ export class AnalyseBilanActiviteComponent {
                                 this.patchBilanForm(this.bilanN1Form, bilan);
                             }
                         });
+                        if (response.data.bilans.length > 0) {
+                            this.bilanSaved.set(true);
+                        }
                     }
                 }
             });
@@ -742,6 +750,9 @@ export class AnalyseBilanActiviteComponent {
                                 this.patchRentabiliteForm(this.rentabiliteN2Form, rent);
                             }
                         });
+                        if (response.data.rentabilites.length > 0) {
+                            this.rentabiliteSaved.set(true);
+                        }
                     }
                 }
             });
@@ -754,6 +765,7 @@ export class AnalyseBilanActiviteComponent {
                 next: (response) => {
                     if (response?.data?.besoinCredit) {
                         this.patchBesoinCreditForm(response.data.besoinCredit);
+                        this.besoinCreditSaved.set(true);
                     }
                 }
             });
@@ -1006,8 +1018,8 @@ export class AnalyseBilanActiviteComponent {
             { label: 'Bilan', command: () => this.onStepChange(0) },
             { label: 'Rentabilité', command: () => this.onStepChange(1) },
             { label: 'Personnes caution', command: () => this.onStepChange(2) },
-            { label: 'Synthèse', command: () => this.onStepChange(3) },
-            { label: 'Besoin Crédit', command: () => this.onStepChange(4) }
+            { label: 'Besoin Crédit', command: () => this.onStepChange(3) },
+            { label: 'Synthèse', command: () => this.onStepChange(4) }
         ]);
     }
 
@@ -1442,6 +1454,7 @@ export class AnalyseBilanActiviteComponent {
             .subscribe({
                 next: () => {
                     this.savingBilan.set(false);
+                    this.bilanSaved.set(true);
                     this.messageService.add({
                         severity: 'success',
                         summary: 'Succès',
@@ -1593,6 +1606,7 @@ export class AnalyseBilanActiviteComponent {
             .subscribe({
                 next: () => {
                     this.savingRentabilite.set(false);
+                    this.rentabiliteSaved.set(true);
                     this.messageService.add({
                         severity: 'success',
                         summary: 'Succès',
@@ -1657,6 +1671,7 @@ export class AnalyseBilanActiviteComponent {
             .subscribe({
                 next: () => {
                     this.savingBesoinCredit.set(false);
+                    this.besoinCreditSaved.set(true);
                     this.messageService.add({
                         severity: 'success',
                         summary: 'Succès',

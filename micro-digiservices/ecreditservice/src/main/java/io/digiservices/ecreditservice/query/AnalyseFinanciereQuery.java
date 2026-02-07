@@ -99,7 +99,26 @@ public class AnalyseFinanciereQuery {
             :autreImmobilisation, :stocks, :creancesClients, :tresorerieCaisseBanque,
             :capitauxPropre, :empruntLongTerme, :empruntCourtTerme, :autresDettes,
             :observationsActif, :observationsPassif
-        ) RETURNING bilan_id
+        )
+        ON CONFLICT (analyse_id, type_periode) DO UPDATE SET
+            terrain = EXCLUDED.terrain,
+            batiment_magasin = EXCLUDED.batiment_magasin,
+            installation_agencement = EXCLUDED.installation_agencement,
+            materiel_industriel = EXCLUDED.materiel_industriel,
+            mobilier_bureau = EXCLUDED.mobilier_bureau,
+            materiel_informatique = EXCLUDED.materiel_informatique,
+            materiel_transport = EXCLUDED.materiel_transport,
+            autre_immobilisation = EXCLUDED.autre_immobilisation,
+            stocks = EXCLUDED.stocks,
+            creances_clients = EXCLUDED.creances_clients,
+            tresorerie_caisse_banque = EXCLUDED.tresorerie_caisse_banque,
+            capitaux_propre = EXCLUDED.capitaux_propre,
+            emprunt_long_terme = EXCLUDED.emprunt_long_terme,
+            emprunt_court_terme = EXCLUDED.emprunt_court_terme,
+            autres_dettes = EXCLUDED.autres_dettes,
+            observations_actif = EXCLUDED.observations_actif,
+            observations_passif = EXCLUDED.observations_passif
+        RETURNING bilan_id
         """;
 
     public static final String SELECT_BILANS_BY_ANALYSE = """
@@ -194,7 +213,27 @@ public class AnalyseFinanciereQuery {
             :publicitePromotion, :impotsTaxes, :fraisBancairesInterets,
             :echeanceAutreCredit, :diversesCharges, :amortissementsProvisions,
             :autresRevenusHorsActivite
-        ) RETURNING rentabilite_id
+        )
+        ON CONFLICT (analyse_id, type_periode) DO UPDATE SET
+            chiffre_affaires = EXCLUDED.chiffre_affaires,
+            cout_achat_marchandises = EXCLUDED.cout_achat_marchandises,
+            marge_brute = EXCLUDED.marge_brute,
+            salaires = EXCLUDED.salaires,
+            prelevement_entrepreneur = EXCLUDED.prelevement_entrepreneur,
+            loyers = EXCLUDED.loyers,
+            transport = EXCLUDED.transport,
+            electricite_eau_telephone = EXCLUDED.electricite_eau_telephone,
+            fournitures_autres_besoins = EXCLUDED.fournitures_autres_besoins,
+            entretien_reparation = EXCLUDED.entretien_reparation,
+            carburant_lubrifiants = EXCLUDED.carburant_lubrifiants,
+            publicite_promotion = EXCLUDED.publicite_promotion,
+            impots_taxes = EXCLUDED.impots_taxes,
+            frais_bancaires_interets = EXCLUDED.frais_bancaires_interets,
+            echeance_autre_credit = EXCLUDED.echeance_autre_credit,
+            diverses_charges = EXCLUDED.diverses_charges,
+            amortissements_provisions = EXCLUDED.amortissements_provisions,
+            autres_revenus_hors_activite = EXCLUDED.autres_revenus_hors_activite
+        RETURNING rentabilite_id
         """;
 
     public static final String SELECT_RENTABILITES_BY_ANALYSE = """
@@ -288,7 +327,28 @@ public class AnalyseFinanciereQuery {
             :comptesRecevoir, :dettesFournisseurs, :creditFournisseur,
             :ajustCoutAchatCycle, :ajustTresorerieDispo, :ajustStockActuel,
             :ajustComptesRecevoir, :ajustDettesFournisseurs, :ajustCreditFournisseur
-        ) RETURNING besoin_credit_id
+        )
+        ON CONFLICT (analyse_id) DO UPDATE SET
+            cout_equipement = EXCLUDED.cout_equipement,
+            depenses_rattachees = EXCLUDED.depenses_rattachees,
+            apport_personnel = EXCLUDED.apport_personnel,
+            ajust_cout_equipement = EXCLUDED.ajust_cout_equipement,
+            ajust_depenses_rattachees = EXCLUDED.ajust_depenses_rattachees,
+            ajust_apport_personnel = EXCLUDED.ajust_apport_personnel,
+            cout_achat_cycle = EXCLUDED.cout_achat_cycle,
+            nbre_cycle_financer = EXCLUDED.nbre_cycle_financer,
+            tresorerie_disponible = EXCLUDED.tresorerie_disponible,
+            stock_actuel = EXCLUDED.stock_actuel,
+            comptes_recevoir = EXCLUDED.comptes_recevoir,
+            dettes_fournisseurs = EXCLUDED.dettes_fournisseurs,
+            credit_fournisseur = EXCLUDED.credit_fournisseur,
+            ajust_cout_achat_cycle = EXCLUDED.ajust_cout_achat_cycle,
+            ajust_tresorerie_dispo = EXCLUDED.ajust_tresorerie_dispo,
+            ajust_stock_actuel = EXCLUDED.ajust_stock_actuel,
+            ajust_comptes_recevoir = EXCLUDED.ajust_comptes_recevoir,
+            ajust_dettes_fournisseurs = EXCLUDED.ajust_dettes_fournisseurs,
+            ajust_credit_fournisseur = EXCLUDED.ajust_credit_fournisseur
+        RETURNING besoin_credit_id
         """;
 
     public static final String SELECT_BESOIN_CREDIT_BY_ANALYSE = """
@@ -468,8 +528,7 @@ public class AnalyseFinanciereQuery {
             af.cycle_affaires as "cycleAffaires",
             af.facteur_cycle as "facteurCycle",
             af.type_cdr as "typeCdr",
-            af.valeur_garantie as "valeurGarantie",
-            COALESCE(gar.total_valeur_emprunte, 0) as "totalValeurEmprunte",
+            COALESCE(gar.total_valeur_emprunte, 0) as "valeurGarantie",
 
             -- ══════ DEMANDE DE CRÉDIT ══════
             d.montant_demande as "montantDemande",

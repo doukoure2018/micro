@@ -377,8 +377,14 @@
 
                 <ng-template pTemplate="footer">
                     <div class="flex justify-content-end gap-2">
-                        <button pButton label="Enregistrer Bilan" icon="pi pi-save" (click)="saveBilanAll()"
-                            [loading]="savingBilan()" [disabled]="!state().analyseExiste"></button>
+                        <!-- Bouton Enregistrer (première fois) -->
+                        <button *ngIf="!bilanSaved()" pButton label="Enregistrer Bilan" icon="pi pi-save"
+                            (click)="saveBilanAll()" [loading]="savingBilan()"
+                            [disabled]="!state().analyseExiste"></button>
+                        <!-- Bouton Modifier (après enregistrement) -->
+                        <button *ngIf="bilanSaved()" pButton label="Modifier Bilan" icon="pi pi-pencil"
+                            class="p-button-warning" (click)="saveBilanAll()" [loading]="savingBilan()"
+                            [disabled]="!state().analyseExiste"></button>
                     </div>
                 </ng-template>
             </p-card>
@@ -439,11 +445,13 @@
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'coutAchatMarchandises')"
+                                    <p-inputNumber
+                                        [formControl]="getControl(rentabiliteN1Form, 'coutAchatMarchandises')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'coutAchatMarchandises')"
+                                    <p-inputNumber
+                                        [formControl]="getControl(rentabiliteN2Form, 'coutAchatMarchandises')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border"></td>
@@ -496,15 +504,18 @@
                             <tr>
                                 <td class="p-2 pl-4 border-1 surface-border">Prélèvement de l'entrepreneur</td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteNForm, 'prelevementEntrepreneur')"
+                                    <p-inputNumber
+                                        [formControl]="getControl(rentabiliteNForm, 'prelevementEntrepreneur')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'prelevementEntrepreneur')"
+                                    <p-inputNumber
+                                        [formControl]="getControl(rentabiliteN1Form, 'prelevementEntrepreneur')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'prelevementEntrepreneur')"
+                                    <p-inputNumber
+                                        [formControl]="getControl(rentabiliteN2Form, 'prelevementEntrepreneur')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border"></td>
@@ -518,12 +529,12 @@
                                         [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'loyers')" mode="decimal"
-                                        [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
+                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'loyers')"
+                                        mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'loyers')" mode="decimal"
-                                        [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
+                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'loyers')"
+                                        mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border"></td>
                             </tr>
@@ -550,15 +561,18 @@
                             <tr>
                                 <td class="p-2 pl-4 border-1 surface-border">Électricité, eau, téléphone</td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteNForm, 'electriciteEauTelephone')"
+                                    <p-inputNumber
+                                        [formControl]="getControl(rentabiliteNForm, 'electriciteEauTelephone')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'electriciteEauTelephone')"
+                                    <p-inputNumber
+                                        [formControl]="getControl(rentabiliteN1Form, 'electriciteEauTelephone')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'electriciteEauTelephone')"
+                                    <p-inputNumber
+                                        [formControl]="getControl(rentabiliteN2Form, 'electriciteEauTelephone')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border"></td>
@@ -568,15 +582,18 @@
                             <tr>
                                 <td class="p-2 pl-4 border-1 surface-border">Fournitures et autres besoins</td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteNForm, 'fournituresAutresBesoins')"
+                                    <p-inputNumber
+                                        [formControl]="getControl(rentabiliteNForm, 'fournituresAutresBesoins')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'fournituresAutresBesoins')"
+                                    <p-inputNumber
+                                        [formControl]="getControl(rentabiliteN1Form, 'fournituresAutresBesoins')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'fournituresAutresBesoins')"
+                                    <p-inputNumber
+                                        [formControl]="getControl(rentabiliteN2Form, 'fournituresAutresBesoins')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border"></td>
@@ -658,15 +675,18 @@
                             <tr>
                                 <td class="p-2 pl-4 border-1 surface-border">Frais bancaires, Intérêts payés</td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteNForm, 'fraisBancairesInterets')"
+                                    <p-inputNumber
+                                        [formControl]="getControl(rentabiliteNForm, 'fraisBancairesInterets')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'fraisBancairesInterets')"
+                                    <p-inputNumber
+                                        [formControl]="getControl(rentabiliteN1Form, 'fraisBancairesInterets')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'fraisBancairesInterets')"
+                                    <p-inputNumber
+                                        [formControl]="getControl(rentabiliteN2Form, 'fraisBancairesInterets')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border"></td>
@@ -710,7 +730,8 @@
 
                             <!-- Total Autres Charges d'exploitation -->
                             <tr class="bg-red-100">
-                                <td class="p-2 font-bold border-1 surface-border">Total autres charges d'exploitation</td>
+                                <td class="p-2 font-bold border-1 surface-border">Total autres charges d'exploitation
+                                </td>
                                 <td class="p-2 text-right border-1 surface-border font-bold text-red-700">
                                     {{ totalChargesN() | currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
                                 </td>
@@ -727,15 +748,18 @@
                             <tr class="bg-orange-50">
                                 <td class="p-2 pl-4 font-bold border-1 surface-border">Amortissements et Provisions</td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteNForm, 'amortissementsProvisions')"
+                                    <p-inputNumber
+                                        [formControl]="getControl(rentabiliteNForm, 'amortissementsProvisions')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'amortissementsProvisions')"
+                                    <p-inputNumber
+                                        [formControl]="getControl(rentabiliteN1Form, 'amortissementsProvisions')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'amortissementsProvisions')"
+                                    <p-inputNumber
+                                        [formControl]="getControl(rentabiliteN2Form, 'amortissementsProvisions')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border"></td>
@@ -743,7 +767,8 @@
 
                             <!-- Résultat d'exploitation de l'activité -->
                             <tr class="bg-blue-100">
-                                <td class="p-2 font-bold border-1 surface-border">Résultat d'exploitation de l'activité</td>
+                                <td class="p-2 font-bold border-1 surface-border">Résultat d'exploitation de l'activité
+                                </td>
                                 <td class="p-2 text-right border-1 surface-border font-bold"
                                     [ngClass]="resultatExploitationN() >= 0 ? 'text-green-700' : 'text-red-700'">
                                     {{ resultatExploitationN() | currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
@@ -766,7 +791,8 @@
 
                             <!-- Cash-Flow (Excédent de trésorerie) -->
                             <tr class="bg-purple-100">
-                                <td class="p-2 font-bold border-1 surface-border">Cash-flow (Excédent de trésorerie)</td>
+                                <td class="p-2 font-bold border-1 surface-border">Cash-flow (Excédent de trésorerie)
+                                </td>
                                 <td class="p-2 text-right border-1 surface-border font-bold text-purple-700">
                                     {{ cashFlowN() | currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
                                 </td>
@@ -786,17 +812,21 @@
 
                             <!-- Autres revenus net hors activité -->
                             <tr>
-                                <td class="p-2 font-semibold border-1 surface-border">Autres revenus net hors activité</td>
+                                <td class="p-2 font-semibold border-1 surface-border">Autres revenus net hors activité
+                                </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteNForm, 'autresRevenusHorsActivite')"
+                                    <p-inputNumber
+                                        [formControl]="getControl(rentabiliteNForm, 'autresRevenusHorsActivite')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN1Form, 'autresRevenusHorsActivite')"
+                                    <p-inputNumber
+                                        [formControl]="getControl(rentabiliteN1Form, 'autresRevenusHorsActivite')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border">
-                                    <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'autresRevenusHorsActivite')"
+                                    <p-inputNumber
+                                        [formControl]="getControl(rentabiliteN2Form, 'autresRevenusHorsActivite')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
                                 <td class="p-1 border-1 surface-border"></td>
@@ -809,7 +839,8 @@
 
                             <!-- Capacité de remboursement calculée (= Cash-flow + Autres revenus) -->
                             <tr class="bg-green-200">
-                                <td class="p-2 font-bold border-1 surface-border">Capacité de remboursement calculée</td>
+                                <td class="p-2 font-bold border-1 surface-border">Capacité de remboursement calculée
+                                </td>
                                 <td class="p-2 text-right border-1 surface-border font-bold"
                                     [ngClass]="resultatNetN() >= 0 ? 'text-green-800' : 'text-red-700'">
                                     {{ resultatNetN() | currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
@@ -830,8 +861,14 @@
 
                 <ng-template pTemplate="footer">
                     <div class="flex justify-content-end gap-2">
-                        <button pButton label="Enregistrer Rentabilité" icon="pi pi-save" (click)="saveRentabiliteAll()"
-                            [loading]="savingRentabilite()" [disabled]="!state().analyseExiste"></button>
+                        <!-- Bouton Enregistrer (première fois) -->
+                        <button *ngIf="!rentabiliteSaved()" pButton label="Enregistrer Rentabilité" icon="pi pi-save"
+                            (click)="saveRentabiliteAll()" [loading]="savingRentabilite()"
+                            [disabled]="!state().analyseExiste"></button>
+                        <!-- Bouton Modifier (après enregistrement) -->
+                        <button *ngIf="rentabiliteSaved()" pButton label="Modifier Rentabilité" icon="pi pi-pencil"
+                            class="p-button-warning" (click)="saveRentabiliteAll()" [loading]="savingRentabilite()"
+                            [disabled]="!state().analyseExiste"></button>
                     </div>
                 </ng-template>
             </p-card>
@@ -931,8 +968,8 @@
             </p-card>
         </div>
 
-        <!-- ==================== ÉTAPE 3: SYNTHÈSE ==================== -->
-        <div *ngIf="activeIndex() === 3">
+        <!-- ==================== ÉTAPE 4: SYNTHÈSE ==================== -->
+        <div *ngIf="activeIndex() === 4">
             <p-card header="Synthèse de l'Analyse">
                 <div class="grid">
                     <!-- Récapitulatif du crédit sollicité -->
@@ -1019,8 +1056,8 @@
             </p-card>
         </div>
 
-        <!-- ==================== ÉTAPE 4: BESOIN CRÉDIT (Optionnel) ==================== -->
-        <div *ngIf="activeIndex() === 4">
+        <!-- ==================== ÉTAPE 3: BESOIN CRÉDIT ==================== -->
+        <div *ngIf="activeIndex() === 3">
             <p-card>
                 <ng-template pTemplate="header">
                     <div class="flex align-items-center justify-content-between p-3 bg-primary text-white">
@@ -1378,8 +1415,11 @@
 
                 <ng-template pTemplate="footer">
                     <div class="flex justify-content-end gap-2">
-                        <button pButton label="Enregistrer Besoin Crédit" icon="pi pi-save" (click)="saveBesoinCredit()"
-                            [loading]="savingBesoinCredit()" [disabled]="!state().analyseExiste"></button>
+                        <button *ngIf="!besoinCreditSaved()" pButton label="Enregistrer Besoin Crédit" icon="pi pi-save"
+                            (click)="saveBesoinCredit()" [loading]="savingBesoinCredit()" [disabled]="!state().analyseExiste"></button>
+                        <button *ngIf="besoinCreditSaved()" pButton label="Modifier Besoin Crédit" icon="pi pi-pencil"
+                            class="p-button-warning" (click)="saveBesoinCredit()" [loading]="savingBesoinCredit()"
+                            [disabled]="!state().analyseExiste"></button>
                     </div>
                 </ng-template>
             </p-card>
