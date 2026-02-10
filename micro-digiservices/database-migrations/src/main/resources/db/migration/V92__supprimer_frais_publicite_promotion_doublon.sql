@@ -5,9 +5,16 @@
 -- On supprime le doublon
 
 -- D'abord, copier les valeurs non nulles vers publicite_promotion si nécessaire
-UPDATE analyse_rentabilite
-SET publicite_promotion = COALESCE(publicite_promotion, 0) + COALESCE(frais_publicite_promotion, 0)
-WHERE frais_publicite_promotion IS NOT NULL AND frais_publicite_promotion > 0;
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns
+               WHERE table_name = 'analyse_rentabilite'
+               AND column_name = 'frais_publicite_promotion') THEN
+        UPDATE analyse_rentabilite
+        SET publicite_promotion = COALESCE(publicite_promotion, 0) + COALESCE(frais_publicite_promotion, 0)
+        WHERE frais_publicite_promotion IS NOT NULL AND frais_publicite_promotion > 0;
+    END IF;
+END $$;
 
 -- Supprimer la vue qui dépend de ce champ
 DROP VIEW IF EXISTS v_synthese_analyse CASCADE;
