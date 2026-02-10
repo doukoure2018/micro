@@ -69,7 +69,7 @@ export class AttenteComponent implements OnInit {
         return all.filter(d => d.statutDemande === 'REJECTED' || d.validationState === 'REJECTED').length;
     });
 
-    // Demandes filtrées et triées par date décroissante
+    // Demandes filtrées, groupées par jour et triées par date décroissante
     filteredDemandes = computed(() => {
         const all = this.state().demandeAttentes || [];
         let filtered: any[];
@@ -91,11 +91,19 @@ export class AttenteComponent implements OnInit {
                 filtered = [...all];
         }
 
-        return filtered.sort((a, b) => {
-            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-            return dateB - dateA;
-        });
+        return filtered
+            .map(d => ({
+                ...d,
+                dateGroup: d.createdAt ? d.createdAt.substring(0, 10) : '1970-01-01'
+            }))
+            .sort((a, b) => {
+                if (a.dateGroup !== b.dateGroup) {
+                    return b.dateGroup.localeCompare(a.dateGroup);
+                }
+                const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                return timeB - timeA;
+            });
     });
 
     private userService = inject(UserService);
@@ -437,6 +445,38 @@ export class AttenteComponent implements OnInit {
         this.expandedRows = {};
         this.state.update((state) => ({ ...state, pointVenteId, agenceId: undefined }));
         this.loadAllDemandesWithGaranties();
+    }
+
+    // Nombre de demandes pour un jour donné
+    getCountForDate(dateGroup: string): number {
+        return this.filteredDemandes().filter(d => d.dateGroup === dateGroup).length;
+    }
+
+    // Montant total pour un jour donné
+    getTotalMontantForDate(dateGroup: string): number {
+        return this.filteredDemandes()
+            .filter(d => d.dateGroup === dateGroup)
+            .reduce((total: number, d: any) => total + (d.montantDemande || 0), 0);
+    }
+
+    // Formater la date du groupe en français
+    formatDateGroup(dateGroup: string): string {
+        const date = new Date(dateGroup + 'T00:00:00');
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const groupDate = new Date(date);
+        groupDate.setHours(0, 0, 0, 0);
+
+        if (groupDate.getTime() === today.getTime()) {
+            return "Aujourd'hui";
+        } else if (groupDate.getTime() === yesterday.getTime()) {
+            return 'Hier';
+        }
+
+        const options: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+        return date.toLocaleDateString('fr-FR', options);
     }
 
     // Obtenir le nombre de garanties

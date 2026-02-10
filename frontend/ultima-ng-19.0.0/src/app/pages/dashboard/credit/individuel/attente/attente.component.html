@@ -93,11 +93,12 @@
 
 <!-- Table des demandes -->
 <div class="card">
-    <p-table #dt [value]="filteredDemandes()" [paginator]="true" paginatorDropdownAppendTo="body" [rows]="10"
+    <p-table #dt [value]="filteredDemandes()" [paginator]="true" paginatorDropdownAppendTo="body" [rows]="15"
         [showCurrentPageReport]="true" responsiveLayout="scroll"
         currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} entrées"
-        [rowsPerPageOptions]="[10, 25, 50]"
-        sortField="createdAt" [sortOrder]="-1"
+        [rowsPerPageOptions]="[15, 30, 50]"
+        groupRowsBy="dateGroup" rowGroupMode="subheader"
+        sortField="dateGroup" [sortOrder]="-1"
         [globalFilterFields]="['nom', 'prenom', 'numeroMembre', 'typeActivite', 'telephone', 'montantDemande']">
 
         <ng-template pTemplate="caption">
@@ -165,6 +166,21 @@
                     Date <p-sortIcon field="createdAt"></p-sortIcon>
                 </th>
                 <th style="width:7%">Actions</th>
+            </tr>
+        </ng-template>
+
+        <ng-template pTemplate="groupheader" let-demande>
+            <tr pRowGroupHeader>
+                <td colspan="10">
+                    <div class="flex align-items-center gap-3 py-2">
+                        <i class="pi pi-calendar text-primary"></i>
+                        <span class="font-bold text-lg">{{ formatDateGroup(demande.dateGroup) }}</span>
+                        <p-badge [value]="getCountForDate(demande.dateGroup).toString()" severity="info"></p-badge>
+                        <span class="text-500 text-sm ml-2">
+                            Total: {{ getTotalMontantForDate(demande.dateGroup) | currency:'GNF':'symbol':'1.0-0' }}
+                        </span>
+                    </div>
+                </td>
             </tr>
         </ng-template>
 
