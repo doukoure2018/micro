@@ -718,4 +718,37 @@ public class UserResource {
         }
     }
 
+    @PutMapping("/location/{userId}")
+    public ResponseEntity<Response> updateUserLocation(
+            @NotNull Authentication authentication,
+            @PathVariable("userId") Long userId,
+            @RequestParam("delegationId") Long delegationId,
+            @RequestParam("agenceId") Long agenceId,
+            @RequestParam("pointventeId") Long pointventeId,
+            HttpServletRequest request) {
+
+        log.info("User {} updating location for user {}: delegation={}, agence={}, pointvente={}",
+                authentication.getName(), userId, delegationId, agenceId, pointventeId);
+
+        try {
+            userService.updateUserLocation(userId, delegationId, agenceId, pointventeId);
+
+            return ResponseEntity.ok(getResponse(
+                    request,
+                    Map.of("userId", userId, "delegationId", delegationId,
+                            "agenceId", agenceId, "pointventeId", pointventeId),
+                    "Localisation mise à jour avec succès",
+                    OK
+            ));
+        } catch (Exception e) {
+            log.error("Erreur lors de la mise à jour de la localisation: {}", e.getMessage());
+            return ResponseEntity.status(BAD_REQUEST).body(getResponse(
+                    request,
+                    emptyMap(),
+                    e.getMessage(),
+                    BAD_REQUEST
+            ));
+        }
+    }
+
 }

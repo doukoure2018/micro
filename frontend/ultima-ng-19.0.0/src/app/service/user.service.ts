@@ -968,6 +968,10 @@ export class UserService {
      */
     getUsersByRole$ = (roleName: string) => this.http.get<IResponse>(`${this.server}/user/by-role/${roleName}`).pipe(tap(console.log), catchError(this.handleError));
 
+    updateUserLocation$ = (userId: number, delegationId: number, agenceId: number, pointventeId: number) =>
+        this.http.put<IResponse>(`${this.server}/user/location/${userId}?delegationId=${delegationId}&agenceId=${agenceId}&pointventeId=${pointventeId}`, {})
+            .pipe(tap(console.log), catchError(this.handleError));
+
     // ==================== INFO PERSONNEL ====================
 
     /**

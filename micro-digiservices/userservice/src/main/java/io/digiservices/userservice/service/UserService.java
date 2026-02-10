@@ -55,4 +55,7 @@ public interface UserService {
     void updateUserAuthorization(Long userId, boolean isAuthorized);
     Boolean getUserAuthorizationStatus(Long userId);
     List<User> getUsersByRole(String roleName);
-    }
+
+    // Mise a jour localisation
+    void updateUserLocation(Long userId, Long delegationId, Long agenceId, Long pointventeId);
+}

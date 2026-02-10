@@ -1,13 +1,18 @@
 import { IResponse } from '@/interface/response';
 import { IUser } from '@/interface/user';
+import { Delegation } from '@/interface/delegation';
+import { Agence } from '@/interface/agence';
+import { PointVente } from '@/interface/point.vente';
 import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject, signal, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
 import { DividerModule } from 'primeng/divider';
 import { IconField } from 'primeng/iconfield';
 import { InputIcon } from 'primeng/inputicon';
@@ -40,6 +45,7 @@ interface FilterOption {
         InputTextModule,
         ProgressBarModule,
         ButtonModule,
+        DialogModule,
         IconField,
         InputIcon,
         TagModule,
@@ -109,6 +115,17 @@ export class AdminComponent {
     // Variables pour les filtres globaux
     globalFilterUsers: string = '';
     globalFilterAgents: string = '';
+
+    // Dialog modification localisation CAISSE
+    showLocationDialog = signal(false);
+    locationDialogUser = signal<IUser | null>(null);
+    savingLocation = signal(false);
+    delegations = signal<Delegation[]>([]);
+    agences = signal<Agence[]>([]);
+    pointVentes = signal<PointVente[]>([]);
+    selectedDelegationId = signal<number | null>(null);
+    selectedAgenceId = signal<number | null>(null);
+    selectedPointventeId = signal<number | null>(null);
 
     private router = inject(Router);
     private destroyRef = inject(DestroyRef);
@@ -234,20 +251,25 @@ export class AdminComponent {
     loadAgentCredits(): void {
         this.state.update((state) => ({ ...state, loadingAgentCredits: true }));
 
-        this.userService
-            .getUsersByRole$('AGENT_CREDIT')
+        forkJoin({
+            agents: this.userService.getUsersByRole$('AGENT_CREDIT'),
+            caisse: this.userService.getUsersByRole$('CAISSE')
+        })
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
-                next: (response: IResponse) => {
-                    console.log('Agents crédit chargés:', response);
+                next: ({ agents, caisse }) => {
+                    const allUsers = [
+                        ...(agents.data?.users || []),
+                        ...(caisse.data?.users || [])
+                    ];
                     this.state.update((state) => ({
                         ...state,
-                        agentCredits: response.data?.users || [],
+                        agentCredits: allUsers,
                         loadingAgentCredits: false
                     }));
                 },
                 error: (error) => {
-                    console.error('Erreur lors du chargement des agents crédit:', error);
+                    console.error('Erreur lors du chargement des agents:', error);
                     this.state.update((state) => ({
                         ...state,
                         loadingAgentCredits: false
@@ -255,7 +277,7 @@ export class AdminComponent {
                     this.messageService.add({
                         severity: 'error',
                         summary: 'Erreur',
-                        detail: 'Impossible de charger la liste des agents crédit',
+                        detail: 'Impossible de charger la liste des agents',
                         life: 3000
                     });
                 }
@@ -323,5 +345,126 @@ export class AdminComponent {
 
     get authorizedAgents(): number {
         return this.state().agentCredits?.filter((a) => a.authorized).length || 0;
+    }
+
+    // ========================================
+    // MODIFICATION LOCALISATION (CAISSE)
+    // ========================================
+
+    openLocationDialog(user: IUser): void {
+        this.locationDialogUser.set(user);
+        this.selectedDelegationId.set(user.delegationId || null);
+        this.selectedAgenceId.set(user.agenceId || null);
+        this.selectedPointventeId.set(user.pointventeId || null);
+        this.agences.set([]);
+        this.pointVentes.set([]);
+
+        // Charger les delegations
+        this.userService.getAllDelegation$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (res: IResponse) => {
+                    this.delegations.set(res.data?.delegations || []);
+                    // Si delegation deja selectionnee, charger les agences
+                    if (user.delegationId) {
+                        this.loadAgences(user.delegationId, user.agenceId || null);
+                    }
+                }
+            });
+
+        this.showLocationDialog.set(true);
+    }
+
+    onDelegationChange(delegationId: number): void {
+        this.selectedDelegationId.set(delegationId);
+        this.selectedAgenceId.set(null);
+        this.selectedPointventeId.set(null);
+        this.agences.set([]);
+        this.pointVentes.set([]);
+        if (delegationId) {
+            this.loadAgences(delegationId, null);
+        }
+    }
+
+    onAgenceChange(agenceId: number): void {
+        this.selectedAgenceId.set(agenceId);
+        this.selectedPointventeId.set(null);
+        this.pointVentes.set([]);
+        if (agenceId) {
+            this.loadPointVentes(agenceId);
+        }
+    }
+
+    private loadAgences(delegationId: number, preselectedAgenceId: number | null): void {
+        this.userService.getAllAgenceByDelegationId$(delegationId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (res: IResponse) => {
+                    this.agences.set(res.data?.agences || []);
+                    if (preselectedAgenceId) {
+                        this.loadPointVentes(preselectedAgenceId);
+                    }
+                }
+            });
+    }
+
+    private loadPointVentes(agenceId: number): void {
+        this.userService.getAllPointventesByAgenceId$(agenceId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (res: IResponse) => {
+                    this.pointVentes.set(res.data?.pointVentes || []);
+                }
+            });
+    }
+
+    saveLocation(): void {
+        const user = this.locationDialogUser();
+        const delegationId = this.selectedDelegationId();
+        const agenceId = this.selectedAgenceId();
+        const pointventeId = this.selectedPointventeId();
+
+        if (!user || !delegationId || !agenceId || !pointventeId) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Attention',
+                detail: 'Veuillez remplir tous les champs',
+                life: 3000
+            });
+            return;
+        }
+
+        this.savingLocation.set(true);
+        this.userService.updateUserLocation$(user.userId, delegationId, agenceId, pointventeId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.state.update((state) => ({
+                        ...state,
+                        agentCredits: state.agentCredits?.map((a) =>
+                            a.userId === user.userId
+                                ? { ...a, delegationId, agenceId, pointventeId }
+                                : a
+                        )
+                    }));
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Succès',
+                        detail: `Localisation de ${user.firstName} ${user.lastName} mise à jour`,
+                        life: 3000
+                    });
+                    this.savingLocation.set(false);
+                    this.showLocationDialog.set(false);
+                },
+                error: () => {
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Erreur',
+                        detail: 'Impossible de mettre à jour la localisation',
+                        life: 3000
+                    });
+                    this.savingLocation.set(false);
+                }
+            });
     }
 }

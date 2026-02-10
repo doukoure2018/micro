@@ -627,7 +627,7 @@ public class UserQuery {
 
     public static final String SELECT_USERS_BY_ROLE_QUERY =
             """
-            SELECT 
+            SELECT
                 u.user_id,
                 u.user_uuid,
                 u.username,
@@ -648,11 +648,25 @@ public class UserQuery {
                 u.updated_at,
                 r.name AS role,
                 r.authority AS authorities
-            FROM users u 
-            JOIN user_roles ur ON ur.user_id = u.user_id 
-            JOIN roles r ON r.role_id = ur.role_id 
+            FROM users u
+            JOIN user_roles ur ON ur.user_id = u.user_id
+            JOIN roles r ON r.role_id = ur.role_id
             WHERE r.name = :roleName
             ORDER BY u.created_at DESC
+            """;
+
+    // ========================================
+    // MISE A JOUR LOCALISATION UTILISATEUR
+    // ========================================
+
+    public static final String UPDATE_USER_LOCATION_QUERY =
+            """
+            UPDATE users
+            SET delegation_id = :delegationId,
+                agence_id = :agenceId,
+                pointvente_id = :pointventeId,
+                updated_at = NOW()
+            WHERE user_id = :userId
             """;
 
 }

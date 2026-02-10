@@ -104,7 +104,7 @@
     <p-table #dtAgents [value]="state().agentCredits || []" [paginator]="true" [rows]="5"
         [rowsPerPageOptions]="[5, 10, 20]" [showCurrentPageReport]="true"
         currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} agents" styleClass="p-datatable-sm"
-        [globalFilterFields]="['firstName', 'lastName', 'username', 'email', 'service']" [filterDelay]="300"
+        [globalFilterFields]="['firstName', 'lastName', 'username', 'email', 'service', 'role']" [filterDelay]="300"
         [rowHover]="true" dataKey="userId">
 
         <!-- Caption avec recherche globale -->
@@ -138,9 +138,16 @@
                         <p-sortIcon field="email"></p-sortIcon>
                     </div>
                 </th>
+                <th pSortableColumn="role" style="min-width: 120px;">
+                    <div class="flex align-items-center">
+                        Rôle
+                        <p-sortIcon field="role"></p-sortIcon>
+                    </div>
+                </th>
                 <th style="min-width: 120px;">Service</th>
                 <th style="min-width: 100px;" class="text-center">Statut</th>
                 <th style="min-width: 180px;" class="text-center">Autorisation</th>
+                <th style="min-width: 80px;" class="text-center">Action</th>
             </tr>
             <!-- Ligne de filtres -->
             <tr>
@@ -163,6 +170,12 @@
                         placeholder="Filtrer par email" class="w-full p-inputtext-sm" />
                 </th>
                 <th>
+                    <p-dropdown [options]="roleOptions"
+                        (onChange)="dtAgents.filter($event.value, 'role', 'equals')" placeholder="Tous"
+                        [showClear]="true" styleClass="w-full p-inputtext-sm">
+                    </p-dropdown>
+                </th>
+                <th>
                     <p-dropdown [options]="serviceOptions"
                         (onChange)="dtAgents.filter($event.value, 'service', 'equals')" placeholder="Tous"
                         [showClear]="true" styleClass="w-full p-inputtext-sm">
@@ -180,6 +193,7 @@
                         [showClear]="true" styleClass="w-full p-inputtext-sm">
                     </p-dropdown>
                 </th>
+                <th></th>
             </tr>
         </ng-template>
 
@@ -206,6 +220,10 @@
                     <a [href]="'mailto:' + agent.email" class="text-primary no-underline hover:underline">
                         {{ agent.email }}
                     </a>
+                </td>
+                <td>
+                    <p-tag [value]="getRoleLabel(agent.role)" [severity]="getRoleSeverity(agent.role)"
+                        [rounded]="true"></p-tag>
                 </td>
                 <td>
                     <p-chip [label]="agent.service || 'N/A'"
@@ -237,15 +255,24 @@
                         }
                     </div>
                 </td>
+                <td class="text-center">
+                    @if (agent.role === 'CAISSE') {
+                    <button pButton icon="pi pi-map-marker"
+                        class="p-button-rounded p-button-text p-button-sm p-button-warning"
+                        (click)="openLocationDialog(agent)"
+                        pTooltip="Modifier localisation" tooltipPosition="top">
+                    </button>
+                    }
+                </td>
             </tr>
         </ng-template>
 
         <ng-template pTemplate="emptymessage">
             <tr>
-                <td colspan="6">
+                <td colspan="8">
                     <div class="flex flex-column align-items-center justify-content-center p-5">
                         <i class="pi pi-inbox text-5xl text-300 mb-3"></i>
-                        <span class="text-lg font-medium text-500">Aucun agent crédit trouvé</span>
+                        <span class="text-lg font-medium text-500">Aucun agent trouvé</span>
                         <span class="text-sm text-400 mt-1">Essayez de modifier vos critères de recherche</span>
                     </div>
                 </td>
@@ -489,3 +516,55 @@
     </p-table>
     }
 </div>
+
+<!-- DIALOG MODIFICATION LOCALISATION CAISSE -->
+<p-dialog header="Modifier la localisation" [(visible)]="showLocationDialog" [modal]="true"
+    [style]="{ width: '500px' }" [closable]="true">
+    @if (locationDialogUser()) {
+    <div class="flex align-items-center gap-3 mb-4 p-3 surface-ground border-round">
+        <i class="pi pi-user text-2xl text-primary"></i>
+        <div>
+            <span class="font-semibold">{{ locationDialogUser()!.firstName }} {{ locationDialogUser()!.lastName }}</span>
+            <div class="text-500 text-sm">{{ locationDialogUser()!.username }} - {{ locationDialogUser()!.role }}</div>
+        </div>
+    </div>
+
+    <div class="flex flex-column gap-4">
+        <div class="flex flex-column gap-2">
+            <label class="font-semibold text-sm">Delegation</label>
+            <p-dropdown [options]="delegations()" optionLabel="libele" optionValue="id"
+                [(ngModel)]="selectedDelegationId" (onChange)="onDelegationChange($event.value)"
+                placeholder="Choisir une delegation" [showClear]="true" [filter]="true"
+                styleClass="w-full">
+            </p-dropdown>
+        </div>
+
+        <div class="flex flex-column gap-2">
+            <label class="font-semibold text-sm">Agence</label>
+            <p-dropdown [options]="agences()" optionLabel="libele" optionValue="id"
+                [(ngModel)]="selectedAgenceId" (onChange)="onAgenceChange($event.value)"
+                placeholder="Choisir une agence" [showClear]="true" [filter]="true"
+                [disabled]="!selectedDelegationId()" styleClass="w-full">
+            </p-dropdown>
+        </div>
+
+        <div class="flex flex-column gap-2">
+            <label class="font-semibold text-sm">Point de vente</label>
+            <p-dropdown [options]="pointVentes()" optionLabel="libele" optionValue="id"
+                [(ngModel)]="selectedPointventeId"
+                placeholder="Choisir un point de vente" [showClear]="true" [filter]="true"
+                [disabled]="!selectedAgenceId()" styleClass="w-full">
+            </p-dropdown>
+        </div>
+    </div>
+
+    <div class="flex justify-content-end gap-2 mt-4">
+        <button pButton label="Annuler" class="p-button-outlined p-button-secondary"
+            (click)="showLocationDialog.set(false)"></button>
+        <button pButton label="Enregistrer" icon="pi pi-check"
+            [loading]="savingLocation()"
+            [disabled]="!selectedDelegationId() || !selectedAgenceId() || !selectedPointventeId()"
+            (click)="saveLocation()"></button>
+    </div>
+    }
+</p-dialog>

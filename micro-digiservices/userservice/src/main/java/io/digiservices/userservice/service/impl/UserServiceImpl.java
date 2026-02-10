@@ -402,4 +402,11 @@ public class UserServiceImpl  implements UserService {
         return userRepository.getUsersByRole(roleName);
     }
 
+    @Override
+    public void updateUserLocation(Long userId, Long delegationId, Long agenceId, Long pointventeId) {
+        log.info("Mise à jour localisation pour l'utilisateur {}: delegation={}, agence={}, pointvente={}",
+                userId, delegationId, agenceId, pointventeId);
+        userRepository.updateUserLocation(userId, delegationId, agenceId, pointventeId);
+    }
+
 }

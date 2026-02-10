@@ -1,17 +1,124 @@
+<!-- Status Filter Cards -->
+<div class="flex flex-wrap gap-3 mb-4">
+    <!-- TOUTES -->
+    <div class="flex-1 surface-card shadow-1 border-round p-3 cursor-pointer border-left-3 transition-all"
+         style="min-width: 170px"
+         [class.border-left-primary]="activeFilter() === 'ALL'"
+         [class.surface-ground]="activeFilter() === 'ALL'"
+         (click)="activeFilter.set('ALL')">
+        <div class="flex justify-between items-center">
+            <div>
+                <span class="block text-500 font-medium mb-1">Toutes</span>
+                <div class="text-900 font-bold text-xl">{{ state().demandeAttentes?.length || 0 }}</div>
+            </div>
+            <div class="flex items-center justify-center border-round"
+                 style="width:2.5rem;height:2.5rem;background:var(--surface-200)">
+                <i class="pi pi-list text-xl" style="color:var(--text-color-secondary)"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- EN ATTENTE -->
+    <div class="flex-1 surface-card shadow-1 border-round p-3 cursor-pointer border-left-3 transition-all"
+         style="min-width: 170px"
+         [style.border-left-color]="activeFilter() === 'EN_ATTENTE' ? 'var(--blue-500)' : 'transparent'"
+         [class.surface-ground]="activeFilter() === 'EN_ATTENTE'"
+         (click)="activeFilter.set('EN_ATTENTE')">
+        <div class="flex justify-between items-center">
+            <div>
+                <span class="block text-500 font-medium mb-1">En Attente</span>
+                <div class="text-900 font-bold text-xl">{{ countEnAttente() }}</div>
+            </div>
+            <div class="flex items-center justify-center border-round"
+                 style="width:2.5rem;height:2.5rem;background:var(--blue-50)">
+                <i class="pi pi-clock text-xl" style="color:var(--blue-500)"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- AFFECTATION / SELECTION -->
+    <div class="flex-1 surface-card shadow-1 border-round p-3 cursor-pointer border-left-3 transition-all"
+         style="min-width: 170px"
+         [style.border-left-color]="activeFilter() === 'AFFECTATION' ? 'var(--orange-500)' : 'transparent'"
+         [class.surface-ground]="activeFilter() === 'AFFECTATION'"
+         (click)="activeFilter.set('AFFECTATION')">
+        <div class="flex justify-between items-center">
+            <div>
+                <span class="block text-500 font-medium mb-1">Affectation</span>
+                <div class="text-900 font-bold text-xl">{{ countAffectation() }}</div>
+            </div>
+            <div class="flex items-center justify-center border-round"
+                 style="width:2.5rem;height:2.5rem;background:var(--orange-50)">
+                <i class="pi pi-user-edit text-xl" style="color:var(--orange-500)"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- APPROUVEE -->
+    <div class="flex-1 surface-card shadow-1 border-round p-3 cursor-pointer border-left-3 transition-all"
+         style="min-width: 170px"
+         [style.border-left-color]="activeFilter() === 'APPROUVEE' ? 'var(--green-500)' : 'transparent'"
+         [class.surface-ground]="activeFilter() === 'APPROUVEE'"
+         (click)="activeFilter.set('APPROUVEE')">
+        <div class="flex justify-between items-center">
+            <div>
+                <span class="block text-500 font-medium mb-1">Approuvées</span>
+                <div class="text-900 font-bold text-xl">{{ countApprouvee() }}</div>
+            </div>
+            <div class="flex items-center justify-center border-round"
+                 style="width:2.5rem;height:2.5rem;background:var(--green-50)">
+                <i class="pi pi-check-circle text-xl" style="color:var(--green-500)"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- REJETEE -->
+    <div class="flex-1 surface-card shadow-1 border-round p-3 cursor-pointer border-left-3 transition-all"
+         style="min-width: 170px"
+         [style.border-left-color]="activeFilter() === 'REJETEE' ? 'var(--red-500)' : 'transparent'"
+         [class.surface-ground]="activeFilter() === 'REJETEE'"
+         (click)="activeFilter.set('REJETEE')">
+        <div class="flex justify-between items-center">
+            <div>
+                <span class="block text-500 font-medium mb-1">Rejetées</span>
+                <div class="text-900 font-bold text-xl">{{ countRejetee() }}</div>
+            </div>
+            <div class="flex items-center justify-center border-round"
+                 style="width:2.5rem;height:2.5rem;background:var(--red-50)">
+                <i class="pi pi-times-circle text-xl" style="color:var(--red-500)"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Table des demandes -->
 <div class="card">
-    <!-- En-tête avec filtres et recherche -->
-    <p-table #dt [value]="state().demandeAttentes!" [paginator]="true" paginatorDropdownAppendTo="body" [rows]="10"
+    <p-table #dt [value]="filteredDemandes()" [paginator]="true" paginatorDropdownAppendTo="body" [rows]="10"
         [showCurrentPageReport]="true" responsiveLayout="scroll"
         currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} entrées"
         [rowsPerPageOptions]="[10, 25, 50]"
+        sortField="createdAt" [sortOrder]="-1"
         [globalFilterFields]="['nom', 'prenom', 'numeroMembre', 'typeActivite', 'telephone', 'montantDemande']">
 
         <ng-template pTemplate="caption">
             <div class="flex flex-wrap gap-2 items-center justify-between">
-                <div class="flex gap-2">
+                <div class="flex gap-2 items-center">
                     <button pButton icon="pi pi-refresh" class="p-button-outlined p-button-sm"
                         pTooltip="Rafraîchir les données" (click)="refreshData()">
                     </button>
+
+                    @if(activeFilter() !== 'ALL') {
+                    <p-tag [value]="activeFilter() === 'EN_ATTENTE' ? 'En Attente' :
+                                    activeFilter() === 'AFFECTATION' ? 'Affectation' :
+                                    activeFilter() === 'APPROUVEE' ? 'Approuvées' : 'Rejetées'"
+                           [severity]="activeFilter() === 'EN_ATTENTE' ? 'info' :
+                                       activeFilter() === 'AFFECTATION' ? 'warn' :
+                                       activeFilter() === 'APPROUVEE' ? 'success' : 'danger'">
+                    </p-tag>
+                    <button pButton icon="pi pi-filter-slash" label="Toutes"
+                        class="p-button-text p-button-sm" (click)="activeFilter.set('ALL')">
+                    </button>
+                    }
 
                     @if(state().agenceId || state().pointVenteId) {
                     <button pButton icon="pi pi-filter-slash" label="Réinitialiser filtres"
@@ -42,7 +149,7 @@
                 <th pSortableColumn="montantDemande" style="width:12%">
                     Montant <p-sortIcon field="montantDemande"></p-sortIcon>
                 </th>
-                <th pSortableColumn="typeActivite" style="width:15%">
+                <th pSortableColumn="typeActivite" style="width:13%">
                     Activité <p-sortIcon field="typeActivite"></p-sortIcon>
                 </th>
                 <th style="width:8%">
@@ -57,7 +164,7 @@
                 <th pSortableColumn="createdAt" style="width:10%">
                     Date <p-sortIcon field="createdAt"></p-sortIcon>
                 </th>
-                <th style="width:10%">Actions</th>
+                <th style="width:7%">Actions</th>
             </tr>
         </ng-template>
 
@@ -183,8 +290,22 @@
                 <td colspan="10" class="text-center p-4">
                     <div class="flex flex-column align-items-center gap-3">
                         <i class="pi pi-inbox text-5xl text-gray-400"></i>
+                        @if(activeFilter() === 'ALL') {
                         <h3 class="text-xl font-semibold text-gray-600">Aucune demande en attente</h3>
                         <p class="text-gray-500">Les nouvelles demandes apparaîtront ici</p>
+                        } @else if(activeFilter() === 'EN_ATTENTE') {
+                        <h3 class="text-xl font-semibold text-gray-600">Aucune demande en attente</h3>
+                        <p class="text-gray-500">Aucune nouvelle demande à traiter</p>
+                        } @else if(activeFilter() === 'AFFECTATION') {
+                        <h3 class="text-xl font-semibold text-gray-600">Aucune demande en affectation</h3>
+                        <p class="text-gray-500">Aucune demande en cours de sélection</p>
+                        } @else if(activeFilter() === 'APPROUVEE') {
+                        <h3 class="text-xl font-semibold text-gray-600">Aucune demande approuvée</h3>
+                        <p class="text-gray-500">Les demandes approuvées apparaîtront ici</p>
+                        } @else {
+                        <h3 class="text-xl font-semibold text-gray-600">Aucune demande rejetée</h3>
+                        <p class="text-gray-500">Aucune demande rejetée pour le moment</p>
+                        }
                     </div>
                 </td>
             </tr>
@@ -207,9 +328,12 @@
             <div class="flex align-items-center justify-between p-3 border-top-1 surface-border">
                 <div class="flex gap-4">
                     <span class="text-gray-600">
-                        <strong>Total demandes:</strong> {{ state().demandeAttentes?.length || 0 }}
+                        <strong>Demandes affichées:</strong> {{ filteredDemandes().length }}
+                        @if(activeFilter() !== 'ALL') {
+                        <span class="text-500"> / {{ state().demandeAttentes?.length || 0 }}</span>
+                        }
                     </span>
-                    @if(state().demandeAttentes && state().demandeAttentes!.length > 0) {
+                    @if(filteredDemandes().length > 0) {
                     <span class="text-gray-600">
                         <strong>Montant total:</strong>
                         {{ calculateTotalMontant() | currency:'GNF':'symbol':'1.0-0' }}

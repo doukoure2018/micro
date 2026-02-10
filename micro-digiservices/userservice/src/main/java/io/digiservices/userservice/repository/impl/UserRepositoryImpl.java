@@ -1059,4 +1059,26 @@ public class UserRepositoryImpl implements UserRepository {
         }
     }
 
+    @Override
+    public void updateUserLocation(Long userId, Long delegationId, Long agenceId, Long pointventeId) {
+        try {
+            int updated = jdbcClient.sql(UPDATE_USER_LOCATION_QUERY)
+                    .param("userId", userId)
+                    .param("delegationId", delegationId)
+                    .param("agenceId", agenceId)
+                    .param("pointventeId", pointventeId)
+                    .update();
+            if (updated == 0) {
+                throw new ApiException("Aucun utilisateur trouvé avec l'ID: " + userId);
+            }
+            log.info("Localisation mise à jour pour l'utilisateur {}: delegation={}, agence={}, pointvente={}",
+                    userId, delegationId, agenceId, pointventeId);
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Erreur lors de la mise à jour de la localisation: {}", e.getMessage());
+            throw new ApiException("Une erreur est survenue lors de la mise à jour de la localisation");
+        }
+    }
+
 }

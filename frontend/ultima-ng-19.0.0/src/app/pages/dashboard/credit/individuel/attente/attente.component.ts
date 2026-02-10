@@ -2,7 +2,7 @@ import { DemandeIndividuel } from '@/interface/demande-individuel.interface';
 import { IResponse } from '@/interface/response';
 import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, inject, signal, OnInit } from '@angular/core';
+import { Component, computed, DestroyRef, inject, signal, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -44,6 +44,59 @@ export class AttenteComponent implements OnInit {
 
     // Propriété séparée pour les lignes expandées (compatible avec PrimeNG)
     expandedRows: { [key: string]: boolean } = {};
+
+    // Filtre actif par statut
+    activeFilter = signal<'ALL' | 'EN_ATTENTE' | 'AFFECTATION' | 'APPROUVEE' | 'REJETEE'>('ALL');
+
+    // Compteurs par statut
+    countEnAttente = computed(() => {
+        const all = this.state().demandeAttentes || [];
+        return all.filter(d => d.statutDemande === 'EN_ATTENTE' && (!d.validationState || d.validationState === 'NOUVEAU')).length;
+    });
+
+    countAffectation = computed(() => {
+        const all = this.state().demandeAttentes || [];
+        return all.filter(d => d.validationState === 'SELECTION').length;
+    });
+
+    countApprouvee = computed(() => {
+        const all = this.state().demandeAttentes || [];
+        return all.filter(d => d.validationState === 'APPROVED').length;
+    });
+
+    countRejetee = computed(() => {
+        const all = this.state().demandeAttentes || [];
+        return all.filter(d => d.statutDemande === 'REJECTED' || d.validationState === 'REJECTED').length;
+    });
+
+    // Demandes filtrées et triées par date décroissante
+    filteredDemandes = computed(() => {
+        const all = this.state().demandeAttentes || [];
+        let filtered: any[];
+
+        switch (this.activeFilter()) {
+            case 'EN_ATTENTE':
+                filtered = all.filter(d => d.statutDemande === 'EN_ATTENTE' && (!d.validationState || d.validationState === 'NOUVEAU'));
+                break;
+            case 'AFFECTATION':
+                filtered = all.filter(d => d.validationState === 'SELECTION');
+                break;
+            case 'APPROUVEE':
+                filtered = all.filter(d => d.validationState === 'APPROVED');
+                break;
+            case 'REJETEE':
+                filtered = all.filter(d => d.statutDemande === 'REJECTED' || d.validationState === 'REJECTED');
+                break;
+            default:
+                filtered = [...all];
+        }
+
+        return filtered.sort((a, b) => {
+            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return dateB - dateA;
+        });
+    });
 
     private userService = inject(UserService);
     private router = inject(Router);
@@ -438,25 +491,23 @@ export class AttenteComponent implements OnInit {
     }
 
     /**
-     * Calculer le montant total de toutes les demandes
+     * Calculer le montant total des demandes filtrées
      */
     calculateTotalMontant(): number {
-        const demandes = this.state().demandeAttentes;
+        const demandes = this.filteredDemandes();
         if (!demandes || demandes.length === 0) return 0;
-
         return demandes.reduce((total, d) => total + (d.montantDemande || 0), 0);
     }
 
     /**
-     * Calculer le total de toutes les garanties de toutes les demandes
+     * Calculer le total des garanties des demandes filtrées
      */
     calculateTotalAllGaranties(): number {
-        const demandes = this.state().demandeAttentes;
+        const demandes = this.filteredDemandes();
         if (!demandes || demandes.length === 0) return 0;
-
         return demandes.reduce((total, d) => {
             if (d.garanties && d.garanties.length > 0) {
-                return total + d.garanties.reduce((sum, g) => sum + (g.valeurGarantie || 0), 0);
+                return total + d.garanties.reduce((sum: number, g: any) => sum + (g.valeurGarantie || 0), 0);
             }
             return total;
         }, 0);
