@@ -378,4 +378,17 @@ public class AnalyseFinanciereResource {
                             "Echec de la soumission: " + result.getNombreErreurs() + " erreur(s)", BAD_REQUEST));
         }
     }
+
+    // ==================== AUTO-REMPLIR DEPUIS COLLECTE ====================
+
+    @PostMapping("/analyse/{analyseId}/auto-remplir/{collecteId}")
+    public ResponseEntity<Response> autoRemplirDepuisCollecte(
+            @PathVariable Long analyseId,
+            @PathVariable Long collecteId,
+            HttpServletRequest httpRequest) {
+        var result = analyseService.autoRemplirDepuisCollecte(analyseId, collecteId);
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("data", result),
+                        "Donnees pre-remplies depuis la collecte", OK));
+    }
 }

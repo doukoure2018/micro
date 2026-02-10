@@ -412,12 +412,15 @@ public class DemandeIndQuery {
      */
     public static final String CALL_INSERT_DEMANDE_WITH_GARANTIES_PROC_V5 =
             "SELECT * FROM insert_demande_with_garanties(" +
-                    "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " +  // 1-10
-                    "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " +  // 11-20
-                    "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " +  // 21-30
-                    "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " +  // 31-40
-                    "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " +  // 41-50
-                    "?, ?, ?, ?, ?, ?, ?)";              // 51-57
+                    "?, ?, ?, ?, ?, ?, ?, ?, ?, ?::date, " +  // 1-10 (param 10 = date_naissance)
+                    "?, ?, ?, ?, ?, ?::text, ?, ?, ?, ?, " +  // 11-20 (param 16 = addresse text)
+                    "?, ?::text, ?, ?::text, ?, ?, " +         // 21-26 (params 22,24 = text)
+                    "?, ?, ?, ?, ?, ?, ?, ?, ?::text, " +      // 27-35 (param 35 = detail_object text)
+                    "?, ?, ?, ?, ?, ?, ?, " +                  // 36-42
+                    "?, ?, " +                                  // 43-44
+                    "?, ?, ?, ?, ?, ?, ?, ?, " +               // 45-52
+                    "?, ?, " +                                  // 53-54
+                    "?, ?, ?)";              // 51-57
 
     /**
      * Requête pour récupérer une demande avec ses garanties

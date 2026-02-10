@@ -3,6 +3,7 @@ package io.digiservices.ecreditservice.service.impl;
 import io.digiservices.ecreditservice.dto.*;
 import io.digiservices.ecreditservice.exception.ApiException;
 import io.digiservices.ecreditservice.repository.AnalyseFinanciereRepository;
+import io.digiservices.ecreditservice.repository.CollecteDonneesRepository;
 import io.digiservices.ecreditservice.service.AnalyseFinanciereService;
 import io.digiservices.ecreditservice.validation.AnalyseFinanciereValidator;
 import lombok.RequiredArgsConstructor;
@@ -10,7 +11,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -18,6 +22,7 @@ import java.util.List;
 public class AnalyseFinanciereServiceImpl implements AnalyseFinanciereService {
 
     private final AnalyseFinanciereRepository repository;
+    private final CollecteDonneesRepository collecteRepository;
 
     // ==================== ANALYSE ====================
 
@@ -360,5 +365,210 @@ public class AnalyseFinanciereServiceImpl implements AnalyseFinanciereService {
         }
 
         return result;
+    }
+
+    // ==================== AUTO-REMPLIR DEPUIS COLLECTE ====================
+
+    @Override
+    public AutoRemplirResultDto autoRemplirDepuisCollecte(Long analyseId, Long collecteId) {
+        // 1. Read analyse header for facteurCycle
+        AnalyseFinanciereDto analyse = repository.getAnalyseById(analyseId);
+        if (analyse == null) {
+            throw new ApiException("Analyse non trouvee avec ID: " + analyseId);
+        }
+        int facteur = analyse.getFacteurCycle() != null ? analyse.getFacteurCycle() : 1;
+        BigDecimal f = BigDecimal.valueOf(facteur);
+
+        // 2. Read all collecte data in one query
+        Map<String, Object> data = collecteRepository.getCollecteForAutoRemplir(collecteId);
+
+        // 3. Compute BILAN N values
+        BigDecimal terrain = bd(data.get("terrainValeur"));
+        BigDecimal batimentMagasin = bd(data.get("vncBatiments"));
+        BigDecimal installationAgencement = bd(data.get("vncInstallations"));
+        BigDecimal materielIndustriel = bd(data.get("vncMaterielsIndustriels"));
+        BigDecimal mobilierBureau = bd(data.get("vncMobilier"));
+        BigDecimal materielInformatique = bd(data.get("vncInformatique"));
+        BigDecimal materielTransport = bd(data.get("vncTransport"));
+        BigDecimal autreImmobilisation = bd(data.get("cautionFinanciereValeur")).add(bd(data.get("pretEmployeValeur")));
+
+        // Stocks: use detailed evaluation if enabled, otherwise estimated value
+        boolean stockEvaluerDetail = boolVal(data.get("stockEvaluerDetail"));
+        BigDecimal stocks = stockEvaluerDetail
+                ? bd(data.get("totalStockArticles"))
+                : bd(data.get("stockValeurEstimee"));
+
+        BigDecimal creancesClients = bd(data.get("creanceMoins3Mois")).add(bd(data.get("creancePlus3Mois")));
+        BigDecimal tresorerieCaisseBanque = bd(data.get("cashValeur"))
+                .add(bd(data.get("compteCrgValeur")))
+                .add(bd(data.get("tontinierValeur")))
+                .add(bd(data.get("compteBanqueValeur")));
+
+        BigDecimal empruntLongTerme = bd(data.get("empruntBancaireLtValeur"));
+        BigDecimal empruntCourtTerme = bd(data.get("empruntBancaireCtValeur"));
+        BigDecimal autresDettes = bd(data.get("avanceClientValeur"))
+                .add(bd(data.get("detteFournisseurValeur")))
+                .add(bd(data.get("impotNonPayeValeur")))
+                .add(bd(data.get("loyerNonPayeValeur")))
+                .add(bd(data.get("factureNonPayeeValeur")))
+                .add(bd(data.get("tontineDetteValeur")))
+                .add(bd(data.get("autreDetteValeur")));
+
+        // Total immobilisations
+        BigDecimal totalImmobilisations = terrain.add(batimentMagasin).add(installationAgencement)
+                .add(materielIndustriel).add(mobilierBureau).add(materielInformatique)
+                .add(materielTransport).add(autreImmobilisation);
+
+        // Total Bilan = Immobilisations + Stocks + Creances + Tresorerie
+        BigDecimal totalBilan = totalImmobilisations.add(stocks).add(creancesClients).add(tresorerieCaisseBanque);
+
+        // Capitaux propres = Total Bilan - Total Dettes
+        BigDecimal totalDettes = empruntLongTerme.add(empruntCourtTerme).add(autresDettes);
+        BigDecimal capitauxPropre = totalBilan.subtract(totalDettes);
+
+        // 4. Compute RENTABILITE N values
+        BigDecimal caMensuel = bd(data.get("caMensuelCalcule"));
+        if (caMensuel.compareTo(BigDecimal.ZERO) == 0) {
+            caMensuel = bd(data.get("caMensuelDeclare"));
+        }
+        BigDecimal chiffreAffaires = caMensuel.multiply(f);
+
+        // Taux marge: use declared if known, otherwise calculated
+        boolean connaitTauxMarge = boolVal(data.get("connaitTauxMarge"));
+        BigDecimal tauxMarge;
+        if (connaitTauxMarge) {
+            tauxMarge = bd(data.get("tauxMargeDeclare"));
+        } else {
+            tauxMarge = bd(data.get("tauxMargeCalcule"));
+        }
+        // Override with analyse header if set
+        if (analyse.getTauxMargeRetenu() != null && analyse.getTauxMargeRetenu().compareTo(BigDecimal.ZERO) > 0) {
+            tauxMarge = analyse.getTauxMargeRetenu();
+        }
+
+        BigDecimal margeBrute = chiffreAffaires.multiply(tauxMarge).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        BigDecimal coutAchatMarchandises = chiffreAffaires.subtract(margeBrute);
+
+        // Charges (all monthly * facteur)
+        BigDecimal salaires = bd(data.get("salaireMontant")).multiply(f);
+        BigDecimal loyers = bd(data.get("loyerMontant")).multiply(f);
+        BigDecimal transportCharge = bd(data.get("transportAchatMontant"))
+                .add(bd(data.get("transportVenteMontant")))
+                .add(bd(data.get("transportDiversMontant")))
+                .multiply(f);
+        BigDecimal electriciteEauTelephone = bd(data.get("telephoneMontant"))
+                .add(bd(data.get("electriciteMontant")))
+                .add(bd(data.get("eauMontant")))
+                .multiply(f);
+        BigDecimal fournituresAutresBesoins = bd(data.get("fournitureMontant")).multiply(f);
+        BigDecimal entretienReparation = bd(data.get("entretienMontant")).multiply(f);
+        BigDecimal carburantLubrifiants = bd(data.get("carburantMontant")).multiply(f);
+        BigDecimal publicitePromotion = bd(data.get("publiciteMontant")).multiply(f);
+        BigDecimal impotsTaxes = bd(data.get("impotsTaxesMontant")).multiply(f);
+        BigDecimal fraisBancairesInterets = bd(data.get("fraisBancairesMontant"))
+                .add(bd(data.get("interetsEmpruntsMontant")))
+                .multiply(f);
+        BigDecimal echeanceAutreCredit = bd(data.get("echeanceAutreCreditMontant")).multiply(f);
+        BigDecimal diversesCharges = bd(data.get("assuranceMontant"))
+                .add(bd(data.get("honorairesMontant")))
+                .add(bd(data.get("autresChargesMontant")))
+                .multiply(f);
+
+        // Prelevement entrepreneur (conditional logic)
+        BigDecimal prelevementEntrepreneur;
+        boolean depensesPrelevees = boolVal(data.get("depensesPreleveesActivite"));
+        boolean salaireFixe = boolVal(data.get("salaireFixe"));
+        if (depensesPrelevees) {
+            prelevementEntrepreneur = bd(data.get("alimentationMontant"))
+                    .add(bd(data.get("loyerResidenceMontant")))
+                    .add(bd(data.get("transportPriveMontant")))
+                    .add(bd(data.get("electriciteEauCommMontant")))
+                    .add(bd(data.get("habillementMontant")))
+                    .add(bd(data.get("fraisMedicauxMontant")))
+                    .add(bd(data.get("echeanceCreditPersoMontant")))
+                    .add(bd(data.get("scolariteMontant")))
+                    .add(bd(data.get("travauxConstructionMontant")))
+                    .add(bd(data.get("autresChargesPersoMontant")))
+                    .multiply(f);
+        } else if (salaireFixe) {
+            prelevementEntrepreneur = bd(data.get("salairePersoMontant")).multiply(f);
+        } else {
+            prelevementEntrepreneur = BigDecimal.ZERO;
+        }
+
+        // Amortissements + Provisions
+        BigDecimal amortissementsProvisions = bd(data.get("provisionsMontant"))
+                .add(bd(data.get("totalAmortMensuelEnCours")))
+                .multiply(f);
+
+        // Autres revenus (NOT multiplied by facteur per Excel mapping)
+        BigDecimal autresRevenusHorsActivite = bd(data.get("salaireExterneMontant"))
+                .add(bd(data.get("loyersPercusMontant")))
+                .add(bd(data.get("activiteSecondaireMontant")))
+                .add(bd(data.get("autresRevenusMontant")));
+
+        // 5. Compute BESOIN CREDIT values
+        BigDecimal comptesRecevoir = bd(data.get("creanceMoins3Mois")); // only < 3 months
+        BigDecimal creditFournisseur = bd(data.get("creditFournisseurValeur"));
+
+        // 6. Build result
+        return AutoRemplirResultDto.builder()
+                // Bilan
+                .terrain(terrain)
+                .batimentMagasin(batimentMagasin)
+                .installationAgencement(installationAgencement)
+                .materielIndustriel(materielIndustriel)
+                .mobilierBureau(mobilierBureau)
+                .materielInformatique(materielInformatique)
+                .materielTransport(materielTransport)
+                .autreImmobilisation(autreImmobilisation)
+                .stocks(stocks)
+                .creancesClients(creancesClients)
+                .tresorerieCaisseBanque(tresorerieCaisseBanque)
+                .empruntLongTerme(empruntLongTerme)
+                .empruntCourtTerme(empruntCourtTerme)
+                .autresDettes(autresDettes)
+                .capitauxPropre(capitauxPropre)
+                // Rentabilite
+                .chiffreAffaires(chiffreAffaires)
+                .coutAchatMarchandises(coutAchatMarchandises)
+                .margeBrute(margeBrute)
+                .tauxMarge(tauxMarge)
+                .salaires(salaires)
+                .prelevementEntrepreneur(prelevementEntrepreneur)
+                .loyers(loyers)
+                .transport(transportCharge)
+                .electriciteEauTelephone(electriciteEauTelephone)
+                .fournituresAutresBesoins(fournituresAutresBesoins)
+                .entretienReparation(entretienReparation)
+                .carburantLubrifiants(carburantLubrifiants)
+                .publicitePromotion(publicitePromotion)
+                .impotsTaxes(impotsTaxes)
+                .fraisBancairesInterets(fraisBancairesInterets)
+                .echeanceAutreCredit(echeanceAutreCredit)
+                .diversesCharges(diversesCharges)
+                .amortissementsProvisions(amortissementsProvisions)
+                .autresRevenusHorsActivite(autresRevenusHorsActivite)
+                // Besoin credit
+                .coutAchatCycle(coutAchatMarchandises)
+                .tresorerieDisponible(tresorerieCaisseBanque)
+                .stockActuel(stocks)
+                .comptesRecevoir(comptesRecevoir)
+                .dettesFournisseurs(autresDettes)
+                .creditFournisseur(creditFournisseur)
+                .build();
+    }
+
+    private BigDecimal bd(Object value) {
+        if (value == null) return BigDecimal.ZERO;
+        if (value instanceof BigDecimal) return (BigDecimal) value;
+        if (value instanceof Number) return BigDecimal.valueOf(((Number) value).doubleValue());
+        return BigDecimal.ZERO;
+    }
+
+    private boolean boolVal(Object value) {
+        if (value == null) return false;
+        if (value instanceof Boolean) return (Boolean) value;
+        return false;
     }
 }

@@ -53,4 +53,7 @@ public interface AnalyseFinanciereService {
 
     // Soumission - 1 endpoint
     SoumissionResultDto soumettreAnalyse(SoumissionRequest request, String codUsuario, String nomAnalyste);
+
+    // Auto-remplir depuis collecte
+    AutoRemplirResultDto autoRemplirDepuisCollecte(Long analyseId, Long collecteId);
 }

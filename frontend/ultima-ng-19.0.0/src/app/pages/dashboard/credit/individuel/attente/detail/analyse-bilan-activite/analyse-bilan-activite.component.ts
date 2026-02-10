@@ -22,7 +22,7 @@ import { PanelModule } from 'primeng/panel';
 import { DividerModule } from 'primeng/divider';
 import { TooltipModule } from 'primeng/tooltip';
 import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { MenuItem, MessageService } from 'primeng/api';
+import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { Personnecaution } from '@/interface/personnecaution';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UserService } from '@/service/user.service';
@@ -32,6 +32,11 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { SelectModule } from 'primeng/select';
 import { HttpClient } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
+import { AccordionModule } from 'primeng/accordion';
+import { DialogModule } from 'primeng/dialog';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { CollecteService } from './collecte.service';
+import { CollecteDonnees, Amortissement, TYPES_IMMOBILISATION } from './collecte.models';
 
 interface ComponentState {
     loading: boolean;
@@ -81,20 +86,25 @@ interface RatioInfo {
         DividerModule,
         TooltipModule,
         DatePickerModule,
-        SelectModule
+        SelectModule,
+        AccordionModule,
+        DialogModule,
+        ConfirmDialogModule
     ],
     templateUrl: './analyse-bilan-activite.component.html',
     styleUrl: './analyse-bilan-activite.component.scss',
-    providers: [MessageService, { provide: LOCALE_ID, useValue: 'fr-FR' }]
+    providers: [MessageService, ConfirmationService, { provide: LOCALE_ID, useValue: 'fr-FR' }]
 })
 export class AnalyseBilanActiviteComponent {
     private fb = inject(FormBuilder);
     private router = inject(Router);
     private messageService = inject(MessageService);
+    private confirmationService = inject(ConfirmationService);
     private destroyRef = inject(DestroyRef);
     private userService = inject(UserService);
     private http = inject(HttpClient);
     private route = inject(ActivatedRoute);
+    private collecteService = inject(CollecteService);
 
     private apiUrl = environment.apiBaseUrl;
 
@@ -154,6 +164,130 @@ export class AnalyseBilanActiviteComponent {
         { label: 'Annuelle', value: 'ANNUELLE', facteur: 12 },
         { label: 'Unique', value: 'UNIQUE', facteur: 1 }
     ];
+
+    // ============== COLLECTE SIGNALS ==============
+    collecte = signal<CollecteDonnees | null>(null);
+    collecteLoading = signal<boolean>(false);
+    savingCollecte = signal<boolean>(false);
+    collecteSaved = signal<boolean>(false);
+
+    // Collecte forms
+    collecteHeaderForm!: FormGroup;
+    section2Form!: FormGroup;
+    section3Form!: FormGroup;
+    section4Form!: FormGroup;
+    section5Form!: FormGroup;
+    section6Form!: FormGroup;
+    section7Form!: FormGroup;
+    section8Form!: FormGroup;
+    section9Form!: FormGroup;
+
+    // Amortissements
+    amortissements = signal<Amortissement[]>([]);
+    amortissementDialog = signal<boolean>(false);
+    editingAmortissement = signal<Amortissement | null>(null);
+    amortissementForm!: FormGroup;
+    savingAmortissement = signal<boolean>(false);
+    typesImmobilisation = TYPES_IMMOBILISATION;
+
+    // Produits and Stock Articles for sections 4 and 5
+    produits = signal<any[]>([]);
+    stockArticles = signal<any[]>([]);
+
+    // OUI/NON options for dropdowns
+    ouiNonOptions = [
+        { label: 'OUI', value: true },
+        { label: 'NON', value: false }
+    ];
+
+    // Secteur activite options
+    secteursActivite = [
+        { label: 'AGRICULTURE', value: 'AGRICULTURE' },
+        { label: 'COMMERCE', value: 'COMMERCE' },
+        { label: 'ARTISANAT', value: 'ARTISANAT' },
+        { label: 'SERVICE', value: 'SERVICE' },
+        { label: 'INDUSTRIE', value: 'INDUSTRIE' },
+        { label: 'Autre', value: 'Autre' }
+    ];
+
+    sousSecteursActivite = [
+        { label: 'Habillement', value: 'Habillement' },
+        { label: 'Restauration', value: 'Restauration' },
+        { label: 'Alimentation', value: 'Alimentation' },
+        { label: 'Cosmetique', value: 'Cosmetique' },
+        { label: 'Mercerie', value: 'Mercerie' },
+        { label: 'Vaisselle-Emaux', value: 'Vaisselle-Emaux' },
+        { label: 'Autre', value: 'Autre' }
+    ];
+
+    frequenceVentesOptions = [
+        { label: 'Journaliere', value: 'Journaliere' },
+        { label: 'Hebdomadaire', value: 'Hebdomadaire' },
+        { label: 'Mensuelle', value: 'Mensuelle' }
+    ];
+
+    // Cycle matrices data
+    cycleMensuel = signal<any>({});
+    cycleHebdo = signal<any>({});
+
+    months = ['Janv', 'Fevr', 'Mars', 'Avril', 'Mai', 'Juin', 'Juil', 'Aout', 'Sept', 'Oct', 'Nov', 'Dec'];
+    days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+    cycleLevels = ['Fort', 'Moyen', 'Faible'];
+
+    // Computed: total charges personnelles
+    totalChargesPersonnelles = computed(() => {
+        this.formChangeCounter();
+        const form = this.section7Form;
+        if (!form || form.get('salaireFixe')?.value === true) return 0;
+        return (
+            (form.get('alimentationMontant')?.value || 0) +
+            (form.get('loyerResidenceMontant')?.value || 0) +
+            (form.get('transportPriveMontant')?.value || 0) +
+            (form.get('electriciteEauCommMontant')?.value || 0) +
+            (form.get('habillementMontant')?.value || 0) +
+            (form.get('fraisMedicauxMontant')?.value || 0) +
+            (form.get('echeanceCreditPersoMontant')?.value || 0) +
+            (form.get('scolariteMontant')?.value || 0) +
+            (form.get('travauxConstructionMontant')?.value || 0) +
+            (form.get('autresChargesPersoMontant')?.value || 0)
+        );
+    });
+
+    // Computed: total produits ventes / couts / taux marge
+    totalProduitsVentes = computed(() => {
+        const prods = this.produits();
+        return prods.reduce((sum, p) => sum + (p.prixVente || 0) * (p.quantite || 0), 0);
+    });
+
+    totalProduitsCouts = computed(() => {
+        const prods = this.produits();
+        return prods.reduce((sum, p) => sum + (p.coutAchat || 0) * (p.quantite || 0), 0);
+    });
+
+    tauxMargeCalcule = computed(() => {
+        const ventes = this.totalProduitsVentes();
+        if (ventes === 0) return 0;
+        return ((ventes - this.totalProduitsCouts()) / ventes) * 100;
+    });
+
+    // Computed: total stock articles
+    totalStockArticles = computed(() => {
+        const articles = this.stockArticles();
+        return articles.reduce((sum, a) => sum + (a.quantite || 0) * (a.coutUnitaire || 0), 0);
+    });
+
+    // Computed: amortissements totals
+    totalAmortValeurAcquisition = computed(() => {
+        return this.amortissements().reduce((sum, a) => sum + (a.valeurAcquisition || 0), 0);
+    });
+
+    totalAmortMensuel = computed(() => {
+        return this.amortissements().reduce((sum, a) => sum + (a.amortissementMensuel || 0), 0);
+    });
+
+    totalAmortVNC = computed(() => {
+        return this.amortissements().reduce((sum, a) => sum + (a.valeurNetteComptable || 0), 0);
+    });
 
     // ============== COMPUTED VALUES FOR BILAN ==============
     // Note: formChangeCounter force le recalcul quand le formulaire change
@@ -502,14 +636,32 @@ export class AnalyseBilanActiviteComponent {
     // ============== COMPUTED VALUES FOR BESOIN CREDIT ==============
 
     // INVESTISSEMENT - Colonnes Montant
-    investissementCoutEquipement = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('coutEquipement')?.value || 0; });
-    investissementDepensesRattachees = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('depensesRattachees')?.value || 0; });
-    investissementApportPersonnel = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('apportPersonnel')?.value || 0; });
+    investissementCoutEquipement = computed(() => {
+        this.formChangeCounter();
+        return this.besoinCreditForm?.get('coutEquipement')?.value || 0;
+    });
+    investissementDepensesRattachees = computed(() => {
+        this.formChangeCounter();
+        return this.besoinCreditForm?.get('depensesRattachees')?.value || 0;
+    });
+    investissementApportPersonnel = computed(() => {
+        this.formChangeCounter();
+        return this.besoinCreditForm?.get('apportPersonnel')?.value || 0;
+    });
 
     // INVESTISSEMENT - Colonnes Ajustement
-    investissementAjustCoutEquipement = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('ajustCoutEquipement')?.value || 0; });
-    investissementAjustDepensesRattachees = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('ajustDepensesRattachees')?.value || 0; });
-    investissementAjustApportPersonnel = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('ajustApportPersonnel')?.value || 0; });
+    investissementAjustCoutEquipement = computed(() => {
+        this.formChangeCounter();
+        return this.besoinCreditForm?.get('ajustCoutEquipement')?.value || 0;
+    });
+    investissementAjustDepensesRattachees = computed(() => {
+        this.formChangeCounter();
+        return this.besoinCreditForm?.get('ajustDepensesRattachees')?.value || 0;
+    });
+    investissementAjustApportPersonnel = computed(() => {
+        this.formChangeCounter();
+        return this.besoinCreditForm?.get('ajustApportPersonnel')?.value || 0;
+    });
 
     // INVESTISSEMENT - Colonnes Montant effectif (Montant + Ajustement)
     effCoutEquipement = computed(() => this.investissementCoutEquipement() + this.investissementAjustCoutEquipement());
@@ -527,21 +679,60 @@ export class AnalyseBilanActiviteComponent {
     besoinReelInvestissementFinal = computed(() => this.totalInvestissementEffectif() - this.effApportPersonnel());
 
     // EXPLOITATION - Colonnes Montant
-    exploitationCoutAchatCycle = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('coutAchatCycle')?.value || 0; });
-    exploitationNbreCycles = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('nbreCycleFinancer')?.value || 1; });
-    exploitationTresorerieDispo = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('tresorerieDisponible')?.value || 0; });
-    exploitationStockActuel = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('stockActuel')?.value || 0; });
-    exploitationComptesRecevoir = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('comptesRecevoir')?.value || 0; });
-    exploitationDettesFournisseurs = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('dettesFournisseurs')?.value || 0; });
-    exploitationCreditFournisseur = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('creditFournisseur')?.value || 0; });
+    exploitationCoutAchatCycle = computed(() => {
+        this.formChangeCounter();
+        return this.besoinCreditForm?.get('coutAchatCycle')?.value || 0;
+    });
+    exploitationNbreCycles = computed(() => {
+        this.formChangeCounter();
+        return this.besoinCreditForm?.get('nbreCycleFinancer')?.value || 1;
+    });
+    exploitationTresorerieDispo = computed(() => {
+        this.formChangeCounter();
+        return this.besoinCreditForm?.get('tresorerieDisponible')?.value || 0;
+    });
+    exploitationStockActuel = computed(() => {
+        this.formChangeCounter();
+        return this.besoinCreditForm?.get('stockActuel')?.value || 0;
+    });
+    exploitationComptesRecevoir = computed(() => {
+        this.formChangeCounter();
+        return this.besoinCreditForm?.get('comptesRecevoir')?.value || 0;
+    });
+    exploitationDettesFournisseurs = computed(() => {
+        this.formChangeCounter();
+        return this.besoinCreditForm?.get('dettesFournisseurs')?.value || 0;
+    });
+    exploitationCreditFournisseur = computed(() => {
+        this.formChangeCounter();
+        return this.besoinCreditForm?.get('creditFournisseur')?.value || 0;
+    });
 
     // EXPLOITATION - Colonnes Ajustement
-    exploitationAjustCoutAchat = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('ajustCoutAchatCycle')?.value || 0; });
-    exploitationAjustTresorerie = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('ajustTresorerieDispo')?.value || 0; });
-    exploitationAjustStock = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('ajustStockActuel')?.value || 0; });
-    exploitationAjustComptes = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('ajustComptesRecevoir')?.value || 0; });
-    exploitationAjustDettes = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('ajustDettesFournisseurs')?.value || 0; });
-    exploitationAjustCredit = computed(() => { this.formChangeCounter(); return this.besoinCreditForm?.get('ajustCreditFournisseur')?.value || 0; });
+    exploitationAjustCoutAchat = computed(() => {
+        this.formChangeCounter();
+        return this.besoinCreditForm?.get('ajustCoutAchatCycle')?.value || 0;
+    });
+    exploitationAjustTresorerie = computed(() => {
+        this.formChangeCounter();
+        return this.besoinCreditForm?.get('ajustTresorerieDispo')?.value || 0;
+    });
+    exploitationAjustStock = computed(() => {
+        this.formChangeCounter();
+        return this.besoinCreditForm?.get('ajustStockActuel')?.value || 0;
+    });
+    exploitationAjustComptes = computed(() => {
+        this.formChangeCounter();
+        return this.besoinCreditForm?.get('ajustComptesRecevoir')?.value || 0;
+    });
+    exploitationAjustDettes = computed(() => {
+        this.formChangeCounter();
+        return this.besoinCreditForm?.get('ajustDettesFournisseurs')?.value || 0;
+    });
+    exploitationAjustCredit = computed(() => {
+        this.formChangeCounter();
+        return this.besoinCreditForm?.get('ajustCreditFournisseur')?.value || 0;
+    });
 
     // EXPLOITATION - Montants effectifs
     effCoutAchatCycle = computed(() => this.exploitationCoutAchatCycle() + this.exploitationAjustCoutAchat());
@@ -664,6 +855,7 @@ export class AnalyseBilanActiviteComponent {
 
                         this.prefillFormsWithDemande(demandeIndividuel);
                         this.loadExistingAnalyse();
+                        this.loadCollecte();
                     }
                 },
                 error: (error) => {
@@ -1015,11 +1207,13 @@ export class AnalyseBilanActiviteComponent {
 
     initStepItems() {
         this.items.set([
-            { label: 'Bilan', command: () => this.onStepChange(0) },
-            { label: 'Rentabilité', command: () => this.onStepChange(1) },
-            { label: 'Personnes caution', command: () => this.onStepChange(2) },
-            { label: 'Besoin Crédit', command: () => this.onStepChange(3) },
-            { label: 'Synthèse', command: () => this.onStepChange(4) }
+            { label: 'Collecte', command: () => this.onStepChange(0) },
+            { label: 'Amortissements', command: () => this.onStepChange(1) },
+            { label: 'Bilan', command: () => this.onStepChange(2) },
+            { label: 'Rentabilité', command: () => this.onStepChange(3) },
+            { label: 'Personnes caution', command: () => this.onStepChange(4) },
+            { label: 'Besoin Crédit', command: () => this.onStepChange(5) },
+            { label: 'Synthèse', command: () => this.onStepChange(6) }
         ]);
     }
 
@@ -1195,33 +1389,216 @@ export class AnalyseBilanActiviteComponent {
             profession: ['']
         });
 
+        // ============== COLLECTE FORMS ==============
+        this.collecteHeaderForm = this.fb.group({
+            dateEvaluation: [null],
+            activiteDescription: [''],
+            secteurActivite: [''],
+            sousSecteurActivite: [''],
+            sousSousSecteur: ['']
+        });
+
+        this.section2Form = this.fb.group({
+            capaciteRemboursementDeclaree: [0]
+        });
+
+        this.section3Form = this.fb.group({
+            caHebdomadaireDeclare: [0],
+            caMensuelDeclare: [0],
+            caJourFort: [0],
+            caJourMoyen: [0],
+            caJourFaible: [0],
+            cycleMensuelJson: [''],
+            cycleHebdoJson: ['']
+        });
+
+        this.section4Form = this.fb.group({
+            connaitTauxMarge: [false],
+            tauxMargeDeclare: [0],
+            calculerTauxMarge: [false],
+            frequenceVentes: ['']
+        });
+
+        this.section5Form = this.fb.group({
+            terrainExiste: [false],
+            terrainValeur: [0],
+            batimentExiste: [false],
+            batimentPropriete: [false],
+            installationExiste: [false],
+            installationPropriete: [false],
+            materielRoulantExiste: [false],
+            materielRoulantPropriete: [false],
+            mobilierExiste: [false],
+            mobilierPropriete: [false],
+            machineExiste: [false],
+            machinePropriete: [false],
+            cautionFinanciereExiste: [false],
+            cautionFinanciereValeur: [0],
+            pretEmployeExiste: [false],
+            pretEmployeFondsActivite: [false],
+            pretEmployeValeur: [0],
+            stockExiste: [false],
+            stockConnaitValeur: [false],
+            stockValeurEstimee: [0],
+            stockEvaluerDetail: [false],
+            creditFournisseurExiste: [false],
+            creditFournisseurPrevu: [false],
+            creditFournisseurValeur: [0],
+            creanceClientExiste: [false],
+            creancePlus3Mois: [0],
+            creanceMoins3Mois: [0],
+            cashExiste: [false],
+            cashValeur: [0],
+            compteCrgExiste: [false],
+            compteCrgValeur: [0],
+            tontinierExiste: [false],
+            tontinierValeur: [0],
+            compteBanqueExiste: [false],
+            compteBanqueValeur: [0],
+            empruntImfExiste: [false],
+            empruntImfValeur: [0],
+            empruntBancaireLtExiste: [false],
+            empruntBancaireLtValeur: [0],
+            empruntBancaireCtExiste: [false],
+            empruntBancaireCtValeur: [0],
+            avanceClientExiste: [false],
+            avanceClientValeur: [0],
+            detteFournisseurExiste: [false],
+            detteFournisseurValeur: [0],
+            impotNonPayeExiste: [false],
+            impotNonPayeValeur: [0],
+            loyerNonPayeExiste: [false],
+            loyerNonPayeValeur: [0],
+            factureNonPayeeExiste: [false],
+            factureNonPayeeValeur: [0],
+            tontineDetteExiste: [false],
+            tontineDetteValeur: [0],
+            autreDetteExiste: [false],
+            autreDetteValeur: [0]
+        });
+
+        this.section6Form = this.fb.group({
+            loyerExiste: [false],
+            loyerMontant: [0],
+            salaireExiste: [false],
+            salaireMontant: [0],
+            fournitureExiste: [false],
+            fournitureMontant: [0],
+            publiciteExiste: [false],
+            publiciteMontant: [0],
+            telephoneExiste: [false],
+            telephoneMontant: [0],
+            electriciteExiste: [false],
+            electriciteMontant: [0],
+            eauExiste: [false],
+            eauMontant: [0],
+            transportAchatExiste: [false],
+            transportAchatMontant: [0],
+            transportVenteExiste: [false],
+            transportVenteMontant: [0],
+            transportDiversExiste: [false],
+            transportDiversMontant: [0],
+            entretienExiste: [false],
+            entretienMontant: [0],
+            carburantExiste: [false],
+            carburantMontant: [0],
+            assuranceExiste: [false],
+            assuranceMontant: [0],
+            fraisBancairesExiste: [false],
+            fraisBancairesMontant: [0],
+            interetsEmpruntsExiste: [false],
+            interetsEmpruntsMontant: [0],
+            impotsTaxesExiste: [false],
+            impotsTaxesMontant: [0],
+            honorairesExiste: [false],
+            honorairesMontant: [0],
+            provisionsExiste: [false],
+            provisionsMontant: [0],
+            echeanceAutreCreditExiste: [false],
+            echeanceAutreCreditMontant: [0],
+            autresChargesExiste: [false],
+            autresChargesMontant: [0]
+        });
+
+        this.section7Form = this.fb.group({
+            salaireFixe: [true],
+            salaireMontant: [0],
+            alimentationMontant: [0],
+            loyerResidenceMontant: [0],
+            transportPriveMontant: [0],
+            electriciteEauCommMontant: [0],
+            habillementMontant: [0],
+            fraisMedicauxMontant: [0],
+            echeanceCreditPersoMontant: [0],
+            scolariteMontant: [0],
+            travauxConstructionMontant: [0],
+            autresChargesPersoMontant: [0],
+            depensesPreleveesActivite: [false]
+        });
+
+        this.section8Form = this.fb.group({
+            salaireExterneExiste: [false],
+            salaireExterneMontant: [0],
+            loyersPercusExiste: [false],
+            loyersPercusMontant: [0],
+            activiteSecondaireExiste: [false],
+            activiteSecondaireMontant: [0],
+            autresRevenusExiste: [false],
+            autresRevenusMontant: [0]
+        });
+
+        this.section9Form = this.fb.group({
+            terrainExiste: [false],
+            terrainValeur: [0],
+            maisonExiste: [false],
+            maisonValeur: [0],
+            vehiculeExiste: [false],
+            vehiculeValeur: [0],
+            motoExiste: [false],
+            motoValeur: [0],
+            autreBienExiste: [false],
+            autreBienValeur: [0]
+        });
+
+        this.amortissementForm = this.fb.group({
+            natureImmobilisation: [''],
+            typeImmobilisation: [null],
+            dateAcquisition: [null],
+            dureeAmortissementMois: [60],
+            valeurAcquisition: [0]
+        });
+
         // Subscribe to form valueChanges to trigger computed values recalculation
         this.bilanNForm.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-            this.formChangeCounter.update(v => v + 1);
+            this.formChangeCounter.update((v) => v + 1);
         });
 
         this.bilanN1Form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-            this.formChangeCounter.update(v => v + 1);
+            this.formChangeCounter.update((v) => v + 1);
         });
 
         this.rentabiliteNForm.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-            this.formChangeCounter.update(v => v + 1);
+            this.formChangeCounter.update((v) => v + 1);
         });
 
         this.rentabiliteN1Form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-            this.formChangeCounter.update(v => v + 1);
+            this.formChangeCounter.update((v) => v + 1);
         });
 
         this.rentabiliteN2Form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-            this.formChangeCounter.update(v => v + 1);
+            this.formChangeCounter.update((v) => v + 1);
         });
 
         this.besoinCreditForm.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-            this.formChangeCounter.update(v => v + 1);
+            this.formChangeCounter.update((v) => v + 1);
         });
 
         this.propositionForm.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-            this.formChangeCounter.update(v => v + 1);
+            this.formChangeCounter.update((v) => v + 1);
+        });
+
+        this.section7Form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+            this.formChangeCounter.update((v) => v + 1);
         });
     }
 
@@ -1724,6 +2101,91 @@ export class AnalyseBilanActiviteComponent {
             });
     }
 
+    // ==================== AUTO-REMPLIR DEPUIS COLLECTE ====================
+
+    autoRemplirDepuisCollecte(): void {
+        const analyseId = this.state().analyseId;
+        const collecteId = this.collecte()?.collecteId;
+        if (!analyseId || !collecteId) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Attention',
+                detail: "Veuillez d'abord creer l'analyse et la collecte"
+            });
+            return;
+        }
+
+        this.loading.set(true);
+        this.http
+            .post<any>(`${this.apiUrl}/ecredit/bilan_finance/analyse/${analyseId}/auto-remplir/${collecteId}`, {})
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (res) => {
+                    const data = res?.data?.data || res?.data || res;
+                    // Patch Bilan N
+                    this.bilanNForm.patchValue({
+                        terrains: data.terrain || 0,
+                        constructions: data.batimentMagasin || 0,
+                        installationsTechniques: data.installationAgencement || 0,
+                        materielTransport: data.materielTransport || 0,
+                        materielBureau: data.mobilierBureau || 0,
+                        autresImmobilisations: (data.autreImmobilisation || 0) + (data.materielIndustriel || 0) + (data.materielInformatique || 0),
+                        stocks: data.stocks || 0,
+                        creances: data.creancesClients || 0,
+                        tresorerieActif: data.tresorerieCaisseBanque || 0,
+                        capitauxPropre: data.capitauxPropre || 0,
+                        dettesLongTerme: data.empruntLongTerme || 0,
+                        dettesCourtTerme: data.empruntCourtTerme || 0,
+                        tresoreriePassif: data.autresDettes || 0
+                    });
+                    // Patch Rentabilite N
+                    this.rentabiliteNForm.patchValue({
+                        chiffreAffaires: data.chiffreAffaires || 0,
+                        coutAchatMarchandises: data.coutAchatMarchandises || 0,
+                        salaires: data.salaires || 0,
+                        prelevementEntrepreneur: data.prelevementEntrepreneur || 0,
+                        loyers: data.loyers || 0,
+                        transport: data.transport || 0,
+                        electriciteEauTelephone: data.electriciteEauTelephone || 0,
+                        fournituresAutresBesoins: data.fournituresAutresBesoins || 0,
+                        entretienReparation: data.entretienReparation || 0,
+                        carburantLubrifiants: data.carburantLubrifiants || 0,
+                        publicitePromotion: data.publicitePromotion || 0,
+                        impotsTaxes: data.impotsTaxes || 0,
+                        fraisBancairesInterets: data.fraisBancairesInterets || 0,
+                        echeanceAutreCredit: data.echeanceAutreCredit || 0,
+                        diversesCharges: data.diversesCharges || 0,
+                        amortissementsProvisions: data.amortissementsProvisions || 0,
+                        autresRevenusHorsActivite: data.autresRevenusHorsActivite || 0
+                    });
+                    // Patch Besoin Credit
+                    this.besoinCreditForm.patchValue({
+                        coutAchatCycle: data.coutAchatCycle || 0,
+                        tresorerieDisponible: data.tresorerieDisponible || 0,
+                        stockActuel: data.stockActuel || 0,
+                        comptesRecevoir: data.comptesRecevoir || 0,
+                        dettesFournisseurs: data.dettesFournisseurs || 0,
+                        creditFournisseur: data.creditFournisseur || 0
+                    });
+                    this.formChangeCounter.update((c) => c + 1);
+                    this.loading.set(false);
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Succes',
+                        detail: 'Bilan, Rentabilite et Besoin de credit pre-remplis depuis la collecte'
+                    });
+                },
+                error: (err) => {
+                    this.loading.set(false);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Erreur',
+                        detail: err?.error?.message || 'Echec du pre-remplissage depuis la collecte'
+                    });
+                }
+            });
+    }
+
     calculateRatios(): void {
         const analyseId = this.state().analyseId;
         if (!analyseId) {
@@ -1777,7 +2239,7 @@ export class AnalyseBilanActiviteComponent {
         this.loading.set(true);
 
         // Préparer les personnes caution pour l'envoi
-        const personnesCautionData = this.personnecautions.map(pc => ({
+        const personnesCautionData = this.personnecautions.map((pc) => ({
             nom: pc.nom || '',
             prenom: pc.prenom || '',
             telephone: pc.telephone || '',
@@ -1879,5 +2341,467 @@ export class AnalyseBilanActiviteComponent {
 
     allRatiosConformesPropose(): boolean {
         return this.ratiosData().every((r) => r.conformePropose);
+    }
+
+    // ============== COLLECTE METHODS ==============
+
+    loadCollecte(): void {
+        if (!this.demandeIndividuelId) return;
+        this.collecteLoading.set(true);
+        this.collecteService
+            .getCollecteByDemande(this.demandeIndividuelId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    const collecteData = response?.data?.collecte;
+                    if (collecteData) {
+                        this.collecte.set(collecteData);
+                        this.collecteSaved.set(true);
+                        this.patchCollecteForms(collecteData);
+                        if (collecteData.amortissements) {
+                            this.amortissements.set(collecteData.amortissements);
+                        }
+                    }
+                    this.collecteLoading.set(false);
+                },
+                error: () => {
+                    this.collecteLoading.set(false);
+                }
+            });
+    }
+
+    createCollecte(): void {
+        if (!this.demandeIndividuelId) return;
+        this.savingCollecte.set(true);
+        const headerValues = this.collecteHeaderForm.value;
+        const body = {
+            dateEvaluation: headerValues.dateEvaluation ? this.formatDate(headerValues.dateEvaluation) : null,
+            activiteDescription: headerValues.activiteDescription,
+            secteurActivite: headerValues.secteurActivite,
+            sousSecteurActivite: headerValues.sousSecteurActivite,
+            sousSousSecteur: headerValues.sousSousSecteur
+        };
+        this.collecteService
+            .createCollecte(this.demandeIndividuelId, body)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    const collecteData = response?.data?.collecte;
+                    if (collecteData) {
+                        this.collecte.set(collecteData);
+                        this.collecteSaved.set(true);
+                        this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Collecte creee avec succes' });
+                    }
+                    this.savingCollecte.set(false);
+                },
+                error: (error) => {
+                    this.savingCollecte.set(false);
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: error?.error?.message || 'Impossible de creer la collecte' });
+                }
+            });
+    }
+
+    saveCollecteSection(sectionNumber: number): void {
+        const collecteId = this.collecte()?.collecteId;
+        if (!collecteId) {
+            this.messageService.add({ severity: 'warn', summary: 'Attention', detail: "Veuillez d'abord creer la collecte" });
+            return;
+        }
+        this.savingCollecte.set(true);
+
+        let obs;
+        switch (sectionNumber) {
+            case 1:
+                obs = this.collecteService.updateSection1(collecteId, this.collecteHeaderForm.value);
+                break;
+            case 2:
+                obs = this.collecteService.updateSection2(collecteId, this.section2Form.value);
+                break;
+            case 3: {
+                const section3Data = {
+                    ...this.section3Form.value,
+                    cycleMensuelJson: JSON.stringify(this.cycleMensuel()),
+                    cycleHebdoJson: JSON.stringify(this.cycleHebdo())
+                };
+                obs = this.collecteService.updateSection3(collecteId, section3Data);
+                break;
+            }
+            case 4: {
+                const margeBruteData = { ...this.section4Form.value, produits: this.produits() };
+                obs = this.collecteService.updateSection4(collecteId, margeBruteData);
+                break;
+            }
+            case 5: {
+                const actifPassifData = { ...this.section5Form.value, stockArticles: this.stockArticles() };
+                obs = this.collecteService.updateSection5(collecteId, actifPassifData);
+                break;
+            }
+            case 6:
+                obs = this.collecteService.updateSection6(collecteId, this.section6Form.value);
+                break;
+            case 7:
+                obs = this.collecteService.updateSection7(collecteId, this.section7Form.value);
+                break;
+            case 8:
+                obs = this.collecteService.updateSection8(collecteId, this.section8Form.value);
+                break;
+            case 9:
+                obs = this.collecteService.updateSection9(collecteId, this.section9Form.value);
+                break;
+            default:
+                return;
+        }
+
+        obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: (response) => {
+                const collecteData = response?.data?.collecte;
+                if (collecteData) {
+                    this.collecte.set(collecteData);
+                    this.patchCollecteForms(collecteData);
+                    if (collecteData.amortissements) {
+                        this.amortissements.set(collecteData.amortissements);
+                    }
+                }
+                this.savingCollecte.set(false);
+                this.messageService.add({ severity: 'success', summary: 'Succes', detail: `Section ${sectionNumber} enregistree` });
+            },
+            error: (error) => {
+                this.savingCollecte.set(false);
+                this.messageService.add({ severity: 'error', summary: 'Erreur', detail: error?.error?.message || 'Erreur lors de la sauvegarde' });
+            }
+        });
+    }
+
+    private patchCollecteForms(data: CollecteDonnees): void {
+        if (!data) return;
+
+        this.collecteHeaderForm.patchValue({
+            dateEvaluation: data.dateEvaluation ? new Date(data.dateEvaluation) : null,
+            activiteDescription: data.activiteDescription || '',
+            secteurActivite: data.secteurActivite || '',
+            sousSecteurActivite: data.sousSecteurActivite || '',
+            sousSousSecteur: data.sousSousSecteur || ''
+        });
+
+        if (data.conditionCredit) {
+            this.section2Form.patchValue({
+                capaciteRemboursementDeclaree: data.conditionCredit.capaciteRemboursementDeclaree || 0
+            });
+        }
+
+        if (data.chiffreAffaires) {
+            this.section3Form.patchValue(data.chiffreAffaires);
+            // Parse cycle JSON
+            if (data.chiffreAffaires.cycleMensuelJson) {
+                try {
+                    this.cycleMensuel.set(JSON.parse(data.chiffreAffaires.cycleMensuelJson));
+                } catch (e) {}
+            }
+            if (data.chiffreAffaires.cycleHebdoJson) {
+                try {
+                    this.cycleHebdo.set(JSON.parse(data.chiffreAffaires.cycleHebdoJson));
+                } catch (e) {}
+            }
+        }
+        if (data.margeBrute) {
+            this.section4Form.patchValue({
+                connaitTauxMarge: data.margeBrute.connaitTauxMarge || false,
+                tauxMargeDeclare: data.margeBrute.tauxMargeDeclare || 0,
+                calculerTauxMarge: data.margeBrute.calculerTauxMarge || false,
+                frequenceVentes: data.margeBrute.frequenceVentes || ''
+            });
+            if (data.margeBrute.produits) {
+                this.produits.set(data.margeBrute.produits);
+            }
+        }
+        if (data.actifPassif) {
+            this.section5Form.patchValue(data.actifPassif);
+            if (data.actifPassif.stockArticles) {
+                this.stockArticles.set(data.actifPassif.stockArticles);
+            }
+        }
+        if (data.chargeEntreprise) {
+            this.section6Form.patchValue(data.chargeEntreprise);
+        }
+        if (data.chargePersonnelle) {
+            this.section7Form.patchValue(data.chargePersonnelle);
+        }
+        if (data.autreRevenu) {
+            this.section8Form.patchValue(data.autreRevenu);
+        }
+        if (data.bienPersonnel) {
+            this.section9Form.patchValue(data.bienPersonnel);
+        }
+    }
+
+    // ============== PRODUIT METHODS (Section 4) ==============
+
+    addProduit(): void {
+        const current = this.produits();
+        this.produits.set([...current, { nomProduit: '', prixVente: 0, coutAchat: 0, quantite: 0, ordre: current.length + 1 }]);
+    }
+
+    removeProduit(index: number): void {
+        const current = [...this.produits()];
+        current.splice(index, 1);
+        current.forEach((p, i) => (p.ordre = i + 1));
+        this.produits.set(current);
+    }
+
+    // ============== STOCK ARTICLE METHODS (Section 5) ==============
+
+    addStockArticle(): void {
+        const current = this.stockArticles();
+        this.stockArticles.set([...current, { nomArticle: '', quantite: 0, coutUnitaire: 0, ordre: current.length + 1 }]);
+    }
+
+    removeStockArticle(index: number): void {
+        const current = [...this.stockArticles()];
+        current.splice(index, 1);
+        current.forEach((s, i) => (s.ordre = i + 1));
+        this.stockArticles.set(current);
+    }
+
+    // ============== AMORTISSEMENT METHODS ==============
+
+    openNewAmortissement(): void {
+        this.editingAmortissement.set(null);
+        this.amortissementForm.reset({
+            natureImmobilisation: '',
+            typeImmobilisation: null,
+            dateAcquisition: null,
+            dureeAmortissementMois: 60,
+            valeurAcquisition: 0
+        });
+        this.amortissementDialog.set(true);
+    }
+
+    editAmortissement(amort: Amortissement): void {
+        this.editingAmortissement.set(amort);
+        this.amortissementForm.patchValue({
+            natureImmobilisation: amort.natureImmobilisation || '',
+            typeImmobilisation: amort.typeImmobilisation || null,
+            dateAcquisition: amort.dateAcquisition ? new Date(amort.dateAcquisition) : null,
+            dureeAmortissementMois: amort.dureeAmortissementMois || 60,
+            valeurAcquisition: amort.valeurAcquisition || 0
+        });
+        this.amortissementDialog.set(true);
+    }
+
+    onTypeImmobilisationChange(event: any): void {
+        const selected = this.typesImmobilisation.find((t) => t.value === event.value);
+        if (selected) {
+            this.amortissementForm.patchValue({ dureeAmortissementMois: selected.dureeMois });
+        }
+    }
+
+    saveAmortissement(): void {
+        const collecteId = this.collecte()?.collecteId;
+        if (!collecteId) return;
+
+        this.savingAmortissement.set(true);
+        const formValue = this.amortissementForm.value;
+        const body = {
+            collecteId: collecteId,
+            natureImmobilisation: formValue.natureImmobilisation,
+            typeImmobilisation: formValue.typeImmobilisation,
+            dateAcquisition: formValue.dateAcquisition ? this.formatDate(formValue.dateAcquisition) : null,
+            dureeAmortissementMois: formValue.dureeAmortissementMois,
+            valeurAcquisition: formValue.valeurAcquisition
+        };
+
+        const editing = this.editingAmortissement();
+        const obs = editing?.amortissementId ? this.collecteService.updateAmortissement(editing.amortissementId, body) : this.collecteService.addAmortissement(collecteId, body);
+
+        obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: () => {
+                this.savingAmortissement.set(false);
+                this.amortissementDialog.set(false);
+                this.loadAmortissements();
+                this.messageService.add({ severity: 'success', summary: 'Succes', detail: editing ? 'Amortissement mis a jour' : 'Amortissement ajoute' });
+            },
+            error: (error) => {
+                this.savingAmortissement.set(false);
+                this.messageService.add({ severity: 'error', summary: 'Erreur', detail: error?.error?.message || 'Erreur' });
+            }
+        });
+    }
+
+    confirmDeleteAmortissement(amort: Amortissement): void {
+        this.confirmationService.confirm({
+            message: 'Voulez-vous supprimer cet amortissement ?',
+            header: 'Confirmation',
+            icon: 'pi pi-exclamation-triangle',
+            accept: () => {
+                if (amort.amortissementId) {
+                    this.collecteService
+                        .deleteAmortissement(amort.amortissementId)
+                        .pipe(takeUntilDestroyed(this.destroyRef))
+                        .subscribe({
+                            next: () => {
+                                this.loadAmortissements();
+                                this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Amortissement supprime' });
+                            },
+                            error: (error) => {
+                                this.messageService.add({ severity: 'error', summary: 'Erreur', detail: error?.error?.message || 'Erreur' });
+                            }
+                        });
+                }
+            }
+        });
+    }
+
+    loadAmortissements(): void {
+        const collecteId = this.collecte()?.collecteId;
+        if (!collecteId) return;
+        this.collecteService
+            .getAmortissements(collecteId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    this.amortissements.set(response?.data?.amortissements || []);
+                }
+            });
+    }
+
+    recalculerAmortissements(): void {
+        const collecteId = this.collecte()?.collecteId;
+        if (!collecteId) return;
+        this.collecteService
+            .recalculerAmortissements(collecteId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    this.amortissements.set(response?.data?.amortissements || []);
+                    this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Amortissements recalcules' });
+                },
+                error: (error) => {
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: error?.error?.message || 'Erreur' });
+                }
+            });
+    }
+
+    // ============== CYCLE MATRIX METHODS ==============
+
+    toggleCycleCell(type: 'month' | 'week', item: string, level: string): void {
+        const data = type === 'month' ? { ...this.cycleMensuel() } : { ...this.cycleHebdo() };
+        // Remove item from all levels
+        this.cycleLevels.forEach((l) => {
+            if (data[l]) {
+                data[l] = data[l].filter((i: string) => i !== item);
+            }
+        });
+        // Add to new level
+        if (!data[level]) data[level] = [];
+        data[level].push(item);
+
+        if (type === 'month') {
+            this.cycleMensuel.set(data);
+            this.section3Form.patchValue({ cycleMensuelJson: JSON.stringify(data) });
+        } else {
+            this.cycleHebdo.set(data);
+            this.section3Form.patchValue({ cycleHebdoJson: JSON.stringify(data) });
+        }
+    }
+
+    getCycleLevel(type: 'month' | 'week', item: string): string | null {
+        const data = type === 'month' ? this.cycleMensuel() : this.cycleHebdo();
+        for (const level of this.cycleLevels) {
+            if (data[level]?.includes(item)) return level;
+        }
+        return null;
+    }
+
+    // ============== INLINE AMORTISSEMENT METHODS ==============
+
+    addAmortissementRow(): void {
+        const collecteId = this.collecte()?.collecteId;
+        if (!collecteId) return;
+        const today = new Date().toISOString().split('T')[0];
+        const body = {
+            collecteId: collecteId,
+            natureImmobilisation: '',
+            typeImmobilisation: 'Autres immobilisations',
+            dateAcquisition: today,
+            dureeAmortissementMois: 60,
+            valeurAcquisition: 0
+        };
+        this.collecteService
+            .addAmortissement(collecteId, body)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => this.loadAmortissements(),
+                error: (err) => this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err?.error?.message || 'Erreur' })
+            });
+    }
+
+    updateAmortissementRow(amort: Amortissement): void {
+        if (!amort.amortissementId) return;
+        const body = {
+            collecteId: amort.collecteId,
+            natureImmobilisation: amort.natureImmobilisation,
+            typeImmobilisation: amort.typeImmobilisation,
+            dateAcquisition: amort.dateAcquisition,
+            dureeAmortissementMois: amort.dureeAmortissementMois,
+            valeurAcquisition: amort.valeurAcquisition
+        };
+        this.collecteService
+            .updateAmortissement(amort.amortissementId, body)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => this.loadAmortissements()
+            });
+    }
+
+    onAmortTypeChange(amort: Amortissement, typeValue: string): void {
+        amort.typeImmobilisation = typeValue;
+        const found = this.typesImmobilisation.find((t) => t.value === typeValue);
+        if (found) {
+            amort.dureeAmortissementMois = found.dureeMois;
+        }
+        this.updateAmortissementRow(amort);
+    }
+
+    deleteAmortissementRow(amort: Amortissement): void {
+        if (!amort.amortissementId) return;
+        this.collecteService
+            .deleteAmortissement(amort.amortissementId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.loadAmortissements();
+                    this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Amortissement supprime' });
+                }
+            });
+    }
+
+    getTotalEmprunte(): number {
+        const garanties = this.state().demandeIndividuel?.garanties;
+        if (!garanties || garanties.length === 0) return 0;
+        return garanties.reduce((total: number, g: any) => total + (g.valeurEmprunte || 0), 0);
+    }
+
+    getAmortCategories(): { type: string; count: number; totalVNC: number }[] {
+        const items = this.amortissements();
+        const map = new Map<string, { count: number; totalVNC: number }>();
+        for (const item of items) {
+            const type = item.typeImmobilisation || 'Non classifie';
+            const existing = map.get(type) || { count: 0, totalVNC: 0 };
+            existing.count++;
+            existing.totalVNC += item.valeurNetteComptable || 0;
+            map.set(type, existing);
+        }
+        return Array.from(map.entries())
+            .filter(([, val]) => val.totalVNC > 0)
+            .map(([type, val]) => ({ type, ...val }));
+    }
+
+    private formatDate(date: any): string {
+        if (!date) return '';
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     }
 }

@@ -123,7 +123,7 @@ export class DetailComponent {
         submittingAvis: false,
         editingAvis: false,
         editingAvisId: undefined,
-        deletingAvisId: undefined,
+        deletingAvisId: undefined
     });
 
     updateForm: FormGroup;

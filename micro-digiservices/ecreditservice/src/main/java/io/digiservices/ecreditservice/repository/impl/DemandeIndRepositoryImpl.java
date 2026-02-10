@@ -667,8 +667,11 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
             stmt.setString(9, demandeIndividuel.getNumId());
 
             // ===== Paramètres 10-18: Informations personnelles =====
-            stmt.setDate(10, demandeIndividuel.getDateNaissance() != null ?
-                    Date.valueOf(demandeIndividuel.getDateNaissance()) : null);
+            if (demandeIndividuel.getDateNaissance() != null) {
+                stmt.setDate(10, Date.valueOf(demandeIndividuel.getDateNaissance()));
+            } else {
+                stmt.setNull(10, Types.DATE);
+            }
             stmt.setString(11, demandeIndividuel.getLieuxNaissance());
             stmt.setString(12, demandeIndividuel.getGenre());
             stmt.setString(13, demandeIndividuel.getSituationMatrimoniale());
