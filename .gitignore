@@ -3,6 +3,8 @@
 **/node_modules
 **/*.iml.env
 frontend/ultima-ng-19.0.0/.angular/cache/
+frontend/ultima-ng-19.0.0/dist/
 .env
 .env.*
 *.env
+nul
