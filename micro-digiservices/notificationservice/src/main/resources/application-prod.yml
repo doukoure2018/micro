@@ -8,10 +8,11 @@ spring:
     cache: true
 
   mail:
-    host: smtp.gmail.com
-    port: 587
-    username: douklifsa93@gmail.com
-    password: uppv zody hnsl bbzu
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:digiaborecreditrural@gmail.com}
+    password: ${MAIL_PASSWORD}
+    from-name: ${MAIL_FROM_NAME:Digi-CRG}
     properties:
       mail:
         smtp:
@@ -23,14 +24,6 @@ spring:
             enable: true
             required: true
     default-encoding: UTF-8
-
-
-  sendgrid:
-    api:
-      key: ${SENDGRID_API_KEY}
-    from:
-      email: ${SENDGRID_FROM_EMAIL:support@digi-creditrural-io.com}
-      name: ${SENDGRID_FROM_NAME:Digicrg}
 
   cloud:
     discovery:

@@ -1,144 +1,185 @@
-// src/app/components/credit-par-delegation/credit-par-delegation.component.ts
-import { DelegationCreditDto } from '@/interface/delegation-credit-dto.interface';
-import { DemandeIndividuel } from '@/interface/demande-individuel.interface';
 import { IResponse } from '@/interface/response';
+import { IUser } from '@/interface/user';
 import { UserService } from '@/service/user.service';
-import { CommonModule, CurrencyPipe } from '@angular/common';
-import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Component, DestroyRef, inject, Input, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
-import { AccordionModule } from 'primeng/accordion';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { BadgeModule } from 'primeng/badge';
 import { ButtonModule } from 'primeng/button';
-import { CardModule } from 'primeng/card';
+import { ChipModule } from 'primeng/chip';
+import { DialogModule } from 'primeng/dialog';
 import { DividerModule } from 'primeng/divider';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
-import { MessageModule } from 'primeng/message';
-import { ProgressSpinner } from 'primeng/progressspinner';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { TableModule } from 'primeng/table';
+import { TabViewModule } from 'primeng/tabview';
 import { TagModule } from 'primeng/tag';
-import { TooltipModule } from 'primeng/tooltip';
-
-interface ComponentState {
-    delegations: DelegationCreditDto[];
-    loading: boolean;
-    message: string | undefined;
-    error: string | undefined;
-    totalDemandes: number;
-    montantGlobal: number;
-}
+import { TextareaModule } from 'primeng/textarea';
+import { ToastModule } from 'primeng/toast';
 
 @Component({
     selector: 'app-credit-par-delegation',
     standalone: true,
-    imports: [CommonModule, AccordionModule, TableModule, TagModule, ButtonModule, ProgressSpinner, MessageModule, CardModule, BadgeModule, DividerModule, IconFieldModule, InputIconModule, InputTextModule, TooltipModule, CurrencyPipe, RouterLink],
+    imports: [
+        CommonModule, TableModule, InputIconModule, IconFieldModule, TagModule,
+        ButtonModule, ToastModule, ProgressSpinnerModule, ChipModule, DividerModule,
+        TabViewModule, BadgeModule, DialogModule, ReactiveFormsModule, TextareaModule
+    ],
     templateUrl: './credit-par-delegation.component.html',
     styleUrl: './credit-par-delegation.component.scss',
     providers: [MessageService]
 })
 export class CreditParDelegationComponent implements OnInit {
-    state = signal<ComponentState>({
-        delegations: [],
-        loading: false,
-        message: undefined,
-        error: undefined,
-        totalDemandes: 0,
-        montantGlobal: 0
-    });
+    @Input() user?: IUser;
+
+    // Workflow credit DE
+    workflowAValiderDE = signal<any[]>([]);
+    loading = signal(false);
+
+    // Dialogues
+    showValidationDialog = false;
+    showRejetDialog = false;
+    selectedDemande: any = null;
+
+    validationForm: FormGroup;
+    rejetForm: FormGroup;
+
+    sectionsOptions = [
+        { label: 'Collecte des donnees', value: 'COLLECTE' },
+        { label: 'Bilan d\'activite', value: 'BILAN_ACTIVITE' },
+        { label: 'Flux de tresorerie', value: 'FLUX_TRESORERIE' },
+        { label: 'Amortissements', value: 'AMORTISSEMENTS' },
+        { label: 'Rentabilite', value: 'RENTABILITE' },
+        { label: 'Ratios financiers', value: 'RATIOS' },
+        { label: 'Personne caution', value: 'PERSONNE_CAUTION' }
+    ];
 
     private userService = inject(UserService);
+    private router = inject(Router);
     private destroyRef = inject(DestroyRef);
+    private messageService = inject(MessageService);
+    private fb = inject(FormBuilder);
 
-    ngOnInit(): void {
-        this.loadCreditParDelegation();
+    constructor() {
+        this.validationForm = this.fb.group({
+            avis: ['', [Validators.required, Validators.minLength(10)]]
+        });
+        this.rejetForm = this.fb.group({
+            motifRejet: ['', [Validators.required, Validators.minLength(10)]],
+            sectionsARevoir: [[], [Validators.required]],
+            instructions: ['']
+        });
     }
 
-    private loadCreditParDelegation(): void {
-        this.state.update((state) => ({ ...state, loading: true, error: undefined }));
+    ngOnInit(): void {
+        this.loadWorkflowAValiderDE();
+    }
 
-        this.userService
-            .getListCreditParDelegation$()
+    // ==================== CHARGEMENT DONNEES ====================
+
+    private loadWorkflowAValiderDE(): void {
+        this.loading.set(true);
+        this.userService.getAValiderDE$()
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (response: IResponse) => {
-                    const delegations = response.data.listCreditParDelegation || [];
-
-                    // Calculer les totaux
-                    const totalDemandes = delegations.reduce((sum, d) => sum + d.totalDemandes, 0);
-                    const montantGlobal = delegations.reduce((sum, d) => sum + (d.montantTotal || 0), 0);
-
-                    this.state.update((state) => ({
-                        ...state,
-                        delegations,
-                        totalDemandes,
-                        montantGlobal,
-                        loading: false,
-                        message: response.message,
-                        error: undefined
-                    }));
+                    this.workflowAValiderDE.set(response.data?.workflowDemandes || []);
+                    this.loading.set(false);
                 },
-                error: (error: string) => {
-                    this.state.update((state) => ({
-                        ...state,
-                        loading: false,
-                        message: undefined,
-                        error
-                    }));
+                error: () => {
+                    this.loading.set(false);
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Erreur lors du chargement', life: 5000 });
                 }
             });
     }
 
-    getStatusLabel(statutDemande: string, validationState: string): string {
-        if (statutDemande === 'EN_ATTENTE' && validationState === 'NOUVEAU') {
-            return 'NOUVELLE DEMANDE';
-        } else if (statutDemande === 'EN_ATTENTE' && validationState === 'SELECTION') {
-            return 'SÉLECTION';
-        } else if (statutDemande === 'EN_ATTENTE' && validationState === 'APPROVED') {
-            return 'EN COURS DE VALIDATION';
+    // ==================== ACTIONS ====================
+
+    viewDemandeDetail(demandeId: number): void {
+        this.router.navigate(['/dashboards/credit/individuel/attente/detail', demandeId]);
+    }
+
+    ouvrirValidation(demande: any): void {
+        this.selectedDemande = demande;
+        this.validationForm.reset();
+        this.showValidationDialog = true;
+    }
+
+    ouvrirRejet(demande: any): void {
+        this.selectedDemande = demande;
+        this.rejetForm.reset();
+        this.showRejetDialog = true;
+    }
+
+    confirmerValidation(): void {
+        if (this.validationForm.invalid || !this.selectedDemande) return;
+
+        this.userService.validerDE$(this.selectedDemande.demandeIndividuelId, this.validationForm.value.avis)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Validation finale effectuee', life: 3000 });
+                    this.showValidationDialog = false;
+                    this.loadWorkflowAValiderDE();
+                },
+                error: (err) => {
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || 'Erreur lors de la validation', life: 5000 });
+                }
+            });
+    }
+
+    confirmerRejet(): void {
+        if (this.rejetForm.invalid || !this.selectedDemande) return;
+
+        const body = {
+            motifRejet: this.rejetForm.value.motifRejet,
+            sectionsARevoir: this.rejetForm.value.sectionsARevoir,
+            instructions: this.rejetForm.value.instructions || undefined
+        };
+
+        this.userService.rejeterDE$(this.selectedDemande.demandeIndividuelId, body)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.messageService.add({ severity: 'warn', summary: 'Rejet', detail: 'Demande rejetee par DE', life: 3000 });
+                    this.showRejetDialog = false;
+                    this.loadWorkflowAValiderDE();
+                },
+                error: (err) => {
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || 'Erreur lors du rejet', life: 5000 });
+                }
+            });
+    }
+
+    toggleSection(value: string, event: Event): void {
+        const checkbox = event.target as HTMLInputElement;
+        const current: string[] = this.rejetForm.get('sectionsARevoir')?.value || [];
+        if (checkbox.checked) {
+            this.rejetForm.get('sectionsARevoir')?.setValue([...current, value]);
+        } else {
+            this.rejetForm.get('sectionsARevoir')?.setValue(current.filter(v => v !== value));
         }
-        return statutDemande;
+        this.rejetForm.get('sectionsARevoir')?.markAsTouched();
     }
 
-    getStatusSeverity(statutDemande: string, validationState: string): 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast' | undefined {
-        if (statutDemande === 'EN_ATTENTE' && validationState === 'APPROVED') return 'warn';
-        if (statutDemande === 'EN_ATTENTE' && validationState === 'NOUVEAU') return 'info';
-        if (statutDemande === 'EN_ATTENTE' && validationState === 'SELECTION') return 'secondary';
-        if (statutDemande === 'REJECTED') return 'danger';
-        if (statutDemande === 'APPROVED') return 'success';
-        return undefined;
+    // ==================== UTILITAIRES ====================
+
+    formatMontantGNF(montant: number): string {
+        if (!montant || montant === 0) return '0 GNF';
+        return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'GNF', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(montant);
     }
 
-    getDelegationSeverity(totalDemandes: number): 'success' | 'info' | 'warn' | 'danger' {
-        if (totalDemandes >= 10) return 'danger';
-        if (totalDemandes >= 5) return 'warn';
-        if (totalDemandes >= 1) return 'info';
-        return 'success';
+    onGlobalFilter(table: any, event: Event): void {
+        table.filterGlobal((event.target as HTMLInputElement).value, 'contains');
     }
 
-    formatDate(date: Date | string | undefined): string {
-        if (!date) return '-';
-        const d = new Date(date);
-        return d.toLocaleDateString('fr-FR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    }
-
-    refreshData(): void {
-        this.loadCreditParDelegation();
-    }
-
-    trackByDelegation(index: number, delegation: DelegationCreditDto): number {
-        return delegation.delegationId;
-    }
-
-    trackByDemande(index: number, demande: DemandeIndividuel): number {
-        return demande.demandeIndividuelId || index;
+    refreshWorkflow(): void {
+        this.loadWorkflowAValiderDE();
+        this.messageService.add({ severity: 'info', summary: 'Actualisation', detail: 'Donnees actualisees', life: 2000 });
     }
 }

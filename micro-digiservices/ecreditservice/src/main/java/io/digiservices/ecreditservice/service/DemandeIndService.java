@@ -74,4 +74,6 @@ public interface DemandeIndService {
     List<DemandeIndividuel> getAllDemandesWithGaranties(Long agenceId, Long pointVenteId);
 
     List<DelegationCreditDto> listCreditParDelegation();
+
+    void updateDemandeComplete(DemandeIndividuel demande);
 }

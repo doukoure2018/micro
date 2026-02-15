@@ -199,7 +199,7 @@
                                 ({{ formatMontant(mensualite().capital) }} + {{ formatMontant(mensualite().interet) }})
                             </div>
                         </div>
-                        <p-button label="Créer le dossier" icon="pi pi-plus-circle" severity="warn"
+                        <p-button *ngIf="userRole() === 'AGENT_CREDIT'" label="Créer le dossier" icon="pi pi-plus-circle" severity="warn"
                             (onClick)="createDossierCredit()" [loading]="state().saving"
                             pTooltip="Créer le dossier pour pouvoir sauvegarder les prévisions">
                         </p-button>
@@ -502,7 +502,7 @@
                     </p-button>
                     }
 
-                    <p-button label="Sauvegarder" icon="pi pi-save" severity="success" [loading]="state().saving"
+                    <p-button *ngIf="userRole() === 'AGENT_CREDIT'" label="Sauvegarder" icon="pi pi-save" severity="success" [loading]="state().saving"
                         [disabled]="!canSaveTableau()" (onClick)="savePrevisions()">
                     </p-button>
                 </div>

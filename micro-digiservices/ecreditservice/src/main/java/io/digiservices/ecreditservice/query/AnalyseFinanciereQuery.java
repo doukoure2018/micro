@@ -68,15 +68,15 @@ public class AnalyseFinanciereQuery {
 
     public static final String UPDATE_ANALYSE_FINANCIERE = """
         UPDATE analyse_financiere SET
-            cycle_affaires = :cycleAffaires,
-            facteur_cycle = :facteurCycle,
-            hypothese_ca = :hypotheseCa,
-            type_marge = :typeMarge,
-            taux_marge_retenu = :tauxMargeRetenu,
-            type_cdr = :typeCdr,
-            capacite_remb_declaree = :capaciteRembDeclaree,
-            valeur_garantie = :valeurGarantie,
-            commentaire_orientation = :commentaireOrientation
+            cycle_affaires = COALESCE(:cycleAffaires, cycle_affaires),
+            facteur_cycle = COALESCE(:facteurCycle, facteur_cycle),
+            hypothese_ca = COALESCE(:hypotheseCa, hypothese_ca),
+            type_marge = COALESCE(:typeMarge, type_marge),
+            taux_marge_retenu = COALESCE(:tauxMargeRetenu, taux_marge_retenu),
+            type_cdr = COALESCE(:typeCdr, type_cdr),
+            capacite_remb_declaree = COALESCE(:capaciteRembDeclaree, capacite_remb_declaree),
+            valeur_garantie = COALESCE(:valeurGarantie, valeur_garantie),
+            commentaire_orientation = COALESCE(:commentaireOrientation, commentaire_orientation)
         WHERE analyse_id = :analyseId
         """;
 

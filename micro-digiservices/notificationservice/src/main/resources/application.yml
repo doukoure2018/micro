@@ -11,8 +11,9 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: douklifsa93@gmail.com
-    password: uppv zody hnsl bbzu
+    username: digiaborecreditrural@gmail.com
+    password: wgox vofy ccbk bcpa
+    from-name: Digi-CRG
     properties:
       mail:
         smtp:
@@ -24,14 +25,6 @@ spring:
             enable: true
             required: true
     default-encoding: UTF-8
-
-
-  sendgrid:
-    api:
-      key: ${SENDGRID_API_KEY}
-    from:
-      email: ${SENDGRID_FROM_EMAIL:support@digi-creditrural-io.com}
-      name: ${SENDGRID_FROM_NAME:Digicrg}
 
   cloud:
     discovery:

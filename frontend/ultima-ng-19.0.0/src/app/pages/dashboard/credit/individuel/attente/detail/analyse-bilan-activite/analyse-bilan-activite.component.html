@@ -72,75 +72,158 @@
                     <p-accordion [multiple]="true">
 
                         <!-- ===== SECTION 1: ACTIVITE (depuis la demande) ===== -->
-                        <p-accordionTab header="Section 1 - Activite">
-                            <div class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                <div class="col-6 text-sm">Description de l'activite</div>
-                                <div class="col-6 font-semibold">{{ state().demandeIndividuel?.descriptionActivite || state().demandeIndividuel?.currentActivite || '-' }}</div>
+                        <p-accordion-panel value="0">
+                        <p-accordion-header>Section 1 - Activite</p-accordion-header>
+                        <p-accordion-content>
+                            <!-- Cas Particulier -->
+                            <div *ngIf="isParticulier()" class="overflow-x-auto">
+                                <table class="w-full text-sm border-collapse">
+                                    <thead>
+                                        <tr class="surface-ground">
+                                            <th class="p-2 border-1 surface-border text-left font-medium">Description de
+                                                l'activite</th>
+                                            <th class="p-2 border-1 surface-border text-left font-medium">Secteur
+                                                d'activite</th>
+                                            <th class="p-2 border-1 surface-border text-left font-medium">Profession
+                                            </th>
+                                            <th class="p-2 border-1 surface-border text-left font-medium">Nbre annees
+                                                activite</th>
+                                            <th class="p-2 border-1 surface-border text-left font-medium">Adresse lieu
+                                                d'activite</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="p-2 border-1 surface-border font-semibold">{{
+                                                state().demandeIndividuel?.descriptionActivite ||
+                                                state().demandeIndividuel?.currentActivite || '-' }}</td>
+                                            <td class="p-2 border-1 surface-border font-semibold">{{
+                                                state().demandeIndividuel?.secteurActivite ||
+                                                state().demandeIndividuel?.typeActivite || '-' }}</td>
+                                            <td class="p-2 border-1 surface-border font-semibold">{{
+                                                state().demandeIndividuel?.profession || '-' }}</td>
+                                            <td class="p-2 border-1 surface-border font-semibold text-center">{{
+                                                state().demandeIndividuel?.nombreAnneeActivite || '-' }} ans</td>
+                                            <td class="p-2 border-1 surface-border font-semibold">{{
+                                                state().demandeIndividuel?.adresseLieuActivite || '-' }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
-                            <div class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                <div class="col-6 text-sm">Secteur d'activite</div>
-                                <div class="col-6 font-semibold">{{ state().demandeIndividuel?.typeActivite || state().demandeIndividuel?.secteurActivite || '-' }}</div>
+
+                            <!-- Cas Professionnel / PME/PMI -->
+                            <div *ngIf="!isParticulier()" class="overflow-x-auto">
+                                <table class="w-full text-sm border-collapse">
+                                    <thead>
+                                        <tr class="surface-ground">
+                                            <th class="p-2 border-1 surface-border text-left font-medium">Secteur
+                                                d'activite</th>
+                                            <th class="p-2 border-1 surface-border text-left font-medium">Sous-secteur
+                                                d'activite</th>
+                                            <th class="p-2 border-1 surface-border text-left font-medium">
+                                                Sous-sous-secteur</th>
+                                            <th class="p-2 border-1 surface-border text-left font-medium">Nbre annees
+                                                activite</th>
+                                            <th class="p-2 border-1 surface-border text-left font-medium">Adresse lieu
+                                                d'activite</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="p-2 border-1 surface-border font-semibold">{{ getActiviteLabel()
+                                                }}</td>
+                                            <td class="p-2 border-1 surface-border font-semibold">{{
+                                                getSousActiviteLabel() }}</td>
+                                            <td class="p-2 border-1 surface-border font-semibold">{{
+                                                getSousSousActiviteLabel() }}</td>
+                                            <td class="p-2 border-1 surface-border font-semibold text-center">{{
+                                                state().demandeIndividuel?.nombreAnneeActivite || '-' }} ans</td>
+                                            <td class="p-2 border-1 surface-border font-semibold">{{
+                                                state().demandeIndividuel?.adresseLieuActivite || '-' }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <div class="grid align-items-center py-2 px-3 mt-2 surface-ground border-round">
+                                    <div class="col-3 text-sm font-medium">Description de l'activite</div>
+                                    <div class="col-9 font-semibold">{{ state().demandeIndividuel?.descriptionActivite
+                                        || state().demandeIndividuel?.currentActivite || '-' }}</div>
+                                </div>
                             </div>
-                            <div class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                <div class="col-6 text-sm">Sous-secteur d'activite</div>
-                                <div class="col-6 font-semibold">{{ state().demandeIndividuel?.sousActivite || '-' }}</div>
-                            </div>
-                            <div *ngIf="state().demandeIndividuel?.sousSousActivite" class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                <div class="col-6 text-sm">Sous-sous-secteur</div>
-                                <div class="col-6 font-semibold">{{ state().demandeIndividuel?.sousSousActivite || '-' }}</div>
-                            </div>
-                            <div class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                <div class="col-6 text-sm">Nombre d'annees d'activite</div>
-                                <div class="col-6 font-semibold">{{ state().demandeIndividuel?.nombreAnneeActivite || '-' }} ans</div>
-                            </div>
-                            <div class="grid align-items-center py-2 px-3 hover:surface-hover">
-                                <div class="col-6 text-sm">Adresse du lieu d'activite</div>
-                                <div class="col-6 font-semibold">{{ state().demandeIndividuel?.adresseLieuActivite || '-' }}</div>
-                            </div>
-                        </p-accordionTab>
+                        </p-accordion-content>
+                        </p-accordion-panel>
 
                         <!-- ===== SECTION 2: CONDITIONS DE CREDIT ===== -->
-                        <p-accordionTab header="Section 2 - Conditions de credit sollicite">
-                            <div class="grid align-items-center py-2 px-3 border-bottom-1 surface-border bg-yellow-50">
-                                <div class="col-6 text-sm font-medium">Objet du credit</div>
-                                <div class="col-6 font-bold">{{ state().demandeIndividuel?.objectCredit || state().demandeIndividuel?.objetCredit || '-' }}</div>
+                        <p-accordion-panel value="1">
+                        <p-accordion-header>Section 2 - Conditions de credit sollicite</p-accordion-header>
+                        <p-accordion-content>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm border-collapse">
+                                    <thead>
+                                        <tr class="surface-ground">
+                                            <th class="p-2 border-1 surface-border text-left font-medium">Objet du
+                                                credit</th>
+                                            <th class="p-2 border-1 surface-border text-left font-medium">Montant
+                                                sollicite</th>
+                                            <th class="p-2 border-1 surface-border text-left font-medium">Duree</th>
+                                            <th class="p-2 border-1 surface-border text-left font-medium">Periodicite
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="p-2 border-1 surface-border font-bold bg-yellow-50">{{
+                                                state().demandeIndividuel?.objectCredit ||
+                                                state().demandeIndividuel?.objetCredit || '-' }}</td>
+                                            <td class="p-2 border-1 surface-border font-bold bg-yellow-50">{{
+                                                (state().demandeIndividuel?.montantDemande || 0) |
+                                                currency:'GNF':'symbol':'1.0-0':'fr-FR' }}</td>
+                                            <td class="p-2 border-1 surface-border text-center">{{
+                                                state().demandeIndividuel?.dureeDemande ||
+                                                state().demandeIndividuel?.dureeMois || '-' }} mois</td>
+                                            <td class="p-2 border-1 surface-border">{{
+                                                state().demandeIndividuel?.periodiciteRemboursement ||
+                                                state().demandeIndividuel?.periodicite || '-' }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
-                            <div class="grid align-items-center py-2 px-3 border-bottom-1 surface-border bg-yellow-50">
-                                <div class="col-6 text-sm font-medium">Montant sollicite</div>
-                                <div class="col-6 font-bold">{{ (state().demandeIndividuel?.montantDemande || 0) |
-                                    currency:'GNF':'symbol':'1.0-0':'fr-FR' }}</div>
+                            <div class="overflow-x-auto mt-2">
+                                <table class="w-full text-sm border-collapse">
+                                    <thead>
+                                        <tr class="surface-ground">
+                                            <th class="p-2 border-1 surface-border text-left font-medium">Periode de
+                                                differe</th>
+                                            <th class="p-2 border-1 surface-border text-left font-medium">Nbre echeances
+                                            </th>
+                                            <th class="p-2 border-1 surface-border text-left font-medium">Echeance
+                                                correspondante</th>
+                                            <th class="p-2 border-1 surface-border text-left font-medium">Valeur
+                                                garantie proposee</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="p-2 border-1 surface-border text-center">{{
+                                                state().demandeIndividuel?.periodeDiffere || 0 }} mois</td>
+                                            <td class="p-2 border-1 surface-border text-center">{{
+                                                state().demandeIndividuel?.nombreEcheance ||
+                                                state().demandeIndividuel?.nombreEcheances || '-' }}</td>
+                                            <td class="p-2 border-1 surface-border font-bold bg-yellow-50">{{
+                                                (state().demandeIndividuel?.echeance || 0) |
+                                                currency:'GNF':'symbol':'1.0-0':'fr-FR' }}</td>
+                                            <td class="p-2 border-1 surface-border font-bold bg-yellow-50">{{
+                                                (getTotalEmprunte()) | currency:'GNF':'symbol':'1.0-0':'fr-FR' }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
-                            <div class="grid align-items-center py-2 px-3 border-bottom-1 surface-border">
-                                <div class="col-6 text-sm">Duree de credit sollicite</div>
-                                <div class="col-6">{{ state().demandeIndividuel?.dureeDemande || state().demandeIndividuel?.dureeMois || '-' }} mois</div>
-                            </div>
-                            <div class="grid align-items-center py-2 px-3 border-bottom-1 surface-border">
-                                <div class="col-6 text-sm">Periodicite de remboursement</div>
-                                <div class="col-6">{{ state().demandeIndividuel?.periodiciteRemboursement || state().demandeIndividuel?.periodicite || '-' }}</div>
-                            </div>
-                            <div class="grid align-items-center py-2 px-3 border-bottom-1 surface-border">
-                                <div class="col-6 text-sm">Periode de differe</div>
-                                <div class="col-6">{{ state().demandeIndividuel?.periodeDiffere || 0 }} mois</div>
-                            </div>
-                            <div class="grid align-items-center py-2 px-3 border-bottom-1 surface-border">
-                                <div class="col-6 text-sm">Nombre d'echeances</div>
-                                <div class="col-6">{{ state().demandeIndividuel?.nombreEcheance || state().demandeIndividuel?.nombreEcheances || '-' }}</div>
-                            </div>
-                            <div class="grid align-items-center py-2 px-3 border-bottom-1 surface-border bg-yellow-50">
-                                <div class="col-6 text-sm font-medium">Echeance correspondante</div>
-                                <div class="col-6 font-bold">{{ (state().demandeIndividuel?.echeance || 0) |
-                                    currency:'GNF':'symbol':'1.0-0':'fr-FR' }}</div>
-                            </div>
-                            <div class="grid align-items-center py-2 px-3 border-bottom-1 surface-border bg-yellow-50">
-                                <div class="col-6 text-sm font-medium">Valeur de la garantie proposee</div>
-                                <div class="col-6 font-bold">{{ (getTotalEmprunte()) |
-                                    currency:'GNF':'symbol':'1.0-0':'fr-FR' }}</div>
-                            </div>
-                            <div [formGroup]="section2Form" class="grid align-items-center py-2 px-3 border-bottom-1 surface-border">
-                                <div class="col-6 text-sm font-medium">Capacite de remboursement periodique declaree</div>
+                            <div [formGroup]="section2Form"
+                                class="grid align-items-center py-2 px-3 mt-3 surface-ground border-round">
+                                <div class="col-6 text-sm font-medium">Capacite de remboursement periodique declaree
+                                </div>
                                 <div class="col-6">
-                                    <p-inputNumber formControlName="capaciteRemboursementDeclaree"
-                                        mode="decimal" [useGrouping]="true" class="w-full"
+                                    <p-inputNumber formControlName="capaciteRemboursementDeclaree" mode="decimal"
+                                        [useGrouping]="true" class="w-full"
                                         placeholder="Saisir le montant"></p-inputNumber>
                                 </div>
                             </div>
@@ -148,10 +231,13 @@
                                 <button pButton label="Enregistrer Section 2" icon="pi pi-save"
                                     (click)="saveCollecteSection(2)" [loading]="savingCollecte()"></button>
                             </div>
-                        </p-accordionTab>
+                        </p-accordion-content>
+                        </p-accordion-panel>
 
                         <!-- ===== SECTION 3: CHIFFRE D'AFFAIRES ===== -->
-                        <p-accordionTab header="Section 3 - Quel Chiffre d'Affaires?">
+                        <p-accordion-panel value="2">
+                        <p-accordion-header>Section 3 - Quel Chiffre d'Affaires?</p-accordion-header>
+                        <p-accordion-content>
                             <form [formGroup]="section3Form">
                                 <!-- Estimation initiale -->
                                 <div class="surface-ground border-round p-3 mb-4">
@@ -267,10 +353,13 @@
                                         (click)="saveCollecteSection(3)" [loading]="savingCollecte()"></button>
                                 </div>
                             </form>
-                        </p-accordionTab>
+                        </p-accordion-content>
+                        </p-accordion-panel>
 
                         <!-- ===== SECTION 4: MARGE BRUTE ===== -->
-                        <p-accordionTab header="Section 4 - Structure de la marge brute">
+                        <p-accordion-panel value="3">
+                        <p-accordion-header>Section 4 - Structure de la marge brute</p-accordion-header>
+                        <p-accordion-content>
                             <form [formGroup]="section4Form">
                                 <div
                                     class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
@@ -379,10 +468,13 @@
                                 <button pButton label="Enregistrer Section 4" icon="pi pi-save"
                                     (click)="saveCollecteSection(4)" [loading]="savingCollecte()"></button>
                             </div>
-                        </p-accordionTab>
+                        </p-accordion-content>
+                        </p-accordion-panel>
 
                         <!-- ===== SECTION 5: ACTIFS / PASSIFS ===== -->
-                        <p-accordionTab header="Section 5 - Evaluation des actifs nets de l'entreprise">
+                        <p-accordion-panel value="4">
+                        <p-accordion-header>Section 5 - Evaluation des actifs nets de l'entreprise</p-accordion-header>
+                        <p-accordion-content>
                             <form [formGroup]="section5Form">
                                 <!-- a) Terrains -->
                                 <div
@@ -486,34 +578,37 @@
                                     </div>
                                 </div>
 
-                                <!-- g) Caution financiere -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">g) Caution financiere/depot financier effectue ?</div>
-                                    <div class="col-6"><p-select formControlName="cautionFinanciereExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section5Form.get('cautionFinanciereExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Evalue a</span>
-                                    <p-inputNumber formControlName="cautionFinanciereValeur" mode="decimal"
-                                        [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                </div>
-
-                                <!-- h) Prets employes -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">h) Avez-vous fait des prets a vos employes ?</div>
-                                    <div class="col-6"><p-select formControlName="pretEmployeExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section5Form.get('pretEmployeExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Evalue a</span>
-                                    <p-inputNumber formControlName="pretEmployeValeur" mode="decimal"
-                                        [useGrouping]="true" class="w-12rem"></p-inputNumber>
+                                <!-- g) Caution financiere + h) Prets employes -->
+                                <div class="grid">
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">g) Caution financiere/depot financier ?</span>
+                                            <p-select formControlName="cautionFinanciereExiste"
+                                                [options]="ouiNonOptions" optionLabel="label" optionValue="value"
+                                                class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section5Form.get('cautionFinanciereExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Evalue a</span>
+                                            <p-inputNumber formControlName="cautionFinanciereValeur" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">h) Prets faits a vos employes ?</span>
+                                            <p-select formControlName="pretEmployeExiste" [options]="ouiNonOptions"
+                                                optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section5Form.get('pretEmployeExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Evalue a</span>
+                                            <p-inputNumber formControlName="pretEmployeValeur" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <!-- i) Stock -->
@@ -596,41 +691,44 @@
                                     </div>
                                 </ng-container>
 
-                                <!-- j) Credit fournisseur -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">j) Obtenez-vous des credits fournisseurs ?</div>
-                                    <div class="col-6"><p-select formControlName="creditFournisseurExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section5Form.get('creditFournisseurExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Evalue a</span>
-                                    <p-inputNumber formControlName="creditFournisseurValeur" mode="decimal"
-                                        [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                </div>
-
-                                <!-- k) Creances clients -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">k) Avez-vous des clients qui vous doivent de l'argent ?
+                                <!-- j) Credit fournisseur + k) Creances clients -->
+                                <div class="grid">
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">j) Credits fournisseurs ?</span>
+                                            <p-select formControlName="creditFournisseurExiste"
+                                                [options]="ouiNonOptions" optionLabel="label" optionValue="value"
+                                                class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section5Form.get('creditFournisseurExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Evalue a</span>
+                                            <p-inputNumber formControlName="creditFournisseurValeur" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
                                     </div>
-                                    <div class="col-6"><p-select formControlName="creanceClientExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section5Form.get('creanceClientExiste')?.value" class="pl-5 mx-3 mb-2">
-                                    <div
-                                        class="flex align-items-center gap-3 py-2 surface-ground border-round px-3 mb-1">
-                                        <span class="text-sm text-600">Creances &gt; 3 mois</span>
-                                        <p-inputNumber formControlName="creancePlus3Mois" mode="decimal"
-                                            [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                    </div>
-                                    <div class="flex align-items-center gap-3 py-2 surface-ground border-round px-3">
-                                        <span class="text-sm text-600">Creances &lt; 3 mois</span>
-                                        <p-inputNumber formControlName="creanceMoins3Mois" mode="decimal"
-                                            [useGrouping]="true" class="w-12rem"></p-inputNumber>
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">k) Clients qui vous doivent ?</span>
+                                            <p-select formControlName="creanceClientExiste" [options]="ouiNonOptions"
+                                                optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section5Form.get('creanceClientExiste')?.value" class="mx-1 mb-1">
+                                            <div
+                                                class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mb-1">
+                                                <span class="text-xs text-600">Creances &gt; 3 mois</span>
+                                                <p-inputNumber formControlName="creancePlus3Mois" mode="decimal"
+                                                    [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                            </div>
+                                            <div
+                                                class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round">
+                                                <span class="text-xs text-600">Creances &lt; 3 mois</span>
+                                                <p-inputNumber formControlName="creanceMoins3Mois" mode="decimal"
+                                                    [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -638,66 +736,65 @@
                                 <div class="mt-4 pt-3 border-top-1 surface-border">
                                     <h4 class="text-sm font-semibold mb-3">Tresorerie</h4>
 
-                                    <!-- l) Cash -->
-                                    <div
-                                        class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                        <div class="col-6 text-sm">l) Avez-vous de l'argent cash quelque part ?</div>
-                                        <div class="col-6"><p-select formControlName="cashExiste"
-                                                [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                                class="w-8rem"></p-select></div>
-                                    </div>
-                                    <div *ngIf="section5Form.get('cashExiste')?.value"
-                                        class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                        <span class="text-sm text-600">Montant</span>
-                                        <p-inputNumber formControlName="cashValeur" mode="decimal" [useGrouping]="true"
-                                            class="w-12rem"></p-inputNumber>
-                                    </div>
-
-                                    <!-- m) Compte CRG -->
-                                    <div
-                                        class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                        <div class="col-6 text-sm">m) Avez-vous de l'argent dans un compte CRG ?</div>
-                                        <div class="col-6"><p-select formControlName="compteCrgExiste"
-                                                [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                                class="w-8rem"></p-select></div>
-                                    </div>
-                                    <div *ngIf="section5Form.get('compteCrgExiste')?.value"
-                                        class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                        <span class="text-sm text-600">Montant</span>
-                                        <p-inputNumber formControlName="compteCrgValeur" mode="decimal"
-                                            [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                    </div>
-
-                                    <!-- n) Tontinier -->
-                                    <div
-                                        class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                        <div class="col-6 text-sm">n) Avez-vous de l'argent aupres d'un tontinier ?
+                                    <div class="grid">
+                                        <!-- l) Cash + m) Compte CRG -->
+                                        <div class="col-12 md:col-6">
+                                            <div
+                                                class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                                <span class="text-sm">l) Argent cash quelque part ?</span>
+                                                <p-select formControlName="cashExiste" [options]="ouiNonOptions"
+                                                    optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                            </div>
+                                            <div *ngIf="section5Form.get('cashExiste')?.value"
+                                                class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                                <span class="text-xs text-600">Montant</span>
+                                                <p-inputNumber formControlName="cashValeur" mode="decimal"
+                                                    [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                            </div>
                                         </div>
-                                        <div class="col-6"><p-select formControlName="tontinierExiste"
-                                                [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                                class="w-8rem"></p-select></div>
-                                    </div>
-                                    <div *ngIf="section5Form.get('tontinierExiste')?.value"
-                                        class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                        <span class="text-sm text-600">Montant</span>
-                                        <p-inputNumber formControlName="tontinierValeur" mode="decimal"
-                                            [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                    </div>
-
-                                    <!-- o) Banque/Mobile money -->
-                                    <div
-                                        class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                        <div class="col-6 text-sm">o) Avez-vous de l'argent dans un compte en
-                                            banque/mobile money ?</div>
-                                        <div class="col-6"><p-select formControlName="compteBanqueExiste"
-                                                [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                                class="w-8rem"></p-select></div>
-                                    </div>
-                                    <div *ngIf="section5Form.get('compteBanqueExiste')?.value"
-                                        class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                        <span class="text-sm text-600">Montant</span>
-                                        <p-inputNumber formControlName="compteBanqueValeur" mode="decimal"
-                                            [useGrouping]="true" class="w-12rem"></p-inputNumber>
+                                        <div class="col-12 md:col-6">
+                                            <div
+                                                class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                                <span class="text-sm">m) Argent dans un compte CRG ?</span>
+                                                <p-select formControlName="compteCrgExiste" [options]="ouiNonOptions"
+                                                    optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                            </div>
+                                            <div *ngIf="section5Form.get('compteCrgExiste')?.value"
+                                                class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                                <span class="text-xs text-600">Montant</span>
+                                                <p-inputNumber formControlName="compteCrgValeur" mode="decimal"
+                                                    [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                            </div>
+                                        </div>
+                                        <!-- n) Tontinier + o) Banque/Mobile money -->
+                                        <div class="col-12 md:col-6">
+                                            <div
+                                                class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                                <span class="text-sm">n) Argent aupres d'un tontinier ?</span>
+                                                <p-select formControlName="tontinierExiste" [options]="ouiNonOptions"
+                                                    optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                            </div>
+                                            <div *ngIf="section5Form.get('tontinierExiste')?.value"
+                                                class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                                <span class="text-xs text-600">Montant</span>
+                                                <p-inputNumber formControlName="tontinierValeur" mode="decimal"
+                                                    [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                            </div>
+                                        </div>
+                                        <div class="col-12 md:col-6">
+                                            <div
+                                                class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                                <span class="text-sm">o) Argent en banque/mobile money ?</span>
+                                                <p-select formControlName="compteBanqueExiste" [options]="ouiNonOptions"
+                                                    optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                            </div>
+                                            <div *ngIf="section5Form.get('compteBanqueExiste')?.value"
+                                                class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                                <span class="text-xs text-600">Montant</span>
+                                                <p-inputNumber formControlName="compteBanqueValeur" mode="decimal"
+                                                    [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -705,160 +802,156 @@
                                 <div class="mt-4 pt-3 border-top-1 surface-border">
                                     <h4 class="text-sm font-semibold mb-3">Dettes et Engagements</h4>
 
-                                    <!-- p) Emprunt IMF -->
-                                    <div
-                                        class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                        <div class="col-6 text-sm">p) Devez-vous de l'argent a une institution de
-                                            microfinance ?</div>
-                                        <div class="col-6"><p-select formControlName="empruntImfExiste"
-                                                [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                                class="w-8rem"></p-select></div>
-                                    </div>
-                                    <div *ngIf="section5Form.get('empruntImfExiste')?.value"
-                                        class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                        <span class="text-sm text-600">Montant</span>
-                                        <p-inputNumber formControlName="empruntImfValeur" mode="decimal"
-                                            [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                    </div>
-
-                                    <!-- q) Emprunt bancaire LT -->
-                                    <div
-                                        class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                        <div class="col-6 text-sm">q) Avez-vous un emprunt bancaire a + d'1 an ?</div>
-                                        <div class="col-6"><p-select formControlName="empruntBancaireLtExiste"
-                                                [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                                class="w-8rem"></p-select></div>
-                                    </div>
-                                    <div *ngIf="section5Form.get('empruntBancaireLtExiste')?.value"
-                                        class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                        <span class="text-sm text-600">Montant</span>
-                                        <p-inputNumber formControlName="empruntBancaireLtValeur" mode="decimal"
-                                            [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                    </div>
-
-                                    <!-- r) Emprunt bancaire CT -->
-                                    <div
-                                        class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                        <div class="col-6 text-sm">r) Avez-vous un emprunt bancaire a - d'1 an ?</div>
-                                        <div class="col-6"><p-select formControlName="empruntBancaireCtExiste"
-                                                [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                                class="w-8rem"></p-select></div>
-                                    </div>
-                                    <div *ngIf="section5Form.get('empruntBancaireCtExiste')?.value"
-                                        class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                        <span class="text-sm text-600">Montant</span>
-                                        <p-inputNumber formControlName="empruntBancaireCtValeur" mode="decimal"
-                                            [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                    </div>
-
-                                    <!-- s) Avances clients -->
-                                    <div
-                                        class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                        <div class="col-6 text-sm">s) Avez-vous recu des avances chez vos clients ?
+                                    <div class="grid">
+                                        <!-- p) Emprunt IMF + q) Emprunt bancaire LT -->
+                                        <div class="col-12 md:col-6">
+                                            <div
+                                                class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                                <span class="text-sm">p) Dette institution microfinance ?</span>
+                                                <p-select formControlName="empruntImfExiste" [options]="ouiNonOptions"
+                                                    optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                            </div>
+                                            <div *ngIf="section5Form.get('empruntImfExiste')?.value"
+                                                class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                                <span class="text-xs text-600">Montant</span>
+                                                <p-inputNumber formControlName="empruntImfValeur" mode="decimal"
+                                                    [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                            </div>
                                         </div>
-                                        <div class="col-6"><p-select formControlName="avanceClientExiste"
-                                                [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                                class="w-8rem"></p-select></div>
-                                    </div>
-                                    <div *ngIf="section5Form.get('avanceClientExiste')?.value"
-                                        class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                        <span class="text-sm text-600">Montant</span>
-                                        <p-inputNumber formControlName="avanceClientValeur" mode="decimal"
-                                            [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                    </div>
-
-                                    <!-- t) Dettes fournisseurs -->
-                                    <div
-                                        class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                        <div class="col-6 text-sm">t) Devez-vous de l'argent a vos fournisseurs ?</div>
-                                        <div class="col-6"><p-select formControlName="detteFournisseurExiste"
-                                                [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                                class="w-8rem"></p-select></div>
-                                    </div>
-                                    <div *ngIf="section5Form.get('detteFournisseurExiste')?.value"
-                                        class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                        <span class="text-sm text-600">Montant</span>
-                                        <p-inputNumber formControlName="detteFournisseurValeur" mode="decimal"
-                                            [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                    </div>
-
-                                    <!-- u) Impots non payes -->
-                                    <div
-                                        class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                        <div class="col-6 text-sm">u) Avez-vous des avis d'imposition non encore regles
-                                            ?</div>
-                                        <div class="col-6"><p-select formControlName="impotNonPayeExiste"
-                                                [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                                class="w-8rem"></p-select></div>
-                                    </div>
-                                    <div *ngIf="section5Form.get('impotNonPayeExiste')?.value"
-                                        class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                        <span class="text-sm text-600">Montant</span>
-                                        <p-inputNumber formControlName="impotNonPayeValeur" mode="decimal"
-                                            [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                    </div>
-
-                                    <!-- v) Loyers non payes -->
-                                    <div
-                                        class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                        <div class="col-6 text-sm">v) Avez-vous des loyers non encore payes ?</div>
-                                        <div class="col-6"><p-select formControlName="loyerNonPayeExiste"
-                                                [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                                class="w-8rem"></p-select></div>
-                                    </div>
-                                    <div *ngIf="section5Form.get('loyerNonPayeExiste')?.value"
-                                        class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                        <span class="text-sm text-600">Montant</span>
-                                        <p-inputNumber formControlName="loyerNonPayeValeur" mode="decimal"
-                                            [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                    </div>
-
-                                    <!-- w) Factures non payees -->
-                                    <div
-                                        class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                        <div class="col-6 text-sm">w) Avez-vous des factures d'electricite non encore
-                                            payees ?</div>
-                                        <div class="col-6"><p-select formControlName="factureNonPayeeExiste"
-                                                [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                                class="w-8rem"></p-select></div>
-                                    </div>
-                                    <div *ngIf="section5Form.get('factureNonPayeeExiste')?.value"
-                                        class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                        <span class="text-sm text-600">Montant</span>
-                                        <p-inputNumber formControlName="factureNonPayeeValeur" mode="decimal"
-                                            [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                    </div>
-
-                                    <!-- x) Tontine dette -->
-                                    <div
-                                        class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                        <div class="col-6 text-sm">x) Etes-vous dans une tontine (ou votre tour est deja
-                                            passe) ?</div>
-                                        <div class="col-6"><p-select formControlName="tontineDetteExiste"
-                                                [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                                class="w-8rem"></p-select></div>
-                                    </div>
-                                    <div *ngIf="section5Form.get('tontineDetteExiste')?.value"
-                                        class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                        <span class="text-sm text-600">Montant restant</span>
-                                        <p-inputNumber formControlName="tontineDetteValeur" mode="decimal"
-                                            [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                    </div>
-
-                                    <!-- y) Autres dettes -->
-                                    <div
-                                        class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                        <div class="col-6 text-sm">y) Avez-vous une dette quelconque a regler bientot ?
+                                        <div class="col-12 md:col-6">
+                                            <div
+                                                class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                                <span class="text-sm">q) Emprunt bancaire a + d'1 an ?</span>
+                                                <p-select formControlName="empruntBancaireLtExiste"
+                                                    [options]="ouiNonOptions" optionLabel="label" optionValue="value"
+                                                    class="w-7rem"></p-select>
+                                            </div>
+                                            <div *ngIf="section5Form.get('empruntBancaireLtExiste')?.value"
+                                                class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                                <span class="text-xs text-600">Montant</span>
+                                                <p-inputNumber formControlName="empruntBancaireLtValeur" mode="decimal"
+                                                    [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                            </div>
                                         </div>
-                                        <div class="col-6"><p-select formControlName="autreDetteExiste"
-                                                [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                                class="w-8rem"></p-select></div>
-                                    </div>
-                                    <div *ngIf="section5Form.get('autreDetteExiste')?.value"
-                                        class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                        <span class="text-sm text-600">Montant</span>
-                                        <p-inputNumber formControlName="autreDetteValeur" mode="decimal"
-                                            [useGrouping]="true" class="w-12rem"></p-inputNumber>
+                                        <!-- r) Emprunt bancaire CT + s) Avances clients -->
+                                        <div class="col-12 md:col-6">
+                                            <div
+                                                class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                                <span class="text-sm">r) Emprunt bancaire a - d'1 an ?</span>
+                                                <p-select formControlName="empruntBancaireCtExiste"
+                                                    [options]="ouiNonOptions" optionLabel="label" optionValue="value"
+                                                    class="w-7rem"></p-select>
+                                            </div>
+                                            <div *ngIf="section5Form.get('empruntBancaireCtExiste')?.value"
+                                                class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                                <span class="text-xs text-600">Montant</span>
+                                                <p-inputNumber formControlName="empruntBancaireCtValeur" mode="decimal"
+                                                    [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                            </div>
+                                        </div>
+                                        <div class="col-12 md:col-6">
+                                            <div
+                                                class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                                <span class="text-sm">s) Avances recues de clients ?</span>
+                                                <p-select formControlName="avanceClientExiste" [options]="ouiNonOptions"
+                                                    optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                            </div>
+                                            <div *ngIf="section5Form.get('avanceClientExiste')?.value"
+                                                class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                                <span class="text-xs text-600">Montant</span>
+                                                <p-inputNumber formControlName="avanceClientValeur" mode="decimal"
+                                                    [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                            </div>
+                                        </div>
+                                        <!-- t) Dettes fournisseurs + u) Impots non payes -->
+                                        <div class="col-12 md:col-6">
+                                            <div
+                                                class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                                <span class="text-sm">t) Dette envers fournisseurs ?</span>
+                                                <p-select formControlName="detteFournisseurExiste"
+                                                    [options]="ouiNonOptions" optionLabel="label" optionValue="value"
+                                                    class="w-7rem"></p-select>
+                                            </div>
+                                            <div *ngIf="section5Form.get('detteFournisseurExiste')?.value"
+                                                class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                                <span class="text-xs text-600">Montant</span>
+                                                <p-inputNumber formControlName="detteFournisseurValeur" mode="decimal"
+                                                    [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                            </div>
+                                        </div>
+                                        <div class="col-12 md:col-6">
+                                            <div
+                                                class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                                <span class="text-sm">u) Imposition non encore reglee ?</span>
+                                                <p-select formControlName="impotNonPayeExiste" [options]="ouiNonOptions"
+                                                    optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                            </div>
+                                            <div *ngIf="section5Form.get('impotNonPayeExiste')?.value"
+                                                class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                                <span class="text-xs text-600">Montant</span>
+                                                <p-inputNumber formControlName="impotNonPayeValeur" mode="decimal"
+                                                    [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                            </div>
+                                        </div>
+                                        <!-- v) Loyers non payes + w) Factures non payees -->
+                                        <div class="col-12 md:col-6">
+                                            <div
+                                                class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                                <span class="text-sm">v) Loyers non encore payes ?</span>
+                                                <p-select formControlName="loyerNonPayeExiste" [options]="ouiNonOptions"
+                                                    optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                            </div>
+                                            <div *ngIf="section5Form.get('loyerNonPayeExiste')?.value"
+                                                class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                                <span class="text-xs text-600">Montant</span>
+                                                <p-inputNumber formControlName="loyerNonPayeValeur" mode="decimal"
+                                                    [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                            </div>
+                                        </div>
+                                        <div class="col-12 md:col-6">
+                                            <div
+                                                class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                                <span class="text-sm">w) Factures electricite non payees ?</span>
+                                                <p-select formControlName="factureNonPayeeExiste"
+                                                    [options]="ouiNonOptions" optionLabel="label" optionValue="value"
+                                                    class="w-7rem"></p-select>
+                                            </div>
+                                            <div *ngIf="section5Form.get('factureNonPayeeExiste')?.value"
+                                                class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                                <span class="text-xs text-600">Montant</span>
+                                                <p-inputNumber formControlName="factureNonPayeeValeur" mode="decimal"
+                                                    [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                            </div>
+                                        </div>
+                                        <!-- x) Tontine dette + y) Autres dettes -->
+                                        <div class="col-12 md:col-6">
+                                            <div
+                                                class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                                <span class="text-sm">x) Tontine (tour deja passe) ?</span>
+                                                <p-select formControlName="tontineDetteExiste" [options]="ouiNonOptions"
+                                                    optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                            </div>
+                                            <div *ngIf="section5Form.get('tontineDetteExiste')?.value"
+                                                class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                                <span class="text-xs text-600">Montant restant</span>
+                                                <p-inputNumber formControlName="tontineDetteValeur" mode="decimal"
+                                                    [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                            </div>
+                                        </div>
+                                        <div class="col-12 md:col-6">
+                                            <div
+                                                class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                                <span class="text-sm">y) Dette quelconque a regler ?</span>
+                                                <p-select formControlName="autreDetteExiste" [options]="ouiNonOptions"
+                                                    optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                            </div>
+                                            <div *ngIf="section5Form.get('autreDetteExiste')?.value"
+                                                class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                                <span class="text-xs text-600">Montant</span>
+                                                <p-inputNumber formControlName="autreDetteValeur" mode="decimal"
+                                                    [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </form>
@@ -866,298 +959,319 @@
                                 <button pButton label="Enregistrer Section 5" icon="pi pi-save"
                                     (click)="saveCollecteSection(5)" [loading]="savingCollecte()"></button>
                             </div>
-                        </p-accordionTab>
+                        </p-accordion-content>
+                        </p-accordion-panel>
 
                         <!-- ===== SECTION 6: CHARGES MENSUELLES DE L'ENTREPRISE ===== -->
-                        <p-accordionTab header="Section 6 - Evaluation des charges mensuelles de l'entreprise">
+                        <p-accordion-panel value="5">
+                        <p-accordion-header>Section 6 - Evaluation des charges mensuelles de l'entreprise</p-accordion-header>
+                        <p-accordion-content>
                             <form [formGroup]="section6Form">
-                                <!-- a) Loyer -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">a) Le loyer des magasins et boutiques</div>
-                                    <div class="col-6"><p-select formControlName="loyerExiste" [options]="ouiNonOptions"
-                                            optionLabel="label" optionValue="value" class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section6Form.get('loyerExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Montant mensuel</span>
-                                    <p-inputNumber formControlName="loyerMontant" mode="decimal" [useGrouping]="true"
-                                        class="w-12rem"></p-inputNumber>
-                                </div>
-                                <!-- b) Salaires -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">b) Le salaire des employes</div>
-                                    <div class="col-6"><p-select formControlName="salaireExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section6Form.get('salaireExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Montant mensuel</span>
-                                    <p-inputNumber formControlName="salaireMontant" mode="decimal" [useGrouping]="true"
-                                        class="w-12rem"></p-inputNumber>
-                                </div>
-                                <!-- c) Fournitures -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">c) Achat de fournitures de bureau</div>
-                                    <div class="col-6"><p-select formControlName="fournitureExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section6Form.get('fournitureExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Montant mensuel</span>
-                                    <p-inputNumber formControlName="fournitureMontant" mode="decimal"
-                                        [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                </div>
-                                <!-- d) Publicite -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">d) Frais de publicite et promotion</div>
-                                    <div class="col-6"><p-select formControlName="publiciteExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section6Form.get('publiciteExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Montant mensuel</span>
-                                    <p-inputNumber formControlName="publiciteMontant" mode="decimal"
-                                        [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                </div>
-                                <!-- e) Telephone -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">e) Frais de Telephone / Internet</div>
-                                    <div class="col-6"><p-select formControlName="telephoneExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section6Form.get('telephoneExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Montant mensuel</span>
-                                    <p-inputNumber formControlName="telephoneMontant" mode="decimal"
-                                        [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                </div>
-                                <!-- f) Electricite -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">f) Frais d'electricite</div>
-                                    <div class="col-6"><p-select formControlName="electriciteExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section6Form.get('electriciteExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Montant mensuel</span>
-                                    <p-inputNumber formControlName="electriciteMontant" mode="decimal"
-                                        [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                </div>
-                                <!-- g) Eau -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">g) Frais d'eau</div>
-                                    <div class="col-6"><p-select formControlName="eauExiste" [options]="ouiNonOptions"
-                                            optionLabel="label" optionValue="value" class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section6Form.get('eauExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Montant mensuel</span>
-                                    <p-inputNumber formControlName="eauMontant" mode="decimal" [useGrouping]="true"
-                                        class="w-12rem"></p-inputNumber>
-                                </div>
-                                <!-- h) Transport achat -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">h) Frais de transport sur achat</div>
-                                    <div class="col-6"><p-select formControlName="transportAchatExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section6Form.get('transportAchatExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Montant mensuel</span>
-                                    <p-inputNumber formControlName="transportAchatMontant" mode="decimal"
-                                        [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                </div>
-                                <!-- i) Transport vente -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">i) Frais de transport sur vente</div>
-                                    <div class="col-6"><p-select formControlName="transportVenteExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section6Form.get('transportVenteExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Montant mensuel</span>
-                                    <p-inputNumber formControlName="transportVenteMontant" mode="decimal"
-                                        [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                </div>
-                                <!-- j) Transport divers -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">j) Frais de transport divers</div>
-                                    <div class="col-6"><p-select formControlName="transportDiversExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section6Form.get('transportDiversExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Montant mensuel</span>
-                                    <p-inputNumber formControlName="transportDiversMontant" mode="decimal"
-                                        [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                </div>
-                                <!-- k) Entretien -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">k) Frais d'entretien et de reparation</div>
-                                    <div class="col-6"><p-select formControlName="entretienExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section6Form.get('entretienExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Montant mensuel</span>
-                                    <p-inputNumber formControlName="entretienMontant" mode="decimal"
-                                        [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                </div>
-                                <!-- l) Carburant -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">l) Frais de carburant</div>
-                                    <div class="col-6"><p-select formControlName="carburantExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section6Form.get('carburantExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Montant mensuel</span>
-                                    <p-inputNumber formControlName="carburantMontant" mode="decimal"
-                                        [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                </div>
-                                <!-- m) Assurance -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">m) Frais d'assurance</div>
-                                    <div class="col-6"><p-select formControlName="assuranceExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section6Form.get('assuranceExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Montant mensuel</span>
-                                    <p-inputNumber formControlName="assuranceMontant" mode="decimal"
-                                        [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                </div>
-                                <!-- n) Frais bancaires -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">n) Frais bancaires</div>
-                                    <div class="col-6"><p-select formControlName="fraisBancairesExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section6Form.get('fraisBancairesExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Montant mensuel</span>
-                                    <p-inputNumber formControlName="fraisBancairesMontant" mode="decimal"
-                                        [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                </div>
-                                <!-- n) Interets emprunts -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">n) Interets sur emprunts</div>
-                                    <div class="col-6"><p-select formControlName="interetsEmpruntsExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section6Form.get('interetsEmpruntsExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Montant mensuel</span>
-                                    <p-inputNumber formControlName="interetsEmpruntsMontant" mode="decimal"
-                                        [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                </div>
-                                <!-- o) Impots taxes -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">o) Impots - Taxes et permis</div>
-                                    <div class="col-6"><p-select formControlName="impotsTaxesExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section6Form.get('impotsTaxesExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Montant mensuel</span>
-                                    <p-inputNumber formControlName="impotsTaxesMontant" mode="decimal"
-                                        [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                </div>
-                                <!-- p) Honoraires -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">p) Frais Honoraires professionnels</div>
-                                    <div class="col-6"><p-select formControlName="honorairesExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section6Form.get('honorairesExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Montant mensuel</span>
-                                    <p-inputNumber formControlName="honorairesMontant" mode="decimal"
-                                        [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                </div>
-                                <!-- q) Provisions -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">q) Provisions mensuelles eventuelles</div>
-                                    <div class="col-6"><p-select formControlName="provisionsExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section6Form.get('provisionsExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Montant mensuel</span>
-                                    <p-inputNumber formControlName="provisionsMontant" mode="decimal"
-                                        [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                </div>
-                                <!-- r) Echeance autre credit -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">r) Echeance autre credit</div>
-                                    <div class="col-6"><p-select formControlName="echeanceAutreCreditExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section6Form.get('echeanceAutreCreditExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Montant mensuel</span>
-                                    <p-inputNumber formControlName="echeanceAutreCreditMontant" mode="decimal"
-                                        [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                </div>
-                                <!-- s) Autres charges -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">s) Autres charges</div>
-                                    <div class="col-6"><p-select formControlName="autresChargesExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section6Form.get('autresChargesExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Montant mensuel</span>
-                                    <p-inputNumber formControlName="autresChargesMontant" mode="decimal"
-                                        [useGrouping]="true" class="w-12rem"></p-inputNumber>
+                                <div class="grid">
+                                    <!-- a) Loyer + b) Salaires -->
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">a) Loyer magasins et boutiques</span>
+                                            <p-select formControlName="loyerExiste" [options]="ouiNonOptions"
+                                                optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section6Form.get('loyerExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Montant</span>
+                                            <p-inputNumber formControlName="loyerMontant" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">b) Salaire des employes</span>
+                                            <p-select formControlName="salaireExiste" [options]="ouiNonOptions"
+                                                optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section6Form.get('salaireExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Montant</span>
+                                            <p-inputNumber formControlName="salaireMontant" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
+                                    <!-- c) Fournitures + d) Publicite -->
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">c) Achat de fournitures de bureau</span>
+                                            <p-select formControlName="fournitureExiste" [options]="ouiNonOptions"
+                                                optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section6Form.get('fournitureExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Montant</span>
+                                            <p-inputNumber formControlName="fournitureMontant" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">d) Frais publicite et promotion</span>
+                                            <p-select formControlName="publiciteExiste" [options]="ouiNonOptions"
+                                                optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section6Form.get('publiciteExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Montant</span>
+                                            <p-inputNumber formControlName="publiciteMontant" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
+                                    <!-- e) Telephone + f) Electricite -->
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">e) Frais Telephone / Internet</span>
+                                            <p-select formControlName="telephoneExiste" [options]="ouiNonOptions"
+                                                optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section6Form.get('telephoneExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Montant</span>
+                                            <p-inputNumber formControlName="telephoneMontant" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">f) Frais d'electricite</span>
+                                            <p-select formControlName="electriciteExiste" [options]="ouiNonOptions"
+                                                optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section6Form.get('electriciteExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Montant</span>
+                                            <p-inputNumber formControlName="electriciteMontant" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
+                                    <!-- g) Eau + h) Transport achat -->
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">g) Frais d'eau</span>
+                                            <p-select formControlName="eauExiste" [options]="ouiNonOptions"
+                                                optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section6Form.get('eauExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Montant</span>
+                                            <p-inputNumber formControlName="eauMontant" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">h) Frais transport sur achat</span>
+                                            <p-select formControlName="transportAchatExiste" [options]="ouiNonOptions"
+                                                optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section6Form.get('transportAchatExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Montant</span>
+                                            <p-inputNumber formControlName="transportAchatMontant" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
+                                    <!-- i) Transport vente + j) Transport divers -->
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">i) Frais transport sur vente</span>
+                                            <p-select formControlName="transportVenteExiste" [options]="ouiNonOptions"
+                                                optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section6Form.get('transportVenteExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Montant</span>
+                                            <p-inputNumber formControlName="transportVenteMontant" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">j) Frais transport divers</span>
+                                            <p-select formControlName="transportDiversExiste" [options]="ouiNonOptions"
+                                                optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section6Form.get('transportDiversExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Montant</span>
+                                            <p-inputNumber formControlName="transportDiversMontant" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
+                                    <!-- k) Entretien + l) Carburant -->
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">k) Frais entretien et reparation</span>
+                                            <p-select formControlName="entretienExiste" [options]="ouiNonOptions"
+                                                optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section6Form.get('entretienExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Montant</span>
+                                            <p-inputNumber formControlName="entretienMontant" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">l) Frais de carburant</span>
+                                            <p-select formControlName="carburantExiste" [options]="ouiNonOptions"
+                                                optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section6Form.get('carburantExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Montant</span>
+                                            <p-inputNumber formControlName="carburantMontant" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
+                                    <!-- m) Assurance + n) Frais bancaires -->
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">m) Frais d'assurance</span>
+                                            <p-select formControlName="assuranceExiste" [options]="ouiNonOptions"
+                                                optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section6Form.get('assuranceExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Montant</span>
+                                            <p-inputNumber formControlName="assuranceMontant" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">n) Frais bancaires</span>
+                                            <p-select formControlName="fraisBancairesExiste" [options]="ouiNonOptions"
+                                                optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section6Form.get('fraisBancairesExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Montant</span>
+                                            <p-inputNumber formControlName="fraisBancairesMontant" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
+                                    <!-- o) Interets emprunts + p) Impots taxes -->
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">o) Interets sur emprunts</span>
+                                            <p-select formControlName="interetsEmpruntsExiste" [options]="ouiNonOptions"
+                                                optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section6Form.get('interetsEmpruntsExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Montant</span>
+                                            <p-inputNumber formControlName="interetsEmpruntsMontant" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">p) Impots - Taxes et permis</span>
+                                            <p-select formControlName="impotsTaxesExiste" [options]="ouiNonOptions"
+                                                optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section6Form.get('impotsTaxesExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Montant</span>
+                                            <p-inputNumber formControlName="impotsTaxesMontant" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
+                                    <!-- q) Honoraires + r) Provisions -->
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">q) Honoraires professionnels</span>
+                                            <p-select formControlName="honorairesExiste" [options]="ouiNonOptions"
+                                                optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section6Form.get('honorairesExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Montant</span>
+                                            <p-inputNumber formControlName="honorairesMontant" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">r) Provisions mensuelles</span>
+                                            <p-select formControlName="provisionsExiste" [options]="ouiNonOptions"
+                                                optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section6Form.get('provisionsExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Montant</span>
+                                            <p-inputNumber formControlName="provisionsMontant" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
+                                    <!-- s) Echeance autre credit + t) Autres charges -->
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">s) Echeance autre credit</span>
+                                            <p-select formControlName="echeanceAutreCreditExiste"
+                                                [options]="ouiNonOptions" optionLabel="label" optionValue="value"
+                                                class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section6Form.get('echeanceAutreCreditExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Montant</span>
+                                            <p-inputNumber formControlName="echeanceAutreCreditMontant" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">t) Autres charges</span>
+                                            <p-select formControlName="autresChargesExiste" [options]="ouiNonOptions"
+                                                optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section6Form.get('autresChargesExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Montant</span>
+                                            <p-inputNumber formControlName="autresChargesMontant" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
                                 </div>
                             </form>
                             <div class="flex justify-content-end mt-3">
                                 <button pButton label="Enregistrer Section 6" icon="pi pi-save"
                                     (click)="saveCollecteSection(6)" [loading]="savingCollecte()"></button>
                             </div>
-                        </p-accordionTab>
+                        </p-accordion-content>
+                        </p-accordion-panel>
 
                         <!-- ===== SECTION 7: CHARGES PERSONNELLES ===== -->
-                        <p-accordionTab header="Section 7 - Evaluation des charges personnelles de l'entrepreneur">
+                        <p-accordion-panel value="6">
+                        <p-accordion-header>Section 7 - Evaluation des charges personnelles de l'entrepreneur</p-accordion-header>
+                        <p-accordion-content>
                             <form [formGroup]="section7Form">
                                 <div
                                     class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
@@ -1186,94 +1300,91 @@
                                         <p class="text-orange-700 text-sm m-0"><strong>Note:</strong> Veuillez detailler
                                             vos charges personnelles mensuelles prelevees sur l'activite.</p>
                                     </div>
-                                    <div
-                                        class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                        <div class="col-6 text-sm">a) Frais d'alimentation</div>
-                                        <div class="col-6 flex align-items-center gap-2">
-                                            <p-inputNumber formControlName="alimentationMontant" mode="decimal"
-                                                [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                            <span class="text-sm text-500">GNF</span>
+                                    <div class="grid">
+                                        <!-- a) Alimentation + b) Loyer residence -->
+                                        <div class="col-12 md:col-6">
+                                            <div
+                                                class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                                <span class="text-sm">a) Frais d'alimentation</span>
+                                                <p-inputNumber formControlName="alimentationMontant" mode="decimal"
+                                                    [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div
-                                        class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                        <div class="col-6 text-sm">b) Redevance - Loyer residence personnelle</div>
-                                        <div class="col-6 flex align-items-center gap-2">
-                                            <p-inputNumber formControlName="loyerResidenceMontant" mode="decimal"
-                                                [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                            <span class="text-sm text-500">GNF</span>
+                                        <div class="col-12 md:col-6">
+                                            <div
+                                                class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                                <span class="text-sm">b) Loyer residence personnelle</span>
+                                                <p-inputNumber formControlName="loyerResidenceMontant" mode="decimal"
+                                                    [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div
-                                        class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                        <div class="col-6 text-sm">c) Frais de transport prive</div>
-                                        <div class="col-6 flex align-items-center gap-2">
-                                            <p-inputNumber formControlName="transportPriveMontant" mode="decimal"
-                                                [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                            <span class="text-sm text-500">GNF</span>
+                                        <!-- c) Transport + d) Electricite/eau/comm -->
+                                        <div class="col-12 md:col-6">
+                                            <div
+                                                class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                                <span class="text-sm">c) Frais de transport prive</span>
+                                                <p-inputNumber formControlName="transportPriveMontant" mode="decimal"
+                                                    [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div
-                                        class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                        <div class="col-6 text-sm">d) Electricite - eau - communication</div>
-                                        <div class="col-6 flex align-items-center gap-2">
-                                            <p-inputNumber formControlName="electriciteEauCommMontant" mode="decimal"
-                                                [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                            <span class="text-sm text-500">GNF</span>
+                                        <div class="col-12 md:col-6">
+                                            <div
+                                                class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                                <span class="text-sm">d) Electricite - eau - communication</span>
+                                                <p-inputNumber formControlName="electriciteEauCommMontant"
+                                                    mode="decimal" [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div
-                                        class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                        <div class="col-6 text-sm">e) Frais d'habillement</div>
-                                        <div class="col-6 flex align-items-center gap-2">
-                                            <p-inputNumber formControlName="habillementMontant" mode="decimal"
-                                                [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                            <span class="text-sm text-500">GNF</span>
+                                        <!-- e) Habillement + f) Frais medicaux -->
+                                        <div class="col-12 md:col-6">
+                                            <div
+                                                class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                                <span class="text-sm">e) Frais d'habillement</span>
+                                                <p-inputNumber formControlName="habillementMontant" mode="decimal"
+                                                    [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div
-                                        class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                        <div class="col-6 text-sm">f) Frais medicaux</div>
-                                        <div class="col-6 flex align-items-center gap-2">
-                                            <p-inputNumber formControlName="fraisMedicauxMontant" mode="decimal"
-                                                [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                            <span class="text-sm text-500">GNF</span>
+                                        <div class="col-12 md:col-6">
+                                            <div
+                                                class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                                <span class="text-sm">f) Frais medicaux</span>
+                                                <p-inputNumber formControlName="fraisMedicauxMontant" mode="decimal"
+                                                    [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div
-                                        class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                        <div class="col-6 text-sm">g) Echeance autre credit</div>
-                                        <div class="col-6 flex align-items-center gap-2">
-                                            <p-inputNumber formControlName="echeanceCreditPersoMontant" mode="decimal"
-                                                [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                            <span class="text-sm text-500">GNF</span>
+                                        <!-- g) Echeance credit + h) Scolarite -->
+                                        <div class="col-12 md:col-6">
+                                            <div
+                                                class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                                <span class="text-sm">g) Echeance autre credit</span>
+                                                <p-inputNumber formControlName="echeanceCreditPersoMontant"
+                                                    mode="decimal" [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div
-                                        class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                        <div class="col-6 text-sm">h) Frais de scolarite</div>
-                                        <div class="col-6 flex align-items-center gap-2">
-                                            <p-inputNumber formControlName="scolariteMontant" mode="decimal"
-                                                [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                            <span class="text-sm text-500">GNF</span>
+                                        <div class="col-12 md:col-6">
+                                            <div
+                                                class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                                <span class="text-sm">h) Frais de scolarite</span>
+                                                <p-inputNumber formControlName="scolariteMontant" mode="decimal"
+                                                    [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div
-                                        class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                        <div class="col-6 text-sm">i) Travaux de constructions privees</div>
-                                        <div class="col-6 flex align-items-center gap-2">
-                                            <p-inputNumber formControlName="travauxConstructionMontant" mode="decimal"
-                                                [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                            <span class="text-sm text-500">GNF</span>
+                                        <!-- i) Constructions + j) Autres charges -->
+                                        <div class="col-12 md:col-6">
+                                            <div
+                                                class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                                <span class="text-sm">i) Travaux constructions privees</span>
+                                                <p-inputNumber formControlName="travauxConstructionMontant"
+                                                    mode="decimal" [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div
-                                        class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                        <div class="col-6 text-sm">j) Autres charges personnelles</div>
-                                        <div class="col-6 flex align-items-center gap-2">
-                                            <p-inputNumber formControlName="autresChargesPersoMontant" mode="decimal"
-                                                [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                            <span class="text-sm text-500">GNF</span>
+                                        <div class="col-12 md:col-6">
+                                            <div
+                                                class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                                <span class="text-sm">j) Autres charges personnelles</span>
+                                                <p-inputNumber formControlName="autresChargesPersoMontant"
+                                                    mode="decimal" [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -1300,152 +1411,171 @@
                                 <button pButton label="Enregistrer Section 7" icon="pi pi-save"
                                     (click)="saveCollecteSection(7)" [loading]="savingCollecte()"></button>
                             </div>
-                        </p-accordionTab>
+                        </p-accordion-content>
+                        </p-accordion-panel>
 
                         <!-- ===== SECTION 8: AUTRES REVENUS ===== -->
-                        <p-accordionTab header="Section 8 - Evaluation des autres revenus mensuels">
+                        <p-accordion-panel value="7">
+                        <p-accordion-header>Section 8 - Evaluation des autres revenus mensuels</p-accordion-header>
+                        <p-accordion-content>
                             <form [formGroup]="section8Form">
-                                <!-- a) Salaire externe -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">a) Salaire et remunerations en tant que salarie</div>
-                                    <div class="col-6"><p-select formControlName="salaireExterneExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section8Form.get('salaireExterneExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Montant</span>
-                                    <p-inputNumber formControlName="salaireExterneMontant" mode="decimal"
-                                        [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                </div>
-                                <!-- b) Loyers percus -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">b) Loyers percus</div>
-                                    <div class="col-6"><p-select formControlName="loyersPercusExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section8Form.get('loyersPercusExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Montant</span>
-                                    <p-inputNumber formControlName="loyersPercusMontant" mode="decimal"
-                                        [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                </div>
-                                <!-- c) Activites secondaires -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">c) Revenus issus d'activites secondaires</div>
-                                    <div class="col-6"><p-select formControlName="activiteSecondaireExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section8Form.get('activiteSecondaireExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Montant</span>
-                                    <p-inputNumber formControlName="activiteSecondaireMontant" mode="decimal"
-                                        [useGrouping]="true" class="w-12rem"></p-inputNumber>
-                                </div>
-                                <!-- d) Autres revenus -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">d) Autres revenus</div>
-                                    <div class="col-6"><p-select formControlName="autresRevenusExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section8Form.get('autresRevenusExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Montant</span>
-                                    <p-inputNumber formControlName="autresRevenusMontant" mode="decimal"
-                                        [useGrouping]="true" class="w-12rem"></p-inputNumber>
+                                <div class="grid">
+                                    <!-- a) Salaire externe + b) Loyers percus -->
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">a) Salaire et remunerations en tant que
+                                                salarie</span>
+                                            <p-select formControlName="salaireExterneExiste" [options]="ouiNonOptions"
+                                                optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section8Form.get('salaireExterneExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Montant</span>
+                                            <p-inputNumber formControlName="salaireExterneMontant" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">b) Loyers percus</span>
+                                            <p-select formControlName="loyersPercusExiste" [options]="ouiNonOptions"
+                                                optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section8Form.get('loyersPercusExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Montant</span>
+                                            <p-inputNumber formControlName="loyersPercusMontant" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
+                                    <!-- c) Activites secondaires + d) Autres revenus -->
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">c) Revenus issus d'activites secondaires</span>
+                                            <p-select formControlName="activiteSecondaireExiste"
+                                                [options]="ouiNonOptions" optionLabel="label" optionValue="value"
+                                                class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section8Form.get('activiteSecondaireExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Montant</span>
+                                            <p-inputNumber formControlName="activiteSecondaireMontant" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">d) Autres revenus</span>
+                                            <p-select formControlName="autresRevenusExiste" [options]="ouiNonOptions"
+                                                optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section8Form.get('autresRevenusExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Montant</span>
+                                            <p-inputNumber formControlName="autresRevenusMontant" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
                                 </div>
                             </form>
                             <div class="flex justify-content-end mt-3">
                                 <button pButton label="Enregistrer Section 8" icon="pi pi-save"
                                     (click)="saveCollecteSection(8)" [loading]="savingCollecte()"></button>
                             </div>
-                        </p-accordionTab>
+                        </p-accordion-content>
+                        </p-accordion-panel>
 
                         <!-- ===== SECTION 9: BIENS PERSONNELS ===== -->
-                        <p-accordionTab header="Section 9 - Evaluation des biens personnels de l'entrepreneur">
+                        <p-accordion-panel value="8">
+                        <p-accordion-header>Section 9 - Evaluation des biens personnels de l'entrepreneur</p-accordion-header>
+                        <p-accordion-content>
                             <form [formGroup]="section9Form">
-                                <!-- a) Terrains -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">a) Avez-vous des terrains vides</div>
-                                    <div class="col-6"><p-select formControlName="terrainExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section9Form.get('terrainExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Valeur estimee</span>
-                                    <p-inputNumber formControlName="terrainValeur" mode="decimal" [useGrouping]="true"
-                                        class="w-12rem"></p-inputNumber>
-                                </div>
-                                <!-- b) Maisons -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">b) Avez-vous des maisons</div>
-                                    <div class="col-6"><p-select formControlName="maisonExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section9Form.get('maisonExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Valeur estimee</span>
-                                    <p-inputNumber formControlName="maisonValeur" mode="decimal" [useGrouping]="true"
-                                        class="w-12rem"></p-inputNumber>
-                                </div>
-                                <!-- c) Vehicules -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">c) Avez-vous des vehicules</div>
-                                    <div class="col-6"><p-select formControlName="vehiculeExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section9Form.get('vehiculeExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Valeur estimee</span>
-                                    <p-inputNumber formControlName="vehiculeValeur" mode="decimal" [useGrouping]="true"
-                                        class="w-12rem"></p-inputNumber>
-                                </div>
-                                <!-- d) Motos -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">d) Avez-vous des motos</div>
-                                    <div class="col-6"><p-select formControlName="motoExiste" [options]="ouiNonOptions"
-                                            optionLabel="label" optionValue="value" class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section9Form.get('motoExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Valeur estimee</span>
-                                    <p-inputNumber formControlName="motoValeur" mode="decimal" [useGrouping]="true"
-                                        class="w-12rem"></p-inputNumber>
-                                </div>
-                                <!-- e) Autres biens -->
-                                <div
-                                    class="grid align-items-center py-2 px-3 border-bottom-1 surface-border hover:surface-hover">
-                                    <div class="col-6 text-sm">e) Autres biens personnels</div>
-                                    <div class="col-6"><p-select formControlName="autreBienExiste"
-                                            [options]="ouiNonOptions" optionLabel="label" optionValue="value"
-                                            class="w-8rem"></p-select></div>
-                                </div>
-                                <div *ngIf="section9Form.get('autreBienExiste')?.value"
-                                    class="flex align-items-center gap-3 pl-5 py-2 surface-ground border-round mx-3 mb-2">
-                                    <span class="text-sm text-600">Valeur estimee</span>
-                                    <p-inputNumber formControlName="autreBienValeur" mode="decimal" [useGrouping]="true"
-                                        class="w-12rem"></p-inputNumber>
+                                <div class="grid">
+                                    <!-- a) Terrains + b) Maisons -->
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">a) Avez-vous des terrains vides</span>
+                                            <p-select formControlName="terrainExiste" [options]="ouiNonOptions"
+                                                optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section9Form.get('terrainExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Valeur estimee</span>
+                                            <p-inputNumber formControlName="terrainValeur" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">b) Avez-vous des maisons</span>
+                                            <p-select formControlName="maisonExiste" [options]="ouiNonOptions"
+                                                optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section9Form.get('maisonExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Valeur estimee</span>
+                                            <p-inputNumber formControlName="maisonValeur" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
+                                    <!-- c) Vehicules + d) Motos -->
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">c) Avez-vous des vehicules</span>
+                                            <p-select formControlName="vehiculeExiste" [options]="ouiNonOptions"
+                                                optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section9Form.get('vehiculeExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Valeur estimee</span>
+                                            <p-inputNumber formControlName="vehiculeValeur" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">d) Avez-vous des motos</span>
+                                            <p-select formControlName="motoExiste" [options]="ouiNonOptions"
+                                                optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section9Form.get('motoExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Valeur estimee</span>
+                                            <p-inputNumber formControlName="motoValeur" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
+                                    <!-- e) Autres biens -->
+                                    <div class="col-12 md:col-6">
+                                        <div
+                                            class="flex align-items-center gap-3 py-2 px-2 border-bottom-1 surface-border hover:surface-hover">
+                                            <span class="text-sm">e) Autres biens personnels</span>
+                                            <p-select formControlName="autreBienExiste" [options]="ouiNonOptions"
+                                                optionLabel="label" optionValue="value" class="w-7rem"></p-select>
+                                        </div>
+                                        <div *ngIf="section9Form.get('autreBienExiste')?.value"
+                                            class="flex align-items-center gap-2 pl-3 py-1 surface-ground border-round mx-1 mb-1">
+                                            <span class="text-xs text-600">Valeur estimee</span>
+                                            <p-inputNumber formControlName="autreBienValeur" mode="decimal"
+                                                [useGrouping]="true" class="w-10rem"></p-inputNumber>
+                                        </div>
+                                    </div>
                                 </div>
                             </form>
                             <div class="flex justify-content-end mt-3">
                                 <button pButton label="Enregistrer Section 9" icon="pi pi-save"
                                     (click)="saveCollecteSection(9)" [loading]="savingCollecte()"></button>
                             </div>
-                        </p-accordionTab>
+                        </p-accordion-content>
+                        </p-accordion-panel>
                     </p-accordion>
                 </div>
             </p-card>
@@ -1470,6 +1600,29 @@
                     <span>Veuillez d'abord creer une collecte (etape precedente).</span>
                 </div>
 
+                <!-- Notification: amortissements manquants -->
+                <div *ngIf="collecte() && missingAmortissementTypes().length > 0"
+                    class="mb-3 p-3 bg-orange-50 border-round border-1 border-orange-300">
+                    <div class="flex align-items-center mb-2">
+                        <i class="pi pi-exclamation-triangle text-orange-600 mr-2 text-xl"></i>
+                        <span class="font-bold text-orange-700">Amortissements manquants</span>
+                    </div>
+                    <p class="text-sm text-orange-700 mt-0 mb-3">
+                        Vous avez declare posseder les actifs suivants en Section 5.
+                        Veuillez ajouter les amortissements correspondants :
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                        <div *ngFor="let missing of missingAmortissementTypes()"
+                            class="flex align-items-center gap-2 p-2 bg-white border-round border-1 border-orange-200">
+                            <i class="pi pi-plus-circle text-orange-500"></i>
+                            <span class="text-sm font-medium">{{ missing.label }}</span>
+                            <button pButton label="Ajouter" icon="pi pi-plus"
+                                class="p-button-sm p-button-warning"
+                                (click)="addAmortissementForType(missing.type)"></button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Inline table editing -->
                 <div *ngIf="collecte()" class="overflow-x-auto">
                     <table class="w-full text-sm border-collapse">
@@ -1486,7 +1639,11 @@
                                     d'acquisition</th>
                                 <th class="p-2 border-1 surface-border text-right" style="width:120px">Amort. mensuel
                                 </th>
-                                <th class="p-2 border-1 surface-border text-right" style="width:140px">VNC</th>
+                                <th class="p-2 border-1 surface-border text-right" style="width:130px">Cumul amort.</th>
+                                <th class="p-2 border-1 surface-border text-center" style="width:110px">Date fin</th>
+                                <th class="p-2 border-1 surface-border text-right" style="width:130px">VNC</th>
+                                <th class="p-2 border-1 surface-border text-right" style="width:140px">VNC ajustee</th>
+                                <th class="p-2 border-1 surface-border text-center" style="width:90px">Statut</th>
                                 <th class="p-2 border-1 surface-border" style="width:40px"></th>
                             </tr>
                         </thead>
@@ -1513,7 +1670,7 @@
                                     <input type="date" [(ngModel)]="amort.dateAcquisition"
                                         [ngModelOptions]="{standalone: true}"
                                         class="w-full p-1 text-sm border-1 surface-border border-round"
-                                        (blur)="updateAmortissementRow(amort)" />
+                                        (change)="updateAmortissementRow(amort)" />
                                 </td>
                                 <td class="p-1 border-1 surface-border">
                                     <input type="number" [(ngModel)]="amort.dureeAmortissementMois"
@@ -1531,8 +1688,27 @@
                                     {{ (amort.amortissementMensuel || 0) | currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
                                 </td>
                                 <td
+                                    class="p-2 border-1 surface-border text-right font-mono text-orange-700 bg-orange-50">
+                                    {{ (amort.amortissementCumule || 0) | currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
+                                </td>
+                                <td class="p-2 border-1 surface-border text-center font-mono text-sm">
+                                    {{ getDateFin(amort) }}
+                                </td>
+                                <td
                                     class="p-2 border-1 surface-border text-right font-mono text-green-700 bg-green-50 font-bold">
                                     {{ (amort.valeurNetteComptable || 0) | currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
+                                </td>
+                                <td class="p-1 border-1 surface-border">
+                                    <p-inputNumber [(ngModel)]="amort.valeurNetteAjustee"
+                                        [ngModelOptions]="{standalone: true}" mode="decimal" [useGrouping]="true"
+                                        class="w-full input-sm" placeholder="Optionnel"
+                                        (onBlur)="updateAmortissementRow(amort)"></p-inputNumber>
+                                </td>
+                                <td class="p-2 border-1 surface-border text-center">
+                                    <p-tag *ngIf="amort.statutAmortissement === 'Amorti'" value="Amorti"
+                                        severity="danger"></p-tag>
+                                    <p-tag *ngIf="amort.statutAmortissement === 'En cours'" value="En cours"
+                                        severity="success"></p-tag>
                                 </td>
                                 <td class="p-1 border-1 surface-border text-center">
                                     <button pButton icon="pi pi-trash"
@@ -1555,10 +1731,14 @@
                                     class="p-2 border-1 surface-border text-right font-mono font-bold text-blue-700 bg-blue-100">
                                     {{ totalAmortMensuel() | currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
                                 </td>
+                                <td class="p-2 border-1 surface-border"></td>
+                                <td class="p-2 border-1 surface-border"></td>
                                 <td
                                     class="p-2 border-1 surface-border text-right font-mono font-bold text-green-700 bg-green-100">
                                     {{ totalAmortVNC() | currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
                                 </td>
+                                <td class="p-2 border-1 surface-border"></td>
+                                <td class="p-2 border-1 surface-border"></td>
                                 <td class="border-1 surface-border"></td>
                             </tr>
                         </tfoot>
@@ -1596,9 +1776,8 @@
 
                 <!-- Bouton pre-remplir depuis collecte -->
                 <div class="flex justify-content-end mb-3" *ngIf="collecte()?.collecteId && state().analyseExiste">
-                    <p-button label="Pre-remplir depuis la collecte" icon="pi pi-sync"
-                        [loading]="loading()" severity="info" [outlined]="true"
-                        (onClick)="autoRemplirDepuisCollecte()"
+                    <p-button label="Pre-remplir depuis la collecte" icon="pi pi-sync" [loading]="loading()"
+                        severity="info" [outlined]="true" (onClick)="autoRemplirDepuisCollecte()"
                         [disabled]="!state().analyseId || !collecte()?.collecteId"
                         pTooltip="Remplir automatiquement Bilan, Rentabilite et Besoin de credit depuis les donnees de collecte" />
                 </div>
@@ -2003,7 +2182,11 @@
                                     <p-inputNumber [formControl]="getControl(rentabiliteN2Form, 'chiffreAffaires')"
                                         mode="decimal" [useGrouping]="true" class="w-full input-sm"></p-inputNumber>
                                 </td>
-                                <td class="p-1 border-1 surface-border text-xs">Hyp. Moy.</td>
+                                <td class="p-1 border-1 surface-border">
+                                    <p-select [options]="hypotheseCaOptions" [(ngModel)]="selectedHypotheseCa"
+                                        [ngModelOptions]="{standalone: true}" (onChange)="onHypotheseCaChange($event)"
+                                        placeholder="Hyp." styleClass="w-full text-xs"></p-select>
+                                </td>
                             </tr>
 
                             <tr>
@@ -2042,7 +2225,11 @@
                                 <td class="p-2 text-right border-1 surface-border font-bold text-green-700">
                                     {{ margeBruteN2() | currency:'GNF':'symbol':'1.0-0':'fr-FR' }}
                                 </td>
-                                <td class="p-2 border-1 surface-border text-xs">% Recom.</td>
+                                <td class="p-1 border-1 surface-border">
+                                    <p-select [options]="typeMargeOptions" [(ngModel)]="selectedTypeMarge"
+                                        [ngModelOptions]="{standalone: true}" (onChange)="onTypeMargeChange($event)"
+                                        placeholder="%" styleClass="w-full text-xs"></p-select>
+                                </td>
                             </tr>
 
                             <!-- Autres charges header - 13 charges -->

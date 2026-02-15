@@ -102,6 +102,9 @@ export class AnalyseFluxTresorerieComponent {
 
     private ngZone = inject(NgZone);
 
+    // Rôle utilisateur connecté
+    userRole = signal<string>('');
+
     // État global
     state = signal({
         hasDossierCredit: false,
@@ -543,6 +546,13 @@ export class AnalyseFluxTresorerieComponent {
     }
 
     ngOnInit() {
+        // Charger le rôle de l'utilisateur connecté
+        this.userService.profile$().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: (res) => {
+                this.userRole.set(res?.data?.user?.role || '');
+            }
+        });
+
         // D'ABORD initialiser les formulaires de base
         this.initializeCreditParamsForm();
         this.initializeNewClientForm();

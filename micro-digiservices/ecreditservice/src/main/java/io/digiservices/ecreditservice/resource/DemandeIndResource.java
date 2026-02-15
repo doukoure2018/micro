@@ -763,6 +763,57 @@ public class DemandeIndResource {
                 "Liste des Credits Par Délégation", OK));
     }
 
+    @PutMapping("/updateDemandeComplete/{demandeId}")
+    public ResponseEntity<Response> updateDemandeComplete(
+            @NotNull Authentication authentication,
+            @PathVariable(name = "demandeId") Long demandeId,
+            @Valid @RequestBody DemandeIndividuel demandeIndividuel,
+            HttpServletRequest request) {
+        try {
+            demandeIndividuel.setDemandeIndividuelId(demandeId);
+
+            // Valider les garanties si fournies
+            if (demandeIndividuel.getGaranties() != null && !demandeIndividuel.getGaranties().isEmpty()) {
+                validateGaranties(demandeIndividuel.getGaranties());
+            }
+
+            demandeIndService.updateDemandeComplete(demandeIndividuel);
+
+            // Retourner la demande mise a jour
+            DemandeIndividuel updated = demandeIndService.getDemandeWithGaranties(demandeId);
+
+            return ResponseEntity.ok(
+                    Response.builder()
+                            .timeStamp(System.currentTimeMillis())
+                            .data(Map.of("demandeIndividuel", updated))
+                            .message("Demande mise a jour avec succes")
+                            .status(OK)
+                            .statusCode(OK.value())
+                            .build()
+            );
+        } catch (ApiException e) {
+            log.error("Erreur: {}", e.getMessage());
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(Response.builder()
+                            .timeStamp(System.currentTimeMillis())
+                            .message(e.getMessage())
+                            .status(HttpStatus.BAD_REQUEST)
+                            .statusCode(HttpStatus.BAD_REQUEST.value())
+                            .build());
+        } catch (Exception e) {
+            log.error("Erreur lors de la mise a jour de la demande: ", e);
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Response.builder()
+                            .timeStamp(System.currentTimeMillis())
+                            .message("Erreur lors de la mise a jour: " + e.getMessage())
+                            .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                            .build());
+        }
+    }
+
     @GetMapping("/doukoure/test")
     public ResponseEntity<Response> doukoureTest(@NotNull Authentication authentication,HttpServletRequest request) {
         return created(getUri()).body(getResponse(request, emptyMap(), "this is the test for doukoure salifou", OK));

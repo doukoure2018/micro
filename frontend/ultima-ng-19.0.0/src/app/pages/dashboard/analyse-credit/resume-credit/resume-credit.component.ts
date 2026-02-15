@@ -58,6 +58,7 @@ export class ResumeCreditComponent {
         user?: IUser;
         resumeCredit?: ResumeCredit;
         infoAdministrative?: InfoAdministrative;
+        totalValeurEmprunte: number;
         loading: boolean;
         loadingAdmin: boolean;
         message: string | undefined;
@@ -67,6 +68,7 @@ export class ResumeCreditComponent {
         loading: false,
         message: undefined,
         loadingAdmin: false,
+        totalValeurEmprunte: 0,
         error: undefined,
         searching: false
     });
@@ -137,8 +139,11 @@ export class ResumeCreditComponent {
                             message: 'Résumé chargé avec succès'
                         }));
 
-                        // NOUVEAU : Charger les infos administratives une fois le résumé chargé
+                        // Charger les infos administratives une fois le résumé chargé
                         this.chargerInfoAdministrative();
+
+                        // Charger la valeur garantie réelle depuis garantie_propose
+                        this.chargerValeurGarantie();
 
                         this.messageService.add({
                             severity: 'success',
@@ -152,6 +157,25 @@ export class ResumeCreditComponent {
                 error: (error) => {
                     this.gererErreur('Erreur lors du chargement du résumé', error);
                 }
+            });
+    }
+
+    chargerValeurGarantie(): void {
+        const demandeIndividuelId = this.state().resumeCredit?.demande_credit?.demandeIndividuelId;
+        if (!demandeIndividuelId) return;
+
+        this.analyseCreditService
+            .getDemandeWithGaranties$(demandeIndividuelId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    const totalValeurEmprunte = response?.data?.totalValeurEmprunte || 0;
+                    this.state.update((current) => ({
+                        ...current,
+                        totalValeurEmprunte
+                    }));
+                },
+                error: () => {}
             });
     }
 
@@ -1214,26 +1238,10 @@ export class ResumeCreditComponent {
     }
 
     /**
-     * Calcul amélioré de la valeur de garantie incluant les personnes caution
+     * Valeur de garantie = SUM(valeur_emprunte) depuis la table garantie_propose
      */
     getValeurGarantie(): number {
-        const resumeCredit = this.state().resumeCredit;
-
-        // Estimation de la garantie basée sur le patrimoine personnel + une partie de l'actif
-        const patrimoinePersonnel = this.calculerPatrimoinePersonnel();
-        const totalActif = this.calculerTotalActif();
-
-        // Base de garantie = patrimoine personnel + 50% de l'actif professionnel
-        let garantieBase = patrimoinePersonnel + totalActif * 0.5;
-
-        // Bonus basé sur le nombre de personnes caution
-        const nbPersonnes = this.getNombrePersonnesCaution();
-        const bonusPersonnesCaution = nbPersonnes * 0.1; // 10% par personne caution
-
-        // Coefficient multiplicateur basé sur les personnes caution
-        const coefficientCaution = 1 + Math.min(bonusPersonnesCaution, 0.3); // Maximum 30% de bonus
-
-        return garantieBase * coefficientCaution;
+        return this.state().totalValeurEmprunte;
     }
 
     getMontantCredit(): number {

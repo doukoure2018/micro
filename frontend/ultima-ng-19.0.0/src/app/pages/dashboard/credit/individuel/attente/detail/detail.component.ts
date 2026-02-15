@@ -105,6 +105,14 @@ export class DetailComponent {
         editingAvis: boolean;
         editingAvisId?: number;
         deletingAvisId?: number;
+        validationDA: {
+            bilan: { statut: string; motifRejet?: string; sectionsARevoir?: string[]; instructionsAc?: string; valideParNom?: string; dateValidation?: string; dateRejet?: string } | null;
+            flux: { statut: string; motifRejet?: string; sectionsARevoir?: string[]; instructionsAc?: string; valideParNom?: string; dateValidation?: string; dateRejet?: string } | null;
+        };
+        showModalRejetBilan: boolean;
+        showModalRejetFlux: boolean;
+        showWorkflowRejetDA: boolean;
+        showWorkflowRejetDR: boolean;
     }>({
         loading: false,
         message: undefined,
@@ -123,7 +131,12 @@ export class DetailComponent {
         submittingAvis: false,
         editingAvis: false,
         editingAvisId: undefined,
-        deletingAvisId: undefined
+        deletingAvisId: undefined,
+        validationDA: { bilan: null, flux: null },
+        showModalRejetBilan: false,
+        showModalRejetFlux: false,
+        showWorkflowRejetDA: false,
+        showWorkflowRejetDR: false
     });
 
     updateForm: FormGroup;
@@ -139,6 +152,47 @@ export class DetailComponent {
     // Ajouter le formulaire pour les avis
     avisForm: FormGroup;
 
+    // Formulaires pour rejet DA
+    rejetBilanForm: FormGroup;
+    rejetFluxForm: FormGroup;
+
+    // Formulaires workflow DA
+    workflowDAForm: FormGroup;
+    workflowDARejetForm: FormGroup;
+
+    // Formulaires workflow DR
+    workflowDRForm: FormGroup;
+    workflowDRRejetForm: FormGroup;
+
+    workflowSectionsOptions = [
+        { label: 'Collecte des donnees', value: 'COLLECTE' },
+        { label: "Bilan d'activite", value: 'BILAN_ACTIVITE' },
+        { label: 'Flux de tresorerie', value: 'FLUX_TRESORERIE' },
+        { label: 'Amortissements', value: 'AMORTISSEMENTS' },
+        { label: 'Rentabilite', value: 'RENTABILITE' },
+        { label: 'Ratios financiers', value: 'RATIOS' },
+        { label: 'Personne caution', value: 'PERSONNE_CAUTION' },
+        { label: 'Garantie proposee', value: 'GARANTIE' },
+        { label: 'Demande complete', value: 'DEMANDE_COMPLETE' }
+    ];
+
+    // Options sections pour rejet
+    sectionsBilanOptions = [
+        { label: 'Collecte des données', value: 'COLLECTE' },
+        { label: 'Amortissements', value: 'AMORTISSEMENTS' },
+        { label: 'Bilan', value: 'BILAN' },
+        { label: 'Rentabilité', value: 'RENTABILITE' },
+        { label: 'Besoin en crédit', value: 'BESOIN_CREDIT' },
+        { label: 'Ratios financiers', value: 'RATIOS' },
+        { label: 'Personne caution', value: 'PERSONNE_CAUTION' }
+    ];
+
+    sectionsFluxOptions = [
+        { label: 'Flux client', value: 'FLUX_CLIENT' },
+        { label: 'Flux associé', value: 'FLUX_ASSOCIE' },
+        { label: 'Projection N+1', value: 'PROJECTION_N1' }
+    ];
+
     constructor() {
         this.updateForm = this.fb.group({
             code: ['', Validators.required],
@@ -148,6 +202,36 @@ export class DetailComponent {
 
         this.avisForm = this.fb.group({
             libele: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(1000)]]
+        });
+
+        this.rejetBilanForm = this.fb.group({
+            motifRejet: ['', [Validators.required, Validators.minLength(10)]],
+            sectionsARevoir: [[], [Validators.required]],
+            instructionsAc: ['']
+        });
+
+        this.rejetFluxForm = this.fb.group({
+            motifRejet: ['', [Validators.required, Validators.minLength(10)]],
+            sectionsARevoir: [[], [Validators.required]],
+            instructionsAc: ['']
+        });
+
+        this.workflowDAForm = this.fb.group({
+            avis: ['', [Validators.required, Validators.minLength(10)]]
+        });
+        this.workflowDARejetForm = this.fb.group({
+            motifRejet: ['', [Validators.required, Validators.minLength(10)]],
+            sectionsARevoir: [[], [Validators.required]],
+            instructions: ['']
+        });
+
+        this.workflowDRForm = this.fb.group({
+            avis: ['', [Validators.required, Validators.minLength(10)]]
+        });
+        this.workflowDRRejetForm = this.fb.group({
+            motifRejet: ['', [Validators.required, Validators.minLength(10)]],
+            sectionsARevoir: [[], [Validators.required]],
+            instructions: ['']
         });
     }
 
@@ -239,6 +323,9 @@ export class DetailComponent {
 
                         // Charger les avis
                         this.loadAvis(+demandeData.demandeIndividuelId!);
+
+                        // Charger les statuts de validation DA
+                        this.loadValidationDA(+demandeData.demandeIndividuelId!);
 
                         if (demandeData.pos) {
                             this.loadPointVenteInfo(demandeData.pos);
@@ -1745,12 +1832,386 @@ export class DetailComponent {
         window.open(route, '_blank');
     }
 
-    // Ajouter cette méthode dans DetailComponent
+    // ==================== VALIDATION DA ====================
+
+    private loadValidationDA(demandeId: number): void {
+        this.userService
+            .getStatutValidationDA$(demandeId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    const validations = (response.data as any)?.validationsDA || [];
+                    let bilan: any = null;
+                    let flux: any = null;
+                    for (const v of validations) {
+                        if (v.typeValidation === 'BILAN_ACTIVITE') {
+                            bilan = v;
+                        } else if (v.typeValidation === 'FLUX_TRESORERIE') {
+                            flux = v;
+                        }
+                    }
+                    // Parse sectionsARevoir from comma-separated string to array
+                    if (bilan?.sectionsARevoir && typeof bilan.sectionsARevoir === 'string') {
+                        bilan = { ...bilan, sectionsARevoir: bilan.sectionsARevoir.split(',').map((s: string) => s.trim()) };
+                    }
+                    if (flux?.sectionsARevoir && typeof flux.sectionsARevoir === 'string') {
+                        flux = { ...flux, sectionsARevoir: flux.sectionsARevoir.split(',').map((s: string) => s.trim()) };
+                    }
+                    this.state.update((s) => ({
+                        ...s,
+                        validationDA: { bilan, flux }
+                    }));
+                },
+                error: () => {
+                    // Pas de validation encore, on reste avec null
+                }
+            });
+    }
+
+    validerBilan(): void {
+        const demandeId = this.state().demandeIndividuel?.demandeIndividuelId;
+        if (!demandeId) return;
+
+        this.confirmationService.confirm({
+            message: "Confirmez-vous la validation du Bilan d'Activité ?",
+            header: 'Confirmation',
+            icon: 'pi pi-check-circle',
+            accept: () => {
+                this.userService
+                    .validerBilanDA$(+demandeId)
+                    .pipe(takeUntilDestroyed(this.destroyRef))
+                    .subscribe({
+                        next: () => {
+                            this.messageService.add({ severity: 'success', summary: 'Succès', detail: "Bilan d'activité validé", life: 3000 });
+                            this.loadValidationDA(+demandeId);
+                        },
+                        error: (err) => {
+                            this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err?.error?.message || 'Erreur lors de la validation', life: 5000 });
+                        }
+                    });
+            }
+        });
+    }
+
+    ouvrirModalRejetBilan(): void {
+        this.rejetBilanForm.reset();
+        this.state.update((s) => ({ ...s, showModalRejetBilan: true }));
+    }
+
+    confirmerRejetBilan(): void {
+        if (this.rejetBilanForm.invalid) return;
+        const demandeId = this.state().demandeIndividuel?.demandeIndividuelId;
+        if (!demandeId) return;
+
+        const body = {
+            motifRejet: this.rejetBilanForm.value.motifRejet,
+            sectionsARevoir: this.rejetBilanForm.value.sectionsARevoir,
+            instructionsAc: this.rejetBilanForm.value.instructionsAc || null
+        };
+
+        this.userService
+            .rejeterBilanDA$(+demandeId, body)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.messageService.add({ severity: 'warn', summary: 'Rejet', detail: "Bilan d'activité rejeté", life: 3000 });
+                    this.state.update((s) => ({ ...s, showModalRejetBilan: false }));
+                    this.loadValidationDA(+demandeId);
+                },
+                error: (err) => {
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err?.error?.message || 'Erreur lors du rejet', life: 5000 });
+                }
+            });
+    }
+
+    validerFlux(): void {
+        const demandeId = this.state().demandeIndividuel?.demandeIndividuelId;
+        if (!demandeId) return;
+
+        this.confirmationService.confirm({
+            message: 'Confirmez-vous la validation du Flux de Trésorerie ?',
+            header: 'Confirmation',
+            icon: 'pi pi-check-circle',
+            accept: () => {
+                this.userService
+                    .validerFluxDA$(+demandeId)
+                    .pipe(takeUntilDestroyed(this.destroyRef))
+                    .subscribe({
+                        next: () => {
+                            this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Flux de trésorerie validé', life: 3000 });
+                            this.loadValidationDA(+demandeId);
+                        },
+                        error: (err) => {
+                            this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err?.error?.message || 'Erreur lors de la validation', life: 5000 });
+                        }
+                    });
+            }
+        });
+    }
+
+    ouvrirModalRejetFlux(): void {
+        this.rejetFluxForm.reset();
+        this.state.update((s) => ({ ...s, showModalRejetFlux: true }));
+    }
+
+    confirmerRejetFlux(): void {
+        if (this.rejetFluxForm.invalid) return;
+        const demandeId = this.state().demandeIndividuel?.demandeIndividuelId;
+        if (!demandeId) return;
+
+        const body = {
+            motifRejet: this.rejetFluxForm.value.motifRejet,
+            sectionsARevoir: this.rejetFluxForm.value.sectionsARevoir,
+            instructionsAc: this.rejetFluxForm.value.instructionsAc || null
+        };
+
+        this.userService
+            .rejeterFluxDA$(+demandeId, body)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.messageService.add({ severity: 'warn', summary: 'Rejet', detail: 'Flux de trésorerie rejeté', life: 3000 });
+                    this.state.update((s) => ({ ...s, showModalRejetFlux: false }));
+                    this.loadValidationDA(+demandeId);
+                },
+                error: (err) => {
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err?.error?.message || 'Erreur lors du rejet', life: 5000 });
+                }
+            });
+    }
+
+    toggleSection(form: FormGroup, value: string, event: Event): void {
+        const checkbox = event.target as HTMLInputElement;
+        const current: string[] = form.get('sectionsARevoir')?.value || [];
+        if (checkbox.checked) {
+            form.get('sectionsARevoir')?.setValue([...current, value]);
+        } else {
+            form.get('sectionsARevoir')?.setValue(current.filter((v) => v !== value));
+        }
+        form.get('sectionsARevoir')?.markAsTouched();
+    }
+
+    mergeState(partial: any): (s: any) => any {
+        return (s: any) => ({ ...s, ...partial });
+    }
+
+    getSectionLabel(value: string): string {
+        const all = [...this.sectionsBilanOptions, ...this.sectionsFluxOptions];
+        return all.find((o) => o.value === value)?.label || value;
+    }
+
     goBack(): void {
-        if (this.state().user?.role === 'MANAGER') {
+        const role = this.state().user?.role;
+        if (role === 'DA') {
+            this.router.navigate(['/dashboards']);
+        } else if (role === 'DR') {
+            this.router.navigate(['/dashboards']);
+        } else if (role === 'MANAGER') {
             this.router.navigate(['/dashboards']);
         } else {
             this.router.navigate(['/dashboards/agent-credit/list-selection-ind']);
         }
+    }
+
+    // ==================== WORKFLOW HIERARCHIQUE ====================
+
+    getWorkflowSteps(): { label: string; state: string; active: boolean; completed: boolean }[] {
+        const vs = this.state().demandeIndividuel?.validationState || '';
+        const stateOrder = ['NOUVEAU', 'SELECTION', 'APPROVED', 'VALIDATED_DA', 'VALIDATED_DR', 'VALIDATED_FINAL'];
+        const correctionStates: Record<string, string> = {
+            CORRECTION: 'APPROVED',
+            CORRECTION_DR: 'VALIDATED_DA',
+            CORRECTION_DE: 'VALIDATED_DR'
+        };
+        const effectiveState = correctionStates[vs] || vs;
+        const currentIdx = stateOrder.indexOf(effectiveState);
+
+        return [
+            { label: 'Demande', state: 'NOUVEAU', active: effectiveState === 'NOUVEAU', completed: currentIdx > 0 },
+            { label: 'Selection', state: 'SELECTION', active: effectiveState === 'SELECTION', completed: currentIdx > 1 },
+            { label: 'AC Approuve', state: 'APPROVED', active: effectiveState === 'APPROVED', completed: currentIdx > 2 },
+            { label: 'DA Valide', state: 'VALIDATED_DA', active: effectiveState === 'VALIDATED_DA', completed: currentIdx > 3 },
+            { label: 'DR Valide', state: 'VALIDATED_DR', active: effectiveState === 'VALIDATED_DR', completed: currentIdx > 4 },
+            { label: 'Valide Final', state: 'VALIDATED_FINAL', active: effectiveState === 'VALIDATED_FINAL', completed: false }
+        ];
+    }
+
+    isInCorrectionState(): boolean {
+        const vs = this.state().demandeIndividuel?.validationState || '';
+        return ['CORRECTION', 'CORRECTION_DR', 'CORRECTION_DE'].includes(vs);
+    }
+
+    /**
+     * Check if bilan needs correction (old validation_da rejection OR new workflow DA/DR/DE rejection)
+     */
+    isBilanNeedsCorrection(): boolean {
+        if (this.state().validationDA.bilan?.statut === 'REJETE') return true;
+        const vs = this.state().demandeIndividuel?.validationState || '';
+        const bilanSections = ['BILAN_ACTIVITE', 'COLLECTE', 'AMORTISSEMENTS', 'RENTABILITE', 'RATIOS', 'PERSONNE_CAUTION'];
+        if (vs === 'CORRECTION') {
+            const sections = this.state().demandeIndividuel?.sectionsARevoirDa || '';
+            return bilanSections.some((s) => sections.includes(s));
+        }
+        if (vs === 'CORRECTION_DR') {
+            const sections = this.state().demandeIndividuel?.sectionsARevoirDr || '';
+            return bilanSections.some((s) => sections.includes(s));
+        }
+        if (vs === 'CORRECTION_DE') {
+            const sections = this.state().demandeIndividuel?.sectionsARevoirDe || '';
+            return bilanSections.some((s) => sections.includes(s));
+        }
+        return false;
+    }
+
+    isFluxNeedsCorrection(): boolean {
+        if (this.state().validationDA.flux?.statut === 'REJETE') return true;
+        const vs = this.state().demandeIndividuel?.validationState || '';
+        if (vs === 'CORRECTION') {
+            const sections = this.state().demandeIndividuel?.sectionsARevoirDa || '';
+            return sections.includes('FLUX_TRESORERIE');
+        }
+        if (vs === 'CORRECTION_DR') {
+            const sections = this.state().demandeIndividuel?.sectionsARevoirDr || '';
+            return sections.includes('FLUX_TRESORERIE');
+        }
+        if (vs === 'CORRECTION_DE') {
+            const sections = this.state().demandeIndividuel?.sectionsARevoirDe || '';
+            return sections.includes('FLUX_TRESORERIE');
+        }
+        return false;
+    }
+
+    getCorrectionLevel(): string {
+        const vs = this.state().demandeIndividuel?.validationState || '';
+        if (vs === 'CORRECTION') return 'DA';
+        if (vs === 'CORRECTION_DR') return 'DR';
+        if (vs === 'CORRECTION_DE') return 'DE';
+        return '';
+    }
+
+    getCorrectionInfo(): { level: string; motif: string; sections: string; instructions: string } {
+        const d = this.state().demandeIndividuel;
+        const vs = d?.validationState || '';
+        if (vs === 'CORRECTION') {
+            return { level: 'DA', motif: d?.motifRejetDa || '', sections: d?.sectionsARevoirDa || '', instructions: d?.instructionsAc || '' };
+        } else if (vs === 'CORRECTION_DR') {
+            return { level: 'DR', motif: d?.motifRejetDr || '', sections: d?.sectionsARevoirDr || '', instructions: d?.instructionsDa || '' };
+        } else if (vs === 'CORRECTION_DE') {
+            return { level: 'DE', motif: d?.motifRejetDe || '', sections: d?.sectionsARevoirDe || '', instructions: d?.instructionsDr || '' };
+        }
+        return { level: '', motif: '', sections: '', instructions: '' };
+    }
+
+    isWorkflowAdvanced(): boolean {
+        const vs = this.state().demandeIndividuel?.validationState || '';
+        return ['APPROVED', 'VALIDATED_DA', 'VALIDATED_DR', 'VALIDATED_FINAL', 'CORRECTION', 'CORRECTION_DR', 'CORRECTION_DE'].includes(vs);
+    }
+
+    confirmerWorkflowValidationDA(): void {
+        if (this.workflowDAForm.invalid) return;
+        const demandeId = this.state().demandeIndividuel?.demandeIndividuelId;
+        if (!demandeId) return;
+
+        this.userService
+            .validerDA$(+demandeId, this.workflowDAForm.value.avis)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Demande validee et transmise au DR', life: 3000 });
+                    this.workflowDAForm.reset();
+                    this.loadDemandeWithGaranties();
+                },
+                error: (err: any) => {
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || 'Erreur lors de la validation', life: 5000 });
+                }
+            });
+    }
+
+    ouvrirWorkflowRejetDA(): void {
+        this.workflowDARejetForm.reset();
+        this.workflowDARejetForm.get('sectionsARevoir')?.setValue([]);
+        this.state.update(this.mergeState({ showWorkflowRejetDA: true }));
+    }
+
+    confirmerWorkflowRejetDA(): void {
+        if (this.workflowDARejetForm.invalid) return;
+        const demandeId = this.state().demandeIndividuel?.demandeIndividuelId;
+        if (!demandeId) return;
+
+        const body = {
+            motifRejet: this.workflowDARejetForm.value.motifRejet,
+            sectionsARevoir: this.workflowDARejetForm.value.sectionsARevoir,
+            instructions: this.workflowDARejetForm.value.instructions || undefined
+        };
+
+        this.userService
+            .rejeterDA$(+demandeId, body)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.messageService.add({ severity: 'warn', summary: 'Rejet', detail: 'Demande rejetee par DA', life: 3000 });
+                    this.state.update(this.mergeState({ showWorkflowRejetDA: false }));
+                    this.workflowDARejetForm.reset();
+                    this.loadDemandeWithGaranties();
+                },
+                error: (err: any) => {
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || 'Erreur lors du rejet', life: 5000 });
+                }
+            });
+    }
+
+    // ==================== WORKFLOW DR ====================
+
+    confirmerWorkflowValidationDR(): void {
+        if (this.workflowDRForm.invalid) return;
+        const demandeId = this.state().demandeIndividuel?.demandeIndividuelId;
+        if (!demandeId) return;
+
+        this.userService
+            .validerDR$(+demandeId, this.workflowDRForm.value.avis)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.messageService.add({ severity: 'success', summary: 'Succes', detail: "Demande validee et transmise a la Direction d'Exploitation", life: 3000 });
+                    this.workflowDRForm.reset();
+                    this.loadDemandeWithGaranties();
+                },
+                error: (err: any) => {
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || 'Erreur lors de la validation', life: 5000 });
+                }
+            });
+    }
+
+    ouvrirWorkflowRejetDR(): void {
+        this.workflowDRRejetForm.reset();
+        this.workflowDRRejetForm.get('sectionsARevoir')?.setValue([]);
+        this.state.update(this.mergeState({ showWorkflowRejetDR: true }));
+    }
+
+    confirmerWorkflowRejetDR(): void {
+        if (this.workflowDRRejetForm.invalid) return;
+        const demandeId = this.state().demandeIndividuel?.demandeIndividuelId;
+        if (!demandeId) return;
+
+        const body = {
+            motifRejet: this.workflowDRRejetForm.value.motifRejet,
+            sectionsARevoir: this.workflowDRRejetForm.value.sectionsARevoir,
+            instructions: this.workflowDRRejetForm.value.instructions || undefined
+        };
+
+        this.userService
+            .rejeterDR$(+demandeId, body)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.messageService.add({ severity: 'warn', summary: 'Rejet', detail: 'Demande rejetee par DR', life: 3000 });
+                    this.state.update(this.mergeState({ showWorkflowRejetDR: false }));
+                    this.workflowDRRejetForm.reset();
+                    this.loadDemandeWithGaranties();
+                },
+                error: (err: any) => {
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || 'Erreur lors du rejet', life: 5000 });
+                }
+            });
     }
 }

@@ -230,5 +230,20 @@ export default [
         path: 'suivi-arrete-caisse',
         data: { breadcrumb: 'Suivi des Arretes de Caisse' },
         loadComponent: () => import('./admin/de/suivi-arrete-caisse/suivi-arrete-caisse.component').then((c) => c.SuiviArreteCaisseComponent)
+    },
+    {
+        path: 'resp-regional',
+        data: { breadcrumb: 'Validation DR - Delegue Regional' },
+        loadComponent: () => import('./resp-regional/resp-regional.component').then((c) => c.RespRegionalComponent)
+    },
+    {
+        path: 'direction-exploitation',
+        data: { breadcrumb: 'Validation DE - Direction Exploitation' },
+        loadComponent: () => import('./direction-exploitation/direction-exploitation.component').then((c) => c.DirectionExploitationComponent)
+    },
+    {
+        path: 'agent-credit/correction-demande/:demandeIndividuelId',
+        data: { breadcrumb: 'Correction de la Demande' },
+        loadComponent: () => import('./agent-credit/correction-demande/correction-demande.component').then((c) => c.CorrectionDemandeComponent)
     }
 ] as Routes;

@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, Input, OnInit, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { IUser } from '@/interface/user';
+import { IResponse } from '@/interface/response';
 import { UserService } from '@/service/user.service';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
@@ -17,6 +19,11 @@ import { DialogModule } from 'primeng/dialog';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { FormsModule } from '@angular/forms';
 import { TextareaModule } from 'primeng/textarea';
+import { BadgeModule } from 'primeng/badge';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
+import { InputTextModule } from 'primeng/inputtext';
+import { Router } from '@angular/router';
 
 /**
  * Composant pour la gestion des bons de commande par le DR (Directeur Régional)
@@ -29,19 +36,23 @@ import { TextareaModule } from 'primeng/textarea';
     selector: 'app-list-stock',
     standalone: true,
     imports: [
-        CommonModule, 
-        FormsModule, 
-        TableModule, 
-        TagModule, 
-        ButtonModule, 
-        CardModule, 
-        ToastModule, 
-        ProgressSpinnerModule, 
-        DividerModule, 
-        TooltipModule, 
-        DialogModule, 
-        ConfirmDialogModule, 
-        TextareaModule
+        CommonModule,
+        FormsModule,
+        TableModule,
+        TagModule,
+        ButtonModule,
+        CardModule,
+        ToastModule,
+        ProgressSpinnerModule,
+        DividerModule,
+        TooltipModule,
+        DialogModule,
+        ConfirmDialogModule,
+        TextareaModule,
+        BadgeModule,
+        IconFieldModule,
+        InputIconModule,
+        InputTextModule
     ],
     templateUrl: './list-stock.component.html',
     styleUrl: './list-stock.component.scss',
@@ -61,12 +72,18 @@ export class ListStockComponent implements OnInit {
     private userService = inject(UserService);
     private messageService = inject(MessageService);
     private confirmationService = inject(ConfirmationService);
+    private router = inject(Router);
+    private destroyRef = inject(DestroyRef);
 
     stocks = signal<any[]>([]);
     delegation = signal<Delegation | null>(null);
     loading = signal(false);
     delegationId = signal<number | null>(null);
     expandedRows = signal<{ [key: string]: boolean }>({});
+
+    // Workflow credit DR
+    workflowAValiderDR = signal<any[]>([]);
+    workflowCorrectionDE = signal<any[]>([]);
 
     // Signals pour les dialogues
     showRejectDialog = signal(false);
@@ -84,6 +101,9 @@ export class ListStockComponent implements OnInit {
         } else {
             this.showWarning('Aucune délégation associée à cet utilisateur');
         }
+        // Charger les demandes de credit pour le workflow DR
+        this.loadWorkflowAValiderDR();
+        this.loadWorkflowCorrectionDE();
     }
 
     isUrgent(stock: any): boolean {
@@ -454,5 +474,56 @@ export class ListStockComponent implements OnInit {
             return stock;
         });
         this.stocks.set(updatedStocks);
+    }
+
+    // ==================== WORKFLOW CREDIT DR ====================
+
+    private loadWorkflowAValiderDR(): void {
+        this.userService.getAValiderDR$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    this.workflowAValiderDR.set(response.data?.workflowDemandes || []);
+                },
+                error: () => {}
+            });
+    }
+
+    private loadWorkflowCorrectionDE(): void {
+        this.userService.getEnCorrectionDE$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    this.workflowCorrectionDE.set(response.data?.workflowDemandes || []);
+                },
+                error: () => {}
+            });
+    }
+
+    hasWorkflowAValiderDR(): boolean {
+        return this.workflowAValiderDR().length > 0;
+    }
+
+    hasWorkflowCorrectionDE(): boolean {
+        return this.workflowCorrectionDE().length > 0;
+    }
+
+    viewDemandeDetail(demandeId: number): void {
+        this.router.navigate(['/dashboards/credit/individuel/attente/detail', demandeId]);
+    }
+
+    formatMontantGNF(montant: number): string {
+        if (!montant || montant === 0) return '0 GNF';
+        return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'GNF', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(montant);
+    }
+
+    onGlobalFilter(table: any, event: Event): void {
+        table.filterGlobal((event.target as HTMLInputElement).value, 'contains');
+    }
+
+    refreshWorkflow(): void {
+        this.loadWorkflowAValiderDR();
+        this.loadWorkflowCorrectionDE();
+        this.showSuccess('Donnees du workflow actualisees');
     }
 }

@@ -20,6 +20,7 @@ public class AmortissementDto {
     private LocalDate dateAcquisition;
     private Integer dureeAmortissementMois;
     private BigDecimal valeurAcquisition;
+    private BigDecimal valeurNetteAjustee;
 
     // Calculated fields
     private BigDecimal amortissementMensuel;

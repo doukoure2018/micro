@@ -471,9 +471,9 @@ public class CollecteDonneesQuery {
 
     public static final String INSERT_AMORTISSEMENT = """
             INSERT INTO collecte_amortissement (collecte_id, ordre, nature_immobilisation, type_immobilisation,
-                date_acquisition, duree_amortissement_mois, valeur_acquisition)
+                date_acquisition, duree_amortissement_mois, valeur_acquisition, valeur_nette_ajustee)
             VALUES (:collecteId, :ordre, :natureImmobilisation, :typeImmobilisation,
-                :dateAcquisition, :dureeAmortissementMois, :valeurAcquisition)
+                :dateAcquisition, :dureeAmortissementMois, :valeurAcquisition, :valeurNetteAjustee)
             RETURNING amortissement_id
             """;
 
@@ -481,7 +481,8 @@ public class CollecteDonneesQuery {
             UPDATE collecte_amortissement
             SET ordre = :ordre, nature_immobilisation = :natureImmobilisation,
                 type_immobilisation = :typeImmobilisation, date_acquisition = :dateAcquisition,
-                duree_amortissement_mois = :dureeAmortissementMois, valeur_acquisition = :valeurAcquisition
+                duree_amortissement_mois = :dureeAmortissementMois, valeur_acquisition = :valeurAcquisition,
+                valeur_nette_ajustee = :valeurNetteAjustee
             WHERE amortissement_id = :amortissementId
             """;
 
@@ -495,7 +496,8 @@ public class CollecteDonneesQuery {
                 type_immobilisation as "typeImmobilisation", date_acquisition as "dateAcquisition",
                 duree_amortissement_mois as "dureeAmortissementMois", valeur_acquisition as "valeurAcquisition",
                 amortissement_mensuel as "amortissementMensuel", amortissement_cumule as "amortissementCumule",
-                valeur_nette_comptable as "valeurNetteComptable", statut_amortissement as "statutAmortissement"
+                valeur_nette_comptable as "valeurNetteComptable", statut_amortissement as "statutAmortissement",
+                valeur_nette_ajustee as "valeurNetteAjustee"
             FROM collecte_amortissement
             WHERE collecte_id = :collecteId
             ORDER BY ordre
@@ -554,11 +556,25 @@ public class CollecteDonneesQuery {
                 COALESCE(ca.ca_jour_fort, 0) AS "caJourFort",
                 COALESCE(ca.ca_jour_moyen, 0) AS "caJourMoyen",
                 COALESCE(ca.ca_jour_faible, 0) AS "caJourFaible",
+                COALESCE(ca.ca_hebdomadaire_declare, 0) AS "caHebdomadaireDeclare",
+                ca.cycle_hebdo_json AS "cycleHebdoJson",
                 -- Marge brute
                 COALESCE(mb.connait_taux_marge, false) AS "connaitTauxMarge",
                 COALESCE(mb.taux_marge_declare, 0) AS "tauxMargeDeclare",
                 COALESCE(mb.calculer_taux_marge, false) AS "calculerTauxMarge",
                 COALESCE(mb.taux_marge_calcule, 0) AS "tauxMargeCalcule",
+                -- Compute product totals directly from collecte_produit
+                COALESCE((SELECT SUM(p.prix_vente * p.quantite) FROM collecte_produit p
+                          WHERE p.collecte_id = :collecteId), 0) AS "totalCaCalcule",
+                COALESCE((SELECT SUM(p.cout_achat * p.quantite) FROM collecte_produit p
+                          WHERE p.collecte_id = :collecteId), 0) AS "totalCoutCalcule",
+                -- Min/Max taux marge par produit
+                COALESCE((SELECT MIN(CASE WHEN p.prix_vente > 0
+                    THEN (p.prix_vente - p.cout_achat) * 100.0 / p.prix_vente ELSE NULL END)
+                    FROM collecte_produit p WHERE p.collecte_id = :collecteId), 0) AS "tauxMargeProduitMin",
+                COALESCE((SELECT MAX(CASE WHEN p.prix_vente > 0
+                    THEN (p.prix_vente - p.cout_achat) * 100.0 / p.prix_vente ELSE NULL END)
+                    FROM collecte_produit p WHERE p.collecte_id = :collecteId), 0) AS "tauxMargeProduitMax",
                 -- Charges entreprise
                 COALESCE(ce.salaire_montant, 0) AS "salaireMontant",
                 COALESCE(ce.loyer_montant, 0) AS "loyerMontant",

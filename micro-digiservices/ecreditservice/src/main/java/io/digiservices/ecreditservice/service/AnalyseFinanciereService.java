@@ -3,6 +3,7 @@ package io.digiservices.ecreditservice.service;
 import io.digiservices.ecreditservice.dto.*;
 
 import java.util.List;
+import java.util.Map;
 
 public interface AnalyseFinanciereService {
 
@@ -56,4 +57,7 @@ public interface AnalyseFinanciereService {
 
     // Auto-remplir depuis collecte
     AutoRemplirResultDto autoRemplirDepuisCollecte(Long analyseId, Long collecteId);
+
+    // Alternatives CA & marge (lecture seule, pas de sauvegarde)
+    Map<String, Object> getAlternatives(Long analyseId, Long collecteId);
 }

@@ -225,6 +225,155 @@
     </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- WORKFLOW CREDIT - Demandes a Valider par le DR                        -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="col-12" *ngIf="hasWorkflowAValiderDR()">
+    <p-card styleClass="border-l-4 border-green-500">
+        <div class="flex flex-wrap gap-3 items-center justify-between mb-4">
+            <h3 class="text-xl font-semibold m-0">
+                <i class="pi pi-check-square mr-2 text-green-600"></i>
+                Demandes de Credit en attente de Validation DR
+                <p-badge [value]="workflowAValiderDR().length.toString()" severity="success" class="ml-2"></p-badge>
+            </h3>
+            <button pButton type="button" icon="pi pi-refresh" (click)="refreshWorkflow()"
+                class="p-button-secondary p-button-sm" pTooltip="Actualiser"></button>
+        </div>
+
+        <p-table #dtWorkflowDR [value]="workflowAValiderDR()" [paginator]="true" [rows]="10"
+            [showCurrentPageReport]="true" responsiveLayout="scroll"
+            currentPageReportTemplate="Affichage de {first} a {last} sur {totalRecords}"
+            [rowsPerPageOptions]="[10, 25, 50]"
+            [globalFilterFields]="['nom', 'prenom', 'numeroMembre', 'objectCredit', 'avisAgentCredit', 'avisDa']"
+            styleClass="p-datatable-striped">
+
+            <ng-template pTemplate="caption">
+                <div class="flex flex-wrap gap-3 items-center justify-between">
+                    <p-icon-field class="w-full sm:w-80">
+                        <p-inputicon class="pi pi-search" />
+                        <input pInputText type="text" (input)="onGlobalFilter(dtWorkflowDR, $event)"
+                            placeholder="Rechercher..." class="w-full" />
+                    </p-icon-field>
+                    <div class="text-sm text-500">
+                        {{ workflowAValiderDR().length }} demande(s) en attente
+                    </div>
+                </div>
+            </ng-template>
+
+            <ng-template pTemplate="header">
+                <tr>
+                    <th pSortableColumn="createdAt" style="width:10%">Date <p-sortIcon field="createdAt"></p-sortIcon></th>
+                    <th pSortableColumn="nom" style="width:18%">Client <p-sortIcon field="nom"></p-sortIcon></th>
+                    <th class="text-right" style="width:14%">Montant</th>
+                    <th style="width:14%">Objet</th>
+                    <th style="width:16%">Avis AC</th>
+                    <th style="width:16%">Avis DA</th>
+                    <th class="text-center" style="width:12%">Actions</th>
+                </tr>
+            </ng-template>
+
+            <ng-template pTemplate="body" let-demande>
+                <tr class="hover:bg-surface-50">
+                    <td>{{ demande.createdAt | date:'dd/MM/yyyy' }}</td>
+                    <td>
+                        <div class="flex flex-column gap-1">
+                            <span class="font-semibold">{{ demande.prenom }} {{ demande.nom }}</span>
+                            <small class="text-500">{{ demande.numeroMembre }}</small>
+                        </div>
+                    </td>
+                    <td class="text-right font-bold text-green-600">{{ formatMontantGNF(demande.montantDemande) }}</td>
+                    <td>{{ demande.objectCredit }}</td>
+                    <td>
+                        <small *ngIf="demande.avisAgentCredit" class="text-600">{{ demande.avisAgentCredit | slice:0:50 }}...</small>
+                        <small *ngIf="!demande.avisAgentCredit" class="text-400">-</small>
+                    </td>
+                    <td>
+                        <small *ngIf="demande.avisDa" class="text-600">{{ demande.avisDa | slice:0:50 }}...</small>
+                        <small *ngIf="!demande.avisDa" class="text-400">-</small>
+                    </td>
+                    <td class="text-center">
+                        <p-button icon="pi pi-eye" label="Voir detail"
+                            (click)="viewDemandeDetail(demande.demandeIndividuelId)" size="small"
+                            severity="info"></p-button>
+                    </td>
+                </tr>
+            </ng-template>
+
+            <ng-template pTemplate="emptymessage">
+                <tr>
+                    <td colspan="7" class="text-center p-6">
+                        <i class="pi pi-check-circle text-4xl text-green-500 mb-3"></i>
+                        <p class="text-600">Aucune demande de credit a valider</p>
+                    </td>
+                </tr>
+            </ng-template>
+        </p-table>
+    </p-card>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- WORKFLOW CREDIT - Demandes Rejetees par la DE                         -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="col-12" *ngIf="hasWorkflowCorrectionDE()">
+    <p-card styleClass="border-l-4 border-orange-500">
+        <div class="flex flex-wrap gap-3 items-center justify-between mb-4">
+            <h3 class="text-xl font-semibold m-0">
+                <i class="pi pi-exclamation-circle mr-2 text-orange-600"></i>
+                Demandes Rejetees par la Direction d'Exploitation
+                <p-badge [value]="workflowCorrectionDE().length.toString()" severity="danger" class="ml-2"></p-badge>
+            </h3>
+        </div>
+
+        <p-table #dtCorrectionDE [value]="workflowCorrectionDE()" [paginator]="true" [rows]="10"
+            [showCurrentPageReport]="true" responsiveLayout="scroll"
+            currentPageReportTemplate="Affichage de {first} a {last} sur {totalRecords}"
+            [rowsPerPageOptions]="[10, 25, 50]"
+            [globalFilterFields]="['nom', 'prenom', 'numeroMembre', 'motifRejetDe']"
+            styleClass="p-datatable-striped">
+
+            <ng-template pTemplate="header">
+                <tr>
+                    <th pSortableColumn="createdAt" style="width:12%">Date <p-sortIcon field="createdAt"></p-sortIcon></th>
+                    <th pSortableColumn="nom" style="width:20%">Client <p-sortIcon field="nom"></p-sortIcon></th>
+                    <th class="text-right" style="width:15%">Montant</th>
+                    <th style="width:25%">Motif de rejet DE</th>
+                    <th style="width:15%">Sections a revoir</th>
+                    <th class="text-center" style="width:13%">Actions</th>
+                </tr>
+            </ng-template>
+
+            <ng-template pTemplate="body" let-demande>
+                <tr class="hover:bg-surface-50">
+                    <td>{{ demande.createdAt | date:'dd/MM/yyyy' }}</td>
+                    <td>
+                        <div class="flex flex-column gap-1">
+                            <span class="font-semibold">{{ demande.prenom }} {{ demande.nom }}</span>
+                            <small class="text-500">{{ demande.numeroMembre }}</small>
+                        </div>
+                    </td>
+                    <td class="text-right font-bold text-orange-600">{{ formatMontantGNF(demande.montantDemande) }}</td>
+                    <td>{{ demande.motifRejetDe }}</td>
+                    <td><small>{{ demande.sectionsARevoirDe }}</small></td>
+                    <td class="text-center">
+                        <p-button icon="pi pi-eye" label="Voir"
+                            (click)="viewDemandeDetail(demande.demandeIndividuelId)" size="small"
+                            severity="warn"></p-button>
+                    </td>
+                </tr>
+            </ng-template>
+
+            <ng-template pTemplate="emptymessage">
+                <tr>
+                    <td colspan="6" class="text-center p-6">
+                        <i class="pi pi-check-circle text-4xl text-green-500 mb-3"></i>
+                        <p class="text-600">Aucune demande rejetee par la DE</p>
+                    </td>
+                </tr>
+            </ng-template>
+        </p-table>
+    </p-card>
+</div>
+
 <!-- Dialogue de validation -->
 <p-dialog [(visible)]="showValidateDialog" [modal]="true" [draggable]="false" [resizable]="false"
     [style]="{width: '450px'}" header="Validation de la commande" [closable]="!processingAction()">

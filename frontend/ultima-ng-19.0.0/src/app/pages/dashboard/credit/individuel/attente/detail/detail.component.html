@@ -71,10 +71,80 @@
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <!-- WORKFLOW STEPPER - Progression de la validation hierarchique            -->
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <div *ngIf="isWorkflowAdvanced()" class="bg-white rounded-xl shadow-sm mb-4 p-4">
+            <div class="flex items-center gap-2 mb-3">
+                <i class="pi pi-sitemap text-blue-600"></i>
+                <span class="font-semibold text-gray-700">Progression de la Validation</span>
+            </div>
+            <div class="flex items-center justify-between gap-1">
+                <ng-container *ngFor="let step of getWorkflowSteps(); let i = index; let last = last">
+                    <div class="flex flex-col items-center gap-1 flex-1">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" [ngClass]="{
+                                'bg-green-500 text-white': step.completed,
+                                'bg-blue-500 text-white': step.active && !step.completed,
+                                'bg-gray-200 text-gray-500': !step.active && !step.completed
+                            }">
+                            <i *ngIf="step.completed" class="pi pi-check text-xs"></i>
+                            <span *ngIf="!step.completed">{{ i + 1 }}</span>
+                        </div>
+                        <span class="text-xs text-center" [ngClass]="{
+                            'text-green-700 font-semibold': step.completed,
+                            'text-blue-700 font-semibold': step.active && !step.completed,
+                            'text-gray-400': !step.active && !step.completed
+                        }">{{ step.label }}</span>
+                    </div>
+                    <div *ngIf="!last" class="flex-1 h-0.5 mt-[-16px]"
+                        [ngClass]="{'bg-green-400': step.completed, 'bg-gray-200': !step.completed}"></div>
+                </ng-container>
+            </div>
+
+            <!-- Avis accumules -->
+            <div *ngIf="state().demandeIndividuel?.avisDa || state().demandeIndividuel?.avisDr || state().demandeIndividuel?.avisAgentCredit"
+                class="mt-3 pt-3 border-t border-gray-100">
+                <div class="flex flex-wrap gap-4">
+                    <div *ngIf="state().demandeIndividuel?.avisAgentCredit" class="flex flex-col gap-1">
+                        <small class="text-gray-500 font-semibold">Avis AC</small>
+                        <small class="text-gray-700">{{ state().demandeIndividuel?.avisAgentCredit }}</small>
+                    </div>
+                    <div *ngIf="state().demandeIndividuel?.avisDa" class="flex flex-col gap-1">
+                        <small class="text-gray-500 font-semibold">Avis DA <span
+                                *ngIf="state().demandeIndividuel?.validatedByDa" class="text-blue-600">({{
+                                state().demandeIndividuel?.validatedByDa }})</span></small>
+                        <small class="text-gray-700">{{ state().demandeIndividuel?.avisDa }}</small>
+                    </div>
+                    <div *ngIf="state().demandeIndividuel?.avisDr" class="flex flex-col gap-1">
+                        <small class="text-gray-500 font-semibold">Avis DR <span
+                                *ngIf="state().demandeIndividuel?.validatedByDr" class="text-blue-600">({{
+                                state().demandeIndividuel?.validatedByDr }})</span></small>
+                        <small class="text-gray-700">{{ state().demandeIndividuel?.avisDr }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bandeau de rejet -->
+        <div *ngIf="isInCorrectionState()" class="bg-red-50 border-l-4 border-red-500 rounded-r-xl shadow-sm mb-4 p-4">
+            <div class="flex items-start gap-3">
+                <i class="pi pi-exclamation-triangle text-red-500 text-2xl mt-1"></i>
+                <div class="flex-1">
+                    <h4 class="text-red-800 font-bold m-0 mb-1">Demande rejetee par {{ getCorrectionInfo().level }}</h4>
+                    <p *ngIf="getCorrectionInfo().motif" class="text-red-700 m-0 mb-2"><strong>Motif :</strong> {{
+                        getCorrectionInfo().motif }}</p>
+                    <p *ngIf="getCorrectionInfo().sections" class="text-red-600 m-0 mb-2"><strong>Sections a revoir
+                            :</strong> {{ getCorrectionInfo().sections }}</p>
+                    <p *ngIf="getCorrectionInfo().instructions" class="text-blue-700 m-0"><i
+                            class="pi pi-info-circle mr-1"></i><strong>Instructions :</strong> {{
+                        getCorrectionInfo().instructions }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
         <!-- NATURE DU CLIENT - Affichage prominent en haut                         -->
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
-        <div class="nature-client-card"
-            [ngClass]="{
+        <div class="nature-client-card" [ngClass]="{
                 'nature-pme': state().demandeIndividuel?.natureClient?.includes('PME'),
                 'nature-professionnel': state().demandeIndividuel?.natureClient?.includes('Professionnel'),
                 'nature-particulier': !state().demandeIndividuel?.natureClient?.includes('PME') && !state().demandeIndividuel?.natureClient?.includes('Professionnel')
@@ -93,13 +163,14 @@
                             <p class="nature-label">Nature du Client</p>
                             <h2 class="nature-title">
                                 {{ state().demandeIndividuel?.natureClient?.includes('PME') ? 'Entreprise (PME/PMI)' :
-                                   state().demandeIndividuel?.natureClient?.includes('Professionnel') ? 'Professionnel' :
-                                   'Particulier' }}
+                                state().demandeIndividuel?.natureClient?.includes('Professionnel') ? 'Professionnel' :
+                                'Particulier' }}
                             </h2>
                             <!-- Affichage conditionnel pour PME -->
                             <p *ngIf="state().demandeIndividuel?.natureClient?.includes('PME') && state().demandeIndividuel?.nomPersonneMorale"
                                 class="nature-subtitle">
-                                <span *ngIf="state().demandeIndividuel?.sigle" class="font-bold">{{ state().demandeIndividuel?.sigle }} - </span>
+                                <span *ngIf="state().demandeIndividuel?.sigle" class="font-bold">{{
+                                    state().demandeIndividuel?.sigle }} - </span>
                                 {{ state().demandeIndividuel?.nomPersonneMorale }}
                             </p>
                         </div>
@@ -111,7 +182,8 @@
                 </div>
             </div>
             <!-- Informations supplémentaires selon la nature -->
-            <div class="nature-client-details" *ngIf="state().demandeIndividuel?.email || state().demandeIndividuel?.prefecture || state().demandeIndividuel?.sousPrefecture || (state().demandeIndividuel?.natureClient?.includes('PME') && state().demandeIndividuel?.titreDirecteur)">
+            <div class="nature-client-details"
+                *ngIf="state().demandeIndividuel?.email || state().demandeIndividuel?.prefecture || state().demandeIndividuel?.sousPrefecture || (state().demandeIndividuel?.natureClient?.includes('PME') && state().demandeIndividuel?.titreDirecteur)">
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div class="detail-item" *ngIf="state().demandeIndividuel?.email">
                         <span class="detail-label">Email</span>
@@ -125,7 +197,8 @@
                         <span class="detail-label">Sous-Préfecture</span>
                         <span class="detail-value">{{ state().demandeIndividuel?.sousPrefecture }}</span>
                     </div>
-                    <div class="detail-item" *ngIf="state().demandeIndividuel?.natureClient?.includes('PME') && state().demandeIndividuel?.titreDirecteur">
+                    <div class="detail-item"
+                        *ngIf="state().demandeIndividuel?.natureClient?.includes('PME') && state().demandeIndividuel?.titreDirecteur">
                         <span class="detail-label">Titre du Directeur</span>
                         <span class="detail-value">{{ state().demandeIndividuel?.titreDirecteur }}</span>
                     </div>
@@ -416,8 +489,7 @@
                                     class="text-red-500">*</span>
                             </label>
                             <input pInputText formControlName="codAgent" placeholder="Ex: AGCR001"
-                                class="w-full uppercase"
-                                (input)="onAgentCodeChange($any($event.target).value)"
+                                class="w-full uppercase" (input)="onAgentCodeChange($any($event.target).value)"
                                 [disabled]="!updateForm.get('code')?.value" />
                             <small *ngIf="!updateForm.get('code')?.value" class="text-gray-500 mt-2 block">
                                 <i class="pi pi-info-circle mr-1"></i>Sélectionnez d'abord un point de service
@@ -505,42 +577,53 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <!-- 1. Bilan d'Activité -->
                     <div class="border-2 rounded-xl p-5 transition-all hover:shadow-md overflow-visible"
-                        [ngClass]="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'border-green-300 bg-green-50' :
+                        [ngClass]="isBilanNeedsCorrection() ? 'border-red-400 bg-red-50' :
+                                   state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'border-green-300 bg-green-50' :
                                    state().analyseStatut === 'BROUILLON' ? 'border-yellow-300 bg-yellow-50' : 'border-blue-300 bg-blue-50'">
                         <div class="flex items-center gap-3 mb-4">
-                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white"
-                                [ngClass]="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'bg-green-500' :
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white" [ngClass]="isBilanNeedsCorrection() ? 'bg-red-500' :
+                                           state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'bg-green-500' :
                                            state().analyseStatut === 'BROUILLON' ? 'bg-yellow-500' : 'bg-blue-500'">
-                                <i class="pi text-lg" [ngClass]="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'pi-check' :
+                                <i class="pi text-lg" [ngClass]="isBilanNeedsCorrection() ? 'pi-exclamation-triangle' :
+                                           state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'pi-check' :
                                            state().analyseStatut === 'BROUILLON' ? 'pi-clock' : 'pi-chart-bar'"></i>
                             </div>
                             <div>
-                                <div class="font-bold text-base text-gray-800">1. Bilan d'Activité</div>
+                                <div class="font-bold text-base text-gray-800">1. Bilan d'Activit&eacute;</div>
                                 <div class="text-sm font-medium"
-                                    [ngClass]="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'text-green-600' :
+                                    [ngClass]="isBilanNeedsCorrection() ? 'text-red-600' :
+                                               state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'text-green-600' :
                                                state().analyseStatut === 'BROUILLON' ? 'text-yellow-600' : 'text-blue-600'">
-                                    {{ state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? '✓ Complété' :
-                                       state().analyseStatut === 'BROUILLON' ? '⏳ En cours' : '○ À renseigner' }}
+                                    {{ isBilanNeedsCorrection() ? 'Rejet&eacute; par le ' + getCorrectionLevel() + ' - &Agrave; corriger' :
+                                    state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ?
+                                    'Compl&eacute;t&eacute;' :
+                                    state().analyseStatut === 'BROUILLON' ? 'En cours' : '&Agrave; renseigner' }}
                                 </div>
                             </div>
                         </div>
 
                         <!-- Boutons d'action -->
                         <div class="mt-4">
-                            <!-- Bouton Visualiser - quand complété -->
-                            <a *ngIf="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE'"
+                            <!-- Bouton Corriger - quand rejet&eacute; par le DA (validation_da ou workflow) -->
+                            <a *ngIf="isBilanNeedsCorrection()"
+                                [routerLink]="['/dashboards/credit/individuel/detail/analyse-bilan-activite', state().demandeIndividuel?.demandeIndividuelId]"
+                                class="flex items-center justify-center w-full bg-orange-600 hover:bg-orange-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors no-underline">
+                                <i class="pi pi-pencil mr-2"></i>Corriger l'analyse
+                            </a>
+                            <!-- Bouton Visualiser - quand compl&eacute;t&eacute; (et pas rejet&eacute;) -->
+                            <a *ngIf="!isBilanNeedsCorrection() && (state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE')"
                                 [routerLink]="['/dashboards/credit/individuel/detail/resume-analyse', state().demandeIndividuel?.demandeIndividuelId]"
                                 class="flex items-center justify-center w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors no-underline">
                                 <i class="pi pi-eye mr-2"></i>Visualiser
                             </a>
-                            <!-- Bouton Continuer - quand en brouillon -->
-                            <a *ngIf="state().analyseStatut === 'BROUILLON'"
+                            <!-- Bouton Continuer - quand en brouillon (et pas rejet&eacute;) -->
+                            <a *ngIf="!isBilanNeedsCorrection() && state().analyseStatut === 'BROUILLON'"
                                 [routerLink]="['/dashboards/credit/individuel/detail/analyse-bilan-activite', state().demandeIndividuel?.demandeIndividuelId]"
                                 class="flex items-center justify-center w-full bg-yellow-600 hover:bg-yellow-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors no-underline">
                                 <i class="pi pi-pencil mr-2"></i>Continuer
                             </a>
                             <!-- Bouton Renseigner - quand pas d'analyse -->
-                            <a *ngIf="state().analyseStatut !== 'SOUMISE' && state().analyseStatut !== 'VALIDEE' && state().analyseStatut !== 'BROUILLON'"
+                            <a *ngIf="!isBilanNeedsCorrection() && state().analyseStatut !== 'SOUMISE' && state().analyseStatut !== 'VALIDEE' && state().analyseStatut !== 'BROUILLON'"
                                 [routerLink]="['/dashboards/credit/individuel/detail/analyse-bilan-activite', state().demandeIndividuel?.demandeIndividuelId]"
                                 class="flex items-center justify-center w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors no-underline cursor-pointer"
                                 style="display: flex !important; visibility: visible !important;">
@@ -551,31 +634,40 @@
 
                     <!-- 2. Flux de Trésorerie -->
                     <div class="border-2 rounded-xl p-5 transition-all hover:shadow-md overflow-visible"
-                        [ngClass]="state().hasDossierCredit ? 'border-green-300 bg-green-50' : 'border-orange-300 bg-orange-50'">
+                        [ngClass]="isFluxNeedsCorrection() ? 'border-red-400 bg-red-50' :
+                                   state().hasDossierCredit ? 'border-green-300 bg-green-50' : 'border-orange-300 bg-orange-50'">
                         <div class="flex items-center gap-3 mb-4">
-                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white"
-                                [ngClass]="state().hasDossierCredit ? 'bg-green-500' : 'bg-orange-500'">
-                                <i class="pi text-lg" [ngClass]="state().hasDossierCredit ? 'pi-check' : 'pi-money-bill'"></i>
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white" [ngClass]="isFluxNeedsCorrection() ? 'bg-red-500' :
+                                           state().hasDossierCredit ? 'bg-green-500' : 'bg-orange-500'">
+                                <i class="pi text-lg" [ngClass]="isFluxNeedsCorrection() ? 'pi-exclamation-triangle' :
+                                           state().hasDossierCredit ? 'pi-check' : 'pi-money-bill'"></i>
                             </div>
                             <div>
-                                <div class="font-bold text-base text-gray-800">2. Flux de Trésorerie</div>
-                                <div class="text-sm font-medium"
-                                    [ngClass]="state().hasDossierCredit ? 'text-green-600' : 'text-orange-600'">
-                                    {{ state().hasDossierCredit ? '✓ Complété' : '○ À renseigner' }}
+                                <div class="font-bold text-base text-gray-800">2. Flux de Tr&eacute;sorerie</div>
+                                <div class="text-sm font-medium" [ngClass]="isFluxNeedsCorrection() ? 'text-red-600' :
+                                               state().hasDossierCredit ? 'text-green-600' : 'text-orange-600'">
+                                    {{ isFluxNeedsCorrection() ? 'Rejet&eacute; par le ' + getCorrectionLevel() + ' - &Agrave; corriger' :
+                                    state().hasDossierCredit ? 'Compl&eacute;t&eacute;' : '&Agrave; renseigner' }}
                                 </div>
                             </div>
                         </div>
 
                         <!-- Boutons d'action -->
                         <div class="mt-4">
-                            <!-- Bouton Visualiser - quand complété -->
-                            <a *ngIf="state().hasDossierCredit"
+                            <!-- Bouton Corriger - quand rejet&eacute; par le DA (validation_da ou workflow) -->
+                            <a *ngIf="isFluxNeedsCorrection()"
+                                [routerLink]="['/dashboards/credit/individuel/detail/analyse-flux-tresorerie', state().demandeIndividuel?.demandeIndividuelId]"
+                                class="flex items-center justify-center w-full bg-orange-600 hover:bg-orange-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors no-underline">
+                                <i class="pi pi-pencil mr-2"></i>Corriger le flux
+                            </a>
+                            <!-- Bouton Visualiser - quand compl&eacute;t&eacute; (et pas rejet&eacute;) -->
+                            <a *ngIf="!isFluxNeedsCorrection() && state().hasDossierCredit"
                                 [routerLink]="['/dashboards/credit/individuel/detail/analyse-flux-tresorerie', state().demandeIndividuel?.demandeIndividuelId]"
                                 class="flex items-center justify-center w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors no-underline">
                                 <i class="pi pi-eye mr-2"></i>Visualiser
                             </a>
-                            <!-- Bouton Renseigner - quand pas de dossier crédit -->
-                            <a *ngIf="!state().hasDossierCredit"
+                            <!-- Bouton Renseigner - quand pas de dossier cr&eacute;dit -->
+                            <a *ngIf="!isFluxNeedsCorrection() && !state().hasDossierCredit"
                                 [routerLink]="['/dashboards/credit/individuel/detail/analyse-flux-tresorerie', state().demandeIndividuel?.demandeIndividuelId]"
                                 class="flex items-center justify-center w-full bg-orange-600 hover:bg-orange-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors no-underline cursor-pointer"
                                 style="display: flex !important; visibility: visible !important;">
@@ -609,54 +701,425 @@
 
             <div class="p-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <!-- Bilan d'Activité -->
-                    <div class="border-2 rounded-xl p-5 flex items-center justify-between"
-                        [ngClass]="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'border-green-300 bg-green-50' :
-                                   state().analyseStatut === 'BROUILLON' ? 'border-yellow-300 bg-yellow-50' : 'border-gray-300 bg-gray-50'">
-                        <div class="flex items-center gap-4">
-                            <i class="pi pi-chart-bar text-3xl"
-                                [ngClass]="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'text-green-500' :
-                                           state().analyseStatut === 'BROUILLON' ? 'text-yellow-500' : 'text-gray-400'"></i>
-                            <div>
-                                <div class="font-bold text-lg">Bilan d'Activité</div>
-                                <div class="font-medium"
-                                    [ngClass]="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'text-green-600' :
-                                               state().analyseStatut === 'BROUILLON' ? 'text-yellow-600' : 'text-gray-500'">
-                                    {{ state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? '✓
-                                    Disponible' :
-                                    state().analyseStatut === 'BROUILLON' ? '⏳ En cours' : '○ Non renseigné' }}
+
+                    <!-- ========== Bilan d'Activité ========== -->
+                    <div>
+                        <div class="border-2 rounded-xl p-5 flex items-center justify-between"
+                            [ngClass]="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'border-green-300 bg-green-50' :
+                                       state().analyseStatut === 'BROUILLON' ? 'border-yellow-300 bg-yellow-50' : 'border-gray-300 bg-gray-50'">
+                            <div class="flex items-center gap-4">
+                                <i class="pi pi-chart-bar text-3xl"
+                                    [ngClass]="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'text-green-500' :
+                                               state().analyseStatut === 'BROUILLON' ? 'text-yellow-500' : 'text-gray-400'"></i>
+                                <div>
+                                    <div class="font-bold text-lg">Bilan d'Activit&eacute;</div>
+                                    <div class="font-medium"
+                                        [ngClass]="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'text-green-600' :
+                                                   state().analyseStatut === 'BROUILLON' ? 'text-yellow-600' : 'text-gray-500'">
+                                        {{ state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ?
+                                        'Disponible' :
+                                        state().analyseStatut === 'BROUILLON' ? 'En cours' : 'Non renseigne' }}
+                                    </div>
                                 </div>
                             </div>
+                            <a *ngIf="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE'"
+                                [routerLink]="['/dashboards/credit/individuel/detail/resume-analyse', state().demandeIndividuel?.demandeIndividuelId]"
+                                class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-semibold text-base transition-all shadow-lg border-2 border-indigo-700">
+                                <i class="pi pi-eye text-lg"></i>
+                                <span>Voir</span>
+                            </a>
                         </div>
-                        <a *ngIf="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE'"
-                            [routerLink]="['/dashboards/credit/individuel/detail/resume-analyse', state().demandeIndividuel?.demandeIndividuelId]"
-                            class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-semibold text-base transition-all shadow-lg border-2 border-indigo-700">
-                            <i class="pi pi-eye text-lg"></i>
-                            <span>Voir</span>
-                        </a>
+
+                        <!-- Bandeau statut validation bilan -->
+                        <div *ngIf="state().validationDA.bilan?.statut === 'VALIDE'"
+                            class="mt-3 bg-green-100 border border-green-400 rounded-lg p-3 flex items-center gap-3">
+                            <i class="pi pi-check-circle text-green-600 text-xl"></i>
+                            <div>
+                                <span class="font-semibold text-green-800">Valid&eacute;</span>
+                                <span class="text-green-700 text-sm ml-2">
+                                    par {{ state().validationDA.bilan?.valideParNom }}
+                                    le {{ formatDate(state().validationDA.bilan?.dateValidation) }}
+                                </span>
+                            </div>
+                        </div>
+                        <div *ngIf="state().validationDA.bilan?.statut === 'REJETE'"
+                            class="mt-3 bg-red-100 border border-red-400 rounded-lg p-3">
+                            <div class="flex items-center gap-3 mb-2">
+                                <i class="pi pi-times-circle text-red-600 text-xl"></i>
+                                <span class="font-semibold text-red-800">Rejet&eacute;</span>
+                                <span class="text-red-700 text-sm ml-2">
+                                    par {{ state().validationDA.bilan?.valideParNom }}
+                                    le {{ formatDate(state().validationDA.bilan?.dateRejet) }}
+                                </span>
+                            </div>
+                            <div class="text-red-700 text-sm mb-1"><strong>Motif :</strong> {{
+                                state().validationDA.bilan?.motifRejet }}</div>
+                            <div *ngIf="state().validationDA.bilan?.sectionsARevoir?.length"
+                                class="text-red-700 text-sm mb-1">
+                                <strong>Sections &agrave; revoir :</strong>
+                                <span *ngFor="let s of state().validationDA.bilan?.sectionsARevoir; let last = last">
+                                    {{ getSectionLabel(s) }}<span *ngIf="!last">, </span>
+                                </span>
+                            </div>
+                            <div *ngIf="state().validationDA.bilan?.instructionsAc" class="text-red-700 text-sm">
+                                <strong>Instructions :</strong> {{ state().validationDA.bilan?.instructionsAc }}
+                            </div>
+                        </div>
+
                     </div>
 
-                    <!-- Flux de Trésorerie -->
-                    <div class="border-2 rounded-xl p-5 flex items-center justify-between"
-                        [ngClass]="state().hasDossierCredit ? 'border-green-300 bg-green-50' : 'border-gray-300 bg-gray-50'">
-                        <div class="flex items-center gap-4">
-                            <i class="pi pi-money-bill text-3xl"
-                                [ngClass]="state().hasDossierCredit ? 'text-green-500' : 'text-gray-400'"></i>
-                            <div>
-                                <div class="font-bold text-lg">Flux de Trésorerie</div>
-                                <div class="font-medium"
-                                    [ngClass]="state().hasDossierCredit ? 'text-green-600' : 'text-gray-500'">
-                                    {{ state().hasDossierCredit ? '✓ Disponible' : '○ Non renseigné' }}
+                    <!-- ========== Flux de Tr&eacute;sorerie ========== -->
+                    <div>
+                        <div class="border-2 rounded-xl p-5 flex items-center justify-between"
+                            [ngClass]="state().hasDossierCredit ? 'border-green-300 bg-green-50' : 'border-gray-300 bg-gray-50'">
+                            <div class="flex items-center gap-4">
+                                <i class="pi pi-money-bill text-3xl"
+                                    [ngClass]="state().hasDossierCredit ? 'text-green-500' : 'text-gray-400'"></i>
+                                <div>
+                                    <div class="font-bold text-lg">Flux de Tr&eacute;sorerie</div>
+                                    <div class="font-medium"
+                                        [ngClass]="state().hasDossierCredit ? 'text-green-600' : 'text-gray-500'">
+                                        {{ state().hasDossierCredit ? 'Disponible' : 'Non renseigne' }}
+                                    </div>
                                 </div>
                             </div>
+                            <a *ngIf="state().hasDossierCredit"
+                                [routerLink]="['/dashboards/credit/individuel/detail/analyse-flux-tresorerie/' + state().demandeIndividuel?.demandeIndividuelId]"
+                                class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-semibold text-base transition-all shadow-lg border-2 border-indigo-700">
+                                <i class="pi pi-eye text-lg"></i>
+                                <span>Voir</span>
+                            </a>
                         </div>
-                        <a *ngIf="state().hasDossierCredit"
-                            [routerLink]="['/dashboards/credit/individuel/detail/analyse-flux-tresorerie/' + state().demandeIndividuel?.demandeIndividuelId]"
-                            class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-semibold text-base transition-all shadow-lg border-2 border-indigo-700">
-                            <i class="pi pi-eye text-lg"></i>
-                            <span>Voir</span>
-                        </a>
+
+                        <!-- Bandeau statut validation flux -->
+                        <div *ngIf="state().validationDA.flux?.statut === 'VALIDE'"
+                            class="mt-3 bg-green-100 border border-green-400 rounded-lg p-3 flex items-center gap-3">
+                            <i class="pi pi-check-circle text-green-600 text-xl"></i>
+                            <div>
+                                <span class="font-semibold text-green-800">Valid&eacute;</span>
+                                <span class="text-green-700 text-sm ml-2">
+                                    par {{ state().validationDA.flux?.valideParNom }}
+                                    le {{ formatDate(state().validationDA.flux?.dateValidation) }}
+                                </span>
+                            </div>
+                        </div>
+                        <div *ngIf="state().validationDA.flux?.statut === 'REJETE'"
+                            class="mt-3 bg-red-100 border border-red-400 rounded-lg p-3">
+                            <div class="flex items-center gap-3 mb-2">
+                                <i class="pi pi-times-circle text-red-600 text-xl"></i>
+                                <span class="font-semibold text-red-800">Rejet&eacute;</span>
+                                <span class="text-red-700 text-sm ml-2">
+                                    par {{ state().validationDA.flux?.valideParNom }}
+                                    le {{ formatDate(state().validationDA.flux?.dateRejet) }}
+                                </span>
+                            </div>
+                            <div class="text-red-700 text-sm mb-1"><strong>Motif :</strong> {{
+                                state().validationDA.flux?.motifRejet }}</div>
+                            <div *ngIf="state().validationDA.flux?.sectionsARevoir?.length"
+                                class="text-red-700 text-sm mb-1">
+                                <strong>Sections &agrave; revoir :</strong>
+                                <span *ngFor="let s of state().validationDA.flux?.sectionsARevoir; let last = last">
+                                    {{ getSectionLabel(s) }}<span *ngIf="!last">, </span>
+                                </span>
+                            </div>
+                            <div *ngIf="state().validationDA.flux?.instructionsAc" class="text-red-700 text-sm">
+                                <strong>Instructions :</strong> {{ state().validationDA.flux?.instructionsAc }}
+                            </div>
+                        </div>
+
                     </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <!-- SECTION VALIDATION WORKFLOW DA - Apres verification bilan et flux       -->
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <div *ngIf="state().user?.role === 'DA'
+               && state().demandeIndividuel?.validationState === 'APPROVED'
+               && (state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE')
+               && state().hasDossierCredit"
+            class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-green-300 mb-8">
+            <div class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-4 flex items-center gap-3">
+                <i class="pi pi-check-square text-xl"></i>
+                <span class="font-bold text-lg uppercase tracking-wide">Validation Hierarchique - Directeur
+                    d'Agence</span>
+            </div>
+            <div class="p-6">
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                    <div class="flex items-center gap-3">
+                        <i class="pi pi-info-circle text-green-600 text-xl"></i>
+                        <div>
+                            <p class="font-semibold text-green-800 m-0">Le bilan et le flux de tresorerie ont ete
+                                renseignes.</p>
+                            <p class="text-green-700 text-sm m-0 mt-1">Vous pouvez maintenant valider ou rejeter cette
+                                demande pour la transmettre au Delegue Regional.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <form [formGroup]="workflowDAForm">
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            Avis du Directeur d'Agence <span class="text-red-500">*</span>
+                        </label>
+                        <textarea pTextarea formControlName="avis" rows="4" class="w-full"
+                            placeholder="Saisissez votre avis sur cette demande..." [autoResize]="true"></textarea>
+                        <small *ngIf="workflowDAForm.get('avis')?.invalid && workflowDAForm.get('avis')?.touched"
+                            class="text-red-500">L'avis est obligatoire (min 10 caracteres)</small>
+                    </div>
+                </form>
+
+                <div class="flex justify-center gap-4 mt-6">
+                    <button pButton type="button" (click)="confirmerWorkflowValidationDA()"
+                        [disabled]="workflowDAForm.invalid || state().loading"
+                        class="px-8 py-3 font-bold shadow-lg bg-gradient-to-r from-green-500 to-emerald-600"
+                        icon="pi pi-check-circle" label="VALIDER ET TRANSMETTRE AU DR">
+                    </button>
+                    <button pButton type="button" (click)="ouvrirWorkflowRejetDA()"
+                        class="p-button-danger p-button-outlined px-8 py-3 font-bold" icon="pi pi-times-circle"
+                        label="REJETER">
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Rejet Workflow DA -->
+        <p-dialog header="Rejeter la demande" [visible]="state().showWorkflowRejetDA" [modal]="true"
+            [style]="{ width: '600px' }" [closable]="true"
+            (onHide)="state.update(mergeState({showWorkflowRejetDA: false}))">
+            <div class="mb-4 p-3 bg-red-50 border-round">
+                <p class="font-semibold m-0">{{ state().demandeIndividuel?.prenom }} {{ state().demandeIndividuel?.nom
+                    }}</p>
+                <p class="text-600 m-0">{{ state().demandeIndividuel?.montantDemande | currency:'GNF ':'symbol':'1.0-0'
+                    }} - {{ state().demandeIndividuel?.objectCredit }}</p>
+            </div>
+            <form [formGroup]="workflowDARejetForm">
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        Motif du rejet <span class="text-red-500">*</span>
+                    </label>
+                    <textarea pTextarea formControlName="motifRejet" rows="3" class="w-full"
+                        placeholder="Expliquez la raison du rejet..." [autoResize]="true"></textarea>
+                    <small
+                        *ngIf="workflowDARejetForm.get('motifRejet')?.invalid && workflowDARejetForm.get('motifRejet')?.touched"
+                        class="text-red-500">Minimum 10 caracteres requis</small>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        Sections a revoir <span class="text-red-500">*</span>
+                    </label>
+                    <div class="flex flex-col gap-2">
+                        <div *ngFor="let opt of workflowSectionsOptions" class="flex items-center gap-2">
+                            <input type="checkbox" [value]="opt.value" [id]="'wf_' + opt.value"
+                                [checked]="workflowDARejetForm.get('sectionsARevoir')?.value?.includes(opt.value)"
+                                (change)="toggleSection(workflowDARejetForm, opt.value, $event)"
+                                class="w-4 h-4 text-red-600 rounded border-gray-300">
+                            <label [for]="'wf_' + opt.value" class="text-sm cursor-pointer">{{ opt.label }}</label>
+                        </div>
+                    </div>
+                    <small
+                        *ngIf="workflowDARejetForm.get('sectionsARevoir')?.touched && (!workflowDARejetForm.get('sectionsARevoir')?.value || workflowDARejetForm.get('sectionsARevoir')?.value?.length === 0)"
+                        class="text-red-500">Selectionnez au moins une section</small>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        Instructions pour l'Agent de Credit (optionnel)
+                    </label>
+                    <textarea pTextarea formControlName="instructions" rows="2" class="w-full"
+                        placeholder="Instructions specifiques..." [autoResize]="true"></textarea>
+                </div>
+            </form>
+            <ng-template #footer>
+                <div class="flex justify-end gap-3">
+                    <button pButton type="button" label="Annuler" icon="pi pi-times"
+                        class="p-button-secondary p-button-outlined"
+                        (click)="state.update(mergeState({showWorkflowRejetDA: false}))"></button>
+                    <button pButton type="button" label="Confirmer le rejet" icon="pi pi-check" class="p-button-danger"
+                        (click)="confirmerWorkflowRejetDA()" [disabled]="workflowDARejetForm.invalid"></button>
+                </div>
+            </ng-template>
+        </p-dialog>
+
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <!-- SECTION VALIDATION WORKFLOW DR - Delegue Regional                      -->
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <div *ngIf="state().user?.role === 'DR'
+               && state().demandeIndividuel?.validationState === 'VALIDATED_DA'
+               && (state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE')
+               && state().hasDossierCredit"
+            class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-purple-300 mb-8">
+            <div class="bg-gradient-to-r from-purple-600 to-violet-600 text-white px-6 py-4 flex items-center gap-3">
+                <i class="pi pi-check-square text-xl"></i>
+                <span class="font-bold text-lg uppercase tracking-wide">Validation Hierarchique - Delegue Regional</span>
+            </div>
+            <div class="p-6">
+                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
+                    <div class="flex items-center gap-3">
+                        <i class="pi pi-info-circle text-purple-600 text-xl"></i>
+                        <div>
+                            <p class="font-semibold text-purple-800 m-0">La demande a ete validee par le Directeur d'Agence.</p>
+                            <p class="text-purple-700 text-sm m-0 mt-1">Vous pouvez maintenant valider ou rejeter cette demande pour la transmettre a la Direction d'Exploitation.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Avis precedents -->
+                <div *ngIf="state().demandeIndividuel?.avisAgentCredit || state().demandeIndividuel?.avisDa"
+                    class="mb-6 bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <h5 class="text-sm font-semibold text-gray-600 mb-3">Avis precedents</h5>
+                    <div class="space-y-2">
+                        <div *ngIf="state().demandeIndividuel?.avisAgentCredit" class="text-sm">
+                            <span class="font-semibold text-blue-700">AC :</span>
+                            <span class="text-gray-700 ml-1">{{ state().demandeIndividuel?.avisAgentCredit }}</span>
+                        </div>
+                        <div *ngIf="state().demandeIndividuel?.avisDa" class="text-sm">
+                            <span class="font-semibold text-amber-700">DA
+                                <span *ngIf="state().demandeIndividuel?.validatedByDa">({{ state().demandeIndividuel?.validatedByDa }})</span> :</span>
+                            <span class="text-gray-700 ml-1">{{ state().demandeIndividuel?.avisDa }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <form [formGroup]="workflowDRForm">
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            Avis du Delegue Regional <span class="text-red-500">*</span>
+                        </label>
+                        <textarea pTextarea formControlName="avis" rows="4" class="w-full"
+                            placeholder="Saisissez votre avis sur cette demande..." [autoResize]="true"></textarea>
+                        <small *ngIf="workflowDRForm.get('avis')?.invalid && workflowDRForm.get('avis')?.touched"
+                            class="text-red-500">L'avis est obligatoire (min 10 caracteres)</small>
+                    </div>
+                </form>
+
+                <div class="flex justify-center gap-4 mt-6">
+                    <button pButton type="button" (click)="confirmerWorkflowValidationDR()"
+                        [disabled]="workflowDRForm.invalid || state().loading"
+                        class="px-8 py-3 font-bold shadow-lg bg-gradient-to-r from-purple-500 to-violet-600"
+                        icon="pi pi-check-circle" label="VALIDER ET TRANSMETTRE A LA DE">
+                    </button>
+                    <button pButton type="button" (click)="ouvrirWorkflowRejetDR()"
+                        class="p-button-danger p-button-outlined px-8 py-3 font-bold" icon="pi pi-times-circle"
+                        label="REJETER">
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Rejet Workflow DR -->
+        <p-dialog header="Rejeter la demande (DR)" [visible]="state().showWorkflowRejetDR" [modal]="true"
+            [style]="{ width: '600px' }" [closable]="true"
+            (onHide)="state.update(mergeState({showWorkflowRejetDR: false}))">
+            <div class="mb-4 p-3 bg-red-50 border-round">
+                <p class="font-semibold m-0">{{ state().demandeIndividuel?.prenom }} {{ state().demandeIndividuel?.nom }}</p>
+                <p class="text-600 m-0">{{ state().demandeIndividuel?.montantDemande | currency:'GNF ':'symbol':'1.0-0' }} - {{ state().demandeIndividuel?.objectCredit }}</p>
+            </div>
+            <form [formGroup]="workflowDRRejetForm">
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        Motif du rejet <span class="text-red-500">*</span>
+                    </label>
+                    <textarea pTextarea formControlName="motifRejet" rows="3" class="w-full"
+                        placeholder="Expliquez la raison du rejet..." [autoResize]="true"></textarea>
+                    <small *ngIf="workflowDRRejetForm.get('motifRejet')?.invalid && workflowDRRejetForm.get('motifRejet')?.touched"
+                        class="text-red-500">Minimum 10 caracteres requis</small>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        Sections a revoir <span class="text-red-500">*</span>
+                    </label>
+                    <div class="flex flex-col gap-2">
+                        <div *ngFor="let opt of workflowSectionsOptions" class="flex items-center gap-2">
+                            <input type="checkbox" [value]="opt.value" [id]="'wfdr_' + opt.value"
+                                [checked]="workflowDRRejetForm.get('sectionsARevoir')?.value?.includes(opt.value)"
+                                (change)="toggleSection(workflowDRRejetForm, opt.value, $event)"
+                                class="w-4 h-4 text-red-600 rounded border-gray-300">
+                            <label [for]="'wfdr_' + opt.value" class="text-sm cursor-pointer">{{ opt.label }}</label>
+                        </div>
+                    </div>
+                    <small *ngIf="workflowDRRejetForm.get('sectionsARevoir')?.touched && (!workflowDRRejetForm.get('sectionsARevoir')?.value || workflowDRRejetForm.get('sectionsARevoir')?.value?.length === 0)"
+                        class="text-red-500">Selectionnez au moins une section</small>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        Instructions pour le Directeur d'Agence (optionnel)
+                    </label>
+                    <textarea pTextarea formControlName="instructions" rows="2" class="w-full"
+                        placeholder="Instructions specifiques..." [autoResize]="true"></textarea>
+                </div>
+            </form>
+            <ng-template #footer>
+                <div class="flex justify-end gap-3">
+                    <button pButton type="button" label="Annuler" icon="pi pi-times"
+                        class="p-button-secondary p-button-outlined"
+                        (click)="state.update(mergeState({showWorkflowRejetDR: false}))"></button>
+                    <button pButton type="button" label="Confirmer le rejet" icon="pi pi-check" class="p-button-danger"
+                        (click)="confirmerWorkflowRejetDR()" [disabled]="workflowDRRejetForm.invalid"></button>
+                </div>
+            </ng-template>
+        </p-dialog>
+
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <!-- ALERTE REJET DA POUR AGENT DE CREDIT                                   -->
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <div *ngIf="state().user?.role === 'AGENT_CREDIT' && (state().validationDA.bilan?.statut === 'REJETE' || state().validationDA.flux?.statut === 'REJETE')"
+            class="bg-red-50 border-2 border-red-400 rounded-xl p-6 mb-8">
+            <div class="flex items-center gap-3 mb-4">
+                <i class="pi pi-exclamation-triangle text-red-600 text-2xl"></i>
+                <span class="font-bold text-red-800 text-lg">Analyse rejet&eacute;e par le Directeur d'Agence</span>
+            </div>
+
+            <!-- Rejet Bilan -->
+            <div *ngIf="state().validationDA.bilan?.statut === 'REJETE'"
+                class="bg-white border border-red-300 rounded-lg p-4 mb-3">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="font-semibold text-red-700">
+                        <i class="pi pi-chart-bar mr-2"></i>Bilan d'Activit&eacute; - Rejet&eacute;
+                    </div>
+                    <a [routerLink]="['/dashboards/credit/individuel/detail/analyse-bilan-activite', state().demandeIndividuel?.demandeIndividuelId]"
+                        class="inline-flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-all no-underline">
+                        <i class="pi pi-pencil"></i>
+                        <span>Corriger le Bilan</span>
+                    </a>
+                </div>
+                <div class="text-sm text-gray-700 mb-1"><strong>Motif :</strong> {{
+                    state().validationDA.bilan?.motifRejet }}</div>
+                <div *ngIf="state().validationDA.bilan?.sectionsARevoir?.length" class="text-sm text-gray-700 mb-1">
+                    <strong>Sections &agrave; revoir :</strong>
+                    <span *ngFor="let s of state().validationDA.bilan?.sectionsARevoir; let last = last">
+                        {{ getSectionLabel(s) }}<span *ngIf="!last">, </span>
+                    </span>
+                </div>
+                <div *ngIf="state().validationDA.bilan?.instructionsAc" class="text-sm text-gray-700">
+                    <strong>Instructions :</strong> {{ state().validationDA.bilan?.instructionsAc }}
+                </div>
+            </div>
+
+            <!-- Rejet Flux -->
+            <div *ngIf="state().validationDA.flux?.statut === 'REJETE'"
+                class="bg-white border border-red-300 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="font-semibold text-red-700">
+                        <i class="pi pi-money-bill mr-2"></i>Flux de Tr&eacute;sorerie - Rejet&eacute;
+                    </div>
+                    <a [routerLink]="['/dashboards/credit/individuel/detail/analyse-flux-tresorerie', state().demandeIndividuel?.demandeIndividuelId]"
+                        class="inline-flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-all no-underline">
+                        <i class="pi pi-pencil"></i>
+                        <span>Corriger le Flux</span>
+                    </a>
+                </div>
+                <div class="text-sm text-gray-700 mb-1"><strong>Motif :</strong> {{
+                    state().validationDA.flux?.motifRejet }}</div>
+                <div *ngIf="state().validationDA.flux?.sectionsARevoir?.length" class="text-sm text-gray-700 mb-1">
+                    <strong>Sections &agrave; revoir :</strong>
+                    <span *ngFor="let s of state().validationDA.flux?.sectionsARevoir; let last = last">
+                        {{ getSectionLabel(s) }}<span *ngIf="!last">, </span>
+                    </span>
+                </div>
+                <div *ngIf="state().validationDA.flux?.instructionsAc" class="text-sm text-gray-700">
+                    <strong>Instructions :</strong> {{ state().validationDA.flux?.instructionsAc }}
                 </div>
             </div>
         </div>
@@ -742,37 +1205,88 @@
         <!-- SECTION AVIS - DA/DR/MANAGER (après approbation)                       -->
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
         <div *ngIf="(state().user?.role === 'DA' || state().user?.role === 'DR' || state().user?.role === 'MANAGER')
-            && state().demandeIndividuel?.validationState === 'APPROVED'"
+            && isWorkflowAdvanced()"
             class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-teal-200 mb-8 mt-10">
             <div class="bg-teal-500 text-white px-6 py-4 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <i class="pi pi-comments text-xl"></i>
                     <span class="font-bold text-lg uppercase tracking-wide">Avis et Recommandations</span>
                 </div>
-                <p-badge [value]="state().avisList.length.toString()" severity="contrast"></p-badge>
             </div>
 
             <div class="p-6">
-                <!-- Formulaire -->
-                <div *ngIf="(!state().userHasAvis && state().showAvisForm) || state().editingAvis" class="mb-6">
-                    <form [formGroup]="avisForm" (ngSubmit)="submitAvis()" class="bg-gray-50 rounded-xl p-5">
-                        <div class="mb-4">
-                            <p-chip [label]="getRoleLabel(state().user?.role!)" icon="pi pi-user"></p-chip>
+                <!-- Avis Workflow (avis_agent_credit, avis_da, avis_dr stockes sur la demande) -->
+                <div *ngIf="state().demandeIndividuel?.avisAgentCredit || state().demandeIndividuel?.avisDa || state().demandeIndividuel?.avisDr"
+                    class="mb-6">
+                    <h4 class="text-base font-semibold text-gray-700 mb-3">
+                        <i class="pi pi-verified mr-2 text-indigo-500"></i>Avis Hierarchiques
+                    </h4>
+                    <div class="space-y-3">
+                        <!-- Avis Agent de Credit -->
+                        <div *ngIf="state().demandeIndividuel?.avisAgentCredit"
+                            class="border rounded-xl p-4 border-blue-200 bg-blue-50">
+                            <div class="flex items-center gap-3 mb-2">
+                                <p-avatar label="AC" shape="circle"
+                                    [style]="{'background-color': '#3b82f6', 'color': 'white'}"></p-avatar>
+                                <div>
+                                    <p class="font-semibold text-sm m-0">Agent de Credit</p>
+                                    <p-tag value="Approbation" severity="info" [rounded]="true"></p-tag>
+                                </div>
+                            </div>
+                            <p class="text-gray-700 whitespace-pre-wrap mt-2 mb-0">{{
+                                state().demandeIndividuel?.avisAgentCredit }}</p>
                         </div>
-                        <textarea pTextarea formControlName="libele" rows="4" class="w-full mb-4"
-                            placeholder="Partagez votre avis..." [autoResize]="true">
-                        </textarea>
-                        <div class="flex justify-end gap-4">
-                            <p-button label="Annuler" icon="pi pi-times" severity="secondary" [outlined]="true"
-                                (onClick)="cancelEdit()"></p-button>
-                            <p-button label="Soumettre" icon="pi pi-send" type="submit"
-                                [loading]="state().submittingAvis" [disabled]="avisForm.invalid"></p-button>
+                        <!-- Avis DA -->
+                        <div *ngIf="state().demandeIndividuel?.avisDa"
+                            class="border rounded-xl p-4 border-amber-200 bg-amber-50">
+                            <div class="flex items-center gap-3 mb-2">
+                                <p-avatar label="DA" shape="circle"
+                                    [style]="{'background-color': '#f59e0b', 'color': 'white'}"></p-avatar>
+                                <div>
+                                    <p class="font-semibold text-sm m-0">Directeur d'Agence
+                                        <span *ngIf="state().demandeIndividuel?.validatedByDa"
+                                            class="text-gray-500 font-normal">
+                                            - {{ state().demandeIndividuel?.validatedByDa }}
+                                        </span>
+                                    </p>
+                                    <p-tag value="Validation DA" severity="warn" [rounded]="true"></p-tag>
+                                </div>
+                            </div>
+                            <p class="text-gray-700 whitespace-pre-wrap mt-2 mb-0">{{ state().demandeIndividuel?.avisDa
+                                }}</p>
                         </div>
-                    </form>
+                        <!-- Avis DR -->
+                        <div *ngIf="state().demandeIndividuel?.avisDr"
+                            class="border rounded-xl p-4 border-purple-200 bg-purple-50">
+                            <div class="flex items-center gap-3 mb-2">
+                                <p-avatar label="DR" shape="circle"
+                                    [style]="{'background-color': '#8b5cf6', 'color': 'white'}"></p-avatar>
+                                <div>
+                                    <p class="font-semibold text-sm m-0">Delegue Regional
+                                        <span *ngIf="state().demandeIndividuel?.validatedByDr"
+                                            class="text-gray-500 font-normal">
+                                            - {{ state().demandeIndividuel?.validatedByDr }}
+                                        </span>
+                                    </p>
+                                    <p-tag value="Validation DR" severity="secondary" [rounded]="true"></p-tag>
+                                </div>
+                            </div>
+                            <p class="text-gray-700 whitespace-pre-wrap mt-2 mb-0">{{ state().demandeIndividuel?.avisDr
+                                }}</p>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Liste des avis -->
+                <!-- Separator -->
+                <div *ngIf="(state().demandeIndividuel?.avisAgentCredit || state().demandeIndividuel?.avisDa || state().demandeIndividuel?.avisDr) && state().avisList.length > 0"
+                    class="border-t border-gray-200 my-4"></div>
+
+                <!-- Liste des avis (table avis) -->
                 <div *ngIf="state().avisList.length > 0" class="space-y-6">
+                    <h4 *ngIf="state().demandeIndividuel?.avisAgentCredit || state().demandeIndividuel?.avisDa || state().demandeIndividuel?.avisDr"
+                        class="text-base font-semibold text-gray-700 mb-3">
+                        <i class="pi pi-comments mr-2 text-teal-500"></i>Commentaires
+                    </h4>
                     <div *ngFor="let avis of state().avisList"
                         class="border rounded-xl p-5 transition-all hover:shadow-md"
                         [ngClass]="avis.idUser === state().user?.userId ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-white'">
@@ -801,17 +1315,24 @@
                     </div>
                 </div>
 
-                <div *ngIf="state().avisList.length === 0" class="text-center py-10 text-gray-500">
+                <div *ngIf="state().avisList.length === 0 && !state().demandeIndividuel?.avisAgentCredit && !state().demandeIndividuel?.avisDa && !state().demandeIndividuel?.avisDr"
+                    class="text-center py-10 text-gray-500">
                     <i class="pi pi-comments text-5xl mb-4 block opacity-50"></i>
-                    <p class="text-lg">Aucun avis n'a encore été donné</p>
+                    <p class="text-lg">Aucun avis n'a encore ete donne</p>
+                </div>
+
+                <!-- Bouton Retour -->
+                <div class="mt-8 text-center border-t border-gray-200 pt-6">
+                    <button pButton type="button" (click)="goBack()" class="p-button-outlined px-8 py-3 font-semibold"
+                        icon="pi pi-arrow-left" label="Retour">
+                    </button>
                 </div>
             </div>
         </div>
 
         <!-- Message si demande non approuvée (pour DA/DR/MANAGER) -->
         <div *ngIf="(state().user?.role === 'DA' || state().user?.role === 'DR' || state().user?.role === 'MANAGER')
-            && state().demandeIndividuel?.validationState !== 'APPROVED'"
-            class="bg-gray-100 border border-gray-300 rounded-xl p-8 text-center mb-8">
+            && !isWorkflowAdvanced()" class="bg-gray-100 border border-gray-300 rounded-xl p-8 text-center mb-8">
             <i class="pi pi-lock text-gray-400 text-5xl mb-4"></i>
             <h4 class="font-semibold text-gray-600 text-lg mb-3">Section Avis Non Disponible</h4>
             <p class="text-gray-500 mb-4">
@@ -823,4 +1344,107 @@
         </div>
 
     </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- MODAL REJET BILAN                                                      -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <p-dialog header="Rejeter le Bilan d'Activit&eacute;" [visible]="state().showModalRejetBilan" [modal]="true"
+        [style]="{ width: '550px' }" [closable]="true"
+        (onHide)="state.update(mergeState({showModalRejetBilan: false}))">
+        <form [formGroup]="rejetBilanForm">
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    Motif du rejet <span class="text-red-500">*</span>
+                </label>
+                <textarea pTextarea formControlName="motifRejet" rows="3" class="w-full"
+                    placeholder="Expliquez la raison du rejet..." [autoResize]="true"></textarea>
+                <small *ngIf="rejetBilanForm.get('motifRejet')?.invalid && rejetBilanForm.get('motifRejet')?.touched"
+                    class="text-red-500">Minimum 10 caract&egrave;res requis</small>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    Sections &agrave; revoir <span class="text-red-500">*</span>
+                </label>
+                <div class="flex flex-col gap-2">
+                    <div *ngFor="let opt of sectionsBilanOptions" class="flex items-center gap-2">
+                        <input type="checkbox" [value]="opt.value" [id]="'bilan_' + opt.value"
+                            [checked]="rejetBilanForm.get('sectionsARevoir')?.value?.includes(opt.value)"
+                            (change)="toggleSection(rejetBilanForm, opt.value, $event)"
+                            class="w-4 h-4 text-red-600 rounded border-gray-300">
+                        <label [for]="'bilan_' + opt.value" class="text-sm cursor-pointer">{{ opt.label }}</label>
+                    </div>
+                </div>
+                <small
+                    *ngIf="rejetBilanForm.get('sectionsARevoir')?.touched && (!rejetBilanForm.get('sectionsARevoir')?.value || rejetBilanForm.get('sectionsARevoir')?.value?.length === 0)"
+                    class="text-red-500">S&eacute;lectionnez au moins une section</small>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    Instructions pour l'Agent de Cr&eacute;dit (optionnel)
+                </label>
+                <textarea pTextarea formControlName="instructionsAc" rows="2" class="w-full"
+                    placeholder="Instructions sp&eacute;cifiques..." [autoResize]="true"></textarea>
+            </div>
+        </form>
+        <ng-template #footer>
+            <div class="flex justify-end gap-3">
+                <button pButton type="button" label="Annuler" icon="pi pi-times"
+                    class="p-button-secondary p-button-outlined"
+                    (click)="state.update(mergeState({showModalRejetBilan: false}))"></button>
+                <button pButton type="button" label="Confirmer le rejet" icon="pi pi-check" class="p-button-danger"
+                    (click)="confirmerRejetBilan()" [disabled]="rejetBilanForm.invalid"></button>
+            </div>
+        </ng-template>
+    </p-dialog>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- MODAL REJET FLUX                                                       -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <p-dialog header="Rejeter le Flux de Tr&eacute;sorerie" [visible]="state().showModalRejetFlux" [modal]="true"
+        [style]="{ width: '550px' }" [closable]="true" (onHide)="state.update(mergeState({showModalRejetFlux: false}))">
+        <form [formGroup]="rejetFluxForm">
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    Motif du rejet <span class="text-red-500">*</span>
+                </label>
+                <textarea pTextarea formControlName="motifRejet" rows="3" class="w-full"
+                    placeholder="Expliquez la raison du rejet..." [autoResize]="true"></textarea>
+                <small *ngIf="rejetFluxForm.get('motifRejet')?.invalid && rejetFluxForm.get('motifRejet')?.touched"
+                    class="text-red-500">Minimum 10 caract&egrave;res requis</small>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    Sections &agrave; revoir <span class="text-red-500">*</span>
+                </label>
+                <div class="flex flex-col gap-2">
+                    <div *ngFor="let opt of sectionsFluxOptions" class="flex items-center gap-2">
+                        <input type="checkbox" [value]="opt.value" [id]="'flux_' + opt.value"
+                            [checked]="rejetFluxForm.get('sectionsARevoir')?.value?.includes(opt.value)"
+                            (change)="toggleSection(rejetFluxForm, opt.value, $event)"
+                            class="w-4 h-4 text-red-600 rounded border-gray-300">
+                        <label [for]="'flux_' + opt.value" class="text-sm cursor-pointer">{{ opt.label }}</label>
+                    </div>
+                </div>
+                <small
+                    *ngIf="rejetFluxForm.get('sectionsARevoir')?.touched && (!rejetFluxForm.get('sectionsARevoir')?.value || rejetFluxForm.get('sectionsARevoir')?.value?.length === 0)"
+                    class="text-red-500">S&eacute;lectionnez au moins une section</small>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    Instructions pour l'Agent de Cr&eacute;dit (optionnel)
+                </label>
+                <textarea pTextarea formControlName="instructionsAc" rows="2" class="w-full"
+                    placeholder="Instructions sp&eacute;cifiques..." [autoResize]="true"></textarea>
+            </div>
+        </form>
+        <ng-template #footer>
+            <div class="flex justify-end gap-3">
+                <button pButton type="button" label="Annuler" icon="pi pi-times"
+                    class="p-button-secondary p-button-outlined"
+                    (click)="state.update(mergeState({showModalRejetFlux: false}))"></button>
+                <button pButton type="button" label="Confirmer le rejet" icon="pi pi-check" class="p-button-danger"
+                    (click)="confirmerRejetFlux()" [disabled]="rejetFluxForm.invalid"></button>
+            </div>
+        </ng-template>
+    </p-dialog>
 </div>

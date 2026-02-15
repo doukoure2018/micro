@@ -231,8 +231,8 @@
                     @for (credit of state().histoCredits!.creditos; track credit.numCredito) {
                     @if (getPlanPagosByCredit(credit.numCredito); as planPagos) {
                     @if (planPagos.length > 0) {
-                    <p-accordionTab>
-                        <ng-template pTemplate="header">
+                    <p-accordion-panel [value]="credit.numCredito">
+                        <p-accordion-header>
                             <div class="flex align-items-center justify-content-between w-full">
                                 <div class="flex align-items-center">
                                     <i class="pi pi-credit-card text-blue-600 mr-3"></i>
@@ -251,7 +251,8 @@
                                         [severity]="getStatusSeverity(credit.indEstado)"></p-tag>
                                 </div>
                             </div>
-                        </ng-template>
+                        </p-accordion-header>
+                        <p-accordion-content>
 
                         <!-- Credit Summary -->
                         <div class="mb-4 p-3 bg-gray-50 border-round">
@@ -394,7 +395,8 @@
                                 </div>
                             </div>
                         </div>
-                    </p-accordionTab>
+                    </p-accordion-content>
+                    </p-accordion-panel>
                     }
                     }
                     }

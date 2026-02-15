@@ -1,0 +1,638 @@
+<div class="form-container">
+    <p-toast></p-toast>
+
+    <!-- Loading Spinner -->
+    @if(state().submitting || state().loading) {
+    <div class="loading-overlay">
+        <p-progressSpinner [style]="{ width: '50px', height: '50px' }"></p-progressSpinner>
+    </div>
+    }
+
+    <!-- Alert Banner: DA Rejection Info -->
+    @if(state().motifRejetDa || state().sectionsARevoirDa) {
+    <div class="rejection-banner">
+        <div class="rejection-header">
+            <i class="pi pi-exclamation-triangle"></i>
+            <span>Demande rejetee par le Directeur d'Agence - Correction requise</span>
+        </div>
+        @if(state().motifRejetDa) {
+        <div class="rejection-detail">
+            <strong>Motif du rejet :</strong> {{ state().motifRejetDa }}
+        </div>
+        }
+        @if(state().sectionsARevoirDa) {
+        <div class="rejection-detail">
+            <strong>Sections a revoir :</strong> {{ state().sectionsARevoirDa }}
+        </div>
+        }
+        @if(state().instructionsAc) {
+        <div class="rejection-detail instructions">
+            <strong>Instructions :</strong> {{ state().instructionsAc }}
+        </div>
+        }
+    </div>
+    }
+
+    <!-- Main Form -->
+    <form #correctionForm="ngForm" (ngSubmit)="submitCorrection(correctionForm)">
+
+        <!-- EN-TETE DYNAMIQUE -->
+        <div class="form-header">
+            <h1 class="header-title">
+                CORRECTION DE LA DEMANDE DE CREDIT
+                @switch(formData.natureClient) {
+                @case('Demande de Credit Pour PME/PMI') { - PME/PMI }
+                @case('Demande de credit Pour Professionnels') { - PROFESSIONNELS }
+                @default { - PARTICULIERS }
+                }
+            </h1>
+        </div>
+
+        <!-- LIGNE D'EN-TETE: Delegation, Agence, Point de service -->
+        <table class="form-table header-table">
+            <tbody>
+                <tr>
+                    <td class="label-cell">Delegation *</td>
+                    <td style="width: 180px;">
+                        <p-dropdown [(ngModel)]="formData.delegation" name="delegation"
+                            [options]="state().allDelegations || []" optionLabel="libele" dataKey="id" [filter]="true"
+                            styleClass="w-full" [disabled]="state().submitting" (onChange)="onDelegationChange($event)"
+                            required placeholder="Selectionner">
+                        </p-dropdown>
+                    </td>
+                    <td class="label-cell">Agence *</td>
+                    <td style="width: 180px;">
+                        <p-dropdown [(ngModel)]="formData.agence" name="agence"
+                            [options]="state().filteredAgences || []" optionLabel="libele" dataKey="id" [filter]="true"
+                            styleClass="w-full" [disabled]="state().submitting || !state().filteredAgences?.length"
+                            (onChange)="onAgenceChange($event)" required placeholder="Selectionner">
+                        </p-dropdown>
+                    </td>
+                    <td class="label-cell">Point de Service *</td>
+                    <td style="width: 180px;">
+                        <p-dropdown [(ngModel)]="formData.pos" name="pos" [options]="state().filteredPointsVente || []"
+                            optionLabel="libele" dataKey="id" [filter]="true" styleClass="w-full"
+                            [disabled]="state().submitting || !state().filteredPointsVente?.length" required
+                            placeholder="Selectionner">
+                        </p-dropdown>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label-cell">Date de la demande</td>
+                    <td>
+                        <span class="date-display">{{ today | date:'dd/MM/yyyy' }}</span>
+                    </td>
+                    <td class="label-cell">N Membre *</td>
+                    <td>
+                        <input pInputText [(ngModel)]="formData.numeroMembre" name="numeroMembreHeader" class="w-full"
+                            [disabled]="state().submitting" required>
+                    </td>
+                    <td class="label-cell">N de la demande</td>
+                    <td>
+                        <input pInputText [value]="demandeIndividuelId" name="numeroDemande" class="w-full"
+                            [disabled]="true">
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- SECTION: TYPE DE DEMANDE -->
+        <div class="form-section">
+            <div class="section-header">
+                <span>Type de Demande</span>
+            </div>
+            <table class="form-table">
+                <tbody>
+                    <tr>
+                        <td class="label-cell" style="width: 180px;">Nature de la demande *</td>
+                        <td colspan="5">
+                            <p-dropdown [(ngModel)]="formData.natureClient" name="natureClient"
+                                [options]="natureClientOptions" optionLabel="label" optionValue="value"
+                                [style]="{'width': '350px', 'max-width': '100%'}" [disabled]="state().submitting"
+                                (onChange)="onNatureClientChange($event)" required placeholder="Selectionner la nature"
+                                [appendTo]="'body'">
+                            </p-dropdown>
+                        </td>
+                    </tr>
+                    @if(formData.natureClient === 'Demande de Credit Pour PME/PMI') {
+                    <tr>
+                        <td class="label-cell highlight-blue">Nom de l'entreprise *</td>
+                        <td colspan="2">
+                            <input pInputText [(ngModel)]="formData.nomPersonneMorale" name="nomPersonneMorale"
+                                class="w-full" [disabled]="state().submitting" required placeholder="Raison sociale">
+                        </td>
+                        <td class="label-cell highlight-blue">Sigle</td>
+                        <td colspan="2">
+                            <input pInputText [(ngModel)]="formData.sigle" name="sigle" class="w-full"
+                                [disabled]="state().submitting" placeholder="Ex: SARL, SA, PME...">
+                        </td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- SECTION 1: IDENTIFICATION DE L'EMPRUNTEUR -->
+        <div class="form-section">
+            <div class="section-header">
+                <span>1. Identification de l'emprunteur</span>
+                @if(formData.natureClient === 'Demande de Credit Pour PME/PMI') {
+                <span class="header-note">Dirigeant (titre)</span>
+                <input pInputText [(ngModel)]="formData.titreDirecteur" name="titreDirecteur" class="header-input"
+                    [disabled]="state().submitting" placeholder="PDG, DG, Gerant...">
+                }
+            </div>
+            <table class="form-table">
+                <tbody>
+                    <tr>
+                        <td class="label-cell" style="width: 200px;">Prenom (s) et Nom *</td>
+                        <td colspan="5">
+                            <div class="flex gap-2">
+                                <input pInputText [(ngModel)]="formData.prenom" name="prenom" placeholder="Prenom(s)"
+                                    class="flex-1" [disabled]="state().submitting" required>
+                                <input pInputText [(ngModel)]="formData.nom" name="nom" placeholder="Nom" class="flex-1"
+                                    [disabled]="state().submitting" required>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Autres nom (surnom)</td>
+                        <td colspan="5">
+                            <input pInputText [(ngModel)]="formData.sernom" name="sernom" class="w-full"
+                                [disabled]="state().submitting">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Date d'adhesion</td>
+                        <td>
+                            <p-calendar [(ngModel)]="formData.dateAdhesion" name="dateAdhesion" dateFormat="dd/mm/yy"
+                                [showIcon]="true" styleClass="w-full" [disabled]="state().submitting">
+                            </p-calendar>
+                        </td>
+                        <td class="label-cell">Sexe *</td>
+                        <td>
+                            <p-dropdown [(ngModel)]="formData.genre" name="genre" [options]="genreOptions"
+                                optionLabel="label" optionValue="value" styleClass="w-full"
+                                [disabled]="state().submitting" required>
+                            </p-dropdown>
+                        </td>
+                        @if (!isParticulier()) {
+                        <td class="label-cell">Categories</td>
+                        <td>
+                            <input pInputText [(ngModel)]="formData.categorie" name="categorie" class="w-full"
+                                [disabled]="state().submitting">
+                        </td>
+                        } @else {
+                        <td class="label-cell highlight-yellow">Profession *</td>
+                        <td>
+                            <input pInputText [(ngModel)]="formData.profession" name="profession" class="w-full"
+                                [disabled]="state().submitting" required placeholder="Ex: Commercant, Enseignant...">
+                        </td>
+                        }
+                    </tr>
+                    @if (isParticulier()) {
+                    <tr>
+                        <td class="label-cell highlight-yellow">Secteur d'activite *</td>
+                        <td colspan="5">
+                            <input pInputText [(ngModel)]="formData.secteurActivite" name="secteurActivite"
+                                class="w-full" [disabled]="state().submitting" required
+                                placeholder="Ex: Commerce, Agriculture, Services...">
+                        </td>
+                    </tr>
+                    }
+                    <tr>
+                        <td class="label-cell">Nature de la piece d'identite *</td>
+                        <td colspan="2">
+                            <p-dropdown [(ngModel)]="formData.typePiece" name="typePiece" [options]="typePieceOptions"
+                                optionLabel="label" optionValue="value" styleClass="w-full"
+                                [disabled]="state().submitting" required [appendTo]="'body'">
+                            </p-dropdown>
+                        </td>
+                        <td class="label-cell">Numero de la piece *</td>
+                        <td colspan="2">
+                            <input pInputText [(ngModel)]="formData.numId" name="numId" placeholder="Numero de la piece"
+                                class="w-full" [disabled]="state().submitting" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Date de naissance *</td>
+                        <td>
+                            <p-calendar [(ngModel)]="formData.dateNaissance" name="dateNaissance" dateFormat="dd/mm/yy"
+                                [showIcon]="true" styleClass="w-full" [disabled]="state().submitting" required>
+                            </p-calendar>
+                        </td>
+                        <td class="label-cell" colspan="2">Lieu de naissance *</td>
+                        <td colspan="2">
+                            <input pInputText [(ngModel)]="formData.lieuxNaissance" name="lieuxNaissance" class="w-full"
+                                [disabled]="state().submitting" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Adresse personnelle *</td>
+                        <td colspan="5">
+                            <input pInputText [(ngModel)]="formData.addresseDomicileContact"
+                                name="addresseDomicileContact" class="w-full" [disabled]="state().submitting" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Nombre d'annees a cette adresse *</td>
+                        <td>
+                            <p-inputNumber [(ngModel)]="formData.nombreAnneeHabitation" name="nombreAnneeHabitation"
+                                [min]="0" styleClass="w-full" [disabled]="state().submitting" required>
+                            </p-inputNumber>
+                        </td>
+                        <td class="label-cell" colspan="2">Repere</td>
+                        <td colspan="2">
+                            <input pInputText [(ngModel)]="formData.typePropriete" name="typePropriete" class="w-full"
+                                [disabled]="state().submitting">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Telephone *</td>
+                        <td>
+                            <input pInputText [(ngModel)]="formData.telephone" name="telephone" class="w-full"
+                                [disabled]="state().submitting" required>
+                        </td>
+                        <td class="label-cell" colspan="2">Email</td>
+                        <td colspan="2">
+                            <input pInputText [(ngModel)]="formData.email" name="email" type="email" class="w-full"
+                                [disabled]="state().submitting" placeholder="exemple@email.com">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Situation de famille *</td>
+                        <td>
+                            <p-dropdown [(ngModel)]="formData.situationMatrimoniale" name="situationMatrimoniale"
+                                [options]="situationMatrimonialeOptions" optionLabel="label" optionValue="value"
+                                styleClass="w-full" [disabled]="state().submitting" required>
+                            </p-dropdown>
+                        </td>
+                        <td class="label-cell">Enfants a charge</td>
+                        <td>
+                            <p-inputNumber [(ngModel)]="formData.nombrePersonneScolarise" name="nombrePersonneScolarise"
+                                [min]="0" styleClass="w-full" [disabled]="state().submitting">
+                            </p-inputNumber>
+                        </td>
+                        <td class="label-cell">Autres personnes a charge:</td>
+                        <td>
+                            <p-inputNumber [(ngModel)]="formData.nombrePersonneEnCharge" name="nombrePersonneEnCharge"
+                                [min]="0" styleClass="w-full" [disabled]="state().submitting" required>
+                            </p-inputNumber>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Nom du pere</td>
+                        <td colspan="2">
+                            <input pInputText [(ngModel)]="formData.nomPere" name="nomPere" class="w-full"
+                                [disabled]="state().submitting">
+                        </td>
+                        <td class="label-cell">Nom de la mere</td>
+                        <td colspan="2">
+                            <input pInputText [(ngModel)]="formData.nomMere" name="nomMere" class="w-full"
+                                [disabled]="state().submitting">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Nom du conjoint</td>
+                        <td colspan="5">
+                            <input pInputText [(ngModel)]="formData.nomConjoint" name="nomConjoint" class="w-full"
+                                [disabled]="state().submitting">
+                        </td>
+                    </tr>
+                    @if (!isParticulier()) {
+                    <tr>
+                        <td class="label-cell highlight-yellow">Nature de l'activite ou de l'entreprise</td>
+                        <td colspan="5">
+                            <input pInputText [(ngModel)]="formData.natureActivite" name="natureActivite" class="w-full"
+                                [disabled]="state().submitting">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Type d'activite *</td>
+                        <td>
+                            <p-dropdown [(ngModel)]="formData.selectedTypeActivite" name="typeActivite"
+                                [options]="activiteOptions" optionLabel="label" optionValue="value" [filter]="true"
+                                styleClass="w-full" [disabled]="state().submitting"
+                                (onChange)="onActiviteChange($event)" required placeholder="Selectionner une activite">
+                            </p-dropdown>
+                        </td>
+                        <td class="label-cell">Sous-activite *</td>
+                        <td>
+                            <p-dropdown [(ngModel)]="formData.selectedSousActivite" name="sousActivite"
+                                [options]="sousActiviteOptions" optionLabel="label" optionValue="value" [filter]="true"
+                                styleClass="w-full" [disabled]="state().submitting || sousActiviteOptions.length === 0"
+                                (onChange)="onSousActiviteChange($event)" required placeholder="Selectionner">
+                            </p-dropdown>
+                        </td>
+                        <td class="label-cell">Filiere</td>
+                        <td>
+                            <p-dropdown [(ngModel)]="formData.selectedSousSousActivite" name="sousSousActivite"
+                                [options]="sousSousActiviteOptions" optionLabel="label" optionValue="value"
+                                [filter]="true" styleClass="w-full"
+                                [disabled]="state().submitting || sousSousActiviteOptions.length === 0"
+                                (onChange)="onSousSousActiviteChange($event)" placeholder="Selectionner">
+                            </p-dropdown>
+                        </td>
+                    </tr>
+                    }
+                    <tr>
+                        <td class="label-cell">Nombre d'annees d'experience dans cette activite *</td>
+                        <td colspan="5">
+                            <p-inputNumber [(ngModel)]="formData.nombreAnneeActivite" name="nombreAnneeActivite"
+                                [min]="0" styleClass="w-15rem" suffix=" an(s)" [disabled]="state().submitting" required>
+                            </p-inputNumber>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Autres activites generatrices de revenus</td>
+                        <td colspan="5">
+                            <input pInputText [(ngModel)]="formData.autreActivite" name="autreActivite" class="w-full"
+                                [disabled]="state().submitting">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Adresse de l'entreprise *</td>
+                        <td colspan="5">
+                            <input pInputText [(ngModel)]="formData.adresseLieuActivite" name="adresseLieuActivite"
+                                class="w-full" [disabled]="state().submitting" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Prefecture</td>
+                        <td>
+                            <input pInputText [(ngModel)]="formData.prefectureActivite" name="prefectureActivite"
+                                class="w-full" [disabled]="state().submitting">
+                        </td>
+                        <td class="label-cell">Sous-prefecture</td>
+                        <td>
+                            <input pInputText [(ngModel)]="formData.sousPrefectureActivite"
+                                name="sousPrefectureActivite" class="w-full" [disabled]="state().submitting">
+                        </td>
+                        <td class="label-cell">Lieu de l'activite</td>
+                        <td>
+                            <input pInputText [(ngModel)]="formData.lieuActivite" name="lieuActivite" class="w-full"
+                                [disabled]="state().submitting">
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- SECTION 2: CARACTERISTIQUES DU PRET -->
+        <div class="form-section">
+            <div class="section-header">
+                <span>2. Caracteristiques du pret</span>
+            </div>
+            <table class="form-table">
+                <tbody>
+                    <tr>
+                        <td class="label-cell" style="width: 180px;">Objet du pret *</td>
+                        <td style="width: 200px;">
+                            <p-dropdown [(ngModel)]="formData.objectCredit" name="objectCredit"
+                                [options]="objectCreditOptions" optionLabel="label" optionValue="value"
+                                styleClass="w-full" [disabled]="state().submitting" required>
+                            </p-dropdown>
+                        </td>
+                        <td class="label-cell">Montant demande *</td>
+                        <td style="width: 180px;">
+                            <p-inputNumber [(ngModel)]="formData.montantDemande" name="montantDemande" [min]="1"
+                                styleClass="w-full" [disabled]="state().submitting" required>
+                            </p-inputNumber>
+                        </td>
+                        <td class="label-cell" style="width: 60px;">GNF</td>
+                        <td class="label-cell">Duree du pret *</td>
+                        <td>
+                            <p-inputNumber [(ngModel)]="formData.dureeDemande" name="dureeDemande" [min]="1"
+                                suffix=" mois" styleClass="w-full" [disabled]="state().submitting" required>
+                            </p-inputNumber>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Nombre d'echeances *</td>
+                        <td>
+                            <p-inputNumber [(ngModel)]="formData.nombreEcheance" name="nombreEcheance" [min]="1"
+                                styleClass="w-full" [disabled]="state().submitting" required>
+                            </p-inputNumber>
+                        </td>
+                        <td class="label-cell">Taux *</td>
+                        <td>
+                            <p-inputNumber [(ngModel)]="formData.tauxInteret" name="tauxInteret" [min]="0" [max]="100"
+                                suffix=" %" [minFractionDigits]="2" styleClass="w-full" [disabled]="state().submitting"
+                                required>
+                            </p-inputNumber>
+                        </td>
+                        <td class="label-cell" colspan="2">Periodicite *</td>
+                        <td>
+                            <p-dropdown [(ngModel)]="formData.periodiciteRemboursement" name="periodiciteRemboursement"
+                                [options]="periodiciteOptions" optionLabel="label" optionValue="value"
+                                styleClass="w-full" [disabled]="state().submitting" required>
+                            </p-dropdown>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Echeance</td>
+                        <td>
+                            <p-inputNumber [(ngModel)]="formData.echeance" name="echeance" mode="currency"
+                                currency="GNF" locale="fr-FR" styleClass="w-full" [disabled]="state().submitting">
+                            </p-inputNumber>
+                        </td>
+                        <td class="label-cell" colspan="3">Object du credit *</td>
+                        <td colspan="2">
+                            <input pInputText [(ngModel)]="formData.detailObjectCredit" name="detailObjectCredit"
+                                class="w-full" [disabled]="state().submitting" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Statut du credit *</td>
+                        <td>
+                            <div class="flex gap-3">
+                                @for(option of statutCreditOptions; track option.value) {
+                                <div class="field-radiobutton">
+                                    <p-radioButton [(ngModel)]="formData.statutCredit" name="statutCredit"
+                                        [value]="option.value" [inputId]="'corr_' + option.value" [disabled]="state().submitting">
+                                    </p-radioButton>
+                                    <label [for]="'corr_' + option.value" class="ml-1">{{ option.label }}</label>
+                                </div>
+                                }
+                            </div>
+                        </td>
+                        <td class="label-cell">Rang</td>
+                        <td>
+                            <p-inputNumber [(ngModel)]="formData.rangCredit" name="rangCredit" [min]="1"
+                                styleClass="w-full" [disabled]="state().submitting">
+                            </p-inputNumber>
+                        </td>
+                        <td class="label-cell" colspan="2">Type de credit *</td>
+                        <td>
+                            <p-dropdown [(ngModel)]="formData.tipCredito" name="tipCredito"
+                                [options]="typeCreditOptions" optionLabel="label" optionValue="value" [filter]="true"
+                                styleClass="w-full" [disabled]="state().submitting"
+                                (onChange)="onTypeCreditChange($event)" required>
+                            </p-dropdown>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- SECTION 3: GARANTIES -->
+        <div class="form-section">
+            <div class="section-header">
+                <span>3. Garanties</span>
+                <button type="button" pButton icon="pi pi-plus" label="Ajouter"
+                    class="p-button-sm p-button-success ml-3" (click)="showAddGarantieDialog()"
+                    [disabled]="state().submitting">
+                </button>
+            </div>
+            <table class="form-table garantie-table">
+                <thead>
+                    <tr>
+                        <th style="width: 180px;">Types de garantie</th>
+                        <th>Description de la garantie</th>
+                        <th style="width: 180px;">Valeur de la garantie</th>
+                        <th style="width: 180px;">Valeur retenue</th>
+                        <th style="width: 80px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for(garantie of getGarantiesByType('Garantie Financiere'); track $index) {
+                    <tr>
+                        @if($first) {
+                        <td class="label-cell" [attr.rowspan]="getGarantiesByType('Garantie Financiere').length">
+                            Garantie financiere
+                        </td>
+                        }
+                        <td>{{ garantie.descriptionGarantie }}</td>
+                        <td class="text-right">{{ garantie.valeurGarantie | number:'1.0-0' }}</td>
+                        <td class="text-right">{{ garantie.valeurEmprunte | number:'1.0-0' }}</td>
+                        <td class="text-center">
+                            <button type="button" pButton icon="pi pi-trash"
+                                class="p-button-text p-button-danger p-button-sm"
+                                (click)="deleteGarantieByRef(garantie)" [disabled]="state().submitting">
+                            </button>
+                        </td>
+                    </tr>
+                    } @empty {
+                    <tr>
+                        <td class="label-cell">Garantie financiere</td>
+                        <td colspan="4" class="text-center text-muted">-</td>
+                    </tr>
+                    }
+
+                    @for(garantie of getGarantiesByType('Garantie Materielle'); track $index) {
+                    <tr>
+                        @if($first) {
+                        <td class="label-cell" [attr.rowspan]="getGarantiesByType('Garantie Materielle').length">
+                            Garantie materielle
+                        </td>
+                        }
+                        <td>{{ garantie.descriptionGarantie }}</td>
+                        <td class="text-right">{{ garantie.valeurGarantie | number:'1.0-0' }}</td>
+                        <td class="text-right">{{ garantie.valeurEmprunte | number:'1.0-0' }}</td>
+                        <td class="text-center">
+                            <button type="button" pButton icon="pi pi-trash"
+                                class="p-button-text p-button-danger p-button-sm"
+                                (click)="deleteGarantieByRef(garantie)" [disabled]="state().submitting">
+                            </button>
+                        </td>
+                    </tr>
+                    } @empty {
+                    <tr>
+                        <td class="label-cell">Garantie materielle</td>
+                        <td colspan="4" class="text-center text-muted">-</td>
+                    </tr>
+                    }
+
+                    @for(garantie of getGarantiesByType('Caution Solidaire', 'Autre Garantie'); track $index) {
+                    <tr>
+                        @if($first) {
+                        <td class="label-cell"
+                            [attr.rowspan]="getGarantiesByType('Caution Solidaire', 'Autre Garantie').length">
+                            Autres garantie
+                        </td>
+                        }
+                        <td>{{ garantie.descriptionGarantie }}</td>
+                        <td class="text-right">{{ garantie.valeurGarantie | number:'1.0-0' }}</td>
+                        <td class="text-right">{{ garantie.valeurEmprunte | number:'1.0-0' }}</td>
+                        <td class="text-center">
+                            <button type="button" pButton icon="pi pi-trash"
+                                class="p-button-text p-button-danger p-button-sm"
+                                (click)="deleteGarantieByRef(garantie)" [disabled]="state().submitting">
+                            </button>
+                        </td>
+                    </tr>
+                    } @empty {
+                    <tr>
+                        <td class="label-cell">Autres garantie</td>
+                        <td colspan="4" class="text-center text-muted">-</td>
+                    </tr>
+                    }
+
+                    <tr class="total-row">
+                        <td></td>
+                        <td class="text-center font-bold">TOTAL</td>
+                        <td class="text-right font-bold">{{ calculateTotalGaranties() | number:'1.0-0' }}</td>
+                        <td class="text-right font-bold">{{ calculateTotalEmpruntable() | number:'1.0-0' }}</td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Actions Buttons -->
+        <div class="action-buttons">
+            <button type="button" pButton icon="pi pi-arrow-left" label="Retour" class="p-button-secondary"
+                (click)="goBack()" [disabled]="state().submitting">
+            </button>
+            <div class="flex gap-2">
+                <button type="submit" pButton icon="pi pi-check" label="Sauvegarder les corrections"
+                    class="p-button-warning"
+                    [loading]="state().submitting"
+                    [disabled]="correctionForm.invalid || state().submitting || state().garanties.length === 0">
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Dialog Garantie -->
+    <p-dialog [(visible)]="state().showGarantieDialog"
+        [header]="state().editingGarantieIndex !== undefined ? 'Modifier la garantie' : 'Ajouter une garantie'"
+        [modal]="true" [style]="{ width: '500px' }" [draggable]="false" [resizable]="false">
+        <div class="grid">
+            <div class="col-12">
+                <label class="block mb-2">Type de garantie *</label>
+                <p-dropdown [(ngModel)]="state().currentGarantie.typeGarantie" [options]="typeGarantieOptions"
+                    optionLabel="label" optionValue="value" placeholder="Selectionner" styleClass="w-full"
+                    appendTo="body">
+                </p-dropdown>
+            </div>
+            <div class="col-12">
+                <label class="block mb-2">Description de la garantie *</label>
+                <textarea pTextarea [(ngModel)]="state().currentGarantie.descriptionGarantie" rows="3" class="w-full"
+                    placeholder="Decrivez precisement la garantie">
+                </textarea>
+            </div>
+            <div class="col-12">
+                <label class="block mb-2">Valeur de la garantie (GNF) *</label>
+                <p-inputNumber [(ngModel)]="state().currentGarantie.valeurGarantie" mode="currency" currency="GNF"
+                    locale="fr-FR" [min]="1" styleClass="w-full">
+                </p-inputNumber>
+            </div>
+            <div class="col-12">
+                <div class="valeur-retenue">
+                    <span>Valeur retenue (75%):</span>
+                    <strong>{{ (state().currentGarantie.valeurGarantie * 0.75) | number:'1.0-0' }} GNF</strong>
+                </div>
+            </div>
+        </div>
+        <ng-template pTemplate="footer">
+            <button type="button" pButton icon="pi pi-times" label="Annuler" class="p-button-text"
+                (click)="cancelGarantie()">
+            </button>
+            <button type="button" pButton icon="pi pi-check" label="Valider" (click)="saveGarantie()" [disabled]="!state().currentGarantie.typeGarantie ||
+                           !state().currentGarantie.descriptionGarantie ||
+                           state().currentGarantie.valeurGarantie <= 0">
+            </button>
+        </ng-template>
+    </p-dialog>
+</div>

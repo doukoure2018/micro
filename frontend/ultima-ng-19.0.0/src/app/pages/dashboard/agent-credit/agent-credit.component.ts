@@ -9,10 +9,14 @@ import { Component, DestroyRef, inject, signal, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
+import { BadgeModule } from 'primeng/badge';
 import { ButtonModule } from 'primeng/button';
+import { ChipModule } from 'primeng/chip';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
+import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { RippleModule } from 'primeng/ripple';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
@@ -21,7 +25,7 @@ import { ToastModule } from 'primeng/toast';
 @Component({
     selector: 'app-agent-credit',
     standalone: true,
-    imports: [CommonModule, ButtonModule, RippleModule, MessageModule, RouterLink, TableModule, IconFieldModule, InputIconModule, TagModule, ToastModule],
+    imports: [CommonModule, ButtonModule, RippleModule, MessageModule, RouterLink, TableModule, IconFieldModule, InputIconModule, InputTextModule, TagModule, ToastModule, BadgeModule, ChipModule, ProgressSpinnerModule],
     templateUrl: './agent-credit.component.html',
     providers: [MessageService]
 })
@@ -35,6 +39,9 @@ export class AgentCreditComponent implements OnInit {
         filteredDemandeAttentes?: DemandeIndividuel[];
         creditDtos?: NewCredit[];
         nombreDemandeInd?: number;
+        workflowEnCorrection: any[];
+        workflowCorrectionDR: any[];
+        workflowSuiviValidation: any[];
         loading: boolean;
         message: string | undefined;
         error: string | any;
@@ -46,6 +53,9 @@ export class AgentCreditComponent implements OnInit {
         message: undefined,
         error: undefined,
         filteredDemandeAttentes: [],
+        workflowEnCorrection: [],
+        workflowCorrectionDR: [],
+        workflowSuiviValidation: [],
         isAgentActive: undefined,
         checkingStatus: false
     });
@@ -190,6 +200,9 @@ export class AgentCreditComponent implements OnInit {
                             life: 3000
                         });
                         this.laodDemandeAttenteByPointVente();
+                        this.loadWorkflowEnCorrection();
+                        this.loadWorkflowCorrectionDR();
+                        this.loadSuiviValidation();
                     }
                 },
                 error: (error) => {
@@ -296,6 +309,9 @@ export class AgentCreditComponent implements OnInit {
         console.log('🔄 Refresh clicked');
         if (this.state().isAgentActive) {
             this.laodDemandeAttenteByPointVente();
+            this.loadWorkflowEnCorrection();
+            this.loadWorkflowCorrectionDR();
+            this.loadSuiviValidation();
         } else {
             this.loadUserAndCheckStatus();
         }
@@ -365,5 +381,99 @@ export class AgentCreditComponent implements OnInit {
             return;
         }
         this.router.navigate(['/dashboards/agent-credit/detail-credit-ind/', referenceCredit, numeroMembre]);
+    }
+
+    // ==================== WORKFLOW HIERARCHIQUE ====================
+
+    private loadWorkflowEnCorrection(): void {
+        this.userService.getEnCorrectionAC$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    this.state.update(s => ({
+                        ...s,
+                        workflowEnCorrection: response.data?.workflowDemandes || []
+                    }));
+                },
+                error: () => {}
+            });
+    }
+
+    private loadWorkflowCorrectionDR(): void {
+        this.userService.getEnCorrectionDRForAC$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    this.state.update(s => ({
+                        ...s,
+                        workflowCorrectionDR: response.data?.workflowDemandes || []
+                    }));
+                },
+                error: () => {}
+            });
+    }
+
+    private loadSuiviValidation(): void {
+        this.userService.getSuiviValidationAC$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    this.state.update(s => ({
+                        ...s,
+                        workflowSuiviValidation: response.data?.workflowDemandes || []
+                    }));
+                },
+                error: () => {}
+            });
+    }
+
+    hasWorkflowEnCorrection(): boolean {
+        return this.state().workflowEnCorrection.length > 0;
+    }
+
+    hasWorkflowCorrectionDR(): boolean {
+        return this.state().workflowCorrectionDR.length > 0;
+    }
+
+    hasSuiviValidation(): boolean {
+        return this.state().workflowSuiviValidation.length > 0;
+    }
+
+    getValidationStateLabel(validationState: string): string {
+        const labels: Record<string, string> = {
+            APPROVED: 'En attente DA',
+            VALIDATED_DA: 'En attente DR',
+            VALIDATED_DR: 'En attente DE',
+            VALIDATED_FINAL: 'Valide'
+        };
+        return labels[validationState] || validationState;
+    }
+
+    getValidationStateSeverity(validationState: string): 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast' | undefined {
+        const severities: Record<string, any> = {
+            APPROVED: 'info',
+            VALIDATED_DA: 'warn',
+            VALIDATED_DR: 'secondary',
+            VALIDATED_FINAL: 'success'
+        };
+        return severities[validationState] || 'info';
+    }
+
+    formatMontantGNF(montant: number): string {
+        if (!montant || montant === 0) return '0 GNF';
+        return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'GNF', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(montant);
+    }
+
+    viewDemandeDetail(demandeId: number): void {
+        this.router.navigate(['/dashboards/credit/individuel/attente/detail', demandeId]);
+    }
+
+    hasDemandeCorrectionSection(demande: any): boolean {
+        const sections = demande.sectionsARevoirDa || '';
+        return sections.includes('GARANTIE') || sections.includes('DEMANDE_COMPLETE');
+    }
+
+    navigateCorrectionDemande(demandeId: number): void {
+        this.router.navigate(['/dashboards/agent-credit/correction-demande', demandeId]);
     }
 }

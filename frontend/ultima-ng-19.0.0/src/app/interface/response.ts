@@ -269,5 +269,11 @@ export interface IResponse {
         arrete?: ArreteCaisse;
         stats?: ArreteCaisseStats;
         total?: number;
+        totalValeurEmprunte?: number;
+        validationDA?: any;
+        validationsDA?: any[];
+        demandesRejetees?: any[];
+        demandesValideesIds?: number[];
+        workflowDemandes?: any[];
     };
 }

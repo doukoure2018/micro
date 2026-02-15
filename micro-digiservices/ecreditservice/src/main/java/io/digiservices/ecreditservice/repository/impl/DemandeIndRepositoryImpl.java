@@ -1090,6 +1090,33 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
             demande.setSousPrefecture((String) demandeMap.get("sous_prefecture"));
             demande.setEmail((String) demandeMap.get("email"));
 
+            // Workflow hierarchique
+            demande.setAvisAgentCredit((String) demandeMap.get("avis_agent_credit"));
+            demande.setAvisDa((String) demandeMap.get("avis_da"));
+            demande.setMotifRejetDa((String) demandeMap.get("motif_rejet_da"));
+            demande.setSectionsARevoirDa((String) demandeMap.get("sections_a_revoir_da"));
+            demande.setInstructionsAc((String) demandeMap.get("instructions_ac"));
+            demande.setValidatedByDa((String) demandeMap.get("validated_by_da"));
+            if (demandeMap.get("date_validation_da") != null) {
+                demande.setDateValidationDa(LocalDateTime.parse(demandeMap.get("date_validation_da").toString()));
+            }
+            demande.setAvisDr((String) demandeMap.get("avis_dr"));
+            demande.setMotifRejetDr((String) demandeMap.get("motif_rejet_dr"));
+            demande.setSectionsARevoirDr((String) demandeMap.get("sections_a_revoir_dr"));
+            demande.setInstructionsDa((String) demandeMap.get("instructions_da"));
+            demande.setValidatedByDr((String) demandeMap.get("validated_by_dr"));
+            if (demandeMap.get("date_validation_dr") != null) {
+                demande.setDateValidationDr(LocalDateTime.parse(demandeMap.get("date_validation_dr").toString()));
+            }
+            demande.setAvisDe((String) demandeMap.get("avis_de"));
+            demande.setMotifRejetDe((String) demandeMap.get("motif_rejet_de"));
+            demande.setSectionsARevoirDe((String) demandeMap.get("sections_a_revoir_de"));
+            demande.setInstructionsDr((String) demandeMap.get("instructions_dr"));
+            demande.setValidatedByDe((String) demandeMap.get("validated_by_de"));
+            if (demandeMap.get("date_validation_de") != null) {
+                demande.setDateValidationDe(LocalDateTime.parse(demandeMap.get("date_validation_de").toString()));
+            }
+
             // Timestamp
             if (demandeMap.get("createdat") != null) {
                 String timestampStr = demandeMap.get("createdat").toString();
@@ -1177,5 +1204,98 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
         return new BigDecimal(value.toString());
     }
 
+    @Override
+    @Transactional
+    public void updateDemandeComplete(DemandeIndividuel demande) {
+        try {
+            log.info("Mise a jour complete de la demande {}", demande.getDemandeIndividuelId());
+
+            Map<String, Object> params = new HashMap<>();
+            params.put("demandeIndividuelId", demande.getDemandeIndividuelId());
+            params.put("nom", demande.getNom());
+            params.put("prenom", demande.getPrenom());
+            params.put("sernom", demande.getSernom());
+            params.put("telephone", demande.getTelephone());
+            params.put("email", demande.getEmail());
+            params.put("numeroMembre", demande.getNumeroMembre());
+            params.put("typePiece", demande.getTypePiece());
+            params.put("numId", demande.getNumId());
+            params.put("dateNaissance", demande.getDateNaissance());
+            params.put("lieuxNaissance", demande.getLieuxNaissance());
+            params.put("genre", demande.getGenre());
+            params.put("situationMatrimoniale", demande.getSituationMatrimoniale());
+            params.put("nombrePersonneEnCharge", demande.getNombrePersonneEnCharge());
+            params.put("nombrePersonneScolarise", demande.getNombrePersonneScolarise());
+            params.put("addresseDomicileContact", demande.getAddresseDomicileContact());
+            params.put("typePropriete", demande.getTypePropriete());
+            params.put("nombreAnneeHabitation", demande.getNombreAnneeHabitation());
+            params.put("typeActivite", demande.getTypeActivite());
+            params.put("sousActivite", demande.getSousActivite());
+            params.put("sousSousActivite", demande.getSousSousActivite());
+            params.put("descriptionActivite", demande.getDescriptionActivite());
+            params.put("nombreAnneeActivite", demande.getNombreAnneeActivite());
+            params.put("adresseLieuActivite", demande.getAdresseLieuActivite());
+            params.put("autreActivite", demande.getAutreActivite());
+            params.put("lieuActivite", demande.getLieuActivite());
+            params.put("natureActivite", demande.getNatureActivite());
+            params.put("currentActivite", demande.getCurrentActivite());
+            params.put("profession", demande.getProfession());
+            params.put("secteurActivite", demande.getSecteurActivite());
+            params.put("montantDemande", demande.getMontantDemande());
+            params.put("dureeDemande", demande.getDureeDemande());
+            params.put("periodiciteRemboursement", demande.getPeriodiciteRemboursement());
+            params.put("tauxInteret", demande.getTauxInteret());
+            params.put("periodeDiffere", demande.getPeriodeDiffere());
+            params.put("nombreEcheance", demande.getNombreEcheance());
+            params.put("echeance", demande.getEcheance());
+            params.put("objectCredit", demande.getObjectCredit());
+            params.put("detailObjectCredit", demande.getDetailObjectCredit());
+            params.put("statutCredit", demande.getStatutCredit());
+            params.put("rangCredit", demande.getRangCredit());
+            params.put("tipCredito", demande.getTipCredito());
+            params.put("natureClient", demande.getNatureClient());
+            params.put("nomPersonneMorale", demande.getNomPersonneMorale());
+            params.put("sigle", demande.getSigle());
+            params.put("categorie", demande.getCategorie());
+            params.put("nomPere", demande.getNomPere());
+            params.put("nomMere", demande.getNomMere());
+            params.put("nomConjoint", demande.getNomConjoint());
+            params.put("prefecture", demande.getPrefecture());
+            params.put("sousPrefecture", demande.getSousPrefecture());
+
+            int updated = jdbcClient.sql(DemandeIndQuery.UPDATE_DEMANDE_IND_COMPLETE)
+                    .params(params)
+                    .update();
+
+            if (updated == 0) {
+                throw new ApiException("Demande non trouvee ou n'est pas en etat CORRECTION");
+            }
+
+            // Remplacer les garanties si fournies
+            if (demande.getGaranties() != null && !demande.getGaranties().isEmpty()) {
+                jdbcClient.sql(DemandeIndQuery.DELETE_GARANTIES_BY_DEMANDE)
+                        .param("demandeIndividuelId", demande.getDemandeIndividuelId())
+                        .update();
+
+                for (GarantiePropose garantie : demande.getGaranties()) {
+                    jdbcClient.sql(DemandeIndQuery.INSERT_GARANTIE)
+                            .param("demandeIndividuelId", demande.getDemandeIndividuelId())
+                            .param("typeGarantie", garantie.getTypeGarantie())
+                            .param("descriptionGarantie", garantie.getDescriptionGarantie())
+                            .param("valeurGarantie", garantie.getValeurGarantie())
+                            .param("valeurEmprunte", garantie.getValeurEmprunte())
+                            .update();
+                }
+                log.info("Remplacement de {} garanties pour la demande {}", demande.getGaranties().size(), demande.getDemandeIndividuelId());
+            }
+
+            log.info("Demande {} mise a jour avec succes", demande.getDemandeIndividuelId());
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Erreur lors de la mise a jour de la demande: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la mise a jour de la demande");
+        }
+    }
 
 }

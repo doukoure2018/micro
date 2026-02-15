@@ -244,6 +244,7 @@ export interface Amortissement {
     amortissementCumule?: number;
     valeurNetteComptable?: number;
     statutAmortissement?: string;
+    valeurNetteAjustee?: number;
 }
 
 export const TYPES_IMMOBILISATION = [

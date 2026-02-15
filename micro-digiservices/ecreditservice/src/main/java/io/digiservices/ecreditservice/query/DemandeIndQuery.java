@@ -597,5 +597,46 @@ public class DemandeIndQuery {
         SELECT id, libele FROM delegation ORDER BY libele
         """;
 
+    public static final String UPDATE_DEMANDE_IND_COMPLETE = """
+        UPDATE demandeindividuel SET
+            nom = :nom, prenom = :prenom, sernom = :sernom, telephone = :telephone,
+            email = :email, numero_membre = :numeroMembre,
+            type_piece = :typePiece, numid = :numId, date_naissance = :dateNaissance,
+            lieux_naissance = :lieuxNaissance, genre = :genre,
+            situation_matrimoniale = :situationMatrimoniale,
+            nombre_personne_en_charge = :nombrePersonneEnCharge,
+            nombre_personne_scolarise = :nombrePersonneScolarise,
+            addresse_domicile_contact = :addresseDomicileContact,
+            type_propriete = :typePropriete, nombre_annee_habitation = :nombreAnneeHabitation,
+            type_activite = :typeActivite, sous_activite = :sousActivite,
+            sous_sous_activite = :sousSousActivite, description_activite = :descriptionActivite,
+            nombre_annee_activite = :nombreAnneeActivite,
+            adresse_lieu_activite = :adresseLieuActivite,
+            autre_activite = :autreActivite, lieu_activite = :lieuActivite,
+            nature_activite = :natureActivite, current_activite = :currentActivite,
+            profession = :profession, secteur_activite = :secteurActivite,
+            montant_demande = :montantDemande, duree_demande = :dureeDemande,
+            periodicite_remboursement = :periodiciteRemboursement,
+            taux_interet = :tauxInteret, periode_differe = :periodeDiffere,
+            nombre_echeance = :nombreEcheance, echeance = :echeance,
+            object_credit = :objectCredit, detail_object_credit = :detailObjectCredit,
+            statut_credit = :statutCredit, rang_credit = :rangCredit,
+            tip_credito = :tipCredito,
+            nature_client = :natureClient, nom_personne_morale = :nomPersonneMorale,
+            sigle = :sigle, categorie = :categorie,
+            nom_pere = :nomPere, nom_mere = :nomMere, nom_conjoint = :nomConjoint,
+            prefecture = :prefecture, sous_prefecture = :sousPrefecture
+        WHERE demandeindividuel_id = :demandeIndividuelId
+          AND validation_state = 'CORRECTION'
+        """;
+
+    public static final String DELETE_GARANTIES_BY_DEMANDE = """
+        DELETE FROM garantie_propose WHERE demandeindividuel_id = :demandeIndividuelId
+        """;
+
+    public static final String INSERT_GARANTIE = """
+        INSERT INTO garantie_propose (demandeindividuel_id, type_garantie, description_garantie, valeur_garantie, valeur_emprunte)
+        VALUES (:demandeIndividuelId, :typeGarantie, :descriptionGarantie, :valeurGarantie, :valeurEmprunte)
+        """;
 
 }

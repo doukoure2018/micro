@@ -108,6 +108,31 @@ export interface DemandeIndividuel {
     agenceLibele?: string;
     pointVenteLibele?: string;
 
+    // ==================== WORKFLOW HIERARCHIQUE ====================
+    // AC
+    avisAgentCredit?: string;
+    // DA
+    avisDa?: string;
+    motifRejetDa?: string;
+    sectionsARevoirDa?: string;
+    instructionsAc?: string;
+    dateValidationDa?: string | Date;
+    validatedByDa?: string;
+    // DR
+    avisDr?: string;
+    motifRejetDr?: string;
+    sectionsARevoirDr?: string;
+    instructionsDa?: string;
+    dateValidationDr?: string | Date;
+    validatedByDr?: string;
+    // DE
+    avisDe?: string;
+    motifRejetDe?: string;
+    sectionsARevoirDe?: string;
+    instructionsDr?: string;
+    dateValidationDe?: string | Date;
+    validatedByDe?: string;
+
     // ==================== CHAMPS SUPPLÉMENTAIRES FORMULAIRE ====================
     dateAdhesion?: Date | null;
     titreDirecteur?: string; // Pour PME/PMI
@@ -192,8 +217,11 @@ export enum StatutDemande {
 export enum ValidationState {
     NOUVEAU = 'NOUVEAU',
     SELECTION = 'SELECTION',
-    EN_REVISION = 'EN_REVISION',
-    APPROUVE = 'APPROUVE',
-    REJETE = 'REJETE',
-    EN_ATTENTE_DOCUMENTS = 'EN_ATTENTE_DOCUMENTS'
+    APPROVED = 'APPROVED',
+    CORRECTION = 'CORRECTION',
+    VALIDATED_DA = 'VALIDATED_DA',
+    CORRECTION_DR = 'CORRECTION_DR',
+    VALIDATED_DR = 'VALIDATED_DR',
+    CORRECTION_DE = 'CORRECTION_DE',
+    VALIDATED_FINAL = 'VALIDATED_FINAL'
 }

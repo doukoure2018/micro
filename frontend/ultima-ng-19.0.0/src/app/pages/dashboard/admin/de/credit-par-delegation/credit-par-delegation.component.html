@@ -1,191 +1,165 @@
-<!-- src/app/components/credit-par-delegation/credit-par-delegation.component.html -->
-<div class="card">
-    <!-- Header -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
-        <div class="flex flex-col">
-            <span class="text-surface-900 dark:text-surface-0 text-2xl font-semibold mb-2">
-                Liste des Crédits par Délégation
-            </span>
-            <span class="text-surface-600 dark:text-surface-200">
-                Vue consolidée des demandes de crédit pour la mise en place
-            </span>
+<div class="grid">
+    <div class="col-12">
+        <p-toast></p-toast>
+
+        <!-- Loading -->
+        <div *ngIf="loading()" class="flex justify-center items-center py-8">
+            <p-progressSpinner strokeWidth="4" [style]="{width: '50px', height: '50px'}"></p-progressSpinner>
+            <span class="ml-3">Chargement...</span>
         </div>
 
-        <div class="flex gap-2">
-            <p-button icon="pi pi-refresh" label="Actualiser" severity="secondary" [loading]="state().loading"
-                (onClick)="refreshData()">
-            </p-button>
-        </div>
-    </div>
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <!-- WORKFLOW CREDIT - Demandes a Valider par le DE                        -->
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <div class="col-12" *ngIf="!loading()">
+            <div class="card border-l-4 border-green-500">
+                <div class="flex flex-wrap gap-3 items-center justify-between mb-4">
+                    <h3 class="text-xl font-semibold m-0">
+                        <i class="pi pi-check-square mr-2 text-green-600"></i>
+                        Demandes de Credit en attente de Validation DE
+                        <p-badge *ngIf="workflowAValiderDE().length > 0"
+                            [value]="workflowAValiderDE().length.toString()" severity="success" class="ml-2"></p-badge>
+                    </h3>
+                    <button pButton type="button" icon="pi pi-refresh" (click)="refreshWorkflow()"
+                        class="p-button-secondary p-button-sm" pTooltip="Actualiser"></button>
+                </div>
 
-    <!-- Statistiques globales -->
-    @if (!state().loading && state().delegations.length > 0) {
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-            <div class="flex items-center gap-3">
-                <div class="bg-blue-500 rounded-full p-3">
-                    <i class="pi pi-building text-white text-xl"></i>
-                </div>
-                <div>
-                    <div class="text-surface-600 dark:text-surface-300 text-sm">Délégations</div>
-                    <div class="text-2xl font-bold text-surface-900 dark:text-surface-0">
-                        {{ state().delegations.length }}
-                    </div>
-                </div>
+                <p-table #dtWorkflowDE [value]="workflowAValiderDE()" [paginator]="true" [rows]="10"
+                    [showCurrentPageReport]="true" responsiveLayout="scroll"
+                    currentPageReportTemplate="Affichage de {first} a {last} sur {totalRecords}"
+                    [rowsPerPageOptions]="[10, 25, 50]"
+                    [globalFilterFields]="['nom', 'prenom', 'numeroMembre', 'objectCredit', 'delegationLibele', 'agenceLibele', 'avisDr']"
+                    styleClass="p-datatable-striped">
+
+                    <ng-template pTemplate="caption">
+                        <div class="flex flex-wrap gap-3 items-center justify-between">
+                            <p-icon-field class="w-full sm:w-80">
+                                <p-inputicon class="pi pi-search" />
+                                <input pInputText type="text" (input)="onGlobalFilter(dtWorkflowDE, $event)"
+                                    placeholder="Rechercher..." class="w-full" />
+                            </p-icon-field>
+                            <div class="text-sm text-500">
+                                {{ workflowAValiderDE().length }} demande(s) en attente
+                            </div>
+                        </div>
+                    </ng-template>
+
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th pSortableColumn="createdAt" style="width:10%">Date <p-sortIcon field="createdAt"></p-sortIcon></th>
+                            <th pSortableColumn="nom" style="width:15%">Client <p-sortIcon field="nom"></p-sortIcon></th>
+                            <th style="width:10%">Delegation</th>
+                            <th style="width:10%">Agence</th>
+                            <th pSortableColumn="montantDemande" class="text-right" style="width:13%">Montant <p-sortIcon field="montantDemande"></p-sortIcon></th>
+                            <th style="width:12%">Objet</th>
+                            <th style="width:14%">Avis DR</th>
+                            <th class="text-center" style="width:16%">Actions</th>
+                        </tr>
+                    </ng-template>
+
+                    <ng-template pTemplate="body" let-demande>
+                        <tr class="hover:bg-surface-50">
+                            <td>{{ demande.createdAt | date:'dd/MM/yyyy' }}</td>
+                            <td>
+                                <div class="flex flex-column gap-1">
+                                    <span class="font-semibold">{{ demande.prenom }} {{ demande.nom }}</span>
+                                    <small class="text-500">{{ demande.numeroMembre }}</small>
+                                </div>
+                            </td>
+                            <td><p-chip [label]="demande.delegationLibele || 'N/A'" styleClass="text-xs bg-purple-50 text-purple-700"></p-chip></td>
+                            <td><p-chip [label]="demande.agenceLibele || 'N/A'" styleClass="text-xs"></p-chip></td>
+                            <td class="text-right font-bold text-green-600">{{ formatMontantGNF(demande.montantDemande) }}</td>
+                            <td>{{ demande.objectCredit }}</td>
+                            <td>
+                                <small *ngIf="demande.avisDr" class="text-600">{{ demande.avisDr | slice:0:40 }}...</small>
+                                <small *ngIf="!demande.avisDr" class="text-400">-</small>
+                            </td>
+                            <td class="text-center">
+                                <div class="flex gap-2 justify-center">
+                                    <p-button icon="pi pi-eye" (click)="viewDemandeDetail(demande.demandeIndividuelId)"
+                                        size="small" severity="info" pTooltip="Voir detail"></p-button>
+                                    <p-button icon="pi pi-check" (click)="ouvrirValidation(demande)"
+                                        size="small" severity="success" pTooltip="Valider"></p-button>
+                                    <p-button icon="pi pi-times" (click)="ouvrirRejet(demande)"
+                                        size="small" severity="danger" pTooltip="Rejeter"></p-button>
+                                </div>
+                            </td>
+                        </tr>
+                    </ng-template>
+
+                    <ng-template pTemplate="emptymessage">
+                        <tr>
+                            <td colspan="8" class="text-center p-6">
+                                <div class="flex flex-col items-center gap-3">
+                                    <i class="pi pi-check-circle text-6xl text-green-500"></i>
+                                    <span class="text-600 font-medium text-xl">Aucune demande en attente</span>
+                                    <small class="text-500">Toutes les demandes ont ete traitees</small>
+                                </div>
+                            </td>
+                        </tr>
+                    </ng-template>
+                </p-table>
             </div>
         </div>
-
-        <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-            <div class="flex items-center gap-3">
-                <div class="bg-green-500 rounded-full p-3">
-                    <i class="pi pi-file text-white text-xl"></i>
-                </div>
-                <div>
-                    <div class="text-surface-600 dark:text-surface-300 text-sm">Total Demandes</div>
-                    <div class="text-2xl font-bold text-surface-900 dark:text-surface-0">
-                        {{ state().totalDemandes }}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
-            <div class="flex items-center gap-3">
-                <div class="bg-purple-500 rounded-full p-3">
-                    <i class="pi pi-wallet text-white text-xl"></i>
-                </div>
-                <div>
-                    <div class="text-surface-600 dark:text-surface-300 text-sm">Montant Global</div>
-                    <div class="text-2xl font-bold text-surface-900 dark:text-surface-0">
-                        {{ state().montantGlobal | currency:'GNF ':'symbol':'1.0-0' }}
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
-    }
-
-    <!-- Loading State -->
-    @if (state().loading) {
-    <div class="flex justify-center items-center py-8">
-        <p-progressSpinner strokeWidth="4"></p-progressSpinner>
-    </div>
-    }
-
-    <!-- Error Message -->
-    @if (state().error) {
-    <p-message severity="error" [text]="state().error" styleClass="w-full mb-4"></p-message>
-    }
-
-    <!-- Accordion par Délégation -->
-    @if (!state().loading && state().delegations.length > 0) {
-    <p-accordion [multiple]="true">
-        @for (delegation of state().delegations; track trackByDelegation($index, delegation)) {
-        <p-accordion-panel>
-            <p-accordion-header>
-                <div class="flex justify-between items-center w-full pr-4">
-                    <div class="flex items-center gap-3">
-                        <i class="pi pi-building text-primary"></i>
-                        <span class="font-semibold text-lg">{{ delegation.delegationLibele }}</span>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <p-tag [value]="delegation.totalDemandes + ' demande(s)'"
-                            [severity]="getDelegationSeverity(delegation.totalDemandes)">
-                        </p-tag>
-                        <span class="text-sm text-surface-600 dark:text-surface-300">
-                            {{ delegation.montantTotal | currency:'GNF ':'symbol':'1.0-0' }}
-                        </span>
-                    </div>
-                </div>
-            </p-accordion-header>
-            <p-accordion-content>
-                <div class="p-2">
-                    <p-table [value]="delegation.demandes" [paginator]="delegation.demandes.length > 10" [rows]="10"
-                        [rowsPerPageOptions]="[10, 25, 50]"
-                        [globalFilterFields]="['nom', 'prenom', 'numeroMembre', 'descriptionActivite']"
-                        responsiveLayout="scroll" styleClass="p-datatable-sm" [rowHover]="true">
-
-                        <ng-template pTemplate="header">
-                            <tr>
-                                <th>Référence</th>
-                                <th>Client</th>
-                                <th>N° Membre</th>
-                                <th>Montant</th>
-                                <th>Durée</th>
-                                <th>Activité</th>
-                                <th>Statut</th>
-                                <th>Date</th>
-                                <th class="text-center">Actions</th>
-                            </tr>
-                        </ng-template>
-
-                        <ng-template pTemplate="body" let-demande>
-                            <tr>
-                                <td>
-                                    <span class="font-mono text-sm">{{ demande.demandeIndividuelId }}</span>
-                                </td>
-                                <td>
-                                    <div class="flex flex-col">
-                                        <span class="font-medium">{{ demande.prenom }} {{ demande.nom }}</span>
-                                        <span class="text-xs text-surface-500">{{ demande.telephone }}</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <span class="font-mono">{{ demande.numeroMembre }}</span>
-                                </td>
-                                <td>
-                                    <span class="font-semibold text-primary">
-                                        {{ demande.montantDemande | currency:'GNF ':'symbol':'1.0-0' }}
-                                    </span>
-                                </td>
-                                <td>{{ demande.dureeDemande }} mois</td>
-                                <td>
-                                    <span class="text-sm" [pTooltip]="demande.descriptionActivite">
-                                        {{ demande.typeActivite || demande.descriptionActivite | slice:0:20 }}...
-                                    </span>
-                                </td>
-                                <td>
-                                    <p-tag [value]="getStatusLabel(demande.statutDemande, demande.validationState)"
-                                        [severity]="getStatusSeverity(demande.statutDemande, demande.validationState)">
-                                    </p-tag>
-                                </td>
-                                <td>
-                                    <span class="text-sm">{{ formatDate(demande.createdAt) }}</span>
-                                </td>
-                                <td class="text-center">
-                                    <div class="flex justify-center gap-1">
-                                        <p-button
-                                            [routerLink]="['/dashboards/credit/individuel/attente/detail', demande.demandeIndividuelId]"
-                                            icon="pi pi-eye" severity="info" [rounded]="true" [text]="true"
-                                            pTooltip="Voir détails">
-                                        </p-button>
-                                        <p-button icon="pi pi-check-circle" severity="success" [rounded]="true"
-                                            [text]="true" pTooltip="Valider">
-                                        </p-button>
-                                    </div>
-                                </td>
-                            </tr>
-                        </ng-template>
-
-                        <ng-template pTemplate="emptymessage">
-                            <tr>
-                                <td colspan="9" class="text-center py-4">
-                                    <i class="pi pi-inbox text-4xl text-surface-300 mb-2"></i>
-                                    <p class="text-surface-500">Aucune demande pour cette délégation</p>
-                                </td>
-                            </tr>
-                        </ng-template>
-                    </p-table>
-                </div>
-            </p-accordion-content>
-        </p-accordion-panel>
-        }
-    </p-accordion>
-    } @else if (!state().loading) {
-    <div class="flex flex-col items-center justify-center py-12">
-        <i class="pi pi-folder-open text-6xl text-surface-300 mb-4"></i>
-        <p class="text-xl text-surface-500">Aucune demande de crédit trouvée</p>
-        <p class="text-surface-400">Les demandes en attente apparaîtront ici</p>
-    </div>
-    }
 </div>
+
+<!-- Dialog Validation Finale -->
+<p-dialog header="Validation Finale" [(visible)]="showValidationDialog" [modal]="true" [style]="{width: '500px'}">
+    <div *ngIf="selectedDemande" class="mb-4 p-3 bg-green-50 border-round">
+        <p class="font-semibold m-0">{{ selectedDemande.prenom }} {{ selectedDemande.nom }}</p>
+        <p class="text-600 m-0">{{ formatMontantGNF(selectedDemande.montantDemande) }} - {{ selectedDemande.objectCredit }}</p>
+    </div>
+    <form [formGroup]="validationForm">
+        <div class="flex flex-col gap-2 mb-4">
+            <label class="font-semibold">Avis de la Direction *</label>
+            <textarea pTextarea formControlName="avis" rows="4" placeholder="Saisissez votre avis pour la validation finale..." class="w-full"></textarea>
+            <small *ngIf="validationForm.get('avis')?.touched && validationForm.get('avis')?.invalid" class="text-red-500">
+                L'avis est obligatoire (min 10 caracteres)
+            </small>
+        </div>
+    </form>
+    <ng-template pTemplate="footer">
+        <p-button label="Annuler" icon="pi pi-times" (click)="showValidationDialog = false" severity="secondary"></p-button>
+        <p-button label="Valider definitivement" icon="pi pi-check-circle" (click)="confirmerValidation()" severity="success"
+            [disabled]="validationForm.invalid"></p-button>
+    </ng-template>
+</p-dialog>
+
+<!-- Dialog Rejet -->
+<p-dialog header="Rejeter la demande" [(visible)]="showRejetDialog" [modal]="true" [style]="{width: '600px'}">
+    <div *ngIf="selectedDemande" class="mb-4 p-3 bg-red-50 border-round">
+        <p class="font-semibold m-0">{{ selectedDemande.prenom }} {{ selectedDemande.nom }}</p>
+        <p class="text-600 m-0">{{ formatMontantGNF(selectedDemande.montantDemande) }}</p>
+    </div>
+    <form [formGroup]="rejetForm">
+        <div class="flex flex-col gap-2 mb-4">
+            <label class="font-semibold">Motif de rejet *</label>
+            <textarea pTextarea formControlName="motifRejet" rows="3" placeholder="Motif du rejet..." class="w-full"></textarea>
+            <small *ngIf="rejetForm.get('motifRejet')?.touched && rejetForm.get('motifRejet')?.invalid" class="text-red-500">
+                Le motif est obligatoire (min 10 caracteres)
+            </small>
+        </div>
+        <div class="flex flex-col gap-2 mb-4">
+            <label class="font-semibold">Sections a revoir *</label>
+            <div class="flex flex-wrap gap-3">
+                <div *ngFor="let option of sectionsOptions" class="flex items-center gap-2">
+                    <input type="checkbox" [value]="option.value" (change)="toggleSection(option.value, $event)">
+                    <label>{{ option.label }}</label>
+                </div>
+            </div>
+            <small *ngIf="rejetForm.get('sectionsARevoir')?.touched && rejetForm.get('sectionsARevoir')?.value?.length === 0" class="text-red-500">
+                Au moins une section doit etre selectionnee
+            </small>
+        </div>
+        <div class="flex flex-col gap-2">
+            <label class="font-semibold">Instructions pour le DR</label>
+            <textarea pTextarea formControlName="instructions" rows="2" placeholder="Instructions..." class="w-full"></textarea>
+        </div>
+    </form>
+    <ng-template pTemplate="footer">
+        <p-button label="Annuler" icon="pi pi-times" (click)="showRejetDialog = false" severity="secondary"></p-button>
+        <p-button label="Rejeter" icon="pi pi-times-circle" (click)="confirmerRejet()" severity="danger"
+            [disabled]="rejetForm.invalid"></p-button>
+    </ng-template>
+</p-dialog>

@@ -53,6 +53,15 @@ public class AutoRemplirResultDto {
     private BigDecimal amortissementsProvisions;
     private BigDecimal autresRevenusHorsActivite;
 
+    // ==================== HYPOTHESES CA & MARGE ====================
+    private BigDecimal caHypFaible;
+    private BigDecimal caHypMoyen;
+    private BigDecimal caHypEleve;
+    private BigDecimal tauxMargeFaible;
+    private BigDecimal tauxMargeRecom;
+    private BigDecimal tauxMargeFort;
+    private BigDecimal tauxMargeDeclar;
+
     // ==================== BESOIN CREDIT ====================
     private BigDecimal coutAchatCycle;
     private BigDecimal tresorerieDisponible;

@@ -226,5 +226,15 @@ public class DemandeIndServiceImpl implements DemandeIndService {
         demande.setEcheance(BigDecimal.valueOf(echeance));
     }
 
+    @Override
+    @Transactional
+    public void updateDemandeComplete(DemandeIndividuel demande) {
+        log.info("Mise a jour complete de la demande {}", demande.getDemandeIndividuelId());
+        validateDemandeData(demande);
+        if (demande.getEcheance() == null) {
+            calculateEcheance(demande);
+        }
+        demandeIndRepository.updateDemandeComplete(demande);
+    }
 
 }

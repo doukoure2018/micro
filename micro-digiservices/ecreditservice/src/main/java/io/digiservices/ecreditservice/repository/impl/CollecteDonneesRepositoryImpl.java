@@ -573,6 +573,7 @@ public class CollecteDonneesRepositoryImpl implements CollecteDonneesRepository 
                     .param("dateAcquisition", dto.getDateAcquisition())
                     .param("dureeAmortissementMois", dto.getDureeAmortissementMois() != null ? dto.getDureeAmortissementMois() : 60)
                     .param("valeurAcquisition", defaultDecimal(dto.getValeurAcquisition()))
+                    .param("valeurNetteAjustee", dto.getValeurNetteAjustee())
                     .query(Long.class)
                     .single();
         } catch (Exception e) {
@@ -592,6 +593,7 @@ public class CollecteDonneesRepositoryImpl implements CollecteDonneesRepository 
                     .param("dateAcquisition", dto.getDateAcquisition())
                     .param("dureeAmortissementMois", dto.getDureeAmortissementMois() != null ? dto.getDureeAmortissementMois() : 60)
                     .param("valeurAcquisition", defaultDecimal(dto.getValeurAcquisition()))
+                    .param("valeurNetteAjustee", dto.getValeurNetteAjustee())
                     .update();
         } catch (Exception e) {
             log.error("Error updating amortissement: {}", e.getMessage(), e);

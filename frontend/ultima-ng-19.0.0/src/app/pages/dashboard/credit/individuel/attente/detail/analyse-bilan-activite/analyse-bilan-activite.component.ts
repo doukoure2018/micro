@@ -37,6 +37,7 @@ import { DialogModule } from 'primeng/dialog';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { CollecteService } from './collecte.service';
 import { CollecteDonnees, Amortissement, TYPES_IMMOBILISATION } from './collecte.models';
+import { CreditActiviteData } from '@/service/credit-activite.model';
 
 interface ComponentState {
     loading: boolean;
@@ -234,6 +235,23 @@ export class AnalyseBilanActiviteComponent {
     days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
     cycleLevels = ['Fort', 'Moyen', 'Faible'];
 
+    // Hypothese CA & Type Marge options
+    hypotheseCaOptions = [
+        { label: 'Hyp. Faib.', value: 'Hyp. Faib.' },
+        { label: 'Hyp. Moy.', value: 'Hyp. Moy.' },
+        { label: 'Hyp. Elev.', value: 'Hyp. Elev.' }
+    ];
+    typeMargeOptions = [
+        { label: '% Recom.', value: '% Recom.' },
+        { label: 'Fort %', value: 'Fort %' },
+        { label: 'Faible %', value: 'Faible %' },
+        { label: '% Declar', value: '% Declar' }
+    ];
+    selectedHypotheseCa = 'Hyp. Faib.';
+    selectedTypeMarge = '% Recom.';
+    caAlternatives: { faible: number; moyen: number; eleve: number } | null = null;
+    tauxAlternatives: { recom: number; fort: number; faible: number; declar: number } | null = null;
+
     // Computed: total charges personnelles
     totalChargesPersonnelles = computed(() => {
         this.formChangeCounter();
@@ -287,6 +305,28 @@ export class AnalyseBilanActiviteComponent {
 
     totalAmortVNC = computed(() => {
         return this.amortissements().reduce((sum, a) => sum + (a.valeurNetteComptable || 0), 0);
+    });
+
+    // ============== MISSING AMORTISSEMENTS (Section 5 → Amorts) ==============
+    missingAmortissementTypes = computed(() => {
+        const s5 = this.section5Form;
+        const amorts = this.amortissements();
+        this.formChangeCounter();
+
+        const required: { label: string; type: string }[] = [];
+
+        if (s5.get('batimentExiste')?.value && s5.get('batimentPropriete')?.value)
+            required.push({ label: 'b) Batiments et magasin', type: 'Batiments et magasin' });
+        if (s5.get('installationExiste')?.value && s5.get('installationPropriete')?.value)
+            required.push({ label: 'c) Installations et agencements', type: 'Installations et agencements' });
+        if (s5.get('materielRoulantExiste')?.value && s5.get('materielRoulantPropriete')?.value)
+            required.push({ label: 'd) Materiel de transport', type: 'Materiel de transport' });
+        if (s5.get('mobilierExiste')?.value && s5.get('mobilierPropriete')?.value)
+            required.push({ label: 'e) Mobilier de bureau', type: 'Mobilier de bureau' });
+        if (s5.get('machineExiste')?.value && s5.get('machinePropriete')?.value)
+            required.push({ label: 'f) Materiels industriels', type: 'Materiels industriels' });
+
+        return required.filter(r => !amorts.some(a => a.typeImmobilisation === r.type));
     });
 
     // ============== COMPUTED VALUES FOR BILAN ==============
@@ -886,6 +926,9 @@ export class AnalyseBilanActiviteComponent {
                             analyseId: analyseIdValue,
                             analyseExiste: true
                         }));
+                        // Load hypothesis selections from analyse header
+                        this.selectedHypotheseCa = analyse.hypotheseCa || 'Hyp. Faib.';
+                        this.selectedTypeMarge = analyse.typeMarge || '% Recom.';
                         this.loadAnalyseDetails(analyseIdValue);
                     } else {
                         this.state.update((state) => ({ ...state, analyseExiste: false }));
@@ -976,6 +1019,35 @@ export class AnalyseBilanActiviteComponent {
 
         // Charger ratios
         this.loadRatios(analyseId);
+
+        // Charger les personnes caution existantes
+        this.loadExistingCautions();
+    }
+
+    private loadExistingCautions(): void {
+        if (!this.demandeIndividuelId) return;
+        this.http
+            .get<any>(`${this.apiUrl}/ecredit/bilan_finance/synthese/demande/${this.demandeIndividuelId}`)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    const cautions = response?.data?.personnesCaution;
+                    if (cautions && Array.isArray(cautions) && cautions.length > 0) {
+                        this.personnecautions = cautions.map((c: any) => ({
+                            personnecautionId: c.personnecautionId,
+                            nom: c.nom || '',
+                            prenom: c.prenom || '',
+                            telephone: c.telephone || '',
+                            activite: c.activite || '',
+                            age: c.age || null,
+                            profession: c.profession || ''
+                        }));
+                    }
+                },
+                error: () => {
+                    // Pas de cautions existantes, on continue avec un tableau vide
+                }
+            });
     }
 
     private loadRatios(analyseId: number): void {
@@ -1600,6 +1672,10 @@ export class AnalyseBilanActiviteComponent {
         this.section7Form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
             this.formChangeCounter.update((v) => v + 1);
         });
+
+        this.section5Form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+            this.formChangeCounter.update((v) => v + 1);
+        });
     }
 
     onStepChange(index: number) {
@@ -2167,6 +2243,18 @@ export class AnalyseBilanActiviteComponent {
                         dettesFournisseurs: data.dettesFournisseurs || 0,
                         creditFournisseur: data.creditFournisseur || 0
                     });
+                    // Store CA & margin alternatives for instant switching
+                    this.caAlternatives = {
+                        faible: data.caHypFaible || 0,
+                        moyen: data.caHypMoyen || 0,
+                        eleve: data.caHypEleve || 0
+                    };
+                    this.tauxAlternatives = {
+                        recom: data.tauxMargeRecom || 0,
+                        fort: data.tauxMargeFort || 0,
+                        faible: data.tauxMargeFaible || 0,
+                        declar: data.tauxMargeDeclar || 0
+                    };
                     this.formChangeCounter.update((c) => c + 1);
                     this.loading.set(false);
                     this.messageService.add({
@@ -2184,6 +2272,103 @@ export class AnalyseBilanActiviteComponent {
                     });
                 }
             });
+    }
+
+    // ==================== LOAD ALTERNATIVES (on page load) ====================
+
+    private loadAlternatives(collecteId: number): void {
+        const analyseId = this.state().analyseId;
+        if (!analyseId || !collecteId) return;
+        this.http
+            .get<any>(`${this.apiUrl}/ecredit/bilan_finance/analyse/${analyseId}/alternatives/${collecteId}`)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (res) => {
+                    const alt = res?.data?.alternatives || res?.data || {};
+                    this.caAlternatives = {
+                        faible: alt.caHypFaible || 0,
+                        moyen: alt.caHypMoyen || 0,
+                        eleve: alt.caHypEleve || 0
+                    };
+                    this.tauxAlternatives = {
+                        recom: alt.tauxMargeRecom || 0,
+                        fort: alt.tauxMargeFort || 0,
+                        faible: alt.tauxMargeFaible || 0,
+                        declar: alt.tauxMargeDeclar || 0
+                    };
+                },
+                error: () => {
+                    // Silently fail - alternatives are optional
+                }
+            });
+    }
+
+    // ==================== HYPOTHESE CA & TYPE MARGE ====================
+
+    onHypotheseCaChange(event: any): void {
+        this.selectedHypotheseCa = event.value;
+        this.recalculerCA();
+        this.saveAnalyseHeader();
+    }
+
+    onTypeMargeChange(event: any): void {
+        this.selectedTypeMarge = event.value;
+        this.recalculerCA();
+        this.saveAnalyseHeader();
+    }
+
+    private recalculerCA(): void {
+        if (!this.caAlternatives || !this.tauxAlternatives) return;
+
+        let ca = 0;
+        switch (this.selectedHypotheseCa) {
+            case 'Hyp. Elev.':
+                ca = this.caAlternatives.eleve;
+                break;
+            case 'Hyp. Moy.':
+                ca = this.caAlternatives.moyen;
+                break;
+            default:
+                ca = this.caAlternatives.faible;
+                break;
+        }
+
+        let taux = 0;
+        switch (this.selectedTypeMarge) {
+            case 'Fort %':
+                taux = this.tauxAlternatives.fort;
+                break;
+            case 'Faible %':
+                taux = this.tauxAlternatives.faible;
+                break;
+            case '% Declar':
+                taux = this.tauxAlternatives.declar;
+                break;
+            default:
+                taux = this.tauxAlternatives.recom;
+                break;
+        }
+
+        const marge = (ca * taux) / 100;
+        const cout = ca - marge;
+
+        this.rentabiliteNForm.patchValue({
+            chiffreAffaires: Math.round(ca),
+            coutAchatMarchandises: Math.round(cout)
+        });
+        this.formChangeCounter.update((c) => c + 1);
+    }
+
+    private saveAnalyseHeader(): void {
+        const analyseId = this.state().analyseId;
+        if (!analyseId) return;
+        this.http
+            .put(`${this.apiUrl}/ecredit/bilan_finance/analyse/${analyseId}`, {
+                hypotheseCa: this.selectedHypotheseCa,
+                typeMarge: this.selectedTypeMarge
+            })
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe();
     }
 
     calculateRatios(): void {
@@ -2250,7 +2435,7 @@ export class AnalyseBilanActiviteComponent {
 
         const request = {
             analyseId: analyseId,
-            forcerSoumission: false,
+            forcerSoumission: this.state().analyseExiste,
             personnesCaution: personnesCautionData
         };
 
@@ -2361,6 +2546,8 @@ export class AnalyseBilanActiviteComponent {
                         if (collecteData.amortissements) {
                             this.amortissements.set(collecteData.amortissements);
                         }
+                        // Auto-load CA & margin alternatives for dropdown switching
+                        this.loadAlternatives(collecteData.collecteId);
                     }
                     this.collecteLoading.set(false);
                 },
@@ -2427,27 +2614,126 @@ export class AnalyseBilanActiviteComponent {
                 break;
             }
             case 4: {
-                const margeBruteData = { ...this.section4Form.value, produits: this.produits() };
+                const margeBruteData = {
+                    ...this.section4Form.value,
+                    produits: this.produits(),
+                    totalCaCalcule: this.totalProduitsVentes(),
+                    totalCoutCalcule: this.totalProduitsCouts(),
+                    tauxMargeCalcule: this.tauxMargeCalcule()
+                };
                 obs = this.collecteService.updateSection4(collecteId, margeBruteData);
                 break;
             }
             case 5: {
-                const actifPassifData = { ...this.section5Form.value, stockArticles: this.stockArticles() };
+                const raw = { ...this.section5Form.value };
+                // Reset valeurs to 0 when *Existe is false
+                const existeValeurPairs: [string, string[]][] = [
+                    ['terrainExiste', ['terrainValeur']],
+                    ['cautionFinanciereExiste', ['cautionFinanciereValeur']],
+                    ['pretEmployeExiste', ['pretEmployeValeur']],
+                    ['stockExiste', ['stockValeurEstimee']],
+                    ['creditFournisseurExiste', ['creditFournisseurValeur']],
+                    ['creanceClientExiste', ['creancePlus3Mois', 'creanceMoins3Mois']],
+                    ['cashExiste', ['cashValeur']],
+                    ['compteCrgExiste', ['compteCrgValeur']],
+                    ['tontinierExiste', ['tontinierValeur']],
+                    ['compteBanqueExiste', ['compteBanqueValeur']],
+                    ['empruntImfExiste', ['empruntImfValeur']],
+                    ['empruntBancaireLtExiste', ['empruntBancaireLtValeur']],
+                    ['empruntBancaireCtExiste', ['empruntBancaireCtValeur']],
+                    ['avanceClientExiste', ['avanceClientValeur']],
+                    ['detteFournisseurExiste', ['detteFournisseurValeur']],
+                    ['impotNonPayeExiste', ['impotNonPayeValeur']],
+                    ['loyerNonPayeExiste', ['loyerNonPayeValeur']],
+                    ['factureNonPayeeExiste', ['factureNonPayeeValeur']],
+                    ['tontineDetteExiste', ['tontineDetteValeur']],
+                    ['autreDetteExiste', ['autreDetteValeur']]
+                ];
+                for (const [existeKey, valeurKeys] of existeValeurPairs) {
+                    if (!raw[existeKey]) {
+                        for (const vk of valeurKeys) {
+                            raw[vk] = 0;
+                        }
+                    }
+                }
+                const actifPassifData = { ...raw, stockArticles: this.stockArticles() };
                 obs = this.collecteService.updateSection5(collecteId, actifPassifData);
                 break;
             }
-            case 6:
-                obs = this.collecteService.updateSection6(collecteId, this.section6Form.value);
+            case 6: {
+                const raw6 = { ...this.section6Form.value };
+                const section6Pairs: [string, string[]][] = [
+                    ['loyerExiste', ['loyerMontant']],
+                    ['salaireExiste', ['salaireMontant']],
+                    ['fournitureExiste', ['fournitureMontant']],
+                    ['publiciteExiste', ['publiciteMontant']],
+                    ['telephoneExiste', ['telephoneMontant']],
+                    ['electriciteExiste', ['electriciteMontant']],
+                    ['eauExiste', ['eauMontant']],
+                    ['transportAchatExiste', ['transportAchatMontant']],
+                    ['transportVenteExiste', ['transportVenteMontant']],
+                    ['transportDiversExiste', ['transportDiversMontant']],
+                    ['entretienExiste', ['entretienMontant']],
+                    ['carburantExiste', ['carburantMontant']],
+                    ['assuranceExiste', ['assuranceMontant']],
+                    ['fraisBancairesExiste', ['fraisBancairesMontant']],
+                    ['interetsEmpruntsExiste', ['interetsEmpruntsMontant']],
+                    ['impotsTaxesExiste', ['impotsTaxesMontant']],
+                    ['honorairesExiste', ['honorairesMontant']],
+                    ['provisionsExiste', ['provisionsMontant']],
+                    ['echeanceAutreCreditExiste', ['echeanceAutreCreditMontant']],
+                    ['autresChargesExiste', ['autresChargesMontant']]
+                ];
+                for (const [existeKey, valeurKeys] of section6Pairs) {
+                    if (!raw6[existeKey]) {
+                        for (const vk of valeurKeys) {
+                            raw6[vk] = 0;
+                        }
+                    }
+                }
+                obs = this.collecteService.updateSection6(collecteId, raw6);
                 break;
+            }
             case 7:
                 obs = this.collecteService.updateSection7(collecteId, this.section7Form.value);
                 break;
-            case 8:
-                obs = this.collecteService.updateSection8(collecteId, this.section8Form.value);
+            case 8: {
+                const raw8 = { ...this.section8Form.value };
+                const section8Pairs: [string, string[]][] = [
+                    ['salaireExterneExiste', ['salaireExterneMontant']],
+                    ['loyersPercusExiste', ['loyersPercusMontant']],
+                    ['activiteSecondaireExiste', ['activiteSecondaireMontant']],
+                    ['autresRevenusExiste', ['autresRevenusMontant']]
+                ];
+                for (const [existeKey, valeurKeys] of section8Pairs) {
+                    if (!raw8[existeKey]) {
+                        for (const vk of valeurKeys) {
+                            raw8[vk] = 0;
+                        }
+                    }
+                }
+                obs = this.collecteService.updateSection8(collecteId, raw8);
                 break;
-            case 9:
-                obs = this.collecteService.updateSection9(collecteId, this.section9Form.value);
+            }
+            case 9: {
+                const raw9 = { ...this.section9Form.value };
+                const section9Pairs: [string, string[]][] = [
+                    ['terrainExiste', ['terrainValeur']],
+                    ['maisonExiste', ['maisonValeur']],
+                    ['vehiculeExiste', ['vehiculeValeur']],
+                    ['motoExiste', ['motoValeur']],
+                    ['autreBienExiste', ['autreBienValeur']]
+                ];
+                for (const [existeKey, valeurKeys] of section9Pairs) {
+                    if (!raw9[existeKey]) {
+                        for (const vk of valeurKeys) {
+                            raw9[vk] = 0;
+                        }
+                    }
+                }
+                obs = this.collecteService.updateSection9(collecteId, raw9);
                 break;
+            }
             default:
                 return;
         }
@@ -2659,7 +2945,8 @@ export class AnalyseBilanActiviteComponent {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (response) => {
-                    this.amortissements.set(response?.data?.amortissements || []);
+                    const amorts = response?.data?.amortissements || [];
+                    this.amortissements.set(this.normalizeAmortDates(amorts));
                 }
             });
     }
@@ -2672,7 +2959,8 @@ export class AnalyseBilanActiviteComponent {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (response) => {
-                    this.amortissements.set(response?.data?.amortissements || []);
+                    const amorts = response?.data?.amortissements || [];
+                    this.amortissements.set(this.normalizeAmortDates(amorts));
                     this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Amortissements recalcules' });
                 },
                 error: (error) => {
@@ -2714,6 +3002,40 @@ export class AnalyseBilanActiviteComponent {
 
     // ============== INLINE AMORTISSEMENT METHODS ==============
 
+    addAmortissementForType(type: string): void {
+        const collecteId = this.collecte()?.collecteId;
+        if (!collecteId) return;
+        const typeInfo = this.typesImmobilisation.find(t => t.value === type);
+        const today = new Date().toISOString().split('T')[0];
+        const body = {
+            collecteId,
+            natureImmobilisation: '',
+            typeImmobilisation: type,
+            dateAcquisition: today,
+            dureeAmortissementMois: typeInfo?.dureeMois || 60,
+            valeurAcquisition: 0,
+            valeurNetteAjustee: null
+        };
+        this.collecteService
+            .addAmortissement(collecteId, body)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.loadAmortissements();
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Succes',
+                        detail: `Amortissement "${type}" ajoute`
+                    });
+                },
+                error: (err) => this.messageService.add({
+                    severity: 'error',
+                    summary: 'Erreur',
+                    detail: err?.error?.message || 'Erreur'
+                })
+            });
+    }
+
     addAmortissementRow(): void {
         const collecteId = this.collecte()?.collecteId;
         if (!collecteId) return;
@@ -2724,7 +3046,8 @@ export class AnalyseBilanActiviteComponent {
             typeImmobilisation: 'Autres immobilisations',
             dateAcquisition: today,
             dureeAmortissementMois: 60,
-            valeurAcquisition: 0
+            valeurAcquisition: 0,
+            valeurNetteAjustee: null
         };
         this.collecteService
             .addAmortissement(collecteId, body)
@@ -2743,13 +3066,25 @@ export class AnalyseBilanActiviteComponent {
             typeImmobilisation: amort.typeImmobilisation,
             dateAcquisition: amort.dateAcquisition,
             dureeAmortissementMois: amort.dureeAmortissementMois,
-            valeurAcquisition: amort.valeurAcquisition
+            valeurAcquisition: amort.valeurAcquisition,
+            valeurNetteAjustee: amort.valeurNetteAjustee || null
         };
         this.collecteService
             .updateAmortissement(amort.amortissementId, body)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
-                next: () => this.loadAmortissements()
+                next: (response) => {
+                    const updated = response?.data?.amortissement;
+                    if (updated) {
+                        this.normalizeAmortDates([updated]);
+                        const list = this.amortissements();
+                        const idx = list.findIndex(a => a.amortissementId === updated.amortissementId);
+                        if (idx >= 0) {
+                            list[idx] = updated;
+                            this.amortissements.set([...list]);
+                        }
+                    }
+                }
             });
     }
 
@@ -2773,6 +3108,46 @@ export class AnalyseBilanActiviteComponent {
                     this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Amortissement supprime' });
                 }
             });
+    }
+
+    getDateFin(amort: Amortissement): string {
+        if (!amort.dateAcquisition || !amort.dureeAmortissementMois) return '';
+        const date = new Date(amort.dateAcquisition);
+        date.setMonth(date.getMonth() + amort.dureeAmortissementMois);
+        return date.toISOString().split('T')[0];
+    }
+
+    // ==================== SECTION 1: Resolution des codes activite ====================
+
+    isParticulier(): boolean {
+        const nc = this.state().demandeIndividuel?.natureClient;
+        return !nc || nc.includes('Particulier');
+    }
+
+    getActiviteLabel(): string {
+        const code = Number(this.state().demandeIndividuel?.typeActivite);
+        if (!code) return '-';
+        const activite = CreditActiviteData.getActiviteByCode(code);
+        return activite ? `${code} - ${activite.libelle}` : `${code}`;
+    }
+
+    getSousActiviteLabel(): string {
+        const codeActivite = Number(this.state().demandeIndividuel?.typeActivite);
+        const codeSous = Number(this.state().demandeIndividuel?.sousActivite);
+        if (!codeActivite || !codeSous) return '-';
+        const sous = CreditActiviteData.getSousActiviteByCode(codeActivite, codeSous);
+        return sous ? `${codeSous} - ${sous.libelle}` : `${codeSous}`;
+    }
+
+    getSousSousActiviteLabel(): string {
+        const codeActivite = Number(this.state().demandeIndividuel?.typeActivite);
+        const codeSous = Number(this.state().demandeIndividuel?.sousActivite);
+        const codeSousSous = Number(this.state().demandeIndividuel?.sousSousActivite);
+        if (!codeActivite || !codeSous || !codeSousSous) return '-';
+        const ssa = CreditActiviteData.SOUS_SOUS_ACTIVITES.find(
+            s => s.codeActivite === codeActivite && s.codeSousActivite === codeSous && s.code === codeSousSous
+        );
+        return ssa ? `${codeSousSous} - ${ssa.libelle}` : `${codeSousSous}`;
     }
 
     getTotalEmprunte(): number {
@@ -2803,5 +3178,19 @@ export class AnalyseBilanActiviteComponent {
         const month = String(d.getMonth() + 1).padStart(2, '0');
         const day = String(d.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
+    }
+
+    private normalizeAmortDates(amorts: Amortissement[]): Amortissement[] {
+        for (const a of amorts) {
+            if (a.dateAcquisition) {
+                if (Array.isArray(a.dateAcquisition)) {
+                    const arr = a.dateAcquisition as any as number[];
+                    a.dateAcquisition = `${arr[0]}-${String(arr[1]).padStart(2, '0')}-${String(arr[2]).padStart(2, '0')}`;
+                } else if (typeof a.dateAcquisition === 'string' && a.dateAcquisition.length > 10) {
+                    a.dateAcquisition = a.dateAcquisition.substring(0, 10);
+                }
+            }
+        }
+        return amorts;
     }
 }

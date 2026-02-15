@@ -104,6 +104,31 @@ public class DemandeIndividuel {
     // ==================== GARANTIES ====================
     private List<GarantiePropose> garanties;
 
+    // ==================== WORKFLOW HIERARCHIQUE ====================
+    // AC
+    private String avisAgentCredit;
+    // DA
+    private String avisDa;
+    private String motifRejetDa;
+    private String sectionsARevoirDa;
+    private String instructionsAc;
+    private LocalDateTime dateValidationDa;
+    private String validatedByDa;
+    // DR
+    private String avisDr;
+    private String motifRejetDr;
+    private String sectionsARevoirDr;
+    private String instructionsDa;
+    private LocalDateTime dateValidationDr;
+    private String validatedByDr;
+    // DE
+    private String avisDe;
+    private String motifRejetDe;
+    private String sectionsARevoirDe;
+    private String instructionsDr;
+    private LocalDateTime dateValidationDe;
+    private String validatedByDe;
+
     // ==================== CHAMPS POUR AFFICHAGE (libellés) ====================
     private String delegationLibele;
     private String agenceLibele;

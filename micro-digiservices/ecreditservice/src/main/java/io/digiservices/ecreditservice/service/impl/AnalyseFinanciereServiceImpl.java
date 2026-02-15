@@ -1,5 +1,7 @@
 package io.digiservices.ecreditservice.service.impl;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digiservices.ecreditservice.dto.*;
 import io.digiservices.ecreditservice.exception.ApiException;
 import io.digiservices.ecreditservice.repository.AnalyseFinanciereRepository;
@@ -15,6 +17,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +26,7 @@ public class AnalyseFinanciereServiceImpl implements AnalyseFinanciereService {
 
     private final AnalyseFinanciereRepository repository;
     private final CollecteDonneesRepository collecteRepository;
+    private final ObjectMapper objectMapper;
 
     // ==================== ANALYSE ====================
 
@@ -370,6 +374,7 @@ public class AnalyseFinanciereServiceImpl implements AnalyseFinanciereService {
     // ==================== AUTO-REMPLIR DEPUIS COLLECTE ====================
 
     @Override
+    @Transactional
     public AutoRemplirResultDto autoRemplirDepuisCollecte(Long analyseId, Long collecteId) {
         // 1. Read analyse header for facteurCycle
         AnalyseFinanciereDto analyse = repository.getAnalyseById(analyseId);
@@ -426,27 +431,98 @@ public class AnalyseFinanciereServiceImpl implements AnalyseFinanciereService {
         BigDecimal totalDettes = empruntLongTerme.add(empruntCourtTerme).add(autresDettes);
         BigDecimal capitauxPropre = totalBilan.subtract(totalDettes);
 
-        // 4. Compute RENTABILITE N values
-        BigDecimal caMensuel = bd(data.get("caMensuelCalcule"));
-        if (caMensuel.compareTo(BigDecimal.ZERO) == 0) {
-            caMensuel = bd(data.get("caMensuelDeclare"));
-        }
-        BigDecimal chiffreAffaires = caMensuel.multiply(f);
+        // 4. Compute RENTABILITE N values with CA hypotheses and margin types
+        BigDecimal totalCaProduits = bd(data.get("totalCaCalcule"));
+        BigDecimal totalCoutProduits = bd(data.get("totalCoutCalcule"));
 
-        // Taux marge: use declared if known, otherwise calculated
-        boolean connaitTauxMarge = boolVal(data.get("connaitTauxMarge"));
-        BigDecimal tauxMarge;
-        if (connaitTauxMarge) {
-            tauxMarge = bd(data.get("tauxMargeDeclare"));
+        // 4a. Compute cycle-based monthly CA from cycleHebdoJson
+        BigDecimal caJourFort = bd(data.get("caJourFort"));
+        BigDecimal caJourMoyen = bd(data.get("caJourMoyen"));
+        BigDecimal caJourFaible = bd(data.get("caJourFaible"));
+        BigDecimal caCyclique = BigDecimal.ZERO;
+        try {
+            Object cycleHebdoObj = data.get("cycleHebdoJson");
+            if (cycleHebdoObj != null) {
+                String cycleHebdoStr = cycleHebdoObj.toString();
+                JsonNode cycleHebdo = objectMapper.readTree(cycleHebdoStr);
+                int nbFort = cycleHebdo.has("Fort") ? cycleHebdo.get("Fort").size() : 0;
+                int nbMoyen = cycleHebdo.has("Moyen") ? cycleHebdo.get("Moyen").size() : 0;
+                int nbFaible = cycleHebdo.has("Faible") ? cycleHebdo.get("Faible").size() : 0;
+                caCyclique = caJourFort.multiply(BigDecimal.valueOf(nbFort))
+                        .add(caJourMoyen.multiply(BigDecimal.valueOf(nbMoyen)))
+                        .add(caJourFaible.multiply(BigDecimal.valueOf(nbFaible)))
+                        .multiply(BigDecimal.valueOf(4)); // hebdo → mensuel
+            }
+        } catch (Exception e) {
+            log.warn("Error parsing cycleHebdoJson: {}", e.getMessage());
+        }
+
+        BigDecimal caDeclare = bd(data.get("caMensuelDeclare"));
+        BigDecimal caHebdoDeclare = bd(data.get("caHebdomadaireDeclare"));
+
+        // 4b. Compute additional CA estimates (matching Excel formula)
+        // Estimate 4: all days at fort rate, monthly = caJourFort × 7 × 4
+        BigDecimal caFortMensuel = caJourFort.multiply(BigDecimal.valueOf(28));
+        // Estimate 5: all days at faible rate, weekly = caJourFaible × 7
+        BigDecimal caFaibleHebdo = caJourFaible.multiply(BigDecimal.valueOf(7));
+        // Estimate 6: weighted weekly CA (same as caCyclique but without ×4)
+        BigDecimal caHebdoWeighted = caCyclique.compareTo(BigDecimal.ZERO) > 0
+                ? caCyclique.divide(BigDecimal.valueOf(4), 2, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+
+        // 4c. Compute 7 CA hypotheses: MIN / AVG / MAX of non-zero estimates
+        List<BigDecimal> caEstimates = Stream.of(
+                        totalCaProduits,    // 1. Monthly product-based CA
+                        caCyclique,         // 2. Weighted weekly × 4 (monthly)
+                        caDeclare,          // 3. Declared monthly
+                        caFortMensuel,      // 4. All days at fort rate (monthly)
+                        caFaibleHebdo,      // 5. All days at faible rate (weekly)
+                        caHebdoWeighted,    // 6. Weighted weekly
+                        caHebdoDeclare      // 7. Declared weekly
+                )
+                .filter(v -> v.compareTo(BigDecimal.ZERO) > 0)
+                .toList();
+
+        BigDecimal caHypFaible, caHypMoyen, caHypEleve;
+        if (caEstimates.isEmpty()) {
+            caHypFaible = caHypMoyen = caHypEleve = BigDecimal.ZERO;
         } else {
-            tauxMarge = bd(data.get("tauxMargeCalcule"));
-        }
-        // Override with analyse header if set
-        if (analyse.getTauxMargeRetenu() != null && analyse.getTauxMargeRetenu().compareTo(BigDecimal.ZERO) > 0) {
-            tauxMarge = analyse.getTauxMargeRetenu();
+            caHypFaible = caEstimates.stream().min(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
+            caHypEleve = caEstimates.stream().max(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
+            caHypMoyen = caEstimates.stream().reduce(BigDecimal.ZERO, BigDecimal::add)
+                    .divide(BigDecimal.valueOf(caEstimates.size()), 2, RoundingMode.HALF_UP);
         }
 
-        BigDecimal margeBrute = chiffreAffaires.multiply(tauxMarge).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        // 4c. Select CA based on hypothese_ca from analyse header
+        String hypotheseCa = analyse.getHypotheseCa() != null ? analyse.getHypotheseCa() : "Hyp. Faib.";
+        BigDecimal chiffreAffaires = switch (hypotheseCa) {
+            case "Hyp. Elev." -> caHypEleve;
+            case "Hyp. Moy." -> caHypMoyen;
+            default -> caHypFaible;
+        };
+        chiffreAffaires = chiffreAffaires.multiply(f);
+
+        // 4d. Compute 4 margin rates
+        BigDecimal tauxMargeRecom = totalCaProduits.compareTo(BigDecimal.ZERO) > 0
+                ? totalCaProduits.subtract(totalCoutProduits).multiply(BigDecimal.valueOf(100))
+                    .divide(totalCaProduits, 4, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+        BigDecimal tauxMargeFaible = bd(data.get("tauxMargeProduitMin"));
+        BigDecimal tauxMargeFort = bd(data.get("tauxMargeProduitMax"));
+        BigDecimal tauxMargeDeclar = bd(data.get("tauxMargeDeclare"));
+
+        // 4e. Select margin based on type_marge from analyse header
+        String typeMarge = analyse.getTypeMarge() != null ? analyse.getTypeMarge() : "% Recom.";
+        BigDecimal tauxMarge = switch (typeMarge) {
+            case "Fort %" -> tauxMargeFort;
+            case "Faible %" -> tauxMargeFaible;
+            case "% Declar" -> tauxMargeDeclar;
+            default -> tauxMargeRecom;
+        };
+
+        // 4f. Compute margin and cost
+        BigDecimal margeBrute = chiffreAffaires.multiply(tauxMarge)
+                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
         BigDecimal coutAchatMarchandises = chiffreAffaires.subtract(margeBrute);
 
         // Charges (all monthly * facteur)
@@ -496,10 +572,8 @@ public class AnalyseFinanciereServiceImpl implements AnalyseFinanciereService {
             prelevementEntrepreneur = BigDecimal.ZERO;
         }
 
-        // Amortissements + Provisions
-        BigDecimal amortissementsProvisions = bd(data.get("provisionsMontant"))
-                .add(bd(data.get("totalAmortMensuelEnCours")))
-                .multiply(f);
+        // Amortissements (from amortissement table, 'En cours' items only)
+        BigDecimal amortissementsProvisions = bd(data.get("totalAmortMensuelEnCours")).multiply(f);
 
         // Autres revenus (NOT multiplied by facteur per Excel mapping)
         BigDecimal autresRevenusHorsActivite = bd(data.get("salaireExterneMontant"))
@@ -511,7 +585,66 @@ public class AnalyseFinanciereServiceImpl implements AnalyseFinanciereService {
         BigDecimal comptesRecevoir = bd(data.get("creanceMoins3Mois")); // only < 3 months
         BigDecimal creditFournisseur = bd(data.get("creditFournisseurValeur"));
 
-        // 6. Build result
+        // 6. Persist computed values to database (UPSERT)
+        // Bilan N
+        CreateBilanRequest bilanRequest = new CreateBilanRequest();
+        bilanRequest.setAnalyseId(analyseId);
+        bilanRequest.setTypePeriode("N");
+        bilanRequest.setTerrain(terrain);
+        bilanRequest.setBatimentMagasin(batimentMagasin);
+        bilanRequest.setInstallationAgencement(installationAgencement);
+        bilanRequest.setMaterielIndustriel(materielIndustriel);
+        bilanRequest.setMobilierBureau(mobilierBureau);
+        bilanRequest.setMaterielInformatique(materielInformatique);
+        bilanRequest.setMaterielTransport(materielTransport);
+        bilanRequest.setAutreImmobilisation(autreImmobilisation);
+        bilanRequest.setStocks(stocks);
+        bilanRequest.setCreancesClients(creancesClients);
+        bilanRequest.setTresorerieCaisseBanque(tresorerieCaisseBanque);
+        bilanRequest.setCapitauxPropre(capitauxPropre);
+        bilanRequest.setEmpruntLongTerme(empruntLongTerme);
+        bilanRequest.setEmpruntCourtTerme(empruntCourtTerme);
+        bilanRequest.setAutresDettes(autresDettes);
+        repository.createBilan(bilanRequest);
+
+        // Rentabilite N
+        CreateRentabiliteRequest rentabiliteRequest = new CreateRentabiliteRequest();
+        rentabiliteRequest.setAnalyseId(analyseId);
+        rentabiliteRequest.setTypePeriode("N");
+        rentabiliteRequest.setChiffreAffaires(chiffreAffaires);
+        rentabiliteRequest.setCoutAchatMarchandises(coutAchatMarchandises);
+        rentabiliteRequest.setMargeBrute(margeBrute);
+        rentabiliteRequest.setSalaires(salaires);
+        rentabiliteRequest.setPrelevementEntrepreneur(prelevementEntrepreneur);
+        rentabiliteRequest.setLoyers(loyers);
+        rentabiliteRequest.setTransport(transportCharge);
+        rentabiliteRequest.setElectriciteEauTelephone(electriciteEauTelephone);
+        rentabiliteRequest.setFournituresAutresBesoins(fournituresAutresBesoins);
+        rentabiliteRequest.setEntretienReparation(entretienReparation);
+        rentabiliteRequest.setCarburantLubrifiants(carburantLubrifiants);
+        rentabiliteRequest.setPublicitePromotion(publicitePromotion);
+        rentabiliteRequest.setImpotsTaxes(impotsTaxes);
+        rentabiliteRequest.setFraisBancairesInterets(fraisBancairesInterets);
+        rentabiliteRequest.setEcheanceAutreCredit(echeanceAutreCredit);
+        rentabiliteRequest.setDiversesCharges(diversesCharges);
+        rentabiliteRequest.setAmortissementsProvisions(amortissementsProvisions);
+        rentabiliteRequest.setAutresRevenusHorsActivite(autresRevenusHorsActivite);
+        repository.createRentabilite(rentabiliteRequest);
+
+        // Besoin Credit
+        CreateBesoinCreditRequest besoinRequest = new CreateBesoinCreditRequest();
+        besoinRequest.setAnalyseId(analyseId);
+        besoinRequest.setCoutAchatCycle(coutAchatMarchandises);
+        besoinRequest.setTresorerieDisponible(tresorerieCaisseBanque);
+        besoinRequest.setStockActuel(stocks);
+        besoinRequest.setComptesRecevoir(comptesRecevoir);
+        besoinRequest.setDettesFournisseurs(autresDettes);
+        besoinRequest.setCreditFournisseur(creditFournisseur);
+        repository.createBesoinCredit(besoinRequest);
+
+        log.info("Auto-remplir: persisted bilan N, rentabilite N, besoin credit for analyse {}", analyseId);
+
+        // 7. Build result
         return AutoRemplirResultDto.builder()
                 // Bilan
                 .terrain(terrain)
@@ -549,6 +682,14 @@ public class AnalyseFinanciereServiceImpl implements AnalyseFinanciereService {
                 .diversesCharges(diversesCharges)
                 .amortissementsProvisions(amortissementsProvisions)
                 .autresRevenusHorsActivite(autresRevenusHorsActivite)
+                // Hypotheses CA & Marge (alternatives pour switch frontend)
+                .caHypFaible(caHypFaible.multiply(f))
+                .caHypMoyen(caHypMoyen.multiply(f))
+                .caHypEleve(caHypEleve.multiply(f))
+                .tauxMargeFaible(tauxMargeFaible)
+                .tauxMargeRecom(tauxMargeRecom)
+                .tauxMargeFort(tauxMargeFort)
+                .tauxMargeDeclar(tauxMargeDeclar)
                 // Besoin credit
                 .coutAchatCycle(coutAchatMarchandises)
                 .tresorerieDisponible(tresorerieCaisseBanque)
@@ -557,6 +698,83 @@ public class AnalyseFinanciereServiceImpl implements AnalyseFinanciereService {
                 .dettesFournisseurs(autresDettes)
                 .creditFournisseur(creditFournisseur)
                 .build();
+    }
+
+    @Override
+    public Map<String, Object> getAlternatives(Long analyseId, Long collecteId) {
+        AnalyseFinanciereDto analyse = repository.getAnalyseById(analyseId);
+        if (analyse == null) {
+            throw new ApiException("Analyse non trouvee avec ID: " + analyseId);
+        }
+        int facteur = analyse.getFacteurCycle() != null ? analyse.getFacteurCycle() : 1;
+        BigDecimal f = BigDecimal.valueOf(facteur);
+
+        Map<String, Object> data = collecteRepository.getCollecteForAutoRemplir(collecteId);
+
+        BigDecimal totalCaProduits = bd(data.get("totalCaCalcule"));
+        BigDecimal totalCoutProduits = bd(data.get("totalCoutCalcule"));
+
+        BigDecimal caJourFort = bd(data.get("caJourFort"));
+        BigDecimal caJourMoyen = bd(data.get("caJourMoyen"));
+        BigDecimal caJourFaible = bd(data.get("caJourFaible"));
+        BigDecimal caCyclique = BigDecimal.ZERO;
+        try {
+            Object cycleHebdoObj = data.get("cycleHebdoJson");
+            if (cycleHebdoObj != null) {
+                JsonNode cycleHebdo = objectMapper.readTree(cycleHebdoObj.toString());
+                int nbFort = cycleHebdo.has("Fort") ? cycleHebdo.get("Fort").size() : 0;
+                int nbMoyen = cycleHebdo.has("Moyen") ? cycleHebdo.get("Moyen").size() : 0;
+                int nbFaible = cycleHebdo.has("Faible") ? cycleHebdo.get("Faible").size() : 0;
+                caCyclique = caJourFort.multiply(BigDecimal.valueOf(nbFort))
+                        .add(caJourMoyen.multiply(BigDecimal.valueOf(nbMoyen)))
+                        .add(caJourFaible.multiply(BigDecimal.valueOf(nbFaible)))
+                        .multiply(BigDecimal.valueOf(4));
+            }
+        } catch (Exception e) {
+            log.warn("Error parsing cycleHebdoJson for alternatives: {}", e.getMessage());
+        }
+
+        BigDecimal caDeclare = bd(data.get("caMensuelDeclare"));
+        BigDecimal caHebdoDeclare = bd(data.get("caHebdomadaireDeclare"));
+        BigDecimal caFortMensuel = caJourFort.multiply(BigDecimal.valueOf(28));
+        BigDecimal caFaibleHebdo = caJourFaible.multiply(BigDecimal.valueOf(7));
+        BigDecimal caHebdoWeighted = caCyclique.compareTo(BigDecimal.ZERO) > 0
+                ? caCyclique.divide(BigDecimal.valueOf(4), 2, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+
+        List<BigDecimal> caEstimates = Stream.of(
+                        totalCaProduits, caCyclique, caDeclare,
+                        caFortMensuel, caFaibleHebdo, caHebdoWeighted, caHebdoDeclare)
+                .filter(v -> v.compareTo(BigDecimal.ZERO) > 0)
+                .toList();
+
+        BigDecimal caHypFaible, caHypMoyen, caHypEleve;
+        if (caEstimates.isEmpty()) {
+            caHypFaible = caHypMoyen = caHypEleve = BigDecimal.ZERO;
+        } else {
+            caHypFaible = caEstimates.stream().min(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
+            caHypEleve = caEstimates.stream().max(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
+            caHypMoyen = caEstimates.stream().reduce(BigDecimal.ZERO, BigDecimal::add)
+                    .divide(BigDecimal.valueOf(caEstimates.size()), 2, RoundingMode.HALF_UP);
+        }
+
+        BigDecimal tauxMargeRecom = totalCaProduits.compareTo(BigDecimal.ZERO) > 0
+                ? totalCaProduits.subtract(totalCoutProduits).multiply(BigDecimal.valueOf(100))
+                    .divide(totalCaProduits, 4, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+        BigDecimal tauxMargeFaible = bd(data.get("tauxMargeProduitMin"));
+        BigDecimal tauxMargeFort = bd(data.get("tauxMargeProduitMax"));
+        BigDecimal tauxMargeDeclar = bd(data.get("tauxMargeDeclare"));
+
+        return Map.of(
+                "caHypFaible", caHypFaible.multiply(f),
+                "caHypMoyen", caHypMoyen.multiply(f),
+                "caHypEleve", caHypEleve.multiply(f),
+                "tauxMargeFaible", tauxMargeFaible,
+                "tauxMargeRecom", tauxMargeRecom,
+                "tauxMargeFort", tauxMargeFort,
+                "tauxMargeDeclar", tauxMargeDeclar
+        );
     }
 
     private BigDecimal bd(Object value) {

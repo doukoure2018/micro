@@ -17,7 +17,7 @@ import { CardModule } from 'primeng/card';
 import { DividerModule } from 'primeng/divider';
 import { BadgeModule } from 'primeng/badge';
 import { TooltipModule } from 'primeng/tooltip';
-import { switchMap, of, catchError } from 'rxjs';
+import { switchMap, of, catchError, forkJoin } from 'rxjs';
 
 @Component({
     selector: 'app-attente',
@@ -46,32 +46,37 @@ export class AttenteComponent implements OnInit {
     expandedRows: { [key: string]: boolean } = {};
 
     // Filtre actif par statut
-    activeFilter = signal<'ALL' | 'EN_ATTENTE' | 'AFFECTATION' | 'APPROUVEE' | 'REJETEE'>('ALL');
+    activeFilter = signal<'ALL' | 'EN_ATTENTE' | 'AFFECTATION' | 'REJETEE'>('ALL');
+
+    // IDs des demandes entièrement validées par le DA (bilan + flux VALIDE)
+    demandesValideesIds = signal<Set<number>>(new Set());
+
+    // Exclure uniquement les demandes entièrement validées par le DA
+    private demandesSansBilanFlux = computed(() => {
+        const all = this.state().demandeAttentes || [];
+        const valideesIds = this.demandesValideesIds();
+        return all.filter(d => {
+            const id = d.demandeIndividuelId;
+            return !id || !valideesIds.has(id);
+        });
+    });
 
     // Compteurs par statut
     countEnAttente = computed(() => {
-        const all = this.state().demandeAttentes || [];
-        return all.filter(d => d.statutDemande === 'EN_ATTENTE' && (!d.validationState || d.validationState === 'NOUVEAU')).length;
+        return this.demandesSansBilanFlux().filter(d => d.statutDemande === 'EN_ATTENTE' && (!d.validationState || d.validationState === 'NOUVEAU')).length;
     });
 
     countAffectation = computed(() => {
-        const all = this.state().demandeAttentes || [];
-        return all.filter(d => d.validationState === 'SELECTION').length;
-    });
-
-    countApprouvee = computed(() => {
-        const all = this.state().demandeAttentes || [];
-        return all.filter(d => d.validationState === 'APPROVED').length;
+        return this.demandesSansBilanFlux().filter(d => d.validationState === 'SELECTION').length;
     });
 
     countRejetee = computed(() => {
-        const all = this.state().demandeAttentes || [];
-        return all.filter(d => d.statutDemande === 'REJECTED' || d.validationState === 'REJECTED').length;
+        return this.demandesSansBilanFlux().filter(d => d.statutDemande === 'REJECTED' || d.validationState === 'REJECTED').length;
     });
 
     // Demandes filtrées, groupées par jour et triées par date décroissante
     filteredDemandes = computed(() => {
-        const all = this.state().demandeAttentes || [];
+        const all = this.demandesSansBilanFlux();
         let filtered: any[];
 
         switch (this.activeFilter()) {
@@ -80,9 +85,6 @@ export class AttenteComponent implements OnInit {
                 break;
             case 'AFFECTATION':
                 filtered = all.filter(d => d.validationState === 'SELECTION');
-                break;
-            case 'APPROUVEE':
-                filtered = all.filter(d => d.validationState === 'APPROVED');
                 break;
             case 'REJETEE':
                 filtered = all.filter(d => d.statutDemande === 'REJECTED' || d.validationState === 'REJECTED');
@@ -111,6 +113,8 @@ export class AttenteComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
 
     ngOnInit(): void {
+        // Charger les IDs des demandes entièrement validées par le DA
+        this.loadDemandesValideesIds();
         // Récupérer les informations de l'utilisateur puis charger les données
         this.loadUserInfoAndDemandes();
     }
@@ -144,6 +148,21 @@ export class AttenteComponent implements OnInit {
         this.expandedRows = { ...this.expandedRows };
 
         console.log('Expanded rows après toggle:', this.expandedRows);
+    }
+
+    private loadDemandesValideesIds(): void {
+        this.userService.getDemandesValideesIds$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    const ids: number[] = response.data?.demandesValideesIds || [];
+                    this.demandesValideesIds.set(new Set(ids));
+                },
+                error: (error: any) => {
+                    console.error('Erreur lors du chargement des demandes validées:', error);
+                    this.demandesValideesIds.set(new Set());
+                }
+            });
     }
 
     private loadUserInfoAndDemandes(): void {

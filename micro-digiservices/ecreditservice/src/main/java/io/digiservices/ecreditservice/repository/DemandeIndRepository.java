@@ -75,4 +75,6 @@ public interface DemandeIndRepository {
     void rejetDemandeInd(Long demandeindividuelId);
 
     List<DelegationCreditDto> listCreditParDelegation();
+
+    void updateDemandeComplete(DemandeIndividuel demande);
 }

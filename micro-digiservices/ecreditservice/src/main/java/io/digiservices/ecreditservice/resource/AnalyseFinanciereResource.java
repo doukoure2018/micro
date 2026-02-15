@@ -391,4 +391,15 @@ public class AnalyseFinanciereResource {
                 getResponse(httpRequest, Map.of("data", result),
                         "Donnees pre-remplies depuis la collecte", OK));
     }
+
+    @GetMapping("/analyse/{analyseId}/alternatives/{collecteId}")
+    public ResponseEntity<Response> getAlternatives(
+            @PathVariable Long analyseId,
+            @PathVariable Long collecteId,
+            HttpServletRequest httpRequest) {
+        var result = analyseService.getAlternatives(analyseId, collecteId);
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("alternatives", result),
+                        "Alternatives CA et marge", OK));
+    }
 }
