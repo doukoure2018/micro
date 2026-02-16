@@ -190,12 +190,10 @@ jobs:
               cp .env.docker .env.prod || { echo "❌ No .env.docker found!"; exit 1; }
             fi
 
-            # Load environment (compatible POSIX, gere les espaces dans les valeurs)
-            while IFS= read -r line; do
-              [[ "$line" =~ ^[[:space:]]*# ]] && continue
-              [[ -z "$line" ]] && continue
-              export "$line"
-            done < .env.prod
+            # Load only DB variables needed by the script (docker-compose reads .env.prod directly)
+            export POSTGRES_USER=$(grep '^POSTGRES_USER=' .env.prod | cut -d'=' -f2)
+            export POSTGRES_DB=$(grep '^POSTGRES_DB=' .env.prod | cut -d'=' -f2)
+            export POSTGRES_PASSWORD=$(grep '^POSTGRES_PASSWORD=' .env.prod | cut -d'=' -f2)
             
              # Backup database before deployment
             echo "📦 Creating pre-deployment backup..."
