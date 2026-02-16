@@ -191,7 +191,9 @@ jobs:
             fi
 
             # Load environment
-            export $(cat .env.prod | grep -v '^#' | xargs)
+            set -a
+            source .env.prod
+            set +a
             
              # Backup database before deployment
             echo "📦 Creating pre-deployment backup..."
