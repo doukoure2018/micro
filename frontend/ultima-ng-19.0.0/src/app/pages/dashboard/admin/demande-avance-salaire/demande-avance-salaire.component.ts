@@ -316,8 +316,8 @@ export class DemandeAvanceSalaireComponent implements OnInit {
             next: (response) => {
                 if (response.data?.demandes) {
                     const allDemandes = response.data.demandes as unknown as DemandeSalaryDto[];
-                    // Filtrer par matricule
-                    const actives = allDemandes.filter((d) => d.matricule === matricule && ['ENCOURS', 'VALIDER', 'CONFIRMER'].includes(d.statut!));
+                    // Filtrer par matricule et mois en cours
+                    const actives = allDemandes.filter((d) => d.matricule === matricule && ['ENCOURS', 'VALIDER', 'CONFIRMER'].includes(d.statut!) && this.isCurrentMonth(d.createdAt));
                     this.demandesActives.set(actives);
                 }
                 this.isSearching.set(false);
@@ -359,7 +359,8 @@ export class DemandeAvanceSalaireComponent implements OnInit {
             next: (response) => {
                 if (response.data?.demandes) {
                     const demandes = response.data.demandes as unknown as DemandeSalaryDto[];
-                    const actives = demandes.filter((d) => ['ENCOURS', 'VALIDER', 'CONFIRMER'].includes(d.statut!));
+                    // Filtrer par statut actif ET mois en cours uniquement
+                    const actives = demandes.filter((d) => ['ENCOURS', 'VALIDER', 'CONFIRMER'].includes(d.statut!) && this.isCurrentMonth(d.createdAt));
                     this.demandesActives.set(actives);
                 }
                 this.isSearching.set(false);
@@ -468,6 +469,18 @@ export class DemandeAvanceSalaireComponent implements OnInit {
         this.needsManualMatricule.set(false);
         this.currentStep.set(0);
         this.checkAuthorization();
+    }
+
+    private isCurrentMonth(dateValue: Date | string | number[] | undefined): boolean {
+        if (!dateValue) return false;
+        const now = new Date();
+        let d: Date;
+        if (Array.isArray(dateValue)) {
+            d = new Date(dateValue[0], dateValue[1] - 1, dateValue[2]);
+        } else {
+            d = new Date(dateValue);
+        }
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
     }
 
     formatMontant(montant: number | undefined): string {
