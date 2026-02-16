@@ -388,6 +388,7 @@ public class SalaireQuery {
         FROM demande_salary
         WHERE matricule = :matricule
         AND statut IN ('ENCOURS', 'VALIDER', 'CONFIRMER')
+        AND DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE)
         """;
 
     /**
@@ -486,6 +487,7 @@ public class SalaireQuery {
     FROM demande_salary
     WHERE id_user = :userId
       AND statut IN ('ENCOURS', 'VALIDER', 'CONFIRMER')
+      AND DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE)
     """;
 
 
