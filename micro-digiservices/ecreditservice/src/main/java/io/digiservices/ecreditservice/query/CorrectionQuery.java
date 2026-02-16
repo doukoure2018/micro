@@ -89,9 +89,11 @@ public class CorrectionQuery {
                       relac_beneficiario, det_direccion, cod_provincia,cod_canton, district, agence, code_agence, cod_actividad,
                       cod_profesion, cod_sector, type_entre, nbr_annee2, ind_sexo, est_civil, conjoint, nbr_enfant,
                       type_habit, nbr_annee, statut_clt, nature, prov_serv_destino, id_user, id_manager_agent, created_at,
-                      updated_at, correction_statut 
-               FROM public.personne_physique 
-               WHERE code_agence = :codAgencia 
+                      updated_at, correction_statut
+               FROM public.personne_physique
+               WHERE code_agence = :codAgencia
+                 AND correction_statut IN ('EN_ATTENTE', 'VALIDE')
+               ORDER BY CASE WHEN correction_statut = 'EN_ATTENTE' THEN 0 ELSE 1 END, created_at DESC
             """;
 
     public static final String GET_ALL_DEMANDE_CORRECTION_ATTENTE_BY_COD_AGENCIA_REJET =

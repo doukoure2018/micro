@@ -74,16 +74,30 @@ export class CorrectionEnAttenteComponent implements OnInit {
         checkingStatus: false
     });
 
+    selectedStatut = signal<string>('EN_ATTENTE');
+
     filteredList = computed(() => {
         const searchValue = this.state().searchValue.toLowerCase();
-        if (!searchValue) {
-            return this.state().listePPAttente;
+        const statut = this.selectedStatut();
+        let list = this.state().listePPAttente;
+
+        // Filtrer par statut
+        if (statut !== 'TOUS') {
+            list = list.filter((pp) => pp.correctionStatut === statut);
         }
 
-        return this.state().listePPAttente.filter(
-            (pp) => pp.nomCliente?.toLowerCase().includes(searchValue) || pp.codCliente?.toLowerCase().includes(searchValue) || pp.numId?.toLowerCase().includes(searchValue) || pp.telPrincipal?.toLowerCase().includes(searchValue)
-        );
+        // Filtrer par recherche
+        if (searchValue) {
+            list = list.filter(
+                (pp) => pp.nomCliente?.toLowerCase().includes(searchValue) || pp.codCliente?.toLowerCase().includes(searchValue) || pp.numId?.toLowerCase().includes(searchValue) || pp.telPrincipal?.toLowerCase().includes(searchValue)
+            );
+        }
+
+        return list;
     });
+
+    enAttenteTotal = computed(() => this.state().listePPAttente.filter((p) => p.correctionStatut === 'EN_ATTENTE').length);
+    valideTotal = computed(() => this.state().listePPAttente.filter((p) => p.correctionStatut === 'VALIDE').length);
 
     private userService = inject(UserService);
     private router = inject(Router);
@@ -418,6 +432,10 @@ export class CorrectionEnAttenteComponent implements OnInit {
 
     onSearchChange(value: string): void {
         this.state.update((s) => ({ ...s, searchValue: value }));
+    }
+
+    onStatutChange(statut: string): void {
+        this.selectedStatut.set(statut);
     }
 
     public reloadPage(): void {

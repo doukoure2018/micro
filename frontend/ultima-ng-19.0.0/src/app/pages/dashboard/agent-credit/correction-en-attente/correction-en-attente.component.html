@@ -94,6 +94,28 @@
                     <button pButton label="Réessayer" icon="pi pi-refresh" (click)="loadListePPAttente()"></button>
                 </div>
 
+                <!-- Filtres par statut -->
+                <div *ngIf="!state().loading && !state().error" class="flex gap-2 mb-3">
+                    <button pButton
+                        [label]="'En Attente (' + enAttenteTotal() + ')'"
+                        icon="pi pi-clock"
+                        [class]="selectedStatut() === 'EN_ATTENTE' ? 'p-button-warning' : 'p-button-outlined p-button-secondary'"
+                        (click)="onStatutChange('EN_ATTENTE')">
+                    </button>
+                    <button pButton
+                        [label]="'Validé (' + valideTotal() + ')'"
+                        icon="pi pi-check-circle"
+                        [class]="selectedStatut() === 'VALIDE' ? 'p-button-success' : 'p-button-outlined p-button-secondary'"
+                        (click)="onStatutChange('VALIDE')">
+                    </button>
+                    <button pButton
+                        [label]="'Tous (' + state().listePPAttente.length + ')'"
+                        icon="pi pi-list"
+                        [class]="selectedStatut() === 'TOUS' ? 'p-button-info' : 'p-button-outlined p-button-secondary'"
+                        (click)="onStatutChange('TOUS')">
+                    </button>
+                </div>
+
                 <!-- Table des données -->
                 <div *ngIf="!state().loading && !state().error" class="table-container">
                     <p-table [value]="filteredList()" [paginator]="true" [rows]="10"
