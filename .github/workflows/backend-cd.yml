@@ -190,10 +190,12 @@ jobs:
               cp .env.docker .env.prod || { echo "❌ No .env.docker found!"; exit 1; }
             fi
 
-            # Load environment
-            set -a
-            source .env.prod
-            set +a
+            # Load environment (compatible POSIX, gere les espaces dans les valeurs)
+            while IFS= read -r line; do
+              [[ "$line" =~ ^[[:space:]]*# ]] && continue
+              [[ -z "$line" ]] && continue
+              export "$line"
+            done < .env.prod
             
              # Backup database before deployment
             echo "📦 Creating pre-deployment backup..."
