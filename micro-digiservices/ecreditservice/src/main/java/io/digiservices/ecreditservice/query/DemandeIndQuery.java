@@ -625,9 +625,14 @@ public class DemandeIndQuery {
             nature_client = :natureClient, nom_personne_morale = :nomPersonneMorale,
             sigle = :sigle, categorie = :categorie,
             nom_pere = :nomPere, nom_mere = :nomMere, nom_conjoint = :nomConjoint,
-            prefecture = :prefecture, sous_prefecture = :sousPrefecture
+            prefecture = :prefecture, sous_prefecture = :sousPrefecture,
+            validation_state = CASE
+                WHEN validation_state = 'CORRECTION' THEN 'NOUVEAU'
+                WHEN validation_state = 'CORRECTION_DR' THEN 'VALIDATED_DA'
+                WHEN validation_state = 'CORRECTION_DE' THEN 'VALIDATED_DR'
+            END
         WHERE demandeindividuel_id = :demandeIndividuelId
-          AND validation_state = 'CORRECTION'
+          AND validation_state IN ('CORRECTION', 'CORRECTION_DR', 'CORRECTION_DE')
         """;
 
     public static final String DELETE_GARANTIES_BY_DEMANDE = """

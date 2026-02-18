@@ -687,6 +687,13 @@ export class CorrectionDemandeComponent implements OnInit {
         return this.state().garanties.filter((g) => types.includes(g.typeGarantie!));
     }
 
+    editGarantieByRef(garantie: GarantiePropose): void {
+        const index = this.state().garanties.indexOf(garantie);
+        if (index > -1) {
+            this.editGarantie(garantie, index);
+        }
+    }
+
     deleteGarantieByRef(garantie: GarantiePropose): void {
         const index = this.state().garanties.indexOf(garantie);
         if (index > -1) {

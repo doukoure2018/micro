@@ -1268,7 +1268,7 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
                     .update();
 
             if (updated == 0) {
-                throw new ApiException("Demande non trouvee ou n'est pas en etat CORRECTION");
+                throw new ApiException("Demande non trouvee ou n'est pas en etat de correction (CORRECTION, CORRECTION_DR, CORRECTION_DE)");
             }
 
             // Remplacer les garanties si fournies

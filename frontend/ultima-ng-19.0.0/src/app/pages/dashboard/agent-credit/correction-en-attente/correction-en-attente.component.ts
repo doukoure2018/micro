@@ -88,9 +88,7 @@ export class CorrectionEnAttenteComponent implements OnInit {
 
         // Filtrer par recherche
         if (searchValue) {
-            list = list.filter(
-                (pp) => pp.nomCliente?.toLowerCase().includes(searchValue) || pp.codCliente?.toLowerCase().includes(searchValue) || pp.numId?.toLowerCase().includes(searchValue) || pp.telPrincipal?.toLowerCase().includes(searchValue)
-            );
+            list = list.filter((pp) => pp.nomCliente?.toLowerCase().includes(searchValue) || pp.codCliente?.toLowerCase().includes(searchValue) || pp.numId?.toLowerCase().includes(searchValue) || pp.telPrincipal?.toLowerCase().includes(searchValue));
         }
 
         return list;
