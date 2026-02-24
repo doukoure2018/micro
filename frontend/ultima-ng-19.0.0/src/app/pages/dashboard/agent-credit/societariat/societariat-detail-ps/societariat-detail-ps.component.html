@@ -34,6 +34,28 @@
         </div>
     </div>
 
+    <!-- Filtre par date -->
+    <div class="date-filter">
+        <div class="date-filter-fields">
+            <div class="date-field">
+                <label>Du</label>
+                <p-calendar [ngModel]="dateDebut()" (ngModelChange)="dateDebut.set($event); onDateChange()"
+                    dateFormat="dd/mm/yy" [showIcon]="true" placeholder="Date début"
+                    [showClear]="true" appendTo="body"></p-calendar>
+            </div>
+            <div class="date-field">
+                <label>Au</label>
+                <p-calendar [ngModel]="dateFin()" (ngModelChange)="dateFin.set($event); onDateChange()"
+                    dateFormat="dd/mm/yy" [showIcon]="true" placeholder="Date fin"
+                    [showClear]="true" appendTo="body"></p-calendar>
+            </div>
+            @if (dateDebut() || dateFin()) {
+            <button pButton type="button" icon="pi pi-times" label="Réinitialiser"
+                class="p-button-text p-button-sm" (click)="clearDateFilter()"></button>
+            }
+        </div>
+    </div>
+
     @if (error()) {
     <div class="error">{{ error() }}</div>
     }

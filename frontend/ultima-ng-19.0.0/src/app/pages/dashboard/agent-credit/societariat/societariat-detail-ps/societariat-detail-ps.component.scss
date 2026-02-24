@@ -119,6 +119,35 @@
     }
 }
 
+// Date filter
+.date-filter {
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+
+    .date-filter-fields {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+
+        .date-field {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+
+            label {
+                font-size: 0.875rem;
+                font-weight: 600;
+                color: #374151;
+                white-space: nowrap;
+            }
+        }
+    }
+}
+
 // Status badges
 .status-badge {
     display: inline-block;

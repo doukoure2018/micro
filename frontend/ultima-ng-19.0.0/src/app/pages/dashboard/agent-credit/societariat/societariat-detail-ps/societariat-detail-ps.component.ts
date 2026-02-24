@@ -2,8 +2,10 @@ import { CommonModule, registerLocaleData } from '@angular/common';
 import localeFr from '@angular/common/locales/fr';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, Input, OnChanges, SimpleChanges, OnInit, computed, inject, signal, LOCALE_ID } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
+import { CalendarModule } from 'primeng/calendar';
 import { TableModule } from 'primeng/table';
 import { TooltipModule } from 'primeng/tooltip';
 import { PersonnePhysique } from '@/interface/personnePhysique';
@@ -14,7 +16,7 @@ registerLocaleData(localeFr);
 
 @Component({
     selector: 'app-societariat-detail-ps',
-    imports: [CommonModule, TableModule, ButtonModule, TooltipModule],
+    imports: [CommonModule, FormsModule, TableModule, ButtonModule, CalendarModule, TooltipModule],
     templateUrl: './societariat-detail-ps.component.html',
     styleUrl: './societariat-detail-ps.component.scss',
     providers: [{ provide: LOCALE_ID, useValue: 'fr-FR' }]
@@ -40,6 +42,9 @@ export class SocietariatDetailPsComponent implements OnChanges, OnInit {
         error: undefined,
         statut: null
     });
+
+    dateDebut = signal<Date | null>(null);
+    dateFin = signal<Date | null>(null);
 
     isLoading = computed(() => this.state().loading);
     items = computed(() => this.state().filteredItems);
@@ -107,8 +112,18 @@ export class SocietariatDetailPsComponent implements OnChanges, OnInit {
 
     applyFilter(statut: string | null): void {
         const allItems = this.allItems();
-        const filteredItems = statut ? allItems.filter((i) => i.correctionStatut === statut) : allItems;
-        this.state.update((s) => ({ ...s, filteredItems, statut }));
+        const debut = this.dateDebut();
+        const fin = this.dateFin();
+        let filtered = statut ? allItems.filter((i) => i.correctionStatut === statut) : allItems;
+        if (debut) {
+            const debutStart = new Date(debut.getFullYear(), debut.getMonth(), debut.getDate());
+            filtered = filtered.filter((i) => i.createdAt && new Date(i.createdAt) >= debutStart);
+        }
+        if (fin) {
+            const finEnd = new Date(fin.getFullYear(), fin.getMonth(), fin.getDate(), 23, 59, 59, 999);
+            filtered = filtered.filter((i) => i.createdAt && new Date(i.createdAt) <= finEnd);
+        }
+        this.state.update((s) => ({ ...s, filteredItems: filtered, statut }));
     }
 
     filterAll(): void {
@@ -125,6 +140,16 @@ export class SocietariatDetailPsComponent implements OnChanges, OnInit {
 
     filterValide(): void {
         this.applyFilter('VALIDE');
+    }
+
+    onDateChange(): void {
+        this.applyFilter(this.statut() ?? null);
+    }
+
+    clearDateFilter(): void {
+        this.dateDebut.set(null);
+        this.dateFin.set(null);
+        this.applyFilter(this.statut() ?? null);
     }
 
     refresh(): void {
