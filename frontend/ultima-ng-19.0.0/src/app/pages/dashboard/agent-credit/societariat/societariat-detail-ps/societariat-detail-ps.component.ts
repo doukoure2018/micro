@@ -92,7 +92,7 @@ export class SocietariatDetailPsComponent implements OnChanges, OnInit {
                     ...item,
                     createdAt:
                         Array.isArray(item.createdAt) && item.createdAt.length >= 3
-                            ? new Date(item.createdAt[0], (item.createdAt[1] || 1) - 1, item.createdAt[2] || 1, item.createdAt[3] || 0, item.createdAt[4] || 0, item.createdAt[5] || 0, item.createdAt[6] || 0).toISOString()
+                            ? new Date(item.createdAt[0], (item.createdAt[1] || 1) - 1, item.createdAt[2] || 1, item.createdAt[3] || 0, item.createdAt[4] || 0, item.createdAt[5] || 0).toISOString()
                             : item.createdAt
                 }));
                 const filteredItems = statut ? allItems.filter((i) => i.correctionStatut === statut) : allItems;
