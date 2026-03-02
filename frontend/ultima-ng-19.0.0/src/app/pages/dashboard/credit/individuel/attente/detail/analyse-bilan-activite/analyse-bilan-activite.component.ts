@@ -23,7 +23,6 @@ import { DividerModule } from 'primeng/divider';
 import { TooltipModule } from 'primeng/tooltip';
 import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
-import { Personnecaution } from '@/interface/personnecaution';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UserService } from '@/service/user.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -144,15 +143,11 @@ export class AnalyseBilanActiviteComponent {
     besoinCreditForm!: FormGroup;
     propositionForm!: FormGroup;
     demandeCreditForm!: FormGroup;
-    personnecautionForm!: FormGroup;
-
     // Ratios data
     ratiosData = signal<RatioInfo[]>([]);
 
     // Signal pour déclencher le recalcul des computed values quand le formulaire change
     private formChangeCounter = signal<number>(0);
-
-    personnecautions: Personnecaution[] = [];
     demandeIndividuelId: number | null = null;
 
     // Periodicités disponibles
@@ -315,18 +310,13 @@ export class AnalyseBilanActiviteComponent {
 
         const required: { label: string; type: string }[] = [];
 
-        if (s5.get('batimentExiste')?.value && s5.get('batimentPropriete')?.value)
-            required.push({ label: 'b) Batiments et magasin', type: 'Batiments et magasin' });
-        if (s5.get('installationExiste')?.value && s5.get('installationPropriete')?.value)
-            required.push({ label: 'c) Installations et agencements', type: 'Installations et agencements' });
-        if (s5.get('materielRoulantExiste')?.value && s5.get('materielRoulantPropriete')?.value)
-            required.push({ label: 'd) Materiel de transport', type: 'Materiel de transport' });
-        if (s5.get('mobilierExiste')?.value && s5.get('mobilierPropriete')?.value)
-            required.push({ label: 'e) Mobilier de bureau', type: 'Mobilier de bureau' });
-        if (s5.get('machineExiste')?.value && s5.get('machinePropriete')?.value)
-            required.push({ label: 'f) Materiels industriels', type: 'Materiels industriels' });
+        if (s5.get('batimentExiste')?.value && s5.get('batimentPropriete')?.value) required.push({ label: 'b) Batiments et magasin', type: 'Batiments et magasin' });
+        if (s5.get('installationExiste')?.value && s5.get('installationPropriete')?.value) required.push({ label: 'c) Installations et agencements', type: 'Installations et agencements' });
+        if (s5.get('materielRoulantExiste')?.value && s5.get('materielRoulantPropriete')?.value) required.push({ label: 'd) Materiel de transport', type: 'Materiel de transport' });
+        if (s5.get('mobilierExiste')?.value && s5.get('mobilierPropriete')?.value) required.push({ label: 'e) Mobilier de bureau', type: 'Mobilier de bureau' });
+        if (s5.get('machineExiste')?.value && s5.get('machinePropriete')?.value) required.push({ label: 'f) Materiels industriels', type: 'Materiels industriels' });
 
-        return required.filter(r => !amorts.some(a => a.typeImmobilisation === r.type));
+        return required.filter((r) => !amorts.some((a) => a.typeImmobilisation === r.type));
     });
 
     // ============== COMPUTED VALUES FOR BILAN ==============
@@ -1019,35 +1009,6 @@ export class AnalyseBilanActiviteComponent {
 
         // Charger ratios
         this.loadRatios(analyseId);
-
-        // Charger les personnes caution existantes
-        this.loadExistingCautions();
-    }
-
-    private loadExistingCautions(): void {
-        if (!this.demandeIndividuelId) return;
-        this.http
-            .get<any>(`${this.apiUrl}/ecredit/bilan_finance/synthese/demande/${this.demandeIndividuelId}`)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: (response) => {
-                    const cautions = response?.data?.personnesCaution;
-                    if (cautions && Array.isArray(cautions) && cautions.length > 0) {
-                        this.personnecautions = cautions.map((c: any) => ({
-                            personnecautionId: c.personnecautionId,
-                            nom: c.nom || '',
-                            prenom: c.prenom || '',
-                            telephone: c.telephone || '',
-                            activite: c.activite || '',
-                            age: c.age || null,
-                            profession: c.profession || ''
-                        }));
-                    }
-                },
-                error: () => {
-                    // Pas de cautions existantes, on continue avec un tableau vide
-                }
-            });
     }
 
     private loadRatios(analyseId: number): void {
@@ -1283,9 +1244,8 @@ export class AnalyseBilanActiviteComponent {
             { label: 'Amortissements', command: () => this.onStepChange(1) },
             { label: 'Bilan', command: () => this.onStepChange(2) },
             { label: 'Rentabilité', command: () => this.onStepChange(3) },
-            { label: 'Personnes caution', command: () => this.onStepChange(4) },
-            { label: 'Besoin Crédit', command: () => this.onStepChange(5) },
-            { label: 'Synthèse', command: () => this.onStepChange(6) }
+            { label: 'Besoin Crédit', command: () => this.onStepChange(4) },
+            { label: 'Synthèse', command: () => this.onStepChange(5) }
         ]);
     }
 
@@ -1449,16 +1409,6 @@ export class AnalyseBilanActiviteComponent {
             delegation: [null],
             agence: [null],
             pointVente: [null]
-        });
-
-        // Personne caution
-        this.personnecautionForm = this.fb.group({
-            nom: [''],
-            prenom: [''],
-            telephone: [''],
-            activite: [''],
-            age: [null],
-            profession: ['']
         });
 
         // ============== COLLECTE FORMS ==============
@@ -1745,35 +1695,6 @@ export class AnalyseBilanActiviteComponent {
         if (!this.demandeCreditForm.get('agence')?.disabled) {
             this.demandeCreditForm.patchValue({ pointVente: null });
         }
-    }
-
-    addPersonnecaution(): void {
-        const personnecaution: Personnecaution = {
-            nom: this.personnecautionForm.get('nom')?.value || '',
-            prenom: this.personnecautionForm.get('prenom')?.value || '',
-            telephone: this.personnecautionForm.get('telephone')?.value || '',
-            activite: this.personnecautionForm.get('activite')?.value || '',
-            age: this.personnecautionForm.get('age')?.value || undefined,
-            profession: this.personnecautionForm.get('profession')?.value || ''
-        };
-
-        this.personnecautions.push(personnecaution);
-        this.personnecautionForm.reset();
-
-        this.messageService.add({
-            severity: 'success',
-            summary: 'Succès',
-            detail: 'Personne caution ajoutée avec succès.'
-        });
-    }
-
-    removePersonnecaution(index: number): void {
-        this.personnecautions.splice(index, 1);
-        this.messageService.add({
-            severity: 'info',
-            summary: 'Information',
-            detail: 'Personne caution supprimée.'
-        });
     }
 
     // ============== API CALLS ==============
@@ -2423,20 +2344,9 @@ export class AnalyseBilanActiviteComponent {
 
         this.loading.set(true);
 
-        // Préparer les personnes caution pour l'envoi
-        const personnesCautionData = this.personnecautions.map((pc) => ({
-            nom: pc.nom || '',
-            prenom: pc.prenom || '',
-            telephone: pc.telephone || '',
-            activite: pc.activite || '',
-            age: pc.age || null,
-            profession: pc.profession || ''
-        }));
-
         const request = {
             analyseId: analyseId,
-            forcerSoumission: this.state().analyseExiste,
-            personnesCaution: personnesCautionData
+            forcerSoumission: this.state().analyseExiste
         };
 
         // Appel API pour soumettre l'analyse via la procédure stockée fn_soumettre_analyse
@@ -2449,11 +2359,10 @@ export class AnalyseBilanActiviteComponent {
                     const soumission = response?.data?.soumission;
 
                     if (soumission?.succes) {
-                        const nbCautions = this.personnecautions.length;
                         this.messageService.add({
                             severity: 'success',
                             summary: 'Succès',
-                            detail: `Analyse soumise avec succès${nbCautions > 0 ? ' avec ' + nbCautions + ' personne(s) caution' : ''}`
+                            detail: 'Analyse soumise avec succès'
                         });
 
                         setTimeout(() => {
@@ -3005,7 +2914,7 @@ export class AnalyseBilanActiviteComponent {
     addAmortissementForType(type: string): void {
         const collecteId = this.collecte()?.collecteId;
         if (!collecteId) return;
-        const typeInfo = this.typesImmobilisation.find(t => t.value === type);
+        const typeInfo = this.typesImmobilisation.find((t) => t.value === type);
         const today = new Date().toISOString().split('T')[0];
         const body = {
             collecteId,
@@ -3028,11 +2937,12 @@ export class AnalyseBilanActiviteComponent {
                         detail: `Amortissement "${type}" ajoute`
                     });
                 },
-                error: (err) => this.messageService.add({
-                    severity: 'error',
-                    summary: 'Erreur',
-                    detail: err?.error?.message || 'Erreur'
-                })
+                error: (err) =>
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Erreur',
+                        detail: err?.error?.message || 'Erreur'
+                    })
             });
     }
 
@@ -3078,7 +2988,7 @@ export class AnalyseBilanActiviteComponent {
                     if (updated) {
                         this.normalizeAmortDates([updated]);
                         const list = this.amortissements();
-                        const idx = list.findIndex(a => a.amortissementId === updated.amortissementId);
+                        const idx = list.findIndex((a) => a.amortissementId === updated.amortissementId);
                         if (idx >= 0) {
                             list[idx] = updated;
                             this.amortissements.set([...list]);
@@ -3144,9 +3054,7 @@ export class AnalyseBilanActiviteComponent {
         const codeSous = Number(this.state().demandeIndividuel?.sousActivite);
         const codeSousSous = Number(this.state().demandeIndividuel?.sousSousActivite);
         if (!codeActivite || !codeSous || !codeSousSous) return '-';
-        const ssa = CreditActiviteData.SOUS_SOUS_ACTIVITES.find(
-            s => s.codeActivite === codeActivite && s.codeSousActivite === codeSous && s.code === codeSousSous
-        );
+        const ssa = CreditActiviteData.SOUS_SOUS_ACTIVITES.find((s) => s.codeActivite === codeActivite && s.codeSousActivite === codeSous && s.code === codeSousSous);
         return ssa ? `${codeSousSous} - ${ssa.libelle}` : `${codeSousSous}`;
     }
 

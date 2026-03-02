@@ -303,6 +303,14 @@ public class AnalyseFinanciereServiceImpl implements AnalyseFinanciereService {
         return repository.getPersonnesCautionByDemande(demandeindividuelId);
     }
 
+    @Override
+    @Transactional
+    public void savePersonnesCaution(Long demandeindividuelId, List<PersonneCautionRequest.PersonneCautionInput> personnesCaution) {
+        repository.savePersonnesCaution(demandeindividuelId, personnesCaution);
+        log.info("Saved {} personnes caution for demande: {}",
+                personnesCaution != null ? personnesCaution.size() : 0, demandeindividuelId);
+    }
+
     // ==================== UTILITY ====================
 
     @Override
@@ -350,19 +358,16 @@ public class AnalyseFinanciereServiceImpl implements AnalyseFinanciereService {
             throw new ApiException("Analyse non trouvee avec ID: " + request.getAnalyseId());
         }
 
-        // Appeler la nouvelle méthode avec les personnes caution
         SoumissionResultDto result = repository.soumettreAnalyse(
                 request.getAnalyseId(),
                 codUsuario,
                 nomAnalyste,
-                request.getForcerSoumission(),
-                request.getPersonnesCaution()
+                request.getForcerSoumission()
         );
 
         if (result.getSucces()) {
-            int nbCautions = request.getPersonnesCaution() != null ? request.getPersonnesCaution().size() : 0;
-            log.info("Analyse {} soumise avec succes par {} avec {} personne(s) caution",
-                    request.getAnalyseId(), nomAnalyste, nbCautions);
+            log.info("Analyse {} soumise avec succes par {}",
+                    request.getAnalyseId(), nomAnalyste);
         } else {
             log.warn("Echec de la soumission de l'analyse {}: {} erreurs",
                     request.getAnalyseId(), result.getNombreErreurs());

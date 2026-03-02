@@ -659,6 +659,37 @@ public class UserQuery {
     // MISE A JOUR LOCALISATION UTILISATEUR
     // ========================================
 
+    public static final String SELECT_USERS_BY_POINTVENTE_QUERY =
+            """
+            SELECT
+                u.user_id,
+                u.user_uuid,
+                u.username,
+                u.first_name,
+                u.last_name,
+                u.email,
+                u.phone,
+                u.image_url,
+                u.enabled,
+                u.account_non_locked,
+                u.account_non_expired,
+                u.is_authorized,
+                u.delegation_id,
+                u.agence_id,
+                u.pointvente_id,
+                u.service,
+                u.created_at,
+                u.updated_at,
+                r.name AS role,
+                r.authority AS authorities
+            FROM users u
+            JOIN user_roles ur ON ur.user_id = u.user_id
+            JOIN roles r ON r.role_id = ur.role_id
+            WHERE u.pointvente_id = :pointventeId
+            AND u.enabled = true
+            ORDER BY u.username ASC
+            """;
+
     public static final String UPDATE_USER_LOCATION_QUERY =
             """
             UPDATE users

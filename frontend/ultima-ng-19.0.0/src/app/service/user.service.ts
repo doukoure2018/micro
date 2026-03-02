@@ -605,6 +605,20 @@ export class UserService {
         return this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/check`, { params }).pipe(catchError(this.handleError));
     }
 
+    /**
+     * Rapprochement audit : permet de choisir le point de service
+     */
+    checkReconciliationAudit$(pointVenteCode: string, dateDebut: string, dateFin: string): Observable<IResponse> {
+        const params = { pointVenteCode, dateDebut, dateFin };
+        return this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/audit`, { params }).pipe(catchError(this.handleError));
+    }
+
+    /**
+     * Récupérer tous les points de vente (toutes agences) - pour le module audit
+     */
+    getAllPointVentesAudit$ = (): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/points-vente`).pipe(catchError(this.handleError));
+
     // Méthode pour rejeter une demande (spécifique au DA)
     rejectDemandeIndividuel$ = (demandeIndividuelId: number) =>
         <Observable<IResponse>>this.http.patch<IResponse>(`${this.server}/ecredit/update/${demandeIndividuelId}`, {}, { withCredentials: true }).pipe(tap(console.log), catchError(this.handleError));
@@ -967,6 +981,11 @@ export class UserService {
      * Récupérer tous les utilisateurs par rôle
      */
     getUsersByRole$ = (roleName: string) => this.http.get<IResponse>(`${this.server}/user/by-role/${roleName}`).pipe(tap(console.log), catchError(this.handleError));
+
+    /**
+     * Récupérer tous les utilisateurs d'un point de vente
+     */
+    getUsersByPointVente$ = (pointventeId: number) => this.http.get<IResponse>(`${this.server}/user/by-pointvente/${pointventeId}`).pipe(tap(console.log), catchError(this.handleError));
 
     updateUserLocation$ = (userId: number, delegationId: number, agenceId: number, pointventeId: number) =>
         this.http.put<IResponse>(`${this.server}/user/location/${userId}?delegationId=${delegationId}&agenceId=${agenceId}&pointventeId=${pointventeId}`, {})

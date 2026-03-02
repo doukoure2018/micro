@@ -17,4 +17,6 @@ public class Personnecaution {
     private String activite;
     private Long age;
     private String profession;
+    private String adresseComplete;
+    private String descriptionActivite;
 }

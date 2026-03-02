@@ -355,6 +355,21 @@ public class AnalyseFinanciereResource {
                         "Normes ratios recuperees", OK));
     }
 
+    // ==================== PERSONNES CAUTION - 1 endpoint ====================
+
+    @PostMapping("/personnes-caution/{demandeId}")
+    public ResponseEntity<Response> savePersonnesCaution(
+            @PathVariable(name = "demandeId") Long demandeId,
+            @Valid @RequestBody PersonneCautionRequest request,
+            HttpServletRequest httpRequest) {
+
+        analyseService.savePersonnesCaution(demandeId, request.getPersonnesCaution());
+        var personnesCaution = analyseService.getPersonnesCautionByDemande(demandeId);
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("personnesCaution", personnesCaution),
+                        "Personnes caution enregistrees avec succes", OK));
+    }
+
     // ==================== SOUMISSION - 1 endpoint ====================
 
     @PostMapping("/analyse/soumettre")

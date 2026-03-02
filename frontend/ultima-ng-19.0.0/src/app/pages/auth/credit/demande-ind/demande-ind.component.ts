@@ -725,7 +725,7 @@ export class DemandeIndComponent implements OnInit {
             sousPrefecture: this.formData.sousPrefecture || '',
             email: this.formData.email || '',
             tipCredito: this.formData.tipCredito,
-            descriptionActivite: this.getDescriptionActiviteComplete() || form.value.descriptionActivite,
+            descriptionActivite: this.formData.descriptionActivite || '',
             garanties: this.state().garanties.map((g) => ({
                 ...g,
                 typeGarantie: this.convertTypeGarantie(g.typeGarantie!)

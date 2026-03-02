@@ -65,7 +65,8 @@
                     <button pButton type="button"
                         (click)="navigateTo('/dashboards/agent-credit/selection/' + state().demandeIndividuel?.demandeIndividuelId)"
                         icon="pi pi-folder-open" class="p-button-sm p-button-secondary p-button-rounded"
-                        pTooltip="Documents"></button>
+                        pTooltip="Documents">
+                    </button>
                 </div>
             </div>
         </div>
@@ -482,17 +483,24 @@
                             </p-dropdown>
                         </div>
 
-                        <!-- Code User SAF -->
+                        <!-- Agent (utilisateur du point de service) -->
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-3">
-                                <i class="pi pi-user mr-2 text-blue-500"></i>CODE USER SAF <span
-                                    class="text-red-500">*</span>
+                                <i class="pi pi-user mr-2 text-blue-500"></i>Agent <span class="text-red-500">*</span>
                             </label>
-                            <input pInputText formControlName="codAgent" placeholder="Ex: AGCR001"
-                                class="w-full uppercase" (input)="onAgentCodeChange($any($event.target).value)"
-                                [disabled]="!updateForm.get('code')?.value" />
+                            <p-dropdown formControlName="codAgent" [options]="state().agentUsers || []"
+                                optionLabel="label" optionValue="value" placeholder="-- Sélectionner un agent --"
+                                [showClear]="true" [filter]="true" filterPlaceholder="Rechercher..."
+                                [style]="{'width': '100%'}" appendTo="body"
+                                [disabled]="!updateForm.get('code')?.value || !(state().agentUsers?.length)">
+                            </p-dropdown>
                             <small *ngIf="!updateForm.get('code')?.value" class="text-gray-500 mt-2 block">
                                 <i class="pi pi-info-circle mr-1"></i>Sélectionnez d'abord un point de service
+                            </small>
+                            <small *ngIf="updateForm.get('code')?.value && !(state().agentUsers?.length)"
+                                class="text-orange-500 mt-2 block">
+                                <i class="pi pi-exclamation-triangle mr-1"></i>Aucun utilisateur trouvé pour ce point de
+                                service
                             </small>
                         </div>
 
@@ -573,7 +581,27 @@
                     </div>
                 </div>
 
-                <!-- Grid des 2 analyses -->
+                <!-- Bandeau correction demande complète -->
+                <div *ngIf="isDemandeCompleteNeedsCorrection()"
+                    class="mb-6 border-2 border-orange-400 bg-orange-50 rounded-xl p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <i class="pi pi-exclamation-triangle text-orange-600 text-xl"></i>
+                            <div>
+                                <div class="font-bold text-orange-800">Demande compl&egrave;te &agrave; corriger</div>
+                                <div class="text-sm text-orange-600">Le {{ getCorrectionLevel() }} a demand&eacute; la
+                                    correction de la demande compl&egrave;te</div>
+                            </div>
+                        </div>
+                        <a [routerLink]="['/dashboards/agent-credit/correction-demande', state().demandeIndividuel?.demandeIndividuelId]"
+                            style="display: inline-flex !important; align-items: center; background-color: #ea580c; color: white; padding: 10px 20px; border-radius: 8px; font-weight: 600; text-decoration: none; transition: background-color 0.2s;"
+                            class="hover:bg-orange-700">
+                            <i class="pi pi-pencil mr-2"></i>Corriger la demande compl&egrave;te
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Grid des 4 analyses -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <!-- 1. Bilan d'Activité -->
                     <div class="border-2 rounded-xl p-5 transition-all hover:shadow-md overflow-visible"
@@ -594,7 +622,8 @@
                                     [ngClass]="isBilanNeedsCorrection() ? 'text-red-600' :
                                                state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'text-green-600' :
                                                state().analyseStatut === 'BROUILLON' ? 'text-yellow-600' : 'text-blue-600'">
-                                    {{ isBilanNeedsCorrection() ? 'Rejet&eacute; par le ' + getCorrectionLevel() + ' - &Agrave; corriger' :
+                                    {{ isBilanNeedsCorrection() ? 'Rejet&eacute; par le ' + getCorrectionLevel() + ' -
+                                    &Agrave; corriger' :
                                     state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ?
                                     'Compl&eacute;t&eacute;' :
                                     state().analyseStatut === 'BROUILLON' ? 'En cours' : '&Agrave; renseigner' }}
@@ -646,7 +675,8 @@
                                 <div class="font-bold text-base text-gray-800">2. Flux de Tr&eacute;sorerie</div>
                                 <div class="text-sm font-medium" [ngClass]="isFluxNeedsCorrection() ? 'text-red-600' :
                                                state().hasDossierCredit ? 'text-green-600' : 'text-orange-600'">
-                                    {{ isFluxNeedsCorrection() ? 'Rejet&eacute; par le ' + getCorrectionLevel() + ' - &Agrave; corriger' :
+                                    {{ isFluxNeedsCorrection() ? 'Rejet&eacute; par le ' + getCorrectionLevel() + ' -
+                                    &Agrave; corriger' :
                                     state().hasDossierCredit ? 'Compl&eacute;t&eacute;' : '&Agrave; renseigner' }}
                                 </div>
                             </div>
@@ -674,6 +704,72 @@
                                 <i class="pi pi-plus mr-2"></i>Renseigner
                             </a>
                         </div>
+                    </div>
+
+                    <!-- 3. Personnes Caution -->
+                    <div class="border-2 rounded-xl p-5 transition-all hover:shadow-md overflow-visible border-purple-300 bg-purple-50"
+                        style="border-color: #d8b4fe; background-color: #faf5ff;">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white bg-purple-500"
+                                style="background-color: #a855f7;">
+                                <i class="pi pi-users text-lg"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold text-base text-gray-800">3. Personnes Caution</div>
+                                <div class="text-sm font-medium text-purple-600" style="color: #9333ea;">
+                                    Gérer les personnes caution du dossier
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <a [routerLink]="['/dashboards/credit/individuel/detail/personne-caution', state().demandeIndividuel?.demandeIndividuelId]"
+                                class="flex items-center justify-center w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors no-underline cursor-pointer"
+                                style="display: flex !important; visibility: visible !important; background-color: #9333ea !important; color: white !important;">
+                                <i class="pi pi-users mr-2"></i>Gérer les cautions
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- 4. Téléversement des Documents -->
+                    <div class="border-2 rounded-xl p-5 transition-all hover:shadow-md overflow-visible border-teal-300 bg-teal-50"
+                        style="border-color: #5eead4; background-color: #f0fdfa;">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white bg-teal-500"
+                                style="background-color: #14b8a6;">
+                                <i class="pi pi-images text-lg"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold text-base text-gray-800">4. Téléversement des Documents</div>
+                                <div class="text-sm font-medium text-teal-600" style="color: #0d9488;">
+                                    Téléverser les images et documents du dossier
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <a [routerLink]="['/dashboards/agent-credit/selection', state().demandeIndividuel?.demandeIndividuelId]"
+                                class="flex items-center justify-center w-full bg-teal-600 hover:bg-teal-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors no-underline cursor-pointer"
+                                style="display: flex !important; visibility: visible !important; background-color: #0d9488 !important; color: white !important;">
+                                <i class="pi pi-upload mr-2"></i>Téléverser les documents
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bouton Resoumettre les corrections -->
+                <div *ngIf="isInCorrectionState()" class="mt-6 border-2 border-green-400 bg-green-50 rounded-xl p-5">
+                    <div class="flex items-center justify-between flex-wrap gap-4">
+                        <div class="flex items-center gap-3">
+                            <i class="pi pi-check-circle text-green-600 text-2xl"></i>
+                            <div>
+                                <div class="font-bold text-green-800">Corrections termin&eacute;es ?</div>
+                                <div class="text-sm text-green-600">Apres avoir corrig&eacute; toutes les sections
+                                    demand&eacute;es, resoumettre la demande au {{ getCorrectionLevel() }}</div>
+                            </div>
+                        </div>
+                        <button pButton type="button" (click)="resoumettreCorrectionAC()" icon="pi pi-send"
+                            label="Resoumettre les corrections" class="p-button-success p-button-lg"
+                            style="background-color: #16a34a !important; border-color: #16a34a !important;">
+                        </button>
                     </div>
                 </div>
 
@@ -829,6 +925,117 @@
 
                     </div>
 
+                    <!-- ========== Personnes Caution (lecture seule) ========== -->
+                    <div>
+                        <div class="border-2 rounded-xl p-5" style="border-color: #d8b4fe; background-color: #faf5ff;">
+                            <div class="flex items-center gap-4 mb-4">
+                                <i class="pi pi-users text-3xl" style="color: #a855f7;"></i>
+                                <div>
+                                    <div class="font-bold text-lg">Personnes Caution</div>
+                                    <div class="font-medium" style="color: #9333ea;">
+                                        {{ (state().personnesCaution?.length || 0) }} personne(s) caution
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Liste des personnes caution -->
+                            <div *ngIf="state().personnesCaution && state().personnesCaution!.length > 0"
+                                class="space-y-3">
+                                <div *ngFor="let caution of state().personnesCaution; let i = index"
+                                    class="bg-white border border-gray-200 rounded-lg p-3">
+                                    <div class="font-semibold text-gray-800 mb-2">
+                                        <i class="pi pi-user mr-1" style="color: #a855f7;"></i>
+                                        {{ caution.prenom }} {{ caution.nom }}
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2 text-sm">
+                                        <div *ngIf="caution.telephone" class="text-gray-600">
+                                            <strong>T&eacute;l:</strong> {{ caution.telephone }}
+                                        </div>
+                                        <div *ngIf="caution.age" class="text-gray-600">
+                                            <strong>&Acirc;ge:</strong> {{ caution.age }} ans
+                                        </div>
+                                        <div *ngIf="caution.activite" class="text-gray-600">
+                                            <strong>Activit&eacute;:</strong> {{ caution.activite }}
+                                        </div>
+                                        <div *ngIf="caution.profession" class="text-gray-600">
+                                            <strong>Profession:</strong> {{ caution.profession }}
+                                        </div>
+                                        <div *ngIf="$any(caution).adresseComplete" class="col-span-2 text-gray-600">
+                                            <strong>Adresse:</strong> {{ $any(caution).adresseComplete }}
+                                        </div>
+                                        <div *ngIf="$any(caution).descriptionActivite" class="col-span-2 text-gray-600">
+                                            <strong>Description:</strong> {{ $any(caution).descriptionActivite }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Aucune personne caution -->
+                            <div *ngIf="!state().personnesCaution || state().personnesCaution!.length === 0"
+                                class="text-center py-4 text-gray-500">
+                                <i class="pi pi-info-circle mr-2"></i>
+                                Aucune personne caution renseign&eacute;e
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ========== Documents T&eacute;l&eacute;vers&eacute;s (lecture seule) ========== -->
+                    <div>
+                        <div class="border-2 rounded-xl p-5" style="border-color: #5eead4; background-color: #f0fdfa;">
+                            <div class="flex items-center gap-4 mb-4">
+                                <i class="pi pi-images text-3xl" style="color: #14b8a6;"></i>
+                                <div>
+                                    <div class="font-bold text-lg">Documents T&eacute;l&eacute;vers&eacute;s</div>
+                                    <div class="font-medium" style="color: #0d9488;">
+                                        {{ (state().documents?.length || 0) }} document(s)
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Grille des documents - carres moyens -->
+                            <div *ngIf="state().documents && state().documents!.length > 0"
+                                class="flex flex-wrap gap-2">
+                                <div *ngFor="let doc of state().documents; let i = index"
+                                    class="relative rounded-lg overflow-hidden border border-gray-200 bg-white cursor-pointer hover:shadow-lg transition-all group"
+                                    style="width: 80px; height: 80px; flex-shrink: 0;" (click)="viewDocument(doc)">
+
+                                    <!-- Image -->
+                                    <img *ngIf="isImageDocument(doc)" [src]="doc.doc" [alt]="'Doc ' + (i + 1)"
+                                        class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200">
+
+                                    <!-- PDF -->
+                                    <div *ngIf="isPDFDocument(doc)"
+                                        class="w-full h-full bg-red-50 flex flex-col items-center justify-center">
+                                        <i class="pi pi-file-pdf text-2xl text-red-500"></i>
+                                        <span style="font-size: 10px;" class="text-red-600 font-medium mt-1">PDF</span>
+                                    </div>
+
+                                    <!-- Autre -->
+                                    <div *ngIf="!isImageDocument(doc) && !isPDFDocument(doc)"
+                                        class="w-full h-full bg-gray-50 flex flex-col items-center justify-center">
+                                        <i class="pi pi-file text-2xl text-gray-400"></i>
+                                        <span style="font-size: 10px;" class="text-gray-500 font-medium mt-1">{{
+                                            getDocumentExtension(doc) }}</span>
+                                    </div>
+
+                                    <!-- Overlay hover -->
+                                    <div
+                                        class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
+                                        <i
+                                            class="pi pi-eye text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Aucun document -->
+                            <div *ngIf="!state().documents || state().documents!.length === 0"
+                                class="text-center py-4 text-gray-500">
+                                <i class="pi pi-info-circle mr-2"></i>
+                                Aucun document t&eacute;l&eacute;vers&eacute;
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -952,15 +1159,18 @@
             class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-purple-300 mb-8">
             <div class="bg-gradient-to-r from-purple-600 to-violet-600 text-white px-6 py-4 flex items-center gap-3">
                 <i class="pi pi-check-square text-xl"></i>
-                <span class="font-bold text-lg uppercase tracking-wide">Validation Hierarchique - Delegue Regional</span>
+                <span class="font-bold text-lg uppercase tracking-wide">Validation Hierarchique - Delegue
+                    Regional</span>
             </div>
             <div class="p-6">
                 <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
                     <div class="flex items-center gap-3">
                         <i class="pi pi-info-circle text-purple-600 text-xl"></i>
                         <div>
-                            <p class="font-semibold text-purple-800 m-0">La demande a ete validee par le Directeur d'Agence.</p>
-                            <p class="text-purple-700 text-sm m-0 mt-1">Vous pouvez maintenant valider ou rejeter cette demande pour la transmettre a la Direction d'Exploitation.</p>
+                            <p class="font-semibold text-purple-800 m-0">La demande a ete validee par le Directeur
+                                d'Agence.</p>
+                            <p class="text-purple-700 text-sm m-0 mt-1">Vous pouvez maintenant valider ou rejeter cette
+                                demande pour la transmettre a la Direction d'Exploitation.</p>
                         </div>
                     </div>
                 </div>
@@ -976,7 +1186,8 @@
                         </div>
                         <div *ngIf="state().demandeIndividuel?.avisDa" class="text-sm">
                             <span class="font-semibold text-amber-700">DA
-                                <span *ngIf="state().demandeIndividuel?.validatedByDa">({{ state().demandeIndividuel?.validatedByDa }})</span> :</span>
+                                <span *ngIf="state().demandeIndividuel?.validatedByDa">({{
+                                    state().demandeIndividuel?.validatedByDa }})</span> :</span>
                             <span class="text-gray-700 ml-1">{{ state().demandeIndividuel?.avisDa }}</span>
                         </div>
                     </div>
@@ -1013,8 +1224,10 @@
             [style]="{ width: '600px' }" [closable]="true"
             (onHide)="state.update(mergeState({showWorkflowRejetDR: false}))">
             <div class="mb-4 p-3 bg-red-50 border-round">
-                <p class="font-semibold m-0">{{ state().demandeIndividuel?.prenom }} {{ state().demandeIndividuel?.nom }}</p>
-                <p class="text-600 m-0">{{ state().demandeIndividuel?.montantDemande | currency:'GNF ':'symbol':'1.0-0' }} - {{ state().demandeIndividuel?.objectCredit }}</p>
+                <p class="font-semibold m-0">{{ state().demandeIndividuel?.prenom }} {{ state().demandeIndividuel?.nom
+                    }}</p>
+                <p class="text-600 m-0">{{ state().demandeIndividuel?.montantDemande | currency:'GNF ':'symbol':'1.0-0'
+                    }} - {{ state().demandeIndividuel?.objectCredit }}</p>
             </div>
             <form [formGroup]="workflowDRRejetForm">
                 <div class="mb-4">
@@ -1023,7 +1236,8 @@
                     </label>
                     <textarea pTextarea formControlName="motifRejet" rows="3" class="w-full"
                         placeholder="Expliquez la raison du rejet..." [autoResize]="true"></textarea>
-                    <small *ngIf="workflowDRRejetForm.get('motifRejet')?.invalid && workflowDRRejetForm.get('motifRejet')?.touched"
+                    <small
+                        *ngIf="workflowDRRejetForm.get('motifRejet')?.invalid && workflowDRRejetForm.get('motifRejet')?.touched"
                         class="text-red-500">Minimum 10 caracteres requis</small>
                 </div>
                 <div class="mb-4">
@@ -1039,7 +1253,8 @@
                             <label [for]="'wfdr_' + opt.value" class="text-sm cursor-pointer">{{ opt.label }}</label>
                         </div>
                     </div>
-                    <small *ngIf="workflowDRRejetForm.get('sectionsARevoir')?.touched && (!workflowDRRejetForm.get('sectionsARevoir')?.value || workflowDRRejetForm.get('sectionsARevoir')?.value?.length === 0)"
+                    <small
+                        *ngIf="workflowDRRejetForm.get('sectionsARevoir')?.touched && (!workflowDRRejetForm.get('sectionsARevoir')?.value || workflowDRRejetForm.get('sectionsARevoir')?.value?.length === 0)"
                         class="text-red-500">Selectionnez au moins une section</small>
                 </div>
                 <div class="mb-4">
@@ -1190,11 +1405,14 @@
                 <div
                     class="mt-6 text-center p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border-2 border-green-200">
                     <button pButton (click)="approvedDemande(state().demandeIndividuel!)"
-                        [disabled]="!state().userHasAvis" class="px-10 py-3 font-bold shadow-lg text-base"
-                        [ngClass]="state().userHasAvis ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gray-400'"
+                        [disabled]="!state().userHasAvis || isInCorrectionState()" class="px-10 py-3 font-bold shadow-lg text-base"
+                        [ngClass]="state().userHasAvis && !isInCorrectionState() ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gray-400'"
                         icon="pi pi-check-circle" label="APPROUVER LA DEMANDE">
                     </button>
-                    <p *ngIf="!state().userHasAvis" class="text-red-600 mt-4 font-medium">
+                    <p *ngIf="isInCorrectionState()" class="text-orange-600 mt-4 font-medium">
+                        <i class="pi pi-exclamation-triangle mr-2"></i>Veuillez d'abord resoumettre les corrections avant d'approuver la demande
+                    </p>
+                    <p *ngIf="!state().userHasAvis && !isInCorrectionState()" class="text-red-600 mt-4 font-medium">
                         <i class="pi pi-exclamation-triangle mr-2"></i>Donnez d'abord votre avis
                     </p>
                 </div>
@@ -1446,5 +1664,24 @@
                     (click)="confirmerRejetFlux()" [disabled]="rejetFluxForm.invalid"></button>
             </div>
         </ng-template>
+    </p-dialog>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- DIALOG PREVIEW DOCUMENT (image en grand + ouvrir dans un nouvel onglet) -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <p-dialog header="Aper&ccedil;u du document" [visible]="state().showPreviewDialog" (onHide)="closePreviewDialog()"
+        [modal]="true" [closable]="true" [draggable]="false" [style]="{width: '90vw', maxWidth: '800px'}"
+        [maximizable]="true" [blockScroll]="true">
+        <div *ngIf="state().selectedDocumentForPreview" class="text-center">
+            <img [src]="state().selectedDocumentForPreview?.doc" alt="Aper&ccedil;u" class="rounded-lg shadow-lg"
+                style="max-width: 100%; max-height: 70vh; object-fit: contain;">
+            <div class="flex justify-center gap-3 mt-4">
+                <button pButton type="button" label="Ouvrir dans un nouvel onglet" icon="pi pi-external-link"
+                    class="p-button-outlined"
+                    (click)="openDocInNewTab(state().selectedDocumentForPreview?.doc)"></button>
+                <button pButton type="button" label="Fermer" icon="pi pi-times"
+                    class="p-button-secondary p-button-outlined" (click)="closePreviewDialog()"></button>
+            </div>
+        </div>
     </p-dialog>
 </div>

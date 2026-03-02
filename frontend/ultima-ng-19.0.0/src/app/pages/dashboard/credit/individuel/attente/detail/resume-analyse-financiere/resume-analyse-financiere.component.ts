@@ -1,4 +1,3 @@
-import { Personnecaution } from '@/interface/personnecaution';
 import { IResponse } from '@/interface/response';
 import { IUser } from '@/interface/user';
 import { PrintService, PrintAnalyseData } from '@/service/PrintService';
@@ -255,13 +254,11 @@ export class ResumeAnalyseFinanciereComponent {
     state = signal<{
         user?: IUser;
         synthese?: AnalyseSynthese;
-        personnesCaution?: Personnecaution[];
         loading: boolean;
         error: string | null;
     }>({
         loading: false,
-        error: null,
-        personnesCaution: []
+        error: null
     });
 
     private router = inject(Router);
@@ -305,7 +302,6 @@ export class ResumeAnalyseFinanciereComponent {
                             ...s,
                             synthese: responseData.synthese,
                             user: responseData.user,
-                            personnesCaution: responseData.personnesCaution || [],
                             loading: false
                         }));
                     } else {
@@ -350,24 +346,6 @@ export class ResumeAnalyseFinanciereComponent {
     hasMontantPropose(): boolean {
         const montant = this.state().synthese?.montantPropose;
         return montant !== null && montant !== undefined && montant > 0;
-    }
-
-    /**
-     * Vérifie s'il y a des personnes caution
-     */
-    hasPersonnesCaution(): boolean {
-        const cautions = this.state().personnesCaution;
-        return cautions !== null && cautions !== undefined && cautions.length > 0;
-    }
-
-    /**
-     * Retourne le nom complet de la personne caution
-     */
-    getPersonneCautionFullName(pc: Personnecaution): string {
-        const parts = [];
-        if (pc.nom) parts.push(pc.nom);
-        if (pc.prenom) parts.push(pc.prenom);
-        return parts.join(' ') || '-';
     }
 
     // ========================================
@@ -637,7 +615,7 @@ export class ResumeAnalyseFinanciereComponent {
 
         const printData: PrintAnalyseData = {
             synthese: synthese as any,
-            personnesCaution: this.state().personnesCaution || [],
+            personnesCaution: [],
             showRatios: this.canViewRatios()
         };
 

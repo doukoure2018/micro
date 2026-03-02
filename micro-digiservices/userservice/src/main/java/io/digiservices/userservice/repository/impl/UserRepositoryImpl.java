@@ -1060,6 +1060,19 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
+    public List<User> getUsersByPointVente(Long pointventeId) {
+        try {
+            return jdbcClient.sql(SELECT_USERS_BY_POINTVENTE_QUERY)
+                    .param("pointventeId", pointventeId)
+                    .query(User.class)
+                    .list();
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des utilisateurs par point de vente: {}", e.getMessage());
+            throw new ApiException("Une erreur est survenue lors de la récupération des utilisateurs");
+        }
+    }
+
+    @Override
     public void updateUserLocation(Long userId, Long delegationId, Long agenceId, Long pointventeId) {
         try {
             int updated = jdbcClient.sql(UPDATE_USER_LOCATION_QUERY)

@@ -1,0 +1,139 @@
+<div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <p-toast></p-toast>
+
+    <!-- Loading Spinner -->
+    <div *ngIf="loading()"
+        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl">
+            <p-progressSpinner strokeWidth="4"></p-progressSpinner>
+            <p class="text-center mt-4 text-gray-700 font-medium">Chargement en cours...</p>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-4 max-w-5xl">
+
+        <!-- Header -->
+        <div class="sticky top-0 z-40 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg mb-4 p-4">
+            <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-4">
+                    <button pButton type="button" (click)="goBack()" icon="pi pi-arrow-left"
+                        class="p-button-text p-button-rounded p-button-secondary" pTooltip="Retour"></button>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                            <i class="pi pi-users text-blue-600"></i>
+                            Personnes Caution
+                        </h1>
+                        <p class="text-sm text-gray-500">
+                            Dossier N° {{ demandeIndividuelId }}
+                        </p>
+                    </div>
+                </div>
+                <button pButton type="button" label="Enregistrer" icon="pi pi-save"
+                    class="p-button-success" [loading]="saving()"
+                    (click)="savePersonnesCaution()"></button>
+            </div>
+        </div>
+
+        <!-- Formulaire d'ajout -->
+        <p-card header="Ajouter une personne caution" class="mb-4">
+            <p class="text-color-secondary mb-4">
+                Les personnes caution sont optionnelles mais peuvent renforcer le dossier.
+            </p>
+            <form [formGroup]="personnecautionForm" class="p-fluid">
+                <div class="grid gap-3">
+                    <div class="col-12 md:col-6">
+                        <label class="block font-medium mb-1">Nom</label>
+                        <input type="text" pInputText formControlName="nom" class="w-full" />
+                    </div>
+                    <div class="col-12 md:col-6">
+                        <label class="block font-medium mb-1">Prénom</label>
+                        <input type="text" pInputText formControlName="prenom" class="w-full" />
+                    </div>
+                    <div class="col-12 md:col-6">
+                        <label class="block font-medium mb-1">Téléphone</label>
+                        <input type="text" pInputText formControlName="telephone" class="w-full" />
+                    </div>
+                    <div class="col-12 md:col-6">
+                        <label class="block font-medium mb-1">Âge</label>
+                        <p-inputNumber formControlName="age" [showButtons]="true" [min]="18" [max]="100"
+                            suffix=" ans" class="w-full"></p-inputNumber>
+                    </div>
+                    <div class="col-12 md:col-6">
+                        <label class="block font-medium mb-1">Activité</label>
+                        <input type="text" pInputText formControlName="activite" class="w-full" />
+                    </div>
+                    <div class="col-12 md:col-6">
+                        <label class="block font-medium mb-1">Profession</label>
+                        <input type="text" pInputText formControlName="profession" class="w-full" />
+                    </div>
+                    <div class="col-12 md:col-6">
+                        <label class="block font-medium mb-1">Adresse complète</label>
+                        <input type="text" pInputText formControlName="adresseComplete" class="w-full" />
+                    </div>
+                    <div class="col-12 md:col-6">
+                        <label class="block font-medium mb-1">Description de l'activité</label>
+                        <input type="text" pInputText formControlName="descriptionActivite" class="w-full" />
+                    </div>
+                    <div class="col-12">
+                        <button pButton type="button" label="Ajouter cette personne caution"
+                            icon="pi pi-plus" class="p-button-success"
+                            (click)="addPersonnecaution()"></button>
+                    </div>
+                </div>
+            </form>
+        </p-card>
+
+        <!-- Liste des personnes caution ajoutées -->
+        <p-card *ngIf="personnecautions.length > 0">
+            <ng-template pTemplate="header">
+                <div class="p-4 bg-blue-50 border-bottom-1 surface-border">
+                    <h3 class="text-lg font-bold m-0">
+                        <i class="pi pi-users mr-2"></i>
+                        Personnes caution ajoutées ({{ personnecautions.length }})
+                    </h3>
+                </div>
+            </ng-template>
+            <div class="grid gap-3">
+                <div class="col-12 md:col-6" *ngFor="let caution of personnecautions; let i = index">
+                    <p-card>
+                        <ng-template pTemplate="header">
+                            <div class="flex align-items-center justify-content-between p-3 bg-gray-100">
+                                <span class="font-bold">{{ caution.prenom }} {{ caution.nom }}</span>
+                                <button pButton type="button" icon="pi pi-trash"
+                                    class="p-button-rounded p-button-danger p-button-text"
+                                    (click)="removePersonnecaution(i)" pTooltip="Supprimer"></button>
+                            </div>
+                        </ng-template>
+                        <div class="grid">
+                            <div class="col-6" *ngIf="caution.telephone">
+                                <strong>Téléphone:</strong> {{ caution.telephone }}
+                            </div>
+                            <div class="col-6" *ngIf="caution.age">
+                                <strong>Âge:</strong> {{ caution.age }} ans
+                            </div>
+                            <div class="col-6" *ngIf="caution.activite">
+                                <strong>Activité:</strong> {{ caution.activite }}
+                            </div>
+                            <div class="col-6" *ngIf="caution.profession">
+                                <strong>Profession:</strong> {{ caution.profession }}
+                            </div>
+                            <div class="col-6" *ngIf="caution.adresseComplete">
+                                <strong>Adresse:</strong> {{ caution.adresseComplete }}
+                            </div>
+                            <div class="col-6" *ngIf="caution.descriptionActivite">
+                                <strong>Description activité:</strong> {{ caution.descriptionActivite }}
+                            </div>
+                        </div>
+                    </p-card>
+                </div>
+            </div>
+        </p-card>
+
+        <!-- Message si aucune personne caution -->
+        <div *ngIf="personnecautions.length === 0 && !loading()"
+            class="p-4 bg-yellow-50 border-round border-1 border-yellow-200 text-center mt-4">
+            <i class="pi pi-info-circle mr-2"></i>
+            <span>Aucune personne caution ajoutée.</span>
+        </div>
+    </div>
+</div>

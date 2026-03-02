@@ -70,6 +70,9 @@ public interface UserRepository {
     Boolean getUserAuthorizationStatus(Long userId);
     List<User> getUsersByRole(String roleName);
 
+    // Utilisateurs par point de vente
+    List<User> getUsersByPointVente(Long pointventeId);
+
     // Mise a jour localisation
     void updateUserLocation(Long userId, Long delegationId, Long agenceId, Long pointventeId);
 }

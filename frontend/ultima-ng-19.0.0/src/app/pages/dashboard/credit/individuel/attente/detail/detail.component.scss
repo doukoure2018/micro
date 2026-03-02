@@ -899,7 +899,9 @@ label {
         a.bg-blue-600,
         a.bg-orange-600,
         a.bg-yellow-600,
-        a.bg-green-600 {
+        a.bg-green-600,
+        a.bg-purple-600,
+        a.bg-teal-600 {
             margin-top: 1rem !important;
             padding: 0.75rem 1rem !important;
             font-weight: 600 !important;
@@ -907,6 +909,7 @@ label {
             text-align: center !important;
             text-decoration: none !important;
             color: white !important;
+            display: flex !important;
         }
 
         a.bg-blue-600 {
@@ -934,6 +937,20 @@ label {
             background-color: #16a34a !important;
             &:hover {
                 background-color: #15803d !important;
+            }
+        }
+
+        a.bg-purple-600 {
+            background-color: #9333ea !important;
+            &:hover {
+                background-color: #7e22ce !important;
+            }
+        }
+
+        a.bg-teal-600 {
+            background-color: #0d9488 !important;
+            &:hover {
+                background-color: #0f766e !important;
             }
         }
     }

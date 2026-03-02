@@ -718,6 +718,38 @@ public class UserResource {
         }
     }
 
+    /**
+     * Récupérer tous les utilisateurs d'un point de vente
+     * GET /user/by-pointvente/{pointventeId}
+     */
+    @GetMapping("/by-pointvente/{pointventeId}")
+    public ResponseEntity<Response> getUsersByPointVente(
+            @NotNull Authentication authentication,
+            @PathVariable("pointventeId") Long pointventeId,
+            HttpServletRequest request) {
+
+        log.info("User {} fetching users for pointvente: {}", authentication.getName(), pointventeId);
+
+        try {
+            var users = userService.getUsersByPointVente(pointventeId);
+
+            return ResponseEntity.ok(getResponse(
+                    request,
+                    Map.of("users", users),
+                    "Utilisateurs du point de vente récupérés avec succès",
+                    OK
+            ));
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des utilisateurs par point de vente: {}", e.getMessage());
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR).body(getResponse(
+                    request,
+                    emptyMap(),
+                    e.getMessage(),
+                    INTERNAL_SERVER_ERROR
+            ));
+        }
+    }
+
     @PutMapping("/location/{userId}")
     public ResponseEntity<Response> updateUserLocation(
             @NotNull Authentication authentication,

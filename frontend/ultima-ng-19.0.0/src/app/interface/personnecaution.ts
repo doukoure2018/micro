@@ -8,4 +8,6 @@ export interface Personnecaution {
     activite?: string;
     age?: number;
     profession?: string;
+    adresseComplete?: string;
+    descriptionActivite?: string;
 }

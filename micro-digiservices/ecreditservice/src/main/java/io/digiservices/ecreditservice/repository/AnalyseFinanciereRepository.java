@@ -49,11 +49,8 @@ public interface AnalyseFinanciereRepository {
 
     // Personnes Caution
     List<Personnecaution> getPersonnesCautionByDemande(Long demandeindividuelId);
+    void savePersonnesCaution(Long demandeindividuelId, List<PersonneCautionRequest.PersonneCautionInput> personnesCaution);
 
     // Soumission
     SoumissionResultDto soumettreAnalyse(Long analyseId, String codUsuario, String nomAnalyste, Boolean forcerSoumission);
-
-    // Soumission avec personnes caution
-    SoumissionResultDto soumettreAnalyse(Long analyseId, String codUsuario, String nomAnalyste, Boolean forcerSoumission,
-                                          List<SoumissionRequest.PersonneCautionInput> personnesCaution);
 }

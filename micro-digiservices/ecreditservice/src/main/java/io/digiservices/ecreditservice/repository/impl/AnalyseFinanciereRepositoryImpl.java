@@ -505,20 +505,41 @@ public class AnalyseFinanciereRepositoryImpl implements AnalyseFinanciereReposit
                 .list();
     }
 
+    @Override
+    public void savePersonnesCaution(Long demandeindividuelId, List<PersonneCautionRequest.PersonneCautionInput> personnesCaution) {
+        try {
+            // Delete existing
+            jdbcClient.sql(DELETE_PERSONNES_CAUTION_BY_DEMANDE)
+                    .param("demandeindividuelId", demandeindividuelId)
+                    .update();
+
+            // Insert new
+            if (personnesCaution != null) {
+                for (PersonneCautionRequest.PersonneCautionInput pc : personnesCaution) {
+                    jdbcClient.sql(INSERT_PERSONNE_CAUTION)
+                            .param("demandeindividuelId", demandeindividuelId)
+                            .param("nom", pc.getNom())
+                            .param("prenom", pc.getPrenom())
+                            .param("telephone", pc.getTelephone())
+                            .param("activite", pc.getActivite())
+                            .param("age", pc.getAge())
+                            .param("profession", pc.getProfession())
+                            .param("adresseComplete", pc.getAdresseComplete())
+                            .param("descriptionActivite", pc.getDescriptionActivite())
+                            .update();
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error saving personnes caution: {}", e.getMessage(), e);
+            throw new ApiException("Erreur lors de la sauvegarde des personnes caution: " + e.getMessage());
+        }
+    }
+
     // ==================== SOUMISSION ====================
 
     @Override
     public SoumissionResultDto soumettreAnalyse(Long analyseId, String codUsuario, String nomAnalyste, Boolean forcerSoumission) {
-        return soumettreAnalyse(analyseId, codUsuario, nomAnalyste, forcerSoumission, null);
-    }
-
-    @Override
-    public SoumissionResultDto soumettreAnalyse(Long analyseId, String codUsuario, String nomAnalyste, Boolean forcerSoumission,
-                                                 List<SoumissionRequest.PersonneCautionInput> personnesCaution) {
         try {
-            // Construire le tableau de personnes caution pour PostgreSQL
-            String personnesCautionArray = buildPersonnesCautionArray(personnesCaution);
-
             String sql = """
                 SELECT
                     succes,
@@ -552,10 +573,9 @@ public class AnalyseFinanciereRepositoryImpl implements AnalyseFinanciereReposit
                     :analyseId,
                     :codUsuario,
                     :nomAnalyste,
-                    :forcerSoumission,
-                    %s
+                    :forcerSoumission
                 )
-                """.formatted(personnesCautionArray);
+                """;
 
             return jdbcClient.sql(sql)
                     .param("analyseId", analyseId)
@@ -599,42 +619,6 @@ public class AnalyseFinanciereRepositoryImpl implements AnalyseFinanciereReposit
             log.error("Error submitting analyse: {}", e.getMessage(), e);
             throw new ApiException("Erreur lors de la soumission de l'analyse: " + e.getMessage());
         }
-    }
-
-    /**
-     * Construit la représentation PostgreSQL du tableau de personnes caution
-     */
-    private String buildPersonnesCautionArray(List<SoumissionRequest.PersonneCautionInput> personnesCaution) {
-        if (personnesCaution == null || personnesCaution.isEmpty()) {
-            return "NULL::t_personne_caution_input[]";
-        }
-
-        StringBuilder sb = new StringBuilder("ARRAY[");
-        for (int i = 0; i < personnesCaution.size(); i++) {
-            SoumissionRequest.PersonneCautionInput pc = personnesCaution.get(i);
-            if (i > 0) sb.append(",");
-            sb.append("ROW(");
-            sb.append(escapeString(pc.getNom())).append(",");
-            sb.append(escapeString(pc.getPrenom())).append(",");
-            sb.append(escapeString(pc.getTelephone())).append(",");
-            sb.append(escapeString(pc.getActivite())).append(",");
-            sb.append(pc.getAge() != null ? pc.getAge() : "NULL").append(",");
-            sb.append(escapeString(pc.getProfession()));
-            sb.append(")::t_personne_caution_input");
-        }
-        sb.append("]::t_personne_caution_input[]");
-        return sb.toString();
-    }
-
-    /**
-     * Échappe une chaîne pour PostgreSQL
-     */
-    private String escapeString(String value) {
-        if (value == null) {
-            return "NULL";
-        }
-        // Échapper les apostrophes simples
-        return "'" + value.replace("'", "''") + "'";
     }
 
     private List<String> convertArrayToList(java.sql.Array sqlArray) {

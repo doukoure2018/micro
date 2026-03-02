@@ -350,6 +350,16 @@
                     </tr>
                     }
 
+                    <!-- Description de l'activité -->
+                    <tr>
+                        <td class="label-cell">Description de l'activité</td>
+                        <td colspan="5">
+                            <textarea pTextarea [(ngModel)]="formData.descriptionActivite" name="descriptionActivite"
+                                rows="3" class="w-full" [disabled]="state().submitting"
+                                placeholder="Décrivez votre activité en détail..."></textarea>
+                        </td>
+                    </tr>
+
                     <!-- Nombre d'années d'expérience dans cette activité -->
                     <tr>
                         <td class="label-cell">Nombre d'années d'expérience dans cette activité *</td>

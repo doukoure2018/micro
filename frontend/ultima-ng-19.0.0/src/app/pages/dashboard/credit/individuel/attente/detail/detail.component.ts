@@ -2,6 +2,7 @@ import { DemandeIndividuel } from '@/interface/demande-individuel.interface';
 import { DemandeCredit } from '@/interface/demande.credit';
 import { PointVente } from '@/interface/point.vente';
 import { IResponse } from '@/interface/response';
+import { Personnecaution } from '@/interface/personnecaution';
 import { Selection } from '@/interface/selection';
 import { IUser } from '@/interface/user';
 import { UserService } from '@/service/user.service';
@@ -79,9 +80,11 @@ export class DetailComponent {
         user?: IUser;
         pointVentes?: PointVente[];
         pointVente?: PointVente;
+        agentUsers?: { label: string; value: string }[];
         demandeIndividuel?: DemandeIndividuel;
         demande_credit?: DemandeCredit;
         documents?: Selection[];
+        personnesCaution?: Personnecaution[];
         loading: boolean;
         message: string | undefined;
         error: string | any;
@@ -173,6 +176,7 @@ export class DetailComponent {
         { label: 'Ratios financiers', value: 'RATIOS' },
         { label: 'Personne caution', value: 'PERSONNE_CAUTION' },
         { label: 'Garantie proposee', value: 'GARANTIE' },
+        { label: 'Documents incomplets', value: 'DOCUMENTS_INCOMPLETS' },
         { label: 'Demande complete', value: 'DEMANDE_COMPLETE' }
     ];
 
@@ -320,6 +324,7 @@ export class DetailComponent {
                         }
 
                         this.loadDocuments(+demandeData.demandeIndividuelId!);
+                        this.loadPersonnesCaution(+demandeData.demandeIndividuelId!);
 
                         // Charger les avis
                         this.loadAvis(+demandeData.demandeIndividuelId!);
@@ -728,6 +733,26 @@ export class DetailComponent {
     }
 
     /**
+     * Charger les personnes caution pour la consultation DA/DR/MANAGER
+     */
+    private loadPersonnesCaution(demandeId: number): void {
+        this.userService
+            .getSyntheseAnalyseFinanciere$(demandeId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    this.state.update((s) => ({
+                        ...s,
+                        personnesCaution: (response.data as any).personnesCaution || []
+                    }));
+                },
+                error: (error) => {
+                    console.error('Erreur lors du chargement des personnes caution:', error);
+                }
+            });
+    }
+
+    /**
      * Charger les informations du point de vente
      */
     private loadPointVenteInfo(pointventeId: number): void {
@@ -766,6 +791,33 @@ export class DetailComponent {
 
     onPointVenteChange(event: any): void {
         this.updateForm.get('codAgent')?.reset();
+        this.state.update((s) => ({ ...s, agentUsers: [] }));
+
+        const selectedCode = event.value;
+        if (!selectedCode) return;
+
+        // Trouver le PointVente sélectionné pour récupérer son id
+        const selectedPV = (this.state().pointVentes || []).find((pv) => pv.code === selectedCode);
+        if (!selectedPV?.id) return;
+
+        this.userService
+            .getUsersByPointVente$(selectedPV.id)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    const users = response.data?.users || [];
+                    this.state.update((s) => ({
+                        ...s,
+                        agentUsers: users.map((u: any) => ({
+                            label: u.username,
+                            value: u.username
+                        }))
+                    }));
+                },
+                error: (error) => {
+                    console.error('Erreur lors du chargement des utilisateurs:', error);
+                }
+            });
     }
     onSubmit(): void {
         if (this.updateForm.valid) {
@@ -914,6 +966,12 @@ export class DetailComponent {
             showPreviewDialog: false,
             selectedDocumentForPreview: null
         }));
+    }
+
+    openDocInNewTab(url?: string): void {
+        if (url) {
+            window.open(url, '_blank');
+        }
     }
 
     closePDFPreview(): void {
@@ -1996,7 +2054,7 @@ export class DetailComponent {
     }
 
     getSectionLabel(value: string): string {
-        const all = [...this.sectionsBilanOptions, ...this.sectionsFluxOptions];
+        const all = [...this.sectionsBilanOptions, ...this.sectionsFluxOptions, ...this.workflowSectionsOptions];
         return all.find((o) => o.value === value)?.label || value;
     }
 
@@ -2063,6 +2121,16 @@ export class DetailComponent {
         return false;
     }
 
+    isDemandeCompleteNeedsCorrection(): boolean {
+        const vs = this.state().demandeIndividuel?.validationState || '';
+        const demandeSections = ['DEMANDE_COMPLETE', 'COLLECTE'];
+        const getSections = (s: string | undefined) => demandeSections.some((d) => (s || '').includes(d));
+        if (vs === 'CORRECTION') return getSections(this.state().demandeIndividuel?.sectionsARevoirDa);
+        if (vs === 'CORRECTION_DR') return getSections(this.state().demandeIndividuel?.sectionsARevoirDr);
+        if (vs === 'CORRECTION_DE') return getSections(this.state().demandeIndividuel?.sectionsARevoirDe);
+        return false;
+    }
+
     isFluxNeedsCorrection(): boolean {
         if (this.state().validationDA.flux?.statut === 'REJETE') return true;
         const vs = this.state().demandeIndividuel?.validationState || '';
@@ -2089,17 +2157,49 @@ export class DetailComponent {
         return '';
     }
 
+    resoumettreCorrectionAC(): void {
+        const demandeId = this.state().demandeIndividuel?.demandeIndividuelId;
+        if (!demandeId) return;
+        const vs = this.state().demandeIndividuel?.validationState || '';
+        const avis = this.state().demandeIndividuel?.avisAgentCredit || 'Corrections effectuées';
+
+        let call$;
+        if (vs === 'CORRECTION') {
+            call$ = this.userService.approuverAC$(+demandeId, avis);
+        } else if (vs === 'CORRECTION_DR') {
+            call$ = this.userService.validerDA$(+demandeId, avis);
+        } else if (vs === 'CORRECTION_DE') {
+            call$ = this.userService.validerDR$(+demandeId, avis);
+        } else {
+            return;
+        }
+
+        call$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: () => {
+                this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Corrections resoumises avec succes', life: 3000 });
+                this.loadDemandeWithGaranties();
+            },
+            error: (err: any) => {
+                this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || 'Erreur lors de la resoumission', life: 5000 });
+            }
+        });
+    }
+
     getCorrectionInfo(): { level: string; motif: string; sections: string; instructions: string } {
         const d = this.state().demandeIndividuel;
         const vs = d?.validationState || '';
+        let raw = { level: '', motif: '', sections: '', instructions: '' };
         if (vs === 'CORRECTION') {
-            return { level: 'DA', motif: d?.motifRejetDa || '', sections: d?.sectionsARevoirDa || '', instructions: d?.instructionsAc || '' };
+            raw = { level: 'DA', motif: d?.motifRejetDa || '', sections: d?.sectionsARevoirDa || '', instructions: d?.instructionsAc || '' };
         } else if (vs === 'CORRECTION_DR') {
-            return { level: 'DR', motif: d?.motifRejetDr || '', sections: d?.sectionsARevoirDr || '', instructions: d?.instructionsDa || '' };
+            raw = { level: 'DR', motif: d?.motifRejetDr || '', sections: d?.sectionsARevoirDr || '', instructions: d?.instructionsDa || '' };
         } else if (vs === 'CORRECTION_DE') {
-            return { level: 'DE', motif: d?.motifRejetDe || '', sections: d?.sectionsARevoirDe || '', instructions: d?.instructionsDr || '' };
+            raw = { level: 'DE', motif: d?.motifRejetDe || '', sections: d?.sectionsARevoirDe || '', instructions: d?.instructionsDr || '' };
         }
-        return { level: '', motif: '', sections: '', instructions: '' };
+        if (raw.sections) {
+            raw.sections = raw.sections.split(',').map((s: string) => this.getSectionLabel(s.trim())).join(', ');
+        }
+        return raw;
     }
 
     isWorkflowAdvanced(): boolean {

@@ -134,7 +134,20 @@ export class AppMenu {
                                   //   }
                               ]
                             : this.user?.role === 'MANAGER'
-                              ? this.user?.service === 'DSIG'
+                              ? this.user?.service === 'Audit'
+                                  ? [
+                                        {
+                                            label: 'Audit Rapprochement',
+                                            icon: 'pi pi-fw pi-shield',
+                                            routerLink: ['/dashboards/audit-rapprochement']
+                                        },
+                                        {
+                                            label: 'Mes avances de salaire',
+                                            icon: 'pi pi-fw pi-list',
+                                            routerLink: ['/dashboards/mes-demandes-salaire']
+                                        }
+                                    ]
+                                  : this.user?.service === 'DSIG'
                                   ? [
                                         {
                                             label: 'document-verification',

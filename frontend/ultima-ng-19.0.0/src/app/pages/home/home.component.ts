@@ -27,11 +27,7 @@ import { environment } from 'src/environments/environment';
 
 @Component({
     selector: 'app-home',
-    imports: [
-        ProgressSpinnerModule, RouterModule, IconFieldModule, InputIconModule, InputTextModule, 
-        Topbar, DropdownModule, ButtonModule, MenuModule, DialogModule, FormsModule,
-        InputGroupModule, InputGroupAddonModule, MessageModule, ToastModule
-    ],
+    imports: [ProgressSpinnerModule, RouterModule, IconFieldModule, InputIconModule, InputTextModule, Topbar, DropdownModule, ButtonModule, MenuModule, DialogModule, FormsModule, InputGroupModule, InputGroupAddonModule, MessageModule, ToastModule],
     templateUrl: './home.component.html',
     styles: `
         ::placeholder {
@@ -90,7 +86,7 @@ import { environment } from 'src/environments/environment';
 export class HomeComponent {
     loading = signal<boolean>(true);
     isAuthenticatedAndRedirecting = signal<boolean>(false);
-    
+
     // Dialog Personnel
     showPersonnelDialog = signal<boolean>(false);
     personnelState = signal<{ loading: boolean; message: string | undefined; error: string | undefined }>({
@@ -186,15 +182,15 @@ export class HomeComponent {
     // Ajoutez les autres méthodes si elles sont utilisées dans le template
     demandesItems: MenuItem[] = [
         {
-            label: 'Demande de Crédit Individuel',
+            label: 'Demande de Crédit',
             icon: 'pi pi-plus',
             command: () => this.navigateToNewDemande()
-        },
-        {
-            label: 'Demande de Crédit Groupe',
-            icon: 'pi pi-list',
-            command: () => this.navigateToMyDemandes()
         }
+        // {
+        //     label: 'Demande de Crédit Groupe',
+        //     icon: 'pi pi-list',
+        //     command: () => this.navigateToMyDemandes()
+        // }
     ];
 
     navigateToNewDemande() {

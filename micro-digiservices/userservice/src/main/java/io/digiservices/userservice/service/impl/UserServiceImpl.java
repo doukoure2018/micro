@@ -403,6 +403,12 @@ public class UserServiceImpl  implements UserService {
     }
 
     @Override
+    public List<User> getUsersByPointVente(Long pointventeId) {
+        log.info("Récupération des utilisateurs pour le point de vente: {}", pointventeId);
+        return userRepository.getUsersByPointVente(pointventeId);
+    }
+
+    @Override
     public void updateUserLocation(Long userId, Long delegationId, Long agenceId, Long pointventeId) {
         log.info("Mise à jour localisation pour l'utilisateur {}: delegation={}, agence={}, pointvente={}",
                 userId, delegationId, agenceId, pointventeId);

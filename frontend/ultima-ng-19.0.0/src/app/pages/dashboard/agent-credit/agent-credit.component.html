@@ -222,13 +222,14 @@
                     <td class="text-center">
                         <div class="flex gap-2 justify-center">
                             @if(hasDemandeCorrectionSection(demande)) {
-                            <p-button icon="pi pi-pencil" label="Modifier la demande"
+                            <!-- <p-button icon="pi pi-pencil" label="Modifier la demande"
                                 (click)="navigateCorrectionDemande(demande.demandeIndividuelId)" size="small"
-                                severity="danger"></p-button>
+                                severity="danger">
+                            </p-button> -->
                             }
                             <p-button icon="pi pi-eye" label="Corriger"
-                                (click)="viewDemandeDetail(demande.demandeIndividuelId)" size="small"
-                                severity="warn"></p-button>
+                                (click)="viewDemandeDetail(demande.demandeIndividuelId)" size="small" severity="warn">
+                            </p-button>
                         </div>
                     </td>
                 </tr>
@@ -262,8 +263,7 @@
         <p-table #dtCorrectionDR [value]="state().workflowCorrectionDR" [paginator]="true" [rows]="10"
             [showCurrentPageReport]="true" responsiveLayout="scroll"
             currentPageReportTemplate="Affichage de {first} a {last} sur {totalRecords}"
-            [rowsPerPageOptions]="[10, 25, 50]"
-            [globalFilterFields]="['nom', 'prenom', 'numeroMembre', 'motifRejetDr']"
+            [rowsPerPageOptions]="[10, 25, 50]" [globalFilterFields]="['nom', 'prenom', 'numeroMembre', 'motifRejetDr']"
             styleClass="p-datatable-striped">
 
             <ng-template pTemplate="caption">
@@ -278,7 +278,8 @@
 
             <ng-template pTemplate="header">
                 <tr>
-                    <th pSortableColumn="createdAt" style="width:12%">Date <p-sortIcon field="createdAt"></p-sortIcon></th>
+                    <th pSortableColumn="createdAt" style="width:12%">Date <p-sortIcon field="createdAt"></p-sortIcon>
+                    </th>
                     <th pSortableColumn="nom" style="width:18%">Client <p-sortIcon field="nom"></p-sortIcon></th>
                     <th class="text-right" style="width:15%">Montant</th>
                     <th style="width:25%">Motif de rejet DR</th>

@@ -800,9 +800,28 @@ public class AnalyseFinanciereQuery {
             telephone,
             activite,
             age,
-            profession
+            profession,
+            adresse_complete as "adresseComplete",
+            description_activite as "descriptionActivite"
         FROM personnecaution
         WHERE demandeindividuel_id = :demandeindividuelId
         ORDER BY personnecaution_id
+        """;
+
+    // ==================== PERSONNES CAUTION CRUD ====================
+
+    public static final String DELETE_PERSONNES_CAUTION_BY_DEMANDE = """
+        DELETE FROM personnecaution
+        WHERE demandeindividuel_id = :demandeindividuelId
+        """;
+
+    public static final String INSERT_PERSONNE_CAUTION = """
+        INSERT INTO personnecaution (
+            demandeindividuel_id, nom, prenom, telephone, activite, age, profession,
+            adresse_complete, description_activite
+        ) VALUES (
+            :demandeindividuelId, :nom, :prenom, :telephone, :activite, :age, :profession,
+            :adresseComplete, :descriptionActivite
+        )
         """;
 }

@@ -814,10 +814,6 @@ public class DemandeIndResource {
         }
     }
 
-    @GetMapping("/doukoure/test")
-    public ResponseEntity<Response> doukoureTest(@NotNull Authentication authentication,HttpServletRequest request) {
-        return created(getUri()).body(getResponse(request, emptyMap(), "this is the test for doukoure salifou", OK));
-    }
 
 
 

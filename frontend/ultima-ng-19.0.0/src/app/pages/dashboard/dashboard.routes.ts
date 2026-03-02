@@ -181,6 +181,11 @@ export default [
         loadComponent: () => import('./credit/individuel/attente/detail/analyse-flux-tresorerie/analyse-flux-tresorerie.component').then((c) => c.AnalyseFluxTresorerieComponent)
     },
     {
+        path: 'credit/individuel/detail/personne-caution/:demandeindividuelId',
+        data: { breadcrumb: 'Personnes Caution' },
+        loadComponent: () => import('./credit/individuel/attente/detail/personne-caution/personne-caution.component').then((c) => c.PersonneCautionComponent)
+    },
+    {
         path: 'config',
         data: { breadcrumb: 'Configuration des Points de vente' },
         loadComponent: () => import('./admin/config-reseau/config-reseau.component').then((c) => c.ConfigReseauComponent)
@@ -245,5 +250,10 @@ export default [
         path: 'agent-credit/correction-demande/:demandeIndividuelId',
         data: { breadcrumb: 'Correction de la Demande' },
         loadComponent: () => import('./agent-credit/correction-demande/correction-demande.component').then((c) => c.CorrectionDemandeComponent)
+    },
+    {
+        path: 'audit-rapprochement',
+        data: { breadcrumb: 'Audit Rapprochement de Caisse' },
+        loadComponent: () => import('./admin/audit/audit.component').then((c) => c.AuditComponent)
     }
 ] as Routes;

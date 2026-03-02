@@ -44,8 +44,9 @@ public interface AnalyseFinanciereService {
     AnalyseSyntheseDto getSyntheseByAnalyse(Long analyseId);
     AnalyseSyntheseDto getSyntheseByDemande(Long demandeindividuelId);
 
-    // Personnes Caution - 1 endpoint
+    // Personnes Caution - 2 endpoints
     List<Personnecaution> getPersonnesCautionByDemande(Long demandeindividuelId);
+    void savePersonnesCaution(Long demandeindividuelId, List<PersonneCautionRequest.PersonneCautionInput> personnesCaution);
 
     // Utility - 3 endpoints
     byte[] exportPdf(Long analyseId);

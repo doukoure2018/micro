@@ -48,6 +48,34 @@ public class RapprochementResource {
     }
 
 
+    /**
+     * Liste de tous les points de vente (pour le module audit)
+     */
+    @GetMapping("/rapprochement/points-vente")
+    public ResponseEntity<Response> getAllPointsVente(
+            @NotNull Authentication authentication,
+            HttpServletRequest request)
+    {
+        return ResponseEntity.ok(getResponse(request, Map.of("pointVentes", userClient.pointVenteOffline()), "Liste des points de vente", org.springframework.http.HttpStatus.OK));
+    }
+
+    /**
+     * Rapprochement pour le contrôle/audit : permet de choisir n'importe quel point de service
+     */
+    @GetMapping("/rapprochement/audit")
+    public ResponseEntity<Response> checkReconciliationAudit(
+            @NotNull Authentication authentication,
+            @RequestParam(value = "pointVenteCode") String pointVenteCode,
+            @RequestParam(value = "dateDebut") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateDebut,
+            @RequestParam(value = "dateFin") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFin,
+            HttpServletRequest request)
+    {
+        ReconciliationResultDTO reconciliationResultDTO = ebankingClient.checkReconciliation(
+                pointVenteCode, dateDebut, dateFin
+        );
+        return created(getUri()).body(getResponse(request, Map.of("reconciliationResultDTO", reconciliationResultDTO), "Rapprochement Audit effectué avec succès", CREATED));
+    }
+
     @GetMapping("/reconciliationcompte/check")
     public ResponseEntity<Response> checkReconciliationCompte(
             @NotNull Authentication authentication,
