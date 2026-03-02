@@ -44,6 +44,7 @@ public class ArreteCaisseRepositoryImpl implements ArreteCaisseRepository {
                     .delegationNom(rs.getString("delegation_nom"))
                     .agenceNom(rs.getString("agence_nom"))
                     .pointventeNom(rs.getString("pointvente_nom"))
+                    .pointventeCode(rs.getString("pointvente_code"))
                     .build();
 
     @Override

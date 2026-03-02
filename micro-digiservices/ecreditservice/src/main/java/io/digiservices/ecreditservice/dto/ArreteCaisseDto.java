@@ -33,4 +33,5 @@ public class ArreteCaisseDto {
     private String delegationNom;
     private String agenceNom;
     private String pointventeNom;
+    private String pointventeCode;
 }

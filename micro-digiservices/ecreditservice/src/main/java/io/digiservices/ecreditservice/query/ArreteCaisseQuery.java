@@ -9,7 +9,7 @@ public class ArreteCaisseQuery {
                ac.date_remonte, ac.document, ac.delegation_id, ac.agence_id, ac.pointvente_id,
                ac.created_at, ac.updated_at,
                u.first_name as nom_user, u.last_name as prenom_user,
-               d.libele as delegation_nom, a.libele as agence_nom, p.libele as pointvente_nom
+               d.libele as delegation_nom, a.libele as agence_nom, p.libele as pointvente_nom, p.code as pointvente_code
         FROM arrete_caisse ac
         LEFT JOIN users u ON ac.id_user = u.user_id
         LEFT JOIN delegation d ON ac.delegation_id = d.id
@@ -23,7 +23,7 @@ public class ArreteCaisseQuery {
                ac.date_remonte, ac.document, ac.delegation_id, ac.agence_id, ac.pointvente_id,
                ac.created_at, ac.updated_at,
                u.first_name as nom_user, u.last_name as prenom_user,
-               d.libele as delegation_nom, a.libele as agence_nom, p.libele as pointvente_nom
+               d.libele as delegation_nom, a.libele as agence_nom, p.libele as pointvente_nom, p.code as pointvente_code
         FROM arrete_caisse ac
         LEFT JOIN users u ON ac.id_user = u.user_id
         LEFT JOIN delegation d ON ac.delegation_id = d.id
@@ -36,7 +36,7 @@ public class ArreteCaisseQuery {
                ac.date_remonte, ac.document, ac.delegation_id, ac.agence_id, ac.pointvente_id,
                ac.created_at, ac.updated_at,
                u.first_name as nom_user, u.last_name as prenom_user,
-               d.libele as delegation_nom, a.libele as agence_nom, p.libele as pointvente_nom
+               d.libele as delegation_nom, a.libele as agence_nom, p.libele as pointvente_nom, p.code as pointvente_code
         FROM arrete_caisse ac
         LEFT JOIN users u ON ac.id_user = u.user_id
         LEFT JOIN delegation d ON ac.delegation_id = d.id
@@ -51,7 +51,7 @@ public class ArreteCaisseQuery {
                ac.date_remonte, ac.document, ac.delegation_id, ac.agence_id, ac.pointvente_id,
                ac.created_at, ac.updated_at,
                u.first_name as nom_user, u.last_name as prenom_user,
-               d.libele as delegation_nom, a.libele as agence_nom, p.libele as pointvente_nom
+               d.libele as delegation_nom, a.libele as agence_nom, p.libele as pointvente_nom, p.code as pointvente_code
         FROM arrete_caisse ac
         LEFT JOIN users u ON ac.id_user = u.user_id
         LEFT JOIN delegation d ON ac.delegation_id = d.id
@@ -65,7 +65,7 @@ public class ArreteCaisseQuery {
                ac.date_remonte, ac.document, ac.delegation_id, ac.agence_id, ac.pointvente_id,
                ac.created_at, ac.updated_at,
                u.first_name as nom_user, u.last_name as prenom_user,
-               d.libele as delegation_nom, a.libele as agence_nom, p.libele as pointvente_nom
+               d.libele as delegation_nom, a.libele as agence_nom, p.libele as pointvente_nom, p.code as pointvente_code
         FROM arrete_caisse ac
         LEFT JOIN users u ON ac.id_user = u.user_id
         LEFT JOIN delegation d ON ac.delegation_id = d.id
@@ -80,7 +80,7 @@ public class ArreteCaisseQuery {
                ac.date_remonte, ac.document, ac.delegation_id, ac.agence_id, ac.pointvente_id,
                ac.created_at, ac.updated_at,
                u.first_name as nom_user, u.last_name as prenom_user,
-               d.libele as delegation_nom, a.libele as agence_nom, p.libele as pointvente_nom
+               d.libele as delegation_nom, a.libele as agence_nom, p.libele as pointvente_nom, p.code as pointvente_code
         FROM arrete_caisse ac
         LEFT JOIN users u ON ac.id_user = u.user_id
         LEFT JOIN delegation d ON ac.delegation_id = d.id
@@ -95,7 +95,7 @@ public class ArreteCaisseQuery {
                ac.date_remonte, ac.document, ac.delegation_id, ac.agence_id, ac.pointvente_id,
                ac.created_at, ac.updated_at,
                u.first_name as nom_user, u.last_name as prenom_user,
-               d.libele as delegation_nom, a.libele as agence_nom, p.libele as pointvente_nom
+               d.libele as delegation_nom, a.libele as agence_nom, p.libele as pointvente_nom, p.code as pointvente_code
         FROM arrete_caisse ac
         LEFT JOIN users u ON ac.id_user = u.user_id
         LEFT JOIN delegation d ON ac.delegation_id = d.id
@@ -161,7 +161,7 @@ public class ArreteCaisseQuery {
            ac.date_remonte, ac.document, ac.delegation_id, ac.agence_id, ac.pointvente_id,
            ac.created_at, ac.updated_at,
            u.first_name as nom_user, u.last_name as prenom_user,
-           d.libele as delegation_nom, a.libele as agence_nom, p.libele as pointvente_nom
+           d.libele as delegation_nom, a.libele as agence_nom, p.libele as pointvente_nom, p.code as pointvente_code
     FROM arrete_caisse ac
     LEFT JOIN users u ON ac.id_user = u.user_id
     LEFT JOIN delegation d ON ac.delegation_id = d.id
@@ -179,7 +179,7 @@ public class ArreteCaisseQuery {
            ac.date_remonte, ac.document, ac.delegation_id, ac.agence_id, ac.pointvente_id,
            ac.created_at, ac.updated_at,
            u.first_name as nom_user, u.last_name as prenom_user,
-           d.libele as delegation_nom, a.libele as agence_nom, p.libele as pointvente_nom
+           d.libele as delegation_nom, a.libele as agence_nom, p.libele as pointvente_nom, p.code as pointvente_code
     FROM arrete_caisse ac
     LEFT JOIN users u ON ac.id_user = u.user_id
     LEFT JOIN delegation d ON ac.delegation_id = d.id
