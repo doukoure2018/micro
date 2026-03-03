@@ -92,8 +92,8 @@ public class CorrectionQuery {
                       updated_at, correction_statut
                FROM public.personne_physique
                WHERE code_agence = :codAgencia
-                 AND correction_statut IN ('EN_ATTENTE', 'VALIDE')
-               ORDER BY CASE WHEN correction_statut = 'EN_ATTENTE' THEN 0 ELSE 1 END, created_at DESC
+                 AND correction_statut IN ('EN_ATTENTE', 'VALIDE', 'REJETE')
+               ORDER BY CASE WHEN correction_statut = 'EN_ATTENTE' THEN 0 WHEN correction_statut = 'REJETE' THEN 1 ELSE 2 END, created_at DESC
             """;
 
     public static final String GET_ALL_DEMANDE_CORRECTION_ATTENTE_BY_COD_AGENCIA_REJET =
