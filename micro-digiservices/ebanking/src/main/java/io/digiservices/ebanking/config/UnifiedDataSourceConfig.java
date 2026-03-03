@@ -161,7 +161,7 @@ public class UnifiedDataSourceConfig {
         config.setMaximumPoolSize(3);
         config.setMinimumIdle(0);
         config.setConnectionTimeout(180000);
-        config.setInitializationFailTimeout(180000);
+        config.setInitializationFailTimeout(-1);
         config.setIdleTimeout(600000);
         config.setMaxLifetime(1200000);
         config.setValidationTimeout(30000);
@@ -181,8 +181,8 @@ public class UnifiedDataSourceConfig {
             testConnectionAsync(dataSource, "Tertiary");
             return dataSource;
         } catch (Exception e) {
-            log.error("Erreur lors de la création du DataSource Tertiary", e);
-            throw new RuntimeException("Impossible de créer le DataSource Tertiary", e);
+            log.warn("DataSource Tertiary non disponible au demarrage, les connexions seront tentees a la demande", e);
+            return new HikariDataSource(config);
         }
     }
 
