@@ -16,6 +16,7 @@ import { SocietariatComponent } from '../agent-credit/societariat/societariat.co
 import { DemandeAvanceSalaireComponent } from '../admin/demande-avance-salaire/demande-avance-salaire.component';
 import { RhComponent } from '../admin/rh/rh.component';
 import { DfComponent } from '../admin/df/df.component';
+import { SuiviArreteCaisseComponent } from '../admin/de/suivi-arrete-caisse/suivi-arrete-caisse.component';
 
 @Component({
     selector: 'app-home',
@@ -33,7 +34,8 @@ import { DfComponent } from '../admin/df/df.component';
         SocietariatComponent,
         DemandeAvanceSalaireComponent,
         RhComponent,
-        DfComponent
+        DfComponent,
+        SuiviArreteCaisseComponent
     ],
     templateUrl: './home.component.html'
 })

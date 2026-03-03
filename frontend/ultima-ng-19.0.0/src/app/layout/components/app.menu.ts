@@ -148,54 +148,41 @@ export class AppMenu {
                                         }
                                     ]
                                   : this.user?.service === 'DSIG'
-                                  ? [
-                                        {
-                                            label: 'document-verification',
-                                            icon: 'pi pi-fw pi-folder',
-                                            routerLink: ['/dashboards/document-verification']
-                                        }
-                                    ]
-                                  : this.user?.service === 'DE'
                                     ? [
                                           {
-                                              label: 'Situation Stock',
-                                              icon: 'pi pi-fw pi-box',
-                                              routerLink: ['/dashboards/situation-stock']
-                                          },
-                                          {
-                                              label: 'Mes avances de salaire',
-                                              icon: 'pi pi-fw pi-list',
-                                              routerLink: ['/dashboards/mes-demandes-salaire']
-                                          },
-                                          {
-                                              label: 'suivi des Arrete de caisse',
-                                              icon: 'pi pi-fw pi-mo',
-                                              routerLink: ['/dashboards/suivi-arrete-caisse']
+                                              label: 'document-verification',
+                                              icon: 'pi pi-fw pi-folder',
+                                              routerLink: ['/dashboards/document-verification']
                                           }
                                       ]
-                                    : this.user?.service === 'Logistique'
-                                      ? []
-                                      : this.user?.service === 'Societariat'
+                                    : this.user?.service === 'DE'
+                                      ? [
+                                            {
+                                                label: 'Situation Stock',
+                                                icon: 'pi pi-fw pi-box',
+                                                routerLink: ['/dashboards/situation-stock']
+                                            },
+                                            {
+                                                label: 'Mes avances de salaire',
+                                                icon: 'pi pi-fw pi-list',
+                                                routerLink: ['/dashboards/mes-demandes-salaire']
+                                            },
+                                            {
+                                                label: 'suivi des Arrete de caisse',
+                                                icon: 'pi pi-fw pi-mo',
+                                                routerLink: ['/dashboards/suivi-arrete-caisse']
+                                            }
+                                        ]
+                                      : this.user?.service === 'Logistique'
                                         ? []
-                                        : this.user?.service === 'DRH'
-                                          ? [
-                                                {
-                                                    label: 'Gestion Personnel',
-                                                    icon: 'pi pi-fw pi-hourglass',
-                                                    routerLink: ['/dashboards/gestion-personnel']
-                                                },
-                                                {
-                                                    label: 'Mes avances de salaire',
-                                                    icon: 'pi pi-fw pi-list',
-                                                    routerLink: ['/dashboards/mes-demandes-salaire']
-                                                }
-                                            ]
-                                          : this.user?.service === 'DF'
+                                        : this.user?.service === 'Societariat'
+                                          ? []
+                                          : this.user?.service === 'DRH'
                                             ? [
                                                   {
-                                                      label: 'Confirmation Avances (DF)',
-                                                      icon: 'pi pi-fw pi-building',
-                                                      routerLink: ['/dashboards']
+                                                      label: 'Gestion Personnel',
+                                                      icon: 'pi pi-fw pi-hourglass',
+                                                      routerLink: ['/dashboards/gestion-personnel']
                                                   },
                                                   {
                                                       label: 'Mes avances de salaire',
@@ -203,7 +190,28 @@ export class AppMenu {
                                                       routerLink: ['/dashboards/mes-demandes-salaire']
                                                   }
                                               ]
-                                            : []
+                                            : this.user?.service === 'DF'
+                                              ? [
+                                                    {
+                                                        label: 'Confirmation Avances (DF)',
+                                                        icon: 'pi pi-fw pi-building',
+                                                        routerLink: ['/dashboards']
+                                                    },
+                                                    {
+                                                        label: 'Mes avances de salaire',
+                                                        icon: 'pi pi-fw pi-list',
+                                                        routerLink: ['/dashboards/mes-demandes-salaire']
+                                                    }
+                                                ]
+                                              : this.user?.service === 'DI'
+                                                ? [
+                                                      {
+                                                          label: 'Suivi Arrêtés de Caisse',
+                                                          icon: 'pi pi-fw pi-money-bill',
+                                                          routerLink: ['/dashboards/suivi-arrete-caisse']
+                                                      }
+                                                  ]
+                                                : []
                               : this.user?.role === 'DF' || this.user?.service === 'DF'
                                 ? [
                                       {
