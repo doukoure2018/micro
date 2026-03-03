@@ -96,6 +96,7 @@ export class CorrectionEnAttenteComponent implements OnInit {
 
     enAttenteTotal = computed(() => this.state().listePPAttente.filter((p) => p.correctionStatut === 'EN_ATTENTE').length);
     valideTotal = computed(() => this.state().listePPAttente.filter((p) => p.correctionStatut === 'VALIDE').length);
+    rejeteTotal = computed(() => this.state().listePPAttente.filter((p) => p.correctionStatut === 'REJETE').length);
 
     private userService = inject(UserService);
     private router = inject(Router);
@@ -377,6 +378,19 @@ export class CorrectionEnAttenteComponent implements OnInit {
             return;
         }
         this.router.navigate(['dashboards/correction-en-attente/detail', pp.codCliente]);
+    }
+
+    processRejectedCorrection(pp: PersonnePhysique): void {
+        if (this.state().isAgentActive === false) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Accès Refusé',
+                detail: 'Vous devez être activé',
+                life: 5000
+            });
+            return;
+        }
+        this.router.navigate(['dashboards/update-correction-rejet/', pp.codCliente]);
     }
 
     getStatusSeverity(status: string): 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast' | undefined {

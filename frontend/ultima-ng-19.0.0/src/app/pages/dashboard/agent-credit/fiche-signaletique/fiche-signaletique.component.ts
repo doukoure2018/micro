@@ -111,7 +111,7 @@ export class FicheSignaletiqueComponent {
             typeEntreprise: [''],
             lienParente: [''],
             nomParent: [''],
-            conjoint: [''],
+            conjoint: ['', [Validators.maxLength(15)]],
             nbreAnneeH: [0, Validators.min(0)],
             adresse: ['', Validators.maxLength(255)]
         });

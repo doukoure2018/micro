@@ -104,6 +104,10 @@
                         [class]="selectedStatut() === 'VALIDE' ? 'p-button-success' : 'p-button-outlined p-button-secondary'"
                         (click)="onStatutChange('VALIDE')">
                     </button>
+                    <button pButton [label]="'Rejeté (' + rejeteTotal() + ')'" icon="pi pi-times-circle"
+                        [class]="selectedStatut() === 'REJETE' ? 'p-button-danger' : 'p-button-outlined p-button-secondary'"
+                        (click)="onStatutChange('REJETE')">
+                    </button>
                     <button pButton [label]="'Tous (' + state().listePPAttente.length + ')'" icon="pi pi-list"
                         [class]="selectedStatut() === 'TOUS' ? 'p-button-info' : 'p-button-outlined p-button-secondary'"
                         (click)="onStatutChange('TOUS')">
@@ -215,6 +219,11 @@
                                         <button pButton icon="pi pi-eye"
                                             class="p-button-rounded p-button-text p-button-info" pTooltip="Voir détails"
                                             (click)="viewDetails(pp)">
+                                        </button>
+                                        <button *ngIf="pp.correctionStatut === 'REJETE'" pButton icon="pi pi-pencil"
+                                            class="p-button-rounded p-button-text p-button-warning"
+                                            pTooltip="Traiter la correction rejetée"
+                                            (click)="processRejectedCorrection(pp)">
                                         </button>
                                     </div>
                                 </td>

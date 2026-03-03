@@ -225,7 +225,7 @@ export class AddPersonnePhysiqueComponent implements OnInit {
             // Personnel et familial
             indSexo: ['', Validators.required],
             estCivil: [''],
-            conjoint: [''],
+            conjoint: ['', [Validators.maxLength(15)]],
             nbrEnfant: [0],
 
             // Logement
@@ -298,7 +298,7 @@ export class AddPersonnePhysiqueComponent implements OnInit {
             // Personal/Family
             indSexo: this.ficheData.indSexo || '',
             estCivil: this.ficheData.estCivil || '',
-            conjoint: this.ficheData.codCteConyugue || this.ficheData.nomConyugue || '',
+            conjoint: this.ficheData.codCteConyugue || '',
             nbrEnfant: this.ficheData.numHijos || 0,
 
             // Housing - Note: PR for Propriétaire, not PO

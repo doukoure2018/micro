@@ -214,7 +214,7 @@ export class UpdateCorrectionPersonnePhysiqueComponent implements OnInit {
                             pays: safData.codPais,
                             indSexo: safData.indSexo,
                             estCivil: safData.estCivil,
-                            conjoint: safData.nomConyugue || safData.codCteConyugue,
+                            conjoint: safData.codCteConyugue || '',
                             nbrEnfant: safData.numHijos,
                             detDireccion: safData.detDireccion,
                             codProvincia: safData.codProvincia,
