@@ -415,4 +415,10 @@ public class UserServiceImpl  implements UserService {
         userRepository.updateUserLocation(userId, delegationId, agenceId, pointventeId);
     }
 
+    @Override
+    public void updateUserRoleById(Long userId, String role) {
+        log.info("Mise à jour du rôle pour l'utilisateur {}: {}", userId, role);
+        userRepository.updateUserRoleById(userId, role);
+    }
+
 }

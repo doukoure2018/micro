@@ -116,6 +116,25 @@ export class AdminComponent {
     globalFilterUsers: string = '';
     globalFilterAgents: string = '';
 
+    // Dialog modification rôle
+    showRoleDialog = signal(false);
+    roleDialogUser = signal<IUser | null>(null);
+    selectedRole = signal<string | null>(null);
+    savingRole = signal(false);
+    allRoleOptions: FilterOption[] = [
+        { label: 'Super Admin', value: 'SUPER_ADMIN' },
+        { label: 'Admin', value: 'ADMIN' },
+        { label: 'Agent Crédit', value: 'AGENT_CREDIT' },
+        { label: 'Caisse', value: 'CAISSE' },
+        { label: 'Agent Correcteur', value: 'AGENT_CORRECTEUR' },
+        { label: 'Manager', value: 'MANAGER' },
+        { label: 'DR', value: 'DR' },
+        { label: 'DA', value: 'DA' },
+        { label: 'RA', value: 'RA' },
+        { label: 'DF', value: 'DF' },
+        { label: 'Utilisateur', value: 'USER' }
+    ];
+
     // Dialog modification localisation CAISSE
     showLocationDialog = signal(false);
     locationDialogUser = signal<IUser | null>(null);
@@ -258,10 +277,7 @@ export class AdminComponent {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: ({ agents, caisse }) => {
-                    const allUsers = [
-                        ...(agents.data?.users || []),
-                        ...(caisse.data?.users || [])
-                    ];
+                    const allUsers = [...(agents.data?.users || []), ...(caisse.data?.users || [])];
                     this.state.update((state) => ({
                         ...state,
                         agentCredits: allUsers,
@@ -360,7 +376,8 @@ export class AdminComponent {
         this.pointVentes.set([]);
 
         // Charger les delegations
-        this.userService.getAllDelegation$()
+        this.userService
+            .getAllDelegation$()
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (res: IResponse) => {
@@ -396,7 +413,8 @@ export class AdminComponent {
     }
 
     private loadAgences(delegationId: number, preselectedAgenceId: number | null): void {
-        this.userService.getAllAgenceByDelegationId$(delegationId)
+        this.userService
+            .getAllAgenceByDelegationId$(delegationId)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (res: IResponse) => {
@@ -409,11 +427,73 @@ export class AdminComponent {
     }
 
     private loadPointVentes(agenceId: number): void {
-        this.userService.getAllPointventesByAgenceId$(agenceId)
+        this.userService
+            .getAllPointventesByAgenceId$(agenceId)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (res: IResponse) => {
                     this.pointVentes.set(res.data?.pointVentes || []);
+                }
+            });
+    }
+
+    // ========================================
+    // MODIFICATION RÔLE UTILISATEUR
+    // ========================================
+
+    openRoleDialog(user: IUser): void {
+        this.roleDialogUser.set(user);
+        this.selectedRole.set(user.role);
+        this.showRoleDialog.set(true);
+    }
+
+    saveRole(): void {
+        const user = this.roleDialogUser();
+        const newRole = this.selectedRole();
+
+        if (!user || !newRole) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Attention',
+                detail: 'Veuillez sélectionner un rôle',
+                life: 3000
+            });
+            return;
+        }
+
+        if (newRole === user.role) {
+            this.showRoleDialog.set(false);
+            return;
+        }
+
+        this.savingRole.set(true);
+        this.userService
+            .updateUserRole$(user.userId, newRole)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.state.update((state) => ({
+                        ...state,
+                        users: state.users?.map((u) => (u.userId === user.userId ? { ...u, role: newRole } : u)),
+                        agentCredits: state.agentCredits?.map((a) => (a.userId === user.userId ? { ...a, role: newRole } : a))
+                    }));
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Succès',
+                        detail: `Le rôle de ${user.firstName} ${user.lastName} a été modifié en ${this.getRoleLabel(newRole)}`,
+                        life: 3000
+                    });
+                    this.savingRole.set(false);
+                    this.showRoleDialog.set(false);
+                },
+                error: () => {
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Erreur',
+                        detail: 'Impossible de modifier le rôle',
+                        life: 3000
+                    });
+                    this.savingRole.set(false);
                 }
             });
     }
@@ -435,17 +515,14 @@ export class AdminComponent {
         }
 
         this.savingLocation.set(true);
-        this.userService.updateUserLocation$(user.userId, delegationId, agenceId, pointventeId)
+        this.userService
+            .updateUserLocation$(user.userId, delegationId, agenceId, pointventeId)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => {
                     this.state.update((state) => ({
                         ...state,
-                        agentCredits: state.agentCredits?.map((a) =>
-                            a.userId === user.userId
-                                ? { ...a, delegationId, agenceId, pointventeId }
-                                : a
-                        )
+                        agentCredits: state.agentCredits?.map((a) => (a.userId === user.userId ? { ...a, delegationId, agenceId, pointventeId } : a))
                     }));
                     this.messageService.add({
                         severity: 'success',

@@ -115,6 +115,11 @@ export class AppMenu {
                                   label: 'Mes avances de salaire',
                                   icon: 'pi pi-fw pi-list',
                                   routerLink: ['/dashboards/mes-demandes-salaire']
+                              },
+                              {
+                                  label: 'Rapprochement Caisse',
+                                  icon: 'pi pi-fw pi-calculator',
+                                  routerLink: ['/dashboards/rapprochement-caisse']
                               }
                           ]
                         : this.user?.role === 'SUPER_ADMIN'
@@ -127,6 +132,7 @@ export class AppMenu {
                             ]
                           : this.user?.role === 'CAISSE'
                             ? [
+                                  //
                                   //   {
                                   //       label: 'Configuration Reseau',
                                   //       icon: 'pi pi-fw pi-cog',

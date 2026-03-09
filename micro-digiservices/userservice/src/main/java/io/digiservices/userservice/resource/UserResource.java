@@ -750,6 +750,40 @@ public class UserResource {
         }
     }
 
+    /**
+     * Modifier le rôle d'un utilisateur par son ID
+     * PUT /user/role/{userId}?role=AGENT_CREDIT
+     */
+    @PutMapping("/role/{userId}")
+    public ResponseEntity<Response> updateUserRoleById(
+            @NotNull Authentication authentication,
+            @PathVariable("userId") Long userId,
+            @RequestParam("role") String role,
+            HttpServletRequest request) {
+
+        log.info("User {} updating role for user {}: {}",
+                authentication.getName(), userId, role);
+
+        try {
+            userService.updateUserRoleById(userId, role);
+
+            return ResponseEntity.ok(getResponse(
+                    request,
+                    Map.of("userId", userId, "role", role),
+                    "Rôle mis à jour avec succès",
+                    OK
+            ));
+        } catch (Exception e) {
+            log.error("Erreur lors de la mise à jour du rôle: {}", e.getMessage());
+            return ResponseEntity.status(BAD_REQUEST).body(getResponse(
+                    request,
+                    emptyMap(),
+                    e.getMessage(),
+                    BAD_REQUEST
+            ));
+        }
+    }
+
     @PutMapping("/location/{userId}")
     public ResponseEntity<Response> updateUserLocation(
             @NotNull Authentication authentication,

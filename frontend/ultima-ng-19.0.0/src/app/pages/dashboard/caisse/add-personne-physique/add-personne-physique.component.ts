@@ -16,10 +16,10 @@ import { FicheSignaletique } from '@/interface/ficheSignaletique';
 import { PersonnePhysique } from '@/interface/personnePhysique';
 import { TextareaModule } from 'primeng/textarea';
 
-@Component({    
+@Component({
     selector: 'app-add-personne-physique',
     standalone: true,
-    imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, CalendarModule, DropdownModule, InputNumberModule, ToastModule,TextareaModule],
+    imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, CalendarModule, DropdownModule, InputNumberModule, ToastModule, TextareaModule],
     templateUrl: './add-personne-physique.component.html',
     styleUrl: './add-personne-physique.component.scss',
     providers: [MessageService]

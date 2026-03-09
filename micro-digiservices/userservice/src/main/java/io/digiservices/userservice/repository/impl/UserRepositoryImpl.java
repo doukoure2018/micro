@@ -1094,4 +1094,23 @@ public class UserRepositoryImpl implements UserRepository {
         }
     }
 
+    @Override
+    public void updateUserRoleById(Long userId, String role) {
+        try {
+            int updated = jdbcClient.sql(UPDATE_USER_ROLE_BY_ID_QUERY)
+                    .param("userId", userId)
+                    .param("role", role)
+                    .update();
+            if (updated == 0) {
+                throw new ApiException("Aucun utilisateur trouvé avec l'ID: " + userId + " ou rôle invalide: " + role);
+            }
+            log.info("Rôle mis à jour pour l'utilisateur {}: {}", userId, role);
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Erreur lors de la mise à jour du rôle: {}", e.getMessage());
+            throw new ApiException("Une erreur est survenue lors de la mise à jour du rôle");
+        }
+    }
+
 }

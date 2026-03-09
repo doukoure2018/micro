@@ -700,4 +700,15 @@ public class UserQuery {
             WHERE user_id = :userId
             """;
 
+    // ========================================
+    // MISE A JOUR RÔLE UTILISATEUR PAR ID
+    // ========================================
+
+    public static final String UPDATE_USER_ROLE_BY_ID_QUERY =
+            """
+            UPDATE user_roles
+            SET role_id = (SELECT role_id FROM roles WHERE name = :role)
+            WHERE user_id = :userId
+            """;
+
 }

@@ -61,4 +61,7 @@ public interface UserService {
 
     // Mise a jour localisation
     void updateUserLocation(Long userId, Long delegationId, Long agenceId, Long pointventeId);
+
+    // Mise a jour rôle par userId
+    void updateUserRoleById(Long userId, String role);
 }
