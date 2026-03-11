@@ -1,0 +1,356 @@
+.remontee-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    min-height: 100vh;
+    background: #f5f7fa;
+}
+
+.header-banner {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+
+    .header-content {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+
+        h2 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        p {
+            margin: 0.25rem 0 0;
+            opacity: 0.85;
+            font-size: 0.9rem;
+        }
+    }
+}
+
+.mb-4 {
+    margin-bottom: 1.5rem;
+}
+
+.mt-4 {
+    margin-top: 1.5rem;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    margin: -1.5rem -1.5rem 1rem -1.5rem;
+    border-radius: 6px 6px 0 0;
+
+    &.warning {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    h4 {
+        margin: 0;
+    }
+}
+
+.step-content {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.step-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+
+    .step-badge {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
+
+    h3 {
+        margin: 0;
+        color: #2c3e50;
+    }
+}
+
+.step-description {
+    color: #6c757d;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+}
+
+.form-field {
+    margin-bottom: 1.25rem;
+
+    label {
+        display: block;
+        font-weight: 500;
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+
+    @media (max-width: 600px) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.location-form {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.user-found-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    border-radius: 8px;
+}
+
+.location-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 1rem;
+    background: #e8eaf6;
+    border-radius: 8px;
+
+    .summary-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: white;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+        i {
+            color: #667eea;
+        }
+    }
+}
+
+.step-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e9ecef;
+}
+
+.confirmation-card {
+    text-align: center;
+    padding: 1rem;
+    overflow-wrap: break-word;
+    word-break: break-word;
+
+    h3 {
+        color: #28a745;
+        margin: 1rem 0;
+        font-size: 1.1rem;
+    }
+
+    .confirmation-details {
+        display: block;
+        text-align: left;
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-top: 1rem;
+        max-width: 400px;
+        margin-left: auto;
+        margin-right: auto;
+        width: 100%;
+        box-sizing: border-box;
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+
+            &:not(:last-child) {
+                border-bottom: 1px solid #e9ecef;
+            }
+
+            .detail-label {
+                color: #6c757d;
+                flex-shrink: 0;
+            }
+
+            .detail-value {
+                color: #2c3e50;
+                text-align: right;
+                word-break: break-word;
+            }
+        }
+    }
+}
+
+// Step indicator
+.step-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2rem;
+    gap: 0;
+
+    .step-dot {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 50%;
+        background: #dee2e6;
+        color: #6c757d;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.8rem;
+        transition: all 0.3s;
+        cursor: default;
+
+        &.active {
+            background: #667eea;
+            color: white;
+        }
+
+        &.completed {
+            background: #28a745;
+            color: white;
+            cursor: pointer;
+        }
+    }
+
+    .step-line {
+        width: 60px;
+        height: 3px;
+        background: #dee2e6;
+        transition: background 0.3s;
+
+        &.active {
+            background: #28a745;
+        }
+    }
+}
+
+// Responsive
+@media (max-width: 600px) {
+    .remontee-container {
+        padding: 0.5rem;
+    }
+
+    .header-banner {
+        padding: 1rem;
+        margin-bottom: 1rem;
+
+        .header-content {
+            flex-direction: column;
+            text-align: center;
+
+            i {
+                font-size: 1.5rem !important;
+            }
+
+            h2 {
+                font-size: 1.2rem;
+            }
+        }
+    }
+
+    .location-summary {
+        flex-direction: column;
+        padding: 0.75rem;
+
+        .summary-item {
+            width: 100%;
+        }
+    }
+
+    .step-actions {
+        flex-direction: column-reverse;
+        align-items: stretch;
+
+        p-button {
+            width: 100%;
+
+            ::ng-deep .p-button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    }
+
+    .confirmation-card {
+        padding: 0.75rem;
+
+        i.pi-check-circle {
+            font-size: 2.5rem !important;
+        }
+
+        h3 {
+            font-size: 1rem;
+        }
+
+        .confirmation-details {
+            padding: 0.75rem;
+
+            .detail-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.25rem;
+
+                .detail-value {
+                    text-align: left;
+                }
+            }
+        }
+    }
+}
+
+// Font
+.font-bold {
+    font-weight: bold;
+}
+
+.text-sm {
+    font-size: 0.875rem;
+}
+
+.text-center {
+    text-align: center;
+}

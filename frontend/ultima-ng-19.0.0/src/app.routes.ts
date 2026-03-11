@@ -63,6 +63,10 @@ export const appRoutes: Routes = [
     { path: '', loadComponent: () => import('@/pages/home/home.component').then((c) => c.HomeComponent) },
     { path: 'auth', loadChildren: () => import('@/pages/auth/auth.routes') },
     {
+        path: 'remontee-arrete-caisse',
+        loadComponent: () => import('@/pages/public/remontee-arrete-caisse/remontee-arrete-caisse.component').then((c) => c.RemonteeArreteCaisseComponent)
+    },
+    {
         path: 'landing',
         loadComponent: () => import('@/pages/landing/landing').then((c) => c.Landing)
     },

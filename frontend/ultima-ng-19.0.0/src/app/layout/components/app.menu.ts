@@ -281,6 +281,11 @@ export class AppMenu {
                                                   label: 'suivi des Arrete de caisse',
                                                   icon: 'pi pi-fw pi-money-bill',
                                                   routerLink: ['/dashboards/suivi-arrete-caisse']
+                                              },
+                                              {
+                                                  label: 'Outil Rapprochement Caisse',
+                                                  icon: 'pi pi-fw pi-calculator',
+                                                  routerLink: ['/dashboards/rapprochement-caisse-ra']
                                               }
                                           ]
                                         : this.user?.role === 'DA'

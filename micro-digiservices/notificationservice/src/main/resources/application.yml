@@ -11,8 +11,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: digiaborecreditrural@gmail.com
-    password: wgox vofy ccbk bcpa
+    username: webmastercrg01@gmail.com
+    password: kwwu esah lkoo unls
     from-name: Digi-CRG
     properties:
       mail:

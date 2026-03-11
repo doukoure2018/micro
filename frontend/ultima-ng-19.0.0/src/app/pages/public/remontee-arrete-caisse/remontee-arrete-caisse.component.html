@@ -1,0 +1,206 @@
+<div class="remontee-container">
+    <p-toast></p-toast>
+
+    <!-- Header -->
+    <div class="header-banner">
+        <div class="header-content">
+            <i class="pi pi-building" style="font-size: 2rem;"></i>
+            <div>
+                <h2>Remontee Arrete de Caisse</h2>
+                <p>Formulaire de saisie pour les agents de credit</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Form Card -->
+    <p-card>
+        <!-- Step 1: Localisation -->
+        <div *ngIf="activeStep() === 0" class="step-content">
+            <div class="step-header">
+                <span class="step-badge">1</span>
+                <h3>Localisation</h3>
+            </div>
+
+            <p class="step-description">Selectionnez votre delegation, agence et point de service.</p>
+
+            <form [formGroup]="locationForm" class="location-form">
+                <div class="form-field">
+                    <label for="delegation">Delegation</label>
+                    <p-select id="delegation" formControlName="delegation"
+                        [options]="delegations()" optionLabel="libele"
+                        placeholder="Selectionnez une delegation"
+                        [filter]="true" filterBy="libele"
+                        [loading]="loadingDelegations()"
+                        [style]="{'width': '100%'}"
+                        (onChange)="onDelegationChange()">
+                    </p-select>
+                </div>
+
+                <div class="form-field">
+                    <label for="agence">Agence</label>
+                    <p-select id="agence" formControlName="agence"
+                        [options]="agences()" optionLabel="libele"
+                        placeholder="Selectionnez une agence"
+                        [filter]="true" filterBy="libele"
+                        [loading]="loadingAgences()"
+                        [disabled]="agences().length === 0"
+                        [style]="{'width': '100%'}"
+                        (onChange)="onAgenceChange()">
+                    </p-select>
+                </div>
+
+                <div class="form-field">
+                    <label for="pointVente">Point de Service</label>
+                    <p-select id="pointVente" formControlName="pointVente"
+                        [options]="pointVentes()" optionLabel="libele"
+                        placeholder="Selectionnez un point de service"
+                        [filter]="true" filterBy="libele,code"
+                        [loading]="loadingPointVentes()"
+                        [disabled]="pointVentes().length === 0"
+                        [style]="{'width': '100%'}">
+                        <ng-template let-pv pTemplate="item">
+                            <div class="flex items-center gap-2">
+                                <i class="pi pi-map-marker text-blue-500"></i>
+                                <span>{{ pv.libele }}</span>
+                                <span class="text-gray-400 text-sm ml-auto">({{ pv.code }})</span>
+                            </div>
+                        </ng-template>
+                    </p-select>
+                </div>
+            </form>
+
+            <div class="step-actions mt-4">
+                <p-button label="Suivant" icon="pi pi-arrow-right" iconPos="right"
+                    [disabled]="locationForm.invalid" (onClick)="goToStep(1)">
+                </p-button>
+            </div>
+        </div>
+
+        <!-- Step 2: Saisie Arrete -->
+        <div *ngIf="activeStep() === 1" class="step-content">
+            <div class="step-header">
+                <span class="step-badge">2</span>
+                <h3>Saisie de l'Arrete de Caisse</h3>
+            </div>
+
+            <!-- Resume localisation -->
+            <div class="location-summary mb-4">
+                <div class="summary-item">
+                    <i class="pi pi-building"></i>
+                    <span>{{ locationForm.get('delegation')?.value?.libele }}</span>
+                </div>
+                <div class="summary-item">
+                    <i class="pi pi-home"></i>
+                    <span>{{ locationForm.get('agence')?.value?.libele }}</span>
+                </div>
+                <div class="summary-item">
+                    <i class="pi pi-map-marker"></i>
+                    <span>{{ locationForm.get('pointVente')?.value?.libele }} ({{ locationForm.get('pointVente')?.value?.code }})</span>
+                </div>
+            </div>
+
+            <form [formGroup]="arreteForm">
+                <div class="form-row">
+                    <div class="form-field">
+                        <label for="montant">Montant (GNF) *</label>
+                        <p-inputNumber id="montant" formControlName="montant"
+                            mode="decimal" [useGrouping]="true"
+                            placeholder="Saisissez le montant"
+                            [style]="{'width': '100%'}" [inputStyle]="{'width': '100%'}">
+                        </p-inputNumber>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="dateArrete">Date de l'arrete *</label>
+                        <p-datepicker id="dateArrete" formControlName="dateArreteCaisse"
+                            dateFormat="dd/mm/yy" [showIcon]="true"
+                            [maxDate]="today"
+                            placeholder="Selectionnez la date"
+                            appendTo="body"
+                            [style]="{'width': '100%'}">
+                        </p-datepicker>
+                    </div>
+                </div>
+
+                <p-divider></p-divider>
+
+                <div class="form-field">
+                    <label>Document (optionnel)</label>
+                    <p class="text-sm mb-2" style="color: #6c757d;">
+                        Vous pouvez joindre le document maintenant ou le televerser plus tard.
+                    </p>
+                    <p-fileUpload mode="advanced" [auto]="false"
+                        chooseLabel="Choisir un fichier"
+                        accept="image/*,.pdf,.jpg,.jpeg,.png"
+                        [maxFileSize]="50000000"
+                        [showUploadButton]="false"
+                        [showCancelButton]="true"
+                        (onSelect)="onFileSelect($event)"
+                        (onClear)="onFileClear()">
+                        <ng-template pTemplate="empty">
+                            <div class="text-center p-4" style="color: #adb5bd;">
+                                <i class="pi pi-cloud-upload" style="font-size: 2rem;"></i>
+                                <p>Glissez-deposez le fichier ici ou cliquez pour parcourir</p>
+                            </div>
+                        </ng-template>
+                    </p-fileUpload>
+                </div>
+            </form>
+
+            <div class="step-actions mt-4">
+                <p-button label="Retour" icon="pi pi-arrow-left" severity="secondary"
+                    [text]="true" (onClick)="goToStep(0)">
+                </p-button>
+                <p-button [label]="selectedFile ? 'Soumettre avec document' : 'Soumettre sans document'"
+                    [icon]="submitting() ? 'pi pi-spinner pi-spin' : 'pi pi-check'"
+                    [severity]="selectedFile ? 'success' : 'warn'"
+                    [loading]="submitting()"
+                    [disabled]="arreteForm.invalid || submitting()"
+                    (onClick)="submitArrete()">
+                </p-button>
+            </div>
+        </div>
+
+        <!-- Step 3: Confirmation -->
+        <div *ngIf="activeStep() === 2" class="step-content">
+            <div class="confirmation-card">
+                <i class="pi pi-check-circle" style="font-size: 4rem; color: #28a745;"></i>
+                <h3>Arrete de caisse enregistre avec succes!</h3>
+
+                <div *ngIf="createdArrete()" class="confirmation-details">
+                    <div class="detail-row">
+                        <span class="detail-label">Statut:</span>
+                        <p-tag [value]="createdArrete()?.statut || ''"
+                            [severity]="createdArrete()?.statut === 'VALIDE' ? 'success' : 'warn'">
+                        </p-tag>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Montant:</span>
+                        <span class="detail-value font-bold">{{ formatMontant(createdArrete()?.montant || 0) }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Date:</span>
+                        <span class="detail-value">{{ createdArrete()?.dateArreteCaisse }}</span>
+                    </div>
+                </div>
+
+                <p *ngIf="createdArrete()?.statut === 'ENCOURS'" class="mt-3 text-sm" style="color: #856404;">
+                    <i class="pi pi-info-circle"></i>
+                    Pensez a revenir pour televerser le document afin de valider votre arrete.
+                </p>
+
+                <div class="step-actions mt-4">
+                    <p-button label="Nouveau arrete" icon="pi pi-plus" (onClick)="resetForm()">
+                    </p-button>
+                </div>
+            </div>
+        </div>
+    </p-card>
+
+    <!-- Progress indicator -->
+    <div class="step-indicator" *ngIf="activeStep() < 2">
+        <div class="step-dot" [class.active]="activeStep() >= 0" [class.completed]="activeStep() > 0" (click)="activeStep() > 0 ? goToStep(0) : null">1</div>
+        <div class="step-line" [class.active]="activeStep() > 0"></div>
+        <div class="step-dot" [class.active]="activeStep() >= 1">2</div>
+    </div>
+</div>

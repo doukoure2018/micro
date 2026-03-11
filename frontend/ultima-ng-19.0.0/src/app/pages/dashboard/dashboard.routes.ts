@@ -255,5 +255,10 @@ export default [
         path: 'audit-rapprochement',
         data: { breadcrumb: 'Audit Rapprochement de Caisse' },
         loadComponent: () => import('./admin/audit/audit.component').then((c) => c.AuditComponent)
+    },
+    {
+        path: 'rapprochement-caisse-ra',
+        data: { breadcrumb: 'Outil Rapprochement de Caisse' },
+        loadComponent: () => import('./admin/rapprochement-caisse-ra/rapprochement-caisse-ra.component').then((c) => c.RapprochementCaisseRaComponent)
     }
 ] as Routes;
