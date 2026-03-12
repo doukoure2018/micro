@@ -9,11 +9,12 @@ spring:
     initialize: true
     hikari:
       pool-name: ProductionPool
-      maximum-pool-size: 5
-      minimum-idle: 2
-      connection-timeout: 10000
+      maximum-pool-size: 15
+      minimum-idle: 5
+      connection-timeout: 30000
       idle-timeout: 300000
       max-lifetime: 600000
+      leak-detection-threshold: 120000
 
   middleware:
     datasource:

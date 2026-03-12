@@ -323,6 +323,7 @@ services:
       SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_SECOND_LEVEL_CACHE: "false"
       SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_QUERY_CACHE: "false"
       SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_REGION_FACTORY_CLASS: "org.hibernate.cache.internal.NoCachingRegionFactory"
+      JAVA_TOOL_OPTIONS: "-Xms256m -Xmx768m"
     volumes:
       - ./keys:/app/keys
       - ./logs/ebankingservice:/var/log/ebankingservice
