@@ -174,6 +174,14 @@ public class FicheSignaletiqueController {
         soldeSummary.put("totalTransit", data.getTotalSoldeTransit());
         soldeSummary.put("totalReserve", data.getTotalSoldeReserve());
 
+        // Rapprochement Middleware
+        soldeSummary.put("totalDisponibleMiddleware", data.getTotalSoldeDisponibleMiddleware());
+        soldeSummary.put("totalMoyenMiddleware", data.getTotalSoldeMoyenMiddleware());
+        soldeSummary.put("ecartTotalDisponible", data.getEcartTotalDisponible());
+        soldeSummary.put("ecartTotalMoyen", data.getEcartTotalMoyen());
+        soldeSummary.put("rapprochementGlobalOk", data.getRapprochementGlobalOk());
+        soldeSummary.put("comptesAvecEcart", data.getComptesAvecEcart());
+
         metadata.put("soldeSummary", soldeSummary);
 
         // Statistiques par catégorie si nécessaire

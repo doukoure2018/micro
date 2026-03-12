@@ -403,11 +403,14 @@ public class FicheSignaletiqueServiceImpl implements FicheSignaletiqueService {
                             // 1. Récupérer la fiche signalétique de base
                             FicheSignaletiqueResponseDTO basicFiche = repository.getFicheSignaletique(empresa, codCliente.trim());
 
-                            // 2. Récupérer les informations de solde
+                            // 2. Récupérer les informations de solde (Production)
                             List<CompteDTO> comptes = repository.getComptesSoldes(empresa, codCliente.trim());
 
-                            // 3. Convertir et enrichir les données
-                            return buildFicheWithSolde(basicFiche, comptes);
+                            // 3. Récupérer les soldes Middleware pour rapprochement
+                            Map<String, CompteDTO> comptesMiddleware = repository.getComptesSoldesMiddleware(empresa, codCliente.trim());
+
+                            // 4. Convertir et enrichir les données avec rapprochement
+                            return buildFicheWithSolde(basicFiche, comptes, comptesMiddleware);
 
                         } catch (QueryTimeoutException e) {
                             log.error("Query timeout pour client: {}", codCliente);
@@ -470,7 +473,39 @@ public class FicheSignaletiqueServiceImpl implements FicheSignaletiqueService {
 
     private FicheSignaletiqueResponseSoldeDTO buildFicheWithSolde(
             FicheSignaletiqueResponseDTO basicFiche,
-            List<CompteDTO> comptes) {
+            List<CompteDTO> comptes,
+            Map<String, CompteDTO> comptesMiddleware) {
+
+        // Enrichir chaque compte avec les soldes middleware
+        if (comptesMiddleware != null && !comptesMiddleware.isEmpty()) {
+            for (CompteDTO compte : comptes) {
+                CompteDTO mw = comptesMiddleware.get(compte.getNumCuenta());
+                if (mw != null) {
+                    compte.setSalDisponibleMiddleware(mw.getSalDisponible());
+                    compte.setSalPromedioMiddleware(mw.getSalPromedio());
+                    compte.setSalCongeladoMiddleware(mw.getSalCongelado());
+                    compte.setSalTransitoMiddleware(mw.getSalTransito());
+                    compte.setSalReservaMiddleware(mw.getSalReserva());
+
+                    // Calculer les écarts
+                    BigDecimal prodDisp = compte.getSalDisponible() != null ? compte.getSalDisponible() : BigDecimal.ZERO;
+                    BigDecimal mwDisp = mw.getSalDisponible() != null ? mw.getSalDisponible() : BigDecimal.ZERO;
+                    compte.setEcartDisponible(prodDisp.subtract(mwDisp));
+
+                    BigDecimal prodProm = compte.getSalPromedio() != null ? compte.getSalPromedio() : BigDecimal.ZERO;
+                    BigDecimal mwProm = mw.getSalPromedio() != null ? mw.getSalPromedio() : BigDecimal.ZERO;
+                    compte.setEcartPromedio(prodProm.subtract(mwProm));
+
+                    compte.setRapprochementOk(
+                            compte.getEcartDisponible().compareTo(BigDecimal.ZERO) == 0 &&
+                            compte.getEcartPromedio().compareTo(BigDecimal.ZERO) == 0
+                    );
+                } else {
+                    // Compte absent du middleware
+                    compte.setRapprochementOk(null);
+                }
+            }
+        }
 
         // Créer le DTO avec soldes
         FicheSignaletiqueResponseSoldeDTO dto = FicheSignaletiqueResponseSoldeDTO.builder()
@@ -584,6 +619,30 @@ public class FicheSignaletiqueServiceImpl implements FicheSignaletiqueService {
                     .map(CompteDTO::getSalReserva)
                     .filter(Objects::nonNull)
                     .reduce(BigDecimal.ZERO, BigDecimal::add));
+
+            // Totaux Middleware
+            BigDecimal totalMwDisp = comptes.stream()
+                    .map(CompteDTO::getSalDisponibleMiddleware)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            dto.setTotalSoldeDisponibleMiddleware(totalMwDisp);
+
+            BigDecimal totalMwProm = comptes.stream()
+                    .map(CompteDTO::getSalPromedioMiddleware)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            dto.setTotalSoldeMoyenMiddleware(totalMwProm);
+
+            // Écarts globaux
+            dto.setEcartTotalDisponible(dto.getTotalSoldeDisponible().subtract(totalMwDisp));
+            dto.setEcartTotalMoyen(dto.getTotalSoldeMoyen().subtract(totalMwProm));
+
+            // Comptage des comptes avec écart
+            int comptesEcart = (int) comptes.stream()
+                    .filter(c -> c.getRapprochementOk() != null && !c.getRapprochementOk())
+                    .count();
+            dto.setComptesAvecEcart(comptesEcart);
+            dto.setRapprochementGlobalOk(comptesEcart == 0);
         } else {
             dto.setTotalComptes(0);
             dto.setComptesActifs(0);
@@ -593,6 +652,12 @@ public class FicheSignaletiqueServiceImpl implements FicheSignaletiqueService {
             dto.setTotalSoldeCongelado(BigDecimal.ZERO);
             dto.setTotalSoldeTransit(BigDecimal.ZERO);
             dto.setTotalSoldeReserve(BigDecimal.ZERO);
+            dto.setTotalSoldeDisponibleMiddleware(BigDecimal.ZERO);
+            dto.setTotalSoldeMoyenMiddleware(BigDecimal.ZERO);
+            dto.setEcartTotalDisponible(BigDecimal.ZERO);
+            dto.setEcartTotalMoyen(BigDecimal.ZERO);
+            dto.setComptesAvecEcart(0);
+            dto.setRapprochementGlobalOk(true);
         }
 
         return dto;

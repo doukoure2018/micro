@@ -38,4 +38,16 @@ public class CompteDTO {
     private LocalDateTime fecApertura;
 
     private Integer joursSansMouvement;
+
+    // Soldes Middleware (rapprochement)
+    private BigDecimal salDisponibleMiddleware;
+    private BigDecimal salPromedioMiddleware;
+    private BigDecimal salCongeladoMiddleware;
+    private BigDecimal salTransitoMiddleware;
+    private BigDecimal salReservaMiddleware;
+
+    // Écarts Production vs Middleware
+    private BigDecimal ecartDisponible;
+    private BigDecimal ecartPromedio;
+    private Boolean rapprochementOk;
 }

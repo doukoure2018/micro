@@ -216,6 +216,36 @@ export class DigitalVerificationComponent implements OnInit {
         return fiche?.totalSoldeMoyen || 0;
     }
 
+    getTotalSoldeDisponibleMiddleware(): number {
+        const fiche = this.state().ficheSignaletique;
+        return fiche?.totalSoldeDisponibleMiddleware || 0;
+    }
+
+    getTotalSoldeMoyenMiddleware(): number {
+        const fiche = this.state().ficheSignaletique;
+        return fiche?.totalSoldeMoyenMiddleware || 0;
+    }
+
+    getEcartTotalDisponible(): number {
+        const fiche = this.state().ficheSignaletique;
+        return fiche?.ecartTotalDisponible || 0;
+    }
+
+    getEcartTotalMoyen(): number {
+        const fiche = this.state().ficheSignaletique;
+        return fiche?.ecartTotalMoyen || 0;
+    }
+
+    isRapprochementOk(): boolean {
+        const fiche = this.state().ficheSignaletique;
+        return fiche?.rapprochementGlobalOk ?? true;
+    }
+
+    getComptesAvecEcart(): number {
+        const fiche = this.state().ficheSignaletique;
+        return fiche?.comptesAvecEcart || 0;
+    }
+
     getComptes(): CompteInfo[] {
         const fiche = this.state().ficheSignaletique;
         return fiche?.comptes || [];

@@ -1,20 +1,20 @@
 <div class="digital-verification-container">
     <p-toast></p-toast>
 
-    <!-- Enhanced Header Section -->
+    <!-- Header Section -->
     <div class="page-header mb-4">
         <div class="flex align-items-center gap-3">
             <div class="header-icon">
                 <i class="pi pi-verified text-3xl"></i>
             </div>
             <div>
-                <h1 class="page-title m-0">Vérification Digitale</h1>
-                <p class="page-subtitle m-0 mt-1">Recherchez et consultez les informations client</p>
+                <h1 class="page-title m-0">Fiche Signaletique & Rapprochement</h1>
+                <p class="page-subtitle m-0 mt-1">Consultation client avec rapprochement Production / Middleware</p>
             </div>
         </div>
     </div>
 
-    <!-- Enhanced Search Section -->
+    <!-- Search Section -->
     <div class="search-section mb-4">
         <div class="search-card">
             <div class="search-header">
@@ -26,7 +26,7 @@
                     <span class="p-input-icon-left w-full">
                         <i class="pi pi-id-card"></i>
                         <input pInputText id="codCliente" formControlName="codCliente"
-                            placeholder="Entrez le code client (minimum 11 caractères)" class="w-full search-input" />
+                            placeholder="Entrez le code client (minimum 11 caracteres)" class="w-full search-input" />
                     </span>
                     <button pButton type="button" icon="pi pi-search" [loading]="state().searching"
                         [disabled]="searchForm.invalid || state().searching" (click)="searchClient()"
@@ -40,13 +40,13 @@
                 <small class="search-hint"
                     *ngIf="searchForm.get('codCliente')?.value && searchForm.get('codCliente')?.value.length < 11">
                     <i class="pi pi-info-circle mr-1"></i>
-                    {{ 11 - searchForm.get('codCliente')?.value.length }} caractères restants
+                    {{ 11 - searchForm.get('codCliente')?.value.length }} caracteres restants
                 </small>
             </form>
         </div>
     </div>
 
-    <!-- Enhanced Loading State -->
+    <!-- Loading State -->
     <div *ngIf="state().searching" class="loading-container">
         <div class="loading-content">
             <p-progressSpinner styleClass="custom-spinner"></p-progressSpinner>
@@ -54,7 +54,7 @@
         </div>
     </div>
 
-    <!-- Enhanced Error Message -->
+    <!-- Error Message -->
     <div *ngIf="state().error && !state().searching" class="error-container animate-fadeIn">
         <div class="error-content">
             <i class="pi pi-exclamation-triangle error-icon"></i>
@@ -65,10 +65,28 @@
         </div>
     </div>
 
-    <!-- Enhanced Client Information & Balances -->
+    <!-- Client Information & Balances -->
     <div *ngIf="state().ficheSignaletique && !state().searching" class="client-data-container animate-fadeIn">
 
-        <!-- Enhanced Summary Cards with Animations -->
+        <!-- Rapprochement Alert Banner -->
+        <div class="rapprochement-banner mb-4"
+            [ngClass]="{'banner-ok': isRapprochementOk(), 'banner-ecart': !isRapprochementOk()}">
+            <div class="banner-icon">
+                <i [class]="isRapprochementOk() ? 'pi pi-check-circle' : 'pi pi-exclamation-triangle'"></i>
+            </div>
+            <div class="banner-content">
+                <h4 class="banner-title" *ngIf="isRapprochementOk()">Rapprochement OK - Production et Middleware
+                    concordent</h4>
+                <h4 class="banner-title" *ngIf="!isRapprochementOk()">Ecart detecte - {{ getComptesAvecEcart() }}
+                    compte(s) avec differences</h4>
+                <p class="banner-detail" *ngIf="!isRapprochementOk()">
+                    Ecart disponible: {{ formatCurrency(getEcartTotalDisponible()) }} |
+                    Ecart moyen: {{ formatCurrency(getEcartTotalMoyen()) }}
+                </p>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
         <div class="stats-container mb-4">
             <div class="stat-card stat-card-blue">
                 <div class="stat-icon">
@@ -79,57 +97,60 @@
                     <h3 class="stat-value">{{ getComptes().length }}</h3>
                     <div class="stat-indicator">
                         <i class="pi pi-chart-line mr-1"></i>
-                        <span>Total actifs: {{ state().ficheSignaletique?.comptesActifs || 0 }}</span>
+                        <span>Actifs: {{ state().ficheSignaletique?.comptesActifs || 0 }}</span>
                     </div>
                 </div>
             </div>
 
             <div class="stat-card stat-card-green">
                 <div class="stat-icon">
-                    <i class="pi pi-check-circle"></i>
+                    <i class="pi pi-server"></i>
                 </div>
                 <div class="stat-content">
-                    <p class="stat-label">Comptes actifs</p>
-                    <h3 class="stat-value">{{ state().ficheSignaletique?.comptesActifs || 0 }}</h3>
-                    <div class="stat-indicator">
-                        <span class="percentage">{{ ((state().ficheSignaletique?.comptesActifs || 0) /
-                            getComptes().length * 100).toFixed(0) }}%</span>
+                    <p class="stat-label">Solde Production</p>
+                    <h3 class="stat-value">{{ formatCurrency(getTotalSoldeDisponible()) }}</h3>
+                    <div class="stat-indicator positive">
+                        <i class="pi pi-database mr-1"></i>
+                        <span>Base principale</span>
                     </div>
                 </div>
             </div>
 
             <div class="stat-card stat-card-orange">
                 <div class="stat-icon">
-                    <i class="pi pi-money-bill"></i>
+                    <i class="pi pi-cloud"></i>
                 </div>
                 <div class="stat-content">
-                    <p class="stat-label">Solde disponible</p>
-                    <h3 class="stat-value">{{ formatCurrency(getTotalSoldeDisponible()) }}</h3>
-                    <div class="stat-indicator positive">
-                        <i class="pi pi-arrow-up mr-1"></i>
-                        <span>Disponible immédiatement</span>
+                    <p class="stat-label">Solde Middleware</p>
+                    <h3 class="stat-value">{{ formatCurrency(getTotalSoldeDisponibleMiddleware()) }}</h3>
+                    <div class="stat-indicator">
+                        <i class="pi pi-database mr-1"></i>
+                        <span>Base middleware</span>
                     </div>
                 </div>
             </div>
 
-            <div class="stat-card stat-card-purple">
+            <div class="stat-card"
+                [ngClass]="{'stat-card-purple': isRapprochementOk(), 'stat-card-red': !isRapprochementOk()}">
                 <div class="stat-icon">
-                    <i class="pi pi-chart-line"></i>
+                    <i [class]="isRapprochementOk() ? 'pi pi-check-circle' : 'pi pi-times-circle'"></i>
                 </div>
                 <div class="stat-content">
-                    <p class="stat-label">Solde moyen</p>
-                    <h3 class="stat-value">{{ formatCurrency(getTotalSoldeMoyen()) }}</h3>
-                    <div class="stat-indicator">
-                        <i class="pi pi-info-circle mr-1"></i>
-                        <span>Moyenne sur 30 jours</span>
+                    <p class="stat-label">Ecart Total</p>
+                    <h3 class="stat-value" [ngClass]="{'text-danger': !isRapprochementOk()}">
+                        {{ formatCurrency(getEcartTotalDisponible()) }}
+                    </h3>
+                    <div class="stat-indicator" [ngClass]="{'positive': isRapprochementOk()}">
+                        <i [class]="isRapprochementOk() ? 'pi pi-check mr-1' : 'pi pi-exclamation-triangle mr-1'"></i>
+                        <span>{{ isRapprochementOk() ? 'Aucun ecart' : getComptesAvecEcart() + ' compte(s)' }}</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Enhanced Tabs -->
+        <!-- Tabs -->
         <p-tabView styleClass="custom-tabs">
-            <!-- Enhanced Client Information Tab -->
+            <!-- Client Information Tab -->
             <p-tabPanel>
                 <ng-template pTemplate="header">
                     <span class="tab-header">
@@ -138,7 +159,7 @@
                     </span>
                 </ng-template>
 
-                <!-- Enhanced Client Header -->
+                <!-- Client Header -->
                 <div class="client-profile-header">
                     <div class="profile-avatar">
                         <span>{{ (state().ficheSignaletique?.nombreComplet || state().ficheSignaletique?.nomCliente ||
@@ -189,7 +210,7 @@
                                             }}</span>
                                     </div>
                                     <div class="info-row">
-                                        <span class="info-label">État Civil</span>
+                                        <span class="info-label">Etat Civil</span>
                                         <span class="info-value">{{ state().ficheSignaletique?.estatCivilLibelle || '-'
                                             }}</span>
                                     </div>
@@ -204,7 +225,7 @@
                                             }}</span>
                                     </div>
                                     <div class="info-row">
-                                        <span class="info-label">Nationalité</span>
+                                        <span class="info-label">Nationalite</span>
                                         <span class="info-value">{{ state().ficheSignaletique?.nacionalidad || '-'
                                             }}</span>
                                     </div>
@@ -232,7 +253,7 @@
                                             Principal
                                         </div>
                                         <div class="contact-value">{{ state().ficheSignaletique?.telPrincipal || 'Non
-                                            renseigné' }}</div>
+                                            renseigne' }}</div>
                                     </div>
                                     <div class="contact-card">
                                         <div class="contact-type">
@@ -240,7 +261,7 @@
                                             Secondaire
                                         </div>
                                         <div class="contact-value">{{ state().ficheSignaletique?.telSecundario || 'Non
-                                            renseigné' }}</div>
+                                            renseigne' }}</div>
                                     </div>
                                     <div class="contact-card">
                                         <div class="contact-type">
@@ -248,7 +269,7 @@
                                             Autre
                                         </div>
                                         <div class="contact-value">{{ state().ficheSignaletique?.telOtro || 'Non
-                                            renseigné' }}</div>
+                                            renseigne' }}</div>
                                     </div>
                                 </div>
                             </div>
@@ -266,7 +287,7 @@
                                 <div class="section-content">
                                     <div class="address-main">
                                         <i class="pi pi-home mr-2"></i>
-                                        {{ state().ficheSignaletique?.detDireccion || 'Adresse non renseignée' }}
+                                        {{ state().ficheSignaletique?.detDireccion || 'Adresse non renseignee' }}
                                     </div>
                                     <div class="address-details">
                                         <div class="detail-item">
@@ -299,7 +320,7 @@
                                     <div class="id-card">
                                         <div class="id-header">
                                             <i class="pi pi-credit-card"></i>
-                                            <span>Pièce d'identité</span>
+                                            <span>Piece d'identite</span>
                                         </div>
                                         <div class="id-details">
                                             <div class="id-row">
@@ -307,7 +328,7 @@
                                                 <strong>{{ state().ficheSignaletique?.codTipoId || '-' }}</strong>
                                             </div>
                                             <div class="id-row">
-                                                <span>Numéro:</span>
+                                                <span>Numero:</span>
                                                 <strong>{{ state().ficheSignaletique?.numId || '-' }}</strong>
                                             </div>
                                             <div class="id-row">
@@ -324,7 +345,7 @@
                                     <div class="section-icon beneficiary">
                                         <i class="pi pi-users"></i>
                                     </div>
-                                    <h3>Bénéficiaire</h3>
+                                    <h3>Beneficiaire</h3>
                                 </div>
                                 <div class="section-content">
                                     <div class="beneficiary-card">
@@ -333,7 +354,7 @@
                                         </div>
                                         <div class="beneficiary-info">
                                             <p class="beneficiary-name">{{ state().ficheSignaletique?.nomBeneficiario ||
-                                                'Non désigné' }}</p>
+                                                'Non designe' }}</p>
                                             <p class="beneficiary-relation">{{
                                                 state().ficheSignaletique?.relacBeneficiario || '-' }}</p>
                                         </div>
@@ -345,7 +366,254 @@
                 </div>
             </p-tabPanel>
 
-            <!-- Enhanced Accounts Tab -->
+            <!-- Rapprochement Tab -->
+            <p-tabPanel>
+                <ng-template pTemplate="header">
+                    <span class="tab-header">
+                        <i class="pi pi-sync mr-2"></i>
+                        Rapprochement Soldes
+                        <span class="tab-badge"
+                            [ngClass]="{'badge-ok': isRapprochementOk(), 'badge-ecart': !isRapprochementOk()}">
+                            {{ isRapprochementOk() ? 'OK' : getComptesAvecEcart() }}
+                        </span>
+                    </span>
+                </ng-template>
+
+                <!-- Rapprochement Visual Comparison -->
+                <div class="rapprochement-comparison mb-4">
+                    <!-- Production Card -->
+                    <div class="comparison-card comparison-prod">
+                        <div class="comparison-icon-wrapper">
+                            <div class="comparison-icon">
+                                <i class="pi pi-server"></i>
+                            </div>
+                        </div>
+                        <div class="comparison-label">Production (Saf2000)</div>
+                        <div class="comparison-amounts">
+                            <div class="comparison-amount-row">
+                                <span class="comparison-amount-label">Disponible</span>
+                                <span class="comparison-amount-value">{{ formatCurrency(getTotalSoldeDisponible()) }}</span>
+                            </div>
+                            <div class="comparison-amount-row">
+                                <span class="comparison-amount-label">Moyen</span>
+                                <span class="comparison-amount-value secondary">{{ formatCurrency(getTotalSoldeMoyen()) }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- VS Connector -->
+                    <div class="comparison-connector">
+                        <div class="connector-line"></div>
+                        <div class="connector-badge" [ngClass]="{'connector-ok': isRapprochementOk(), 'connector-ecart': !isRapprochementOk()}">
+                            <i [class]="isRapprochementOk() ? 'pi pi-check' : 'pi pi-exclamation-triangle'"></i>
+                            <span>{{ isRapprochementOk() ? 'OK' : 'ECART' }}</span>
+                        </div>
+                        <div class="connector-line"></div>
+                    </div>
+
+                    <!-- Middleware Card -->
+                    <div class="comparison-card comparison-mw">
+                        <div class="comparison-icon-wrapper">
+                            <div class="comparison-icon">
+                                <i class="pi pi-cloud"></i>
+                            </div>
+                        </div>
+                        <div class="comparison-label">Middleware (BD_MIDDLEWARE2)</div>
+                        <div class="comparison-amounts">
+                            <div class="comparison-amount-row">
+                                <span class="comparison-amount-label">Disponible</span>
+                                <span class="comparison-amount-value">{{ formatCurrency(getTotalSoldeDisponibleMiddleware()) }}</span>
+                            </div>
+                            <div class="comparison-amount-row">
+                                <span class="comparison-amount-label">Moyen</span>
+                                <span class="comparison-amount-value secondary">{{ formatCurrency(getTotalSoldeMoyenMiddleware()) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ecarts Summary Bar -->
+                <div class="ecart-bar mb-4" [ngClass]="{'ecart-bar-ok': isRapprochementOk(), 'ecart-bar-danger': !isRapprochementOk()}">
+                    <div class="ecart-bar-item">
+                        <i class="pi pi-arrow-right-arrow-left mr-2"></i>
+                        <span class="ecart-bar-label">Ecart Disponible:</span>
+                        <strong class="ecart-bar-value">{{ formatCurrency(getEcartTotalDisponible()) }}</strong>
+                    </div>
+                    <div class="ecart-bar-divider"></div>
+                    <div class="ecart-bar-item">
+                        <i class="pi pi-arrow-right-arrow-left mr-2"></i>
+                        <span class="ecart-bar-label">Ecart Moyen:</span>
+                        <strong class="ecart-bar-value">{{ formatCurrency(getEcartTotalMoyen()) }}</strong>
+                    </div>
+                    <div class="ecart-bar-divider"></div>
+                    <div class="ecart-bar-item">
+                        <i class="pi pi-list mr-2"></i>
+                        <span class="ecart-bar-label">Comptes en ecart:</span>
+                        <strong class="ecart-bar-value">{{ getComptesAvecEcart() }} / {{ getComptes().length }}</strong>
+                    </div>
+                </div>
+
+                <!-- Rapprochement Detail Table -->
+                <div class="rapprochement-table-container">
+                    <div class="table-legend mb-3">
+                        <div class="legend-item">
+                            <span class="legend-dot legend-dot-prod"></span>
+                            <span>Production</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot legend-dot-mw"></span>
+                            <span>Middleware</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot legend-dot-ecart"></span>
+                            <span>Ecart</span>
+                        </div>
+                    </div>
+
+                    <p-table [value]="getComptes()" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+                        currentPageReportTemplate="Affichage {first} a {last} sur {totalRecords} comptes"
+                        styleClass="rapprochement-table" [tableStyle]="{'min-width': '80rem'}"
+                        [rowHover]="true">
+
+                        <ng-template pTemplate="header">
+                            <tr class="header-group-row">
+                                <th colspan="4" class="header-group-info">Informations Compte</th>
+                                <th colspan="3" class="header-group-disponible">Solde Disponible</th>
+                                <th colspan="3" class="header-group-moyen">Solde Moyen</th>
+                                <th class="header-group-result">Statut</th>
+                            </tr>
+                            <tr>
+                                <th class="text-center" style="width: 2.5rem">#</th>
+                                <th>N. Compte</th>
+                                <th>Categorie</th>
+                                <th class="text-center" style="width: 5rem">Etat</th>
+                                <th class="text-right col-prod">Prod</th>
+                                <th class="text-right col-mw">MW</th>
+                                <th class="text-right col-ecart">Ecart</th>
+                                <th class="text-right col-prod">Prod</th>
+                                <th class="text-right col-mw">MW</th>
+                                <th class="text-right col-ecart">Ecart</th>
+                                <th class="text-center" style="width: 5.5rem">Resultat</th>
+                            </tr>
+                        </ng-template>
+
+                        <ng-template pTemplate="body" let-compte let-rowIndex="rowIndex">
+                            <tr [ngClass]="{'row-ecart': compte.rapprochementOk === false, 'row-ok': compte.rapprochementOk === true, 'row-na': compte.rapprochementOk == null}">
+                                <td class="text-center font-semibold text-color-secondary">{{ rowIndex + 1 }}</td>
+                                <td>
+                                    <div class="account-number">
+                                        <i class="pi pi-credit-card mr-2"></i>
+                                        <span class="font-mono font-semibold">{{ compte.numCuenta }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="category-badge">{{ compte.categorieLibelle || compte.codCategoria }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <p-tag [value]="compte.statutCompte || compte.indEstado || 'N/A'"
+                                        [severity]="getStatutSeverity(compte.indEstado || '')"
+                                        styleClass="status-tag-small">
+                                    </p-tag>
+                                </td>
+
+                                <!-- Solde Disponible: Prod | MW | Ecart -->
+                                <td class="text-right cell-prod">
+                                    <span class="amount-mono">{{ formatCurrency(compte.salDisponible) }}</span>
+                                </td>
+                                <td class="text-right cell-mw">
+                                    <span class="amount-mono" *ngIf="compte.salDisponibleMiddleware != null">
+                                        {{ formatCurrency(compte.salDisponibleMiddleware) }}
+                                    </span>
+                                    <span class="na-badge" *ngIf="compte.salDisponibleMiddleware == null">N/A</span>
+                                </td>
+                                <td class="text-right cell-ecart">
+                                    <span *ngIf="compte.ecartDisponible != null" class="ecart-chip"
+                                        [ngClass]="{'ecart-zero': compte.ecartDisponible === 0, 'ecart-nonzero': compte.ecartDisponible !== 0}">
+                                        {{ formatCurrency(compte.ecartDisponible) }}
+                                    </span>
+                                    <span class="na-badge" *ngIf="compte.ecartDisponible == null">-</span>
+                                </td>
+
+                                <!-- Solde Moyen: Prod | MW | Ecart -->
+                                <td class="text-right cell-prod">
+                                    <span class="amount-mono">{{ formatCurrency(compte.salPromedio) }}</span>
+                                </td>
+                                <td class="text-right cell-mw">
+                                    <span class="amount-mono" *ngIf="compte.salPromedioMiddleware != null">
+                                        {{ formatCurrency(compte.salPromedioMiddleware) }}
+                                    </span>
+                                    <span class="na-badge" *ngIf="compte.salPromedioMiddleware == null">N/A</span>
+                                </td>
+                                <td class="text-right cell-ecart">
+                                    <span *ngIf="compte.ecartPromedio != null" class="ecart-chip"
+                                        [ngClass]="{'ecart-zero': compte.ecartPromedio === 0, 'ecart-nonzero': compte.ecartPromedio !== 0}">
+                                        {{ formatCurrency(compte.ecartPromedio) }}
+                                    </span>
+                                    <span class="na-badge" *ngIf="compte.ecartPromedio == null">-</span>
+                                </td>
+
+                                <!-- Resultat rapprochement -->
+                                <td class="text-center">
+                                    <div class="result-badge result-ok" *ngIf="compte.rapprochementOk === true">
+                                        <i class="pi pi-check-circle"></i> OK
+                                    </div>
+                                    <div class="result-badge result-ecart" *ngIf="compte.rapprochementOk === false">
+                                        <i class="pi pi-times-circle"></i> ECART
+                                    </div>
+                                    <div class="result-badge result-na" *ngIf="compte.rapprochementOk == null">
+                                        <i class="pi pi-minus-circle"></i> N/A
+                                    </div>
+                                </td>
+                            </tr>
+                        </ng-template>
+
+                        <!-- Footer with totals -->
+                        <ng-template pTemplate="footer">
+                            <tr class="total-row">
+                                <td colspan="4" class="text-right font-bold">TOTAUX</td>
+                                <td class="text-right cell-prod">
+                                    <span class="amount-mono font-bold">{{ formatCurrency(getTotalSoldeDisponible()) }}</span>
+                                </td>
+                                <td class="text-right cell-mw">
+                                    <span class="amount-mono font-bold">{{ formatCurrency(getTotalSoldeDisponibleMiddleware()) }}</span>
+                                </td>
+                                <td class="text-right cell-ecart">
+                                    <span class="ecart-chip font-bold"
+                                        [ngClass]="{'ecart-zero': getEcartTotalDisponible() === 0, 'ecart-nonzero': getEcartTotalDisponible() !== 0}">
+                                        {{ formatCurrency(getEcartTotalDisponible()) }}
+                                    </span>
+                                </td>
+                                <td class="text-right cell-prod">
+                                    <span class="amount-mono font-bold">{{ formatCurrency(getTotalSoldeMoyen()) }}</span>
+                                </td>
+                                <td class="text-right cell-mw">
+                                    <span class="amount-mono font-bold">{{ formatCurrency(getTotalSoldeMoyenMiddleware()) }}</span>
+                                </td>
+                                <td class="text-right cell-ecart">
+                                    <span class="ecart-chip font-bold"
+                                        [ngClass]="{'ecart-zero': getEcartTotalMoyen() === 0, 'ecart-nonzero': getEcartTotalMoyen() !== 0}">
+                                        {{ formatCurrency(getEcartTotalMoyen()) }}
+                                    </span>
+                                </td>
+                                <td></td>
+                            </tr>
+                        </ng-template>
+
+                        <ng-template pTemplate="emptymessage">
+                            <tr>
+                                <td colspan="11" class="empty-message">
+                                    <div class="empty-state">
+                                        <i class="pi pi-inbox empty-icon"></i>
+                                        <p>Aucun compte trouve</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+                </div>
+            </p-tabPanel>
+
+            <!-- Comptes & Soldes Tab (detail) -->
             <p-tabPanel>
                 <ng-template pTemplate="header">
                     <span class="tab-header">
@@ -377,19 +645,19 @@
 
                 <div class="accounts-table-container">
                     <p-table [value]="getComptes()" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
-                        currentPageReportTemplate="Affichage {first} à {last} sur {totalRecords} comptes"
+                        currentPageReportTemplate="Affichage {first} a {last} sur {totalRecords} comptes"
                         styleClass="custom-table" [tableStyle]="{'min-width': '60rem'}">
 
                         <ng-template pTemplate="header">
                             <tr>
                                 <th class="text-center" style="width: 3rem">#</th>
-                                <th>Numéro de Compte</th>
-                                <th>Catégorie</th>
+                                <th>Numero de Compte</th>
+                                <th>Categorie</th>
                                 <th class="text-center">Agence</th>
                                 <th class="text-center">Statut</th>
                                 <th class="text-right">Solde Disponible</th>
                                 <th class="text-right">Solde Moyen</th>
-                                <th class="text-center">Dernière Opération</th>
+                                <th class="text-center">Derniere Operation</th>
                                 <th class="text-center">Jours Inactifs</th>
                             </tr>
                         </ng-template>
@@ -442,7 +710,7 @@
                                 <td colspan="9" class="empty-message">
                                     <div class="empty-state">
                                         <i class="pi pi-inbox empty-icon"></i>
-                                        <p>Aucun compte trouvé</p>
+                                        <p>Aucun compte trouve</p>
                                     </div>
                                 </td>
                             </tr>

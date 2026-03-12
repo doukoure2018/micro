@@ -90,6 +90,16 @@ export interface FicheSignaletiqueWithSolde {
     totalSoldeTransit: number;
     totalSoldeReserve: number;
 
+    // Soldes Middleware (rapprochement)
+    totalSoldeDisponibleMiddleware: number;
+    totalSoldeMoyenMiddleware: number;
+
+    // Écarts globaux
+    ecartTotalDisponible: number;
+    ecartTotalMoyen: number;
+    rapprochementGlobalOk: boolean;
+    comptesAvecEcart: number;
+
     // Libellés formatés
     statutClientLibelle: string;
     nombreComplet: string;

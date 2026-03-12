@@ -16,4 +16,16 @@ export interface CompteInfo {
     statutCompte?: string;
     fecApertura?: Date;
     joursSansMouvement?: number;
+
+    // Soldes Middleware (rapprochement)
+    salDisponibleMiddleware?: number;
+    salPromedioMiddleware?: number;
+    salCongeladoMiddleware?: number;
+    salTransitoMiddleware?: number;
+    salReservaMiddleware?: number;
+
+    // Écarts
+    ecartDisponible?: number;
+    ecartPromedio?: number;
+    rapprochementOk?: boolean | null;
 }

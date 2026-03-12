@@ -127,6 +127,16 @@ public class FicheSignaletiqueResponseSoldeDTO {
     private BigDecimal totalSoldeTransit;
     private BigDecimal totalSoldeReserve;
 
+    // Soldes Middleware (rapprochement)
+    private BigDecimal totalSoldeDisponibleMiddleware;
+    private BigDecimal totalSoldeMoyenMiddleware;
+
+    // Écarts globaux
+    private BigDecimal ecartTotalDisponible;
+    private BigDecimal ecartTotalMoyen;
+    private Boolean rapprochementGlobalOk;
+    private Integer comptesAvecEcart;
+
     // Méthodes utilitaires pour obtenir des valeurs formatées
     public String getNombreComplet() {
         StringBuilder sb = new StringBuilder();

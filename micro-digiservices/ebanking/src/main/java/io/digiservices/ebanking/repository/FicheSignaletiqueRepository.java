@@ -5,7 +5,6 @@ import io.digiservices.ebanking.dto.FicheSignaletiqueResponseDTO;
 import io.digiservices.ebanking.dto.UpdateFicheSignaletiqueDTO;
 import io.digiservices.ebanking.exception.ApiException;
 import jakarta.persistence.*;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataAccessResourceFailureException;
@@ -13,8 +12,12 @@ import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.jdbc.core.JdbcTemplate;
+
 import java.math.BigDecimal;
 import java.sql.Date;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDate;
@@ -25,11 +28,16 @@ import java.util.List;
 import java.util.Map;
 @Slf4j
 @Repository
-@RequiredArgsConstructor
 public class FicheSignaletiqueRepository {
 
     @PersistenceContext
     private EntityManager entityManager;
+
+    private final JdbcTemplate middlewareJdbcTemplate;
+
+    public FicheSignaletiqueRepository(@Qualifier("middlewareJdbcTemplate") JdbcTemplate middlewareJdbcTemplate) {
+        this.middlewareJdbcTemplate = middlewareJdbcTemplate;
+    }
 
     @Transactional
     public Map<String, Object> updateFicheSignaletique(UpdateFicheSignaletiqueDTO dto) {
@@ -646,5 +654,56 @@ public class FicheSignaletiqueRepository {
             return new Timestamp(((java.util.Date) value).getTime()).toLocalDateTime();
         }
         return null;
+    }
+
+    /**
+     * Récupère les soldes depuis la base Middleware pour rapprochement.
+     * Retourne une Map<numCuenta, CompteDTO> pour faciliter la correspondance.
+     */
+    public Map<String, CompteDTO> getComptesSoldesMiddleware(String codEmpresa, String codCliente) {
+        log.debug("Récupération des soldes Middleware - Entreprise: {}, Client: {}", codEmpresa, codCliente);
+
+        long startTime = System.currentTimeMillis();
+        Map<String, CompteDTO> comptesMap = new HashMap<>();
+
+        try {
+            String sql = "SELECT ce.COD_AGENCIA, ce.NUM_CUENTA, ce.COD_CATEGORIA, " +
+                    "ce.SAL_DISPONIBLE, ce.SAL_PROMEDIO, ce.SAL_CONGELADO, ce.SAL_TRANSITO, " +
+                    "ce.SAL_RESERVA, ce.IND_ESTADO " +
+                    "FROM [CC].[CC_CUENTA_EFECTIVO] ce " +
+                    "WHERE ce.COD_EMPRESA = ? AND ce.COD_CLIENTE = ? " +
+                    "ORDER BY ce.NUM_CUENTA";
+
+            List<CompteDTO> comptes = middlewareJdbcTemplate.query(sql,
+                    new Object[]{codEmpresa != null ? codEmpresa : "00000", codCliente},
+                    (ResultSet rs, int rowNum) -> {
+                        CompteDTO dto = new CompteDTO();
+                        dto.setNumCuenta(rs.getString("NUM_CUENTA"));
+                        dto.setCodAgencia(rs.getString("COD_AGENCIA"));
+                        dto.setCodCategoria(rs.getString("COD_CATEGORIA"));
+                        dto.setSalDisponible(rs.getBigDecimal("SAL_DISPONIBLE"));
+                        dto.setSalPromedio(rs.getBigDecimal("SAL_PROMEDIO"));
+                        dto.setSalCongelado(rs.getBigDecimal("SAL_CONGELADO"));
+                        dto.setSalTransito(rs.getBigDecimal("SAL_TRANSITO"));
+                        dto.setSalReserva(rs.getBigDecimal("SAL_RESERVA"));
+                        dto.setIndEstado(rs.getString("IND_ESTADO"));
+                        return dto;
+                    });
+
+            for (CompteDTO c : comptes) {
+                comptesMap.put(c.getNumCuenta(), c);
+            }
+
+            long duration = System.currentTimeMillis() - startTime;
+            log.debug("Soldes Middleware récupérés - Client: {} ({} comptes, durée: {} ms)",
+                    codCliente, comptesMap.size(), duration);
+
+        } catch (Exception e) {
+            log.warn("Erreur lors de la récupération des soldes Middleware - Client: {}: {}",
+                    codCliente, e.getMessage());
+            // Ne pas faire échouer la requête principale si le middleware est indisponible
+        }
+
+        return comptesMap;
     }
 }
