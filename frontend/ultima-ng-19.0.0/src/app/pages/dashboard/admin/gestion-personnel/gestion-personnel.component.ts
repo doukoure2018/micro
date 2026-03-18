@@ -489,12 +489,12 @@ export class GestionPersonnelComponent implements OnInit {
 
                 const previewRows: SalairePreviewRow[] = jsonData
                     .filter(row => {
-                        const matricule = row['Matricule'] ?? row['matricule'] ?? row['MATRICULE'] ?? '';
+                        const matricule = row['Matricule'] ?? row['matricule'] ?? row['MATRICULE'] ?? row['Mat'] ?? row['mat'] ?? row['MAT'] ?? '';
                         return matricule !== '' && matricule !== null && matricule !== undefined;
                     })
                     .map(row => {
-                        const matricule = String(row['Matricule'] ?? row['matricule'] ?? row['MATRICULE'] ?? '').trim();
-                        const rawNet = row['NET A PAYER'] ?? row['Net A Payer'] ?? row['net a payer'] ?? row['NET_A_PAYER'] ?? row['netAPayer'] ?? 0;
+                        const matricule = String(row['Matricule'] ?? row['matricule'] ?? row['MATRICULE'] ?? row['Mat'] ?? row['mat'] ?? row['MAT'] ?? '').trim();
+                        const rawNet = row['NET A PAYER'] ?? row['Net A Payer'] ?? row['net a payer'] ?? row['NET_A_PAYER'] ?? row['netAPayer'] ?? row['Net à payer'] ?? row['Net a payer'] ?? row['net à payer'] ?? row['NET À PAYER'] ?? 0;
                         const netAPayer = typeof rawNet === 'number' ? rawNet : parseFloat(String(rawNet).replace(/\s/g, '').replace(',', '.')) || 0;
 
                         return {
