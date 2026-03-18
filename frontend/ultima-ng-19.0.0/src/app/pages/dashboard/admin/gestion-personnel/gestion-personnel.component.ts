@@ -486,8 +486,11 @@ export class GestionPersonnelComponent implements OnInit {
                 const sheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[sheetName];
 
-                // Lire par index de colonne (comme le backend) : col 0 = matricule, col 1 = net à payer
-                const rawRows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+                // Lire toutes les données brutes par index de colonne
+                const rawRows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '', raw: true });
+
+                console.log('Excel raw rows (first 5):', rawRows.slice(0, 5));
+                console.log('Number of columns in row 1:', rawRows[1]?.length, 'values:', rawRows[1]);
 
                 // Ignorer la première ligne (en-têtes) et filtrer les lignes vides
                 const dataRows = rawRows.slice(1).filter(row => {
@@ -497,8 +500,25 @@ export class GestionPersonnelComponent implements OnInit {
 
                 const previewRows: SalairePreviewRow[] = dataRows.map(row => {
                     const matricule = String(row[0]).trim();
-                    const rawNet = row[1];
-                    const netAPayer = typeof rawNet === 'number' ? rawNet : parseFloat(String(rawNet).replace(/\s/g, '').replace(',', '.')) || 0;
+
+                    // Chercher le montant : essayer toutes les colonnes à partir de la 2ème
+                    let netAPayer = 0;
+                    for (let i = 1; i < row.length; i++) {
+                        const val = row[i];
+                        if (val === '' || val === null || val === undefined) continue;
+
+                        if (typeof val === 'number') {
+                            netAPayer = val;
+                            break;
+                        }
+                        // Nettoyer les espaces (normaux, insécables, fins) et convertir
+                        const cleaned = String(val).replace(/[\s\u00A0\u202F\u2009]/g, '').replace(',', '.');
+                        const parsed = parseFloat(cleaned);
+                        if (!isNaN(parsed) && parsed > 0) {
+                            netAPayer = parsed;
+                            break;
+                        }
+                    }
 
                     return {
                         matricule,
