@@ -214,25 +214,97 @@
                             </div>
                         </div>
                         } @else {
-                        <!-- ZONE D'UPLOAD VISIBLE SEULEMENT SI PAS DE DONNÉES -->
+                        <!-- ZONE DE SÉLECTION FICHIER + APERÇU -->
                         <div class="upload-zone">
-                            <p-fileUpload mode="advanced" name="file" accept=".xlsx,.xls" [maxFileSize]="10000000"
-                                [customUpload]="true" (uploadHandler)="onUploadSalaire($event)" [auto]="false"
-                                chooseLabel="Choisir fichier" uploadLabel="Importer" cancelLabel="Annuler"
-                                [showUploadButton]="true" [showCancelButton]="true" [disabled]="isUploadingSalaire()">
-                                <ng-template pTemplate="content">
-                                    <div class="upload-placeholder">
-                                        <i class="pi pi-cloud-upload"></i>
-                                        <p>Glissez-déposez votre fichier Excel ici</p>
-                                        <span>ou cliquez pour sélectionner</span>
+                            <!-- Bouton choisir fichier -->
+                            @if (!hasSalairePreview()) {
+                            <div class="file-select-zone">
+                                <div class="file-select-content">
+                                    <i class="pi pi-file-excel"></i>
+                                    <p>Sélectionnez un fichier Excel pour prévisualiser les données</p>
+                                    <label for="salaireFileInput" class="file-select-btn">
+                                        <i class="pi pi-upload"></i>
+                                        Choisir un fichier
+                                    </label>
+                                    <input id="salaireFileInput" type="file" accept=".xlsx,.xls"
+                                        (change)="onSalaireFileSelect($event)" hidden />
+                                </div>
+                            </div>
+                            }
+
+                            @if (isParsingFile()) {
+                            <div class="upload-progress">
+                                <p-progressBar mode="indeterminate" [style]="{ height: '6px' }"></p-progressBar>
+                                <span>Lecture du fichier en cours...</span>
+                            </div>
+                            }
+
+                            <!-- Aperçu du fichier parsé -->
+                            @if (hasSalairePreview()) {
+                            <div class="preview-section">
+                                <div class="preview-header">
+                                    <div class="preview-info">
+                                        <i class="pi pi-eye"></i>
+                                        <span><strong>Aperçu du fichier :</strong> {{ salaireSelectedFile()?.name }}</span>
+                                        <p-tag [value]="salairePreviewData().length + ' ligne(s)'" severity="info"></p-tag>
                                     </div>
-                                </ng-template>
-                            </p-fileUpload>
+                                    <div class="preview-actions">
+                                        <p-button icon="pi pi-times" label="Annuler" severity="secondary"
+                                            [outlined]="true" size="small" (onClick)="clearSalairePreview()"></p-button>
+                                    </div>
+                                </div>
+
+                                <!-- Tableau d'aperçu -->
+                                <p-table [value]="salairePreviewData()" [paginator]="salairePreviewData().length > 15"
+                                    [rows]="15" [rowsPerPageOptions]="[15, 30, 50]"
+                                    styleClass="p-datatable-striped p-datatable-gridlines p-datatable-sm"
+                                    [tableStyle]="{ 'min-width': '25rem' }"
+                                    [showCurrentPageReport]="true"
+                                    currentPageReportTemplate="Ligne {first} à {last} sur {totalRecords}">
+                                    <ng-template pTemplate="header">
+                                        <tr>
+                                            <th style="width: 60px">#</th>
+                                            <th pSortableColumn="matricule">
+                                                Matricule <p-sortIcon field="matricule"></p-sortIcon>
+                                            </th>
+                                            <th pSortableColumn="netAPayer" style="text-align: right">
+                                                NET A PAYER <p-sortIcon field="netAPayer"></p-sortIcon>
+                                            </th>
+                                        </tr>
+                                    </ng-template>
+                                    <ng-template pTemplate="body" let-row let-rowIndex="rowIndex">
+                                        <tr>
+                                            <td class="row-index">{{ rowIndex + 1 }}</td>
+                                            <td><span class="matricule-badge">{{ row.matricule }}</span></td>
+                                            <td class="text-right">
+                                                <span class="montant">{{ row.netAPayerFormatted }}</span>
+                                            </td>
+                                        </tr>
+                                    </ng-template>
+                                    <ng-template pTemplate="footer">
+                                        <tr>
+                                            <td colspan="2" class="text-right" style="font-weight: 700;">Total</td>
+                                            <td class="text-right">
+                                                <span class="montant total-montant">{{ formatMontant(previewTotalNet()) }}</span>
+                                            </td>
+                                        </tr>
+                                    </ng-template>
+                                </p-table>
+
+                                <!-- Bouton Importer -->
+                                <div class="import-action-bar">
+                                    <p-button icon="pi pi-upload" label="Importer dans la base de données"
+                                        severity="success" (onClick)="confirmImportSalaire()"
+                                        [loading]="isUploadingSalaire()"
+                                        [disabled]="isUploadingSalaire()"></p-button>
+                                </div>
+                            </div>
+                            }
 
                             @if (isUploadingSalaire()) {
                             <div class="upload-progress">
                                 <p-progressBar mode="indeterminate" [style]="{ height: '6px' }"></p-progressBar>
-                                <span>Import en cours...</span>
+                                <span>Import en cours dans la base de données...</span>
                             </div>
                             }
                         </div>

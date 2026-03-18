@@ -25,6 +25,13 @@ import { TabViewModule } from 'primeng/tabview';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
+import * as XLSX from 'xlsx';
+
+export interface SalairePreviewRow {
+    matricule: string;
+    netAPayer: number;
+    netAPayerFormatted?: string;
+}
 
 @Component({
     selector: 'app-gestion-personnel',
@@ -90,6 +97,11 @@ export class GestionPersonnelComponent implements OnInit {
     // ✅ NOUVEAU: Filtre par nom/prénom - Salaire
     searchTermSalaire = signal<string>('');
 
+    // Preview fichier salaire
+    salairePreviewData = signal<SalairePreviewRow[]>([]);
+    salaireSelectedFile = signal<File | null>(null);
+    isParsingFile = signal<boolean>(false);
+
     // Résultats d'import
     importResultPersonnel = signal<ImportResultDto | null>(null);
     importResultSalaire = signal<ImportResultDto | null>(null);
@@ -118,6 +130,11 @@ export class GestionPersonnelComponent implements OnInit {
     });
 
     canImportSalaire = computed(() => !this.hasSalaireData());
+
+    hasSalairePreview = computed(() => this.salairePreviewData().length > 0);
+    previewTotalNet = computed(() => {
+        return this.salairePreviewData().reduce((sum, row) => sum + (row.netAPayer || 0), 0);
+    });
 
     statsPersonnel = computed(() => {
         const result = this.importResultPersonnel();
@@ -436,32 +453,122 @@ export class GestionPersonnelComponent implements OnInit {
 
     // ==================== IMPORT FICHIER SALAIRE ====================
 
-    onUploadSalaire(event: FileUploadHandlerEvent): void {
-        if (!this.canImportSalaire()) {
-            this.messageService.add({
-                severity: 'warn',
-                summary: 'Import impossible',
-                detail: "Vous devez d'abord réinitialiser les données avant d'importer un nouveau fichier."
-            });
-            return;
-        }
+    /**
+     * Appelé quand l'utilisateur sélectionne un fichier Excel.
+     * Parse le fichier côté client et affiche un aperçu dans un tableau.
+     */
+    onSalaireFileSelect(event: Event): void {
+        const input = event.target as HTMLInputElement;
+        const file = input.files?.[0];
 
-        const file = event.files[0];
-
-        if (!file) {
-            this.messageService.add({
-                severity: 'warn',
-                summary: 'Attention',
-                detail: 'Veuillez sélectionner un fichier'
-            });
-            return;
-        }
+        if (!file) return;
 
         if (!this.isValidExcelFile(file)) {
             this.messageService.add({
                 severity: 'error',
                 summary: 'Erreur',
                 detail: 'Le fichier doit être au format Excel (.xlsx ou .xls)'
+            });
+            input.value = '';
+            return;
+        }
+
+        this.isParsingFile.set(true);
+        this.salaireSelectedFile.set(file);
+        this.salairePreviewData.set([]);
+        this.importResultSalaire.set(null);
+
+        const reader = new FileReader();
+        reader.onload = (e: ProgressEvent<FileReader>) => {
+            try {
+                const data = new Uint8Array(e.target?.result as ArrayBuffer);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
+                const previewRows: SalairePreviewRow[] = jsonData
+                    .filter(row => {
+                        const matricule = row['Matricule'] ?? row['matricule'] ?? row['MATRICULE'] ?? '';
+                        return matricule !== '' && matricule !== null && matricule !== undefined;
+                    })
+                    .map(row => {
+                        const matricule = String(row['Matricule'] ?? row['matricule'] ?? row['MATRICULE'] ?? '').trim();
+                        const rawNet = row['NET A PAYER'] ?? row['Net A Payer'] ?? row['net a payer'] ?? row['NET_A_PAYER'] ?? row['netAPayer'] ?? 0;
+                        const netAPayer = typeof rawNet === 'number' ? rawNet : parseFloat(String(rawNet).replace(/\s/g, '').replace(',', '.')) || 0;
+
+                        return {
+                            matricule,
+                            netAPayer,
+                            netAPayerFormatted: new Intl.NumberFormat('fr-FR', {
+                                style: 'currency',
+                                currency: 'GNF',
+                                minimumFractionDigits: 0,
+                                maximumFractionDigits: 0
+                            }).format(netAPayer)
+                        };
+                    });
+
+                this.salairePreviewData.set(previewRows);
+
+                if (previewRows.length === 0) {
+                    this.messageService.add({
+                        severity: 'warn',
+                        summary: 'Fichier vide',
+                        detail: 'Aucune donnée valide trouvée dans le fichier. Vérifiez les colonnes "Matricule" et "NET A PAYER".'
+                    });
+                } else {
+                    this.messageService.add({
+                        severity: 'info',
+                        summary: 'Aperçu chargé',
+                        detail: `${previewRows.length} ligne(s) lue(s) depuis le fichier. Vérifiez puis cliquez sur "Importer".`
+                    });
+                }
+            } catch (error) {
+                console.error('Erreur parsing Excel:', error);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Erreur de lecture',
+                    detail: 'Impossible de lire le fichier Excel. Vérifiez le format.'
+                });
+                this.salaireSelectedFile.set(null);
+            } finally {
+                this.isParsingFile.set(false);
+            }
+        };
+
+        reader.onerror = () => {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Erreur',
+                detail: 'Impossible de lire le fichier.'
+            });
+            this.isParsingFile.set(false);
+            this.salaireSelectedFile.set(null);
+        };
+
+        reader.readAsArrayBuffer(file);
+    }
+
+    /**
+     * Annuler la sélection du fichier et vider l'aperçu.
+     */
+    clearSalairePreview(): void {
+        this.salairePreviewData.set([]);
+        this.salaireSelectedFile.set(null);
+        this.importResultSalaire.set(null);
+    }
+
+    /**
+     * Envoyer le fichier sélectionné au backend pour import en base.
+     */
+    confirmImportSalaire(): void {
+        const file = this.salaireSelectedFile();
+        if (!file) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Attention',
+                detail: 'Veuillez d\'abord sélectionner un fichier'
             });
             return;
         }
@@ -487,6 +594,9 @@ export class GestionPersonnelComponent implements OnInit {
                         detail: `${result?.lignesImportees}/${result?.totalLignes} lignes importées, ${result?.lignesEnErreur} erreurs`
                     });
                 }
+                // Vider l'aperçu après import réussi
+                this.salairePreviewData.set([]);
+                this.salaireSelectedFile.set(null);
                 this.loadAvancesSalaire();
                 this.isUploadingSalaire.set(false);
             },
@@ -500,6 +610,26 @@ export class GestionPersonnelComponent implements OnInit {
                 this.isUploadingSalaire.set(false);
             }
         });
+    }
+
+    /** Kept for backward compatibility with p-fileUpload if needed */
+    onUploadSalaire(event: FileUploadHandlerEvent): void {
+        if (!this.canImportSalaire()) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Import impossible',
+                detail: "Vous devez d'abord réinitialiser les données avant d'importer un nouveau fichier."
+            });
+            return;
+        }
+
+        const file = event.files[0];
+        if (!file) return;
+
+        this.salaireSelectedFile.set(file);
+        // Trigger the same parsing
+        const fakeEvent = { target: { files: [file] } } as unknown as Event;
+        this.onSalaireFileSelect(fakeEvent);
     }
 
     // ==================== AFFICHAGE DES ERREURS ====================
