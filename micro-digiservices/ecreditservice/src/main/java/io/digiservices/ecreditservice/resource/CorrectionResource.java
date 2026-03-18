@@ -527,6 +527,16 @@ public class CorrectionResource {
                                                              HttpServletRequest request) {
         try {
             User user = userClient.getUserByUuid(authentication.getName());
+
+            if (user.getPointventeId() == null) {
+                log.error("Point de vente non configuré pour l'utilisateur: {}", authentication.getName());
+                return ResponseEntity.status(BAD_REQUEST)
+                        .body(getResponse(request,
+                                Map.of("error", "Point de vente non configuré pour cet utilisateur"),
+                                "Point de vente manquant",
+                                BAD_REQUEST));
+            }
+
              String codAgencia = userClient.getPointVenteClient(user.getPointventeId()).getCode();
              // get liste of personne Physique
             List<PersonnePhysique> listePPAttente = correctionService.getListePPAttente(codAgencia);
@@ -802,6 +812,16 @@ public class CorrectionResource {
                                                              HttpServletRequest request) {
         try {
             User user = userClient.getUserByUuid(authentication.getName());
+
+            if (user.getPointventeId() == null) {
+                log.error("Point de vente non configuré pour l'utilisateur: {}", authentication.getName());
+                return ResponseEntity.status(BAD_REQUEST)
+                        .body(getResponse(request,
+                                Map.of("error", "Point de vente non configuré pour cet utilisateur"),
+                                "Point de vente manquant",
+                                BAD_REQUEST));
+            }
+
             String codAgencia = userClient.getPointVenteClient(user.getPointventeId()).getCode();
             // get liste of personne Physique
             List<PersonnePhysique> listRejet = correctionService.listRejet(codAgencia);

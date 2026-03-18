@@ -10,6 +10,7 @@ import io.digiservices.ecreditservice.domain.Response;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -20,12 +21,13 @@ import java.time.LocalDate;
 import java.util.Map;
 
 import static io.digiservices.ecreditservice.utils.RequestUtils.getResponse;
-import static org.springframework.http.HttpStatus.CREATED;
+import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.ResponseEntity.created;
 
 @RestController
 @AllArgsConstructor
 @RequestMapping("/ecredit")
+@Slf4j
 public class RapprochementResource {
 
     private final EbankingClient ebankingClient;
@@ -39,6 +41,13 @@ public class RapprochementResource {
     {
         // get the instance user
         User user = userClient.getUserByUuid(authentication.getName());
+
+        if (user.getPointventeId() == null) {
+            log.error("Point de vente non configuré pour l'utilisateur: {}", authentication.getName());
+            return ResponseEntity.status(BAD_REQUEST)
+                    .body(getResponse(request, Map.of("error", "Point de vente non configuré pour cet utilisateur"), "Point de vente manquant", BAD_REQUEST));
+        }
+
         // get point de service info
         PointVenteDto pointVenteDto = userClient.getPointVenteClient(user.getPointventeId());
         ReconciliationResultDTO reconciliationResultDTO = ebankingClient.checkReconciliation(
@@ -85,6 +94,13 @@ public class RapprochementResource {
     {
         // get the instance user
         User user = userClient.getUserByUuid(authentication.getName());
+
+        if (user.getPointventeId() == null) {
+            log.error("Point de vente non configuré pour l'utilisateur: {}", authentication.getName());
+            return ResponseEntity.status(BAD_REQUEST)
+                    .body(getResponse(request, Map.of("error", "Point de vente non configuré pour cet utilisateur"), "Point de vente manquant", BAD_REQUEST));
+        }
+
         // get point de service info
         PointVenteDto pointVenteDto = userClient.getPointVenteClient(user.getPointventeId());
         ReconciliationResultDTO reconciliationResultDTO = ebankingClient.checkReconciliationCompte(
