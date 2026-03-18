@@ -485,29 +485,32 @@ export class GestionPersonnelComponent implements OnInit {
                 const workbook = XLSX.read(data, { type: 'array' });
                 const sheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[sheetName];
-                const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
 
-                const previewRows: SalairePreviewRow[] = jsonData
-                    .filter(row => {
-                        const matricule = row['Matricule'] ?? row['matricule'] ?? row['MATRICULE'] ?? row['Mat'] ?? row['mat'] ?? row['MAT'] ?? '';
-                        return matricule !== '' && matricule !== null && matricule !== undefined;
-                    })
-                    .map(row => {
-                        const matricule = String(row['Matricule'] ?? row['matricule'] ?? row['MATRICULE'] ?? row['Mat'] ?? row['mat'] ?? row['MAT'] ?? '').trim();
-                        const rawNet = row['NET A PAYER'] ?? row['Net A Payer'] ?? row['net a payer'] ?? row['NET_A_PAYER'] ?? row['netAPayer'] ?? row['Net à payer'] ?? row['Net a payer'] ?? row['net à payer'] ?? row['NET À PAYER'] ?? 0;
-                        const netAPayer = typeof rawNet === 'number' ? rawNet : parseFloat(String(rawNet).replace(/\s/g, '').replace(',', '.')) || 0;
+                // Lire par index de colonne (comme le backend) : col 0 = matricule, col 1 = net à payer
+                const rawRows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
 
-                        return {
-                            matricule,
-                            netAPayer,
-                            netAPayerFormatted: new Intl.NumberFormat('fr-FR', {
-                                style: 'currency',
-                                currency: 'GNF',
-                                minimumFractionDigits: 0,
-                                maximumFractionDigits: 0
-                            }).format(netAPayer)
-                        };
-                    });
+                // Ignorer la première ligne (en-têtes) et filtrer les lignes vides
+                const dataRows = rawRows.slice(1).filter(row => {
+                    const col0 = row[0];
+                    return col0 !== '' && col0 !== null && col0 !== undefined;
+                });
+
+                const previewRows: SalairePreviewRow[] = dataRows.map(row => {
+                    const matricule = String(row[0]).trim();
+                    const rawNet = row[1];
+                    const netAPayer = typeof rawNet === 'number' ? rawNet : parseFloat(String(rawNet).replace(/\s/g, '').replace(',', '.')) || 0;
+
+                    return {
+                        matricule,
+                        netAPayer,
+                        netAPayerFormatted: new Intl.NumberFormat('fr-FR', {
+                            style: 'currency',
+                            currency: 'GNF',
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 0
+                        }).format(netAPayer)
+                    };
+                });
 
                 this.salairePreviewData.set(previewRows);
 
