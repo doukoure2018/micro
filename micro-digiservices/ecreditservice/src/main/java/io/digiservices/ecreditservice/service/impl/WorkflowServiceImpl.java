@@ -77,6 +77,11 @@ public class WorkflowServiceImpl implements WorkflowService {
     }
 
     @Override
+    public List<WorkflowDemandeDto> getEnCorrectionDEForAC(Long agenceId, Long pointventeId) {
+        return workflowRepository.getEnCorrectionDEForAC(agenceId, pointventeId);
+    }
+
+    @Override
     public List<WorkflowDemandeDto> getEnAttenteDA(Long agenceId, Long pointventeId) {
         return workflowRepository.getEnAttenteDA(agenceId, pointventeId);
     }
@@ -84,6 +89,23 @@ public class WorkflowServiceImpl implements WorkflowService {
     @Override
     public List<WorkflowDemandeDto> getSuiviValidationAC(Long agenceId, Long pointventeId) {
         return workflowRepository.getSuiviValidationAC(agenceId, pointventeId);
+    }
+
+    // ==================== DA - DEMANDES AFFECTEES ====================
+
+    @Override
+    public List<WorkflowDemandeDto> getDemandesAffecteesDA(Long agenceId) {
+        return workflowRepository.getDemandesAffecteesDA(agenceId);
+    }
+
+    @Override
+    @Transactional
+    public void annulerAffectation(Long demandeId) {
+        log.info("Annulation de l'affectation pour demande {}", demandeId);
+        int rows = workflowRepository.annulerAffectation(demandeId);
+        if (rows == 0) {
+            throw new ApiException("Demande non trouvée ou état invalide pour l'annulation de l'affectation");
+        }
     }
 
     // ==================== DR ====================

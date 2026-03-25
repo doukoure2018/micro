@@ -177,6 +177,32 @@ public class WorkflowQuery {
             ORDER BY d.createdat DESC
             """;
 
+    public static final String SELECT_EN_CORRECTION_DE_FOR_AC = """
+            SELECT d.demandeindividuel_id AS "demandeIndividuelId",
+                   d.nom, d.prenom, d.telephone,
+                   d.numero_membre AS "numeroMembre",
+                   d.delegation, d.agence, d.pos,
+                   d.montant_demande AS "montantDemande",
+                   d.object_credit AS "objectCredit",
+                   d.validation_state AS "validationState",
+                   d.statut_demande AS "statutDemande",
+                   d.motif_rejet_de AS "motifRejetDe",
+                   d.sections_a_revoir_de AS "sectionsARevoirDe",
+                   d.instructions_dr AS "instructionsDr",
+                   d.validated_by_de AS "validatedByDe",
+                   d.avis_agent_credit AS "avisAgentCredit",
+                   d.avis_da AS "avisDa",
+                   d.avis_dr AS "avisDr",
+                   d.createdat AS "createdAt"
+            FROM demandeindividuel d
+            WHERE d.validation_state = 'CORRECTION_DE'
+              AND (
+                  (CAST(:agenceId AS BIGINT) IS NOT NULL AND CAST(:pointventeId AS BIGINT) IS NULL AND d.agence = CAST(:agenceId AS BIGINT)) OR
+                  (CAST(:pointventeId AS BIGINT) IS NOT NULL AND d.pos = CAST(:pointventeId AS BIGINT))
+              )
+            ORDER BY d.createdat DESC
+            """;
+
     // ==================== DR LISTS ====================
 
     public static final String SELECT_A_VALIDER_DR = """
@@ -305,5 +331,35 @@ public class WorkflowQuery {
                 date_validation_de = NULL
             WHERE demandeindividuel_id = :demandeId
               AND validation_state = 'VALIDATED_DR'
+            """;
+
+    // ==================== DA - DEMANDES AFFECTEES ====================
+
+    public static final String SELECT_DEMANDES_AFFECTEES_DA = """
+            SELECT d.demandeindividuel_id AS "demandeIndividuelId",
+                   d.nom, d.prenom, d.telephone,
+                   d.numero_membre AS "numeroMembre",
+                   d.delegation, d.agence, d.pos,
+                   d.montant_demande AS "montantDemande",
+                   d.object_credit AS "objectCredit",
+                   d.validation_state AS "validationState",
+                   d.statut_demande AS "statutDemande",
+                   d.cod_usuarios AS "codUsuarios",
+                   d.avis_agent_credit AS "avisAgentCredit",
+                   d.createdat AS "createdAt"
+            FROM demandeindividuel d
+            WHERE d.validation_state IN ('SELECTION', 'APPROVED')
+              AND d.statut_demande = 'EN_ATTENTE'
+              AND d.agence = :agenceId
+            ORDER BY d.createdat DESC
+            """;
+
+    public static final String UPDATE_ANNULER_AFFECTATION = """
+            UPDATE demandeindividuel
+            SET validation_state = 'NOUVEAU',
+                cod_usuarios = NULL
+            WHERE demandeindividuel_id = :demandeId
+              AND validation_state = 'SELECTION'
+              AND statut_demande = 'EN_ATTENTE'
             """;
 }

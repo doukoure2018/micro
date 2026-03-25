@@ -19,8 +19,13 @@ public interface WorkflowService {
     // AC lists
     List<WorkflowDemandeDto> getEnCorrectionAC(Long agenceId, Long pointventeId);
     List<WorkflowDemandeDto> getEnCorrectionDRForAC(Long agenceId, Long pointventeId);
+    List<WorkflowDemandeDto> getEnCorrectionDEForAC(Long agenceId, Long pointventeId);
     List<WorkflowDemandeDto> getEnAttenteDA(Long agenceId, Long pointventeId);
     List<WorkflowDemandeDto> getSuiviValidationAC(Long agenceId, Long pointventeId);
+
+    // DA - demandes affectees
+    List<WorkflowDemandeDto> getDemandesAffecteesDA(Long agenceId);
+    void annulerAffectation(Long demandeId);
 
     // DR
     List<WorkflowDemandeDto> getAValiderDR(Long delegationId);

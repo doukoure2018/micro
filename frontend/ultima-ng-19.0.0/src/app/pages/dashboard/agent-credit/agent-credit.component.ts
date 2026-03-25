@@ -41,6 +41,7 @@ export class AgentCreditComponent implements OnInit {
         nombreDemandeInd?: number;
         workflowEnCorrection: any[];
         workflowCorrectionDR: any[];
+        workflowCorrectionDE: any[];
         workflowSuiviValidation: any[];
         loading: boolean;
         message: string | undefined;
@@ -55,6 +56,7 @@ export class AgentCreditComponent implements OnInit {
         filteredDemandeAttentes: [],
         workflowEnCorrection: [],
         workflowCorrectionDR: [],
+        workflowCorrectionDE: [],
         workflowSuiviValidation: [],
         isAgentActive: undefined,
         checkingStatus: false
@@ -202,6 +204,7 @@ export class AgentCreditComponent implements OnInit {
                         this.laodDemandeAttenteByPointVente();
                         this.loadWorkflowEnCorrection();
                         this.loadWorkflowCorrectionDR();
+                        this.loadWorkflowCorrectionDE();
                         this.loadSuiviValidation();
                     }
                 },
@@ -311,6 +314,7 @@ export class AgentCreditComponent implements OnInit {
             this.laodDemandeAttenteByPointVente();
             this.loadWorkflowEnCorrection();
             this.loadWorkflowCorrectionDR();
+            this.loadWorkflowCorrectionDE();
             this.loadSuiviValidation();
         } else {
             this.loadUserAndCheckStatus();
@@ -413,6 +417,20 @@ export class AgentCreditComponent implements OnInit {
             });
     }
 
+    private loadWorkflowCorrectionDE(): void {
+        this.userService.getEnCorrectionDEForAC$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    this.state.update(s => ({
+                        ...s,
+                        workflowCorrectionDE: response.data?.workflowDemandes || []
+                    }));
+                },
+                error: () => {}
+            });
+    }
+
     private loadSuiviValidation(): void {
         this.userService.getSuiviValidationAC$()
             .pipe(takeUntilDestroyed(this.destroyRef))
@@ -433,6 +451,10 @@ export class AgentCreditComponent implements OnInit {
 
     hasWorkflowCorrectionDR(): boolean {
         return this.state().workflowCorrectionDR.length > 0;
+    }
+
+    hasWorkflowCorrectionDE(): boolean {
+        return this.state().workflowCorrectionDE.length > 0;
     }
 
     hasSuiviValidation(): boolean {

@@ -325,6 +325,84 @@
     </div>
     }
 
+    <!-- Section: Demandes Rejetees par DE - A Corriger par AC -->
+    @if(hasWorkflowCorrectionDE()) {
+    <div class="card mt-5 border-l-4 border-purple-500">
+        <div class="flex flex-wrap gap-3 items-center justify-between mb-4">
+            <h3 class="text-xl font-semibold m-0">
+                <i class="pi pi-ban mr-2 text-purple-600"></i>
+                Demandes Rejetees par la Direction Exploitation (DE) - A Corriger
+                <p-badge [value]="state().workflowCorrectionDE.length.toString()" severity="danger"
+                    class="ml-2"></p-badge>
+            </h3>
+            <p-button icon="pi pi-refresh" (click)="refresh()" severity="secondary" size="small"></p-button>
+        </div>
+
+        <p-table #dtCorrectionDE [value]="state().workflowCorrectionDE" [paginator]="true" [rows]="10"
+            [showCurrentPageReport]="true" responsiveLayout="scroll"
+            currentPageReportTemplate="Affichage de {first} a {last} sur {totalRecords}"
+            [rowsPerPageOptions]="[10, 25, 50]" [globalFilterFields]="['nom', 'prenom', 'numeroMembre', 'motifRejetDe']"
+            styleClass="p-datatable-striped">
+
+            <ng-template pTemplate="caption">
+                <div class="flex flex-wrap gap-3 items-center justify-between">
+                    <p-icon-field class="w-full sm:w-80">
+                        <p-inputicon class="pi pi-search" />
+                        <input pInputText type="text" (input)="onGlobalFilter(dtCorrectionDE, $event)"
+                            placeholder="Rechercher..." class="w-full" />
+                    </p-icon-field>
+                </div>
+            </ng-template>
+
+            <ng-template pTemplate="header">
+                <tr>
+                    <th pSortableColumn="createdAt" style="width:12%">Date <p-sortIcon field="createdAt"></p-sortIcon>
+                    </th>
+                    <th pSortableColumn="nom" style="width:18%">Client <p-sortIcon field="nom"></p-sortIcon></th>
+                    <th class="text-right" style="width:15%">Montant</th>
+                    <th style="width:25%">Motif de rejet DE</th>
+                    <th style="width:15%">Sections a revoir</th>
+                    <th class="text-center" style="width:15%">Actions</th>
+                </tr>
+            </ng-template>
+
+            <ng-template pTemplate="body" let-demande>
+                <tr class="hover:bg-surface-50">
+                    <td>{{ demande.createdAt | date:'dd/MM/yyyy' }}</td>
+                    <td>
+                        <div class="flex flex-col gap-1">
+                            <span class="font-semibold">{{ demande.prenom }} {{ demande.nom }}</span>
+                            <small class="text-500">{{ demande.numeroMembre }}</small>
+                        </div>
+                    </td>
+                    <td class="text-right font-bold text-purple-600">{{ formatMontantGNF(demande.montantDemande) }}</td>
+                    <td>
+                        <span>{{ demande.motifRejetDe }}</span>
+                        <br *ngIf="demande.instructionsDr">
+                        <small *ngIf="demande.instructionsDr" class="text-blue-600"><i
+                                class="pi pi-info-circle mr-1"></i>{{ demande.instructionsDr }}</small>
+                    </td>
+                    <td><small>{{ demande.sectionsARevoirDe }}</small></td>
+                    <td class="text-center">
+                        <p-button icon="pi pi-eye" label="Corriger"
+                            (click)="viewDemandeDetail(demande.demandeIndividuelId)" size="small"
+                            severity="warn"></p-button>
+                    </td>
+                </tr>
+            </ng-template>
+
+            <ng-template pTemplate="emptymessage">
+                <tr>
+                    <td colspan="6" class="text-center p-6">
+                        <i class="pi pi-check-circle text-4xl text-green-500 mb-3"></i>
+                        <p class="text-600">Aucune demande rejetee par DE</p>
+                    </td>
+                </tr>
+            </ng-template>
+        </p-table>
+    </div>
+    }
+
     <!-- Section: Suivi des demandes en validation -->
     @if(hasSuiviValidation()) {
     <div class="card mt-5 border-l-4 border-indigo-500">

@@ -8,7 +8,7 @@ import { CommonModule } from '@angular/common';
 import { Component, computed, DestroyRef, inject, Input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -28,7 +28,7 @@ import { ToastModule } from 'primeng/toast';
 
 @Component({
     selector: 'app-resp-agent',
-    imports: [CommonModule, TableModule, InputIconModule, IconFieldModule, TagModule, PopoverModule, ButtonModule, ToastModule, ProgressSpinnerModule, ChipModule, CardModule, DividerModule, TabViewModule, BadgeModule, DialogModule, ReactiveFormsModule, TextareaModule],
+    imports: [CommonModule, TableModule, InputIconModule, IconFieldModule, TagModule, PopoverModule, ButtonModule, ToastModule, ProgressSpinnerModule, ChipModule, CardModule, DividerModule, TabViewModule, BadgeModule, DialogModule, ReactiveFormsModule, TextareaModule, RouterLink],
     templateUrl: './resp-agent.component.html'
 })
 export class RespAgentComponent {

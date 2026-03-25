@@ -616,8 +616,7 @@ export class UserService {
     /**
      * Récupérer tous les points de vente (toutes agences) - pour le module audit
      */
-    getAllPointVentesAudit$ = (): Observable<IResponse> =>
-        this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/points-vente`).pipe(catchError(this.handleError));
+    getAllPointVentesAudit$ = (): Observable<IResponse> => this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/points-vente`).pipe(catchError(this.handleError));
 
     // Méthode pour rejeter une demande (spécifique au DA)
     rejectDemandeIndividuel$ = (demandeIndividuelId: number) =>
@@ -987,13 +986,10 @@ export class UserService {
      */
     getUsersByPointVente$ = (pointventeId: number) => this.http.get<IResponse>(`${this.server}/user/by-pointvente/${pointventeId}`).pipe(tap(console.log), catchError(this.handleError));
 
-    updateUserRole$ = (userId: number, role: string) =>
-        this.http.put<IResponse>(`${this.server}/user/role/${userId}?role=${role}`, {})
-            .pipe(tap(console.log), catchError(this.handleError));
+    updateUserRole$ = (userId: number, role: string) => this.http.put<IResponse>(`${this.server}/user/role/${userId}?role=${role}`, {}).pipe(tap(console.log), catchError(this.handleError));
 
     updateUserLocation$ = (userId: number, delegationId: number, agenceId: number, pointventeId: number) =>
-        this.http.put<IResponse>(`${this.server}/user/location/${userId}?delegationId=${delegationId}&agenceId=${agenceId}&pointventeId=${pointventeId}`, {})
-            .pipe(tap(console.log), catchError(this.handleError));
+        this.http.put<IResponse>(`${this.server}/user/location/${userId}?delegationId=${delegationId}&agenceId=${agenceId}&pointventeId=${pointventeId}`, {}).pipe(tap(console.log), catchError(this.handleError));
 
     // ==================== INFO PERSONNEL ====================
 
@@ -1408,83 +1404,70 @@ export class UserService {
 
     // ==================== VALIDATION DA ====================
 
-    validerBilanDA$ = (demandeId: number) =>
-        <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/bilan_finance/validation-da/${demandeId}/bilan/valider`, {}).pipe(catchError(this.handleError));
+    validerBilanDA$ = (demandeId: number) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/bilan_finance/validation-da/${demandeId}/bilan/valider`, {}).pipe(catchError(this.handleError));
 
     rejeterBilanDA$ = (demandeId: number, body: { motifRejet: string; sectionsARevoir: string[]; instructionsAc?: string }) =>
         <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/bilan_finance/validation-da/${demandeId}/bilan/rejeter`, body).pipe(catchError(this.handleError));
 
-    validerFluxDA$ = (demandeId: number) =>
-        <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/bilan_finance/validation-da/${demandeId}/flux/valider`, {}).pipe(catchError(this.handleError));
+    validerFluxDA$ = (demandeId: number) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/bilan_finance/validation-da/${demandeId}/flux/valider`, {}).pipe(catchError(this.handleError));
 
     rejeterFluxDA$ = (demandeId: number, body: { motifRejet: string; sectionsARevoir: string[]; instructionsAc?: string }) =>
         <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/bilan_finance/validation-da/${demandeId}/flux/rejeter`, body).pipe(catchError(this.handleError));
 
-    getStatutValidationDA$ = (demandeId: number) =>
-        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/bilan_finance/validation-da/${demandeId}/statut`).pipe(catchError(this.handleError));
+    getStatutValidationDA$ = (demandeId: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/bilan_finance/validation-da/${demandeId}/statut`).pipe(catchError(this.handleError));
 
-    getDemandesRejetees$ = () =>
-        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/bilan_finance/validation-da/rejets`).pipe(catchError(this.handleError));
+    getDemandesRejetees$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/bilan_finance/validation-da/rejets`).pipe(catchError(this.handleError));
 
-    getDemandesValideesIds$ = () =>
-        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/bilan_finance/validation-da/validees-ids`).pipe(catchError(this.handleError));
+    getDemandesValideesIds$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/bilan_finance/validation-da/validees-ids`).pipe(catchError(this.handleError));
 
     // ==================== WORKFLOW HIERARCHIQUE ====================
 
-    approuverAC$ = (demandeId: number, avis: string) =>
-        <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/approuver-ac`, { avis }).pipe(catchError(this.handleError));
+    approuverAC$ = (demandeId: number, avis: string) => <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/approuver-ac`, { avis }).pipe(catchError(this.handleError));
 
     // DA
-    getAValiderDA$ = () =>
-        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/a-valider-da`).pipe(catchError(this.handleError));
+    getAValiderDA$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/a-valider-da`).pipe(catchError(this.handleError));
 
-    validerDA$ = (demandeId: number, avis: string) =>
-        <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/valider-da`, { avis }).pipe(catchError(this.handleError));
+    validerDA$ = (demandeId: number, avis: string) => <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/valider-da`, { avis }).pipe(catchError(this.handleError));
 
     rejeterDA$ = (demandeId: number, body: { motifRejet: string; sectionsARevoir: string[]; instructions?: string }) =>
         <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/rejeter-da`, body).pipe(catchError(this.handleError));
 
-    getEnCorrectionAC$ = () =>
-        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/en-correction`).pipe(catchError(this.handleError));
+    getDemandesAffecteesDA$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/demandes-affectees-da`).pipe(catchError(this.handleError));
 
-    getEnCorrectionDRForAC$ = () =>
-        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/en-correction-dr-ac`).pipe(catchError(this.handleError));
+    annulerAffectation$ = (demandeId: number) => <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/annuler-affectation`, {}).pipe(catchError(this.handleError));
 
-    getEnAttenteDA$ = () =>
-        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/en-attente-da`).pipe(catchError(this.handleError));
+    getEnCorrectionAC$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/en-correction`).pipe(catchError(this.handleError));
 
-    getSuiviValidationAC$ = () =>
-        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/suivi-validation`).pipe(catchError(this.handleError));
+    getEnCorrectionDRForAC$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/en-correction-dr-ac`).pipe(catchError(this.handleError));
 
-    getEnCorrectionDR$ = () =>
-        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/en-correction-dr`).pipe(catchError(this.handleError));
+    getEnCorrectionDEForAC$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/en-correction-de-ac`).pipe(catchError(this.handleError));
+
+    getEnAttenteDA$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/en-attente-da`).pipe(catchError(this.handleError));
+
+    getSuiviValidationAC$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/suivi-validation`).pipe(catchError(this.handleError));
+
+    getEnCorrectionDR$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/en-correction-dr`).pipe(catchError(this.handleError));
 
     // DR
-    getAValiderDR$ = () =>
-        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/a-valider-dr`).pipe(catchError(this.handleError));
+    getAValiderDR$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/a-valider-dr`).pipe(catchError(this.handleError));
 
-    validerDR$ = (demandeId: number, avis: string) =>
-        <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/valider-dr`, { avis }).pipe(catchError(this.handleError));
+    validerDR$ = (demandeId: number, avis: string) => <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/valider-dr`, { avis }).pipe(catchError(this.handleError));
 
     rejeterDR$ = (demandeId: number, body: { motifRejet: string; sectionsARevoir: string[]; instructions?: string }) =>
         <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/rejeter-dr`, body).pipe(catchError(this.handleError));
 
     // DE
-    getAValiderDE$ = () =>
-        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/a-valider-de`).pipe(catchError(this.handleError));
+    getAValiderDE$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/a-valider-de`).pipe(catchError(this.handleError));
 
-    validerDE$ = (demandeId: number, avis: string) =>
-        <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/valider-de`, { avis }).pipe(catchError(this.handleError));
+    validerDE$ = (demandeId: number, avis: string) => <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/valider-de`, { avis }).pipe(catchError(this.handleError));
 
     rejeterDE$ = (demandeId: number, body: { motifRejet: string; sectionsARevoir: string[]; instructions?: string }) =>
         <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/rejeter-de`, body).pipe(catchError(this.handleError));
 
     // DR lists for correction
-    getEnCorrectionDE$ = () =>
-        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/en-correction-de`).pipe(catchError(this.handleError));
+    getEnCorrectionDE$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/en-correction-de`).pipe(catchError(this.handleError));
 
     // ==================== CORRECTION DEMANDE COMPLETE ====================
 
-    updateDemandeComplete$ = (demandeId: number, demande: any): Observable<IResponse> =>
-        this.http.put<IResponse>(`${this.server}/ecredit/updateDemandeComplete/${demandeId}`, demande).pipe(catchError(this.handleError));
+    updateDemandeComplete$ = (demandeId: number, demande: any): Observable<IResponse> => this.http.put<IResponse>(`${this.server}/ecredit/updateDemandeComplete/${demandeId}`, demande).pipe(catchError(this.handleError));
 }

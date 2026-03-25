@@ -131,6 +131,17 @@ public class WorkflowResource {
                         "Demandes en correction DR pour AC récupérées", OK));
     }
 
+    @GetMapping("/en-correction-de-ac")
+    public ResponseEntity<Response> getEnCorrectionDEForAC(
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        var result = workflowService.getEnCorrectionDEForAC(user.getAgenceId(), user.getPointventeId());
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("workflowDemandes", result),
+                        "Demandes en correction DE pour AC récupérées", OK));
+    }
+
     @GetMapping("/suivi-validation")
     public ResponseEntity<Response> getSuiviValidationAC(
             Authentication authentication,
@@ -140,6 +151,30 @@ public class WorkflowResource {
         return ResponseEntity.ok(
                 getResponse(httpRequest, Map.of("workflowDemandes", result),
                         "Suivi validation récupéré", OK));
+    }
+
+    // ==================== DA - DEMANDES AFFECTEES ====================
+
+    @GetMapping("/demandes-affectees-da")
+    public ResponseEntity<Response> getDemandesAffecteesDA(
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        var result = workflowService.getDemandesAffecteesDA(user.getAgenceId());
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("workflowDemandes", result),
+                        "Demandes affectées DA récupérées", OK));
+    }
+
+    @PutMapping("/{demandeId}/annuler-affectation")
+    public ResponseEntity<Response> annulerAffectation(
+            @PathVariable Long demandeId,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        workflowService.annulerAffectation(demandeId);
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("message", "Affectation annulée"),
+                        "Affectation annulée avec succès", OK));
     }
 
     // ==================== DR LISTS ====================

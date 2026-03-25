@@ -16,7 +16,13 @@
                 </div>
 
                 <!-- Statistiques rapides -->
-                <div class="flex gap-3 flex-wrap">
+                <div class="flex gap-3 flex-wrap items-center">
+                    <a routerLink="/dashboards/resp-agent/demandes-affectees"
+                        class="p-button p-button-outlined p-button-sm font-semibold no-underline"
+                        style="display: inline-flex; align-items: center; gap: 0.5rem;">
+                        <i class="pi pi-list"></i>
+                        Demandes affectees
+                    </a>
                     <!-- NEW: Add analyse credits stats -->
                     <p-chip *ngIf="hasAnalyseCredits()"
                         [label]="'Analyses: ' + (state().demandeAnalyseCredits?.length || 0)"

@@ -130,6 +130,20 @@ public class WorkflowRepositoryImpl implements WorkflowRepository {
     }
 
     @Override
+    public List<WorkflowDemandeDto> getEnCorrectionDEForAC(Long agenceId, Long pointventeId) {
+        try {
+            return jdbcClient.sql(SELECT_EN_CORRECTION_DE_FOR_AC)
+                    .param("agenceId", agenceId)
+                    .param("pointventeId", pointventeId)
+                    .query(WorkflowDemandeDto.class)
+                    .list();
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des corrections DE pour AC: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la récupération: " + e.getMessage());
+        }
+    }
+
+    @Override
     public List<WorkflowDemandeDto> getEnAttenteDA(Long agenceId, Long pointventeId) {
         try {
             return jdbcClient.sql(SELECT_EN_ATTENTE_DA)
@@ -154,6 +168,33 @@ public class WorkflowRepositoryImpl implements WorkflowRepository {
         } catch (Exception e) {
             log.error("Erreur lors de la récupération du suivi validation AC: {}", e.getMessage());
             throw new ApiException("Erreur lors de la récupération: " + e.getMessage());
+        }
+    }
+
+    // ==================== DA - DEMANDES AFFECTEES ====================
+
+    @Override
+    public List<WorkflowDemandeDto> getDemandesAffecteesDA(Long agenceId) {
+        try {
+            return jdbcClient.sql(SELECT_DEMANDES_AFFECTEES_DA)
+                    .param("agenceId", agenceId)
+                    .query(WorkflowDemandeDto.class)
+                    .list();
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des demandes affectées DA: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la récupération: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public int annulerAffectation(Long demandeId) {
+        try {
+            return jdbcClient.sql(UPDATE_ANNULER_AFFECTATION)
+                    .param("demandeId", demandeId)
+                    .update();
+        } catch (Exception e) {
+            log.error("Erreur lors de l'annulation de l'affectation: {}", e.getMessage());
+            throw new ApiException("Erreur lors de l'annulation: " + e.getMessage());
         }
     }
 

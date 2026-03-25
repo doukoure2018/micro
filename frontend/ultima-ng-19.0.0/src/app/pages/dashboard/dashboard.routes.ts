@@ -121,6 +121,11 @@ export default [
         loadComponent: () => import('./agent-credit/credit-selection/import-selection/import-selection.component').then((c) => c.ImportSelectionComponent)
     },
     {
+        path: 'resp-agent/demandes-affectees',
+        data: { breadcrumb: 'Demandes Affectees' },
+        loadComponent: () => import('./resp-agent/list-demandes-affectees/list-demandes-affectees.component').then((c) => c.ListDemandesAffecteesComponent)
+    },
+    {
         path: 'resp-agent/:referenceCredit/:numeroMembre/:userId',
         data: { breadcrumb: 'Mise en Place de Credit' },
         loadComponent: () => import('./resp-agent/view-instance-credit-ind/view-instance-credit-ind.component').then((c) => c.ViewInstanceCreditIndComponent)
