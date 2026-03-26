@@ -245,8 +245,10 @@
                                 <div class="preview-header">
                                     <div class="preview-info">
                                         <i class="pi pi-eye"></i>
-                                        <span><strong>Aperçu du fichier :</strong> {{ salaireSelectedFile()?.name }}</span>
-                                        <p-tag [value]="salairePreviewData().length + ' ligne(s)'" severity="info"></p-tag>
+                                        <span><strong>Aperçu du fichier :</strong> {{ salaireSelectedFile()?.name
+                                            }}</span>
+                                        <p-tag [value]="salairePreviewData().length + ' ligne(s)'"
+                                            severity="info"></p-tag>
                                     </div>
                                     <div class="preview-actions">
                                         <p-button icon="pi pi-times" label="Annuler" severity="secondary"
@@ -258,8 +260,7 @@
                                 <p-table [value]="salairePreviewData()" [paginator]="salairePreviewData().length > 15"
                                     [rows]="15" [rowsPerPageOptions]="[15, 30, 50]"
                                     styleClass="p-datatable-striped p-datatable-gridlines p-datatable-sm"
-                                    [tableStyle]="{ 'min-width': '25rem' }"
-                                    [showCurrentPageReport]="true"
+                                    [tableStyle]="{ 'min-width': '25rem' }" [showCurrentPageReport]="true"
                                     currentPageReportTemplate="Ligne {first} à {last} sur {totalRecords}">
                                     <ng-template pTemplate="header">
                                         <tr>
@@ -285,7 +286,8 @@
                                         <tr>
                                             <td colspan="2" class="text-right" style="font-weight: 700;">Total</td>
                                             <td class="text-right">
-                                                <span class="montant total-montant">{{ formatMontant(previewTotalNet()) }}</span>
+                                                <span class="montant total-montant">{{ formatMontant(previewTotalNet())
+                                                    }}</span>
                                             </td>
                                         </tr>
                                     </ng-template>
@@ -295,8 +297,7 @@
                                 <div class="import-action-bar">
                                     <p-button icon="pi pi-upload" label="Importer dans la base de données"
                                         severity="success" (onClick)="confirmImportSalaire()"
-                                        [loading]="isUploadingSalaire()"
-                                        [disabled]="isUploadingSalaire()"></p-button>
+                                        [loading]="isUploadingSalaire()" [disabled]="isUploadingSalaire()"></p-button>
                                 </div>
                             </div>
                             }
