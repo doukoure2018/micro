@@ -1,7 +1,7 @@
 <div class="card">
     <p-toast></p-toast>
 
-    <div class="flex flex-wrap gap-3 items-center justify-between mb-4">
+    <div class="flex flex-wrap gap-3 items-center justify-between mb-5">
         <h2 class="text-2xl font-semibold m-0">
             <i class="pi pi-chart-bar mr-2 text-primary"></i>
             Suivi Global des Credits en Cours
@@ -11,35 +11,6 @@
             severity="secondary" size="small"></p-button>
     </div>
 
-    <!-- Compteurs par profil -->
-    @if (!loading() && allDemandes().length > 0) {
-    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-5">
-        @for (profil of profilCounts(); track profil.value) {
-        <div class="border rounded-lg p-3 cursor-pointer transition-all hover:shadow-md {{ profil.bgColor }}"
-            [class.ring-2]="selectedProfil() === profil.value"
-            [class.ring-primary]="selectedProfil() === profil.value"
-            (click)="filterByProfil(profil.value)">
-            <div class="flex flex-col items-center gap-1 text-center">
-                <i class="{{ profil.icon }} text-2xl {{ profil.color }}"></i>
-                <span class="text-3xl font-bold {{ profil.color }}">{{ profil.count }}</span>
-                <span class="text-xs font-medium text-600">{{ profil.label }}</span>
-            </div>
-        </div>
-        }
-    </div>
-
-    <!-- Bouton reset filtre -->
-    <div class="flex items-center gap-3 mb-4">
-        @if (selectedProfil() !== 'ALL') {
-        <p-button icon="pi pi-filter-slash" label="Voir tout"
-            (click)="filterByProfil('ALL')" severity="secondary" size="small"></p-button>
-        }
-        <span class="text-sm text-600">
-            {{ filteredDemandes().length }} demande(s) affichee(s)
-        </span>
-    </div>
-    }
-
     <!-- Loading -->
     @if (loading()) {
     <div class="flex justify-center items-center py-8">
@@ -48,8 +19,53 @@
     </div>
     }
 
-    <!-- Tableau principal -->
+    <!-- Compteurs par profil -->
     @if (!loading() && allDemandes().length > 0) {
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-5">
+        @for (profil of profilCounts(); track profil.value) {
+        <div class="border rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-lg"
+            [ngClass]="{
+                'bg-blue-50 border-blue-200': profil.value === 'AGENT_CREDIT',
+                'bg-green-50 border-green-200': profil.value === 'DA',
+                'bg-orange-50 border-orange-200': profil.value === 'DR' || profil.value === 'CORRECTION_DR',
+                'bg-red-50 border-red-200': profil.value === 'CORRECTION_AC',
+                'bg-purple-50 border-purple-200': profil.value === 'CORRECTION_DE',
+                'bg-indigo-50 border-indigo-200': profil.value === 'VALIDATED_DR',
+                'ring-2 ring-primary shadow-md': selectedProfil() === profil.value
+            }"
+            (click)="filterByProfil(profil.value)">
+            <div class="flex flex-col items-center gap-2 text-center">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center"
+                    [ngClass]="{
+                        'bg-blue-100': profil.value === 'AGENT_CREDIT',
+                        'bg-green-100': profil.value === 'DA',
+                        'bg-orange-100': profil.value === 'DR' || profil.value === 'CORRECTION_DR',
+                        'bg-red-100': profil.value === 'CORRECTION_AC',
+                        'bg-purple-100': profil.value === 'CORRECTION_DE',
+                        'bg-indigo-100': profil.value === 'VALIDATED_DR'
+                    }">
+                    <i [ngClass]="profil.icon + ' text-xl ' + profil.color"></i>
+                </div>
+                <span class="text-3xl font-bold" [ngClass]="profil.color">{{ profil.count }}</span>
+                <span class="text-xs font-semibold text-700 leading-tight">{{ profil.label }}</span>
+            </div>
+        </div>
+        }
+    </div>
+
+    <!-- Filtre actif -->
+    <div class="flex items-center gap-3 mb-4">
+        @if (selectedProfil() !== 'ALL') {
+        <p-button icon="pi pi-filter-slash" label="Voir tout"
+            (click)="filterByProfil('ALL')" severity="secondary" size="small"></p-button>
+        }
+        <span class="text-sm text-600">
+            <i class="pi pi-list mr-1"></i>
+            {{ filteredDemandes().length }} demande(s) affichee(s)
+        </span>
+    </div>
+
+    <!-- Tableau principal -->
     <p-table #dtSuivi [value]="filteredDemandes()" [paginator]="true" [rows]="15"
         [showCurrentPageReport]="true" responsiveLayout="scroll"
         currentPageReportTemplate="Affichage de {first} a {last} sur {totalRecords} demandes"
