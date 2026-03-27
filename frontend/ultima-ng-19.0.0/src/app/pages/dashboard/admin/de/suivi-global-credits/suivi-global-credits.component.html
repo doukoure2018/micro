@@ -21,8 +21,20 @@
 
     <!-- Compteurs par profil -->
     @if (!loading() && allDemandes().length > 0) {
-    <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-5">
-        @for (profil of profilCounts(); track profil.value) {
+    <!-- Ligne 1 : Agent Credit - DA - DR -->
+    <div class="grid grid-cols-3 gap-3 mb-3">
+        @for (profil of profilCountsRow1(); track profil.value) {
+        <ng-container *ngTemplateOutlet="profilCard; context: { $implicit: profil }"></ng-container>
+        }
+    </div>
+    <!-- Ligne 2 : Correction AC - Correction DR - Correction DE - En attente DE -->
+    <div class="grid grid-cols-4 gap-3 mb-5">
+        @for (profil of profilCountsRow2(); track profil.value) {
+        <ng-container *ngTemplateOutlet="profilCard; context: { $implicit: profil }"></ng-container>
+        }
+    </div>
+
+    <ng-template #profilCard let-profil>
         <div class="border rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-lg"
             [ngClass]="{
                 'bg-blue-50 border-blue-200': profil.value === 'AGENT_CREDIT',
@@ -52,8 +64,7 @@
                 </div>
             </div>
         </div>
-        }
-    </div>
+    </ng-template>
 
     <!-- Filtre actif -->
     <div class="flex items-center gap-3 mb-4">

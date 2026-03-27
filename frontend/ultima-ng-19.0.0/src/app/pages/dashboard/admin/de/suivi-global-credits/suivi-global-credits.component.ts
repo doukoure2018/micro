@@ -122,6 +122,16 @@ export class SuiviGlobalCreditsComponent implements OnInit {
         ];
     });
 
+    profilCountsRow1 = computed(() => {
+        const all = this.profilCounts();
+        return all.filter(p => ['AGENT_CREDIT', 'DA', 'DR'].includes(p.value));
+    });
+
+    profilCountsRow2 = computed(() => {
+        const all = this.profilCounts();
+        return all.filter(p => ['CORRECTION_AC', 'CORRECTION_DR', 'CORRECTION_DE', 'VALIDATED_DR'].includes(p.value));
+    });
+
     filteredDemandes = computed(() => {
         const profil = this.selectedProfil();
         const demandes = this.allDemandes();
