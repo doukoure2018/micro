@@ -35,6 +35,7 @@ public interface WorkflowService {
 
     // DE
     List<WorkflowDemandeDto> getAValiderDE();
+    List<WorkflowDemandeDto> getSuiviGlobalDE();
     void validerDE(Long demandeId, String avis, String validatedBy);
     void rejeterDE(Long demandeId, WorkflowRejetRequest request, String validatedBy);
 }

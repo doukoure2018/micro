@@ -333,6 +333,40 @@ public class WorkflowQuery {
               AND validation_state = 'VALIDATED_DR'
             """;
 
+    // ==================== DE - SUIVI GLOBAL ====================
+
+    public static final String SELECT_SUIVI_GLOBAL_DE = """
+            SELECT d.demandeindividuel_id AS "demandeIndividuelId",
+                   d.nom, d.prenom, d.telephone,
+                   d.numero_membre AS "numeroMembre",
+                   d.delegation, d.agence, d.pos,
+                   d.montant_demande AS "montantDemande",
+                   d.object_credit AS "objectCredit",
+                   d.validation_state AS "validationState",
+                   d.statut_demande AS "statutDemande",
+                   d.cod_usuarios AS "codUsuarios",
+                   d.avis_agent_credit AS "avisAgentCredit",
+                   d.avis_da AS "avisDa",
+                   d.avis_dr AS "avisDr",
+                   d.validated_by_da AS "validatedByDa",
+                   d.validated_by_dr AS "validatedByDr",
+                   d.date_validation_da AS "dateValidationDa",
+                   d.date_validation_dr AS "dateValidationDr",
+                   d.createdat AS "createdAt",
+                   del.libele AS "delegationLibele",
+                   ag.libele AS "agenceLibele"
+            FROM demandeindividuel d
+            LEFT JOIN delegation del ON d.delegation = del.id
+            LEFT JOIN agence ag ON d.agence = ag.id
+            WHERE d.statut_demande = 'EN_ATTENTE'
+              AND d.validation_state IN (
+                  'NOUVEAU', 'SELECTION', 'APPROVED',
+                  'CORRECTION', 'CORRECTION_DR', 'CORRECTION_DE',
+                  'VALIDATED_DA', 'VALIDATED_DR'
+              )
+            ORDER BY d.createdat DESC
+            """;
+
     // ==================== DA - DEMANDES AFFECTEES ====================
 
     public static final String SELECT_DEMANDES_AFFECTEES_DA = """

@@ -275,6 +275,18 @@ public class WorkflowRepositoryImpl implements WorkflowRepository {
         }
     }
 
+    @Override
+    public List<WorkflowDemandeDto> getSuiviGlobalDE() {
+        try {
+            return jdbcClient.sql(SELECT_SUIVI_GLOBAL_DE)
+                    .query(WorkflowDemandeDto.class)
+                    .list();
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération du suivi global DE: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la récupération: " + e.getMessage());
+        }
+    }
+
     // ==================== DE ACTIONS ====================
 
     @Override

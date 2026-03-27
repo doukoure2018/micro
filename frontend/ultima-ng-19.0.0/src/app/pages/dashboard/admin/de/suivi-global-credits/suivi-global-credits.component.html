@@ -1,0 +1,128 @@
+<div class="card">
+    <p-toast></p-toast>
+
+    <div class="flex flex-wrap gap-3 items-center justify-between mb-4">
+        <h2 class="text-2xl font-semibold m-0">
+            <i class="pi pi-chart-bar mr-2 text-primary"></i>
+            Suivi Global des Credits en Cours
+            <p-badge [value]="allDemandes().length.toString()" severity="info" class="ml-2"></p-badge>
+        </h2>
+        <p-button icon="pi pi-refresh" label="Actualiser" (click)="refreshData()" [loading]="loading()"
+            severity="secondary" size="small"></p-button>
+    </div>
+
+    <!-- Compteurs par profil -->
+    @if (!loading() && allDemandes().length > 0) {
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-5">
+        @for (profil of profilCounts(); track profil.value) {
+        <div class="border rounded-lg p-3 cursor-pointer transition-all hover:shadow-md {{ profil.bgColor }}"
+            [class.ring-2]="selectedProfil() === profil.value"
+            [class.ring-primary]="selectedProfil() === profil.value"
+            (click)="filterByProfil(profil.value)">
+            <div class="flex flex-col items-center gap-1 text-center">
+                <i class="{{ profil.icon }} text-2xl {{ profil.color }}"></i>
+                <span class="text-3xl font-bold {{ profil.color }}">{{ profil.count }}</span>
+                <span class="text-xs font-medium text-600">{{ profil.label }}</span>
+            </div>
+        </div>
+        }
+    </div>
+
+    <!-- Bouton reset filtre -->
+    <div class="flex items-center gap-3 mb-4">
+        @if (selectedProfil() !== 'ALL') {
+        <p-button icon="pi pi-filter-slash" label="Voir tout"
+            (click)="filterByProfil('ALL')" severity="secondary" size="small"></p-button>
+        }
+        <span class="text-sm text-600">
+            {{ filteredDemandes().length }} demande(s) affichee(s)
+        </span>
+    </div>
+    }
+
+    <!-- Loading -->
+    @if (loading()) {
+    <div class="flex justify-center items-center py-8">
+        <p-progressSpinner strokeWidth="4" [style]="{width: '50px', height: '50px'}"></p-progressSpinner>
+        <span class="ml-3 text-600">Chargement du suivi global...</span>
+    </div>
+    }
+
+    <!-- Tableau principal -->
+    @if (!loading() && allDemandes().length > 0) {
+    <p-table #dtSuivi [value]="filteredDemandes()" [paginator]="true" [rows]="15"
+        [showCurrentPageReport]="true" responsiveLayout="scroll"
+        currentPageReportTemplate="Affichage de {first} a {last} sur {totalRecords} demandes"
+        [rowsPerPageOptions]="[15, 30, 50]"
+        [globalFilterFields]="['nom', 'prenom', 'numeroMembre', 'objectCredit', 'validationState', 'agenceLibele', 'delegationLibele', 'codUsuarios']"
+        styleClass="p-datatable-striped p-datatable-sm"
+        sortField="createdAt" [sortOrder]="-1">
+
+        <ng-template pTemplate="caption">
+            <div class="flex flex-wrap gap-3 items-center justify-between">
+                <p-icon-field class="w-full sm:w-80">
+                    <p-inputicon class="pi pi-search" />
+                    <input pInputText type="text" (input)="onGlobalFilter(dtSuivi, $event)"
+                        placeholder="Rechercher par nom, agence, delegation, agent..." class="w-full" />
+                </p-icon-field>
+            </div>
+        </ng-template>
+
+        <ng-template pTemplate="header">
+            <tr>
+                <th pSortableColumn="createdAt" style="width:10%">Date <p-sortIcon field="createdAt"></p-sortIcon></th>
+                <th pSortableColumn="nom" style="width:14%">Client <p-sortIcon field="nom"></p-sortIcon></th>
+                <th class="text-right" style="width:12%">Montant</th>
+                <th pSortableColumn="delegationLibele" style="width:12%">Delegation <p-sortIcon field="delegationLibele"></p-sortIcon></th>
+                <th pSortableColumn="agenceLibele" style="width:12%">Agence <p-sortIcon field="agenceLibele"></p-sortIcon></th>
+                <th style="width:10%">Agent</th>
+                <th pSortableColumn="validationState" class="text-center" style="width:14%">Profil actuel <p-sortIcon field="validationState"></p-sortIcon></th>
+                <th class="text-center" style="width:16%">Etape</th>
+            </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-demande>
+            <tr class="hover:bg-surface-50 cursor-pointer" (click)="viewDemandeDetail(demande.demandeIndividuelId)">
+                <td>{{ demande.createdAt | date:'dd/MM/yyyy' }}</td>
+                <td>
+                    <div class="flex flex-col gap-1">
+                        <span class="font-semibold">{{ demande.prenom }} {{ demande.nom }}</span>
+                        <small class="text-500">{{ demande.numeroMembre }}</small>
+                    </div>
+                </td>
+                <td class="text-right font-bold">{{ formatMontantGNF(demande.montantDemande) }}</td>
+                <td><small>{{ demande.delegationLibele || '-' }}</small></td>
+                <td><small>{{ demande.agenceLibele || '-' }}</small></td>
+                <td><small class="text-600">{{ demande.codUsuarios || '-' }}</small></td>
+                <td class="text-center">
+                    <p-tag [value]="getProfilLabel(demande.validationState)"
+                        [severity]="getProfilSeverity(demande.validationState)"></p-tag>
+                </td>
+                <td class="text-center">
+                    <small>{{ getEtapeLabel(demande.validationState) }}</small>
+                </td>
+            </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+            <tr>
+                <td colspan="8" class="text-center p-6">
+                    <div class="flex flex-col items-center gap-3">
+                        <i class="pi pi-check-circle text-4xl text-green-500"></i>
+                        <span class="text-600 font-medium">Aucune demande en cours</span>
+                    </div>
+                </td>
+            </tr>
+        </ng-template>
+    </p-table>
+    }
+
+    @if (!loading() && allDemandes().length === 0) {
+    <div class="text-center p-6">
+        <div class="flex flex-col items-center gap-3">
+            <i class="pi pi-inbox text-4xl text-400"></i>
+            <span class="text-600 font-medium">Aucune demande de credit en cours</span>
+        </div>
+    </div>
+    }
+</div>
