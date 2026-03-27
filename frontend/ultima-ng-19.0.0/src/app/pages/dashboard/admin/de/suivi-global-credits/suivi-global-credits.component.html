@@ -22,27 +22,13 @@
     <!-- Compteurs par profil -->
     @if (!loading() && allDemandes().length > 0) {
     <!-- Ligne 1 : Agent Credit - DA - DR -->
-    <div class="grid grid-cols-3 gap-3 mb-3">
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;" class="mb-3">
         @for (profil of profilCountsRow1(); track profil.value) {
-        <ng-container *ngTemplateOutlet="profilCard; context: { $implicit: profil }"></ng-container>
-        }
-    </div>
-    <!-- Ligne 2 : Correction AC - Correction DR - Correction DE - En attente DE -->
-    <div class="grid grid-cols-4 gap-3 mb-5">
-        @for (profil of profilCountsRow2(); track profil.value) {
-        <ng-container *ngTemplateOutlet="profilCard; context: { $implicit: profil }"></ng-container>
-        }
-    </div>
-
-    <ng-template #profilCard let-profil>
-        <div class="border rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-lg"
+        <div class="border rounded-xl p-4 cursor-pointer hover:shadow-lg"
             [ngClass]="{
                 'bg-blue-50 border-blue-200': profil.value === 'AGENT_CREDIT',
                 'bg-green-50 border-green-200': profil.value === 'DA',
-                'bg-orange-50 border-orange-200': profil.value === 'DR' || profil.value === 'CORRECTION_DR',
-                'bg-red-50 border-red-200': profil.value === 'CORRECTION_AC',
-                'bg-purple-50 border-purple-200': profil.value === 'CORRECTION_DE',
-                'bg-indigo-50 border-indigo-200': profil.value === 'VALIDATED_DR',
+                'bg-orange-50 border-orange-200': profil.value === 'DR',
                 'ring-2 ring-primary shadow-md': selectedProfil() === profil.value
             }"
             (click)="filterByProfil(profil.value)">
@@ -51,8 +37,35 @@
                     [ngClass]="{
                         'bg-blue-100': profil.value === 'AGENT_CREDIT',
                         'bg-green-100': profil.value === 'DA',
-                        'bg-orange-100': profil.value === 'DR' || profil.value === 'CORRECTION_DR',
+                        'bg-orange-100': profil.value === 'DR'
+                    }">
+                    <i [ngClass]="profil.icon + ' text-xl ' + profil.color"></i>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-2xl font-bold" [ngClass]="profil.color">{{ profil.count }}</span>
+                    <span class="text-sm font-medium text-700">{{ profil.label }}</span>
+                </div>
+            </div>
+        </div>
+        }
+    </div>
+    <!-- Ligne 2 : Correction AC - Correction DR - Correction DE - En attente DE -->
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;" class="mb-5">
+        @for (profil of profilCountsRow2(); track profil.value) {
+        <div class="border rounded-xl p-4 cursor-pointer hover:shadow-lg"
+            [ngClass]="{
+                'bg-red-50 border-red-200': profil.value === 'CORRECTION_AC',
+                'bg-orange-50 border-orange-200': profil.value === 'CORRECTION_DR',
+                'bg-purple-50 border-purple-200': profil.value === 'CORRECTION_DE',
+                'bg-indigo-50 border-indigo-200': profil.value === 'VALIDATED_DR',
+                'ring-2 ring-primary shadow-md': selectedProfil() === profil.value
+            }"
+            (click)="filterByProfil(profil.value)">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
+                    [ngClass]="{
                         'bg-red-100': profil.value === 'CORRECTION_AC',
+                        'bg-orange-100': profil.value === 'CORRECTION_DR',
                         'bg-purple-100': profil.value === 'CORRECTION_DE',
                         'bg-indigo-100': profil.value === 'VALIDATED_DR'
                     }">
@@ -64,7 +77,8 @@
                 </div>
             </div>
         </div>
-    </ng-template>
+        }
+    </div>
 
     <!-- Filtre actif -->
     <div class="flex items-center gap-3 mb-4">
