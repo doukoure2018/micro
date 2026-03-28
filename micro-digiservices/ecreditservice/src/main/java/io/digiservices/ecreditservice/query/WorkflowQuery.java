@@ -354,7 +354,18 @@ public class WorkflowQuery {
                    d.date_validation_dr AS "dateValidationDr",
                    d.createdat AS "createdAt",
                    del.libele AS "delegationLibele",
-                   ag.libele AS "agenceLibele"
+                   ag.libele AS "agenceLibele",
+                   CASE
+                       WHEN d.validation_state IN ('NOUVEAU', 'SELECTION') THEN
+                           (CURRENT_DATE - DATE(d.createdat))
+                       WHEN d.validation_state IN ('APPROVED', 'CORRECTION') THEN
+                           (CURRENT_DATE - DATE(COALESCE(d.date_validation_da, d.createdat)))
+                       WHEN d.validation_state IN ('VALIDATED_DA', 'CORRECTION_DR') THEN
+                           (CURRENT_DATE - DATE(COALESCE(d.date_validation_da, d.createdat)))
+                       WHEN d.validation_state IN ('VALIDATED_DR', 'CORRECTION_DE') THEN
+                           (CURRENT_DATE - DATE(COALESCE(d.date_validation_dr, d.createdat)))
+                       ELSE (CURRENT_DATE - DATE(d.createdat))
+                   END AS "joursAttente"
             FROM demandeindividuel d
             LEFT JOIN delegation del ON d.delegation = del.id
             LEFT JOIN agence ag ON d.agence = ag.id

@@ -50,6 +50,7 @@ public class WorkflowDemandeDto {
     private String motifRejetDr;
     private String sectionsARevoirDr;
     private String instructionsDa;
+    private Integer joursAttente;
     private String motifRejetDe;
     private String sectionsARevoirDe;
     private String instructionsDr;

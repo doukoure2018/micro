@@ -216,6 +216,13 @@ export class SuiviGlobalCreditsComponent implements OnInit {
         return labels[validationState] || validationState;
     }
 
+    getJoursAttenteSeverity(jours: number): 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast' | undefined {
+        if (jours <= 2) return 'success';
+        if (jours <= 5) return 'info';
+        if (jours <= 10) return 'warn';
+        return 'danger';
+    }
+
     formatMontantGNF(montant: number): string {
         if (!montant || montant === 0) return '0 GNF';
         return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'GNF', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(montant);

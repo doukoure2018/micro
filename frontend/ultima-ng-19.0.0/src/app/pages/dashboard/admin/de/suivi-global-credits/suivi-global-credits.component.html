@@ -113,14 +113,15 @@
 
         <ng-template pTemplate="header">
             <tr>
-                <th pSortableColumn="createdAt" style="width:10%">Date <p-sortIcon field="createdAt"></p-sortIcon></th>
-                <th pSortableColumn="nom" style="width:14%">Client <p-sortIcon field="nom"></p-sortIcon></th>
-                <th class="text-right" style="width:12%">Montant</th>
-                <th pSortableColumn="delegationLibele" style="width:12%">Delegation <p-sortIcon field="delegationLibele"></p-sortIcon></th>
-                <th pSortableColumn="agenceLibele" style="width:12%">Agence <p-sortIcon field="agenceLibele"></p-sortIcon></th>
-                <th style="width:10%">Agent</th>
-                <th pSortableColumn="validationState" class="text-center" style="width:14%">Profil actuel <p-sortIcon field="validationState"></p-sortIcon></th>
-                <th class="text-center" style="width:16%">Etape</th>
+                <th pSortableColumn="createdAt" style="width:9%">Date <p-sortIcon field="createdAt"></p-sortIcon></th>
+                <th pSortableColumn="nom" style="width:13%">Client <p-sortIcon field="nom"></p-sortIcon></th>
+                <th class="text-right" style="width:11%">Montant</th>
+                <th pSortableColumn="delegationLibele" style="width:11%">Delegation <p-sortIcon field="delegationLibele"></p-sortIcon></th>
+                <th pSortableColumn="agenceLibele" style="width:11%">Agence <p-sortIcon field="agenceLibele"></p-sortIcon></th>
+                <th style="width:9%">Agent</th>
+                <th pSortableColumn="validationState" class="text-center" style="width:13%">Profil actuel <p-sortIcon field="validationState"></p-sortIcon></th>
+                <th pSortableColumn="joursAttente" class="text-center" style="width:10%">Attente <p-sortIcon field="joursAttente"></p-sortIcon></th>
+                <th class="text-center" style="width:13%">Etape</th>
             </tr>
         </ng-template>
 
@@ -142,6 +143,10 @@
                         [severity]="getProfilSeverity(demande.validationState)"></p-tag>
                 </td>
                 <td class="text-center">
+                    <p-tag [value]="demande.joursAttente + ' j'"
+                        [severity]="getJoursAttenteSeverity(demande.joursAttente)"></p-tag>
+                </td>
+                <td class="text-center">
                     <small>{{ getEtapeLabel(demande.validationState) }}</small>
                 </td>
             </tr>
@@ -149,7 +154,7 @@
 
         <ng-template pTemplate="emptymessage">
             <tr>
-                <td colspan="8" class="text-center p-6">
+                <td colspan="9" class="text-center p-6">
                     <div class="flex flex-col items-center gap-3">
                         <i class="pi pi-check-circle text-4xl text-green-500"></i>
                         <span class="text-600 font-medium">Aucune demande en cours</span>
