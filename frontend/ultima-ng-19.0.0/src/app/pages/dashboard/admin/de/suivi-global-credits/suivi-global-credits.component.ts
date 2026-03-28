@@ -4,11 +4,13 @@ import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject, Input, OnInit, signal, computed } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { BadgeModule } from 'primeng/badge';
 import { ButtonModule } from 'primeng/button';
 import { ChipModule } from 'primeng/chip';
+import { DatePickerModule } from 'primeng/datepicker';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
@@ -31,9 +33,9 @@ interface ProfilCount {
     selector: 'app-suivi-global-credits',
     standalone: true,
     imports: [
-        CommonModule, TableModule, ButtonModule, TagModule, ToastModule,
+        CommonModule, FormsModule, TableModule, ButtonModule, TagModule, ToastModule,
         BadgeModule, IconFieldModule, InputIconModule, InputTextModule,
-        ProgressSpinnerModule, ChipModule, SelectModule
+        ProgressSpinnerModule, ChipModule, SelectModule, DatePickerModule
     ],
     templateUrl: './suivi-global-credits.component.html',
     providers: [MessageService]
@@ -44,6 +46,13 @@ export class SuiviGlobalCreditsComponent implements OnInit {
     allDemandes = signal<any[]>([]);
     loading = signal(false);
     selectedProfil = signal<string>('ALL');
+
+    // Filtres
+    dateDebut = signal<Date | null>(null);
+    dateFin = signal<Date | null>(null);
+    selectedDelegation = signal<string | null>(null);
+    selectedAgence = signal<string | null>(null);
+    selectedPointvente = signal<string | null>(null);
 
     private userService = inject(UserService);
     private router = inject(Router);
@@ -60,8 +69,67 @@ export class SuiviGlobalCreditsComponent implements OnInit {
         { label: 'En correction (DE)', value: 'CORRECTION_DE' }
     ];
 
+    // Options dynamiques extraites des donnees
+    delegationOptions = computed(() => {
+        const unique = [...new Set(this.allDemandes().map(d => d.delegationLibele).filter(Boolean))].sort();
+        return [{ label: 'Toutes', value: null }, ...unique.map(d => ({ label: d, value: d }))];
+    });
+
+    agenceOptions = computed(() => {
+        let demandes = this.allDemandes();
+        const del = this.selectedDelegation();
+        if (del) {
+            demandes = demandes.filter(d => d.delegationLibele === del);
+        }
+        const unique = [...new Set(demandes.map(d => d.agenceLibele).filter(Boolean))].sort();
+        return [{ label: 'Toutes', value: null }, ...unique.map(a => ({ label: a, value: a }))];
+    });
+
+    pointventeOptions = computed(() => {
+        let demandes = this.allDemandes();
+        const del = this.selectedDelegation();
+        const ag = this.selectedAgence();
+        if (del) demandes = demandes.filter(d => d.delegationLibele === del);
+        if (ag) demandes = demandes.filter(d => d.agenceLibele === ag);
+        const unique = [...new Set(demandes.map(d => d.pointventeLibele).filter(Boolean))].sort();
+        return [{ label: 'Tous', value: null }, ...unique.map(p => ({ label: p, value: p }))];
+    });
+
+    // Les compteurs se basent sur les demandes filtrees
+    baseFilteredDemandes = computed(() => {
+        let demandes = this.allDemandes();
+
+        const dateDebut = this.dateDebut();
+        const dateFin = this.dateFin();
+        const delegation = this.selectedDelegation();
+        const agence = this.selectedAgence();
+        const pointvente = this.selectedPointvente();
+
+        if (dateDebut) {
+            const start = new Date(dateDebut);
+            start.setHours(0, 0, 0, 0);
+            demandes = demandes.filter(d => new Date(d.createdAt) >= start);
+        }
+        if (dateFin) {
+            const end = new Date(dateFin);
+            end.setHours(23, 59, 59, 999);
+            demandes = demandes.filter(d => new Date(d.createdAt) <= end);
+        }
+        if (delegation) {
+            demandes = demandes.filter(d => d.delegationLibele === delegation);
+        }
+        if (agence) {
+            demandes = demandes.filter(d => d.agenceLibele === agence);
+        }
+        if (pointvente) {
+            demandes = demandes.filter(d => d.pointventeLibele === pointvente);
+        }
+
+        return demandes;
+    });
+
     profilCounts = computed<ProfilCount[]>(() => {
-        const demandes = this.allDemandes();
+        const demandes = this.baseFilteredDemandes();
         return [
             {
                 label: 'Agent Credit',
@@ -123,18 +191,16 @@ export class SuiviGlobalCreditsComponent implements OnInit {
     });
 
     profilCountsRow1 = computed(() => {
-        const all = this.profilCounts();
-        return all.filter(p => ['AGENT_CREDIT', 'DA', 'DR'].includes(p.value));
+        return this.profilCounts().filter(p => ['AGENT_CREDIT', 'DA', 'DR'].includes(p.value));
     });
 
     profilCountsRow2 = computed(() => {
-        const all = this.profilCounts();
-        return all.filter(p => ['CORRECTION_AC', 'CORRECTION_DR', 'CORRECTION_DE', 'VALIDATED_DR'].includes(p.value));
+        return this.profilCounts().filter(p => ['CORRECTION_AC', 'CORRECTION_DR', 'CORRECTION_DE', 'VALIDATED_DR'].includes(p.value));
     });
 
     filteredDemandes = computed(() => {
         const profil = this.selectedProfil();
-        const demandes = this.allDemandes();
+        const demandes = this.baseFilteredDemandes();
         if (profil === 'ALL') return demandes;
 
         const stateMap: Record<string, string[]> = {
@@ -148,6 +214,12 @@ export class SuiviGlobalCreditsComponent implements OnInit {
         };
         const states = stateMap[profil] || [];
         return demandes.filter(d => states.includes(d.validationState));
+    });
+
+    hasActiveFilters = computed(() => {
+        return this.dateDebut() !== null || this.dateFin() !== null ||
+            this.selectedDelegation() !== null || this.selectedAgence() !== null ||
+            this.selectedPointvente() !== null;
     });
 
     ngOnInit(): void {
@@ -168,6 +240,38 @@ export class SuiviGlobalCreditsComponent implements OnInit {
                     this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Erreur lors du chargement du suivi global', life: 5000 });
                 }
             });
+    }
+
+    onDateDebutChange(date: Date | null): void {
+        this.dateDebut.set(date);
+    }
+
+    onDateFinChange(date: Date | null): void {
+        this.dateFin.set(date);
+    }
+
+    onDelegationChange(value: string | null): void {
+        this.selectedDelegation.set(value);
+        this.selectedAgence.set(null);
+        this.selectedPointvente.set(null);
+    }
+
+    onAgenceChange(value: string | null): void {
+        this.selectedAgence.set(value);
+        this.selectedPointvente.set(null);
+    }
+
+    onPointventeChange(value: string | null): void {
+        this.selectedPointvente.set(value);
+    }
+
+    resetFilters(): void {
+        this.dateDebut.set(null);
+        this.dateFin.set(null);
+        this.selectedDelegation.set(null);
+        this.selectedAgence.set(null);
+        this.selectedPointvente.set(null);
+        this.selectedProfil.set('ALL');
     }
 
     filterByProfil(profil: string): void {

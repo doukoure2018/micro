@@ -43,6 +43,7 @@ public class WorkflowDemandeDto {
     private LocalDateTime createdAt;
     private String agenceLibele;
     private String delegationLibele;
+    private String pointventeLibele;
     // Correction fields
     private String motifRejetDa;
     private String sectionsARevoirDa;

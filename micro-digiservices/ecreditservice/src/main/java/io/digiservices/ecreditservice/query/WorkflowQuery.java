@@ -355,6 +355,7 @@ public class WorkflowQuery {
                    d.createdat AS "createdAt",
                    del.libele AS "delegationLibele",
                    ag.libele AS "agenceLibele",
+                   pv.libele AS "pointventeLibele",
                    CASE
                        WHEN d.validation_state IN ('NOUVEAU', 'SELECTION') THEN
                            (CURRENT_DATE - DATE(d.createdat))
@@ -369,6 +370,7 @@ public class WorkflowQuery {
             FROM demandeindividuel d
             LEFT JOIN delegation del ON d.delegation = del.id
             LEFT JOIN agence ag ON d.agence = ag.id
+            LEFT JOIN pointvente pv ON d.pos = pv.id
             WHERE d.statut_demande = 'EN_ATTENTE'
               AND d.validation_state IN (
                   'NOUVEAU', 'SELECTION', 'APPROVED',

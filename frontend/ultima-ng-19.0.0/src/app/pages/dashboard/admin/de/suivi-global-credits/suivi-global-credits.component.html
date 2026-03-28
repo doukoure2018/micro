@@ -11,6 +11,55 @@
             severity="secondary" size="small"></p-button>
     </div>
 
+    <!-- Filtres -->
+    <div class="border rounded-lg p-4 mb-4 bg-surface-50">
+        <div class="flex items-center gap-2 mb-3">
+            <i class="pi pi-filter text-primary"></i>
+            <span class="font-semibold text-700">Filtres</span>
+            @if (hasActiveFilters()) {
+            <p-button icon="pi pi-filter-slash" label="Reinitialiser" (click)="resetFilters()"
+                severity="secondary" size="small" class="ml-auto"></p-button>
+            }
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; align-items: end;">
+            <!-- Date debut -->
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-medium text-600">Date debut</label>
+                <p-datepicker [ngModel]="dateDebut()" (ngModelChange)="onDateDebutChange($event)"
+                    dateFormat="dd/mm/yy" [showIcon]="true" placeholder="JJ/MM/AAAA"
+                    [style]="{'width': '100%'}" inputStyleClass="w-full"></p-datepicker>
+            </div>
+            <!-- Date fin -->
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-medium text-600">Date fin</label>
+                <p-datepicker [ngModel]="dateFin()" (ngModelChange)="onDateFinChange($event)"
+                    dateFormat="dd/mm/yy" [showIcon]="true" placeholder="JJ/MM/AAAA"
+                    [style]="{'width': '100%'}" inputStyleClass="w-full"></p-datepicker>
+            </div>
+            <!-- Delegation -->
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-medium text-600">Delegation</label>
+                <p-select [options]="delegationOptions()" [ngModel]="selectedDelegation()"
+                    (ngModelChange)="onDelegationChange($event)" optionLabel="label" optionValue="value"
+                    placeholder="Toutes" [showClear]="true" [style]="{'width': '100%'}"></p-select>
+            </div>
+            <!-- Agence -->
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-medium text-600">Agence</label>
+                <p-select [options]="agenceOptions()" [ngModel]="selectedAgence()"
+                    (ngModelChange)="onAgenceChange($event)" optionLabel="label" optionValue="value"
+                    placeholder="Toutes" [showClear]="true" [style]="{'width': '100%'}"></p-select>
+            </div>
+            <!-- Point de service -->
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-medium text-600">Point de service</label>
+                <p-select [options]="pointventeOptions()" [ngModel]="selectedPointvente()"
+                    (ngModelChange)="onPointventeChange($event)" optionLabel="label" optionValue="value"
+                    placeholder="Tous" [showClear]="true" [style]="{'width': '100%'}"></p-select>
+            </div>
+        </div>
+    </div>
+
     <!-- Loading -->
     @if (loading()) {
     <div class="flex justify-center items-center py-8">
@@ -80,7 +129,7 @@
         }
     </div>
 
-    <!-- Filtre actif -->
+    <!-- Filtre profil actif -->
     <div class="flex items-center gap-3 mb-4">
         @if (selectedProfil() !== 'ALL') {
         <p-button icon="pi pi-filter-slash" label="Voir tout"
@@ -97,7 +146,7 @@
         [showCurrentPageReport]="true" responsiveLayout="scroll"
         currentPageReportTemplate="Affichage de {first} a {last} sur {totalRecords} demandes"
         [rowsPerPageOptions]="[15, 30, 50]"
-        [globalFilterFields]="['nom', 'prenom', 'numeroMembre', 'objectCredit', 'validationState', 'agenceLibele', 'delegationLibele', 'codUsuarios']"
+        [globalFilterFields]="['nom', 'prenom', 'numeroMembre', 'objectCredit', 'validationState', 'agenceLibele', 'delegationLibele', 'pointventeLibele', 'codUsuarios']"
         styleClass="p-datatable-striped p-datatable-sm"
         sortField="createdAt" [sortOrder]="-1">
 
@@ -113,14 +162,15 @@
 
         <ng-template pTemplate="header">
             <tr>
-                <th pSortableColumn="createdAt" style="width:9%">Date <p-sortIcon field="createdAt"></p-sortIcon></th>
-                <th pSortableColumn="nom" style="width:13%">Client <p-sortIcon field="nom"></p-sortIcon></th>
-                <th class="text-right" style="width:11%">Montant</th>
-                <th pSortableColumn="delegationLibele" style="width:11%">Delegation <p-sortIcon field="delegationLibele"></p-sortIcon></th>
-                <th pSortableColumn="agenceLibele" style="width:11%">Agence <p-sortIcon field="agenceLibele"></p-sortIcon></th>
-                <th style="width:9%">Agent</th>
-                <th pSortableColumn="validationState" class="text-center" style="width:13%">Profil actuel <p-sortIcon field="validationState"></p-sortIcon></th>
-                <th pSortableColumn="joursAttente" class="text-center" style="width:10%">Attente <p-sortIcon field="joursAttente"></p-sortIcon></th>
+                <th pSortableColumn="createdAt" style="width:8%">Date <p-sortIcon field="createdAt"></p-sortIcon></th>
+                <th pSortableColumn="nom" style="width:12%">Client <p-sortIcon field="nom"></p-sortIcon></th>
+                <th class="text-right" style="width:10%">Montant</th>
+                <th pSortableColumn="delegationLibele" style="width:10%">Delegation <p-sortIcon field="delegationLibele"></p-sortIcon></th>
+                <th pSortableColumn="agenceLibele" style="width:10%">Agence <p-sortIcon field="agenceLibele"></p-sortIcon></th>
+                <th pSortableColumn="pointventeLibele" style="width:10%">Point de service <p-sortIcon field="pointventeLibele"></p-sortIcon></th>
+                <th style="width:8%">Agent</th>
+                <th pSortableColumn="validationState" class="text-center" style="width:11%">Profil <p-sortIcon field="validationState"></p-sortIcon></th>
+                <th pSortableColumn="joursAttente" class="text-center" style="width:8%">Attente <p-sortIcon field="joursAttente"></p-sortIcon></th>
                 <th class="text-center" style="width:13%">Etape</th>
             </tr>
         </ng-template>
@@ -137,6 +187,7 @@
                 <td class="text-right font-bold">{{ formatMontantGNF(demande.montantDemande) }}</td>
                 <td><small>{{ demande.delegationLibele || '-' }}</small></td>
                 <td><small>{{ demande.agenceLibele || '-' }}</small></td>
+                <td><small>{{ demande.pointventeLibele || '-' }}</small></td>
                 <td><small class="text-600">{{ demande.codUsuarios || '-' }}</small></td>
                 <td class="text-center">
                     <p-tag [value]="getProfilLabel(demande.validationState)"
@@ -154,7 +205,7 @@
 
         <ng-template pTemplate="emptymessage">
             <tr>
-                <td colspan="9" class="text-center p-6">
+                <td colspan="10" class="text-center p-6">
                     <div class="flex flex-col items-center gap-3">
                         <i class="pi pi-check-circle text-4xl text-green-500"></i>
                         <span class="text-600 font-medium">Aucune demande en cours</span>
