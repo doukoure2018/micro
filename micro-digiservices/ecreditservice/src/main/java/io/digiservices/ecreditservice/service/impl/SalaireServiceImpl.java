@@ -1,9 +1,12 @@
 package io.digiservices.ecreditservice.service.impl;
 
+import io.digiservices.clients.UserClient;
+import io.digiservices.clients.domain.User;
 import io.digiservices.ecreditservice.dto.*;
 import io.digiservices.ecreditservice.exception.ApiException;
 import io.digiservices.ecreditservice.repository.SalaireRepository;
 import io.digiservices.ecreditservice.service.SalaireService;
+import io.digiservices.ecreditservice.service.SmsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
@@ -33,6 +36,8 @@ import java.util.Optional;
 public class SalaireServiceImpl implements SalaireService {
 
     private final SalaireRepository salaireRepository;
+    private final SmsService smsService;
+    private final UserClient userClient;
 
     // ==================== INFO PERSONNEL ====================
 
@@ -505,12 +510,16 @@ public class SalaireServiceImpl implements SalaireService {
         // Vérifier que la demande existe et est en cours
         DemandeSalaryDto demande = salaireRepository.findDemandeSalaryById(id)
                 .orElseThrow(() -> new ApiException("Demande non trouvée: " + id));
-        
+
         if (!"ENCOURS".equals(demande.getStatut())) {
             throw new ApiException("Seules les demandes en cours peuvent être validées. Statut actuel: " + demande.getStatut());
         }
-        
-        return salaireRepository.updateDemandeSalaryStatut(id, "VALIDER");
+
+        int updated = salaireRepository.updateDemandeSalaryStatut(id, "VALIDER");
+        if (updated > 0) {
+            sendSmsDR(demande);
+        }
+        return updated;
     }
 
     @Override
@@ -520,12 +529,16 @@ public class SalaireServiceImpl implements SalaireService {
         // Vérifier que la demande existe et est validée
         DemandeSalaryDto demande = salaireRepository.findDemandeSalaryById(id)
                 .orElseThrow(() -> new ApiException("Demande non trouvée: " + id));
-        
+
         if (!"VALIDER".equals(demande.getStatut())) {
             throw new ApiException("Seules les demandes validées peuvent être confirmées. Statut actuel: " + demande.getStatut());
         }
-        
-        return salaireRepository.updateDemandeSalaryStatut(id, "CONFIRMER");
+
+        int updated = salaireRepository.updateDemandeSalaryStatut(id, "CONFIRMER");
+        if (updated > 0) {
+            sendSmsDF(demande);
+        }
+        return updated;
     }
 
     @Override
@@ -559,9 +572,13 @@ public class SalaireServiceImpl implements SalaireService {
         int count = 0;
         for (Long id : ids) {
             try {
+                DemandeSalaryDto demande = salaireRepository.findDemandeSalaryById(id).orElse(null);
                 int updated = salaireRepository.updateDemandeSalaryStatut(id, "VALIDER");
                 if (updated > 0) {
                     count++;
+                    if (demande != null) {
+                        sendSmsDR(demande);
+                    }
                 }
             } catch (Exception e) {
                 log.warn("Erreur validation demande {}: {}", id, e.getMessage());
@@ -578,9 +595,13 @@ public class SalaireServiceImpl implements SalaireService {
         int count = 0;
         for (Long id : ids) {
             try {
+                DemandeSalaryDto demande = salaireRepository.findDemandeSalaryById(id).orElse(null);
                 int updated = salaireRepository.updateDemandeSalaryStatut(id, "CONFIRMER");
                 if (updated > 0) {
                     count++;
+                    if (demande != null) {
+                        sendSmsDF(demande);
+                    }
                 }
             } catch (Exception e) {
                 log.warn("Erreur confirmation demande {}: {}", id, e.getMessage());
@@ -829,5 +850,51 @@ public class SalaireServiceImpl implements SalaireService {
             }
             default -> null;
         };
+    }
+
+    // ==================== SMS AVANCE SALAIRE ====================
+
+    private void sendSmsDR(DemandeSalaryDto demande) {
+        try {
+            User user = userClient.getUserById(demande.getIdUser());
+            if (user != null && user.getPhone() != null && !user.getPhone().isBlank()) {
+                String message = String.format(
+                        "CRG - Avance sur salaire: La Direction des Ressources Humaines a accepte votre demande d'avance sur salaire de %.0f GNF. Matricule: %s.",
+                        demande.getAmount(), demande.getMatricule()
+                );
+                SmsService.SendResult result = smsService.send(user.getPhone(), message);
+                if (result.success()) {
+                    log.info("[SMS-DR] SMS envoyé à {} pour demande {}", user.getPhone(), demande.getId());
+                } else {
+                    log.warn("[SMS-DR] Echec envoi SMS à {} pour demande {}: {}", user.getPhone(), demande.getId(), result.message());
+                }
+            } else {
+                log.warn("[SMS-DR] Pas de numéro de téléphone pour l'utilisateur {} (demande {})", demande.getIdUser(), demande.getId());
+            }
+        } catch (Exception e) {
+            log.error("[SMS-DR] Erreur lors de l'envoi SMS pour demande {}: {}", demande.getId(), e.getMessage());
+        }
+    }
+
+    private void sendSmsDF(DemandeSalaryDto demande) {
+        try {
+            User user = userClient.getUserById(demande.getIdUser());
+            if (user != null && user.getPhone() != null && !user.getPhone().isBlank()) {
+                String message = String.format(
+                        "CRG - Avance sur salaire: La Direction Financiere a confirme votre demande d'avance sur salaire de %.0f GNF. Matricule: %s.",
+                        demande.getAmount(), demande.getMatricule()
+                );
+                SmsService.SendResult result = smsService.send(user.getPhone(), message);
+                if (result.success()) {
+                    log.info("[SMS-DF] SMS envoyé à {} pour demande {}", user.getPhone(), demande.getId());
+                } else {
+                    log.warn("[SMS-DF] Echec envoi SMS à {} pour demande {}: {}", user.getPhone(), demande.getId(), result.message());
+                }
+            } else {
+                log.warn("[SMS-DF] Pas de numéro de téléphone pour l'utilisateur {} (demande {})", demande.getIdUser(), demande.getId());
+            }
+        } catch (Exception e) {
+            log.error("[SMS-DF] Erreur lors de l'envoi SMS pour demande {}: {}", demande.getId(), e.getMessage());
+        }
     }
 }

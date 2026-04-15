@@ -99,6 +99,13 @@ key:
 server:
   port: 8087
 
+# Sayele SMS API
+sms:
+  url: https://hub.sayele.co/api/sendsms
+  client-tk: ${SMS_CLIENT_TK:77e3b8f8-71ff-4496-8d1a-cda8636d861b}
+  client-id: ${SMS_CLIENT_ID:crggn}
+  enabled: true
+
 integration:
   partner:
     user: CRG01
