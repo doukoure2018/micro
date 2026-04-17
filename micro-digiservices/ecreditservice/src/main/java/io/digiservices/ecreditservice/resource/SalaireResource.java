@@ -656,7 +656,7 @@ public class SalaireResource {
     }
 
     /**
-     * Confirmer une demande de salaire
+     * Confirmer uniquement une demande de salaire
      */
     @PutMapping("/salaire/demande-salary/{id}/confirmer")
     public ResponseEntity<Response> confirmerDemandeSalary(
