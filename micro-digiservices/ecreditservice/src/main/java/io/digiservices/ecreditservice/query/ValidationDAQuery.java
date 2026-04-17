@@ -95,11 +95,25 @@ public class ValidationDAQuery {
             """;
 
     public static final String SELECT_DEMANDES_VALIDEES_IDS = """
-            SELECT b.demandeindividuel_id AS "demandeindividuelId"
-            FROM validation_da b
-            JOIN validation_da f ON f.demandeindividuel_id = b.demandeindividuel_id
-            WHERE b.type_validation = 'BILAN_ACTIVITE' AND b.statut = 'VALIDE'
-              AND f.type_validation = 'FLUX_TRESORERIE' AND f.statut = 'VALIDE'
+            SELECT DISTINCT d.demandeindividuel_id AS "demandeindividuelId"
+            FROM demandeindividuel d
+            JOIN validation_da f ON f.demandeindividuel_id = d.demandeindividuel_id
+                AND f.type_validation = 'FLUX_TRESORERIE' AND f.statut = 'VALIDE'
+            LEFT JOIN validation_da b ON b.demandeindividuel_id = d.demandeindividuel_id
+                AND b.type_validation = 'BILAN_ACTIVITE'
+            WHERE (
+                -- Montant >= 50M : bilan + flux obligatoires
+                (COALESCE(d.montant_demande, 0) >= 50000000 AND b.statut = 'VALIDE')
+                OR
+                -- Montant < 50M : flux seul suffit
+                (COALESCE(d.montant_demande, 0) < 50000000)
+            )
+            """;
+
+    public static final String SELECT_MONTANT_DEMANDE = """
+            SELECT montant_demande
+            FROM demandeindividuel
+            WHERE demandeindividuel_id = :demandeId
             """;
 
     public static final String SELECT_BY_DEMANDE_AND_TYPE = """

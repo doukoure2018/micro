@@ -5,6 +5,7 @@ import io.digiservices.ecreditservice.dto.RejetDARequest;
 import io.digiservices.ecreditservice.dto.ValidationDADto;
 
 import java.util.List;
+import java.util.Map;
 
 public interface ValidationDAService {
 
@@ -21,4 +22,6 @@ public interface ValidationDAService {
     List<DemandeRejeteeDto> getDemandesRejetees();
 
     List<Long> getDemandesValideesIds();
+
+    Map<String, Object> getTypeAnalyseRequise(Long demandeId);
 }

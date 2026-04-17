@@ -11,6 +11,7 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import static io.digiservices.ecreditservice.query.ValidationDAQuery.*;
@@ -108,6 +109,21 @@ public class ValidationDARepositoryImpl implements ValidationDARepository {
         } catch (Exception e) {
             log.error("Erreur lors de la récupération des demandes validées: {}", e.getMessage());
             return List.of();
+        }
+    }
+
+    @Override
+    public BigDecimal getMontantDemande(Long demandeId) {
+        try {
+            return jdbcClient.sql(SELECT_MONTANT_DEMANDE)
+                    .param("demandeId", demandeId)
+                    .query(BigDecimal.class)
+                    .single();
+        } catch (EmptyResultDataAccessException e) {
+            return BigDecimal.ZERO;
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération du montant demande: {}", e.getMessage());
+            return BigDecimal.ZERO;
         }
     }
 

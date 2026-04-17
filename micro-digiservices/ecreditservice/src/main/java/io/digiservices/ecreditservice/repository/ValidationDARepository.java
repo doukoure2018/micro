@@ -4,6 +4,7 @@ import io.digiservices.ecreditservice.dto.DemandeRejeteeDto;
 import io.digiservices.ecreditservice.dto.RejetDARequest;
 import io.digiservices.ecreditservice.dto.ValidationDADto;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public interface ValidationDARepository {
@@ -21,4 +22,6 @@ public interface ValidationDARepository {
     List<DemandeRejeteeDto> getDemandesRejetees();
 
     List<Long> getDemandesValideesIds();
+
+    BigDecimal getMontantDemande(Long demandeId);
 }

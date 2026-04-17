@@ -11,7 +11,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -72,6 +74,21 @@ public class ValidationDAServiceImpl implements ValidationDAService {
     @Override
     public List<Long> getDemandesValideesIds() {
         return validationDARepository.getDemandesValideesIds();
+    }
+
+    private static final BigDecimal SEUIL_BILAN = new BigDecimal("50000000");
+
+    @Override
+    public Map<String, Object> getTypeAnalyseRequise(Long demandeId) {
+        BigDecimal montant = validationDARepository.getMontantDemande(demandeId);
+        boolean bilanRequis = montant != null && montant.compareTo(SEUIL_BILAN) >= 0;
+        return Map.of(
+                "demandeId", demandeId,
+                "montantDemande", montant != null ? montant : BigDecimal.ZERO,
+                "seuilBilan", SEUIL_BILAN,
+                "bilanRequis", bilanRequis,
+                "fluxTresorerieRequis", true
+        );
     }
 
     private void validateRejetRequest(RejetDARequest request) {

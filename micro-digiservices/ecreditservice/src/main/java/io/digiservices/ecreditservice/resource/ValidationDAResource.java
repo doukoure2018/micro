@@ -106,4 +106,14 @@ public class ValidationDAResource {
                 getResponse(httpRequest, Map.of("demandesValideesIds", result),
                         "IDs des demandes validées récupérés", OK));
     }
+
+    @GetMapping("/{demandeId}/type-analyse-requise")
+    public ResponseEntity<Response> getTypeAnalyseRequise(
+            @PathVariable Long demandeId,
+            HttpServletRequest httpRequest) {
+        var result = validationDAService.getTypeAnalyseRequise(demandeId);
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("typeAnalyse", result),
+                        "Type d'analyse requise récupéré", OK));
+    }
 }
