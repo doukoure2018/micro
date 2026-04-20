@@ -570,10 +570,10 @@ public class AnalyseFinanciereRepositoryImpl implements AnalyseFinanciereReposit
                     besoin_reel_investissement as "besoinReelInvestissement",
                     besoin_reel_exploitation as "besoinReelExploitation"
                 FROM fn_soumettre_analyse(
-                    :analyseId,
-                    :codUsuario,
-                    :nomAnalyste,
-                    :forcerSoumission
+                    :analyseId::BIGINT,
+                    :codUsuario::VARCHAR,
+                    :nomAnalyste::VARCHAR,
+                    :forcerSoumission::BOOLEAN
                 )
                 """;
 
