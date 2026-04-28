@@ -454,11 +454,15 @@ public class DemandeIndResource {
     public ResponseEntity<Response> ListCreditAttente(@NotNull Authentication authentication,
                                                       HttpServletRequest request) {
 
-        return created(getUri()).body(getResponse(request,Map.of(
-                         "demandeAnalyseCredits",demandeIndService.listDemandeAnalyseCreditByUserId(),
-                         "creditDtos",demandeIndService.getListCreditAttente(userClient.getUserByUuid(authentication.getName()).getAgenceId()),
-                        "agence",userClient.getAgenceById(userClient.getUserByUuid(authentication.getName()).getAgenceId())
-                ),
+        User user = userClient.getUserByUuid(authentication.getName());
+        Long agenceId = user.getAgenceId();
+
+        Map<String, Object> responseData = new HashMap<>();
+        responseData.put("demandeAnalyseCredits", demandeIndService.listDemandeAnalyseCreditByUserId());
+        responseData.put("creditDtos", demandeIndService.getListCreditAttente(agenceId));
+        responseData.put("agence", agenceId != null ? userClient.getAgenceById(agenceId) : null);
+
+        return created(getUri()).body(getResponse(request, responseData,
                 "Liste des Credits Pour la Mise en Place", OK));
     }
 
