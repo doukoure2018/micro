@@ -265,5 +265,20 @@ export default [
         path: 'rapprochement-caisse-ra',
         data: { breadcrumb: 'Outil Rapprochement de Caisse' },
         loadComponent: () => import('./admin/rapprochement-caisse-ra/rapprochement-caisse-ra.component').then((c) => c.RapprochementCaisseRaComponent)
+    },
+    {
+        path: 'changement-telephone/agent',
+        data: { breadcrumb: 'Changement Telephone (Agent)' },
+        loadComponent: () => import('./changement-telephone/agent-changement-telephone.component').then((c) => c.AgentChangementTelephoneComponent)
+    },
+    {
+        path: 'changement-telephone/da',
+        data: { breadcrumb: 'Validation Changement Telephone (DA)' },
+        loadComponent: () => import('./changement-telephone/da-validation-telephone.component').then((c) => c.DaValidationTelephoneComponent)
+    },
+    {
+        path: 'changement-telephone/inspection',
+        data: { breadcrumb: 'Inspection Changement Telephone' },
+        loadComponent: () => import('./changement-telephone/inspection-telephone.component').then((c) => c.InspectionTelephoneComponent)
     }
 ] as Routes;

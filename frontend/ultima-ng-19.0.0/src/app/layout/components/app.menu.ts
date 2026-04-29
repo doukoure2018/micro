@@ -120,6 +120,11 @@ export class AppMenu {
                                   label: 'Rapprochement Caisse',
                                   icon: 'pi pi-fw pi-calculator',
                                   routerLink: ['/dashboards/rapprochement-caisse']
+                              },
+                              {
+                                  label: 'Changement Téléphone',
+                                  icon: 'pi pi-fw pi-phone',
+                                  routerLink: ['/dashboards/changement-telephone/agent']
                               }
                           ]
                         : this.user?.role === 'SUPER_ADMIN'
@@ -215,6 +220,11 @@ export class AppMenu {
                                                           label: 'Suivi Arrêtés de Caisse',
                                                           icon: 'pi pi-fw pi-money-bill',
                                                           routerLink: ['/dashboards/suivi-arrete-caisse']
+                                                      },
+                                                      {
+                                                          label: 'Inspection Changement Téléphone',
+                                                          icon: 'pi pi-fw pi-phone',
+                                                          routerLink: ['/dashboards/changement-telephone/inspection']
                                                       }
                                                   ]
                                                 : []
@@ -309,6 +319,11 @@ export class AppMenu {
                                                     label: 'suivi des Arrete de caisse',
                                                     icon: 'pi pi-fw pi-money-bill',
                                                     routerLink: ['/dashboards/suivi-arrete-caisse']
+                                                },
+                                                {
+                                                    label: 'Validation Changement Téléphone',
+                                                    icon: 'pi pi-fw pi-phone',
+                                                    routerLink: ['/dashboards/changement-telephone/da']
                                                 }
                                             ]
                                           : [])

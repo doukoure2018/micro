@@ -1,0 +1,93 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="card">
+    <div class="flex justify-between items-center mb-4">
+        <div>
+            <h2 class="text-2xl font-semibold">Validation: changements de telephone</h2>
+            <p class="text-gray-500 text-sm">Demandes d'autorisation en attente de votre approbation</p>
+        </div>
+        <p-button label="Actualiser" icon="pi pi-refresh" severity="secondary" (onClick)="refresh()"></p-button>
+    </div>
+
+    @if (loading()) {
+        <div class="flex justify-center p-6">
+            <p-progressSpinner></p-progressSpinner>
+        </div>
+    } @else {
+        <p-table [value]="demandes()" [paginator]="true" [rows]="10" stripedRows responsiveLayout="scroll">
+            <ng-template pTemplate="header">
+                <tr>
+                    <th>Client</th>
+                    <th>Ancien tel.</th>
+                    <th>Nouveau tel.</th>
+                    <th>Raison</th>
+                    <th>Date souhaitee</th>
+                    <th>Demandee le</th>
+                    <th>Rejets passes</th>
+                    <th>Actions</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-d>
+                <tr>
+                    <td>
+                        <div class="font-medium">{{ d.codCliente }}</div>
+                        <div class="text-xs text-gray-500">{{ d.prenomClient }} {{ d.nomClient }}</div>
+                    </td>
+                    <td>{{ d.ancienTelephone }}</td>
+                    <td class="font-semibold text-blue-600">{{ d.nouveauTelephone }}</td>
+                    <td class="max-w-xs">
+                        <div [pTooltip]="d.raisonModification" class="truncate">{{ d.raisonModification }}</div>
+                    </td>
+                    <td>{{ d.dateModificationSouhaitee | date }}</td>
+                    <td>{{ d.demandeAt | date:'short' }}</td>
+                    <td class="text-center">
+                        @if ((d.nombreRejets ?? 0) > 0) {
+                            <p-tag [value]="d.nombreRejets" severity="warn"></p-tag>
+                        } @else {
+                            <span class="text-gray-400">0</span>
+                        }
+                    </td>
+                    <td>
+                        <div class="flex flex-wrap gap-1">
+                            <p-button label="Approuver" icon="pi pi-check" severity="success" size="small" (onClick)="confirmApprouver(d)" [disabled]="submitting()"></p-button>
+                            <p-button label="Rejeter" icon="pi pi-times" severity="warn" size="small" (onClick)="openRejet(d, false)" [disabled]="submitting()"></p-button>
+                            <p-button label="Rejet definitif" icon="pi pi-ban" severity="danger" size="small" [outlined]="true" (onClick)="openRejet(d, true)" [disabled]="submitting()"></p-button>
+                        </div>
+                    </td>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+                <tr><td colspan="8" class="text-center py-6">Aucune demande en attente</td></tr>
+            </ng-template>
+        </p-table>
+    }
+</div>
+
+<!-- Dialog: rejet (simple ou definitif) -->
+<p-dialog [header]="rejetForm.definitif ? 'Rejet definitif de la demande' : 'Rejet de la demande'" [(visible)]="showRejetDialog" [modal]="true" [style]="{width: '550px'}" [closable]="!submitting()">
+    @if (selectedDemande()) {
+        <div class="mb-3 p-3 bg-gray-50 border-l-4 border-gray-400">
+            <div class="text-sm">
+                <strong>Client:</strong> {{ selectedDemande()?.codCliente }} ({{ selectedDemande()?.prenomClient }} {{ selectedDemande()?.nomClient }})
+            </div>
+            <div class="text-sm mt-1">
+                <strong>Changement:</strong> {{ selectedDemande()?.ancienTelephone }} → {{ selectedDemande()?.nouveauTelephone }}
+            </div>
+        </div>
+        @if (rejetForm.definitif) {
+            <div class="mb-3 p-3 bg-red-50 border-l-4 border-red-500">
+                <div class="text-sm font-semibold text-red-700"><i class="pi pi-exclamation-triangle mr-1"></i>Attention: rejet definitif</div>
+                <div class="text-sm text-red-600 mt-1">L'agent ne pourra pas resoumettre cette demande.</div>
+            </div>
+        }
+        <div>
+            <label class="block text-sm font-medium mb-1">Motif du rejet *</label>
+            <textarea pTextarea class="w-full" rows="4" [(ngModel)]="rejetForm.motif" placeholder="Expliquez la raison du rejet"></textarea>
+        </div>
+    }
+    <ng-template pTemplate="footer">
+        <p-button label="Annuler" severity="secondary" (onClick)="showRejetDialog.set(false)" [disabled]="submitting()"></p-button>
+        <p-button [label]="rejetForm.definitif ? 'Confirmer rejet definitif' : 'Confirmer rejet'" icon="pi pi-times-circle" [severity]="rejetForm.definitif ? 'danger' : 'warn'" (onClick)="submitRejet()" [loading]="submitting()"></p-button>
+    </ng-template>
+</p-dialog>

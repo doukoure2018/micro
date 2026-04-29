@@ -1,0 +1,171 @@
+<p-toast></p-toast>
+
+<div class="card">
+    <div class="mb-4">
+        <h2 class="text-2xl font-semibold">Inspection: changements de telephone</h2>
+        <p class="text-gray-500 text-sm">Vue globale et tracabilite complete des demandes (toutes delegations / agences / points de service)</p>
+    </div>
+
+    <!-- KPI cards -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+        @for (k of kpis(); track k.label) {
+            <div class="rounded-lg p-3 flex items-center justify-between" [class]="k.color">
+                <div>
+                    <div class="text-xs uppercase tracking-wide opacity-70">{{ k.label }}</div>
+                    <div class="text-2xl font-bold">{{ k.value }}</div>
+                </div>
+                <i class="text-2xl" [class]="k.icon"></i>
+            </div>
+        }
+    </div>
+
+    <!-- Filtres -->
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4">
+        <div>
+            <label class="block text-xs text-gray-500 mb-1">Delegation ID</label>
+            <input type="number" pInputText class="w-full" [(ngModel)]="filtre.delegationId" placeholder="ID delegation" />
+        </div>
+        <div>
+            <label class="block text-xs text-gray-500 mb-1">Agence ID</label>
+            <input type="number" pInputText class="w-full" [(ngModel)]="filtre.agenceId" placeholder="ID agence" />
+        </div>
+        <div>
+            <label class="block text-xs text-gray-500 mb-1">Point de service ID</label>
+            <input type="number" pInputText class="w-full" [(ngModel)]="filtre.pointVenteId" placeholder="ID point de service" />
+        </div>
+        <div>
+            <label class="block text-xs text-gray-500 mb-1">Statut</label>
+            <p-dropdown [options]="statutOptions" [(ngModel)]="filtre.statut" optionLabel="label" optionValue="value" styleClass="w-full" placeholder="Tous"></p-dropdown>
+        </div>
+        <div class="flex items-end gap-2">
+            <p-button label="Filtrer" icon="pi pi-search" (onClick)="refresh()"></p-button>
+            <p-button label="Reset" icon="pi pi-refresh" severity="secondary" (onClick)="resetFiltre()"></p-button>
+        </div>
+    </div>
+
+    @if (loading()) {
+        <div class="flex justify-center p-6">
+            <p-progressSpinner></p-progressSpinner>
+        </div>
+    } @else {
+        <p-table [value]="demandes()" [paginator]="true" [rows]="15" stripedRows responsiveLayout="scroll">
+            <ng-template pTemplate="header">
+                <tr>
+                    <th>Client</th>
+                    <th>Changement</th>
+                    <th>Statut</th>
+                    <th>Rejets</th>
+                    <th>Demandee par</th>
+                    <th>Approuvee par</th>
+                    <th>Rejetee par</th>
+                    <th>Validee SAF par</th>
+                    <th>Localisation</th>
+                    <th>Actions</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-d>
+                <tr>
+                    <td>
+                        <div class="font-medium">{{ d.codCliente }}</div>
+                        <div class="text-xs text-gray-500">{{ d.prenomClient }} {{ d.nomClient }}</div>
+                    </td>
+                    <td>
+                        <div class="text-sm"><span class="line-through text-gray-500">{{ d.ancienTelephone }}</span> → <strong>{{ d.nouveauTelephone }}</strong></div>
+                    </td>
+                    <td>
+                        <p-tag [value]="statutLabel(d.statut)" [severity]="statutSeverity(d.statut)"></p-tag>
+                    </td>
+                    <td class="text-center">{{ d.nombreRejets ?? 0 }}</td>
+                    <td>
+                        <div class="text-xs font-medium">{{ d.demandeParNom || ('User #' + d.demandeParUserId) }}</div>
+                        <div class="text-xs text-gray-500">{{ d.demandeAt | date:'short' }}</div>
+                    </td>
+                    <td>
+                        @if (d.approuveParUserId) {
+                            <div class="text-xs font-medium">{{ d.approuveParNom || ('User #' + d.approuveParUserId) }}</div>
+                            <div class="text-xs text-gray-500">{{ d.approuveAt | date:'short' }}</div>
+                        } @else { <span class="text-gray-400 text-xs">—</span> }
+                    </td>
+                    <td>
+                        @if (d.rejeteParUserId) {
+                            <div class="text-xs font-medium">{{ d.rejeteParNom || ('User #' + d.rejeteParUserId) }}</div>
+                            <div class="text-xs text-gray-500">{{ d.rejeteAt | date:'short' }}</div>
+                        } @else { <span class="text-gray-400 text-xs">—</span> }
+                    </td>
+                    <td>
+                        @if (d.valideSafParUserId) {
+                            <div class="text-xs font-medium">{{ d.valideSafParNom || ('User #' + d.valideSafParUserId) }}</div>
+                            <div class="text-xs text-gray-500">{{ d.valideSafAt | date:'short' }}</div>
+                        } @else { <span class="text-gray-400 text-xs">—</span> }
+                    </td>
+                    <td>
+                        <div class="text-xs"><span class="text-gray-500">Délégation:</span> {{ d.delegationLibele || '—' }}</div>
+                        <div class="text-xs"><span class="text-gray-500">Agence:</span> {{ d.agenceLibele || '—' }}</div>
+                        <div class="text-xs"><span class="text-gray-500">Point service:</span> {{ d.pointVenteLibele || '—' }}</div>
+                    </td>
+                    <td>
+                        <p-button icon="pi pi-eye" size="small" severity="secondary" [outlined]="true" (onClick)="openDetail(d)" pTooltip="Detail + historique"></p-button>
+                    </td>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+                <tr><td colspan="10" class="text-center py-6">Aucune demande trouvee avec ces filtres</td></tr>
+            </ng-template>
+        </p-table>
+    }
+</div>
+
+<!-- Dialog detail + historique -->
+<p-dialog header="Detail de la demande" [(visible)]="showDetailDialog" [modal]="true" [style]="{width: '750px'}">
+    @if (selectedDemande(); as d) {
+        <div class="grid grid-cols-2 gap-3 mb-4 text-sm">
+            <div><strong>Client:</strong> {{ d.codCliente }} ({{ d.prenomClient }} {{ d.nomClient }})</div>
+            <div><strong>Statut:</strong> <p-tag [value]="statutLabel(d.statut)" [severity]="statutSeverity(d.statut)"></p-tag></div>
+            <div><strong>Ancien tel:</strong> {{ d.ancienTelephone }}</div>
+            <div><strong>Nouveau tel:</strong> {{ d.nouveauTelephone }}</div>
+            <div class="col-span-2"><strong>Raison:</strong> {{ d.raisonModification }}</div>
+            <div><strong>Date souhaitee:</strong> {{ d.dateModificationSouhaitee | date }}</div>
+            <div><strong>Nombre rejets:</strong> {{ d.nombreRejets ?? 0 }}</div>
+            <div><strong>Délégation:</strong> {{ d.delegationLibele || '—' }}</div>
+            <div><strong>Agence:</strong> {{ d.agenceLibele || '—' }}</div>
+            <div class="col-span-2"><strong>Point de service:</strong> {{ d.pointVenteLibele || '—' }}</div>
+            <div><strong>Demandée par:</strong> {{ d.demandeParNom || ('User #' + d.demandeParUserId) }}</div>
+            @if (d.approuveParUserId) {
+                <div><strong>Approuvée par:</strong> {{ d.approuveParNom || ('User #' + d.approuveParUserId) }}</div>
+            }
+            @if (d.rejeteParUserId) {
+                <div><strong>Rejetée par:</strong> {{ d.rejeteParNom || ('User #' + d.rejeteParUserId) }}</div>
+            }
+            @if (d.valideSafParUserId) {
+                <div><strong>Validée SAF par:</strong> {{ d.valideSafParNom || ('User #' + d.valideSafParUserId) }}</div>
+            }
+            @if (d.motifRejetCourant) {
+                <div class="col-span-2 text-red-600"><strong>Motif rejet courant:</strong> {{ d.motifRejetCourant }}</div>
+            }
+            @if (d.safResultMessage) {
+                <div class="col-span-2"><strong>Réponse SAF:</strong> ({{ d.safResultCode }}) {{ d.safResultMessage }}</div>
+            }
+        </div>
+
+        <h3 class="text-lg font-semibold mb-2">Historique des cycles</h3>
+        @if (historique().length === 0) {
+            <p class="text-gray-500 text-sm">Aucun cycle de rejet/resoumission</p>
+        } @else {
+            <p-timeline [value]="historique()">
+                <ng-template pTemplate="content" let-h>
+                    <div class="flex items-center gap-2 mb-1">
+                        <p-tag [value]="h.action" [severity]="actionSeverity(h.action)"></p-tag>
+                        <span class="text-xs text-gray-500">Cycle {{ h.cycleNumero }} • {{ h.at | date:'short' }}</span>
+                    </div>
+                    <div class="text-sm">Par <strong>{{ h.parNom || ('User #' + h.parUserId) }}</strong> ({{ h.parRole }})</div>
+                    @if (h.motif) {
+                        <div class="text-sm text-red-600 mt-1">Motif: {{ h.motif }}</div>
+                    }
+                    @if (h.nouveauTelephoneCycle && h.nouveauTelephoneCycle !== h.ancienTelephoneCycle) {
+                        <div class="text-xs text-gray-500 mt-1">{{ h.ancienTelephoneCycle }} → {{ h.nouveauTelephoneCycle }}</div>
+                    }
+                </ng-template>
+            </p-timeline>
+        }
+    }
+</p-dialog>

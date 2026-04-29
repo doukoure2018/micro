@@ -1,0 +1,134 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="card">
+    <div class="flex justify-between items-center mb-4">
+        <div>
+            <h2 class="text-2xl font-semibold">Changement de telephone client</h2>
+            <p class="text-gray-500 text-sm">Demandes d'autorisation que vous avez initiees</p>
+        </div>
+        <p-button label="Nouvelle demande" icon="pi pi-plus" (onClick)="openCreateDialog()"></p-button>
+    </div>
+
+    @if (loading()) {
+        <div class="flex justify-center p-6">
+            <p-progressSpinner></p-progressSpinner>
+        </div>
+    } @else {
+        <p-table [value]="demandes()" [paginator]="true" [rows]="10" stripedRows responsiveLayout="scroll">
+            <ng-template pTemplate="header">
+                <tr>
+                    <th>Client</th>
+                    <th>Ancien tel.</th>
+                    <th>Nouveau tel.</th>
+                    <th>Statut</th>
+                    <th>Rejets</th>
+                    <th>Date demande</th>
+                    <th>Actions</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-d>
+                <tr>
+                    <td>
+                        <div class="font-medium">{{ d.codCliente }}</div>
+                        <div class="text-xs text-gray-500">{{ d.prenomClient }} {{ d.nomClient }}</div>
+                    </td>
+                    <td>{{ d.ancienTelephone }}</td>
+                    <td class="font-semibold">{{ d.nouveauTelephone }}</td>
+                    <td>
+                        <p-tag [value]="statutLabel(d.statut)" [severity]="statutSeverity(d.statut)"></p-tag>
+                        @if (d.statut === 'REJETE' || d.statut === 'REJETE_DEFINITIF') {
+                            <div class="text-xs text-red-600 mt-1" [pTooltip]="d.motifRejetCourant">
+                                Motif: {{ d.motifRejetCourant | slice:0:40 }}{{ (d.motifRejetCourant?.length ?? 0) > 40 ? '...' : '' }}
+                            </div>
+                        }
+                    </td>
+                    <td class="text-center">{{ d.nombreRejets ?? 0 }}</td>
+                    <td>{{ d.demandeAt | date:'short' }}</td>
+                    <td>
+                        @if (d.statut === 'APPROUVE') {
+                            <p-button label="Valider SAF" icon="pi pi-check" severity="success" size="small" (onClick)="confirmValiderSaf(d)" [disabled]="submitting()"></p-button>
+                        }
+                        @if (d.statut === 'REJETE') {
+                            <p-button label="Resoumettre" icon="pi pi-refresh" severity="warn" size="small" (onClick)="openResoumission(d)" [disabled]="submitting()"></p-button>
+                        }
+                        @if (d.statut === 'VALIDE_SAF') {
+                            <span class="text-green-600 text-sm"><i class="pi pi-check-circle mr-1"></i>Termine</span>
+                        }
+                        @if (d.statut === 'REJETE_DEFINITIF') {
+                            <span class="text-red-600 text-sm"><i class="pi pi-times-circle mr-1"></i>Definitif</span>
+                        }
+                        @if (d.statut === 'EN_ATTENTE_DA') {
+                            <span class="text-gray-500 text-sm"><i class="pi pi-clock mr-1"></i>Attente DA</span>
+                        }
+                    </td>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+                <tr><td colspan="7" class="text-center py-6">Aucune demande pour l'instant</td></tr>
+            </ng-template>
+        </p-table>
+    }
+</div>
+
+<!-- Dialog: nouvelle demande -->
+<p-dialog header="Nouvelle demande de changement de telephone" [(visible)]="showCreateDialog" [modal]="true" [style]="{width: '600px'}" [closable]="!submitting()">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="md:col-span-2">
+            <label class="block text-sm font-medium mb-1">Numero membre du client *</label>
+            <input pInputText class="w-full" [(ngModel)]="form.codCliente" placeholder="Code client" />
+        </div>
+        <div>
+            <label class="block text-sm font-medium mb-1">Nom</label>
+            <input pInputText class="w-full" [(ngModel)]="form.nomClient" />
+        </div>
+        <div>
+            <label class="block text-sm font-medium mb-1">Prenom</label>
+            <input pInputText class="w-full" [(ngModel)]="form.prenomClient" />
+        </div>
+        <div>
+            <label class="block text-sm font-medium mb-1">Ancien telephone *</label>
+            <input pInputText class="w-full" [(ngModel)]="form.ancienTelephone" />
+        </div>
+        <div>
+            <label class="block text-sm font-medium mb-1">Nouveau telephone *</label>
+            <input pInputText class="w-full" [(ngModel)]="form.nouveauTelephone" />
+        </div>
+        <div class="md:col-span-2">
+            <label class="block text-sm font-medium mb-1">Date de modification souhaitee *</label>
+            <input type="date" pInputText class="w-full" [(ngModel)]="form.dateModificationSouhaitee" />
+        </div>
+        <div class="md:col-span-2">
+            <label class="block text-sm font-medium mb-1">Raison de modification *</label>
+            <textarea pTextarea class="w-full" rows="3" [(ngModel)]="form.raisonModification"></textarea>
+        </div>
+    </div>
+    <ng-template pTemplate="footer">
+        <p-button label="Annuler" severity="secondary" (onClick)="showCreateDialog.set(false)" [disabled]="submitting()"></p-button>
+        <p-button label="Envoyer au DA" icon="pi pi-send" (onClick)="submit()" [loading]="submitting()"></p-button>
+    </ng-template>
+</p-dialog>
+
+<!-- Dialog: resoumission -->
+<p-dialog header="Resoumettre la demande" [(visible)]="showResoumissionDialog" [modal]="true" [style]="{width: '500px'}" [closable]="!submitting()">
+    @if (selectedDemande()) {
+        <div class="mb-3 p-3 bg-red-50 border-l-4 border-red-400">
+            <div class="text-sm font-semibold text-red-700">Motif du rejet:</div>
+            <div class="text-sm text-red-600">{{ selectedDemande()?.motifRejetCourant }}</div>
+        </div>
+        <div class="grid grid-cols-1 gap-4">
+            <div>
+                <label class="block text-sm font-medium mb-1">Nouveau telephone *</label>
+                <input pInputText class="w-full" [(ngModel)]="resoumissionForm.nouveauTelephone" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Raison de modification *</label>
+                <textarea pTextarea class="w-full" rows="3" [(ngModel)]="resoumissionForm.raisonModification"></textarea>
+            </div>
+        </div>
+    }
+    <ng-template pTemplate="footer">
+        <p-button label="Annuler" severity="secondary" (onClick)="showResoumissionDialog.set(false)" [disabled]="submitting()"></p-button>
+        <p-button label="Resoumettre au DA" icon="pi pi-refresh" (onClick)="submitResoumission()" [loading]="submitting()"></p-button>
+    </ng-template>
+</p-dialog>
