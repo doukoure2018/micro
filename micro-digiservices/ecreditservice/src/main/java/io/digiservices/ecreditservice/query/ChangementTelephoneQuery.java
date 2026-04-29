@@ -89,7 +89,7 @@ public class ChangementTelephoneQuery {
 
     public static final String SELECT_ATTENTE_DA_BY_AGENCE = SELECT_BASE + """
              WHERE statut = 'EN_ATTENTE_DA'
-               AND (:agenceId IS NULL OR agence_id = :agenceId)
+               AND (CAST(:agenceId AS BIGINT) IS NULL OR agence_id = :agenceId)
              ORDER BY demande_at ASC
             """;
 
@@ -99,10 +99,10 @@ public class ChangementTelephoneQuery {
             """;
 
     public static final String SELECT_INSPECTION_FILTERED = SELECT_BASE + """
-             WHERE (:delegationId IS NULL OR delegation_id = :delegationId)
-               AND (:agenceId     IS NULL OR agence_id = :agenceId)
-               AND (:pointVenteId IS NULL OR point_vente_id = :pointVenteId)
-               AND (:statut       IS NULL OR statut = :statut)
+             WHERE (CAST(:delegationId AS BIGINT)  IS NULL OR delegation_id  = :delegationId)
+               AND (CAST(:agenceId     AS BIGINT)  IS NULL OR agence_id      = :agenceId)
+               AND (CAST(:pointVenteId AS BIGINT)  IS NULL OR point_vente_id = :pointVenteId)
+               AND (CAST(:statut       AS VARCHAR) IS NULL OR statut         = :statut)
              ORDER BY demande_at DESC
             """;
 
@@ -126,9 +126,9 @@ public class ChangementTelephoneQuery {
             SELECT statut AS "statut",
                    COUNT(*) AS "total"
               FROM demande_changement_telephone
-             WHERE (:delegationId IS NULL OR delegation_id = :delegationId)
-               AND (:agenceId     IS NULL OR agence_id = :agenceId)
-               AND (:pointVenteId IS NULL OR point_vente_id = :pointVenteId)
+             WHERE (CAST(:delegationId AS BIGINT) IS NULL OR delegation_id  = :delegationId)
+               AND (CAST(:agenceId     AS BIGINT) IS NULL OR agence_id      = :agenceId)
+               AND (CAST(:pointVenteId AS BIGINT) IS NULL OR point_vente_id = :pointVenteId)
              GROUP BY statut
             """;
 

@@ -15,61 +15,99 @@
             <p-progressSpinner></p-progressSpinner>
         </div>
     } @else {
-        <p-table [value]="demandes()" [paginator]="true" [rows]="10" stripedRows responsiveLayout="scroll">
-            <ng-template pTemplate="header">
-                <tr>
-                    <th>Client</th>
-                    <th>Ancien tel.</th>
-                    <th>Nouveau tel.</th>
-                    <th>Statut</th>
-                    <th>Rejets</th>
-                    <th>Date demande</th>
-                    <th>Actions</th>
-                </tr>
-            </ng-template>
-            <ng-template pTemplate="body" let-d>
-                <tr>
-                    <td>
-                        <div class="font-medium">{{ d.codCliente }}</div>
-                        <div class="text-xs text-gray-500">{{ d.prenomClient }} {{ d.nomClient }}</div>
-                    </td>
-                    <td>{{ d.ancienTelephone }}</td>
-                    <td class="font-semibold">{{ d.nouveauTelephone }}</td>
-                    <td>
-                        <p-tag [value]="statutLabel(d.statut)" [severity]="statutSeverity(d.statut)"></p-tag>
-                        @if (d.statut === 'REJETE' || d.statut === 'REJETE_DEFINITIF') {
-                            <div class="text-xs text-red-600 mt-1" [pTooltip]="d.motifRejetCourant">
-                                Motif: {{ d.motifRejetCourant | slice:0:40 }}{{ (d.motifRejetCourant?.length ?? 0) > 40 ? '...' : '' }}
-                            </div>
-                        }
-                    </td>
-                    <td class="text-center">{{ d.nombreRejets ?? 0 }}</td>
-                    <td>{{ d.demandeAt | date:'short' }}</td>
-                    <td>
-                        @if (d.statut === 'APPROUVE') {
-                            <p-button label="Valider SAF" icon="pi pi-check" severity="success" size="small" (onClick)="confirmValiderSaf(d)" [disabled]="submitting()"></p-button>
-                        }
-                        @if (d.statut === 'REJETE') {
-                            <p-button label="Resoumettre" icon="pi pi-refresh" severity="warn" size="small" (onClick)="openResoumission(d)" [disabled]="submitting()"></p-button>
-                        }
-                        @if (d.statut === 'VALIDE_SAF') {
-                            <span class="text-green-600 text-sm"><i class="pi pi-check-circle mr-1"></i>Termine</span>
-                        }
-                        @if (d.statut === 'REJETE_DEFINITIF') {
-                            <span class="text-red-600 text-sm"><i class="pi pi-times-circle mr-1"></i>Definitif</span>
-                        }
-                        @if (d.statut === 'EN_ATTENTE_DA') {
-                            <span class="text-gray-500 text-sm"><i class="pi pi-clock mr-1"></i>Attente DA</span>
-                        }
-                    </td>
-                </tr>
-            </ng-template>
-            <ng-template pTemplate="emptymessage">
-                <tr><td colspan="7" class="text-center py-6">Aucune demande pour l'instant</td></tr>
-            </ng-template>
-        </p-table>
+        <p-tabView>
+            <!-- En cours -->
+            <p-tabPanel>
+                <ng-template pTemplate="header">
+                    <i class="pi pi-clock mr-2"></i>En cours
+                    @if (demandesEnCours().length > 0) {
+                        <p-badge [value]="demandesEnCours().length" severity="warn" styleClass="ml-2"></p-badge>
+                    }
+                </ng-template>
+                <ng-container *ngTemplateOutlet="demandesTable; context: { $implicit: demandesEnCours(), emptyMsg: 'Aucune demande en cours' }"></ng-container>
+            </p-tabPanel>
+
+            <!-- Rejetees -->
+            <p-tabPanel>
+                <ng-template pTemplate="header">
+                    <i class="pi pi-times-circle mr-2"></i>Rejetees
+                    @if (demandesRejetees().length > 0) {
+                        <p-badge [value]="demandesRejetees().length" severity="danger" styleClass="ml-2"></p-badge>
+                    }
+                </ng-template>
+                <ng-container *ngTemplateOutlet="demandesTable; context: { $implicit: demandesRejetees(), emptyMsg: 'Aucune demande rejetee' }"></ng-container>
+            </p-tabPanel>
+
+            <!-- Validees SAF (historique) -->
+            <p-tabPanel>
+                <ng-template pTemplate="header">
+                    <i class="pi pi-check-circle mr-2"></i>Validees SAF
+                    @if (demandesValidees().length > 0) {
+                        <p-badge [value]="demandesValidees().length" severity="success" styleClass="ml-2"></p-badge>
+                    }
+                </ng-template>
+                <ng-container *ngTemplateOutlet="demandesTable; context: { $implicit: demandesValidees(), emptyMsg: 'Aucune demande validee dans SAF' }"></ng-container>
+            </p-tabPanel>
+        </p-tabView>
     }
 </div>
+
+<!-- Template reutilisable pour la table de demandes (utilise dans chaque onglet) -->
+<ng-template #demandesTable let-list let-empty="emptyMsg">
+    <p-table [value]="list" [paginator]="true" [rows]="10" stripedRows responsiveLayout="scroll">
+        <ng-template pTemplate="header">
+            <tr>
+                <th>Client</th>
+                <th>Ancien tel.</th>
+                <th>Nouveau tel.</th>
+                <th>Statut</th>
+                <th>Rejets</th>
+                <th>Date demande</th>
+                <th>Actions</th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-d>
+            <tr>
+                <td>
+                    <div class="font-medium">{{ d.codCliente }}</div>
+                    <div class="text-xs text-gray-500">{{ d.prenomClient }} {{ d.nomClient }}</div>
+                </td>
+                <td>{{ d.ancienTelephone }}</td>
+                <td class="font-semibold">{{ d.nouveauTelephone }}</td>
+                <td>
+                    <p-tag [value]="statutLabel(d.statut)" [severity]="statutSeverity(d.statut)"></p-tag>
+                    @if (d.statut === 'REJETE' || d.statut === 'REJETE_DEFINITIF') {
+                        <div class="text-xs text-red-600 mt-1" [pTooltip]="d.motifRejetCourant">
+                            Motif: {{ d.motifRejetCourant | slice:0:40 }}{{ (d.motifRejetCourant?.length ?? 0) > 40 ? '...' : '' }}
+                        </div>
+                    }
+                </td>
+                <td class="text-center">{{ d.nombreRejets ?? 0 }}</td>
+                <td>{{ d.demandeAt | date:'short' }}</td>
+                <td>
+                    @if (d.statut === 'APPROUVE') {
+                        <p-button label="Valider SAF" icon="pi pi-check" severity="success" size="small" (onClick)="confirmValiderSaf(d)" [disabled]="submitting()"></p-button>
+                    }
+                    @if (d.statut === 'REJETE') {
+                        <p-button label="Resoumettre" icon="pi pi-refresh" severity="warn" size="small" (onClick)="openResoumission(d)" [disabled]="submitting()"></p-button>
+                    }
+                    @if (d.statut === 'VALIDE_SAF') {
+                        <span class="text-green-600 text-sm"><i class="pi pi-check-circle mr-1"></i>Termine</span>
+                    }
+                    @if (d.statut === 'REJETE_DEFINITIF') {
+                        <span class="text-red-600 text-sm"><i class="pi pi-times-circle mr-1"></i>Definitif</span>
+                    }
+                    @if (d.statut === 'EN_ATTENTE_DA') {
+                        <span class="text-gray-500 text-sm"><i class="pi pi-clock mr-1"></i>Attente DA</span>
+                    }
+                </td>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr><td colspan="7" class="text-center py-6 text-gray-500">{{ empty }}</td></tr>
+        </ng-template>
+    </p-table>
+</ng-template>
 
 <!-- Dialog: nouvelle demande -->
 <p-dialog header="Nouvelle demande de changement de telephone" [(visible)]="showCreateDialog" [modal]="true" [style]="{width: '600px'}" [closable]="!submitting()">

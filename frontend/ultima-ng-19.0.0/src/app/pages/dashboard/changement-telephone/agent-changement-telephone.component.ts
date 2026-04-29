@@ -14,6 +14,8 @@ import { ToastModule } from 'primeng/toast';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
+import { TabViewModule } from 'primeng/tabview';
+import { BadgeModule } from 'primeng/badge';
 
 import { ChangementTelephoneService } from '@/service/changement-telephone.service';
 import { CreateDemandeTelephoneRequest, DemandeChangementTelephone, ResoumissionTelephoneRequest, StatutChangementTelephone } from '@/interface/demande-changement-telephone';
@@ -35,7 +37,9 @@ import { CreateDemandeTelephoneRequest, DemandeChangementTelephone, Resoumission
         ProgressSpinnerModule,
         ConfirmDialogModule,
         TooltipModule,
-        DividerModule
+        DividerModule,
+        TabViewModule,
+        BadgeModule
     ],
     providers: [MessageService, ConfirmationService],
     templateUrl: './agent-changement-telephone.component.html'
@@ -64,6 +68,11 @@ export class AgentChangementTelephoneComponent implements OnInit {
     resoumissionForm: ResoumissionTelephoneRequest = { nouveauTelephone: '', raisonModification: '' };
 
     canCreate = computed(() => this.demandes() !== null);
+
+    // Onglets: filtrage par categorie de statut
+    demandesEnCours = computed(() => this.demandes().filter(d => d.statut === 'EN_ATTENTE_DA' || d.statut === 'APPROUVE'));
+    demandesRejetees = computed(() => this.demandes().filter(d => d.statut === 'REJETE' || d.statut === 'REJETE_DEFINITIF'));
+    demandesValidees = computed(() => this.demandes().filter(d => d.statut === 'VALIDE_SAF'));
 
     ngOnInit() {
         this.refresh();

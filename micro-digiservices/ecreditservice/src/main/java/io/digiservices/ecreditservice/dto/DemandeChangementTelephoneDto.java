@@ -1,5 +1,6 @@
 package io.digiservices.ecreditservice.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,6 +17,9 @@ import java.time.LocalDateTime;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DemandeChangementTelephoneDto {
 
+    private static final String DATE_FMT = "yyyy-MM-dd";
+    private static final String DATETIME_FMT = "yyyy-MM-dd HH:mm:ss.SSSSSS";
+
     private Long id;
 
     private String codCliente;
@@ -24,6 +28,8 @@ public class DemandeChangementTelephoneDto {
     private String ancienTelephone;
     private String nouveauTelephone;
     private String raisonModification;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = DATE_FMT)
     private LocalDate dateModificationSouhaitee;
 
     private String statut;
@@ -32,18 +38,22 @@ public class DemandeChangementTelephoneDto {
 
     private Long demandeParUserId;
     private String demandeParNom;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = DATETIME_FMT)
     private LocalDateTime demandeAt;
 
     private Long approuveParUserId;
     private String approuveParNom;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = DATETIME_FMT)
     private LocalDateTime approuveAt;
 
     private Long rejeteParUserId;
     private String rejeteParNom;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = DATETIME_FMT)
     private LocalDateTime rejeteAt;
 
     private Long valideSafParUserId;
     private String valideSafParNom;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = DATETIME_FMT)
     private LocalDateTime valideSafAt;
     private Integer safResultCode;
     private String safResultMessage;
@@ -55,6 +65,9 @@ public class DemandeChangementTelephoneDto {
     private Long pointVenteId;
     private String pointVenteLibele;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = DATETIME_FMT)
     private LocalDateTime createdAt;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = DATETIME_FMT)
     private LocalDateTime updatedAt;
 }
