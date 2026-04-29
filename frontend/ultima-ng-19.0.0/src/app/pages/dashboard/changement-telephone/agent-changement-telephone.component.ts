@@ -5,6 +5,7 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { DialogModule } from 'primeng/dialog';
+import { DividerModule } from 'primeng/divider';
 import { InputTextModule } from 'primeng/inputtext';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
@@ -33,7 +34,8 @@ import { CreateDemandeTelephoneRequest, DemandeChangementTelephone, Resoumission
         ToastModule,
         ProgressSpinnerModule,
         ConfirmDialogModule,
-        TooltipModule
+        TooltipModule,
+        DividerModule
     ],
     providers: [MessageService, ConfirmationService],
     templateUrl: './agent-changement-telephone.component.html'
@@ -50,6 +52,13 @@ export class AgentChangementTelephoneComponent implements OnInit {
     showCreateDialog = signal(false);
     showResoumissionDialog = signal(false);
     selectedDemande = signal<DemandeChangementTelephone | null>(null);
+
+    // Fiche client (pre-verification avant soumission)
+    showFicheDialog = signal(false);
+    ficheLoading = signal(false);
+    fiche = signal<any | null>(null);
+    ficheError = signal<string | null>(null);
+    ficheCodCliente = signal<string>('');
 
     form: CreateDemandeTelephoneRequest = this.emptyForm();
     resoumissionForm: ResoumissionTelephoneRequest = { nouveauTelephone: '', raisonModification: '' };
@@ -77,6 +86,48 @@ export class AgentChangementTelephoneComponent implements OnInit {
     openCreateDialog() {
         this.form = this.emptyForm();
         this.showCreateDialog.set(true);
+    }
+
+    /** Affiche la fiche signaletique du client saisi pour pre-verification */
+    voirFicheClient() {
+        const code = (this.form.codCliente || '').trim();
+        if (!code) {
+            this.toast.add({ severity: 'warn', summary: 'Code client requis', detail: 'Saisissez d\'abord le numero membre' });
+            return;
+        }
+        this.ficheCodCliente.set(code);
+        this.fiche.set(null);
+        this.ficheError.set(null);
+        this.ficheLoading.set(true);
+        this.showFicheDialog.set(true);
+
+        this.service.getFicheClient(code).subscribe({
+            next: (res) => {
+                const fiche = (res.data as any)?.fiche;
+                if (fiche?.status === 'ERROR' || fiche?.clientExists === false) {
+                    this.ficheError.set(fiche?.message || `Client introuvable dans SAF: ${code}`);
+                } else {
+                    const data = fiche?.data || fiche;
+                    this.fiche.set(data);
+                    // Pre-remplir l'ancien telephone si vide
+                    if (!this.form.ancienTelephone && data?.telPrincipal) {
+                        this.form.ancienTelephone = data.telPrincipal;
+                    }
+                    // Pre-remplir nom/prenom si vides
+                    if (!this.form.nomClient && data?.primerApellido) {
+                        this.form.nomClient = data.primerApellido;
+                    }
+                    if (!this.form.prenomClient && data?.primerNombre) {
+                        this.form.prenomClient = data.primerNombre;
+                    }
+                }
+                this.ficheLoading.set(false);
+            },
+            error: (err) => {
+                this.ficheError.set(err?.message || 'Echec recuperation de la fiche client');
+                this.ficheLoading.set(false);
+            }
+        });
     }
 
     submit() {

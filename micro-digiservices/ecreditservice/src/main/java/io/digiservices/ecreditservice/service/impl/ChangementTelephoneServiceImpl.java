@@ -1,5 +1,9 @@
 package io.digiservices.ecreditservice.service.impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import feign.FeignException;
+import io.digiservices.clients.EbankingClient;
 import io.digiservices.clients.TelephoneFeignClient;
 import io.digiservices.clients.UserClient;
 import io.digiservices.clients.domain.AgenceDto;
@@ -32,6 +36,8 @@ public class ChangementTelephoneServiceImpl implements ChangementTelephoneServic
     private final ChangementTelephoneRepository repository;
     private final TelephoneFeignClient telephoneFeignClient;
     private final UserClient userClient;
+    private final EbankingClient ebankingClient;
+    private final ObjectMapper objectMapper;
 
     @Override
     @Transactional
@@ -259,5 +265,60 @@ public class ChangementTelephoneServiceImpl implements ChangementTelephoneServic
                 return null;
             }
         });
+    }
+
+    /**
+     * Recupere la fiche client depuis SAF en preservant le message d'erreur reel.
+     * Sur erreur Feign (4xx/5xx), parse le body JSON pour en extraire 'message' et 'errorCode'
+     * et renvoie un payload structure (status="ERROR" + message reel) au lieu de lever
+     * une exception generique. Le frontend peut ainsi afficher le vrai motif a l'utilisateur.
+     */
+    @Override
+    public Map<String, Object> getFicheClient(String codCliente) {
+        if (codCliente == null || codCliente.isBlank()) {
+            return errorPayload("BAD_REQUEST", "Le code client est obligatoire", null);
+        }
+        try {
+            Map<String, Object> result = ebankingClient.getFicheSignaletique(codCliente);
+            if (result == null) {
+                return errorPayload("NOT_FOUND", "Aucune donnee retournee par SAF", codCliente);
+            }
+            return result;
+        } catch (FeignException e) {
+            String backendMessage = extractBackendMessage(e);
+            String errorCode = e.status() == 404 ? "NOT_FOUND" : "BAD_REQUEST";
+            log.warn("Erreur recuperation fiche client {} (status={}): {}",
+                    codCliente, e.status(), backendMessage);
+            return errorPayload(errorCode, backendMessage, codCliente);
+        } catch (Exception e) {
+            log.error("Erreur inattendue recuperation fiche client {}: {}", codCliente, e.getMessage(), e);
+            return errorPayload("INTERNAL_ERROR",
+                    "Erreur de communication avec SAF: " + e.getMessage(), codCliente);
+        }
+    }
+
+    private String extractBackendMessage(FeignException e) {
+        String body = e.contentUTF8();
+        if (body == null || body.isBlank()) {
+            return e.getMessage();
+        }
+        try {
+            Map<String, Object> parsed = objectMapper.readValue(body, new TypeReference<Map<String, Object>>() {});
+            Object msg = parsed.get("message");
+            if (msg != null) return msg.toString();
+            return body;
+        } catch (Exception parseEx) {
+            return body;
+        }
+    }
+
+    private Map<String, Object> errorPayload(String errorCode, String message, String codCliente) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("status", "ERROR");
+        payload.put("errorCode", errorCode);
+        payload.put("message", message);
+        payload.put("clientExists", false);
+        if (codCliente != null) payload.put("codCliente", codCliente);
+        return payload;
     }
 }

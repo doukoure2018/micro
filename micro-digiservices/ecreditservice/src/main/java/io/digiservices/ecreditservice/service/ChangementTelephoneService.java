@@ -39,4 +39,11 @@ public interface ChangementTelephoneService {
     List<HistoriqueChangementTelephoneDto> getHistorique(Long demandeId);
 
     Map<String, Long> getStatistiquesInspection(Long delegationId, Long agenceId, Long pointVenteId);
+
+    /**
+     * Recupere la fiche signaletique du client depuis SAF via ebanking.
+     * En cas d'erreur (client introuvable, etc.), retourne un payload structure
+     * preservant le message reel du backend ebanking au lieu de lever une exception.
+     */
+    Map<String, Object> getFicheClient(String codCliente);
 }

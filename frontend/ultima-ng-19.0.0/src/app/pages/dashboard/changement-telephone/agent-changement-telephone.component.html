@@ -76,7 +76,10 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="md:col-span-2">
             <label class="block text-sm font-medium mb-1">Numero membre du client *</label>
-            <input pInputText class="w-full" [(ngModel)]="form.codCliente" placeholder="Code client" />
+            <div class="flex gap-2">
+                <input pInputText class="flex-1" [(ngModel)]="form.codCliente" placeholder="Code client" />
+                <p-button label="Voir fiche" icon="pi pi-id-card" severity="info" [outlined]="true" (onClick)="voirFicheClient()" pTooltip="Verifier le client dans SAF avant de soumettre"></p-button>
+            </div>
         </div>
         <div>
             <label class="block text-sm font-medium mb-1">Nom</label>
@@ -130,5 +133,48 @@
     <ng-template pTemplate="footer">
         <p-button label="Annuler" severity="secondary" (onClick)="showResoumissionDialog.set(false)" [disabled]="submitting()"></p-button>
         <p-button label="Resoumettre au DA" icon="pi pi-refresh" (onClick)="submitResoumission()" [loading]="submitting()"></p-button>
+    </ng-template>
+</p-dialog>
+
+<!-- Dialog: fiche client (pre-verification avant soumission) -->
+<p-dialog header="Fiche client SAF" [(visible)]="showFicheDialog" [modal]="true" [style]="{width: '700px'}">
+    <div class="mb-3 text-sm text-gray-600">
+        Verification du client <strong>{{ ficheCodCliente() }}</strong> avant soumission
+    </div>
+    <p-divider></p-divider>
+
+    @if (ficheLoading()) {
+        <div class="flex justify-center p-6">
+            <p-progressSpinner></p-progressSpinner>
+        </div>
+    } @else if (ficheError()) {
+        <div class="p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm">
+            <i class="pi pi-exclamation-triangle mr-1"></i><strong>{{ ficheError() }}</strong>
+            <div class="text-xs text-red-600 mt-1">Verifiez le code client saisi avant de soumettre la demande.</div>
+        </div>
+    } @else {
+        @if (fiche(); as f) {
+            <div class="mb-3 p-2 bg-green-50 border-l-4 border-green-500 text-green-700 text-sm">
+                <i class="pi pi-check-circle mr-1"></i>Client trouve dans SAF — les champs nom/prenom/ancien telephone ont ete pre-remplis dans le formulaire si non saisis.
+            </div>
+            <div class="grid grid-cols-2 gap-3 text-sm">
+                <div><span class="text-gray-500">Code client:</span> <strong>{{ f.codCliente }}</strong></div>
+                <div><span class="text-gray-500">Categorie:</span> {{ f.catCliente || '—' }}</div>
+                <div class="col-span-2"><span class="text-gray-500">Nom complet:</span> <strong>{{ f.primerNombre }} {{ f.segundoNombre }} {{ f.primerApellido }} {{ f.segundoApellido }}</strong></div>
+                <div><span class="text-gray-500">Tel. principal:</span> <strong>{{ f.telPrincipal || '—' }}</strong></div>
+                <div><span class="text-gray-500">Tel. secondaire:</span> {{ f.telSecundario || f.telOtro || '—' }}</div>
+                <div><span class="text-gray-500">Date naissance:</span> {{ (f.fechNacimiento | date) || '—' }}</div>
+                <div><span class="text-gray-500">Lieu naissance:</span> {{ f.lugarNacimiento || '—' }}</div>
+                <div><span class="text-gray-500">Sexe:</span> {{ f.indSexo || '—' }}</div>
+                <div><span class="text-gray-500">Etat civil:</span> {{ f.estCivil || '—' }}</div>
+                <div><span class="text-gray-500">Pieces ID:</span> {{ f.codTipoId || '—' }} {{ f.numId ? '— ' + f.numId : '' }}</div>
+                <div><span class="text-gray-500">Statut:</span> {{ f.indRelacion || '—' }}</div>
+                <div class="col-span-2"><span class="text-gray-500">Adresse:</span> {{ f.detDireccion || '—' }}</div>
+            </div>
+        }
+    }
+
+    <ng-template pTemplate="footer">
+        <p-button label="Fermer" severity="secondary" (onClick)="showFicheDialog.set(false)"></p-button>
     </ng-template>
 </p-dialog>

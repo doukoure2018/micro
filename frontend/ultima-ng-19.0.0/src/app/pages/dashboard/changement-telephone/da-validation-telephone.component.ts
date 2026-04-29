@@ -17,7 +17,6 @@ import { TooltipModule } from 'primeng/tooltip';
 import { DividerModule } from 'primeng/divider';
 
 import { ChangementTelephoneService } from '@/service/changement-telephone.service';
-import { UserService } from '@/service/user.service';
 import { DemandeChangementTelephone, RejetTelephoneRequest } from '@/interface/demande-changement-telephone';
 
 @Component({
@@ -40,12 +39,11 @@ import { DemandeChangementTelephone, RejetTelephoneRequest } from '@/interface/d
         TooltipModule,
         DividerModule
     ],
-    providers: [MessageService, ConfirmationService, UserService],
+    providers: [MessageService, ConfirmationService],
     templateUrl: './da-validation-telephone.component.html'
 })
 export class DaValidationTelephoneComponent implements OnInit {
     private service = inject(ChangementTelephoneService);
-    private userService = inject(UserService);
     private toast = inject(MessageService);
     private confirm = inject(ConfirmationService);
 
@@ -99,11 +97,17 @@ export class DaValidationTelephoneComponent implements OnInit {
         this.ficheLoading.set(true);
         this.showFicheDialog.set(true);
 
-        this.userService.getFicheSignaletique$(d.codCliente).subscribe({
+        this.service.getFicheClient(d.codCliente).subscribe({
             next: (res) => {
-                const data = (res as any)?.data;
-                const fiche = data?.data || data?.ficheSignaletique || data;
-                this.fiche.set(fiche ?? null);
+                const fiche = (res.data as any)?.fiche;
+                // Si le backend a renvoye un payload d'erreur, message reel preserve
+                if (fiche?.status === 'ERROR' || fiche?.clientExists === false) {
+                    this.ficheError.set(fiche?.message || `Client introuvable dans SAF: ${d.codCliente}`);
+                } else {
+                    // Le payload de succes peut etre soit fiche.data (wrapper SUCCESS)
+                    // soit fiche directement (selon la forme de la reponse ebanking)
+                    this.fiche.set(fiche?.data || fiche);
+                }
                 this.ficheLoading.set(false);
             },
             error: (err) => {

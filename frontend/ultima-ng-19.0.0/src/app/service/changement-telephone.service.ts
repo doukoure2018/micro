@@ -42,6 +42,10 @@ export class ChangementTelephoneService {
         return this.http.get<IResponse>(`${this.base}/${id}`).pipe(catchError(this.handleError));
     }
 
+    getFicheClient(codCliente: string): Observable<IResponse> {
+        return this.http.get<IResponse>(`${this.base}/fiche-client/${encodeURIComponent(codCliente)}`).pipe(catchError(this.handleError));
+    }
+
     getInspection(filtre: InspectionFiltre): Observable<IResponse> {
         let params = new HttpParams();
         if (filtre.delegationId != null) params = params.set('delegationId', String(filtre.delegationId));

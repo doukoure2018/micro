@@ -150,6 +150,19 @@ public class ChangementTelephoneResource {
     }
 
     /**
+     * Recupere la fiche signaletique d'un client depuis SAF avec message d'erreur preserve.
+     * Utilise par AGENT_CREDIT (avant soumission) et DA (avant validation).
+     */
+    @GetMapping("/fiche-client/{codCliente}")
+    public ResponseEntity<Response> getFicheClient(@PathVariable String codCliente,
+                                                   HttpServletRequest httpRequest) {
+        Map<String, Object> fiche = service.getFicheClient(codCliente);
+        return ResponseEntity.ok(getResponse(httpRequest,
+                Map.of("fiche", fiche),
+                "Fiche client SAF", OK));
+    }
+
+    /**
      * Inspection (DI): vue globale avec filtres optionnels delegation/agence/point de vente/statut.
      */
     @GetMapping("/inspection")

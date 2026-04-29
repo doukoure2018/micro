@@ -145,7 +145,7 @@
             <div class="flex flex-wrap gap-2">
                 <p-button label="Rejet definitif" icon="pi pi-ban" severity="danger" [outlined]="true" (onClick)="openRejet(selectedDemande()!, true)" [disabled]="submitting()"></p-button>
                 <p-button label="Rejeter" icon="pi pi-times" severity="warn" (onClick)="openRejet(selectedDemande()!, false)" [disabled]="submitting()"></p-button>
-                <p-button label="Approuver" icon="pi pi-check" severity="success" (onClick)="confirmApprouver(selectedDemande()!)" [disabled]="submitting() || ficheLoading()"></p-button>
+                <p-button label="Approuver" icon="pi pi-check" severity="success" (onClick)="confirmApprouver(selectedDemande()!)" [disabled]="submitting() || ficheLoading() || !!ficheError()" [pTooltip]="ficheError() ? 'Approbation impossible: client introuvable dans SAF' : ''"></p-button>
             </div>
         </div>
     </ng-template>
