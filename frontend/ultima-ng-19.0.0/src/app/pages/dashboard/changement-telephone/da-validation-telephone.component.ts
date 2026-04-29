@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
@@ -14,8 +14,10 @@ import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { CheckboxModule } from 'primeng/checkbox';
 import { TooltipModule } from 'primeng/tooltip';
+import { DividerModule } from 'primeng/divider';
 
 import { ChangementTelephoneService } from '@/service/changement-telephone.service';
+import { UserService } from '@/service/user.service';
 import { DemandeChangementTelephone, RejetTelephoneRequest } from '@/interface/demande-changement-telephone';
 
 @Component({
@@ -35,13 +37,15 @@ import { DemandeChangementTelephone, RejetTelephoneRequest } from '@/interface/d
         TagModule,
         ToastModule,
         CheckboxModule,
-        TooltipModule
+        TooltipModule,
+        DividerModule
     ],
-    providers: [MessageService, ConfirmationService],
+    providers: [MessageService, ConfirmationService, UserService],
     templateUrl: './da-validation-telephone.component.html'
 })
 export class DaValidationTelephoneComponent implements OnInit {
     private service = inject(ChangementTelephoneService);
+    private userService = inject(UserService);
     private toast = inject(MessageService);
     private confirm = inject(ConfirmationService);
 
@@ -49,9 +53,25 @@ export class DaValidationTelephoneComponent implements OnInit {
     loading = signal(false);
     submitting = signal(false);
 
+    // Dialog rejet
     showRejetDialog = signal(false);
-    selectedDemande = signal<DemandeChangementTelephone | null>(null);
     rejetForm: RejetTelephoneRequest = { motif: '', definitif: false };
+
+    // Dialog "Voir fiche client + actions"
+    showFicheDialog = signal(false);
+    ficheLoading = signal(false);
+    fiche = signal<any | null>(null);
+    ficheError = signal<string | null>(null);
+
+    selectedDemande = signal<DemandeChangementTelephone | null>(null);
+
+    // Telephone actuel dans SAF (pour comparer avec ancienTelephone declare par l'agent)
+    telCorrespond = computed<boolean | null>(() => {
+        const f = this.fiche();
+        const d = this.selectedDemande();
+        if (!f || !d) return null;
+        return (f.telPrincipal ?? '').trim() === (d.ancienTelephone ?? '').trim();
+    });
 
     ngOnInit() {
         this.refresh();
@@ -71,6 +91,28 @@ export class DaValidationTelephoneComponent implements OnInit {
         });
     }
 
+    /** Ouvre le dialog de fiche signaletique + actions de validation */
+    openFicheClient(d: DemandeChangementTelephone) {
+        this.selectedDemande.set(d);
+        this.fiche.set(null);
+        this.ficheError.set(null);
+        this.ficheLoading.set(true);
+        this.showFicheDialog.set(true);
+
+        this.userService.getFicheSignaletique$(d.codCliente).subscribe({
+            next: (res) => {
+                const data = (res as any)?.data;
+                const fiche = data?.data || data?.ficheSignaletique || data;
+                this.fiche.set(fiche ?? null);
+                this.ficheLoading.set(false);
+            },
+            error: (err) => {
+                this.ficheError.set(err?.message || 'Echec recuperation de la fiche client');
+                this.ficheLoading.set(false);
+            }
+        });
+    }
+
     confirmApprouver(d: DemandeChangementTelephone) {
         this.confirm.confirm({
             message: `Approuver le changement: ${d.ancienTelephone} -> ${d.nouveauTelephone} pour le client ${d.codCliente} ?`,
@@ -86,6 +128,7 @@ export class DaValidationTelephoneComponent implements OnInit {
             next: () => {
                 this.toast.add({ severity: 'success', summary: 'Demande approuvee', detail: '' });
                 this.submitting.set(false);
+                this.showFicheDialog.set(false);
                 this.refresh();
             },
             error: (err) => {
@@ -117,6 +160,7 @@ export class DaValidationTelephoneComponent implements OnInit {
                     detail: ''
                 });
                 this.showRejetDialog.set(false);
+                this.showFicheDialog.set(false);
                 this.submitting.set(false);
                 this.refresh();
             },

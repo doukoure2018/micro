@@ -50,6 +50,7 @@
                     </td>
                     <td>
                         <div class="flex flex-wrap gap-1">
+                            <p-button icon="pi pi-id-card" severity="info" size="small" [outlined]="true" (onClick)="openFicheClient(d)" [disabled]="submitting()" pTooltip="Voir fiche client + valider"></p-button>
                             <p-button label="Approuver" icon="pi pi-check" severity="success" size="small" (onClick)="confirmApprouver(d)" [disabled]="submitting()"></p-button>
                             <p-button label="Rejeter" icon="pi pi-times" severity="warn" size="small" (onClick)="openRejet(d, false)" [disabled]="submitting()"></p-button>
                             <p-button label="Rejet definitif" icon="pi pi-ban" severity="danger" size="small" [outlined]="true" (onClick)="openRejet(d, true)" [disabled]="submitting()"></p-button>
@@ -63,6 +64,90 @@
         </p-table>
     }
 </div>
+
+<!-- Dialog: fiche signaletique du client + actions de validation -->
+<p-dialog header="Fiche client & validation de la demande" [(visible)]="showFicheDialog" [modal]="true" [style]="{width: '850px', maxHeight: '90vh'}" [closable]="!submitting()" styleClass="overflow-hidden">
+
+    <!-- Resume de la demande en cours -->
+    @if (selectedDemande(); as d) {
+        <div class="mb-4 p-3 bg-blue-50 border-l-4 border-blue-400 rounded">
+            <div class="text-sm font-semibold text-blue-800 mb-2">Demande de changement de telephone</div>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+                <div><span class="text-gray-600">Code client:</span> <strong>{{ d.codCliente }}</strong></div>
+                <div><span class="text-gray-600">Ancien tel.:</span> <span class="line-through">{{ d.ancienTelephone }}</span></div>
+                <div><span class="text-gray-600">Demande par:</span> {{ d.demandeParNom || ('User #' + d.demandeParUserId) }}</div>
+                <div><span class="text-gray-600">Nouveau tel.:</span> <strong class="text-blue-700">{{ d.nouveauTelephone }}</strong></div>
+                <div class="col-span-2"><span class="text-gray-600">Raison:</span> {{ d.raisonModification }}</div>
+                <div class="col-span-2"><span class="text-gray-600">Date souhaitee:</span> {{ d.dateModificationSouhaitee | date }}</div>
+                @if ((d.nombreRejets ?? 0) > 0) {
+                    <div class="col-span-2 text-amber-700"><i class="pi pi-history mr-1"></i><strong>{{ d.nombreRejets }}</strong> rejet(s) precedent(s)</div>
+                }
+            </div>
+        </div>
+    }
+
+    <p-divider></p-divider>
+
+    <!-- Fiche signaletique du client -->
+    <h3 class="text-lg font-semibold mb-3"><i class="pi pi-id-card mr-2"></i>Fiche signaletique du client (SAF)</h3>
+
+    @if (ficheLoading()) {
+        <div class="flex justify-center p-6">
+            <p-progressSpinner></p-progressSpinner>
+        </div>
+    } @else if (ficheError()) {
+        <div class="p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm">
+            <i class="pi pi-exclamation-triangle mr-1"></i>{{ ficheError() }}
+        </div>
+    } @else if (fiche(); as f) {
+        @if (f.clientExists === false) {
+            <div class="p-3 bg-orange-50 border-l-4 border-orange-500 text-orange-700 text-sm">
+                <i class="pi pi-info-circle mr-1"></i>Client introuvable dans SAF: {{ selectedDemande()?.codCliente }}
+            </div>
+        } @else {
+            <!-- Verification telephone declare vs SAF -->
+            @if (telCorrespond() === false) {
+                <div class="mb-3 p-3 bg-amber-50 border-l-4 border-amber-500 text-amber-800 text-sm">
+                    <i class="pi pi-exclamation-triangle mr-1"></i>
+                    <strong>Attention:</strong> l'ancien telephone declare ({{ selectedDemande()?.ancienTelephone }}) ne correspond pas au telephone actuel dans SAF ({{ f.telPrincipal }}).
+                </div>
+            } @else if (telCorrespond() === true) {
+                <div class="mb-3 p-2 bg-green-50 border-l-4 border-green-500 text-green-700 text-sm">
+                    <i class="pi pi-check-circle mr-1"></i>L'ancien telephone declare correspond bien au telephone actuel dans SAF.
+                </div>
+            }
+
+            <div class="grid grid-cols-2 gap-3 text-sm">
+                <div><span class="text-gray-500">Code client:</span> <strong>{{ f.codCliente }}</strong></div>
+                <div><span class="text-gray-500">Categorie:</span> {{ f.catCliente || '—' }}</div>
+                <div class="col-span-2"><span class="text-gray-500">Nom complet:</span> <strong>{{ f.primerNombre }} {{ f.segundoNombre }} {{ f.primerApellido }} {{ f.segundoApellido }}</strong></div>
+                <div><span class="text-gray-500">Tel. principal (SAF):</span> <strong [class.text-amber-700]="telCorrespond() === false">{{ f.telPrincipal || '—' }}</strong></div>
+                <div><span class="text-gray-500">Tel. secondaire:</span> {{ f.telSecundario || f.telOtro || '—' }}</div>
+                <div><span class="text-gray-500">Date naissance:</span> {{ (f.fechNacimiento | date) || '—' }}</div>
+                <div><span class="text-gray-500">Lieu naissance:</span> {{ f.lugarNacimiento || '—' }}</div>
+                <div><span class="text-gray-500">Sexe:</span> {{ f.indSexo || '—' }}</div>
+                <div><span class="text-gray-500">Etat civil:</span> {{ f.estCivil || '—' }}</div>
+                <div><span class="text-gray-500">Nationalite:</span> {{ f.nacionalidad || '—' }}</div>
+                <div><span class="text-gray-500">Pieces ID:</span> {{ f.codTipoId || '—' }} {{ f.numId ? '— ' + f.numId : '' }}</div>
+                <div class="col-span-2"><span class="text-gray-500">Adresse:</span> {{ f.detDireccion || '—' }}</div>
+                <div><span class="text-gray-500">Statut:</span> {{ f.indRelacion || '—' }}</div>
+                <div><span class="text-gray-500">Agence:</span> {{ f.codAgencia || '—' }}</div>
+            </div>
+        }
+    }
+
+    <!-- Actions de validation en bas -->
+    <ng-template pTemplate="footer">
+        <div class="flex flex-wrap justify-between items-center w-full gap-2">
+            <p-button label="Fermer" severity="secondary" (onClick)="showFicheDialog.set(false)" [disabled]="submitting()"></p-button>
+            <div class="flex flex-wrap gap-2">
+                <p-button label="Rejet definitif" icon="pi pi-ban" severity="danger" [outlined]="true" (onClick)="openRejet(selectedDemande()!, true)" [disabled]="submitting()"></p-button>
+                <p-button label="Rejeter" icon="pi pi-times" severity="warn" (onClick)="openRejet(selectedDemande()!, false)" [disabled]="submitting()"></p-button>
+                <p-button label="Approuver" icon="pi pi-check" severity="success" (onClick)="confirmApprouver(selectedDemande()!)" [disabled]="submitting() || ficheLoading()"></p-button>
+            </div>
+        </div>
+    </ng-template>
+</p-dialog>
 
 <!-- Dialog: rejet (simple ou definitif) -->
 <p-dialog [header]="rejetForm.definitif ? 'Rejet definitif de la demande' : 'Rejet de la demande'" [(visible)]="showRejetDialog" [modal]="true" [style]="{width: '550px'}" [closable]="!submitting()">
