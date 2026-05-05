@@ -670,10 +670,17 @@
             </div>
 
             <div class="col-12">
-                <div class="valeur-retenue">
-                    <span>Valeur retenue (75%):</span>
-                    <strong>{{ (state().currentGarantie.valeurGarantie * 0.75) | number:'1.0-0' }} GNF</strong>
-                </div>
+                @if (state().currentGarantie.typeGarantie === 'Garantie Financiere' || state().currentGarantie.typeGarantie === 'Autre Garantie') {
+                    <div class="valeur-retenue">
+                        <span>Valeur retenue (100%):</span>
+                        <strong>{{ state().currentGarantie.valeurGarantie | number:'1.0-0' }} GNF</strong>
+                    </div>
+                } @else {
+                    <div class="valeur-retenue">
+                        <span>Valeur retenue (75%):</span>
+                        <strong>{{ (state().currentGarantie.valeurGarantie * 0.75) | number:'1.0-0' }} GNF</strong>
+                    </div>
+                }
             </div>
         </div>
 

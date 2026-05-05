@@ -441,7 +441,7 @@
                                     {{ garantie.valeurGarantie | currency:'GNF':'symbol':'1.0-0' }}
                                 </td>
                                 <td class="p-4 text-right font-mono font-semibold text-green-700">
-                                    {{ garantie.valeurEmprunte | currency:'GNF':'symbol':'1.0-0' }}
+                                    {{ getValeurEmprunte(garantie) | currency:'GNF':'symbol':'1.0-0' }}
                                 </td>
                             </tr>
                         </tbody>
@@ -598,13 +598,14 @@
                             class="hover:bg-orange-700">
                             <i class="pi pi-pencil mr-2"></i>Corriger la demande compl&egrave;te
                         </a>
-                    </div>
+                    </div>p
                 </div>
 
                 <!-- Grid des 4 analyses -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <!-- 1. Bilan d'Activité -->
-                    <div class="border-2 rounded-xl p-5 transition-all hover:shadow-md overflow-visible"
+                    <!-- 1. Bilan d'Activité (uniquement si montant >= 50 000 000 GNF) -->
+                    <div *ngIf="isBilanRequired()"
+                        class="border-2 rounded-xl p-5 transition-all hover:shadow-md overflow-visible"
                         [ngClass]="isBilanNeedsCorrection() ? 'border-red-400 bg-red-50' :
                                    state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'border-green-300 bg-green-50' :
                                    state().analyseStatut === 'BROUILLON' ? 'border-yellow-300 bg-yellow-50' : 'border-blue-300 bg-blue-50'">
@@ -714,18 +715,67 @@
                                 style="background-color: #a855f7;">
                                 <i class="pi pi-users text-lg"></i>
                             </div>
-                            <div>
+                            <div class="flex-1">
                                 <div class="font-bold text-base text-gray-800">3. Personnes Caution</div>
                                 <div class="text-sm font-medium text-purple-600" style="color: #9333ea;">
+                                    @if (state().personnesCaution && state().personnesCaution!.length > 0) {
+                                    {{ state().personnesCaution!.length }} personne(s) caution renseignée(s)
+                                    } @else {
                                     Gérer les personnes caution du dossier
+                                    }
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Liste des personnes caution déjà saisies -->
+                        @if (state().personnesCaution && state().personnesCaution!.length > 0) {
+                        <div class="space-y-2 mb-4 max-h-64 overflow-y-auto">
+                            @for (caution of state().personnesCaution; track $index) {
+                            <div class="bg-white border border-purple-200 rounded-lg p-3 text-sm">
+                                <div class="font-semibold text-gray-800 mb-1">
+                                    <i class="pi pi-user mr-1" style="color: #a855f7;"></i>
+                                    {{ caution.prenom }} {{ caution.nom }}
+                                </div>
+                                <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-600">
+                                    @if (caution.telephone) {
+                                    <span><i class="pi pi-phone mr-1"></i>{{ caution.telephone }}</span>
+                                    }
+                                    @if (caution.age) {
+                                    <span><i class="pi pi-calendar mr-1"></i>{{ caution.age }} ans</span>
+                                    }
+                                    @if (caution.profession) {
+                                    <span><i class="pi pi-briefcase mr-1"></i>{{ caution.profession }}</span>
+                                    }
+                                    @if (caution.activite) {
+                                    <span><i class="pi pi-building mr-1"></i>{{ caution.activite }}</span>
+                                    }
+                                </div>
+                                @if ($any(caution).adresseComplete) {
+                                <div class="text-xs text-gray-500 mt-1">
+                                    <i class="pi pi-map-marker mr-1"></i>{{ $any(caution).adresseComplete }}
+                                </div>
+                                }
+                            </div>
+                            }
+                        </div>
+                        } @else {
+                        <div class="text-center py-3 text-gray-500 text-sm mb-3">
+                            <i class="pi pi-info-circle mr-1"></i>
+                            Aucune personne caution renseignée
+                        </div>
+                        }
+
+                        <!-- Bouton Gérer (toujours présent pour ajouter / modifier) -->
                         <div class="mt-4">
                             <a [routerLink]="['/dashboards/credit/individuel/detail/personne-caution', state().demandeIndividuel?.demandeIndividuelId]"
                                 class="flex items-center justify-center w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors no-underline cursor-pointer"
                                 style="display: flex !important; visibility: visible !important; background-color: #9333ea !important; color: white !important;">
-                                <i class="pi pi-users mr-2"></i>Gérer les cautions
+                                <i class="pi pi-users mr-2"></i>
+                                @if (state().personnesCaution && state().personnesCaution!.length > 0) {
+                                Ajouter / Modifier les cautions
+                                } @else {
+                                Renseigner les cautions
+                                }
                             </a>
                         </div>
                     </div>
@@ -1405,12 +1455,14 @@
                 <div
                     class="mt-6 text-center p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border-2 border-green-200">
                     <button pButton (click)="approvedDemande(state().demandeIndividuel!)"
-                        [disabled]="!state().userHasAvis || isInCorrectionState()" class="px-10 py-3 font-bold shadow-lg text-base"
+                        [disabled]="!state().userHasAvis || isInCorrectionState()"
+                        class="px-10 py-3 font-bold shadow-lg text-base"
                         [ngClass]="state().userHasAvis && !isInCorrectionState() ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gray-400'"
                         icon="pi pi-check-circle" label="APPROUVER LA DEMANDE">
                     </button>
                     <p *ngIf="isInCorrectionState()" class="text-orange-600 mt-4 font-medium">
-                        <i class="pi pi-exclamation-triangle mr-2"></i>Veuillez d'abord resoumettre les corrections avant d'approuver la demande
+                        <i class="pi pi-exclamation-triangle mr-2"></i>Veuillez d'abord resoumettre les corrections
+                        avant d'approuver la demande
                     </p>
                     <p *ngIf="!state().userHasAvis && !isInCorrectionState()" class="text-red-600 mt-4 font-medium">
                         <i class="pi pi-exclamation-triangle mr-2"></i>Donnez d'abord votre avis

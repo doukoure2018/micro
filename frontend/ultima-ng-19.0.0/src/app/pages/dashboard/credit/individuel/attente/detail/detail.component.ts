@@ -733,11 +733,13 @@ export class DetailComponent {
     }
 
     /**
-     * Charger les personnes caution pour la consultation DA/DR/MANAGER
+     * Charger les personnes caution pour la consultation DA/DR/MANAGER.
+     * Utilise un endpoint dedie qui ne depend pas de la synthese — fonctionne
+     * meme pour les petits credits (< 50M) sans bilan d'activite.
      */
     private loadPersonnesCaution(demandeId: number): void {
         this.userService
-            .getSyntheseAnalyseFinanciere$(demandeId)
+            .getPersonnesCautionByDemande$(demandeId)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (response: IResponse) => {
@@ -747,7 +749,9 @@ export class DetailComponent {
                     }));
                 },
                 error: (error) => {
-                    console.error('Erreur lors du chargement des personnes caution:', error);
+                    console.warn('Pas de personnes caution pour cette demande:', error?.message);
+                    // En cas d'erreur, on garde une liste vide — pas bloquant pour l'affichage
+                    this.state.update((s) => ({ ...s, personnesCaution: [] }));
                 }
             });
     }
@@ -884,12 +888,25 @@ export class DetailComponent {
     }
 
     /**
+     * Calculer la valeur empruntable d'une garantie a la volee selon son type.
+     * Garantie Financiere et Autre Garantie => 100% de la valeur
+     * Caution Solidaire et Garantie Materielle => 75%
+     * Recalcule plutot que de faire confiance a la valeur stockee, qui peut etre
+     * obsolete pour les demandes anterieures aux modifications de regles metier.
+     */
+    getValeurEmprunte(garantie: { typeGarantie?: string; valeurGarantie?: number }): number {
+        const valeur = garantie.valeurGarantie || 0;
+        const pleineValeur = ['Garantie Financiere', 'Autre Garantie'];
+        return pleineValeur.includes(garantie.typeGarantie ?? '') ? valeur : valeur * 0.75;
+    }
+
+    /**
      * Calculer le total empruntable
      */
     getTotalEmprunte(): number {
         const garanties = this.state().demandeIndividuel?.garanties;
         if (!garanties || garanties.length === 0) return 0;
-        return garanties.reduce((total, g) => total + (g.valeurEmprunte || 0), 0);
+        return garanties.reduce((total, g) => total + this.getValeurEmprunte(g), 0);
     }
 
     /**
@@ -1565,7 +1582,7 @@ export class DetailComponent {
             <td>${g.typeGarantie}</td>
             <td>${g.descriptionGarantie}</td>
             <td class="text-right">${this.formatCurrency(g.valeurGarantie)}</td>
-            <td class="text-right">${this.formatCurrency(g.valeurEmprunte)}</td>
+            <td class="text-right">${this.formatCurrency(this.getValeurEmprunte(g))}</td>
         </tr>
     `
             )
@@ -2100,6 +2117,22 @@ export class DetailComponent {
     }
 
     /**
+     * Seuil au-dela duquel un Bilan d'Activite est obligatoire (50 000 000 GNF).
+     * En dessous, seuls Flux de Tresorerie + Personnes Caution + Documents sont requis.
+     */
+    static readonly SEUIL_BILAN_GNF = 50_000_000;
+
+    /**
+     * Determine si le Bilan d'Activite doit etre affiche/rempli pour cette demande,
+     * en fonction du montant sollicite.
+     */
+    isBilanRequired(): boolean {
+        const montant = this.state().demandeIndividuel?.montantDemande;
+        if (montant == null) return true; // par defaut, on l'affiche si on ne sait pas
+        return Number(montant) >= DetailComponent.SEUIL_BILAN_GNF;
+    }
+
+    /**
      * Check if bilan needs correction (old validation_da rejection OR new workflow DA/DR/DE rejection)
      */
     isBilanNeedsCorrection(): boolean {
@@ -2197,7 +2230,10 @@ export class DetailComponent {
             raw = { level: 'DE', motif: d?.motifRejetDe || '', sections: d?.sectionsARevoirDe || '', instructions: d?.instructionsDr || '' };
         }
         if (raw.sections) {
-            raw.sections = raw.sections.split(',').map((s: string) => this.getSectionLabel(s.trim())).join(', ');
+            raw.sections = raw.sections
+                .split(',')
+                .map((s: string) => this.getSectionLabel(s.trim()))
+                .join(', ');
         }
         return raw;
     }

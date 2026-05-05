@@ -1,7 +1,43 @@
 <div class="de-container">
-    <app-suivi-global-credits [user]="user"></app-suivi-global-credits>
+
+    <!-- Bandeau filtres globaux + actions -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <!-- Filtre type de credit -->
+            <div class="flex items-center gap-3">
+                <span class="text-sm font-semibold text-gray-700">
+                    <i class="pi pi-filter mr-1"></i>Type de credit:
+                </span>
+                <p-selectButton [options]="creditTypeOptions" [ngModel]="creditTypeFilter()"
+                    (ngModelChange)="creditTypeFilter.set($event)" optionLabel="label" optionValue="value"
+                    [allowEmpty]="false">
+                </p-selectButton>
+            </div>
+
+            <!-- Bouton historique des anciens credits -->
+            <p-button label="Historique des anciens credits" icon="pi pi-history" severity="secondary" [outlined]="true"
+                (onClick)="ouvrirHistoriqueCredits()" pTooltip="Consulter les anciennes analyses de credit">
+            </p-button>
+        </div>
+
+        <!-- Indicateur de filtre actif -->
+        @if (creditTypeFilter() !== 'ALL') {
+        <div class="mt-3 text-xs text-gray-600 bg-blue-50 border border-blue-200 rounded px-3 py-2">
+            <i class="pi pi-info-circle text-blue-600 mr-1"></i>
+            Filtre actif:
+            @if (creditTypeFilter() === 'PETIT') {
+            <strong>Petits credits (montant &lt; 50 000 000 GNF)</strong>
+            } @else {
+            <strong>Gros credits (montant ≥ 50 000 000 GNF)</strong>
+            }
+        </div>
+        }
+    </div>
+
+    <!-- Suivi global -->
+    <app-suivi-global-credits [user]="user" [creditTypeFilter]="creditTypeFilter()"></app-suivi-global-credits>
 
     <div class="mt-4">
-        <app-credit-par-delegation [user]="user"></app-credit-par-delegation>
+        <app-credit-par-delegation [user]="user" [creditTypeFilter]="creditTypeFilter()"></app-credit-par-delegation>
     </div>
 </div>

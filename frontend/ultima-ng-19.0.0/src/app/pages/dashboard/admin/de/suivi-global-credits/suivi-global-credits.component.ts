@@ -42,10 +42,17 @@ interface ProfilCount {
 })
 export class SuiviGlobalCreditsComponent implements OnInit {
     @Input() user?: IUser;
+    @Input() set creditTypeFilter(value: 'ALL' | 'PETIT' | 'GROS' | undefined) {
+        this._creditTypeFilter.set(value || 'ALL');
+    }
+
+    /** Seuil entre petit et gros credit (50M GNF) */
+    private static readonly SEUIL_PETIT_GROS_GNF = 50_000_000;
 
     allDemandes = signal<any[]>([]);
     loading = signal(false);
     selectedProfil = signal<string>('ALL');
+    private _creditTypeFilter = signal<'ALL' | 'PETIT' | 'GROS'>('ALL');
 
     // Filtres
     dateDebut = signal<Date | null>(null);
@@ -123,6 +130,14 @@ export class SuiviGlobalCreditsComponent implements OnInit {
         }
         if (pointvente) {
             demandes = demandes.filter(d => d.pointventeLibele === pointvente);
+        }
+
+        // Filtre type de credit (petit / gros) base sur le seuil de 50M GNF
+        const creditType = this._creditTypeFilter();
+        if (creditType === 'PETIT') {
+            demandes = demandes.filter(d => Number(d.montantDemande || 0) < SuiviGlobalCreditsComponent.SEUIL_PETIT_GROS_GNF);
+        } else if (creditType === 'GROS') {
+            demandes = demandes.filter(d => Number(d.montantDemande || 0) >= SuiviGlobalCreditsComponent.SEUIL_PETIT_GROS_GNF);
         }
 
         return demandes;

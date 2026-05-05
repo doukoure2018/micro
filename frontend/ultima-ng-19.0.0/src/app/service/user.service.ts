@@ -201,6 +201,12 @@ export class UserService {
     // Synthèse de l'analyse financière (Bilan d'activité)
     getSyntheseAnalyseFinanciere$ = (demandeIndividuelId: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/bilan_finance/synthese/demande/${demandeIndividuelId}`).pipe(tap(console.log), catchError(this.handleError));
 
+    /**
+     * Récupère uniquement les personnes caution d'une demande, sans dépendre d'une synthèse.
+     * Utile pour les petits crédits (< 50M) qui n'ont pas de bilan/synthèse.
+     */
+    getPersonnesCautionByDemande$ = (demandeId: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/bilan_finance/personnes-caution/${demandeId}`).pipe(catchError(this.handleError));
+
     startNewDemandeInd$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/newDemandeInd`).pipe(tap(console.log), catchError(this.handleError));
 
     getInfoAdministrative$ = (delegationId: number, agenceId: number, pointVenteId: number) =>

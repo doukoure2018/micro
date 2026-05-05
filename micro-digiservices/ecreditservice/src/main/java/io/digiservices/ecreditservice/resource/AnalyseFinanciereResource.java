@@ -355,7 +355,7 @@ public class AnalyseFinanciereResource {
                         "Normes ratios recuperees", OK));
     }
 
-    // ==================== PERSONNES CAUTION - 1 endpoint ====================
+    // ==================== PERSONNES CAUTION ====================
 
     @PostMapping("/personnes-caution/{demandeId}")
     public ResponseEntity<Response> savePersonnesCaution(
@@ -368,6 +368,21 @@ public class AnalyseFinanciereResource {
         return ResponseEntity.ok(
                 getResponse(httpRequest, Map.of("personnesCaution", personnesCaution),
                         "Personnes caution enregistrees avec succes", OK));
+    }
+
+    /**
+     * Recupere les personnes caution d'une demande sans dependre de la synthese.
+     * Utile pour les petits credits (< 50M) qui n'ont pas de bilan/synthese.
+     * Retourne une liste vide (200) plutot qu'une 400 si rien n'est renseigne.
+     */
+    @GetMapping("/personnes-caution/{demandeId}")
+    public ResponseEntity<Response> getPersonnesCaution(
+            @PathVariable(name = "demandeId") Long demandeId,
+            HttpServletRequest httpRequest) {
+        var personnesCaution = analyseService.getPersonnesCautionByDemande(demandeId);
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("personnesCaution", personnesCaution),
+                        "Personnes caution recuperees", OK));
     }
 
     // ==================== SOUMISSION - 1 endpoint ====================

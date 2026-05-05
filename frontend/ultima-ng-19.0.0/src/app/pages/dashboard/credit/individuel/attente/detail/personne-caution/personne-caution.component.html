@@ -2,8 +2,7 @@
     <p-toast></p-toast>
 
     <!-- Loading Spinner -->
-    <div *ngIf="loading()"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
+    <div *ngIf="loading()" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
         <div class="bg-white p-8 rounded-2xl shadow-2xl">
             <p-progressSpinner strokeWidth="4"></p-progressSpinner>
             <p class="text-center mt-4 text-gray-700 font-medium">Chargement en cours...</p>
@@ -28,9 +27,8 @@
                         </p>
                     </div>
                 </div>
-                <button pButton type="button" label="Enregistrer" icon="pi pi-save"
-                    class="p-button-success" [loading]="saving()"
-                    (click)="savePersonnesCaution()"></button>
+                <button pButton type="button" label="Enregistrer" icon="pi pi-save" class="p-button-success"
+                    [loading]="saving()" (click)="savePersonnesCaution()"></button>
             </div>
         </div>
 
@@ -51,12 +49,25 @@
                     </div>
                     <div class="col-12 md:col-6">
                         <label class="block font-medium mb-1">Téléphone</label>
-                        <input type="text" pInputText formControlName="telephone" class="w-full" />
+                        <input type="tel" pInputText formControlName="telephone" class="w-full"
+                            placeholder="+224 6XX XX XX XX" inputmode="tel" maxlength="13"
+                            (input)="onTelephoneInput($event)" [class.ng-invalid]="isTelephoneInvalid()"
+                            [class.ng-dirty]="isTelephoneInvalid()" />
+                        @if (isTelephoneInvalid()) {
+                        <small class="text-red-500 block mt-1">
+                            <i class="pi pi-exclamation-circle mr-1"></i>
+                            Format guinéen requis: +224 suivi de 9 chiffres.
+                        </small>
+                        } @else {
+                        <small class="text-gray-500 block mt-1">
+                            Format: +224 suivi de 9 chiffres (ex: +224621091895)
+                        </small>
+                        }
                     </div>
                     <div class="col-12 md:col-6">
                         <label class="block font-medium mb-1">Âge</label>
-                        <p-inputNumber formControlName="age" [showButtons]="true" [min]="18" [max]="100"
-                            suffix=" ans" class="w-full"></p-inputNumber>
+                        <p-inputNumber formControlName="age" [showButtons]="true" [min]="18" [max]="100" suffix=" ans"
+                            class="w-full"></p-inputNumber>
                     </div>
                     <div class="col-12 md:col-6">
                         <label class="block font-medium mb-1">Activité</label>
@@ -75,9 +86,8 @@
                         <input type="text" pInputText formControlName="descriptionActivite" class="w-full" />
                     </div>
                     <div class="col-12">
-                        <button pButton type="button" label="Ajouter cette personne caution"
-                            icon="pi pi-plus" class="p-button-success"
-                            (click)="addPersonnecaution()"></button>
+                        <button pButton type="button" label="Ajouter cette personne caution" icon="pi pi-plus"
+                            class="p-button-success" (click)="addPersonnecaution()"></button>
                     </div>
                 </div>
             </form>

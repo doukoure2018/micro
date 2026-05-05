@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
@@ -18,19 +18,7 @@ import { environment } from 'src/environments/environment';
 
 @Component({
     selector: 'app-personne-caution',
-    imports: [
-        CommonModule,
-        FormsModule,
-        ReactiveFormsModule,
-        ButtonModule,
-        InputTextModule,
-        InputNumberModule,
-        CardModule,
-        ToastModule,
-        TextareaModule,
-        TooltipModule,
-        ProgressSpinnerModule
-    ],
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, ButtonModule, InputTextModule, InputNumberModule, CardModule, ToastModule, TextareaModule, TooltipModule, ProgressSpinnerModule],
     templateUrl: './personne-caution.component.html',
     providers: [MessageService]
 })
@@ -61,17 +49,57 @@ export class PersonneCautionComponent {
         });
     }
 
+    /** Telephone guinéen: +224 suivi de 9 chiffres */
+    private static readonly PHONE_GUINEE_REGEX = /^\+224[0-9]{9}$/;
+
     private initForm(): void {
         this.personnecautionForm = this.fb.group({
             nom: [''],
             prenom: [''],
-            telephone: [''],
+            telephone: ['+224', [Validators.pattern(PersonneCautionComponent.PHONE_GUINEE_REGEX)]],
             activite: [''],
             age: [null],
             profession: [''],
             adresseComplete: [''],
             descriptionActivite: ['']
         });
+    }
+
+    /**
+     * Normalise la saisie du telephone en format guinéen.
+     * - Conserve uniquement chiffres + caractere '+' au debut
+     * - Auto-prefixe avec +224 si l'utilisateur efface le prefixe
+     * - Limite a +224 + 9 chiffres
+     */
+    onTelephoneInput(event: Event): void {
+        const input = event.target as HTMLInputElement;
+        let value = input.value;
+
+        // Garde le '+' uniquement en première position
+        const hasPlus = value.startsWith('+');
+        value = value.replace(/[^\d]/g, '');
+        if (hasPlus) value = '+' + value;
+
+        // Si l'utilisateur a tape sans prefixe ou s'il a tape un autre indicatif, force +224
+        if (!value.startsWith('+224')) {
+            // S'il a juste tape des chiffres, prepend +224
+            const digits = value.replace(/^\+?224?/, '').replace(/\D/g, '');
+            value = '+224' + digits;
+        }
+
+        // Limiter a 9 chiffres apres +224
+        const after = value.substring(4).replace(/\D/g, '');
+        value = '+224' + after.substring(0, 9);
+
+        this.personnecautionForm.get('telephone')?.setValue(value, { emitEvent: false });
+        input.value = value;
+    }
+
+    /** Indicateur pour afficher l'erreur de format dans le template */
+    isTelephoneInvalid(): boolean {
+        const ctrl = this.personnecautionForm.get('telephone');
+        if (!ctrl || !ctrl.value || ctrl.value === '+224') return false;
+        return ctrl.invalid && (ctrl.touched || ctrl.dirty);
     }
 
     private loadExistingCautions(): void {
@@ -105,6 +133,19 @@ export class PersonneCautionComponent {
     }
 
     addPersonnecaution(): void {
+        const telCtrl = this.personnecautionForm.get('telephone');
+        const telValue = telCtrl?.value || '';
+        // Le telephone est optionnel, mais s'il est saisi, il doit respecter le format guineen
+        if (telValue && telValue !== '+224' && telCtrl?.invalid) {
+            telCtrl?.markAsTouched();
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Telephone invalide',
+                detail: 'Format attendu: +224 suivi de 9 chiffres (ex: +224621091895).'
+            });
+            return;
+        }
+
         const personnecaution: Personnecaution = {
             nom: this.personnecautionForm.get('nom')?.value || '',
             prenom: this.personnecautionForm.get('prenom')?.value || '',

@@ -275,12 +275,12 @@ export class AnalyseFluxTresorerieComponent {
         const demande = this.demandeIndividuel();
         const periodicite = demande?.periodiciteRemboursement || 'Mensuelle';
         const labels: { [key: string]: string } = {
-            'Mensuelle': 'mois',
-            'Bimestrielle': 'bimestre',
-            'Trimestrielle': 'trimestre',
-            'Quatrimestrielle': 'quadrimestre',
-            'Semestrielle': 'semestre',
-            'Annuelle': 'année'
+            Mensuelle: 'mois',
+            Bimestrielle: 'bimestre',
+            Trimestrielle: 'trimestre',
+            Quatrimestrielle: 'quadrimestre',
+            Semestrielle: 'semestre',
+            Annuelle: 'année'
         };
         return labels[periodicite] || 'période';
     }
@@ -547,11 +547,14 @@ export class AnalyseFluxTresorerieComponent {
 
     ngOnInit() {
         // Charger le rôle de l'utilisateur connecté
-        this.userService.profile$().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-            next: (res) => {
-                this.userRole.set(res?.data?.user?.role || '');
-            }
-        });
+        this.userService
+            .profile$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (res) => {
+                    this.userRole.set(res?.data?.user?.role || '');
+                }
+            });
 
         // D'ABORD initialiser les formulaires de base
         this.initializeCreditParamsForm();
@@ -763,9 +766,13 @@ export class AnalyseFluxTresorerieComponent {
     private extractPrevisionFormData(prevision: any): any {
         const formData: any = {
             soldeDebut: prevision.soldeDebut || 0,
-            totalEncaissements: prevision.totalEncaissements || 0,
-            totalDecaissements: prevision.totalDecaissements || 0,
-            disponibleEnCaisse: (prevision.soldeDebut || 0) + (prevision.totalEncaissements || 0),
+            // totalEncaissements et totalDecaissements seront recalcules
+            // a partir des lignes plus bas pour garantir la coherence avec
+            // les valeurs effectivement saisies (P0...PN), sans faire confiance
+            // a la valeur stockee qui peut etre obsolete.
+            totalEncaissements: 0,
+            totalDecaissements: 0,
+            disponibleEnCaisse: 0,
             excedentDeficit: prevision.excedentDeficit || 0,
             soldeFin: prevision.soldeFin || 0,
             // Valeurs par défaut pour tous les champs
@@ -856,6 +863,33 @@ export class AnalyseFluxTresorerieComponent {
                 }
             });
         }
+
+        // Recalculer Total Encaissements = Solde Debut + Ventes + Autres revenus + Pret recu
+        // — coherent avec calculateMonth().
+        formData.totalEncaissements =
+            (formData.soldeDebut || 0) +
+            (formData.ventes || 0) +
+            (formData.autresRevenus || 0) +
+            (formData.pret || 0);
+
+        // Recalculer Total Decaissements (hors remboursements credit qui sont
+        // traites separement dans excedent/soldeFin).
+        formData.totalDecaissements =
+            (formData.achatmarchandises || 0) +
+            (formData.mainoeuvre || 0) +
+            (formData.investissement || 0) +
+            (formData.impotstaxes || 0) +
+            (formData.loyer || 0) +
+            (formData.utilities || 0) +
+            (formData.transport || 0) +
+            (formData.salaires || 0) +
+            (formData.fraistelephone || 0) +
+            (formData.chargesfinancieres || 0) +
+            (formData.entretien || 0) +
+            (formData.autresdepenses || 0);
+
+        // Disponible en caisse = Total Encaissements (qui inclut deja le Solde Debut)
+        formData.disponibleEnCaisse = formData.totalEncaissements;
 
         return formData;
     }
@@ -1894,8 +1928,12 @@ export class AnalyseFluxTresorerieComponent {
             const num = Number(val);
             return isNaN(num) ? 0 : num;
         };
-        // Total Encaissements
-        const totalEnc = safeValue(values.ventes) + safeValue(values.autresRevenus) + safeValue(values.pret);
+        // Total Encaissements = Solde Debut + Ventes + Autres revenus + Pret recu
+        const totalEnc =
+            safeValue(values.soldeDebut) +
+            safeValue(values.ventes) +
+            safeValue(values.autresRevenus) +
+            safeValue(values.pret);
 
         // Total Décaissements (sans les remboursements)
         const totalDec =
@@ -1912,8 +1950,8 @@ export class AnalyseFluxTresorerieComponent {
             safeValue(values.entretien) +
             safeValue(values.autresdepenses);
 
-        // Disponible en caisse
-        const disponible = safeValue(values.soldeDebut) + totalEnc;
+        // Disponible en caisse = Total Encaissements (qui inclut deja le Solde Debut)
+        const disponible = totalEnc;
 
         // Excédent/Déficit (avant remboursements)
         const excedent = disponible - totalDec;

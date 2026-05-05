@@ -2,7 +2,7 @@ import { IResponse } from '@/interface/response';
 import { IUser } from '@/interface/user';
 import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, inject, Input, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, Input, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -36,10 +36,30 @@ import { ToastModule } from 'primeng/toast';
 })
 export class CreditParDelegationComponent implements OnInit {
     @Input() user?: IUser;
+    @Input() set creditTypeFilter(value: 'ALL' | 'PETIT' | 'GROS' | undefined) {
+        this._creditTypeFilter.set(value || 'ALL');
+    }
+
+    /** Seuil entre petit et gros credit (50M GNF) */
+    private static readonly SEUIL_PETIT_GROS_GNF = 50_000_000;
 
     // Workflow credit DE
-    workflowAValiderDE = signal<any[]>([]);
+    private _workflowAValiderDE = signal<any[]>([]);
+    private _creditTypeFilter = signal<'ALL' | 'PETIT' | 'GROS'>('ALL');
     loading = signal(false);
+
+    /** Liste filtree par type de credit (petit/gros) — utilisee dans le template */
+    workflowAValiderDE = computed(() => {
+        const list = this._workflowAValiderDE();
+        const filter = this._creditTypeFilter();
+        if (filter === 'PETIT') {
+            return list.filter(d => Number(d.montantDemande || 0) < CreditParDelegationComponent.SEUIL_PETIT_GROS_GNF);
+        }
+        if (filter === 'GROS') {
+            return list.filter(d => Number(d.montantDemande || 0) >= CreditParDelegationComponent.SEUIL_PETIT_GROS_GNF);
+        }
+        return list;
+    });
 
     // Dialogues
     showValidationDialog = false;
@@ -88,7 +108,7 @@ export class CreditParDelegationComponent implements OnInit {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (response: IResponse) => {
-                    this.workflowAValiderDE.set(response.data?.workflowDemandes || []);
+                    this._workflowAValiderDE.set(response.data?.workflowDemandes || []);
                     this.loading.set(false);
                 },
                 error: () => {

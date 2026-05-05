@@ -15,109 +15,125 @@
             </div>
         </ng-template>
 
-        <div class="grid">
-            <!-- Informations personnelles -->
-            <div class="col-12 md:col-6 lg:col-4">
-                <div class="info-group">
-                    <label class="text-sm text-gray-600">Nom complet</label>
-                    <div class="font-semibold text-lg">
-                        {{ demandeIndividuel().prenom }} {{ demandeIndividuel().nom }}
+        <div style="padding: 1rem;">
+            <!-- Bandeau d'identité + crédit en 1 ligne (4 cartes égales) -->
+            <div style="display: grid; grid-template-columns: 2fr 3fr; gap: 1rem; margin-bottom: 1rem; width: 100%;">
+
+                <!-- Bloc Identité (carte bleue) -->
+                <div
+                    style="background: linear-gradient(135deg, #eff6ff, #ecfeff); border: 1px solid #bfdbfe; border-radius: 0.5rem; padding: 1rem;">
+                    <div
+                        style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; color: #1d4ed8;">
+                        <i class="pi pi-user"></i>
+                        <span
+                            style="font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Identité</span>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.7rem; color: #6b7280;">Nom complet</div>
+                        <div style="font-weight: 600; font-size: 1.05rem; color: #1f2937; margin-bottom: 0.75rem;">
+                            {{ demandeIndividuel().prenom }} {{ demandeIndividuel().nom }}
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                            <div>
+                                <div style="font-size: 0.7rem; color: #6b7280;">Date de naissance</div>
+                                <div style="font-weight: 600; font-size: 0.875rem;">
+                                    {{ formatDateFromArray(demandeIndividuel().dateNaissance) }}
+                                </div>
+                                <div style="font-size: 0.7rem; color: #6b7280;">
+                                    {{ calculateAge(demandeIndividuel().dateNaissance) }} ans
+                                </div>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.7rem; color: #6b7280;">Téléphone</div>
+                                <div style="font-weight: 600; font-size: 0.875rem;">
+                                    <i class="pi pi-phone" style="font-size: 0.7rem; margin-right: 0.25rem;"></i>{{
+                                    demandeIndividuel().telephone }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bloc Crédit (carte verte) - 4 colonnes internes -->
+                <div
+                    style="background: linear-gradient(135deg, #ecfdf5, #f0fdf4); border: 1px solid #a7f3d0; border-radius: 0.5rem; padding: 1rem;">
+                    <div
+                        style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; color: #047857;">
+                        <i class="pi pi-wallet"></i>
+                        <span
+                            style="font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Conditions
+                            de crédit</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
+                        <div>
+                            <div style="font-size: 0.7rem; color: #6b7280;">Montant demandé</div>
+                            <div style="font-weight: 700; font-size: 1.05rem; color: #047857;">
+                                {{ formatMontant(demandeIndividuel().montantDemande) }}
+                            </div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.7rem; color: #6b7280;">Durée du prêt</div>
+                            <div style="font-weight: 700; font-size: 1.05rem; color: #1f2937;">
+                                {{ demandeIndividuel().dureeDemande }} <span
+                                    style="font-size: 0.7rem; font-weight: 400; color: #6b7280;">mois</span>
+                            </div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.7rem; color: #6b7280;">Taux d'intérêt</div>
+                            <div style="font-weight: 700; font-size: 1.05rem; color: #1f2937;">
+                                {{ demandeIndividuel().tauxInteret }}<span
+                                    style="font-size: 0.7rem; font-weight: 400; color: #6b7280;">% annuel</span>
+                            </div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.7rem; color: #6b7280;">Échéance mensuelle</div>
+                            <div style="font-weight: 700; font-size: 1.05rem; color: #1d4ed8;">
+                                {{ formatMontant(mensualite().total) }}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="col-12 md:col-6 lg:col-4">
-                <div class="info-group">
-                    <label class="text-sm text-gray-600">Date de naissance</label>
-                    <div class="font-semibold">
-                        {{ formatDateFromArray(demandeIndividuel().dateNaissance) }}
-                        <span class="text-sm text-gray-500 ml-2">
-                            ({{ calculateAge(demandeIndividuel().dateNaissance) }} ans)
-                        </span>
-                    </div>
+            <!-- Activité (pleine largeur) -->
+            <div
+                style="background-color: #fffbeb; border-left: 4px solid #fbbf24; border-radius: 0 0.5rem 0.5rem 0; padding: 1rem; margin-bottom: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; color: #b45309;">
+                    <i class="pi pi-briefcase"></i>
+                    <span
+                        style="font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Activité
+                        du demandeur</span>
                 </div>
-            </div>
-
-            <div class="col-12 md:col-6 lg:col-4">
-                <div class="info-group">
-                    <label class="text-sm text-gray-600">Téléphone</label>
-                    <div class="font-semibold">
-                        <i class="pi pi-phone mr-1"></i>
-                        {{ demandeIndividuel().telephone }}
-                    </div>
+                <div style="font-weight: 600; color: #1f2937;">
+                    {{ demandeIndividuel().descriptionActivite }}
                 </div>
-            </div>
-
-            <!-- Informations du crédit -->
-            <div class="col-12">
-                <p-divider></p-divider>
-            </div>
-
-            <div class="col-12 md:col-6 lg:col-3">
-                <div class="info-group">
-                    <label class="text-sm text-gray-600">Montant demandé</label>
-                    <div class="font-semibold text-primary text-xl">
-                        {{ formatMontant(demandeIndividuel().montantDemande) }}
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12 md:col-6 lg:col-3">
-                <div class="info-group">
-                    <label class="text-sm text-gray-600">Durée du prêt</label>
-                    <div class="font-semibold">
-                        {{ demandeIndividuel().dureeDemande }} mois
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12 md:col-6 lg:col-3">
-                <div class="info-group">
-                    <label class="text-sm text-gray-600">Taux d'intérêt</label>
-                    <div class="font-semibold">
-                        {{ demandeIndividuel().tauxInteret }}% annuel
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12 md:col-6 lg:col-3">
-                <div class="info-group">
-                    <label class="text-sm text-gray-600">Échéance mensuelle</label>
-                    <div class="font-semibold">
-                        {{ formatMontant(mensualite().total) }}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Activité -->
-            <div class="col-12">
-                <p-divider></p-divider>
-                <div class="info-group">
-                    <label class="text-sm text-gray-600">Description de l'activité</label>
-                    <div class="font-semibold">
-                        {{ demandeIndividuel().descriptionActivite }}
-                    </div>
-                    <small class="text-gray-500">
-                        Ancienneté: {{ demandeIndividuel().nombreAnneeActivite }} ans |
-                        Lieu: {{ demandeIndividuel().adresseLieuActivite }}
-                    </small>
+                <div
+                    style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 0.5rem; font-size: 0.7rem; color: #4b5563;">
+                    <span><i class="pi pi-clock" style="margin-right: 0.25rem;"></i>Ancienneté: <strong>{{
+                            demandeIndividuel().nombreAnneeActivite }} ans</strong></span>
+                    <span><i class="pi pi-map-marker" style="margin-right: 0.25rem;"></i>Lieu: <strong>{{
+                            demandeIndividuel().adresseLieuActivite }}</strong></span>
                 </div>
             </div>
 
             <!-- Garanties -->
-            <div class="col-12" *ngIf="garanties().length > 0">
-                <p-divider></p-divider>
-                <h4 class="mb-3">
-                    <i class="pi pi-shield mr-2"></i>
-                    Garanties proposées ({{ garanties().length }})
-                </h4>
-                <p-table [value]="garanties()" styleClass="p-datatable-sm" [scrollable]="true">
+            <div *ngIf="garanties().length > 0"
+                style="background: #fff; border: 1px solid #e5e7eb; border-radius: 0.5rem; overflow: hidden;">
+                <div
+                    style="background: #f9fafb; padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="pi pi-shield" style="color: #4b5563;"></i>
+                    <span style="font-weight: 600; color: #374151;">Garanties proposées</span>
+                    <span
+                        style="font-size: 0.7rem; background: #e5e7eb; color: #374151; padding: 0.125rem 0.5rem; border-radius: 9999px;">{{
+                        garanties().length }}</span>
+                </div>
+                <p-table [value]="garanties()" styleClass="p-datatable-sm">
                     <ng-template pTemplate="header">
                         <tr>
                             <th>Type</th>
                             <th>Description</th>
                             <th class="text-right">Valeur garantie</th>
-                            <th class="text-center">Couverture</th>
+                            <th class="text-center" style="width: 120px;">Couverture</th>
                         </tr>
                     </ng-template>
                     <ng-template pTemplate="body" let-garantie>
@@ -199,8 +215,9 @@
                                 ({{ formatMontant(mensualite().capital) }} + {{ formatMontant(mensualite().interet) }})
                             </div>
                         </div>
-                        <p-button *ngIf="userRole() === 'AGENT_CREDIT'" label="Créer le dossier" icon="pi pi-plus-circle" severity="warn"
-                            (onClick)="createDossierCredit()" [loading]="state().saving"
+                        <p-button *ngIf="userRole() === 'AGENT_CREDIT'" label="Créer le dossier"
+                            icon="pi pi-plus-circle" severity="warn" (onClick)="createDossierCredit()"
+                            [loading]="state().saving"
                             pTooltip="Créer le dossier pour pouvoir sauvegarder les prévisions">
                         </p-button>
                     </div>
@@ -228,10 +245,11 @@
                                 [value]="getTableMonthsWithData() + '/' + (nombreMois() + 1) + ' périodes'"
                                 icon="pi pi-calendar">
                             </p-tag>
-                            <p-tag *ngIf="tresorerieState.hasUnsavedChanges() && hasDossierCredit()" severity="warn" value="Modifications"
-                                icon="pi pi-exclamation-triangle">
+                            <p-tag *ngIf="tresorerieState.hasUnsavedChanges() && hasDossierCredit()" severity="warn"
+                                value="Modifications" icon="pi pi-exclamation-triangle">
                             </p-tag>
-                            <p-tag *ngIf="!tresorerieState.hasUnsavedChanges() && getTableMonthsWithData() > 0 && hasDossierCredit()"
+                            <p-tag
+                                *ngIf="!tresorerieState.hasUnsavedChanges() && getTableMonthsWithData() > 0 && hasDossierCredit()"
                                 severity="success" value="Sauvegardé" icon="pi pi-check">
                             </p-tag>
                         </div>
@@ -502,8 +520,9 @@
                     </p-button>
                     }
 
-                    <p-button *ngIf="userRole() === 'AGENT_CREDIT'" label="Sauvegarder" icon="pi pi-save" severity="success" [loading]="state().saving"
-                        [disabled]="!canSaveTableau()" (onClick)="savePrevisions()">
+                    <p-button *ngIf="userRole() === 'AGENT_CREDIT'" label="Sauvegarder" icon="pi pi-save"
+                        severity="success" [loading]="state().saving" [disabled]="!canSaveTableau()"
+                        (onClick)="savePrevisions()">
                     </p-button>
                 </div>
             </div>

@@ -603,8 +603,9 @@ export class DemandeIndComponent implements OnInit {
             return;
         }
 
-        // Autre Garantie (ex: apport financier) => 100%, sinon 75%
-        garantie.valeurEmprunte = garantie.typeGarantie === 'Autre Garantie' ? garantie.valeurGarantie : garantie.valeurGarantie * 0.75;
+        // Garantie Financiere et Autre Garantie => 100% retenu, sinon 75%
+        const garantiesPleineValeur = ['Garantie Financiere', 'Autre Garantie'];
+        garantie.valeurEmprunte = garantiesPleineValeur.includes(garantie.typeGarantie) ? garantie.valeurGarantie : garantie.valeurGarantie * 0.75;
         const garanties = [...currentState.garanties];
 
         if (currentState.editingGarantieIndex !== undefined) {
