@@ -27,6 +27,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.release>21</maven.compiler.release>
 		<spring.boot.maven.plugin.version>3.4.3</spring.boot.maven.plugin.version>
+		<lombok.version>1.18.38</lombok.version>
 		<spring.boot.dependencies.version>3.4.3</spring.boot.dependencies.version>
 		<spring-cloud.version>2024.0.1</spring-cloud.version>
 		<image>doukoure93/${project.artifactId}:${project.version}</image>
@@ -127,6 +128,13 @@
 				<configuration>
 					<source>21</source>
 					<target>21</target>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+							<version>${lombok.version}</version>
+						</path>
+					</annotationProcessorPaths>
 				</configuration>
 			</plugin>
 		</plugins>

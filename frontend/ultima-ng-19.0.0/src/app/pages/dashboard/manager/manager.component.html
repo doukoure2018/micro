@@ -63,7 +63,7 @@
                 <div class="flex align-items-center mb-3">
                     <i class="pi pi-clock text-orange-600 text-xl mr-2"></i>
                     <h4 class="m-0 text-orange-800">
-                        Demandes d'Analyse de Crédit en Attente ({{ state().demandeAnalyseCredits?.length! }})
+                        Demandes de Crédit en Attente ({{ state().demandeAnalyseCredits?.length! }})
                     </h4>
                 </div>
                 <p-table [value]="state().demandeAnalyseCredits!" [tableStyle]="{'min-width': '50rem'}"
@@ -115,7 +115,7 @@
         <div class="col-12">
             <div class="card text-center p-4">
                 <i class="pi pi-check-circle text-green-500 text-4xl mb-3"></i>
-                <h4 class="text-green-800 mb-2">Aucune demande en attente</h4>
+                <h4 class="text-green-800 mb-2">Aucune demande de crédit en attente</h4>
                 <p class="text-600">Toutes les demandes d'analyse de crédit ont été traitées.</p>
             </div>
         </div>

@@ -109,6 +109,16 @@ public class RapprochementResource {
         return created(getUri()).body(getResponse(request, Map.of("reconciliationResultDTO", reconciliationResultDTO), "Rapprochement effectué avec success", CREATED));
     }
 
+    /**
+     * Liste de tous les points de vente (pour le module audit)
+     */
+    @GetMapping("/test")
+    public String getAllPointsVente(
+            @NotNull Authentication authentication)
+    {
+        return "This is for the test one ";
+    }
+
     private URI getUri() {
         return URI.create("/ecredit/rapprochement-caisse");
     }

@@ -5,7 +5,7 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_DB: ${POSTGRES_DATABASE}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       SERVICE_TAGS: dev1
       SERVICE_NAME: postgresservice
@@ -15,7 +15,6 @@ services:
       - "5432:5432"
     volumes:
       - microservices_postgres_data_v16:/var/lib/postgresql/data
-      - ./micro-digiservices/schema.sql:/docker-entrypoint-initdb.d/schema.sql
     networks:
       - spring
     healthcheck:
@@ -472,7 +471,6 @@ services:
 
 volumes:
   microservices_postgres_data_v16:
-    external: true
   pgadminvolume:
 
 networks:
