@@ -251,6 +251,15 @@ public class WorkflowResource {
                         "Suivi global DE récupéré", OK));
     }
 
+    @GetMapping("/valides-de")
+    public ResponseEntity<Response> getValidesDE(
+            HttpServletRequest httpRequest) {
+        var result = workflowService.getValidesDE();
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("workflowDemandes", result),
+                        "Demandes validées par DE récupérées", OK));
+    }
+
     // ==================== DE ACTIONS ====================
 
     @PutMapping("/{demandeId}/valider-de")

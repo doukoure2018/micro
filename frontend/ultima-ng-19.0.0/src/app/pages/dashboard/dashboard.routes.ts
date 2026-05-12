@@ -37,6 +37,11 @@ export default [
         loadComponent: () => import('./admin/de/situation-stock/situation-stock.component').then((c) => c.SituationStockComponent)
     },
     {
+        path: 'credits-valides-de',
+        data: { breadcrumb: 'Crédits validés par DE' },
+        loadComponent: () => import('./admin/de/credits-valides-de/credits-valides-de.component').then((c) => c.CreditsValidesDeComponent)
+    },
+    {
         path: 'stock',
         data: { breadcrumb: 'Gestion de Stock' },
         loadComponent: () => import('./agent-credit/stock-cmd/stock-cmd.component').then((c) => c.StockCmdComponent)

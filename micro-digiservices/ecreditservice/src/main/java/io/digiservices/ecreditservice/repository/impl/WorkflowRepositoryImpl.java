@@ -287,6 +287,18 @@ public class WorkflowRepositoryImpl implements WorkflowRepository {
         }
     }
 
+    @Override
+    public List<WorkflowDemandeDto> getValidesDE() {
+        try {
+            return jdbcClient.sql(SELECT_VALIDES_DE)
+                    .query(WorkflowDemandeDto.class)
+                    .list();
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des demandes validées par DE: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la récupération: " + e.getMessage());
+        }
+    }
+
     // ==================== DE ACTIONS ====================
 
     @Override

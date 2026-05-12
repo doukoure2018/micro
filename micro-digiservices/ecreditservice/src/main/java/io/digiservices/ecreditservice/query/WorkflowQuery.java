@@ -306,6 +306,37 @@ public class WorkflowQuery {
             ORDER BY d.createdat DESC
             """;
 
+    public static final String SELECT_VALIDES_DE = """
+            SELECT d.demandeindividuel_id AS "demandeIndividuelId",
+                   d.nom, d.prenom, d.telephone,
+                   d.numero_membre AS "numeroMembre",
+                   d.delegation, d.agence, d.pos,
+                   d.montant_demande AS "montantDemande",
+                   d.object_credit AS "objectCredit",
+                   d.validation_state AS "validationState",
+                   d.statut_demande AS "statutDemande",
+                   d.avis_agent_credit AS "avisAgentCredit",
+                   d.avis_da AS "avisDa",
+                   d.avis_dr AS "avisDr",
+                   d.avis_de AS "avisDe",
+                   d.validated_by_da AS "validatedByDa",
+                   d.validated_by_dr AS "validatedByDr",
+                   d.validated_by_de AS "validatedByDe",
+                   d.date_validation_da AS "dateValidationDa",
+                   d.date_validation_dr AS "dateValidationDr",
+                   d.date_validation_de AS "dateValidationDe",
+                   d.createdat AS "createdAt",
+                   del.libele AS "delegationLibele",
+                   ag.libele AS "agenceLibele",
+                   pv.libele AS "pointventeLibele"
+            FROM demandeindividuel d
+            LEFT JOIN delegation del ON d.delegation = del.id
+            LEFT JOIN agence ag ON d.agence = ag.id
+            LEFT JOIN pointvente pv ON d.pos = pv.id
+            WHERE d.validation_state = 'VALIDATED_FINAL'
+            ORDER BY d.date_validation_de DESC NULLS LAST, d.createdat DESC
+            """;
+
     // ==================== DE ACTIONS ====================
 
     public static final String UPDATE_VALIDER_DE = """

@@ -182,6 +182,11 @@ export class AppMenu {
                                                 label: 'suivi des Arrete de caisse',
                                                 icon: 'pi pi-fw pi-mo',
                                                 routerLink: ['/dashboards/suivi-arrete-caisse']
+                                            },
+                                            {
+                                                label: 'Demandes Crédits validées par DE',
+                                                icon: 'pi pi-fw pi-check-circle',
+                                                routerLink: ['/dashboards/credits-valides-de']
                                             }
                                         ]
                                       : this.user?.service === 'Logistique'

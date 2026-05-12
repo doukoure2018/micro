@@ -154,6 +154,11 @@ public class WorkflowServiceImpl implements WorkflowService {
     }
 
     @Override
+    public List<WorkflowDemandeDto> getValidesDE() {
+        return workflowRepository.getValidesDE();
+    }
+
+    @Override
     @Transactional
     public void validerDE(Long demandeId, String avis, String validatedBy) {
         log.info("Validation DE par {} pour demande {}", validatedBy, demandeId);

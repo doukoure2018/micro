@@ -1467,6 +1467,8 @@ export class UserService {
 
     getSuiviGlobalDE$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/suivi-global-de`).pipe(catchError(this.handleError));
 
+    getValidesDE$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/valides-de`).pipe(catchError(this.handleError));
+
     validerDE$ = (demandeId: number, avis: string) => <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/valider-de`, { avis }).pipe(catchError(this.handleError));
 
     rejeterDE$ = (demandeId: number, body: { motifRejet: string; sectionsARevoir: string[]; instructions?: string }) =>

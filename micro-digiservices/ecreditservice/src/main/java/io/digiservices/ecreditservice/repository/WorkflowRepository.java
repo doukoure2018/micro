@@ -40,6 +40,7 @@ public interface WorkflowRepository {
     // DE lists
     List<WorkflowDemandeDto> getAValiderDE();
     List<WorkflowDemandeDto> getSuiviGlobalDE();
+    List<WorkflowDemandeDto> getValidesDE();
 
     // DE actions
     int validerDE(Long demandeId, String avis, String validatedBy);
