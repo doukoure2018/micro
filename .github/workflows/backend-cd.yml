@@ -196,9 +196,10 @@ jobs:
             fi
 
             # Load only DB variables needed by the script (docker-compose reads .env.prod directly)
-            export POSTGRES_USER=$(grep '^POSTGRES_USER=' .env.prod | cut -d'=' -f2)
-            export POSTGRES_DB=$(grep '^POSTGRES_DB=' .env.prod | cut -d'=' -f2)
-            export POSTGRES_PASSWORD=$(grep '^POSTGRES_PASSWORD=' .env.prod | cut -d'=' -f2)
+            # tr -d '\r' strips Windows line endings that would corrupt the values
+            export POSTGRES_USER=$(grep '^POSTGRES_USER=' .env.prod | cut -d'=' -f2 | tr -d '\r\n ')
+            export POSTGRES_DB=$(grep '^POSTGRES_DB=' .env.prod | cut -d'=' -f2 | tr -d '\r\n ')
+            export POSTGRES_PASSWORD=$(grep '^POSTGRES_PASSWORD=' .env.prod | cut -d'=' -f2 | tr -d '\r\n ')
 
             # === GARDE-FOUS PRE-DEPLOIEMENT ===
             echo "🛡️ Pre-deployment safety checks..."
