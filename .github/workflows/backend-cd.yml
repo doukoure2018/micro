@@ -199,19 +199,65 @@ jobs:
             export POSTGRES_USER=$(grep '^POSTGRES_USER=' .env.prod | cut -d'=' -f2)
             export POSTGRES_DB=$(grep '^POSTGRES_DB=' .env.prod | cut -d'=' -f2)
             export POSTGRES_PASSWORD=$(grep '^POSTGRES_PASSWORD=' .env.prod | cut -d'=' -f2)
-            
-             # Backup database before deployment
-            echo "📦 Creating pre-deployment backup..."
+
+            # === GARDE-FOUS PRE-DEPLOIEMENT ===
+            echo "🛡️ Pre-deployment safety checks..."
+
+            # 1. Vérifier que le volume postgres existe (sinon DB perdue!)
+            # Skip if first deployment (volume will be created by docker compose with external: true if missing)
+            if sudo docker ps -a | grep -q postgrecontainer; then
+              if ! sudo docker volume inspect microservices_postgres_data_v16 >/dev/null 2>&1; then
+                echo "❌ FATAL: Volume 'microservices_postgres_data_v16' does not exist!"
+                echo "   Deploying now would create an EMPTY database."
+                echo "   Aborting to protect your data."
+                exit 1
+              fi
+              echo "✅ Postgres volume exists"
+            else
+              echo "ℹ️ First deployment detected (no postgres container yet)"
+            fi
+
+            # 2. Vérifier que docker-compose.yml protège bien le volume
+            if ! grep -A 4 "^volumes:" docker-compose.yml | grep -q "external: true"; then
+              echo "❌ FATAL: docker-compose.yml is missing 'external: true' on postgres volume!"
+              echo "   This would cause Docker to create a NEW empty volume."
+              echo "   Aborting deployment."
+              exit 1
+            fi
+            echo "✅ docker-compose.yml volume config is safe"
+
+            # 3. Backup VÉRIFIÉ (>1MB minimum)
+            mkdir -p ~/backups_pre_deploy
             if sudo docker ps | grep -q postgrecontainer; then
-              sudo docker exec postgrecontainer pg_dumpall -U ${POSTGRES_USER:-user2711} > ~/backup_pre_deploy_$(date +%Y%m%d_%H%M%S).sql && echo "✅ Backup created" || echo "⚠️ Backup failed (first deployment?)"
+              BACKUP_FILE=~/backups_pre_deploy/backup_pre_deploy_$(date +%Y%m%d_%H%M%S).dump
+              echo "📦 Creating verified pre-deployment backup..."
+              if sudo docker exec postgrecontainer pg_dump -U "${POSTGRES_USER:-user2711}" -d "${POSTGRES_DB:-localdb}" -Fc -Z 9 > "$BACKUP_FILE" 2>/tmp/pg_dump.err; then
+                BACKUP_SIZE=$(stat -c%s "$BACKUP_FILE" 2>/dev/null || echo 0)
+                if [ "$BACKUP_SIZE" -lt 1048576 ]; then
+                  echo "❌ FATAL: Backup is too small ($BACKUP_SIZE bytes < 1MB). pg_dump probably failed."
+                  echo "   pg_dump errors:"
+                  cat /tmp/pg_dump.err
+                  rm -f "$BACKUP_FILE"
+                  exit 1
+                fi
+                echo "✅ Backup created ($(du -h "$BACKUP_FILE" | cut -f1)): $BACKUP_FILE"
+              else
+                echo "❌ FATAL: pg_dump command failed"
+                cat /tmp/pg_dump.err
+                rm -f "$BACKUP_FILE"
+                exit 1
+              fi
+              # Rotation: garder 14 jours
+              find ~/backups_pre_deploy -name "backup_pre_deploy_*.dump" -mtime +14 -delete 2>/dev/null || true
             else
               echo "ℹ️ PostgreSQL not running, skipping backup (first deployment?)"
             fi
-            
-            # Complete cleanup
-            echo "🛑 Complete Docker cleanup..."
+
+            # === FIN GARDE-FOUS ===
+
+            # Stop only services managed by this docker-compose (preserves other docker apps)
+            echo "🛑 Stopping services managed by docker-compose..."
             sudo docker compose --env-file .env.prod down --remove-orphans || true
-            sudo docker ps -aq | xargs -r sudo docker rm -f 2>/dev/null || true
             sudo docker network prune -f
 
             # Pull images
