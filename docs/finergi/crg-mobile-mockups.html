@@ -1,0 +1,1879 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRG Mobile — Token Advance Integration Mockups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d0d0f;
+  --bg-2: #161618;
+  --canvas: #f5f3ee;
+  --ink: #0a0a0c;
+  --ink-soft: #2b2b30;
+  --muted: #6b6b73;
+  --line: #d8d4ca;
+  --accent: #FFE600;
+  --accent-soft: #FFF7AA;
+  --action: #0F1F4D;
+  --action-hover: #1a2d6b;
+  --success: #1f7a4d;
+  --warn: #c25500;
+  --error: #b3261e;
+  --phone-radius: 38px;
+  --notch-w: 110px;
+  --notch-h: 26px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg);
+  color: var(--canvas);
+  font-family: 'Manrope', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.45;
+}
+
+body {
+  background:
+    radial-gradient(ellipse at top, rgba(255, 230, 0, 0.06), transparent 60%),
+    radial-gradient(ellipse at bottom right, rgba(15, 31, 77, 0.4), transparent 50%),
+    var(--bg);
+  min-height: 100vh;
+  padding: 60px 40px 80px;
+}
+
+/* ---------- HEADER ---------- */
+.doc-header {
+  max-width: 1400px;
+  margin: 0 auto 80px;
+  border-bottom: 1px solid #2a2a2e;
+  padding-bottom: 50px;
+}
+
+.tag-strip {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 28px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.tag-strip span {
+  padding: 6px 12px;
+  border: 1px solid #2a2a2e;
+  border-radius: 100px;
+}
+
+.tag-strip span.active {
+  background: var(--accent);
+  color: var(--ink);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.doc-header h1 {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: clamp(48px, 6vw, 84px);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  color: var(--canvas);
+  margin-bottom: 24px;
+}
+
+.doc-header h1 em {
+  font-style: normal;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.doc-header p.lead {
+  font-size: 18px;
+  max-width: 720px;
+  color: #b5b5bb;
+  font-weight: 400;
+}
+
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 30px;
+  margin-top: 48px;
+  padding-top: 32px;
+  border-top: 1px dashed #2a2a2e;
+}
+
+.meta-grid > div {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+}
+
+.meta-grid .lbl {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.meta-grid .val {
+  color: var(--canvas);
+  font-size: 14px;
+}
+
+/* ---------- SECTIONS ---------- */
+.flow-section {
+  max-width: 1400px;
+  margin: 0 auto 120px;
+}
+
+.flow-header {
+  display: flex;
+  align-items: baseline;
+  gap: 24px;
+  margin-bottom: 48px;
+  flex-wrap: wrap;
+}
+
+.flow-number {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: 120px;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  color: var(--accent);
+  -webkit-text-stroke: 1px var(--accent);
+}
+
+.flow-title {
+  flex: 1;
+  min-width: 300px;
+}
+
+.flow-title h2 {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 700;
+  font-size: 42px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--canvas);
+  margin-bottom: 12px;
+}
+
+.flow-title p {
+  color: #9a9aa3;
+  max-width: 560px;
+  font-size: 15px;
+}
+
+/* ---------- SCREENS GRID ---------- */
+.screens-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 50px 30px;
+  align-items: start;
+}
+
+.screen-wrap {
+  position: relative;
+}
+
+.screen-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 16px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.screen-label .step {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.screen-label .name {
+  color: var(--canvas);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* ---------- PHONE FRAME ---------- */
+.phone {
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 9 / 19.5;
+  margin: 0 auto;
+  background: #1a1a1d;
+  border-radius: var(--phone-radius);
+  padding: 10px;
+  box-shadow:
+    0 1px 1px rgba(255, 255, 255, 0.05) inset,
+    0 30px 60px -20px rgba(0, 0, 0, 0.6),
+    0 0 0 1px #2a2a2e;
+  position: relative;
+}
+
+.phone::before {
+  content: '';
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: var(--notch-w);
+  height: var(--notch-h);
+  background: #0a0a0c;
+  border-radius: 100px;
+  z-index: 10;
+}
+
+.screen {
+  width: 100%;
+  height: 100%;
+  background: var(--canvas);
+  border-radius: 28px;
+  overflow: hidden;
+  position: relative;
+  color: var(--ink);
+  font-family: 'Manrope', sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Status bar */
+.status-bar {
+  height: 44px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 22px 0 26px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+}
+
+.status-bar .icons {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.status-bar .icons svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* App content area */
+.app-content {
+  flex: 1;
+  padding: 8px 22px 20px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-shrink: 0;
+}
+
+.app-header .back {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #ebe6dc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--ink);
+}
+
+.app-header .title {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+}
+
+.app-header .menu {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--ink);
+}
+
+/* Common elements */
+.h-display {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 700;
+  font-size: 28px;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+
+.h-sub {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 22px;
+  font-weight: 500;
+}
+
+.field-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+  display: block;
+}
+
+.input {
+  width: 100%;
+  background: #ebe6dc;
+  border: none;
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--ink);
+  font-weight: 600;
+  outline: none;
+  margin-bottom: 14px;
+}
+
+.input.with-icon {
+  padding-left: 44px;
+  background-image: linear-gradient(transparent, transparent);
+}
+
+.btn {
+  width: 100%;
+  padding: 15px;
+  border-radius: 14px;
+  background: var(--action);
+  color: white;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  letter-spacing: -0.01em;
+}
+
+.btn-yellow {
+  background: var(--accent);
+  color: var(--ink);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+
+.btn-arrow::after {
+  content: '→';
+  font-size: 17px;
+  margin-left: 4px;
+}
+
+/* ===== SPECIFIC SCREEN STYLES ===== */
+
+/* Screen: Home / Dashboard */
+.home-balance {
+  background: var(--ink);
+  color: var(--canvas);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.home-balance::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 130px;
+  height: 130px;
+  background: radial-gradient(circle, var(--accent), transparent 70%);
+  opacity: 0.5;
+}
+
+.home-balance .lbl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.65;
+  margin-bottom: 8px;
+  position: relative;
+}
+
+.home-balance .amount {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+  position: relative;
+}
+
+.home-balance .amount .currency {
+  font-size: 14px;
+  opacity: 0.6;
+  font-weight: 500;
+  margin-left: 4px;
+}
+
+.home-balance .meter-id {
+  position: relative;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.15);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  opacity: 0.8;
+  display: flex;
+  justify-content: space-between;
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.action-card {
+  background: #ebe6dc;
+  border-radius: 16px;
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.action-card.primary {
+  background: var(--accent);
+}
+
+.action-card .ico {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  margin-bottom: 12px;
+}
+
+.action-card.primary .ico {
+  background: var(--ink);
+  color: var(--accent);
+}
+
+.action-card .lbl {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+
+.action-card .sub {
+  font-size: 10.5px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+.action-card.primary .sub {
+  color: rgba(10, 10, 12, 0.7);
+}
+
+/* Section title */
+.section-tl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.section-tl a {
+  color: var(--action);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+/* Transaction list */
+.tx-list .tx {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px dashed var(--line);
+}
+
+.tx-list .tx:last-child { border-bottom: none; }
+
+.tx .ico {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #ebe6dc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.tx .ico.in { background: #def0e3; color: var(--success); }
+.tx .ico.out { background: #f7e6d4; color: var(--warn); }
+
+.tx .info { flex: 1; min-width: 0; }
+.tx .info .ttl {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tx .info .sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.tx .amt {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tx .amt.in { color: var(--success); }
+.tx .amt.out { color: var(--warn); }
+
+
+/* OFFER CARDS */
+.offer-card {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px 14px 12px;
+  margin-bottom: 8px;
+  position: relative;
+  cursor: pointer;
+}
+
+.offer-card.selected {
+  border-color: var(--action);
+  background: #f0f3ff;
+  border-width: 2px;
+  padding: 13px 13px 11px;
+}
+
+.offer-card .row1 {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+.offer-card .total {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.offer-card .total .cur {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 500;
+  margin-left: 2px;
+}
+
+.offer-card .pct {
+  background: var(--accent);
+  color: var(--ink);
+  padding: 3px 8px;
+  border-radius: 100px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  font-size: 9.5px;
+  letter-spacing: 0.05em;
+}
+
+.offer-card .breakdown {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.offer-card .breakdown b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* Receipt / Summary */
+.receipt {
+  background: #ebe6dc;
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.receipt::before, .receipt::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: var(--canvas);
+  border-radius: 50%;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.receipt::before { left: -8px; }
+.receipt::after { right: -8px; }
+
+.receipt .r-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 8px 0;
+  font-size: 12.5px;
+}
+
+.receipt .r-line + .r-line {
+  border-top: 1px dashed rgba(0, 0, 0, 0.12);
+}
+
+.receipt .r-line .k {
+  color: var(--muted);
+}
+
+.receipt .r-line .v {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.receipt .r-line.tot .k {
+  font-weight: 600;
+  color: var(--ink);
+  font-size: 13.5px;
+}
+
+.receipt .r-line.tot .v {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+
+/* Token success */
+.success-circle {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 30px auto 20px;
+  position: relative;
+}
+
+.success-circle::after {
+  content: '✓';
+  font-size: 50px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.token-display {
+  background: var(--ink);
+  color: var(--accent);
+  border-radius: 14px;
+  padding: 18px;
+  text-align: center;
+  margin: 20px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  font-size: 17px;
+  letter-spacing: 0.05em;
+  word-break: break-all;
+}
+
+.token-display .lbl {
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(255, 230, 0, 0.5);
+  margin-bottom: 6px;
+  letter-spacing: 0.1em;
+}
+
+/* Mobile money picker */
+.mm-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.mm-card {
+  background: white;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 8px;
+  text-align: center;
+}
+
+.mm-card.selected {
+  border-color: var(--action);
+  background: #f0f3ff;
+  border-width: 2px;
+}
+
+.mm-card .logo {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  margin-bottom: 6px;
+}
+
+.mm-card .name {
+  font-size: 10px;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.mm-card .mtn .logo { color: #FFC32B; }
+.mm-card .orange .logo { color: #FF7900; }
+.mm-card .cellcom .logo { color: #0A75B0; }
+
+/* Loading */
+.loading-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.spinner {
+  width: 70px;
+  height: 70px;
+  border: 4px solid #ebe6dc;
+  border-top-color: var(--action);
+  border-radius: 50%;
+  margin-bottom: 24px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loading-wrap .ttl {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 600;
+  font-size: 18px;
+  margin-bottom: 6px;
+  color: var(--ink);
+}
+
+.loading-wrap .sub {
+  font-size: 12px;
+  color: var(--muted);
+  max-width: 220px;
+}
+
+/* Debt display */
+.debt-card {
+  background: var(--ink);
+  color: var(--canvas);
+  border-radius: 20px;
+  padding: 22px;
+  margin-bottom: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.debt-card .warn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 230, 0, 0.15);
+  color: var(--accent);
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  font-weight: 600;
+}
+
+.debt-card .amount {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: 34px;
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+
+.debt-card .amount .currency {
+  font-size: 14px;
+  opacity: 0.6;
+  font-weight: 500;
+}
+
+.debt-card .meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.amount-input {
+  background: #ebe6dc;
+  border-radius: 16px;
+  padding: 24px 20px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.amount-input .lbl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.amount-input .val {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: 38px;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+
+.amount-input .val .currency {
+  font-size: 14px;
+  opacity: 0.45;
+  font-weight: 500;
+}
+
+.amount-quicks {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.amount-quicks button {
+  background: white;
+  border: 1px solid var(--line);
+  padding: 8px 4px;
+  border-radius: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.amount-quicks button.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* error state */
+.error-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 10px;
+}
+
+.error-state .ico {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #fce6e4;
+  color: var(--error);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 38px;
+  font-weight: 700;
+  margin-bottom: 18px;
+}
+
+.error-state h3 {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 700;
+  font-size: 19px;
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+
+.error-state p {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-bottom: 22px;
+  max-width: 220px;
+}
+
+/* Annotations */
+.annotation {
+  margin-top: 18px;
+  border-left: 2px solid var(--accent);
+  padding-left: 14px;
+}
+
+.annotation .api-call {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.annotation .method {
+  background: var(--accent);
+  color: var(--ink);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 10px;
+}
+
+.annotation .method.get { background: #56e07e; }
+.annotation .method.none { background: #4a4a52; color: var(--canvas); }
+
+.annotation .path {
+  color: #d2d2d8;
+  word-break: break-all;
+}
+
+.annotation .desc {
+  font-size: 11.5px;
+  color: #8d8d96;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.annotation .desc b {
+  color: #d2d2d8;
+  font-weight: 600;
+}
+
+/* Flow divider */
+.flow-divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 60px 0 40px;
+}
+
+.flow-divider .line {
+  flex: 1;
+  height: 1px;
+  background: #2a2a2e;
+}
+
+.flow-divider .lbl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Footer doc */
+.footer {
+  max-width: 1400px;
+  margin: 80px auto 0;
+  padding-top: 40px;
+  border-top: 1px solid #2a2a2e;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+}
+
+/* Small responsive */
+@media (max-width: 720px) {
+  body { padding: 30px 16px 60px; }
+  .doc-header h1 { font-size: 44px; }
+  .meta-grid { grid-template-columns: 1fr 1fr; gap: 18px; }
+  .flow-number { font-size: 70px; }
+  .flow-title h2 { font-size: 30px; }
+}
+
+/* Icon stroke utility */
+.ico-svg { display: inline-block; vertical-align: middle; }
+
+</style>
+</head>
+<body>
+
+<header class="doc-header">
+  <div class="tag-strip">
+    <span class="active">MOBILE MOCKUPS</span>
+    <span>FOR DEV PARTNER</span>
+    <span>v1.0 — May 2026</span>
+  </div>
+  <h1>CRG × Finergi<br><em>Token Advance</em> Integration</h1>
+  <p class="lead">
+    Maquettes UI mobiles pour l'intégration du flux d'avance de tokens d'électricité,
+    incluant les flux d'achat à crédit (Token Advance) et de remboursement (Repayment).
+    Chaque écran est annoté avec l'endpoint Finergi à appeler.
+  </p>
+  <div class="meta-grid">
+    <div><span class="lbl">Environment</span><span class="val">api-dev.finergi.cloud</span></div>
+    <div><span class="lbl">Auth method</span><span class="val">OAuth2 / Bearer JWT</span></div>
+    <div><span class="lbl">Currency</span><span class="val">GNF (Guinean Franc)</span></div>
+    <div><span class="lbl">Target platforms</span><span class="val">iOS · Android</span></div>
+  </div>
+</header>
+
+<!-- ============== ARCHITECTURE BANNER ============== -->
+<section style="max-width:1400px; margin:0 auto 100px; background:#161618; border:1px solid #2a2a2e; border-radius:20px; padding:40px 44px; position:relative; overflow:hidden;">
+  <div style="font-family:'JetBrains Mono', monospace; font-size:10px; letter-spacing:0.15em; text-transform:uppercase; color:#FFE600; margin-bottom:14px; font-weight:600;">— Architecture —</div>
+
+  <h2 style="font-family:'Bricolage Grotesque', sans-serif; font-weight:700; font-size:30px; letter-spacing:-0.02em; color:var(--canvas); margin-bottom:18px; line-height:1.1;">L'app mobile parle <em style="font-style:normal; color:var(--accent);">uniquement à Finergi</em></h2>
+
+  <p style="color:#b5b5bb; max-width:760px; font-size:15px; margin-bottom:30px;">
+    Pour ce nouveau parcours "Token Advance", l'app mobile fait <b style="color:var(--canvas)">un seul appel API</b> — vers Finergi. Finergi orchestre tout en backend : génération du token via EDG (B2B) et gestion du Mobile Money. Le parcours existant <i>"Recharge directe"</i> (achat direct via EDG) reste inchangé.
+  </p>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; margin-top:20px;">
+    <div style="background:#0d0d0f; border:1px solid #2a2a2e; border-radius:14px; padding:20px;">
+      <div style="font-family:'JetBrains Mono', monospace; font-size:9.5px; letter-spacing:0.1em; text-transform:uppercase; color:#FFE600; margin-bottom:8px; font-weight:600;">📱 App mobile CRG</div>
+      <div style="color:#d2d2d8; font-size:14px; font-weight:500; margin-bottom:6px;">Parle uniquement à Finergi</div>
+      <div style="color:#8d8d96; font-size:12px;">UI + appels API Finergi. Pas d'appel direct à EDG pour ce parcours.</div>
+    </div>
+    <div style="background:#0d0d0f; border:1px solid #2a2a2e; border-radius:14px; padding:20px;">
+      <div style="font-family:'JetBrains Mono', monospace; font-size:9.5px; letter-spacing:0.1em; text-transform:uppercase; color:#FFE600; margin-bottom:8px; font-weight:600;">🏢 Finergi (orchestrateur)</div>
+      <div style="color:#d2d2d8; font-size:14px; font-weight:500; margin-bottom:6px;">Gère le prêt + appelle EDG</div>
+      <div style="color:#8d8d96; font-size:12px;">Crédit, dette, remboursement. Appelle EDG en backend pour générer le token.</div>
+    </div>
+    <div style="background:#0d0d0f; border:1px solid #2a2a2e; border-radius:14px; padding:20px;">
+      <div style="font-family:'JetBrains Mono', monospace; font-size:9.5px; letter-spacing:0.1em; text-transform:uppercase; color:#FFE600; margin-bottom:8px; font-weight:600;">⚡ EDG (génère le token)</div>
+      <div style="color:#d2d2d8; font-size:14px; font-weight:500; margin-bottom:6px;">Produit le token cryptographique</div>
+      <div style="color:#8d8d96; font-size:12px;">Invisible pour l'app. Le token reçu via Finergi est un <b style="color:#d2d2d8;">vrai token EDG</b>.</div>
+    </div>
+  </div>
+
+  <div style="margin-top:30px; padding:18px; background:rgba(255, 230, 0, 0.06); border-left:3px solid #FFE600; border-radius:0 10px 10px 0;">
+    <div style="font-family:'JetBrains Mono', monospace; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:#FFE600; margin-bottom:6px; font-weight:600;">⚠ Important</div>
+    <div style="color:#d2d2d8; font-size:13.5px; line-height:1.5;">
+      Le <b>token retourné par Finergi est un vrai token EDG</b> (généré par EDG, transité par Finergi). Il a exactement le même format que les tokens du parcours "Recharge directe" existant dans Credit Money — <b>réutiliser le même composant UI d'affichage</b>.
+    </div>
+  </div>
+</section>
+
+<!-- ============== FLOW 1: TOKEN ADVANCE ============== -->
+<section class="flow-section">
+  <header class="flow-header">
+    <div class="flow-number">01</div>
+    <div class="flow-title">
+      <h2>Token Advance Flow</h2>
+      <p>Le client achète des tokens d'électricité à crédit. Il choisit un montant, valide via mobile money,
+      et reçoit un token à saisir dans son compteur.</p>
+    </div>
+  </header>
+
+  <div class="screens-row">
+
+    <!-- Screen 1: Home / Dashboard -->
+    <div class="screen-wrap">
+      <div class="screen-label">
+        <span class="step">1</span>
+        <span class="name">Accueil — choix de l'action</span>
+      </div>
+      <div class="phone">
+        <div class="screen">
+          <div class="status-bar">
+            <span>9:41</span>
+            <span class="icons">●●●● ⌃ ▮</span>
+          </div>
+          <div class="app-content">
+            <div class="app-header">
+              <div class="back">☰</div>
+              <div class="title">CRG Energy</div>
+              <div class="menu">⚙</div>
+            </div>
+
+            <div class="home-balance">
+              <div class="lbl">Solde du compteur</div>
+              <div class="amount">12 450<span class="currency">GNF</span></div>
+              <div class="meter-id">
+                <span>Meter</span>
+                <span>0999 3421 569</span>
+              </div>
+            </div>
+
+            <div class="action-grid">
+              <div class="action-card primary">
+                <div class="ico">⚡</div>
+                <div class="lbl">Avance<br>Tokens</div>
+                <div class="sub">Achat à crédit</div>
+              </div>
+              <div class="action-card">
+                <div class="ico">💰</div>
+                <div class="lbl">Rembourser<br>la dette</div>
+                <div class="sub">Solder mon prêt</div>
+              </div>
+            </div>
+
+            <div class="section-tl">
+              <span>Récent</span>
+              <a>Tout voir</a>
+            </div>
+            <div class="tx-list">
+              <div class="tx">
+                <div class="ico in">⚡</div>
+                <div class="info">
+                  <div class="ttl">Token recharge</div>
+                  <div class="sub">04 mai · 10:45</div>
+                </div>
+                <div class="amt in">+8 500</div>
+              </div>
+              <div class="tx">
+                <div class="ico out">↗</div>
+                <div class="info">
+                  <div class="ttl">Remboursement</div>
+                  <div class="sub">11 mai · 14:05</div>
+                </div>
+                <div class="amt out">−10 000</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="annotation">
+        <div class="api-call">
+          <span class="method">POST</span>
+          <span class="path">/api/v1/security/accessToken</span>
+        </div>
+        <div class="desc"><b>À l'ouverture de l'app</b> : récupère le JWT via <b>client_credentials</b>. Token mis en cache (TTL ~22 ans sur DEV).</div>
+      </div>
+    </div>
+
+    <!-- Screen 2: Choose meter -->
+    <div class="screen-wrap">
+      <div class="screen-label">
+        <span class="step">2</span>
+        <span class="name">Confirmer le compteur</span>
+      </div>
+      <div class="phone">
+        <div class="screen">
+          <div class="status-bar">
+            <span>9:41</span>
+            <span class="icons">●●●● ⌃ ▮</span>
+          </div>
+          <div class="app-content">
+            <div class="app-header">
+              <div class="back">←</div>
+              <div class="title">Avance Tokens</div>
+              <div class="menu"></div>
+            </div>
+
+            <div class="h-display">Quel compteur ?</div>
+            <div class="h-sub">Vérifie le numéro avant de continuer.</div>
+
+            <label class="field-label">N° de compteur EDG</label>
+            <input class="input" value="09993421569" readonly>
+
+            <label class="field-label">N° de téléphone (MSISDN)</label>
+            <input class="input" value="+224 612 123 123" readonly>
+
+            <div style="flex:1"></div>
+
+            <button class="btn btn-arrow">Voir les offres</button>
+          </div>
+        </div>
+      </div>
+      <div class="annotation">
+        <div class="api-call">
+          <span class="method">POST</span>
+          <span class="path">/api/v3/offers</span>
+        </div>
+        <div class="desc"><b>Au clic "Voir les offres"</b> : envoie <code>{ meterNo, msisdn }</code>. Récupère les offres disponibles et <b>tcl</b> (Total Credit Limit).</div>
+      </div>
+    </div>
+
+    <!-- Screen 3: Offers -->
+    <div class="screen-wrap">
+      <div class="screen-label">
+        <span class="step">3</span>
+        <span class="name">Sélection de l'offre</span>
+      </div>
+      <div class="phone">
+        <div class="screen">
+          <div class="status-bar">
+            <span>9:41</span>
+            <span class="icons">●●●● ⌃ ▮</span>
+          </div>
+          <div class="app-content">
+            <div class="app-header">
+              <div class="back">←</div>
+              <div class="title">Choisir une avance</div>
+              <div class="menu"></div>
+            </div>
+
+            <div class="h-display">Combien tu veux ?</div>
+            <div class="h-sub">Crédit dispo : 10 000 GNF</div>
+
+            <div class="offer-card">
+              <div class="row1">
+                <div class="total">3 300<span class="cur">GNF</span></div>
+                <div class="pct">15% fee</div>
+              </div>
+              <div class="breakdown">
+                <span>Token : <b>2 805</b></span>
+                <span>Frais : 495</span>
+              </div>
+            </div>
+
+            <div class="offer-card">
+              <div class="row1">
+                <div class="total">6 700<span class="cur">GNF</span></div>
+                <div class="pct">15% fee</div>
+              </div>
+              <div class="breakdown">
+                <span>Token : <b>5 695</b></span>
+                <span>Frais : 1 005</span>
+              </div>
+            </div>
+
+            <div class="offer-card selected">
+              <div class="row1">
+                <div class="total">10 000<span class="cur">GNF</span></div>
+                <div class="pct">15% fee</div>
+              </div>
+              <div class="breakdown">
+                <span>Token : <b>8 500</b></span>
+                <span>Frais : 1 500</span>
+              </div>
+            </div>
+
+            <div style="flex:1"></div>
+            <button class="btn btn-arrow">Continuer</button>
+          </div>
+        </div>
+      </div>
+      <div class="annotation">
+        <div class="api-call">
+          <span class="method none">UI</span>
+          <span class="path">Affichage de loanOffers[]</span>
+        </div>
+        <div class="desc">Trier par <b>totalAmount</b> asc. Stocker l'<b>offerId</b> de l'offre sélectionnée pour l'étape suivante.</div>
+      </div>
+    </div>
+
+    <!-- Screen 4: Mobile money & confirm -->
+    <div class="screen-wrap">
+      <div class="screen-label">
+        <span class="step">4</span>
+        <span class="name">Récap & paiement</span>
+      </div>
+      <div class="phone">
+        <div class="screen">
+          <div class="status-bar">
+            <span>9:41</span>
+            <span class="icons">●●●● ⌃ ▮</span>
+          </div>
+          <div class="app-content">
+            <div class="app-header">
+              <div class="back">←</div>
+              <div class="title">Confirmation</div>
+              <div class="menu"></div>
+            </div>
+
+            <div class="receipt">
+              <div class="r-line">
+                <span class="k">Meter</span>
+                <span class="v">0999 3421 569</span>
+              </div>
+              <div class="r-line">
+                <span class="k">Token reçu</span>
+                <span class="v">8 500 GNF</span>
+              </div>
+              <div class="r-line">
+                <span class="k">Frais (15%)</span>
+                <span class="v">1 500 GNF</span>
+              </div>
+              <div class="r-line tot">
+                <span class="k">À rembourser</span>
+                <span class="v">10 000 GNF</span>
+              </div>
+            </div>
+
+            <label class="field-label">Wallet pour remboursement</label>
+            <div class="mm-grid">
+              <div class="mm-card mtn selected">
+                <div class="logo">MTN</div>
+                <div class="name">Mobile</div>
+              </div>
+              <div class="mm-card orange">
+                <div class="logo">Orange</div>
+                <div class="name">Money</div>
+              </div>
+              <div class="mm-card cellcom">
+                <div class="logo">Cellcom</div>
+                <div class="name">Wallet</div>
+              </div>
+            </div>
+
+            <div style="flex:1"></div>
+            <button class="btn btn-yellow btn-arrow">Confirmer l'avance</button>
+          </div>
+        </div>
+      </div>
+      <div class="annotation">
+        <div class="api-call">
+          <span class="method">POST</span>
+          <span class="path">/api/v1/advances/crg/notification</span>
+        </div>
+        <div class="desc"><b>Au clic "Confirmer"</b> : envoie le payload complet avec <b>transactionId UUID v4 frais</b>. ⚠️ Idempotence Finergi : ne jamais réutiliser un transactionId.</div>
+      </div>
+    </div>
+
+    <!-- Screen 5: Loading -->
+    <div class="screen-wrap">
+      <div class="screen-label">
+        <span class="step">5</span>
+        <span class="name">Traitement</span>
+      </div>
+      <div class="phone">
+        <div class="screen">
+          <div class="status-bar">
+            <span>9:41</span>
+            <span class="icons">●●●● ⌃ ▮</span>
+          </div>
+          <div class="app-content">
+            <div class="app-header">
+              <div class="back" style="opacity:0.3">←</div>
+              <div class="title">&nbsp;</div>
+              <div class="menu"></div>
+            </div>
+
+            <div class="loading-wrap">
+              <div class="spinner"></div>
+              <div class="ttl">Génération du token…</div>
+              <div class="sub">Ne ferme pas l'app, ça prend ~5 secondes.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="annotation">
+        <div class="api-call">
+          <span class="method none">⌛</span>
+          <span class="path">Finergi orchestre EDG en backend</span>
+        </div>
+        <div class="desc">Pendant l'attente : <b>Finergi crée le prêt + appelle EDG (B2B)</b> pour générer le token cryptographique. 1 seul appel mobile, EDG est invisible. Timeout : <b>30s</b>. Pas de bouton "back".</div>
+      </div>
+    </div>
+
+    <!-- Screen 6: Token success -->
+    <div class="screen-wrap">
+      <div class="screen-label">
+        <span class="step">6</span>
+        <span class="name">Token généré</span>
+      </div>
+      <div class="phone">
+        <div class="screen">
+          <div class="status-bar">
+            <span>9:41</span>
+            <span class="icons">●●●● ⌃ ▮</span>
+          </div>
+          <div class="app-content">
+            <div class="app-header">
+              <div class="back"></div>
+              <div class="title">Succès</div>
+              <div class="menu">⇲</div>
+            </div>
+
+            <div class="success-circle"></div>
+
+            <div style="text-align:center">
+              <div class="h-display" style="font-size:22px">Token envoyé !</div>
+              <div class="h-sub" style="margin-bottom:14px">Saisis-le dans ton compteur EDG.</div>
+            </div>
+
+            <div class="token-display">
+              <div class="lbl">Token EDG · 8 500 GNF</div>
+              1234 · 5678 · 9012<br>3456 · 7890
+            </div>
+
+            <div style="flex:1"></div>
+
+            <button class="btn">Copier le token</button>
+            <button class="btn btn-ghost" style="margin-top:8px">Voir mes prêts</button>
+          </div>
+        </div>
+      </div>
+      <div class="annotation">
+        <div class="api-call">
+          <span class="method none">✓</span>
+          <span class="path">Token EDG reçu via Finergi</span>
+        </div>
+        <div class="desc">Le <b>token est généré par EDG</b> (transité par Finergi). Identique au format "Recharge directe" existant → réutiliser le même composant UI. Stocker <b>loanId</b>, <b>agreementRef</b>, <b>token</b>, <b>tokenAmount</b> en BDD locale.</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============== FLOW DIVIDER ============== -->
+<div style="max-width:1400px; margin:0 auto;">
+<div class="flow-divider">
+  <div class="line"></div>
+  <div class="lbl">— Flow 2 —</div>
+  <div class="line"></div>
+</div>
+</div>
+
+<!-- ============== FLOW 2: REPAYMENT ============== -->
+<section class="flow-section">
+  <header class="flow-header">
+    <div class="flow-number">02</div>
+    <div class="flow-title">
+      <h2>Repayment Flow</h2>
+      <p>Le client consulte sa dette en cours et la rembourse via mobile money.
+      Une fois soldée, il peut à nouveau demander une avance.</p>
+    </div>
+  </header>
+
+  <div class="screens-row">
+
+    <!-- Screen 7: Debt overview -->
+    <div class="screen-wrap">
+      <div class="screen-label">
+        <span class="step">7</span>
+        <span class="name">Vue de la dette</span>
+      </div>
+      <div class="phone">
+        <div class="screen">
+          <div class="status-bar">
+            <span>9:41</span>
+            <span class="icons">●●●● ⌃ ▮</span>
+          </div>
+          <div class="app-content">
+            <div class="app-header">
+              <div class="back">←</div>
+              <div class="title">Mon prêt</div>
+              <div class="menu">⋯</div>
+            </div>
+
+            <div class="debt-card">
+              <div class="warn">● À rembourser</div>
+              <div class="amount">10 000<span class="currency">GNF</span></div>
+              <div class="meta">Échéance : 04 mai 2027</div>
+            </div>
+
+            <div class="section-tl">
+              <span>Détails du prêt</span>
+            </div>
+            <div class="receipt" style="background:white; border:1px solid var(--line);">
+              <div class="r-line">
+                <span class="k">Loan ID</span>
+                <span class="v" style="font-size:10px">02daf4d0…310e2</span>
+              </div>
+              <div class="r-line">
+                <span class="k">Contracté le</span>
+                <span class="v">04 mai 2026</span>
+              </div>
+              <div class="r-line">
+                <span class="k">Token reçu</span>
+                <span class="v">8 500 GNF</span>
+              </div>
+              <div class="r-line">
+                <span class="k">Frais</span>
+                <span class="v">1 500 GNF</span>
+              </div>
+            </div>
+
+            <div style="flex:1"></div>
+            <button class="btn btn-yellow btn-arrow">Rembourser maintenant</button>
+          </div>
+        </div>
+      </div>
+      <div class="annotation">
+        <div class="api-call">
+          <span class="method get">GET</span>
+          <span class="path">/api/v1/debt-outstanding/{meterNo}</span>
+        </div>
+        <div class="desc"><b>À l'ouverture de l'écran</b> : récupère <b>requiredAmount</b>. Si <code>"0.0"</code> → afficher état "à jour" et masquer ce parcours.</div>
+      </div>
+    </div>
+
+    <!-- Screen 8: Amount picker -->
+    <div class="screen-wrap">
+      <div class="screen-label">
+        <span class="step">8</span>
+        <span class="name">Montant à payer</span>
+      </div>
+      <div class="phone">
+        <div class="screen">
+          <div class="status-bar">
+            <span>9:41</span>
+            <span class="icons">●●●● ⌃ ▮</span>
+          </div>
+          <div class="app-content">
+            <div class="app-header">
+              <div class="back">←</div>
+              <div class="title">Remboursement</div>
+              <div class="menu"></div>
+            </div>
+
+            <div class="h-display">Combien rembourser ?</div>
+            <div class="h-sub">Dette totale : 10 000 GNF</div>
+
+            <div class="amount-input">
+              <div class="lbl">Montant</div>
+              <div class="val">10 000<span class="currency"> GNF</span></div>
+            </div>
+
+            <div class="amount-quicks">
+              <button>25%</button>
+              <button>50%</button>
+              <button class="selected">Total</button>
+            </div>
+
+            <label class="field-label">Wallet de paiement</label>
+            <div class="mm-grid">
+              <div class="mm-card mtn selected">
+                <div class="logo">MTN</div>
+                <div class="name">Mobile</div>
+              </div>
+              <div class="mm-card orange">
+                <div class="logo">Orange</div>
+                <div class="name">Money</div>
+              </div>
+              <div class="mm-card cellcom">
+                <div class="logo">Cellcom</div>
+                <div class="name">Wallet</div>
+              </div>
+            </div>
+
+            <div style="flex:1"></div>
+            <button class="btn btn-arrow">Confirmer le paiement</button>
+          </div>
+        </div>
+      </div>
+      <div class="annotation">
+        <div class="api-call">
+          <span class="method none">UI</span>
+          <span class="path">Validation locale du montant</span>
+        </div>
+        <div class="desc"><code>amount</code> doit être ≤ <b>requiredAmount</b>. Si paiement partiel autorisé : prévoir min de 1000 GNF (à confirmer avec Finergi).</div>
+      </div>
+    </div>
+
+    <!-- Screen 9: Loading -->
+    <div class="screen-wrap">
+      <div class="screen-label">
+        <span class="step">9</span>
+        <span class="name">Paiement en cours</span>
+      </div>
+      <div class="phone">
+        <div class="screen">
+          <div class="status-bar">
+            <span>9:41</span>
+            <span class="icons">●●●● ⌃ ▮</span>
+          </div>
+          <div class="app-content">
+            <div class="app-header">
+              <div class="back" style="opacity:0.3">←</div>
+              <div class="title">&nbsp;</div>
+              <div class="menu"></div>
+            </div>
+
+            <div class="loading-wrap">
+              <div class="spinner"></div>
+              <div class="ttl">Confirmation MTN…</div>
+              <div class="sub">Valide le paiement avec ton code PIN sur ton téléphone.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="annotation">
+        <div class="api-call">
+          <span class="method">POST</span>
+          <span class="path">/api/v1/payments</span>
+        </div>
+        <div class="desc">Génère un <b>nouveau UUID v4</b> pour <code>transactionId</code>. ⚠️ Sans UUID frais, Finergi retourne 200 mais n'applique pas le paiement (idempotence).</div>
+      </div>
+    </div>
+
+    <!-- Screen 10: Success -->
+    <div class="screen-wrap">
+      <div class="screen-label">
+        <span class="step">10</span>
+        <span class="name">Dette soldée</span>
+      </div>
+      <div class="phone">
+        <div class="screen">
+          <div class="status-bar">
+            <span>9:41</span>
+            <span class="icons">●●●● ⌃ ▮</span>
+          </div>
+          <div class="app-content">
+            <div class="app-header">
+              <div class="back"></div>
+              <div class="title">Succès</div>
+              <div class="menu">⇲</div>
+            </div>
+
+            <div class="success-circle"></div>
+
+            <div style="text-align:center">
+              <div class="h-display" style="font-size:22px">Prêt remboursé !</div>
+              <div class="h-sub" style="margin-bottom:14px">Tu peux à nouveau demander une avance.</div>
+            </div>
+
+            <div class="receipt" style="background:#def0e3;">
+              <div class="r-line">
+                <span class="k">Montant payé</span>
+                <span class="v">10 000 GNF</span>
+              </div>
+              <div class="r-line">
+                <span class="k">Wallet</span>
+                <span class="v">MTN Mobile</span>
+              </div>
+              <div class="r-line">
+                <span class="k">Référence</span>
+                <span class="v" style="font-size:10px">9d5fb7ad…3377</span>
+              </div>
+              <div class="r-line tot">
+                <span class="k">Statut</span>
+                <span class="v" style="color:var(--success)">✓ Soldé</span>
+              </div>
+            </div>
+
+            <div style="flex:1"></div>
+            <button class="btn">Retour à l'accueil</button>
+            <button class="btn btn-ghost" style="margin-top:8px">Demander une avance</button>
+          </div>
+        </div>
+      </div>
+      <div class="annotation">
+        <div class="api-call">
+          <span class="method get">GET</span>
+          <span class="path">/api/v1/debt-outstanding/{meterNo}</span>
+        </div>
+        <div class="desc"><b>Polling après succès</b> : vérifier que <code>requiredAmount = "0.0"</code>. Si oui, débloquer "Demander une avance".</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============== ERROR STATES ============== -->
+<div style="max-width:1400px; margin:0 auto;">
+<div class="flow-divider">
+  <div class="line"></div>
+  <div class="lbl">— États d'erreur clés —</div>
+  <div class="line"></div>
+</div>
+</div>
+
+<section class="flow-section">
+  <div class="screens-row">
+
+    <!-- Error: dette en cours -->
+    <div class="screen-wrap">
+      <div class="screen-label">
+        <span class="step">!</span>
+        <span class="name">Dette bloque une nouvelle avance</span>
+      </div>
+      <div class="phone">
+        <div class="screen">
+          <div class="status-bar">
+            <span>9:41</span>
+            <span class="icons">●●●● ⌃ ▮</span>
+          </div>
+          <div class="app-content">
+            <div class="app-header">
+              <div class="back">←</div>
+              <div class="title">Avance Tokens</div>
+              <div class="menu"></div>
+            </div>
+
+            <div class="error-state">
+              <div class="ico" style="background:#fff7d9; color:var(--warn)">!</div>
+              <h3>Dette en cours</h3>
+              <p>Tu as 10 000 GNF à rembourser. Solde ton prêt actuel pour pouvoir en demander un nouveau.</p>
+
+              <button class="btn btn-yellow" style="width:auto; padding:13px 24px;">Rembourser maintenant</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="annotation">
+        <div class="api-call">
+          <span class="method">POST</span>
+          <span class="path">/api/v3/offers → loanOffers: []</span>
+        </div>
+        <div class="desc">Si <code>outstandingAmount > 0</code> ET <code>loanOffers</code> est vide → router vers cet écran au lieu de la liste d'offres.</div>
+      </div>
+    </div>
+
+    <!-- Error: network -->
+    <div class="screen-wrap">
+      <div class="screen-label">
+        <span class="step">!</span>
+        <span class="name">Erreur réseau / serveur</span>
+      </div>
+      <div class="phone">
+        <div class="screen">
+          <div class="status-bar">
+            <span>9:41</span>
+            <span class="icons">●●●● ⌃ ▮</span>
+          </div>
+          <div class="app-content">
+            <div class="app-header">
+              <div class="back">←</div>
+              <div class="title">&nbsp;</div>
+              <div class="menu"></div>
+            </div>
+
+            <div class="error-state">
+              <div class="ico">×</div>
+              <h3>Connexion impossible</h3>
+              <p>Vérifie ta connexion internet, puis réessaie. Aucune somme n'a été débitée.</p>
+
+              <button class="btn" style="width:auto; padding:13px 24px;">Réessayer</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="annotation">
+        <div class="api-call">
+          <span class="method none">!</span>
+          <span class="path">HTTP 5xx / Timeout / Network</span>
+        </div>
+        <div class="desc">⚠️ <b>Ne jamais retry automatiquement un POST</b> avec le même transactionId : si le serveur a reçu, ré-envoi = duplicate. Toujours nouveau UUID au retry.</div>
+      </div>
+    </div>
+
+    <!-- Error: vendor or meter not available -->
+    <div class="screen-wrap">
+      <div class="screen-label">
+        <span class="step">!</span>
+        <span class="name">Compteur non éligible</span>
+      </div>
+      <div class="phone">
+        <div class="screen">
+          <div class="status-bar">
+            <span>9:41</span>
+            <span class="icons">●●●● ⌃ ▮</span>
+          </div>
+          <div class="app-content">
+            <div class="app-header">
+              <div class="back">←</div>
+              <div class="title">&nbsp;</div>
+              <div class="menu"></div>
+            </div>
+
+            <div class="error-state">
+              <div class="ico" style="background:#fff7d9; color:var(--warn)">⚠</div>
+              <h3>Compteur non éligible</h3>
+              <p>Ce compteur ne peut pas bénéficier d'avances pour le moment. Contacte le support CRG.</p>
+
+              <button class="btn btn-ghost" style="width:auto; padding:13px 24px;">Contacter le support</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="annotation">
+        <div class="api-call">
+          <span class="method none">×</span>
+          <span class="path">Code 1005 / 1043</span>
+        </div>
+        <div class="desc">Code 1005 = METER NOT AVAILABLE. Code 1043 = VENDOR NOT FOUND. Logger côté CRG + proposer contact support.</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<footer class="footer">
+  CRG × Finergi · Mobile Mockups · v1.0 · Generated 2026-05-12<br>
+  Pour la spec technique complète, voir <b>finergi-crg-mobile-integration-spec.md</b>
+</footer>
+
+</body>
+</html>
