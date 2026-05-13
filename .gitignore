@@ -8,3 +8,4 @@ frontend/ultima-ng-19.0.0/dist/
 .env.*
 *.env
 nul
+**/.DS_Store
