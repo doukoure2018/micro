@@ -6,6 +6,7 @@ import io.digiservices.clients.domain.PointVenteDto;
 import io.digiservices.clients.domain.ReconciliationResultDTO;
 import io.digiservices.clients.domain.User;
 import io.digiservices.ecreditservice.domain.Response;
+import io.digiservices.ecreditservice.service.RapprochementCutoffService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.NotNull;
@@ -32,6 +33,8 @@ public class RapprochementResource {
 
     private final EbankingClient ebankingClient;
     private final UserClient userClient;
+    private final RapprochementCutoffService cutoffService;
+
     @GetMapping("/rapprochement/check")
     public ResponseEntity<Response> checkReconciliation(
                                     @NotNull Authentication authentication,
@@ -39,6 +42,11 @@ public class RapprochementResource {
                                     @RequestParam(value = "dateFin") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFin,
                                     HttpServletRequest request)
     {
+        if (!cutoffService.isSubmissionAllowed()) {
+            return ResponseEntity.status(FORBIDDEN)
+                    .body(getResponse(request, Map.of("error", "RAPPROCHEMENT_CLOSED"), cutoffService.getClosedMessage(), FORBIDDEN));
+        }
+
         // get the instance user
         User user = userClient.getUserByUuid(authentication.getName());
 
@@ -79,6 +87,11 @@ public class RapprochementResource {
             @RequestParam(value = "dateFin") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFin,
             HttpServletRequest request)
     {
+        if (!cutoffService.isSubmissionAllowed()) {
+            return ResponseEntity.status(FORBIDDEN)
+                    .body(getResponse(request, Map.of("error", "RAPPROCHEMENT_CLOSED"), cutoffService.getClosedMessage(), FORBIDDEN));
+        }
+
         ReconciliationResultDTO reconciliationResultDTO = ebankingClient.checkReconciliation(
                 pointVenteCode, dateDebut, dateFin
         );
@@ -92,6 +105,11 @@ public class RapprochementResource {
             @RequestParam(value = "dateFin") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFin,
             HttpServletRequest request)
     {
+        if (!cutoffService.isSubmissionAllowed()) {
+            return ResponseEntity.status(FORBIDDEN)
+                    .body(getResponse(request, Map.of("error", "RAPPROCHEMENT_CLOSED"), cutoffService.getClosedMessage(), FORBIDDEN));
+        }
+
         // get the instance user
         User user = userClient.getUserByUuid(authentication.getName());
 

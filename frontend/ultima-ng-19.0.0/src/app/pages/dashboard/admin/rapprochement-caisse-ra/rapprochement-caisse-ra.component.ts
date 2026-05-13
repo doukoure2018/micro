@@ -34,6 +34,7 @@ import { ExcelExportService } from '@/service/TransactionManquante';
 import { PdfExportService } from '@/service/PdfExportService';
 import { FormatReportPipe } from '@/pipes/FormatReportPipe';
 import { IUser } from '@/interface/user';
+import { RapprochementCutoffService } from '@/service/rapprochement-cutoff.service';
 
 interface PointVenteOption {
     id: number;
@@ -82,6 +83,10 @@ export class RapprochementCaisseRaComponent implements OnInit, OnDestroy {
     private messageService = inject(MessageService);
     private excelExportService = inject(ExcelExportService);
     private pdfExportService = inject(PdfExportService);
+    cutoffService = inject(RapprochementCutoffService);
+
+    canSubmit(): boolean { return this.cutoffService.isSubmissionAllowed(); }
+    isInWarningZone(): boolean { return this.cutoffService.isInWarningZone(); }
 
     private destroy$ = new Subject<void>();
     private currentSubscription?: Subscription;

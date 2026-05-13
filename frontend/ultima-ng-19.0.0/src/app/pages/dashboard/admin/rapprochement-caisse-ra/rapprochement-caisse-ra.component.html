@@ -1,6 +1,25 @@
 <div class="rapprochement-container">
     <p-toast></p-toast>
 
+    <!-- Bandeau cutoff -->
+    @if (!canSubmit()) {
+    <div class="bg-red-50 border border-red-300 rounded-lg p-3 mb-3 flex items-center gap-2">
+        <i class="pi pi-ban text-red-600 text-xl"></i>
+        <div class="text-red-800 text-sm">
+            <strong>Service ferme.</strong> Les soumissions de rapprochement caisse sont desactivees apres
+            {{ cutoffService.getGracePeriodEndLabel() }} (heure de Conakry). Reouverture demain a 00:00.
+        </div>
+    </div>
+    } @else if (isInWarningZone()) {
+    <div class="bg-orange-50 border border-orange-300 rounded-lg p-3 mb-3 flex items-center gap-2">
+        <i class="pi pi-clock text-orange-600 text-xl"></i>
+        <div class="text-orange-800 text-sm">
+            <strong>Attention :</strong> le service sera ferme a {{ cutoffService.getCutoffTimeLabel() }}.
+            Une periode de grace de finalisation est accordee jusqu'a {{ cutoffService.getGracePeriodEndLabel() }}.
+        </div>
+    </div>
+    }
+
     <!-- Header Card -->
     <p-card>
         <ng-template pTemplate="header">
@@ -47,7 +66,10 @@
 
                 <div class="field-button">
                     <p-button label="Analyser" icon="pi pi-search" [loading]="state().loading"
-                        [disabled]="auditForm.invalid || state().loading" (onClick)="performReconciliation()">
+                        [disabled]="auditForm.invalid || state().loading || !canSubmit()"
+                        [pTooltip]="!canSubmit() ? 'Service ferme apres ' + cutoffService.getGracePeriodEndLabel() : ''"
+                        tooltipPosition="top"
+                        (onClick)="performReconciliation()">
                     </p-button>
 
                     <p-button icon="pi pi-refresh" severity="secondary" [text]="true" pTooltip="Reinitialiser"

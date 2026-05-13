@@ -34,6 +34,7 @@ import { ExcelExportService } from '@/service/TransactionManquante';
 import { IUser } from '@/interface/user';
 import { PdfExportService } from '@/service/PdfExportService';
 import { FormatReportPipe } from '@/pipes/FormatReportPipe';
+import { RapprochementCutoffService } from '@/service/rapprochement-cutoff.service';
 
 @Component({
     selector: 'app-rapprochement-caisse',
@@ -75,10 +76,14 @@ export class RapprochementCaisseComponent implements OnDestroy {
     private fb = inject(FormBuilder);
     private messageService = inject(MessageService);
     private excelExportService = inject(ExcelExportService);
+    cutoffService = inject(RapprochementCutoffService);
 
     private destroy$ = new Subject<void>();
     private currentSubscription?: Subscription;
     private pdfExportService = inject(PdfExportService);
+
+    canSubmit(): boolean { return this.cutoffService.isSubmissionAllowed(); }
+    isInWarningZone(): boolean { return this.cutoffService.isInWarningZone(); }
 
     // Dialog pour les options d'export
     showExportDialog = false;

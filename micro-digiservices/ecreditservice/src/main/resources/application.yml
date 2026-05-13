@@ -142,6 +142,12 @@ jwks:
   uri: http://localhost:8080/oauth2/jwks
 
 
+rapprochement:
+  caisse:
+    cutoff-time: "10:00"
+    grace-period-minutes: 15
+    timezone: "Africa/Conakry"
+
 orange:
   api:
     oauth:

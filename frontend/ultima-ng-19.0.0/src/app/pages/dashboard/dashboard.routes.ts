@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { RapprochementCutoffGuard } from '@/service/rapprochement-cutoff.guard';
 
 export default [
     {
@@ -24,6 +25,7 @@ export default [
     {
         path: 'rapprochement-caisse',
         data: { breadcrumb: 'Rapprochement Caisse' },
+        canActivate: [RapprochementCutoffGuard],
         loadComponent: () => import('./agent-credit/rapprochement-caisse/rapprochement-caisse.component').then((c) => c.RapprochementCaisseComponent)
     },
     {
@@ -269,6 +271,7 @@ export default [
     {
         path: 'rapprochement-caisse-ra',
         data: { breadcrumb: 'Outil Rapprochement de Caisse' },
+        canActivate: [RapprochementCutoffGuard],
         loadComponent: () => import('./admin/rapprochement-caisse-ra/rapprochement-caisse-ra.component').then((c) => c.RapprochementCaisseRaComponent)
     },
     {
