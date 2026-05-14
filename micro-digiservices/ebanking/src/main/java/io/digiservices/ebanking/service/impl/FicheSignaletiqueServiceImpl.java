@@ -375,12 +375,10 @@ public class FicheSignaletiqueServiceImpl implements FicheSignaletiqueService {
 
 
     @Override
-    @Transactional(readOnly = true, timeout = 60)
     public FicheSignaletiqueResponseSoldeDTO getFicheSignaletiqueWithSolde(String codCliente) {
         return getFicheSignaletiqueWithSolde(DEFAULT_COD_EMPRESA, codCliente);
     }
 
-    @Transactional(readOnly = true, timeout = 60)
     public FicheSignaletiqueResponseSoldeDTO getFicheSignaletiqueWithSolde(String codEmpresa, String codCliente) {
         log.info("Récupération de la fiche signalétique avec soldes - Entreprise: {}, Client: {}",
                 codEmpresa != null ? codEmpresa : DEFAULT_COD_EMPRESA, codCliente);

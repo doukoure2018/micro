@@ -118,6 +118,10 @@ export class DigitalVerificationComponent implements OnInit {
     }
 
     searchClient(): void {
+        if (this.state().searching) {
+            return;
+        }
+
         const codCliente = this.searchForm.get('codCliente')?.value;
 
         if (!codCliente) {

@@ -43,7 +43,8 @@ function shouldBypassCache(request: HttpRequest<unknown>, httpCache: HttpCacheSe
         '/salaire/info-personnel',
         '/salaire/avance-salaire',
         '/salaire/demande-salary',
-        '/demande-salary'
+        '/demande-salary',
+        '/fiche-signaletique-with-solde/'
     ];
 
     const isBypassUrl = bypassUrls.some((url) => request.url.includes(url));
