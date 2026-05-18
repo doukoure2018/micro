@@ -230,6 +230,11 @@ export class AppMenu {
                                                           label: 'Inspection Changement Téléphone',
                                                           icon: 'pi pi-fw pi-phone',
                                                           routerLink: ['/dashboards/changement-telephone/inspection']
+                                                      },
+                                                      {
+                                                          label: 'Mes avances de salaire',
+                                                          icon: 'pi pi-fw pi-list',
+                                                          routerLink: ['/dashboards/mes-demandes-salaire']
                                                       }
                                                   ]
                                                 : []
