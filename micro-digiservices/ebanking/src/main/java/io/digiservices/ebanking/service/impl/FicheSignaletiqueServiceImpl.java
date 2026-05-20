@@ -41,6 +41,11 @@ public class FicheSignaletiqueServiceImpl implements FicheSignaletiqueService {
 
     private static final String DEFAULT_COD_EMPRESA = "00000";
     private static final int DEFAULT_TIMEOUT_SECONDS = 60;
+    // Deadline plus courte sur la base Production pour basculer rapidement sur
+    // le fallback Middleware quand le serveur Production est lent. Le
+    // queryTimeout JDBC reste à 60s pour ne pas casser les rares cas où la
+    // requête finit juste après ce seuil.
+    private static final int PRODUCTION_TIMEOUT_SECONDS = 15;
     private static final int WARNING_THRESHOLD_MS = 30000; // 30 seconds
 
     @Override
@@ -435,16 +440,16 @@ public class FicheSignaletiqueServiceImpl implements FicheSignaletiqueService {
                         + (cause != null ? cause.getMessage() : e.getMessage()));
             }
 
-            // Production : on attend dans le budget restant; fallback Middleware si échec
+            // Production : deadline courte pour fail-fast; fallback Middleware si échec.
+            // La requête Production peut continuer en arrière-plan jusqu'au queryTimeout
+            // JDBC (60s) — la connexion Hikari sera relâchée à ce moment-là.
             List<CompteDTO> comptesProd = null;
             boolean rapprochementPartiel = false;
             try {
-                long elapsedMs = System.currentTimeMillis() - startTime;
-                long remainingMs = Math.max(1000L,
-                        TimeUnit.SECONDS.toMillis(DEFAULT_TIMEOUT_SECONDS) - elapsedMs);
-                comptesProd = futureProd.get(remainingMs, TimeUnit.MILLISECONDS);
+                comptesProd = futureProd.get(PRODUCTION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             } catch (TimeoutException e) {
-                log.warn("Production indisponible (timeout), fallback Middleware - Client: {}", codCliente);
+                log.warn("Production lente (>{}s), fallback Middleware - Client: {}",
+                        PRODUCTION_TIMEOUT_SECONDS, codCliente);
                 futureProd.cancel(true);
                 rapprochementPartiel = true;
             } catch (ExecutionException e) {
