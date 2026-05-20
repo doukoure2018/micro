@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -394,51 +395,72 @@ public class FicheSignaletiqueServiceImpl implements FicheSignaletiqueService {
                     ? codEmpresa.trim()
                     : DEFAULT_COD_EMPRESA;
 
-            // Execute with timeout using CompletableFuture
-            CompletableFuture<FicheSignaletiqueResponseSoldeDTO> future = CompletableFuture.supplyAsync(
-                    () -> {
-                        try {
-                            // 1. Récupérer la fiche signalétique de base
-                            FicheSignaletiqueResponseDTO basicFiche = repository.getFicheSignaletique(empresa, codCliente.trim());
+            final String client = codCliente.trim();
 
-                            // 2. Récupérer les informations de solde (Production)
-                            List<CompteDTO> comptes = repository.getComptesSoldes(empresa, codCliente.trim());
+            // Lancer les 3 requêtes en parallèle
+            CompletableFuture<FicheSignaletiqueResponseDTO> futureFiche = CompletableFuture.supplyAsync(
+                    () -> repository.getFicheSignaletique(empresa, client), executorService);
 
-                            // 3. Récupérer les soldes Middleware pour rapprochement
-                            Map<String, CompteDTO> comptesMiddleware = repository.getComptesSoldesMiddleware(empresa, codCliente.trim());
+            CompletableFuture<List<CompteDTO>> futureProd = CompletableFuture.supplyAsync(
+                    () -> repository.getComptesSoldes(empresa, client), executorService);
 
-                            // 4. Convertir et enrichir les données avec rapprochement
-                            return buildFicheWithSolde(basicFiche, comptes, comptesMiddleware);
+            CompletableFuture<Map<String, CompteDTO>> futureMw = CompletableFuture.supplyAsync(
+                    () -> repository.getComptesSoldesMiddleware(empresa, client), executorService);
 
-                        } catch (QueryTimeoutException e) {
-                            log.error("Query timeout pour client: {}", codCliente);
-                            throw new ApiException("La requête a pris trop de temps. Veuillez réessayer.");
-                        }
-                    },
-                    executorService
-            );
-
-            FicheSignaletiqueResponseSoldeDTO result;
+            // Fiche identité (obligatoire) + Middleware (rapide, requis pour fallback)
+            FicheSignaletiqueResponseDTO basicFiche;
+            Map<String, CompteDTO> comptesMiddleware;
             try {
-                result = future.get(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                basicFiche = futureFiche.get(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                comptesMiddleware = futureMw.get(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             } catch (TimeoutException e) {
+                futureFiche.cancel(true);
+                futureMw.cancel(true);
+                futureProd.cancel(true);
                 long duration = System.currentTimeMillis() - startTime;
                 log.error("Timeout après {} ms pour client: {}", duration, codCliente);
                 throw new ApiException("La récupération a pris trop de temps (>60s). Veuillez réessayer.");
-
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 log.error("Thread interrompu lors de la récupération", e);
                 throw new ApiException("Opération interrompue");
-
             } catch (ExecutionException e) {
+                futureProd.cancel(true);
                 Throwable cause = e.getCause();
                 if (cause instanceof ApiException) {
                     throw (ApiException) cause;
                 }
-                log.error("Erreur lors de l'exécution asynchrone", e);
-                throw new ApiException("Erreur lors de la récupération: " + cause.getMessage());
+                log.error("Erreur lors de la récupération fiche/middleware", cause != null ? cause : e);
+                throw new ApiException("Erreur lors de la récupération: "
+                        + (cause != null ? cause.getMessage() : e.getMessage()));
             }
+
+            // Production : on attend dans le budget restant; fallback Middleware si échec
+            List<CompteDTO> comptesProd = null;
+            boolean rapprochementPartiel = false;
+            try {
+                long elapsedMs = System.currentTimeMillis() - startTime;
+                long remainingMs = Math.max(1000L,
+                        TimeUnit.SECONDS.toMillis(DEFAULT_TIMEOUT_SECONDS) - elapsedMs);
+                comptesProd = futureProd.get(remainingMs, TimeUnit.MILLISECONDS);
+            } catch (TimeoutException e) {
+                log.warn("Production indisponible (timeout), fallback Middleware - Client: {}", codCliente);
+                futureProd.cancel(true);
+                rapprochementPartiel = true;
+            } catch (ExecutionException e) {
+                Throwable cause = e.getCause();
+                log.warn("Production indisponible ({}), fallback Middleware - Client: {}",
+                        cause != null ? cause.getMessage() : e.getMessage(), codCliente);
+                rapprochementPartiel = true;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                futureProd.cancel(true);
+                log.warn("Thread interrompu pendant l'attente Production - Client: {}", codCliente);
+                rapprochementPartiel = true;
+            }
+
+            FicheSignaletiqueResponseSoldeDTO result =
+                    buildFicheWithSolde(basicFiche, comptesProd, comptesMiddleware, rapprochementPartiel);
 
             // Vérifier si le client existe
             if (result == null || (result.getClientExists() != null && !result.getClientExists())) {
@@ -447,8 +469,8 @@ public class FicheSignaletiqueServiceImpl implements FicheSignaletiqueService {
             }
 
             long duration = System.currentTimeMillis() - startTime;
-            log.info("Fiche signalétique avec soldes récupérée avec succès - Client: {} (durée: {} ms)",
-                    codCliente, duration);
+            log.info("Fiche signalétique avec soldes récupérée - Client: {} (durée: {} ms, rapprochementPartiel: {})",
+                    codCliente, duration, rapprochementPartiel);
 
             // Log warning for slow queries
             if (duration > WARNING_THRESHOLD_MS) {
@@ -471,36 +493,49 @@ public class FicheSignaletiqueServiceImpl implements FicheSignaletiqueService {
 
     private FicheSignaletiqueResponseSoldeDTO buildFicheWithSolde(
             FicheSignaletiqueResponseDTO basicFiche,
-            List<CompteDTO> comptes,
-            Map<String, CompteDTO> comptesMiddleware) {
+            List<CompteDTO> comptesProd,
+            Map<String, CompteDTO> comptesMiddleware,
+            boolean rapprochementPartiel) {
 
-        // Enrichir chaque compte avec les soldes middleware
-        if (comptesMiddleware != null && !comptesMiddleware.isEmpty()) {
-            for (CompteDTO compte : comptes) {
-                CompteDTO mw = comptesMiddleware.get(compte.getNumCuenta());
-                if (mw != null) {
-                    compte.setSalDisponibleMiddleware(mw.getSalDisponible());
-                    compte.setSalPromedioMiddleware(mw.getSalPromedio());
-                    compte.setSalCongeladoMiddleware(mw.getSalCongelado());
-                    compte.setSalTransitoMiddleware(mw.getSalTransito());
-                    compte.setSalReservaMiddleware(mw.getSalReserva());
+        // Choisir la source des comptes : Production si dispo, sinon synthétiser depuis Middleware
+        List<CompteDTO> comptes;
+        if (comptesProd != null) {
+            comptes = comptesProd;
+            // Enrichir chaque compte avec les soldes middleware pour rapprochement
+            if (comptesMiddleware != null && !comptesMiddleware.isEmpty()) {
+                for (CompteDTO compte : comptes) {
+                    CompteDTO mw = comptesMiddleware.get(compte.getNumCuenta());
+                    if (mw != null) {
+                        compte.setSalDisponibleMiddleware(mw.getSalDisponible());
+                        compte.setSalPromedioMiddleware(mw.getSalPromedio());
+                        compte.setSalCongeladoMiddleware(mw.getSalCongelado());
+                        compte.setSalTransitoMiddleware(mw.getSalTransito());
+                        compte.setSalReservaMiddleware(mw.getSalReserva());
 
-                    // Calculer les écarts
-                    BigDecimal prodDisp = compte.getSalDisponible() != null ? compte.getSalDisponible() : BigDecimal.ZERO;
-                    BigDecimal mwDisp = mw.getSalDisponible() != null ? mw.getSalDisponible() : BigDecimal.ZERO;
-                    compte.setEcartDisponible(prodDisp.subtract(mwDisp));
+                        BigDecimal prodDisp = compte.getSalDisponible() != null ? compte.getSalDisponible() : BigDecimal.ZERO;
+                        BigDecimal mwDisp = mw.getSalDisponible() != null ? mw.getSalDisponible() : BigDecimal.ZERO;
+                        compte.setEcartDisponible(prodDisp.subtract(mwDisp));
 
-                    BigDecimal prodProm = compte.getSalPromedio() != null ? compte.getSalPromedio() : BigDecimal.ZERO;
-                    BigDecimal mwProm = mw.getSalPromedio() != null ? mw.getSalPromedio() : BigDecimal.ZERO;
-                    compte.setEcartPromedio(prodProm.subtract(mwProm));
+                        BigDecimal prodProm = compte.getSalPromedio() != null ? compte.getSalPromedio() : BigDecimal.ZERO;
+                        BigDecimal mwProm = mw.getSalPromedio() != null ? mw.getSalPromedio() : BigDecimal.ZERO;
+                        compte.setEcartPromedio(prodProm.subtract(mwProm));
 
-                    compte.setRapprochementOk(
-                            compte.getEcartDisponible().compareTo(BigDecimal.ZERO) == 0 &&
-                            compte.getEcartPromedio().compareTo(BigDecimal.ZERO) == 0
-                    );
-                } else {
-                    // Compte absent du middleware
-                    compte.setRapprochementOk(null);
+                        compte.setRapprochementOk(
+                                compte.getEcartDisponible().compareTo(BigDecimal.ZERO) == 0 &&
+                                compte.getEcartPromedio().compareTo(BigDecimal.ZERO) == 0
+                        );
+                    } else {
+                        compte.setRapprochementOk(null);
+                    }
+                }
+            }
+        } else {
+            // Production indisponible : on construit les comptes depuis Middleware uniquement.
+            // Les soldes "Production" et les écarts ne sont pas peuplés — rapprochement impossible.
+            comptes = new ArrayList<>();
+            if (comptesMiddleware != null) {
+                for (CompteDTO mw : comptesMiddleware.values()) {
+                    comptes.add(buildCompteFromMiddleware(mw));
                 }
             }
         }
@@ -640,7 +675,8 @@ public class FicheSignaletiqueServiceImpl implements FicheSignaletiqueService {
                     .filter(c -> c.getRapprochementOk() != null && !c.getRapprochementOk())
                     .count();
             dto.setComptesAvecEcart(comptesEcart);
-            dto.setRapprochementGlobalOk(comptesEcart == 0);
+            // En mode partiel (Production indisponible), le rapprochement n'est pas calculable
+            dto.setRapprochementGlobalOk(rapprochementPartiel ? null : (comptesEcart == 0));
         } else {
             dto.setTotalComptes(0);
             dto.setComptesActifs(0);
@@ -655,11 +691,65 @@ public class FicheSignaletiqueServiceImpl implements FicheSignaletiqueService {
             dto.setEcartTotalDisponible(BigDecimal.ZERO);
             dto.setEcartTotalMoyen(BigDecimal.ZERO);
             dto.setComptesAvecEcart(0);
-            dto.setRapprochementGlobalOk(true);
+            dto.setRapprochementGlobalOk(rapprochementPartiel ? null : true);
         }
+
+        dto.setRapprochementPartiel(rapprochementPartiel);
+        dto.setSourceSoldes(comptesProd != null ? "PRODUCTION" : "MIDDLEWARE_FALLBACK");
 
         return dto;
     }
 
+    private CompteDTO buildCompteFromMiddleware(CompteDTO mw) {
+        CompteDTO compte = new CompteDTO();
+        compte.setCodAgencia(mw.getCodAgencia());
+        compte.setNumCuenta(mw.getNumCuenta());
+        compte.setCodCategoria(mw.getCodCategoria());
+        compte.setIndEstado(mw.getIndEstado());
+
+        // Soldes Production : on remplit avec les valeurs Middleware pour que
+        // l'affichage reste cohérent (le frontend lit getSalDisponible() pour
+        // les totaux). Les écarts restent à zéro et rapprochementOk reste null.
+        compte.setSalDisponible(mw.getSalDisponible());
+        compte.setSalPromedio(mw.getSalPromedio());
+        compte.setSalCongelado(mw.getSalCongelado());
+        compte.setSalTransito(mw.getSalTransito());
+        compte.setSalReserva(mw.getSalReserva());
+
+        // Soldes Middleware (mêmes valeurs — c'est l'unique source ici)
+        compte.setSalDisponibleMiddleware(mw.getSalDisponible());
+        compte.setSalPromedioMiddleware(mw.getSalPromedio());
+        compte.setSalCongeladoMiddleware(mw.getSalCongelado());
+        compte.setSalTransitoMiddleware(mw.getSalTransito());
+        compte.setSalReservaMiddleware(mw.getSalReserva());
+
+        compte.setEcartDisponible(BigDecimal.ZERO);
+        compte.setEcartPromedio(BigDecimal.ZERO);
+        compte.setRapprochementOk(null);
+
+        // Libellés dérivés
+        if (compte.getCodCategoria() != null) {
+            switch (compte.getCodCategoria()) {
+                case "DEPVU": compte.setCategorieLibelle("DEPOT A VUE"); break;
+                case "EPTON": compte.setCategorieLibelle("EPARGNE TON"); break;
+                case "DAT":   compte.setCategorieLibelle("DEPOT A TERME"); break;
+                case "PLEPA": compte.setCategorieLibelle("PLAN EPARGNE"); break;
+                default:      compte.setCategorieLibelle(compte.getCodCategoria());
+            }
+        }
+        if (compte.getIndEstado() != null) {
+            switch (compte.getIndEstado()) {
+                case "A": compte.setStatutCompte("ACTIF"); break;
+                case "I": compte.setStatutCompte("INACTIF"); break;
+                case "B": compte.setStatutCompte("BLOQUE"); break;
+                case "C": compte.setStatutCompte("CLOTURE"); break;
+                case "T": compte.setStatutCompte("TRANSITOIRE"); break;
+                case "R": compte.setStatutCompte("RESERVE"); break;
+                default:  compte.setStatutCompte(compte.getIndEstado());
+            }
+        }
+
+        return compte;
+    }
 
 }

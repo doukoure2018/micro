@@ -137,6 +137,13 @@ public class FicheSignaletiqueResponseSoldeDTO {
     private Boolean rapprochementGlobalOk;
     private Integer comptesAvecEcart;
 
+    // Indique si la base Production était indisponible et que seuls les soldes
+    // Middleware sont affichés (rapprochement impossible).
+    private Boolean rapprochementPartiel;
+    // "PRODUCTION" quand les deux sources sont disponibles, "MIDDLEWARE_FALLBACK"
+    // quand seule la base Middleware a répondu.
+    private String sourceSoldes;
+
     // Méthodes utilitaires pour obtenir des valeurs formatées
     public String getNombreComplet() {
         StringBuilder sb = new StringBuilder();
