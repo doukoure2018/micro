@@ -190,6 +190,19 @@ public class UserResource {
         return ok(getResponse(request, Map.of("user",updatedUser), "User Updated Successfully", OK));
     }
 
+    // Admin update : modifier le profil d'un autre utilisateur par son userId
+    @PatchMapping("/profile/{userId}")
+    public ResponseEntity<Response> updateUserById(
+            @NotNull Authentication authentication,
+            @PathVariable("userId") Long userId,
+            @RequestBody UserRequest user,
+            HttpServletRequest request) {
+        log.info("Admin {} updating profile for user {}", authentication.getName(), userId);
+        var updatedUser = userService.updateUserById(userId, user.getFirstName(), user.getLastName(),
+                user.getEmail(), user.getPhone(), user.getBio(), user.getAddress());
+        return ok(getResponse(request, Map.of("user", updatedUser), "User profile updated successfully", OK));
+    }
+
     // When user is  logged in
     @PatchMapping("/{updateRole}")
     public ResponseEntity<Response> updateRole(@NotNull Authentication authentication, @RequestBody RoleRequest role, HttpServletRequest request) {

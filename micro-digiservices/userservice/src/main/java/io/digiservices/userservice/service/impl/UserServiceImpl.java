@@ -65,6 +65,12 @@ public class UserServiceImpl  implements UserService {
     }
 
     @Override
+    public User updateUserById(Long userId, String firstName, String lastName, String email, String phone, String bio, String address) {
+        User existing = userRepository.getUserById(userId);
+        return userRepository.updateUser(existing.getUserUuid(), firstName, lastName, email, phone, bio, address);
+    }
+
+    @Override
     public void createUser(String firstName, String lastName, String email, String username, String password, String matricule, String phone)
     {
         // firstly get the token

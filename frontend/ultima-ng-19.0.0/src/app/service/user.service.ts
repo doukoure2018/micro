@@ -4,6 +4,7 @@ import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular
 import { JwtHelperService } from '@auth0/angular-jwt';
 import { catchError, map, Observable, tap, throwError } from 'rxjs';
 import { IResponse } from '@/interface/response';
+import { IUser } from '@/interface/user';
 import { Key } from '@/enum/cache.key';
 import { IAuthentication } from '@/interface/IAuthentication';
 import { environment } from 'src/environments/environment';
@@ -996,6 +997,12 @@ export class UserService {
 
     updateUserLocation$ = (userId: number, delegationId: number, agenceId: number, pointventeId: number) =>
         this.http.put<IResponse>(`${this.server}/user/location/${userId}?delegationId=${delegationId}&agenceId=${agenceId}&pointventeId=${pointventeId}`, {}).pipe(tap(console.log), catchError(this.handleError));
+
+    getUserById$ = (userId: number): Observable<IUser> =>
+        this.http.get<IUser>(`${this.server}/user/getUser/${userId}`).pipe(tap(console.log), catchError(this.handleError));
+
+    updateUserById$ = (userId: number, payload: { firstName: string; lastName: string; email: string; phone?: string; address?: string; bio?: string }): Observable<IResponse> =>
+        this.http.patch<IResponse>(`${this.server}/user/profile/${userId}`, payload).pipe(tap(console.log), catchError(this.handleError));
 
     // ==================== INFO PERSONNEL ====================
 

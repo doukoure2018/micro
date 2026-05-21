@@ -143,6 +143,11 @@ export default [
         loadComponent: () => import('./admin/create-user/create-user.component').then((c) => c.CreateUserComponent)
     },
     {
+        path: 'edit/:userId',
+        data: { breadcrumb: 'Modifier Utilisateur' },
+        loadComponent: () => import('./admin/edit-user/edit-user.component').then((c) => c.EditUserComponent)
+    },
+    {
         path: 'credit/analyse-credit',
         data: { breadcrumb: 'Analyse Credit' },
         loadComponent: () => import('./analyse-credit/analyse-credit.component').then((c) => c.AnalyseCreditComponent)

@@ -7,6 +7,7 @@ export interface IUser {
     username: string;
     password?: string | null;
     phone?: string | null;
+    address?: string | null;
     bio?: string | null;
     imageUrl?: string | null;
     qrCodeImageUri?: string | null;

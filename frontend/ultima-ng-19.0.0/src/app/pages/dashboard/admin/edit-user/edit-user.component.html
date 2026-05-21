@@ -1,0 +1,81 @@
+<p-toast></p-toast>
+
+<div class="card">
+    <div class="flex align-items-center gap-3 mb-4">
+        <div class="bg-primary-100 p-3 border-circle">
+            <i class="pi pi-user-edit text-2xl text-primary"></i>
+        </div>
+        <div>
+            <h2 class="m-0 text-xl font-semibold">Modifier l'utilisateur</h2>
+            @if (user()) {
+            <p class="text-500 mt-1 mb-0 text-sm">
+                {{ user()!.firstName }} {{ user()!.lastName }} — &#64;{{ user()!.username }} (ID: {{ user()!.userId }})
+            </p>
+            }
+        </div>
+    </div>
+
+    @if (loading()) {
+    <div class="flex justify-content-center align-items-center" style="min-height: 300px;">
+        <p-progressSpinner></p-progressSpinner>
+    </div>
+    } @else if (user()) {
+    <form [formGroup]="form" (ngSubmit)="save()" class="flex flex-column gap-4">
+
+        <div class="grid">
+            <div class="col-12 md:col-6">
+                <label class="block font-semibold mb-2 text-sm">Prénom <span class="text-red-500">*</span></label>
+                <input pInputText formControlName="firstName" class="w-full" placeholder="Prénom" />
+                @if (form.get('firstName')?.touched && form.get('firstName')?.invalid) {
+                <small class="text-red-500">Prénom requis</small>
+                }
+            </div>
+
+            <div class="col-12 md:col-6">
+                <label class="block font-semibold mb-2 text-sm">Nom <span class="text-red-500">*</span></label>
+                <input pInputText formControlName="lastName" class="w-full" placeholder="Nom" />
+                @if (form.get('lastName')?.touched && form.get('lastName')?.invalid) {
+                <small class="text-red-500">Nom requis</small>
+                }
+            </div>
+
+            <div class="col-12 md:col-6">
+                <label class="block font-semibold mb-2 text-sm">Email <span class="text-red-500">*</span></label>
+                <input pInputText formControlName="email" type="email" class="w-full" placeholder="email@example.com" />
+                @if (form.get('email')?.touched && form.get('email')?.invalid) {
+                <small class="text-red-500">Email valide requis</small>
+                }
+                <small class="text-orange-600 block mt-1">
+                    <i class="pi pi-exclamation-triangle mr-1"></i>
+                    Attention : modifier l'email peut casser le login si celui-ci s'authentifie par email.
+                </small>
+            </div>
+
+            <div class="col-12 md:col-6">
+                <label class="block font-semibold mb-2 text-sm">Téléphone</label>
+                <input pInputText formControlName="phone" class="w-full" placeholder="+224..." />
+            </div>
+
+            <div class="col-12">
+                <label class="block font-semibold mb-2 text-sm">Adresse</label>
+                <input pInputText formControlName="address" class="w-full" placeholder="Adresse complète" />
+            </div>
+
+            <div class="col-12">
+                <label class="block font-semibold mb-2 text-sm">Bio</label>
+                <textarea pInputTextarea formControlName="bio" rows="3" class="w-full"
+                    placeholder="Description / notes"></textarea>
+            </div>
+        </div>
+
+        <div class="flex justify-content-end gap-2 mt-3">
+            <button pButton type="button" label="Annuler" icon="pi pi-times"
+                class="p-button-outlined p-button-secondary" (click)="cancel()" [disabled]="saving()">
+            </button>
+            <button pButton type="submit" label="Enregistrer" icon="pi pi-check"
+                [loading]="saving()" [disabled]="form.invalid || saving()">
+            </button>
+        </div>
+    </form>
+    }
+</div>
