@@ -65,4 +65,5 @@ public interface UserService {
 
     // Mise a jour rôle par userId
     void updateUserRoleById(Long userId, String role);
+    void updateUserService(Long userId, String service);
 }

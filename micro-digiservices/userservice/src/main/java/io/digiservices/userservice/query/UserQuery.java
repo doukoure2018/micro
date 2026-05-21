@@ -711,4 +711,16 @@ public class UserQuery {
             WHERE user_id = :userId
             """;
 
+    // ========================================
+    // MISE A JOUR SERVICE UTILISATEUR PAR ID
+    // ========================================
+
+    public static final String UPDATE_USER_SERVICE_QUERY =
+            """
+            UPDATE users
+            SET service = :service,
+                updated_at = NOW()
+            WHERE user_id = :userId
+            """;
+
 }

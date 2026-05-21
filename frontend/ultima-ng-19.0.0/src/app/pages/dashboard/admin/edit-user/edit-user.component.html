@@ -1,81 +1,224 @@
 <p-toast></p-toast>
 
 <div class="card">
-    <div class="flex align-items-center gap-3 mb-4">
-        <div class="bg-primary-100 p-3 border-circle">
-            <i class="pi pi-user-edit text-2xl text-primary"></i>
-        </div>
-        <div>
-            <h2 class="m-0 text-xl font-semibold">Modifier l'utilisateur</h2>
-            @if (user()) {
-            <p class="text-500 mt-1 mb-0 text-sm">
-                {{ user()!.firstName }} {{ user()!.lastName }} — &#64;{{ user()!.username }} (ID: {{ user()!.userId }})
-            </p>
+    <span class="text-surface-900 dark:text-surface-0 text-xl font-bold mb-6 block">
+        Modifier l'utilisateur
+    </span>
+
+    @if (state().loading) {
+    <div class="flex justify-center align-items-center" style="min-height: 300px;">
+        <p-progressSpinner [style]="{ width: '50px', height: '50px' }"></p-progressSpinner>
+    </div>
+    } @else if (state().user) {
+    <div class="grid grid-cols-12 gap-4">
+        <div class="col-span-12 lg:col-span-2">
+            <div class="text-surface-900 dark:text-surface-0 font-medium text-xl mb-4">Profil Utilisateur</div>
+            <div class="text-sm text-500 mb-2">
+                <i class="pi pi-id-card mr-1"></i> ID: {{ state().user!.userId }}
+            </div>
+            <div class="text-sm text-500 mb-2">
+                <i class="pi pi-user mr-1"></i> &#64;{{ state().user!.username }}
+            </div>
+            @if (state().submitting) {
+            <div class="flex justify-center mt-4">
+                <p-progressSpinner [style]="{ width: '50px', height: '50px' }"></p-progressSpinner>
+            </div>
             }
         </div>
-    </div>
 
-    @if (loading()) {
-    <div class="flex justify-content-center align-items-center" style="min-height: 300px;">
-        <p-progressSpinner></p-progressSpinner>
-    </div>
-    } @else if (user()) {
-    <form [formGroup]="form" (ngSubmit)="save()" class="flex flex-column gap-4">
+        <div class="col-span-12 lg:col-span-10">
+            <form #userForm="ngForm" (ngSubmit)="save(userForm)">
+                <div class="grid grid-cols-12 gap-4">
 
-        <div class="grid">
-            <div class="col-12 md:col-6">
-                <label class="block font-semibold mb-2 text-sm">Prénom <span class="text-red-500">*</span></label>
-                <input pInputText formControlName="firstName" class="w-full" placeholder="Prénom" />
-                @if (form.get('firstName')?.touched && form.get('firstName')?.invalid) {
-                <small class="text-red-500">Prénom requis</small>
-                }
-            </div>
+                    <!-- Role -->
+                    <div class="mb-6 col-span-12 md:col-span-6">
+                        <label class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">Rôle *</label>
+                        <p-dropdown name="role" [(ngModel)]="selectedRole" [options]="state().roles || []"
+                            optionLabel="name" [filter]="true" filterBy="name" [showClear]="false" required
+                            placeholder="Sélectionner un rôle" [disabled]="state().submitting || state().loadingRoles"
+                            styleClass="w-full" dataKey="role_id" appendTo="body"
+                            (onChange)="onRoleChange($event.value)">
+                            <ng-template pTemplate="selectedItem" let-role>
+                                <span>{{ role?.name }}</span>
+                            </ng-template>
+                            <ng-template pTemplate="item" let-role>
+                                <div class="flex items-center">
+                                    <span>{{ role.name }}</span>
+                                    <span class="ml-2 text-xs text-gray-500">(ID: {{ role.role_id }})</span>
+                                </div>
+                            </ng-template>
+                        </p-dropdown>
+                    </div>
 
-            <div class="col-12 md:col-6">
-                <label class="block font-semibold mb-2 text-sm">Nom <span class="text-red-500">*</span></label>
-                <input pInputText formControlName="lastName" class="w-full" placeholder="Nom" />
-                @if (form.get('lastName')?.touched && form.get('lastName')?.invalid) {
-                <small class="text-red-500">Nom requis</small>
-                }
-            </div>
+                    <!-- Service -->
+                    <div class="mb-6 col-span-12 md:col-span-6">
+                        <label class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">Service</label>
+                        <p-dropdown name="service" [(ngModel)]="selectedService" [options]="services"
+                            optionLabel="label" [filter]="true" filterBy="label" [showClear]="true"
+                            placeholder="Sélectionner un service" [disabled]="state().submitting" styleClass="w-full"
+                            dataKey="value" appendTo="body" (onChange)="onServiceChange($event.value)">
+                            <ng-template pTemplate="selectedItem" let-service>
+                                <span>{{ service?.label }}</span>
+                            </ng-template>
+                            <ng-template pTemplate="item" let-service>
+                                <div class="flex items-center">
+                                    <span>{{ service.label }}</span>
+                                    <span class="ml-2 text-xs text-gray-500">({{ service.value }})</span>
+                                </div>
+                            </ng-template>
+                        </p-dropdown>
+                    </div>
 
-            <div class="col-12 md:col-6">
-                <label class="block font-semibold mb-2 text-sm">Email <span class="text-red-500">*</span></label>
-                <input pInputText formControlName="email" type="email" class="w-full" placeholder="email@example.com" />
-                @if (form.get('email')?.touched && form.get('email')?.invalid) {
-                <small class="text-red-500">Email valide requis</small>
-                }
-                <small class="text-orange-600 block mt-1">
-                    <i class="pi pi-exclamation-triangle mr-1"></i>
-                    Attention : modifier l'email peut casser le login si celui-ci s'authentifie par email.
-                </small>
-            </div>
+                    <!-- Cascade location -->
+                    @if (shouldShowLocationFields(selectedRole?.name)) {
+                    <div class="mb-6 col-span-12"
+                        [ngClass]="{'md:col-span-6': shouldShowAgenceField(selectedRole?.name)}">
+                        <label class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">Délégation *</label>
+                        <p-dropdown name="delegation" [(ngModel)]="selectedDelegation"
+                            [options]="state().delegations || []" optionLabel="libele" [filter]="true" filterBy="libele"
+                            [showClear]="true" required placeholder="Sélectionner une délégation"
+                            [disabled]="state().submitting || state().loadingDelegations"
+                            [loading]="state().loadingDelegations" styleClass="w-full" dataKey="id" appendTo="body"
+                            (onChange)="onDelegationChange($event.value)">
+                            <ng-template pTemplate="selectedItem" let-d>
+                                <span>{{ d?.libele }}</span>
+                            </ng-template>
+                            <ng-template pTemplate="item" let-d>
+                                <div class="flex items-center">
+                                    <span>{{ d.libele }}</span>
+                                    <span class="ml-2 text-xs text-gray-500">(ID: {{ d.id }})</span>
+                                </div>
+                            </ng-template>
+                        </p-dropdown>
+                    </div>
 
-            <div class="col-12 md:col-6">
-                <label class="block font-semibold mb-2 text-sm">Téléphone</label>
-                <input pInputText formControlName="phone" class="w-full" placeholder="+224..." />
-            </div>
+                    @if (shouldShowAgenceField(selectedRole?.name)) {
+                    <div class="mb-6 col-span-12 md:col-span-6">
+                        <label class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">Agence *</label>
+                        <p-dropdown name="agence" [(ngModel)]="selectedAgence" [options]="state().agences || []"
+                            optionLabel="libele" [filter]="true" filterBy="libele" [showClear]="true" required
+                            placeholder="Sélectionner une agence"
+                            [disabled]="state().submitting || state().loadingAgences || !selectedDelegation"
+                            [loading]="state().loadingAgences" styleClass="w-full" dataKey="id" appendTo="body"
+                            (onChange)="onAgenceChange($event.value)">
+                            <ng-template pTemplate="selectedItem" let-a>
+                                <span>{{ a?.libele }}</span>
+                            </ng-template>
+                            <ng-template pTemplate="item" let-a>
+                                <div class="flex items-center">
+                                    <span>{{ a.libele }}</span>
+                                    <span class="ml-2 text-xs text-gray-500">(ID: {{ a.id }})</span>
+                                </div>
+                            </ng-template>
+                        </p-dropdown>
+                    </div>
+                    }
 
-            <div class="col-12">
-                <label class="block font-semibold mb-2 text-sm">Adresse</label>
-                <input pInputText formControlName="address" class="w-full" placeholder="Adresse complète" />
-            </div>
+                    @if (shouldShowPointVenteField(selectedRole?.name)) {
+                    <div class="mb-6 col-span-12">
+                        <label class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">Point de Vente *</label>
+                        <p-dropdown name="pointVente" [(ngModel)]="selectedPointVente"
+                            [options]="state().pointVentes || []" optionLabel="libele" [filter]="true" filterBy="libele"
+                            [showClear]="true" required placeholder="Sélectionner un point de vente"
+                            [disabled]="state().submitting || state().loadingPointVentes || !selectedAgence"
+                            [loading]="state().loadingPointVentes" styleClass="w-full" dataKey="id" appendTo="body"
+                            (onChange)="onPointVenteChange($event.value)">
+                            <ng-template pTemplate="selectedItem" let-pv>
+                                <div class="flex items-center">
+                                    <span>{{ pv?.libele }}</span>
+                                    <span class="ml-2 text-xs text-gray-500" *ngIf="pv?.code">({{ pv.code }})</span>
+                                </div>
+                            </ng-template>
+                            <ng-template pTemplate="item" let-pv>
+                                <div class="flex items-center">
+                                    <span>{{ pv.libele }}</span>
+                                    <span class="ml-2 text-xs text-gray-500">({{ pv.code }} - ID: {{ pv.id }})</span>
+                                </div>
+                            </ng-template>
+                        </p-dropdown>
+                    </div>
+                    }
+                    }
 
-            <div class="col-12">
-                <label class="block font-semibold mb-2 text-sm">Bio</label>
-                <textarea pInputTextarea formControlName="bio" rows="3" class="w-full"
-                    placeholder="Description / notes"></textarea>
-            </div>
+                    <!-- Username (read-only) -->
+                    <div class="mb-6 col-span-12">
+                        <label class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">Nom d'utilisateur</label>
+                        <input pInputText [value]="state().user!.username" disabled class="w-full" />
+                        <small class="text-orange-600 block mt-1">
+                            <i class="pi pi-info-circle mr-1"></i>
+                            Le nom d'utilisateur ne peut pas être modifié (utilisé pour l'authentification).
+                        </small>
+                    </div>
+
+                    <!-- firstName -->
+                    <div class="mb-6 col-span-12 md:col-span-6">
+                        <label class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">Nom *</label>
+                        <input pInputText name="firstName" [ngModel]="state().user!.firstName" required
+                            [disabled]="state().submitting" class="w-full" #firstName="ngModel" />
+                        @if (firstName.invalid && firstName.touched) {
+                        <p-message severity="error" text="Le nom est requis"></p-message>
+                        }
+                    </div>
+
+                    <!-- lastName -->
+                    <div class="mb-6 col-span-12 md:col-span-6">
+                        <label class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">Prénom *</label>
+                        <input pInputText name="lastName" [ngModel]="state().user!.lastName" required
+                            [disabled]="state().submitting" class="w-full" #lastName="ngModel" />
+                        @if (lastName.invalid && lastName.touched) {
+                        <p-message severity="error" text="Le prénom est requis"></p-message>
+                        }
+                    </div>
+
+                    <!-- email -->
+                    <div class="mb-6 col-span-12 md:col-span-6">
+                        <label class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">Email *</label>
+                        <input pInputText name="email" [ngModel]="state().user!.email" type="email" required email
+                            [disabled]="state().submitting" class="w-full" #email="ngModel" />
+                        @if (email.invalid && email.touched) {
+                        <p-message severity="error" text="Email valide requis"></p-message>
+                        }
+                        <small class="text-orange-600 block mt-1">
+                            <i class="pi pi-exclamation-triangle mr-1"></i>
+                            Attention : modifier l'email peut casser le login s'il est utilisé pour l'authentification.
+                        </small>
+                    </div>
+
+                    <!-- phone -->
+                    <div class="mb-6 col-span-12 md:col-span-6">
+                        <label class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">Contact</label>
+                        <input pInputText name="phone" [ngModel]="state().user!.phone" [disabled]="state().submitting"
+                            class="w-full" />
+                    </div>
+
+                    <!-- address -->
+                    <div class="mb-6 col-span-12">
+                        <label class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">Adresse</label>
+                        <input pInputText name="address" [ngModel]="state().user!.address"
+                            [disabled]="state().submitting" class="w-full" placeholder="Adresse complète" />
+                    </div>
+
+                    <!-- bio -->
+                    <div class="mb-6 col-span-12">
+                        <label class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">Bio</label>
+                        <textarea pTextarea name="bio" [ngModel]="state().user!.bio" rows="4" [autoResize]="true"
+                            [disabled]="state().submitting" class="w-full"></textarea>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="col-span-12">
+                        <div class="flex gap-3">
+                            <button pButton pRipple type="submit" label="Enregistrer" icon="pi pi-save"
+                                [loading]="state().submitting"
+                                [disabled]="userForm.invalid || state().submitting" class="w-auto mt-3"></button>
+                            <button pButton pRipple type="button" label="Annuler" icon="pi pi-times"
+                                (click)="cancel()" [disabled]="state().submitting"
+                                class="p-button-secondary w-auto mt-3"></button>
+                        </div>
+                    </div>
+                </div>
+            </form>
         </div>
-
-        <div class="flex justify-content-end gap-2 mt-3">
-            <button pButton type="button" label="Annuler" icon="pi pi-times"
-                class="p-button-outlined p-button-secondary" (click)="cancel()" [disabled]="saving()">
-            </button>
-            <button pButton type="submit" label="Enregistrer" icon="pi pi-check"
-                [loading]="saving()" [disabled]="form.invalid || saving()">
-            </button>
-        </div>
-    </form>
+    </div>
     }
 </div>

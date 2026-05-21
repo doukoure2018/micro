@@ -427,4 +427,10 @@ public class UserServiceImpl  implements UserService {
         userRepository.updateUserRoleById(userId, role);
     }
 
+    @Override
+    public void updateUserService(Long userId, String service) {
+        log.info("Mise à jour du service pour l'utilisateur {}: {}", userId, service);
+        userRepository.updateUserService(userId, service);
+    }
+
 }

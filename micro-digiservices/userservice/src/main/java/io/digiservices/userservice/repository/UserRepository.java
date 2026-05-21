@@ -78,4 +78,7 @@ public interface UserRepository {
 
     // Mise a jour rôle par userId
     void updateUserRoleById(Long userId, String role);
+
+    // Mise a jour service par userId
+    void updateUserService(Long userId, String service);
 }

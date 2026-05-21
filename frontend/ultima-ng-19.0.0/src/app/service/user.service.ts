@@ -1004,6 +1004,9 @@ export class UserService {
     updateUserById$ = (userId: number, payload: { firstName: string; lastName: string; email: string; phone?: string; address?: string; bio?: string }): Observable<IResponse> =>
         this.http.patch<IResponse>(`${this.server}/user/profile/${userId}`, payload).pipe(tap(console.log), catchError(this.handleError));
 
+    updateUserService$ = (userId: number, service: string): Observable<IResponse> =>
+        this.http.put<IResponse>(`${this.server}/user/service/${userId}?service=${encodeURIComponent(service)}`, {}).pipe(tap(console.log), catchError(this.handleError));
+
     // ==================== INFO PERSONNEL ====================
 
     /**

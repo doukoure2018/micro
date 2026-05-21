@@ -797,6 +797,38 @@ public class UserResource {
         }
     }
 
+    /**
+     * Modifier le service d'un utilisateur par son ID
+     * PUT /user/service/{userId}?service=DI
+     */
+    @PutMapping("/service/{userId}")
+    public ResponseEntity<Response> updateUserServiceById(
+            @NotNull Authentication authentication,
+            @PathVariable("userId") Long userId,
+            @RequestParam("service") String service,
+            HttpServletRequest request) {
+
+        log.info("User {} updating service for user {}: {}", authentication.getName(), userId, service);
+
+        try {
+            userService.updateUserService(userId, service);
+            return ResponseEntity.ok(getResponse(
+                    request,
+                    Map.of("userId", userId, "service", service),
+                    "Service mis à jour avec succès",
+                    OK
+            ));
+        } catch (Exception e) {
+            log.error("Erreur lors de la mise à jour du service: {}", e.getMessage());
+            return ResponseEntity.status(BAD_REQUEST).body(getResponse(
+                    request,
+                    emptyMap(),
+                    e.getMessage(),
+                    BAD_REQUEST
+            ));
+        }
+    }
+
     @PutMapping("/location/{userId}")
     public ResponseEntity<Response> updateUserLocation(
             @NotNull Authentication authentication,

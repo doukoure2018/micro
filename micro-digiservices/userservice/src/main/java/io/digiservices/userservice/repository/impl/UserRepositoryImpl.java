@@ -1113,4 +1113,23 @@ public class UserRepositoryImpl implements UserRepository {
         }
     }
 
+    @Override
+    public void updateUserService(Long userId, String service) {
+        try {
+            int updated = jdbcClient.sql(UPDATE_USER_SERVICE_QUERY)
+                    .param("userId", userId)
+                    .param("service", service)
+                    .update();
+            if (updated == 0) {
+                throw new ApiException("Aucun utilisateur trouvé avec l'ID: " + userId);
+            }
+            log.info("Service mis à jour pour l'utilisateur {}: {}", userId, service);
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Erreur lors de la mise à jour du service: {}", e.getMessage());
+            throw new ApiException("Une erreur est survenue lors de la mise à jour du service");
+        }
+    }
+
 }
