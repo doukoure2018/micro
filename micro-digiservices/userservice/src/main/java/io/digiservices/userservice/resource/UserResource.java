@@ -833,21 +833,32 @@ public class UserResource {
     public ResponseEntity<Response> updateUserLocation(
             @NotNull Authentication authentication,
             @PathVariable("userId") Long userId,
-            @RequestParam("delegationId") Long delegationId,
-            @RequestParam("agenceId") Long agenceId,
-            @RequestParam("pointventeId") Long pointventeId,
+            @RequestParam(value = "delegationId", required = false) Long delegationId,
+            @RequestParam(value = "agenceId", required = false) Long agenceId,
+            @RequestParam(value = "pointventeId", required = false) Long pointventeId,
             HttpServletRequest request) {
 
+        // 0 est interprété comme "non applicable" (rôles sans agence/PV). On le mappe à null
+        // pour respecter les FK des colonnes agence_id / pointvente_id.
+        Long normalizedDelegationId = (delegationId != null && delegationId > 0) ? delegationId : null;
+        Long normalizedAgenceId = (agenceId != null && agenceId > 0) ? agenceId : null;
+        Long normalizedPointventeId = (pointventeId != null && pointventeId > 0) ? pointventeId : null;
+
         log.info("User {} updating location for user {}: delegation={}, agence={}, pointvente={}",
-                authentication.getName(), userId, delegationId, agenceId, pointventeId);
+                authentication.getName(), userId, normalizedDelegationId, normalizedAgenceId, normalizedPointventeId);
 
         try {
-            userService.updateUserLocation(userId, delegationId, agenceId, pointventeId);
+            userService.updateUserLocation(userId, normalizedDelegationId, normalizedAgenceId, normalizedPointventeId);
+
+            java.util.Map<String, Object> payload = new java.util.HashMap<>();
+            payload.put("userId", userId);
+            payload.put("delegationId", normalizedDelegationId);
+            payload.put("agenceId", normalizedAgenceId);
+            payload.put("pointventeId", normalizedPointventeId);
 
             return ResponseEntity.ok(getResponse(
                     request,
-                    Map.of("userId", userId, "delegationId", delegationId,
-                            "agenceId", agenceId, "pointventeId", pointventeId),
+                    payload,
                     "Localisation mise à jour avec succès",
                     OK
             ));

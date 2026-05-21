@@ -338,7 +338,7 @@ export class EditUserComponent implements OnInit {
             newAgenceId !== this.originalAgenceId ||
             newPointVenteId !== this.originalPointVenteId;
         if (locationChanged && this.shouldShowLocationFields(newRole)) {
-            calls.push(this.userService.updateUserLocation$(user.userId, newDelegationId ?? 0, newAgenceId ?? 0, newPointVenteId ?? 0));
+            calls.push(this.userService.updateUserLocation$(user.userId, newDelegationId, newAgenceId, newPointVenteId));
         }
 
         this.state.update((s) => ({ ...s, submitting: true }));

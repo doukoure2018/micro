@@ -995,8 +995,13 @@ export class UserService {
 
     updateUserRole$ = (userId: number, role: string) => this.http.put<IResponse>(`${this.server}/user/role/${userId}?role=${role}`, {}).pipe(tap(console.log), catchError(this.handleError));
 
-    updateUserLocation$ = (userId: number, delegationId: number, agenceId: number, pointventeId: number) =>
-        this.http.put<IResponse>(`${this.server}/user/location/${userId}?delegationId=${delegationId}&agenceId=${agenceId}&pointventeId=${pointventeId}`, {}).pipe(tap(console.log), catchError(this.handleError));
+    updateUserLocation$ = (userId: number, delegationId: number | null, agenceId: number | null, pointventeId: number | null) => {
+        let params = new HttpParams();
+        if (delegationId !== null && delegationId !== undefined) params = params.set('delegationId', String(delegationId));
+        if (agenceId !== null && agenceId !== undefined) params = params.set('agenceId', String(agenceId));
+        if (pointventeId !== null && pointventeId !== undefined) params = params.set('pointventeId', String(pointventeId));
+        return this.http.put<IResponse>(`${this.server}/user/location/${userId}`, {}, { params }).pipe(tap(console.log), catchError(this.handleError));
+    };
 
     getUserById$ = (userId: number): Observable<IUser> =>
         this.http.get<IUser>(`${this.server}/user/getUser/${userId}`).pipe(tap(console.log), catchError(this.handleError));
