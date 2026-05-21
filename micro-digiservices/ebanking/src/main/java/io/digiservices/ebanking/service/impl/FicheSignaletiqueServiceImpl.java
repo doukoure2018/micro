@@ -183,7 +183,7 @@ public class FicheSignaletiqueServiceImpl implements FicheSignaletiqueService {
             // Vérifier si le client existe
             if (result == null || (result.getClientExists() != null && !result.getClientExists())) {
                 log.warn("Client non trouvé - Entreprise: {}, Client: {}", empresa, codCliente);
-                throw new ApiException(String.format("Client non trouvé avec le code: %s", codCliente));
+                throw new ResourceNotFoundException("Client", "codCliente", codCliente);
             }
 
             // Post-traitement des données si nécessaire
@@ -470,7 +470,7 @@ public class FicheSignaletiqueServiceImpl implements FicheSignaletiqueService {
             // Vérifier si le client existe
             if (result == null || (result.getClientExists() != null && !result.getClientExists())) {
                 log.warn("Client non trouvé - Entreprise: {}, Client: {}", empresa, codCliente);
-                throw new ApiException(String.format("Client non trouvé avec le code: %s", codCliente));
+                throw new ResourceNotFoundException("Client", "codCliente", codCliente);
             }
 
             long duration = System.currentTimeMillis() - startTime;
