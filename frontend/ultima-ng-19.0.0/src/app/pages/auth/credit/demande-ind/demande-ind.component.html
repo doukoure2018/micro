@@ -67,7 +67,14 @@
                     <td class="label-cell">N° Membre *</td>
                     <td>
                         <input pInputText [(ngModel)]="formData.numeroMembre" name="numeroMembreHeader" class="w-full"
-                            [disabled]="state().submitting" required>
+                            #numeroMembreRef="ngModel" [disabled]="state().submitting" required
+                            pattern="^\d{11}$" maxlength="11" minlength="11" inputmode="numeric"
+                            (keypress)="onlyDigits($event)">
+                        <small *ngIf="numeroMembreRef.invalid && (numeroMembreRef.dirty || numeroMembreRef.touched)"
+                            class="text-red-500 block mt-1">
+                            <span *ngIf="numeroMembreRef.errors?.['required']">Le N° Membre est obligatoire.</span>
+                            <span *ngIf="!numeroMembreRef.errors?.['required']">Le N° Membre doit contenir exactement 11 chiffres.</span>
+                        </small>
                     </td>
                     <td class="label-cell">N° de la demande</td>
                     <td>

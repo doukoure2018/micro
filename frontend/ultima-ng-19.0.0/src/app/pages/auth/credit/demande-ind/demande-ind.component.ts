@@ -289,6 +289,20 @@ export class DemandeIndComponent implements OnInit {
         this.initializeOptions();
     }
 
+    /**
+     * Empeche la saisie de tout caractere non numerique dans le N° Membre.
+     * Le N° Membre doit etre un entier de 11 chiffres.
+     */
+    onlyDigits(event: KeyboardEvent): void {
+        // Autoriser les touches de controle (backspace, tab, fleches, etc.)
+        if (event.ctrlKey || event.metaKey || event.key.length > 1) {
+            return;
+        }
+        if (!/^\d$/.test(event.key)) {
+            event.preventDefault();
+        }
+    }
+
     // ======================== GESTION NATURE CLIENT ========================
 
     onNatureClientChange(event: any): void {
