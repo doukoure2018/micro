@@ -70,8 +70,9 @@ application:
   version: v02
 
 # Configuration AgriPilot - cle API protegeant les endpoints /ebanking/agri/**
+# Defaut vide => le filtre refuse tout (401) tant que AGRIPILOT_API_KEY n'est pas defini (fail-closed).
 agripilot:
-  api-key: ${AGRIPILOT_API_KEY}
+  api-key: ${AGRIPILOT_API_KEY:}
 
 # Configuration Serveur
 server:

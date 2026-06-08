@@ -319,6 +319,7 @@ services:
       BACKEND_APP_URL: ${BACKEND_APP_URL}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://admin:admin2711@discoveryserver:5002/eureka/"
       JWKS_URI: "http://authorizationserver:8080/oauth2/jwks"
+      AGRIPILOT_API_KEY: ${AGRIPILOT_API_KEY:-}
       SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_SECOND_LEVEL_CACHE: "false"
       SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_QUERY_CACHE: "false"
       SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_REGION_FACTORY_CLASS: "org.hibernate.cache.internal.NoCachingRegionFactory"
