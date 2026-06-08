@@ -19,6 +19,7 @@
 		<module>ebanking</module>
 		<module>notificationservice</module>
         <module>ecreditservice</module>
+        <module>agriculteurservice</module>
         <module>clients</module>
         <module>database-migrations</module>
     </modules>

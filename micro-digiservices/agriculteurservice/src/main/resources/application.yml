@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: agriculteurservice
+  profiles:
+    active: default
+  main:
+    allow-bean-definition-overriding: true
+  # Resource Server OAuth2/JWT (la chaine de securite dediee arrive en Phase 4)
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${JWKS_URI:http://localhost:8080/oauth2/jwks}
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+      indent-output: true
+    deserialization:
+      fail-on-unknown-properties: false
+    date-format: yyyy-MM-dd'T'HH:mm:ss.SSS
+    time-zone: UTC
+
+# Pas de section datasource : agriculteurservice n'a PAS de base propre,
+# il consomme uniquement ebanking via Feign.
+
+server:
+  port: 8088
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://admin:admin2711@localhost:5002/eureka/}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 30000
+        readTimeout: 120000
+
+logging:
+  level:
+    io.digiservices.agriculteurservice: DEBUG
