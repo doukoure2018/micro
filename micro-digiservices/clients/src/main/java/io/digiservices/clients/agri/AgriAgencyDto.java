@@ -1,4 +1,4 @@
-package io.digiservices.ebanking.paylaod;
+package io.digiservices.clients.agri;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

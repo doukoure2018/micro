@@ -11,12 +11,11 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
  * <p>Service sans base de donnees propre : il agrege les donnees SAF2000 exposees
  * par {@code ebanking} via Feign et expose une API stable et documentee a AgriPilot.</p>
  *
- * <p>Phase 2 : {@code @EnableFeignClients} sera etendu a
- * {@code basePackages = "io.digiservices.clients"} une fois le EbankingAgriClient cree.</p>
+ * <p>Les clients Feign partages sont declares dans le module {@code clients}.</p>
  */
 @SpringBootApplication
 @EnableDiscoveryClient
-@EnableFeignClients
+@EnableFeignClients(basePackages = "io.digiservices.clients")
 public class AgriculteurServiceApplication {
 
     public static void main(String[] args) {

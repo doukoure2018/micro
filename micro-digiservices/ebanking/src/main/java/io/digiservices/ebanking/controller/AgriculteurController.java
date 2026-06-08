@@ -1,12 +1,12 @@
 package io.digiservices.ebanking.controller;
 
 import io.digiservices.ebanking.exception.BlogAPIException;
-import io.digiservices.ebanking.paylaod.AgriAgencyDto;
-import io.digiservices.ebanking.paylaod.AgriCreditDto;
-import io.digiservices.ebanking.paylaod.CooperativeDto;
-import io.digiservices.ebanking.paylaod.CooperativeMemberDto;
-import io.digiservices.ebanking.paylaod.FarmerDto;
-import io.digiservices.ebanking.paylaod.PageDto;
+import io.digiservices.clients.agri.AgriAgencyDto;
+import io.digiservices.clients.agri.AgriCreditDto;
+import io.digiservices.clients.agri.CooperativeDto;
+import io.digiservices.clients.agri.CooperativeMemberDto;
+import io.digiservices.clients.agri.FarmerDto;
+import io.digiservices.clients.agri.PageDto;
 import io.digiservices.ebanking.service.AgriculteurService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

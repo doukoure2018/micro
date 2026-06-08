@@ -1,11 +1,11 @@
 package io.digiservices.ebanking.service;
 
-import io.digiservices.ebanking.paylaod.AgriAgencyDto;
-import io.digiservices.ebanking.paylaod.AgriCreditDto;
-import io.digiservices.ebanking.paylaod.CooperativeDto;
-import io.digiservices.ebanking.paylaod.CooperativeMemberDto;
-import io.digiservices.ebanking.paylaod.FarmerDto;
-import io.digiservices.ebanking.paylaod.PageDto;
+import io.digiservices.clients.agri.AgriAgencyDto;
+import io.digiservices.clients.agri.AgriCreditDto;
+import io.digiservices.clients.agri.CooperativeDto;
+import io.digiservices.clients.agri.CooperativeMemberDto;
+import io.digiservices.clients.agri.FarmerDto;
+import io.digiservices.clients.agri.PageDto;
 
 import java.util.List;
 

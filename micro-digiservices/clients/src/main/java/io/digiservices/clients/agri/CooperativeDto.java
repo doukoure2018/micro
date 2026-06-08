@@ -1,4 +1,4 @@
-package io.digiservices.ebanking.paylaod;
+package io.digiservices.clients.agri;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,10 +7,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 
 /**
- * Cooperative / groupement (CL.CL_GRUPOS_ECONOMICOS) avec agregats
- * (nombre de membres, nombre de credits agricoles, montant total).
- *
- * <p>A ne pas confondre avec CL_VINCULACIONES (liens individuels client-client).</p>
+ * Cooperative / groupement (CL.CL_GRUPOS_ECONOMICOS) avec agregats.
  */
 @Data
 @NoArgsConstructor

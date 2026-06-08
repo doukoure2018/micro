@@ -1,4 +1,4 @@
-package io.digiservices.ebanking.paylaod;
+package io.digiservices.clients.agri;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,8 +9,6 @@ import java.time.LocalDate;
 
 /**
  * Agriculteur (client ayant au moins un credit agricole).
- * Agrege CL.CL_CLIENTES + details physique/morale + activite/secteur + agence
- * + agregats credits (nombre, montant total).
  */
 @Data
 @NoArgsConstructor
@@ -21,9 +19,7 @@ public class FarmerDto {
     private String codCliente;
     private String nomCliente;
 
-    /** Code brut IND_PERSONA (ex: F / J). */
     private String indPersona;
-    /** Type traduit : PHYSICAL / LEGAL (rempli par le service). */
     private String personType;
 
     private String telPrincipal;
@@ -38,8 +34,6 @@ public class FarmerDto {
     private long nbCredits;
     private BigDecimal totalAmount;
 
-    /** Renseigne uniquement pour une personne physique (sinon null). */
     private FarmerPhysicalDto physicalDetails;
-    /** Renseigne uniquement pour une personne morale (sinon null). */
     private FarmerLegalDto legalDetails;
 }

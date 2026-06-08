@@ -1,4 +1,4 @@
-package io.digiservices.ebanking.paylaod;
+package io.digiservices.clients.agri;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -20,9 +20,7 @@ public class CooperativeMemberDto {
     private String indPersona;
     private String personType;
 
-    /** Code brut IND_GRADO. */
     private String indGrado;
-    /** Role traduit (rempli par le service). */
     private String groupRole;
 
     private LocalDate fecRegistro;

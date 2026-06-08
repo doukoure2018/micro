@@ -1,13 +1,13 @@
 package io.digiservices.ebanking.repository;
 
 import io.digiservices.ebanking.exception.TertiaryUnavailableException;
-import io.digiservices.ebanking.paylaod.AgriAgencyDto;
-import io.digiservices.ebanking.paylaod.AgriCreditDto;
-import io.digiservices.ebanking.paylaod.CooperativeDto;
-import io.digiservices.ebanking.paylaod.CooperativeMemberDto;
-import io.digiservices.ebanking.paylaod.FarmerDto;
-import io.digiservices.ebanking.paylaod.FarmerLegalDto;
-import io.digiservices.ebanking.paylaod.FarmerPhysicalDto;
+import io.digiservices.clients.agri.AgriAgencyDto;
+import io.digiservices.clients.agri.AgriCreditDto;
+import io.digiservices.clients.agri.CooperativeDto;
+import io.digiservices.clients.agri.CooperativeMemberDto;
+import io.digiservices.clients.agri.FarmerDto;
+import io.digiservices.clients.agri.FarmerLegalDto;
+import io.digiservices.clients.agri.FarmerPhysicalDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataAccessException;

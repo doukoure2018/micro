@@ -39,6 +39,11 @@ management:
       exposure:
         include: health, info
 
+# Cle API pour appeler le perimetre agricole d'ebanking (/ebanking/agri/**)
+ebanking:
+  agri:
+    api-key: ${EBANKING_AGRI_API_KEY:}
+
 feign:
   client:
     config:
