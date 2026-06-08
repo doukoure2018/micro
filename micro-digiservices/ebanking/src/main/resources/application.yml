@@ -69,6 +69,10 @@ application:
   title: DIGICRG-MICROSERVICE
   version: v02
 
+# Configuration AgriPilot - cle API protegeant les endpoints /ebanking/agri/**
+agripilot:
+  api-key: ${AGRIPILOT_API_KEY}
+
 # Configuration Serveur
 server:
   port: 8081

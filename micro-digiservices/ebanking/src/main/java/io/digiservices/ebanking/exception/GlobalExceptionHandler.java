@@ -36,6 +36,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 webRequest.getDescription(false));
         return new ResponseEntity<>(errorDetails, HttpStatus.BAD_REQUEST);
     }
+    // datasource tertiary (BDCRG / SAF2000) injoignable -> 503
+    @ExceptionHandler(TertiaryUnavailableException.class)
+    public ResponseEntity<ErrorDetails> handleTertiaryUnavailableException(TertiaryUnavailableException exception,
+                                                                           WebRequest webRequest){
+        ErrorDetails errorDetails = new ErrorDetails(new Date(), exception.getMessage(),
+                webRequest.getDescription(false));
+        return new ResponseEntity<>(errorDetails, HttpStatus.SERVICE_UNAVAILABLE);
+    }
+
     // global exceptions
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorDetails> handleGlobalException(Exception exception,
