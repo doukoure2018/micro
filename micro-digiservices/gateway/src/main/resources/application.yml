@@ -37,6 +37,11 @@ spring:
                 rate-limiter: "#{customRateLimiter}"
                 key-resolver: "#{customKeyResolver}"
 
+          - id: agriculteur-service
+            uri: lb://AGRICULTEURSERVICE
+            predicates:
+              - Path=/agriculteurs/**
+
 eureka:
   client:
     service-url:

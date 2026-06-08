@@ -37,7 +37,13 @@ management:
   endpoints:
     web:
       exposure:
-        include: health, info
+        include: health, info, metrics
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
 
 # Cle API pour appeler le perimetre agricole d'ebanking (/ebanking/agri/**)
 ebanking:

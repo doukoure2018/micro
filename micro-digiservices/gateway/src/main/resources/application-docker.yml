@@ -26,6 +26,10 @@ spring:
           uri: lb://ECREDITSERVICE
           predicates:
             - Path=/ecredit/**
+        - id: agriculteur-service
+          uri: lb://AGRICULTEURSERVICE
+          predicates:
+            - Path=/agriculteurs/**
       # Global CORS configuration
       globalcors:
         cors-configurations:
