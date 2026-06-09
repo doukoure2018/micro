@@ -1,0 +1,106 @@
+{
+  "info": {
+    "name": "AgriPilot - API Agriculteurs",
+    "description": "API d'agregation du perimetre agricole (SAF2000) exposee a AgriPilot. Lecture seule. Auth: JWT Bearer (role AGRIPILOT).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{token}}", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8000", "type": "string" },
+    { "key": "token", "value": "", "type": "string" },
+    { "key": "agencyId", "value": "", "type": "string" },
+    { "key": "clientId", "value": "", "type": "string" },
+    { "key": "creditId", "value": "", "type": "string" },
+    { "key": "groupId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Agences",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/agriculteurs/agencies", "host": ["{{baseUrl}}"], "path": ["agriculteurs", "agencies"] }
+      }
+    },
+    {
+      "name": "Portefeuille d'une agence",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/agriculteurs/agencies/{{agencyId}}/portfolio?page=0&size=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["agriculteurs", "agencies", "{{agencyId}}", "portfolio"],
+          "query": [ { "key": "page", "value": "0" }, { "key": "size", "value": "20" } ]
+        }
+      }
+    },
+    {
+      "name": "Agriculteurs (liste paginee)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/agriculteurs/farmers?page=0&size=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["agriculteurs", "farmers"],
+          "query": [ { "key": "page", "value": "0" }, { "key": "size", "value": "20" } ]
+        }
+      }
+    },
+    {
+      "name": "Agriculteur (detail)",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/agriculteurs/farmers/{{clientId}}", "host": ["{{baseUrl}}"], "path": ["agriculteurs", "farmers", "{{clientId}}"] }
+      }
+    },
+    {
+      "name": "Credits d'un agriculteur",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/agriculteurs/farmers/{{clientId}}/credits", "host": ["{{baseUrl}}"], "path": ["agriculteurs", "farmers", "{{clientId}}", "credits"] }
+      }
+    },
+    {
+      "name": "Credit (detail)",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/agriculteurs/credits/{{creditId}}", "host": ["{{baseUrl}}"], "path": ["agriculteurs", "credits", "{{creditId}}"] }
+      }
+    },
+    {
+      "name": "Cooperatives (liste paginee)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/agriculteurs/cooperatives?page=0&size=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["agriculteurs", "cooperatives"],
+          "query": [ { "key": "page", "value": "0" }, { "key": "size", "value": "20" } ]
+        }
+      }
+    },
+    {
+      "name": "Cooperative (detail)",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/agriculteurs/cooperatives/{{groupId}}", "host": ["{{baseUrl}}"], "path": ["agriculteurs", "cooperatives", "{{groupId}}"] }
+      }
+    },
+    {
+      "name": "Membres d'une cooperative",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/agriculteurs/cooperatives/{{groupId}}/members?page=0&size=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["agriculteurs", "cooperatives", "{{groupId}}", "members"],
+          "query": [ { "key": "page", "value": "0" }, { "key": "size", "value": "20" } ]
+        }
+      }
+    }
+  ]
+}

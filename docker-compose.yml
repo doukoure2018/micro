@@ -305,6 +305,45 @@ services:
       retries: 3
       start_period: 120s
 
+  agriculteurservice:
+    image: doukoure93/agriculteurservice:latest
+    container_name: agriculteurservice
+    ports:
+      - "8088:8088"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://admin:admin2711@discoveryserver:5002/eureka/"
+      JWKS_URI: "http://authorizationserver:8080/oauth2/jwks"
+      # Doit valoir la MEME cle que AGRIPILOT_API_KEY cote ebanking
+      EBANKING_AGRI_API_KEY: ${EBANKING_AGRI_API_KEY:-}
+      JAVA_TOOL_OPTIONS: "-Xms256m -Xmx512m"
+    volumes:
+      - ./logs/agriculteurservice:/var/log/agriculteurservice
+    networks:
+      - spring
+    depends_on:
+      discoveryserver:
+        condition: service_started
+      authorizationserver:
+        condition: service_started
+      ebankingservice:
+        condition: service_started
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8088/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+
   ebankingservice:
     image: doukoure93/ebanking:latest
     container_name: ebankingservice

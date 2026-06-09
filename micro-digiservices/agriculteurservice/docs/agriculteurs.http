@@ -1,0 +1,52 @@
+# Tests d'integration manuels - API AgriPilot (REST Client VS Code / IntelliJ)
+# Renseigner les variables ci-dessous puis envoyer les requetes.
+
+@baseUrl = http://localhost:8000
+@token = COLLER_UN_JWT_AVEC_ROLE_AGRIPILOT
+@agencyId =
+@clientId =
+@creditId =
+@groupId =
+
+### Agences
+GET {{baseUrl}}/agriculteurs/agencies
+Authorization: Bearer {{token}}
+
+### Portefeuille d'une agence (pagine)
+GET {{baseUrl}}/agriculteurs/agencies/{{agencyId}}/portfolio?page=0&size=20
+Authorization: Bearer {{token}}
+
+### Agriculteurs (liste paginee)
+GET {{baseUrl}}/agriculteurs/farmers?page=0&size=20
+Authorization: Bearer {{token}}
+
+### Agriculteur (detail)
+GET {{baseUrl}}/agriculteurs/farmers/{{clientId}}
+Authorization: Bearer {{token}}
+
+### Credits d'un agriculteur
+GET {{baseUrl}}/agriculteurs/farmers/{{clientId}}/credits
+Authorization: Bearer {{token}}
+
+### Credit (detail)
+GET {{baseUrl}}/agriculteurs/credits/{{creditId}}
+Authorization: Bearer {{token}}
+
+### Cooperatives (liste paginee)
+GET {{baseUrl}}/agriculteurs/cooperatives?page=0&size=20
+Authorization: Bearer {{token}}
+
+### Cooperative (detail)
+GET {{baseUrl}}/agriculteurs/cooperatives/{{groupId}}
+Authorization: Bearer {{token}}
+
+### Membres d'une cooperative
+GET {{baseUrl}}/agriculteurs/cooperatives/{{groupId}}/members?page=0&size=20
+Authorization: Bearer {{token}}
+
+### Controle securite : sans token -> 401
+GET {{baseUrl}}/agriculteurs/agencies
+
+### Controle pagination : size invalide -> 400
+GET {{baseUrl}}/agriculteurs/farmers?page=0&size=0
+Authorization: Bearer {{token}}
