@@ -1,0 +1,116 @@
+{
+  "info": {
+    "name": "Ebanking Agri (interne) - X-API-Key",
+    "description": "Endpoints internes /ebanking/agri/** du perimetre agricole SAF2000, proteges par cle API (header X-API-Key = AGRIPILOT_API_KEY). Noms de champs SAF (codCliente, monCredito...). Pour l'API publique francaise, voir AgriPilot.postman_collection.json (/agriculteurs/**, JWT).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      { "key": "key", "value": "X-API-Key", "type": "string" },
+      { "key": "value", "value": "{{apiKey}}", "type": "string" },
+      { "key": "in", "value": "header", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8081", "type": "string" },
+    { "key": "apiKey", "value": "", "type": "string" },
+    { "key": "codAgencia", "value": "", "type": "string" },
+    { "key": "codCliente", "value": "", "type": "string" },
+    { "key": "numCredito", "value": "", "type": "string" },
+    { "key": "codGrupo", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Agences",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/ebanking/agri/agences", "host": ["{{baseUrl}}"], "path": ["ebanking", "agri", "agences"] }
+      }
+    },
+    {
+      "name": "Portefeuille d'une agence",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/ebanking/agri/agences/{{codAgencia}}/portfolio?page=0&size=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["ebanking", "agri", "agences", "{{codAgencia}}", "portfolio"],
+          "query": [ { "key": "page", "value": "0" }, { "key": "size", "value": "20" } ]
+        }
+      }
+    },
+    {
+      "name": "Agriculteurs (liste paginee)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/ebanking/agri/farmers?page=0&size=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["ebanking", "agri", "farmers"],
+          "query": [ { "key": "page", "value": "0" }, { "key": "size", "value": "20" } ]
+        }
+      }
+    },
+    {
+      "name": "Agriculteur (detail)",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/ebanking/agri/farmers/{{codCliente}}", "host": ["{{baseUrl}}"], "path": ["ebanking", "agri", "farmers", "{{codCliente}}"] }
+      }
+    },
+    {
+      "name": "Credits agricoles d'un client",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/ebanking/agri/credits/{{codCliente}}", "host": ["{{baseUrl}}"], "path": ["ebanking", "agri", "credits", "{{codCliente}}"] }
+      }
+    },
+    {
+      "name": "Credit (detail)",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/ebanking/agri/credits/{{numCredito}}/detail", "host": ["{{baseUrl}}"], "path": ["ebanking", "agri", "credits", "{{numCredito}}", "detail"] }
+      }
+    },
+    {
+      "name": "Cooperatives (liste paginee)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/ebanking/agri/cooperatives?page=0&size=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["ebanking", "agri", "cooperatives"],
+          "query": [ { "key": "page", "value": "0" }, { "key": "size", "value": "20" } ]
+        }
+      }
+    },
+    {
+      "name": "Cooperative (detail)",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/ebanking/agri/cooperatives/{{codGrupo}}", "host": ["{{baseUrl}}"], "path": ["ebanking", "agri", "cooperatives", "{{codGrupo}}"] }
+      }
+    },
+    {
+      "name": "Membres d'une cooperative",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/ebanking/agri/cooperatives/{{codGrupo}}/members?page=0&size=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["ebanking", "agri", "cooperatives", "{{codGrupo}}", "members"],
+          "query": [ { "key": "page", "value": "0" }, { "key": "size", "value": "20" } ]
+        }
+      }
+    },
+    {
+      "name": "Controle securite : sans cle -> 401",
+      "request": {
+        "method": "GET",
+        "auth": { "type": "noauth" },
+        "url": { "raw": "{{baseUrl}}/ebanking/agri/agences", "host": ["{{baseUrl}}"], "path": ["ebanking", "agri", "agences"] }
+      }
+    }
+  ]
+}
