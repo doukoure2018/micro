@@ -151,7 +151,16 @@ jobs:
           docker tag doukoure93/notificationservice:0.0.1-SNAPSHOT doukoure93/notificationservice:latest
           docker push doukoure93/notificationservice:${{ steps.build-number.outputs.BUILD_NUMBER }}
           docker push doukoure93/notificationservice:latest
-      
+
+      - name: Build and push Agriculteur Service
+        working-directory: ./micro-digiservices/agriculteurservice
+        run: |
+          mvn -ntp -B verify -DskipTests jib:dockerBuild
+          docker tag doukoure93/agriculteurservice:0.0.1-SNAPSHOT doukoure93/agriculteurservice:${{ steps.build-number.outputs.BUILD_NUMBER }}
+          docker tag doukoure93/agriculteurservice:0.0.1-SNAPSHOT doukoure93/agriculteurservice:latest
+          docker push doukoure93/agriculteurservice:${{ steps.build-number.outputs.BUILD_NUMBER }}
+          docker push doukoure93/agriculteurservice:latest
+
 
       - name: Notify images pushed
         run: >

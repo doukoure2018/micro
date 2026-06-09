@@ -56,6 +56,10 @@ jobs:
           cd micro-digiservices/ecreditservice
           mvn clean verify
 
+      - name: Compile & Unit Test - Agriculteurservice
+        working-directory: ./micro-digiservices
+        run: mvn -ntp -B -pl agriculteurservice -am clean verify
+
       # ... Répète pour chaque microservice
 
       # Exemple migration Flyway sur BDD de test
