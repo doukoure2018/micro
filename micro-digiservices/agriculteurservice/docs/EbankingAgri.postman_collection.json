@@ -1,20 +1,12 @@
 {
   "info": {
     "name": "Ebanking Agri (interne) - X-API-Key",
-    "description": "Endpoints internes /ebanking/agri/** du perimetre agricole SAF2000, proteges par cle API (header X-API-Key = AGRIPILOT_API_KEY). Noms de champs SAF (codCliente, monCredito...). Pour l'API publique francaise, voir AgriPilot.postman_collection.json (/agriculteurs/**, JWT).",
+    "description": "Endpoints INTERNES /ebanking/agri/** (champs SAF). Auth: header X-API-Key = AGRIPILOT_API_KEY (cle interne ebanking).\n\nA tester depuis le serveur (baseUrl http://localhost:8081) : ces routes ne sont pas exposees publiquement (le gateway exige un JWT). Pour l'API publique KUMY, utiliser la collection AgriPilot (/agriculteurs/**).\n\nAVANT D'ENVOYER : onglet Variables -> renseigne 'apiKey'. Le header X-API-Key est present dans chaque requete.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-  },
-  "auth": {
-    "type": "apikey",
-    "apikey": [
-      { "key": "key", "value": "X-API-Key", "type": "string" },
-      { "key": "value", "value": "{{apiKey}}", "type": "string" },
-      { "key": "in", "value": "header", "type": "string" }
-    ]
   },
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:8081", "type": "string" },
-    { "key": "apiKey", "value": "", "type": "string" },
+    { "key": "apiKey", "value": "COLLER_LA_CLE_INTERNE_ICI", "type": "string" },
     { "key": "codAgencia", "value": "", "type": "string" },
     { "key": "codCliente", "value": "", "type": "string" },
     { "key": "numCredito", "value": "", "type": "string" },
@@ -25,6 +17,7 @@
       "name": "Agences",
       "request": {
         "method": "GET",
+        "header": [ { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" } ],
         "url": { "raw": "{{baseUrl}}/ebanking/agri/agences", "host": ["{{baseUrl}}"], "path": ["ebanking", "agri", "agences"] }
       }
     },
@@ -32,6 +25,7 @@
       "name": "Portefeuille d'une agence",
       "request": {
         "method": "GET",
+        "header": [ { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" } ],
         "url": {
           "raw": "{{baseUrl}}/ebanking/agri/agences/{{codAgencia}}/portfolio?page=0&size=20",
           "host": ["{{baseUrl}}"],
@@ -44,6 +38,7 @@
       "name": "Agriculteurs (liste paginee)",
       "request": {
         "method": "GET",
+        "header": [ { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" } ],
         "url": {
           "raw": "{{baseUrl}}/ebanking/agri/farmers?page=0&size=20",
           "host": ["{{baseUrl}}"],
@@ -56,6 +51,7 @@
       "name": "Agriculteur (detail)",
       "request": {
         "method": "GET",
+        "header": [ { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" } ],
         "url": { "raw": "{{baseUrl}}/ebanking/agri/farmers/{{codCliente}}", "host": ["{{baseUrl}}"], "path": ["ebanking", "agri", "farmers", "{{codCliente}}"] }
       }
     },
@@ -63,6 +59,7 @@
       "name": "Credits agricoles d'un client",
       "request": {
         "method": "GET",
+        "header": [ { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" } ],
         "url": { "raw": "{{baseUrl}}/ebanking/agri/credits/{{codCliente}}", "host": ["{{baseUrl}}"], "path": ["ebanking", "agri", "credits", "{{codCliente}}"] }
       }
     },
@@ -70,6 +67,7 @@
       "name": "Credit (detail)",
       "request": {
         "method": "GET",
+        "header": [ { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" } ],
         "url": { "raw": "{{baseUrl}}/ebanking/agri/credits/{{numCredito}}/detail", "host": ["{{baseUrl}}"], "path": ["ebanking", "agri", "credits", "{{numCredito}}", "detail"] }
       }
     },
@@ -77,6 +75,7 @@
       "name": "Cooperatives (liste paginee)",
       "request": {
         "method": "GET",
+        "header": [ { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" } ],
         "url": {
           "raw": "{{baseUrl}}/ebanking/agri/cooperatives?page=0&size=20",
           "host": ["{{baseUrl}}"],
@@ -89,6 +88,7 @@
       "name": "Cooperative (detail)",
       "request": {
         "method": "GET",
+        "header": [ { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" } ],
         "url": { "raw": "{{baseUrl}}/ebanking/agri/cooperatives/{{codGrupo}}", "host": ["{{baseUrl}}"], "path": ["ebanking", "agri", "cooperatives", "{{codGrupo}}"] }
       }
     },
@@ -96,6 +96,7 @@
       "name": "Membres d'une cooperative",
       "request": {
         "method": "GET",
+        "header": [ { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" } ],
         "url": {
           "raw": "{{baseUrl}}/ebanking/agri/cooperatives/{{codGrupo}}/members?page=0&size=20",
           "host": ["{{baseUrl}}"],
@@ -108,7 +109,6 @@
       "name": "Controle securite : sans cle -> 401",
       "request": {
         "method": "GET",
-        "auth": { "type": "noauth" },
         "url": { "raw": "{{baseUrl}}/ebanking/agri/agences", "host": ["{{baseUrl}}"], "path": ["ebanking", "agri", "agences"] }
       }
     }

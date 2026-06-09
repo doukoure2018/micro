@@ -1,20 +1,12 @@
 {
   "info": {
     "name": "AgriPilot - API Agriculteurs (X-API-Key)",
-    "description": "API publique d'agregation du perimetre agricole exposee a AgriPilot. Lecture seule. Auth: cle API publique (header X-API-Key = AGRIPILOT_PUBLIC_API_KEY). Acces direct a agriculteurservice (via une location nginx dediee, bypass du gateway).",
+    "description": "API publique AgriPilot (/agriculteurs/**). Auth: header X-API-Key = AGRIPILOT_PUBLIC_API_KEY.\n\nAVANT D'ENVOYER : ouvre la collection -> onglet Variables -> renseigne 'publicApiKey' (la cle publique du serveur) et au besoin 'baseUrl'. Le header X-API-Key est present dans chaque requete (onglet Headers).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-  },
-  "auth": {
-    "type": "apikey",
-    "apikey": [
-      { "key": "key", "value": "X-API-Key", "type": "string" },
-      { "key": "value", "value": "{{publicApiKey}}", "type": "string" },
-      { "key": "in", "value": "header", "type": "string" }
-    ]
   },
   "variable": [
     { "key": "baseUrl", "value": "https://digi-creditrural-io.com", "type": "string" },
-    { "key": "publicApiKey", "value": "", "type": "string" },
+    { "key": "publicApiKey", "value": "COLLER_LA_CLE_PUBLIQUE_ICI", "type": "string" },
     { "key": "agencyId", "value": "", "type": "string" },
     { "key": "clientId", "value": "", "type": "string" },
     { "key": "creditId", "value": "", "type": "string" },
@@ -25,6 +17,7 @@
       "name": "Agences",
       "request": {
         "method": "GET",
+        "header": [ { "key": "X-API-Key", "value": "{{publicApiKey}}", "type": "text" } ],
         "url": { "raw": "{{baseUrl}}/agriculteurs/agencies", "host": ["{{baseUrl}}"], "path": ["agriculteurs", "agencies"] }
       }
     },
@@ -32,6 +25,7 @@
       "name": "Portefeuille d'une agence",
       "request": {
         "method": "GET",
+        "header": [ { "key": "X-API-Key", "value": "{{publicApiKey}}", "type": "text" } ],
         "url": {
           "raw": "{{baseUrl}}/agriculteurs/agencies/{{agencyId}}/portfolio?page=0&size=20",
           "host": ["{{baseUrl}}"],
@@ -44,6 +38,7 @@
       "name": "Agriculteurs (liste paginee)",
       "request": {
         "method": "GET",
+        "header": [ { "key": "X-API-Key", "value": "{{publicApiKey}}", "type": "text" } ],
         "url": {
           "raw": "{{baseUrl}}/agriculteurs/farmers?page=0&size=20",
           "host": ["{{baseUrl}}"],
@@ -56,6 +51,7 @@
       "name": "Agriculteur (detail)",
       "request": {
         "method": "GET",
+        "header": [ { "key": "X-API-Key", "value": "{{publicApiKey}}", "type": "text" } ],
         "url": { "raw": "{{baseUrl}}/agriculteurs/farmers/{{clientId}}", "host": ["{{baseUrl}}"], "path": ["agriculteurs", "farmers", "{{clientId}}"] }
       }
     },
@@ -63,6 +59,7 @@
       "name": "Credits d'un agriculteur",
       "request": {
         "method": "GET",
+        "header": [ { "key": "X-API-Key", "value": "{{publicApiKey}}", "type": "text" } ],
         "url": { "raw": "{{baseUrl}}/agriculteurs/farmers/{{clientId}}/credits", "host": ["{{baseUrl}}"], "path": ["agriculteurs", "farmers", "{{clientId}}", "credits"] }
       }
     },
@@ -70,6 +67,7 @@
       "name": "Credit (detail)",
       "request": {
         "method": "GET",
+        "header": [ { "key": "X-API-Key", "value": "{{publicApiKey}}", "type": "text" } ],
         "url": { "raw": "{{baseUrl}}/agriculteurs/credits/{{creditId}}", "host": ["{{baseUrl}}"], "path": ["agriculteurs", "credits", "{{creditId}}"] }
       }
     },
@@ -77,6 +75,7 @@
       "name": "Cooperatives (liste paginee)",
       "request": {
         "method": "GET",
+        "header": [ { "key": "X-API-Key", "value": "{{publicApiKey}}", "type": "text" } ],
         "url": {
           "raw": "{{baseUrl}}/agriculteurs/cooperatives?page=0&size=20",
           "host": ["{{baseUrl}}"],
@@ -89,6 +88,7 @@
       "name": "Cooperative (detail)",
       "request": {
         "method": "GET",
+        "header": [ { "key": "X-API-Key", "value": "{{publicApiKey}}", "type": "text" } ],
         "url": { "raw": "{{baseUrl}}/agriculteurs/cooperatives/{{groupId}}", "host": ["{{baseUrl}}"], "path": ["agriculteurs", "cooperatives", "{{groupId}}"] }
       }
     },
@@ -96,6 +96,7 @@
       "name": "Membres d'une cooperative",
       "request": {
         "method": "GET",
+        "header": [ { "key": "X-API-Key", "value": "{{publicApiKey}}", "type": "text" } ],
         "url": {
           "raw": "{{baseUrl}}/agriculteurs/cooperatives/{{groupId}}/members?page=0&size=20",
           "host": ["{{baseUrl}}"],
@@ -108,7 +109,6 @@
       "name": "Controle securite : sans cle -> 401",
       "request": {
         "method": "GET",
-        "auth": { "type": "noauth" },
         "url": { "raw": "{{baseUrl}}/agriculteurs/agencies", "host": ["{{baseUrl}}"], "path": ["agriculteurs", "agencies"] }
       }
     }
