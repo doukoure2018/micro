@@ -308,6 +308,9 @@ services:
   agriculteurservice:
     image: doukoure93/agriculteurservice:latest
     container_name: agriculteurservice
+    # Profil dedie : ce service n'est ni pull ni demarre par defaut.
+    # Activer une fois l'image publiee : docker compose --env-file .env.prod --profile agri up -d agriculteurservice
+    profiles: ["agri"]
     ports:
       - "8088:8088"
     environment:
