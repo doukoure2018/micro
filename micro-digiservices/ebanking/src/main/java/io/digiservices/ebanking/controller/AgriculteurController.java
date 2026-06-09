@@ -46,8 +46,8 @@ public class AgriculteurController {
     @GetMapping("/agences/{codAgencia}/portfolio")
     public ResponseEntity<PageDto<AgriCreditDto>> getAgencyPortfolio(
             @PathVariable("codAgencia") String codAgencia,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size) {
         validatePagination(page, size);
         log.info("[AGRI] GET /agences/{}/portfolio page={} size={}", codAgencia, page, size);
         return ResponseEntity.ok(agriculteurService.getAgencyPortfolio(codAgencia, page, size));
@@ -55,8 +55,8 @@ public class AgriculteurController {
 
     @GetMapping("/farmers")
     public ResponseEntity<PageDto<FarmerDto>> getFarmers(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size) {
         validatePagination(page, size);
         log.info("[AGRI] GET /farmers page={} size={}", page, size);
         return ResponseEntity.ok(agriculteurService.getFarmers(page, size));
@@ -83,8 +83,8 @@ public class AgriculteurController {
 
     @GetMapping("/cooperatives")
     public ResponseEntity<PageDto<CooperativeDto>> getCooperatives(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size) {
         validatePagination(page, size);
         log.info("[AGRI] GET /cooperatives page={} size={}", page, size);
         return ResponseEntity.ok(agriculteurService.getCooperatives(page, size));
@@ -99,8 +99,8 @@ public class AgriculteurController {
     @GetMapping("/cooperatives/{codGrupo}/members")
     public ResponseEntity<PageDto<CooperativeMemberDto>> getCooperativeMembers(
             @PathVariable("codGrupo") String codGrupo,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size) {
         validatePagination(page, size);
         log.info("[AGRI] GET /cooperatives/{}/members page={} size={}", codGrupo, page, size);
         return ResponseEntity.ok(agriculteurService.getCooperativeMembers(codGrupo, page, size));
