@@ -316,8 +316,9 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://admin:admin2711@discoveryserver:5002/eureka/"
-      JWKS_URI: "http://authorizationserver:8080/oauth2/jwks"
-      # Doit valoir la MEME cle que AGRIPILOT_API_KEY cote ebanking
+      # Cle PUBLIQUE : protege /agriculteurs/** (KUMY -> agriculteurservice)
+      AGRIPILOT_PUBLIC_API_KEY: ${AGRIPILOT_PUBLIC_API_KEY:-}
+      # Cle INTERNE : doit valoir la MEME cle que AGRIPILOT_API_KEY cote ebanking
       EBANKING_AGRI_API_KEY: ${EBANKING_AGRI_API_KEY:-}
       JAVA_TOOL_OPTIONS: "-Xms256m -Xmx512m"
     volumes:

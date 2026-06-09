@@ -5,28 +5,29 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
 import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Verifie la securite de l'API AgriPilot (Phase 4) :
- * non authentifie -> 401, role AGRIPILOT -> 200, role insuffisant -> 403.
+ * Securite de l'API publique par cle API (X-API-Key) :
+ * sans cle -> 401, cle valide -> 200, cle invalide -> 401.
  */
 @SpringBootTest(properties = {
         "eureka.client.enabled=false",
         "spring.cloud.discovery.enabled=false",
-        "spring.cloud.service-registry.auto-registration.enabled=false"
+        "spring.cloud.service-registry.auto-registration.enabled=false",
+        "agripilot.public-api-key=test-public-key-123"
 })
 @AutoConfigureMockMvc
 class AgriculteurSecurityTest {
+
+    private static final String VALID_KEY = "test-public-key-123";
 
     @Autowired
     private MockMvc mockMvc;
@@ -35,23 +36,21 @@ class AgriculteurSecurityTest {
     private EbankingAgriClient ebankingAgriClient;
 
     @Test
-    void unauthenticatedReturns401() throws Exception {
+    void withoutApiKeyReturns401() throws Exception {
         mockMvc.perform(get("/agriculteurs/agencies"))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void withAgripilotRoleReturns200() throws Exception {
+    void withValidApiKeyReturns200() throws Exception {
         when(ebankingAgriClient.getAllAgencies()).thenReturn(List.of());
-        mockMvc.perform(get("/agriculteurs/agencies")
-                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_AGRIPILOT"))))
+        mockMvc.perform(get("/agriculteurs/agencies").header("X-API-Key", VALID_KEY))
                 .andExpect(status().isOk());
     }
 
     @Test
-    void withWrongRoleReturns403() throws Exception {
-        mockMvc.perform(get("/agriculteurs/agencies")
-                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_USER"))))
-                .andExpect(status().isForbidden());
+    void withWrongApiKeyReturns401() throws Exception {
+        mockMvc.perform(get("/agriculteurs/agencies").header("X-API-Key", "wrong-key"))
+                .andExpect(status().isUnauthorized());
     }
 }

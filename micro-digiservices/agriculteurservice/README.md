@@ -7,15 +7,15 @@ AgriPilot. **Lecture seule**, contrat stable en français, indépendant des noms
 
 ```
 AgriPilot (KUMY)
-   │  HTTPS + JWT (rôle AGRIPILOT)
+   │  HTTPS + X-API-Key (cle publique)
    ▼
-gateway:8000  ──/agriculteurs/**──►  agriculteurservice:8088
-                                         │  Feign + X-API-Key
-                                         ▼
-                                     ebanking:8081  /ebanking/agri/**
-                                         │  JDBC
-                                         ▼
-                                     SQL Server BDCRG (SAF2000)
+nginx  ──/agriculteurs/**──►  agriculteurservice:8088   (location dediee, bypass du gateway)
+                                  │  Feign + X-API-Key (cle interne)
+                                  ▼
+                              ebanking:8081  /ebanking/agri/**
+                                  │  JDBC
+                                  ▼
+                              SQL Server BDCRG (SAF2000)
 ```
 
 `agriculteurservice` n'a **pas de base de données** : il agrège ebanking via Feign et
@@ -23,23 +23,26 @@ traduit les codes SAF en libellés français.
 
 ## Authentification
 
-- **JWT Bearer** obtenu auprès du serveur d'autorisation, contenant le rôle **`AGRIPILOT`**
-  (claim `authorities` incluant `ROLE_AGRIPILOT`).
-- En-tête : `Authorization: Bearer <jwt>`
-- Sans token → **401** ; rôle insuffisant → **403**.
+- **Clé API** dans le header **`X-API-Key`**, comparée à `AGRIPILOT_PUBLIC_API_KEY`
+  (clé **publique**, distincte de la clé interne agriculteurservice→ebanking).
+- Sans clé / clé invalide → **401**.
 
 ```
 GET /agriculteurs/agencies HTTP/1.1
-Host: <gateway>
-Authorization: Bearer eyJ...
+Host: digi-creditrural-io.com
+X-API-Key: <cle-publique>
 ```
+
+> Deux clés distinctes : `AGRIPILOT_PUBLIC_API_KEY` (KUMY → agriculteurservice) et
+> `AGRIPILOT_API_KEY` / `EBANKING_AGRI_API_KEY` (agriculteurservice → ebanking).
+> Rotation indépendante.
 
 ## Base URL
 
 | Environnement | Base URL |
 |---|---|
-| Via gateway (recommandé) | `http://<host>:8000` |
-| Direct (debug) | `http://<host>:8088` |
+| Public (nginx, recommandé) | `https://digi-creditrural-io.com` |
+| Direct (debug, sur le serveur) | `http://<host>:8088` |
 
 ## Endpoints
 
@@ -122,8 +125,7 @@ Réponse paginée :
 |---|---|
 | 200 | OK |
 | 400 | Paramètre invalide (pagination) |
-| 401 | JWT absent / invalide |
-| 403 | Rôle insuffisant (AGRIPILOT requis) |
+| 401 | Clé API (`X-API-Key`) absente ou invalide |
 | 404 | Ressource introuvable dans le périmètre agricole |
 | 502 | Erreur amont (service de données) |
 | 503 | Base de données (BDCRG) momentanément indisponible |
@@ -139,10 +141,19 @@ Corps d'erreur :
 
 ## Outils de test fournis
 - Collection Postman : [`docs/AgriPilot.postman_collection.json`](docs/AgriPilot.postman_collection.json)
-  (variables `baseUrl`, `token`, `agencyId`, `clientId`, `creditId`, `groupId`)
+  (auth `X-API-Key` ; variables `baseUrl`, `publicApiKey`, `agencyId`, `clientId`, `creditId`, `groupId`)
 - Requêtes REST Client : [`docs/agriculteurs.http`](docs/agriculteurs.http)
 
+Exemple :
+```bash
+curl -H "X-API-Key: <cle-publique>" https://digi-creditrural-io.com/agriculteurs/agencies
+```
+
 ## Notes d'exploitation
-- Variable d'environnement requise : **`EBANKING_AGRI_API_KEY`** (clé API interne vers
-  ebanking — doit être identique à `AGRIPILOT_API_KEY` côté ebanking).
+- Variables d'environnement :
+  - **`AGRIPILOT_PUBLIC_API_KEY`** — clé publique protégeant `/agriculteurs/**` (KUMY).
+  - **`EBANKING_AGRI_API_KEY`** — clé interne vers ebanking (doit être identique à
+    `AGRIPILOT_API_KEY` côté ebanking).
+- Exposition : `location /agriculteurs/` dans nginx pointe **directement** sur
+  `agriculteurservice:8088` (bypass du gateway, qui exige un JWT).
 - Port : `8088`. Health : `/actuator/health`.

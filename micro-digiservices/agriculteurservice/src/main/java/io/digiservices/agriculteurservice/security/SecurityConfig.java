@@ -1,36 +1,41 @@
 package io.digiservices.agriculteurservice.security;
 
-import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
- * Securite de l'API AgriPilot : Resource Server JWT.
+ * Securite de l'API publique AgriPilot : authentification par cle API.
  *
  * <ul>
- *   <li>{@code /agriculteurs/**} : reserve aux roles AGRIPILOT ou ADMIN</li>
+ *   <li>{@code /agriculteurs/**} : protege par {@link ApiKeyAuthFilter}
+ *       (header {@code X-API-Key} = {@code AGRIPILOT_PUBLIC_API_KEY})</li>
  *   <li>actuator health/info + swagger/openapi : ouverts</li>
  *   <li>tout le reste : refuse</li>
  * </ul>
  *
- * <p>Roles extraits du claim {@code authorities} du JWT via {@link JwtConverter}.</p>
+ * <p>KUMY appelle directement agriculteurservice (via une location nginx dediee
+ * qui bypasse le gateway). Aucun JWT requis.</p>
  */
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
-@RequiredArgsConstructor
-public class ResourceServerConfig {
+@Slf4j
+public class SecurityConfig {
 
-    private final JwtConverter jwtConverter;
+    @Value("${agripilot.public-api-key:}")
+    private String publicApiKey;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        ApiKeyAuthFilter apiKeyAuthFilter = new ApiKeyAuthFilter(publicApiKey);
+
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -38,10 +43,13 @@ public class ResourceServerConfig {
                         .requestMatchers(
                                 "/actuator/health", "/actuator/info",
                                 "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
-                        .requestMatchers("/agriculteurs/**").hasAnyRole("AGRIPILOT", "ADMIN")
+                        .requestMatchers("/agriculteurs/**").authenticated()
                         .anyRequest().denyAll())
-                .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtConverter)));
+                .addFilterBefore(apiKeyAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+        if (!org.springframework.util.StringUtils.hasText(publicApiKey)) {
+            log.warn("[AGRI-PUBLIC-AUTH] AGRIPILOT_PUBLIC_API_KEY non configuree : /agriculteurs/** rejette tout (401)");
+        }
         return http.build();
     }
 }

@@ -1,18 +1,20 @@
 {
   "info": {
-    "name": "AgriPilot - API Agriculteurs",
-    "description": "API d'agregation du perimetre agricole (SAF2000) exposee a AgriPilot. Lecture seule. Auth: JWT Bearer (role AGRIPILOT).",
+    "name": "AgriPilot - API Agriculteurs (X-API-Key)",
+    "description": "API publique d'agregation du perimetre agricole exposee a AgriPilot. Lecture seule. Auth: cle API publique (header X-API-Key = AGRIPILOT_PUBLIC_API_KEY). Acces direct a agriculteurservice (via une location nginx dediee, bypass du gateway).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
-    "type": "bearer",
-    "bearer": [
-      { "key": "token", "value": "{{token}}", "type": "string" }
+    "type": "apikey",
+    "apikey": [
+      { "key": "key", "value": "X-API-Key", "type": "string" },
+      { "key": "value", "value": "{{publicApiKey}}", "type": "string" },
+      { "key": "in", "value": "header", "type": "string" }
     ]
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:8000", "type": "string" },
-    { "key": "token", "value": "", "type": "string" },
+    { "key": "baseUrl", "value": "https://digi-creditrural-io.com", "type": "string" },
+    { "key": "publicApiKey", "value": "", "type": "string" },
     { "key": "agencyId", "value": "", "type": "string" },
     { "key": "clientId", "value": "", "type": "string" },
     { "key": "creditId", "value": "", "type": "string" },
@@ -100,6 +102,14 @@
           "path": ["agriculteurs", "cooperatives", "{{groupId}}", "members"],
           "query": [ { "key": "page", "value": "0" }, { "key": "size", "value": "20" } ]
         }
+      }
+    },
+    {
+      "name": "Controle securite : sans cle -> 401",
+      "request": {
+        "method": "GET",
+        "auth": { "type": "noauth" },
+        "url": { "raw": "{{baseUrl}}/agriculteurs/agencies", "host": ["{{baseUrl}}"], "path": ["agriculteurs", "agencies"] }
       }
     }
   ]

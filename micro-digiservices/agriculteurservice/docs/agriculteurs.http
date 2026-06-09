@@ -1,8 +1,8 @@
-# Tests d'integration manuels - API AgriPilot (REST Client VS Code / IntelliJ)
-# Renseigner les variables ci-dessous puis envoyer les requetes.
+# Tests d'integration manuels - API publique AgriPilot (REST Client VS Code / IntelliJ)
+# Auth : cle API publique dans le header X-API-Key (= AGRIPILOT_PUBLIC_API_KEY).
 
-@baseUrl = http://localhost:8000
-@token = COLLER_UN_JWT_AVEC_ROLE_AGRIPILOT
+@baseUrl = https://digi-creditrural-io.com
+@apiKey = COLLER_LA_CLE_PUBLIQUE
 @agencyId =
 @clientId =
 @creditId =
@@ -10,43 +10,43 @@
 
 ### Agences
 GET {{baseUrl}}/agriculteurs/agencies
-Authorization: Bearer {{token}}
+X-API-Key: {{apiKey}}
 
 ### Portefeuille d'une agence (pagine)
 GET {{baseUrl}}/agriculteurs/agencies/{{agencyId}}/portfolio?page=0&size=20
-Authorization: Bearer {{token}}
+X-API-Key: {{apiKey}}
 
 ### Agriculteurs (liste paginee)
 GET {{baseUrl}}/agriculteurs/farmers?page=0&size=20
-Authorization: Bearer {{token}}
+X-API-Key: {{apiKey}}
 
 ### Agriculteur (detail)
 GET {{baseUrl}}/agriculteurs/farmers/{{clientId}}
-Authorization: Bearer {{token}}
+X-API-Key: {{apiKey}}
 
 ### Credits d'un agriculteur
 GET {{baseUrl}}/agriculteurs/farmers/{{clientId}}/credits
-Authorization: Bearer {{token}}
+X-API-Key: {{apiKey}}
 
 ### Credit (detail)
 GET {{baseUrl}}/agriculteurs/credits/{{creditId}}
-Authorization: Bearer {{token}}
+X-API-Key: {{apiKey}}
 
 ### Cooperatives (liste paginee)
 GET {{baseUrl}}/agriculteurs/cooperatives?page=0&size=20
-Authorization: Bearer {{token}}
+X-API-Key: {{apiKey}}
 
 ### Cooperative (detail)
 GET {{baseUrl}}/agriculteurs/cooperatives/{{groupId}}
-Authorization: Bearer {{token}}
+X-API-Key: {{apiKey}}
 
 ### Membres d'une cooperative
 GET {{baseUrl}}/agriculteurs/cooperatives/{{groupId}}/members?page=0&size=20
-Authorization: Bearer {{token}}
+X-API-Key: {{apiKey}}
 
-### Controle securite : sans token -> 401
+### Controle securite : sans cle -> 401
 GET {{baseUrl}}/agriculteurs/agencies
 
 ### Controle pagination : size invalide -> 400
 GET {{baseUrl}}/agriculteurs/farmers?page=0&size=0
-Authorization: Bearer {{token}}
+X-API-Key: {{apiKey}}

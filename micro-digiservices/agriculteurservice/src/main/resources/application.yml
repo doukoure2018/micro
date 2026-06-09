@@ -5,12 +5,6 @@ spring:
     active: default
   main:
     allow-bean-definition-overriding: true
-  # Resource Server OAuth2/JWT (la chaine de securite dediee arrive en Phase 4)
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          jwk-set-uri: ${JWKS_URI:http://localhost:8080/oauth2/jwks}
   jackson:
     serialization:
       write-dates-as-timestamps: false
@@ -45,7 +39,11 @@ springdoc:
   api-docs:
     path: /v3/api-docs
 
-# Cle API pour appeler le perimetre agricole d'ebanking (/ebanking/agri/**)
+# Cle API PUBLIQUE : protege /agriculteurs/** (KUMY -> agriculteurservice)
+agripilot:
+  public-api-key: ${AGRIPILOT_PUBLIC_API_KEY:}
+
+# Cle API INTERNE : pour appeler le perimetre agricole d'ebanking (agriculteurservice -> ebanking)
 ebanking:
   agri:
     api-key: ${EBANKING_AGRI_API_KEY:}
