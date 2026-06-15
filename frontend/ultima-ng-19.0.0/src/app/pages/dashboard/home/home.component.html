@@ -28,7 +28,11 @@
 <app-df [user]="state().user"></app-df>
 }
 @default {
+@if (!state().user?.service) {
+<app-demande-avance-salaire [user]="state().user"></app-demande-avance-salaire>
+} @else {
 <app-digital-verification [user]="state().user"></app-digital-verification>
+}
 }
 }
 } @else if (state().user?.role === 'USER') {

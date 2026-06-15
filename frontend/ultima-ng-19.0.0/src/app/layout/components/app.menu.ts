@@ -238,7 +238,20 @@ export class AppMenu {
                                                           routerLink: ['/dashboards/mes-demandes-salaire']
                                                       }
                                                   ]
-                                                : []
+                                                : !this.user?.service
+                                                  ? [
+                                                        {
+                                                            label: 'Demande Avance Salaire',
+                                                            icon: 'pi pi-fw pi-wallet',
+                                                            routerLink: ['/dashboards/demande-avance-salaire']
+                                                        },
+                                                        {
+                                                            label: 'Mes avances de salaire',
+                                                            icon: 'pi pi-fw pi-list',
+                                                            routerLink: ['/dashboards/mes-demandes-salaire']
+                                                        }
+                                                    ]
+                                                  : []
                               : this.user?.role === 'DF' || this.user?.service === 'DF'
                                 ? [
                                       {
@@ -337,20 +350,7 @@ export class AppMenu {
                                                     routerLink: ['/dashboards/changement-telephone/da']
                                                 }
                                             ]
-                                          : this.user?.role === 'DIGITAL'
-                                            ? [
-                                                  {
-                                                      label: 'Demande Avance Salaire',
-                                                      icon: 'pi pi-fw pi-wallet',
-                                                      routerLink: ['/dashboards/demande-avance-salaire']
-                                                  },
-                                                  {
-                                                      label: 'Mes avances de salaire',
-                                                      icon: 'pi pi-fw pi-list',
-                                                      routerLink: ['/dashboards/mes-demandes-salaire']
-                                                  }
-                                              ]
-                                            : [])
+                                          : [])
                 ]
             }
         ];
