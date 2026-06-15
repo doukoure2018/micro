@@ -127,7 +127,6 @@ export class AppMenu {
                                   routerLink: ['/dashboards/changement-telephone/agent']
                               }
                           ]
-
                         : this.user?.role === 'SUPER_ADMIN'
                           ? [
                                 {
@@ -165,6 +164,11 @@ export class AppMenu {
                                               label: 'document-verification',
                                               icon: 'pi pi-fw pi-folder',
                                               routerLink: ['/dashboards/document-verification']
+                                          },
+                                          {
+                                              label: 'Mes avances de salaire',
+                                              icon: 'pi pi-fw pi-list',
+                                              routerLink: ['/dashboards/mes-demandes-salaire']
                                           }
                                       ]
                                     : this.user?.service === 'DE'
