@@ -127,6 +127,7 @@ export class AppMenu {
                                   routerLink: ['/dashboards/changement-telephone/agent']
                               }
                           ]
+
                         : this.user?.role === 'SUPER_ADMIN'
                           ? [
                                 {
@@ -336,7 +337,20 @@ export class AppMenu {
                                                     routerLink: ['/dashboards/changement-telephone/da']
                                                 }
                                             ]
-                                          : [])
+                                          : this.user?.role === 'DIGITAL'
+                                            ? [
+                                                  {
+                                                      label: 'Demande Avance Salaire',
+                                                      icon: 'pi pi-fw pi-wallet',
+                                                      routerLink: ['/dashboards/demande-avance-salaire']
+                                                  },
+                                                  {
+                                                      label: 'Mes avances de salaire',
+                                                      icon: 'pi pi-fw pi-list',
+                                                      routerLink: ['/dashboards/mes-demandes-salaire']
+                                                  }
+                                              ]
+                                            : [])
                 ]
             }
         ];
