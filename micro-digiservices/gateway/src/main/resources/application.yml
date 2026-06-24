@@ -16,7 +16,7 @@ spring:
           - id: user-service
             uri: lb://USERSERVICE
             predicates:
-              - Path=/user/**
+              - Path=/user/**,/agents/**
           - id: ebanking
             uri: lb://EBANKING
             predicates:
