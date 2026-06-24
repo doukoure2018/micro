@@ -114,6 +114,11 @@ server:
 jwks:
   uri: http://authorizationserver:8080/auth/oauth2/jwks
 
+# Clé API KUMY (/agents/**) : OBLIGATOIRE en prod, aucune valeur par défaut.
+# Si KUMY_AGENTS_API_KEY n'est pas fournie, /agents/** rejette tout (401).
+kumy:
+  agents-api-key: ${KUMY_AGENTS_API_KEY:}
+
 # Logging configuration for production
 logging:
   level:

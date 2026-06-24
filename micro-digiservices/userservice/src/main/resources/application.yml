@@ -79,6 +79,11 @@ server:
 jwks:
   uri: http://localhost:8080/oauth2/jwks
 
+# Clé API pour le contrôle de statut agent par KUMY/AgriScore (/agents/**).
+# En prod : fournie par la variable d'env KUMY_AGENTS_API_KEY (cf. application-prod.yml).
+kumy:
+  agents-api-key: ${KUMY_AGENTS_API_KEY:local-dev-kumy-key}
+
 
 orange:
   api:

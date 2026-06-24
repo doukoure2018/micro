@@ -7,10 +7,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.util.StringUtils;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -30,7 +34,33 @@ public class ResourceServerConfig {
     @Value("${jwks.uri}")
     private String jwtSetUri;
 
+    // Clé API dédiée au contrôle de statut agent par KUMY/AgriScore (rotation indépendante).
+    @Value("${kumy.agents-api-key:}")
+    private String kumyAgentsApiKey;
+
+    /**
+     * Chaîne prioritaire pour /agents/** : authentification par clé API KUMY (header X-API-Key),
+     * isolée de la chaîne JWT. KUMY appelle ce endpoint serveur-à-serveur, sans JWT.
+     */
     @Bean
+    @Order(1)
+    public SecurityFilterChain agentsApiKeyFilterChain(HttpSecurity http) throws Exception {
+        ApiKeyAuthFilter apiKeyAuthFilter = new ApiKeyAuthFilter(kumyAgentsApiKey);
+        http
+                .securityMatcher("/agents/**")
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
+                .addFilterBefore(apiKeyAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+        if (!StringUtils.hasText(kumyAgentsApiKey)) {
+            log.warn("[KUMY-AUTH] kumy.agents-api-key non configurée : /agents/** rejette tout (401)");
+        }
+        return http.build();
+    }
+
+    @Bean
+    @Order(2)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                // .cors(cors -> cors.configurationSource(corsConfigurationSource()))

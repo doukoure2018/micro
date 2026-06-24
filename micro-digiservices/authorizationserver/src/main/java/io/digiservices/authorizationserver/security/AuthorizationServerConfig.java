@@ -2,6 +2,7 @@ package io.digiservices.authorizationserver.security;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.digiservices.authorizationserver.model.AgentProfile;
 import io.digiservices.authorizationserver.model.User;
 import io.digiservices.authorizationserver.repository.UserRepository;
 import jakarta.servlet.ServletException;
@@ -77,6 +78,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AuthorizationServerConfig {
     private static final String AUTHORITY_KEY = "authorities";
+
+    // Scope métier KUMY/AgriScore (SSO fédéré OIDC) et rôles CRG concernés par AgriScore.
+    private static final String AGENT_PROFILE_SCOPE = "agent_profile";
+    private static final Set<String> AGENT_PROFILE_ROLES = Set.of("AGENT_CREDIT", "RA", "DA", "DR");
+
     private final JwtConfiguration jwtConfiguration;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -98,7 +104,7 @@ public class AuthorizationServerConfig {
         http
                 .securityMatcher(authorizationConfig.getEndpointsMatcher())
                 .with(authorizationConfig, authorizationServer -> authorizationServer
-                        .oidc(Customizer.withDefaults())
+                        .oidc(oidc -> oidc.userInfoEndpoint(userInfo -> userInfo.userInfoMapper(this::mapUserInfo)))
                         .authorizationServerSettings(authorizationServerSettings())
                         .registeredClientRepository(registeredClientRepository)
                         .tokenGenerator(tokenGenerator())
@@ -333,7 +339,69 @@ public class AuthorizationServerConfig {
                     log.error("❌ Error adding user claims to ID token: {}", e.getMessage(), e);
                 }
             }
+
+            // Claims métier agent CRG pour la fédération KUMY/AgriScore — uniquement dans l'ID Token
+            // et uniquement si le scope agent_profile a été accordé (les autres clients ne les reçoivent pas).
+            if (OidcParameterNames.ID_TOKEN.equals(context.getTokenType().getValue())
+                    && context.getAuthorizedScopes().contains(AGENT_PROFILE_SCOPE)
+                    && principal.getPrincipal() instanceof User user) {
+                addAgentProfileClaims(context, user);
+            }
         };
+    }
+
+    /**
+     * Ajoute les claims du scope {@code agent_profile} (identité + rattachement géographique de l'agent)
+     * transmis à KUMY/AgriScore. N'émet rien si le rôle est hors périmètre AgriScore
+     * (seuls AGENT_CREDIT, RA, DA, DR sont concernés).
+     */
+    private void addAgentProfileClaims(JwtEncodingContext context, User user) {
+        String role = user.getRole();
+        if (role == null || !AGENT_PROFILE_ROLES.contains(role)) {
+            log.warn("⚠️ Agent {} (role '{}') hors périmètre AgriScore — claims agent_profile non émis",
+                    user.getUserId(), role);
+            return;
+        }
+        try {
+            // agent_id stable, jamais réattribué : basé sur la PK user_id (cf. accord KUMY)
+            context.getClaims()
+                    .claim("agent_id", "CR-" + user.getUserId())
+                    .claim("role", role);
+
+            AgentProfile profile = userRepository.getAgentProfile(user.getUserId());
+            if (profile != null) {
+                addClaimIfPresent(context, "agence_region", profile.delegationLibele());
+                addClaimIfPresent(context, "agence_name", profile.agenceLibele());
+                addClaimIfPresent(context, "agence_code", profile.pointventeCode());
+                addClaimIfPresent(context, "point_de_service", profile.pointventeLibele());
+            }
+            log.info("✅ Claims agent_profile ajoutés pour agent CR-{} (role {})", user.getUserId(), role);
+        } catch (Exception e) {
+            log.error("❌ Erreur ajout des claims agent_profile pour user {}: {}", user.getUserId(), e.getMessage(), e);
+        }
+    }
+
+    private void addClaimIfPresent(JwtEncodingContext context, String name, String value) {
+        if (value != null && !value.isBlank()) {
+            context.getClaims().claim(name, value);
+        }
+    }
+
+    // Claims techniques propres au JWT, à ne pas exposer sur /userinfo.
+    private static final Set<String> JWT_TECHNICAL_CLAIMS =
+            Set.of("iss", "aud", "exp", "iat", "nbf", "jti", "azp", "nonce", "sid", "auth_time", "at_hash", "c_hash");
+
+    /**
+     * Mapper /userinfo : renvoie les claims métier de l'ID Token (dont agent_id, role, agence_*
+     * quand le scope agent_profile est accordé) afin que KUMY puisse rafraîchir le profil de l'agent.
+     * On retire les claims purement techniques du JWT.
+     */
+    private org.springframework.security.oauth2.core.oidc.OidcUserInfo mapUserInfo(
+            org.springframework.security.oauth2.server.authorization.oidc.authentication.OidcUserInfoAuthenticationContext context) {
+        var idToken = context.getAuthorization().getToken(org.springframework.security.oauth2.core.oidc.OidcIdToken.class).getToken();
+        Map<String, Object> claims = new HashMap<>(idToken.getClaims());
+        claims.keySet().removeAll(JWT_TECHNICAL_CLAIMS);
+        return new org.springframework.security.oauth2.core.oidc.OidcUserInfo(claims);
     }
 
     // Method for access token authorities (returns String)

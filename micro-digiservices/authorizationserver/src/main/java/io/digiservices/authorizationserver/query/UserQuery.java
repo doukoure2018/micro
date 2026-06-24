@@ -71,5 +71,20 @@ public class UserQuery {
                                    INSERT INTO devices (user_id, device, client, ip_address) VALUES (:userId, :device, :client, :ipAddress)
                                 """;
 
+    // Profil géographique de l'agent (délégation -> agence -> point de service)
+    // pour les claims métier agent_profile transmis à KUMY/AgriScore (SSO fédéré).
+    public static final String SELECT_AGENT_PROFILE_QUERY=
+                                """
+                                   SELECT d.libele AS delegation_libele,
+                                          a.libele AS agence_libele,
+                                          p.libele AS pointvente_libele,
+                                          p.code   AS pointvente_code
+                                   FROM users u
+                                   LEFT JOIN delegation d ON d.id = u.delegation_id
+                                   LEFT JOIN agence a     ON a.id = u.agence_id
+                                   LEFT JOIN pointvente p ON p.id = u.pointvente_id
+                                   WHERE u.user_id = :userId
+                                """;
+
 
 }

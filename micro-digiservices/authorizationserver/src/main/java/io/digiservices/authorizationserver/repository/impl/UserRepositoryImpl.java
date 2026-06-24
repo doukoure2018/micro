@@ -2,6 +2,7 @@ package io.digiservices.authorizationserver.repository.impl;
 
 
 import io.digiservices.authorizationserver.exception.ApiException;
+import io.digiservices.authorizationserver.model.AgentProfile;
 import io.digiservices.authorizationserver.model.User;
 import io.digiservices.authorizationserver.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -97,6 +98,16 @@ public class UserRepositoryImpl implements UserRepository {
         }catch (Exception e){
             log.error(e.getMessage());
             throw  new ApiException("An error Occured please try again");
+        }
+    }
+
+    @Override
+    public AgentProfile getAgentProfile(Long userId) {
+        try {
+            return jdbcClient.sql(SELECT_AGENT_PROFILE_QUERY).param("userId", userId).query(AgentProfile.class).optional().orElse(null);
+        }catch (Exception e){
+            log.error("Erreur récupération du profil agent (userId={}): {}", userId, e.getMessage());
+            return null;
         }
     }
 }
