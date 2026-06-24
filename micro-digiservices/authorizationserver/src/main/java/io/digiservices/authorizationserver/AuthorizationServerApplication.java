@@ -98,11 +98,15 @@ public class AuthorizationServerApplication {
 	private void registerKumyClient(RegisteredClientRepository repository,
 									BCryptPasswordEncoder passwordEncoder,
 									String clientId, String rawSecret, String redirectUri){
-		if(repository.findByClientId(clientId) != null){
+		var existing = repository.findByClientId(clientId);
+		// Déjà enregistré avec le bon secret -> rien à faire (idempotent).
+		if(existing != null && passwordEncoder.matches(rawSecret, existing.getClientSecret())){
 			return;
 		}
+		// Conserve le même id pour METTRE À JOUR la ligne (sinon save() insère un doublon).
+		String id = existing != null ? existing.getId() : UUID.randomUUID().toString();
 		try {
-			var kumyClient = RegisteredClient.withId(UUID.randomUUID().toString())
+			var kumyClient = RegisteredClient.withId(id)
 					.clientId(clientId)
 					.clientSecret(passwordEncoder.encode(rawSecret))
 					.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
@@ -128,7 +132,11 @@ public class AuthorizationServerApplication {
 							.build())
 					.build();
 			repository.save(kumyClient);
-			log.info("Registered KUMY OIDC client: {} (redirect: {})", clientId, redirectUri);
+			log.info("KUMY OIDC client {}: {} (redirect: {})",
+					existing != null ? "secret mis à jour" : "enregistré", clientId, redirectUri);
+			if (rawSecret == null || rawSecret.startsWith("kumy-") && rawSecret.endsWith("-secret")) {
+				log.warn("⚠️ Client KUMY {} utilise le SECRET PAR DÉFAUT — définir KUMY_OIDC_*_CLIENT_SECRET en prod !", clientId);
+			}
 		}catch (Exception exception){
 			log.error("Failed to register KUMY client {}: {}", clientId, exception.getMessage());
 		}
