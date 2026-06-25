@@ -36,7 +36,25 @@ public class KeyUtils {
     @Value("${key.public}")
     private String publicKeyPath;
 
+    // Clé mise en cache : DOIT être unique et identique pour signer, exposer dans le JWKS
+    // et vérifier (/userinfo). Sans ce cache, chaque appel régénérait une clé différente
+    // (surtout en fallback in-memory), d'où "Invalid signature".
+    private volatile RSAKey cachedKeyPair;
+
     public RSAKey getRSAKeyPair() {
+        RSAKey cached = this.cachedKeyPair;
+        if (cached != null) {
+            return cached;
+        }
+        synchronized (this) {
+            if (this.cachedKeyPair == null) {
+                this.cachedKeyPair = loadOrGenerateRSAKeyPair();
+            }
+            return this.cachedKeyPair;
+        }
+    }
+
+    private RSAKey loadOrGenerateRSAKeyPair() {
         try {
             // Try loading from file path first
             File privateKeyFile = new File(privateKeyPath);
@@ -88,9 +106,18 @@ public class KeyUtils {
         }
     }
 
+    /**
+     * TODO (clé persistante — étape 2) : clé RSA ÉPHÉMÈRE générée en mémoire.
+     * Elle CHANGE à chaque redémarrage et DIFFÈRE entre instances/réplicas → les tokens
+     * deviennent invalides au reboot et la signature n'est pas vérifiable en multi-instance.
+     * À REMPLACER par une vraie clé RSA persistante chargée depuis un fichier PEM monté sur le
+     * serveur (hors git, chemin via config). Les fichiers keys/*.key committés sont des
+     * PLACEHOLDERS invalides, d'où ce fallback. Le cache (getRSAKeyPair) garantit au moins
+     * une clé unique par instance.
+     */
     private RSAKey generateInMemoryKeys() {
         try {
-            log.warn("Generating in-memory RSA keys");
+            log.warn("⚠️ Génération d'une clé RSA EN MÉMOIRE (éphémère) — voir TODO : utiliser une clé PEM persistante");
             KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(RSA);
             keyPairGenerator.initialize(2048);
             KeyPair keyPair = keyPairGenerator.generateKeyPair();
