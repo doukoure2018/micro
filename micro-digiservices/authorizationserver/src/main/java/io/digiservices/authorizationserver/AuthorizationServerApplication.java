@@ -17,6 +17,8 @@ import org.springframework.security.oauth2.server.authorization.settings.ClientS
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 
 import java.time.Duration;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @SpringBootApplication
@@ -45,6 +47,10 @@ public class AuthorizationServerApplication {
 	private String kumyTestClientSecret;
 	@Value("${kumy.oidc.test.redirect-uri:https://idp.kumy.app/creditrural-test/callback}")
 	private String kumyTestRedirectUri;
+	// Redirect supplémentaire pour le client de TEST uniquement (ex. callback Postman pour valider le flux OIDC).
+	// Vide => non ajoutée. Réversible : retirer la valeur et redémarrer pour la supprimer du client.
+	@Value("${kumy.oidc.test.extra-redirect-uri:https://oauth.pstmn.io/v1/callback}")
+	private String kumyTestExtraRedirectUri;
 
 	public static void main(String[] args) {
 		SpringApplication.run(AuthorizationServerApplication.class, args);
@@ -83,9 +89,16 @@ public class AuthorizationServerApplication {
 
 			// Clients fédérés KUMY/AgriScore (Variante A OIDC) - un par environnement
 			registerKumyClient(registeredClientRepository, passwordEncoder,
-					kumyProdClientId, kumyProdClientSecret, kumyProdRedirectUri);
+					kumyProdClientId, kumyProdClientSecret, Set.of(kumyProdRedirectUri));
+
+			// Client de test : redirect KUMY + éventuelle redirect supplémentaire (Postman) pour les essais.
+			Set<String> testRedirectUris = new LinkedHashSet<>();
+			testRedirectUris.add(kumyTestRedirectUri);
+			if (kumyTestExtraRedirectUri != null && !kumyTestExtraRedirectUri.isBlank()) {
+				testRedirectUris.add(kumyTestExtraRedirectUri.trim());
+			}
 			registerKumyClient(registeredClientRepository, passwordEncoder,
-					kumyTestClientId, kumyTestClientSecret, kumyTestRedirectUri);
+					kumyTestClientId, kumyTestClientSecret, testRedirectUris);
 		};
 	}
 
@@ -97,10 +110,12 @@ public class AuthorizationServerApplication {
 	 */
 	private void registerKumyClient(RegisteredClientRepository repository,
 									BCryptPasswordEncoder passwordEncoder,
-									String clientId, String rawSecret, String redirectUri){
+									String clientId, String rawSecret, Set<String> redirectUris){
 		var existing = repository.findByClientId(clientId);
-		// Déjà enregistré avec le bon secret -> rien à faire (idempotent).
-		if(existing != null && passwordEncoder.matches(rawSecret, existing.getClientSecret())){
+		boolean secretOk = existing != null && passwordEncoder.matches(rawSecret, existing.getClientSecret());
+		boolean redirectsOk = existing != null && existing.getRedirectUris().equals(redirectUris);
+		// Déjà enregistré avec le bon secret ET les bonnes redirect URIs -> rien à faire (idempotent).
+		if(existing != null && secretOk && redirectsOk){
 			return;
 		}
 		// Conserve le même id pour METTRE À JOUR la ligne (sinon save() insère un doublon).
@@ -121,7 +136,7 @@ public class AuthorizationServerApplication {
 						scopes.add(OidcScopes.EMAIL);
 						scopes.add(AGENT_PROFILE_SCOPE);
 					})
-					.redirectUri(redirectUri)
+					.redirectUris(uris -> uris.addAll(redirectUris))
 					.clientSettings(ClientSettings.builder()
 							.requireProofKey(true)               // PKCE obligatoire
 							.requireAuthorizationConsent(false)  // flux fédéré via connecteur KUMY
@@ -132,8 +147,8 @@ public class AuthorizationServerApplication {
 							.build())
 					.build();
 			repository.save(kumyClient);
-			log.info("KUMY OIDC client {}: {} (redirect: {})",
-					existing != null ? "secret mis à jour" : "enregistré", clientId, redirectUri);
+			log.info("KUMY OIDC client {}: {} (redirects: {})",
+					existing != null ? "mis à jour" : "enregistré", clientId, redirectUris);
 			if (rawSecret == null || rawSecret.startsWith("kumy-") && rawSecret.endsWith("-secret")) {
 				log.warn("⚠️ Client KUMY {} utilise le SECRET PAR DÉFAUT — définir KUMY_OIDC_*_CLIENT_SECRET en prod !", clientId);
 			}
