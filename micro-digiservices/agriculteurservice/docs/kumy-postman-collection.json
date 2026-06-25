@@ -1,0 +1,200 @@
+{
+  "info": {
+    "name": "CRG ↔ KUMY/AgriScore — Tests d'intégration",
+    "description": "Collection de test des endpoints CRG pour l'intégration KUMY (OIDC + statut agent).\n\nAvant de lancer : créez un Environnement Postman avec les variables api_key, client_secret_prod, client_secret_test (valeurs fournies hors collection, secrètes). Les autres variables ont déjà des valeurs par défaut.\n\nOrdre conseillé : 1 → 2 → 4 → 5 → 3 → (6/7 = flux login OIDC, voir description).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "auth_base", "value": "https://digi-creditrural-io.com/auth", "type": "string" },
+    { "key": "api_base", "value": "https://digi-creditrural-io.com/api", "type": "string" },
+    { "key": "client_id_prod", "value": "kumy-agriscore-prod", "type": "string" },
+    { "key": "client_id_test", "value": "kumy-agriscore-test", "type": "string" },
+    { "key": "redirect_uri_prod", "value": "https://idp.kumy.app/creditrural/callback", "type": "string" },
+    { "key": "agent_id", "value": "CR-40", "type": "string" },
+    { "key": "api_key", "value": "", "type": "string" },
+    { "key": "client_secret_prod", "value": "", "type": "string" },
+    { "key": "client_secret_test", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "1. Discovery OIDC",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{auth_base}}/.well-known/openid-configuration",
+          "host": ["{{auth_base}}"],
+          "path": [".well-known", "openid-configuration"]
+        },
+        "description": "Liste tous les endpoints OIDC + algorithmes. Aucun secret requis. Doit renvoyer 200 + un JSON avec issuer, authorization_endpoint, token_endpoint, jwks_uri, userinfo_endpoint."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('contient token_endpoint', () => pm.expect(pm.response.json()).to.have.property('token_endpoint'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. JWKS (clés publiques RS256)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{auth_base}}/oauth2/jwks",
+          "host": ["{{auth_base}}"],
+          "path": ["oauth2", "jwks"]
+        },
+        "description": "Clés publiques servant à vérifier la signature des tokens (RS256). KUMY les utilise pour valider l'ID Token."
+      }
+    },
+    {
+      "name": "3. Token — vérifier le secret client (prod)",
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            { "key": "username", "value": "{{client_id_prod}}", "type": "string" },
+            { "key": "password", "value": "{{client_secret_prod}}", "type": "string" }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            { "key": "grant_type", "value": "authorization_code" },
+            { "key": "code", "value": "dummy" },
+            { "key": "redirect_uri", "value": "{{redirect_uri_prod}}" },
+            { "key": "code_verifier", "value": "dummydummydummydummydummydummydummydummy" }
+          ]
+        },
+        "url": {
+          "raw": "{{auth_base}}/oauth2/token",
+          "host": ["{{auth_base}}"],
+          "path": ["oauth2", "token"]
+        },
+        "description": "Astuce pour tester le client_secret SANS faire le login complet.\n- Si secret CORRECT : 400 invalid_grant (auth client OK, seul le code bidon est rejeté).\n- Si secret FAUX : 401 invalid_client.\nMettez client_secret_prod dans votre environnement."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('secret client accepté (400 invalid_grant attendu)', () => {",
+              "  pm.expect(pm.response.code, 'si 401 = secret faux/absent').to.eql(400);",
+              "  pm.expect(pm.response.json().error).to.eql('invalid_grant');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Statut agent — avec clé API (200)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "X-API-Key", "value": "{{api_key}}" }
+        ],
+        "url": {
+          "raw": "{{api_base}}/agents/{{agent_id}}/status",
+          "host": ["{{api_base}}"],
+          "path": ["agents", "{{agent_id}}", "status"]
+        },
+        "description": "Statut temps réel d'un agent. Header X-API-Key obligatoire (variable api_key).\nAttendu : 200 + {agentId, active, status: ACTIVE|DISABLED, ...}.\nChangez agent_id (ex. CR-40, CR-176, CR-439)."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('contient status', () => pm.expect(pm.response.json()).to.have.property('status'));",
+              "console.log('Statut agent =', pm.response.json().status);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Statut agent — sans clé (401 attendu)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{api_base}}/agents/{{agent_id}}/status",
+          "host": ["{{api_base}}"],
+          "path": ["agents", "{{agent_id}}", "status"]
+        },
+        "description": "Même requête SANS le header X-API-Key : doit être refusée (401). Prouve que la sécurité fonctionne."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('401 sans clé', () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. UserInfo (nécessite un token)",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{access_token}}", "type": "string" }]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{auth_base}}/userinfo",
+          "host": ["{{auth_base}}"],
+          "path": ["userinfo"]
+        },
+        "description": "Renvoie les claims de l'agent (dont agent_id, role, agence_*) à partir d'un access_token obtenu via le login OIDC (requête 7). Nécessite la variable access_token."
+      }
+    },
+    {
+      "name": "7. Login OIDC complet (Authorization Code + PKCE)",
+      "request": {
+        "auth": {
+          "type": "oauth2",
+          "oauth2": [
+            { "key": "grant_type", "value": "authorization_code_with_pkce", "type": "string" },
+            { "key": "authUrl", "value": "{{auth_base}}/oauth2/authorize", "type": "string" },
+            { "key": "accessTokenUrl", "value": "{{auth_base}}/oauth2/token", "type": "string" },
+            { "key": "clientId", "value": "{{client_id_test}}", "type": "string" },
+            { "key": "clientSecret", "value": "{{client_secret_test}}", "type": "string" },
+            { "key": "scope", "value": "openid profile email agent_profile", "type": "string" },
+            { "key": "redirect_uri", "value": "https://oauth.pstmn.io/v1/callback", "type": "string" },
+            { "key": "challengeAlgorithm", "value": "S256", "type": "string" },
+            { "key": "client_authentication", "value": "client_secret_basic", "type": "string" },
+            { "key": "addTokenTo", "value": "header", "type": "string" }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{auth_base}}/userinfo",
+          "host": ["{{auth_base}}"],
+          "path": ["userinfo"]
+        },
+        "description": "FLUX DE LOGIN COMPLET via l'assistant OAuth 2.0 de Postman.\n\nOnglet Authorization → cliquez 'Get New Access Token' : une fenêtre s'ouvre, l'agent se connecte (email/mot de passe CRG), Postman récupère l'ID Token + access_token et les claims agent_profile.\n\n⚠️ PRÉ-REQUIS : la redirect_uri de Postman (https://oauth.pstmn.io/v1/callback) doit être enregistrée comme URI de redirection autorisée sur le client kumy-agriscore-test. Tant que ce n'est pas fait, le serveur refusera avec 'invalid redirect_uri'. (Demandez à l'équipe CRG de l'ajouter en test.)\n\nNécessite aussi un compte agent de test (non-MFA) ayant un des rôles AGENT_CREDIT/RA/DA/DR."
+      }
+    }
+  ]
+}
