@@ -80,9 +80,12 @@ oauth2:
     code-challenge-method: ${OAUTH2_CODE_CHALLENGE_METHOD:S256}
     redirect-uri: ${UI_APP_URL:http://51.91.254.218:4200}
 
+# Chemins des clés RSA dans le conteneur. Le dossier hôte monté sur /app/keys est
+# configurable via KEYS_DIR (docker-compose) — placer les vraies clés sur le serveur,
+# hors git (cf. keys/README.md). Surchargeables au besoin via KEY_PRIVATE_PATH/KEY_PUBLIC_PATH.
 key:
-  private: "/app/keys/private.key"
-  public: "/app/keys/public.key"
+  private: ${KEY_PRIVATE_PATH:/app/keys/private.key}
+  public: ${KEY_PUBLIC_PATH:/app/keys/public.key}
 
 server:
   port: 8080

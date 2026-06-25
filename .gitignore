@@ -9,3 +9,6 @@ frontend/ultima-ng-19.0.0/dist/
 *.env
 nul
 **/.DS_Store
+
+# Clés RSA OIDC — JAMAIS committées (montées sur le serveur, cf. keys/README.md)
+keys/*.key

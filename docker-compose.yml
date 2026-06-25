@@ -194,7 +194,9 @@ services:
       SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_REGION_FACTORY_CLASS: "org.hibernate.cache.internal.NoCachingRegionFactory"
       JAVA_TOOL_OPTIONS: "-Xms256m -Xmx768m"
     volumes:
-      - ./keys:/app/keys
+      # Clés RSA OIDC montées en lecture seule. Dossier hôte configurable via KEYS_DIR
+      # (défaut ./keys pour le local). En prod : KEYS_DIR=/etc/crg/keys (cf. keys/README.md).
+      - ${KEYS_DIR:-./keys}:/app/keys:ro
       - ./logs/authorizationserver:/var/log/authorizationserver
     networks:
       - spring
