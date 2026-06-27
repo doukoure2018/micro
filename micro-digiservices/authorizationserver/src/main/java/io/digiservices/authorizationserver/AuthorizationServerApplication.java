@@ -37,7 +37,8 @@ public class AuthorizationServerApplication {
 	private String kumyProdClientId;
 	@Value("${kumy.oidc.prod.client-secret:kumy-prod-secret}")
 	private String kumyProdClientSecret;
-	@Value("${kumy.oidc.prod.redirect-uri:https://idp.kumy.app/creditrural/callback}")
+	// Redirect = handler du broker GCIP/Firebase de KUMY (remplace l'ancien callback idp.kumy.app)
+	@Value("${kumy.oidc.prod.redirect-uri:https://kumy-agripilot-prod.firebaseapp.com/__/auth/handler}")
 	private String kumyProdRedirectUri;
 
 	// Client OIDC fédéré KUMY/AgriScore - environnement de test
@@ -45,7 +46,7 @@ public class AuthorizationServerApplication {
 	private String kumyTestClientId;
 	@Value("${kumy.oidc.test.client-secret:kumy-test-secret}")
 	private String kumyTestClientSecret;
-	@Value("${kumy.oidc.test.redirect-uri:https://idp.kumy.app/creditrural-test/callback}")
+	@Value("${kumy.oidc.test.redirect-uri:https://kumy-agripilot-dev.firebaseapp.com/__/auth/handler}")
 	private String kumyTestRedirectUri;
 	// Redirect supplémentaire pour le client de TEST uniquement (ex. callback Postman pour valider le flux OIDC).
 	// Vide => non ajoutée. Réversible : retirer la valeur et redémarrer pour la supprimer du client.
@@ -114,8 +115,10 @@ public class AuthorizationServerApplication {
 		var existing = repository.findByClientId(clientId);
 		boolean secretOk = existing != null && passwordEncoder.matches(rawSecret, existing.getClientSecret());
 		boolean redirectsOk = existing != null && existing.getRedirectUris().equals(redirectUris);
-		// Déjà enregistré avec le bon secret ET les bonnes redirect URIs -> rien à faire (idempotent).
-		if(existing != null && secretOk && redirectsOk){
+		// PKCE optionnel pour KUMY (broker GCIP confidentiel, n'émet pas de code_challenge).
+		boolean pkceOk = existing != null && !existing.getClientSettings().isRequireProofKey();
+		// Déjà enregistré avec le bon secret, les bonnes redirect URIs ET PKCE optionnel -> rien à faire.
+		if(existing != null && secretOk && redirectsOk && pkceOk){
 			return;
 		}
 		// Conserve le même id pour METTRE À JOUR la ligne (sinon save() insère un doublon).
@@ -138,8 +141,8 @@ public class AuthorizationServerApplication {
 					})
 					.redirectUris(uris -> uris.addAll(redirectUris))
 					.clientSettings(ClientSettings.builder()
-							.requireProofKey(true)               // PKCE obligatoire
-							.requireAuthorizationConsent(false)  // flux fédéré via connecteur KUMY
+							.requireProofKey(false)              // PKCE optionnel : client confidentiel (broker GCIP KUMY n'émet pas de code_challenge)
+							.requireAuthorizationConsent(false)  // flux fédéré via broker KUMY
 							.build())
 					.tokenSettings(TokenSettings.builder()
 							.refreshTokenTimeToLive(Duration.ofDays(30))
