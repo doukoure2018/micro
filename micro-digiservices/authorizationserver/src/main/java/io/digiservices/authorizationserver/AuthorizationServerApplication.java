@@ -53,6 +53,13 @@ public class AuthorizationServerApplication {
 	@Value("${kumy.oidc.test.extra-redirect-uri:https://oauth.pstmn.io/v1/callback}")
 	private String kumyTestExtraRedirectUri;
 
+	// Client desktop "Rapprochement Solde" (app Python Tkinter) — client PUBLIC (RFC 8252),
+	// PKCE OBLIGATOIRE, redirect boucle locale 127.0.0.1 sur port fixe.
+	@Value("${desktop.oidc.client-id:crg-rapprochement-desktop}")
+	private String desktopClientId;
+	@Value("${desktop.oidc.redirect-uri:http://127.0.0.1:8765/callback}")
+	private String desktopRedirectUri;
+
 	public static void main(String[] args) {
 		SpringApplication.run(AuthorizationServerApplication.class, args);
 	}
@@ -100,7 +107,51 @@ public class AuthorizationServerApplication {
 			}
 			registerKumyClient(registeredClientRepository, passwordEncoder,
 					kumyTestClientId, kumyTestClientSecret, testRedirectUris);
+
+			// Client desktop public (app Python de rapprochement solde) — PKCE + loopback
+			registerDesktopClient(registeredClientRepository, desktopClientId, desktopRedirectUri);
 		};
+	}
+
+	/**
+	 * Enregistre (idempotent) le client desktop PUBLIC "rapprochement solde" :
+	 * authentification NONE (pas de secret embarqué), PKCE OBLIGATOIRE (client public, RFC 8252),
+	 * redirect en boucle locale 127.0.0.1. Scopes openid/profile/email/agent_profile.
+	 */
+	private void registerDesktopClient(RegisteredClientRepository repository,
+									   String clientId, String redirectUri){
+		if(repository.findByClientId(clientId) != null){
+			return;
+		}
+		try {
+			var desktopClient = RegisteredClient.withId(UUID.randomUUID().toString())
+					.clientId(clientId)
+					.clientAuthenticationMethod(ClientAuthenticationMethod.NONE)   // client public
+					.authorizationGrantTypes(types -> {
+						types.add(AuthorizationGrantType.AUTHORIZATION_CODE);
+						types.add(AuthorizationGrantType.REFRESH_TOKEN);
+					})
+					.scopes(scopes -> {
+						scopes.add(OidcScopes.OPENID);
+						scopes.add(OidcScopes.PROFILE);
+						scopes.add(OidcScopes.EMAIL);
+						scopes.add(AGENT_PROFILE_SCOPE);
+					})
+					.redirectUri(redirectUri)
+					.clientSettings(ClientSettings.builder()
+							.requireProofKey(true)               // PKCE obligatoire (client public)
+							.requireAuthorizationConsent(false)
+							.build())
+					.tokenSettings(TokenSettings.builder()
+							.refreshTokenTimeToLive(Duration.ofDays(1))
+							.accessTokenTimeToLive(Duration.ofMinutes(30))
+							.build())
+					.build();
+			repository.save(desktopClient);
+			log.info("Registered desktop OIDC client: {} (redirect: {})", clientId, redirectUri);
+		}catch (Exception exception){
+			log.error("Failed to register desktop client {}: {}", clientId, exception.getMessage());
+		}
 	}
 
 	/**
