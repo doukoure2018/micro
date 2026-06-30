@@ -150,6 +150,7 @@ public class AuthorizationServerConfig {
         http.securityMatcher("/**")
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/login", "/oauth2/authorize/**", "/oauth2/authorize").permitAll()
+                        .requestMatchers("/images/**", "/css/**", "/js/**", "/favicon.ico").permitAll()
                         .requestMatchers(POST, "/logout").permitAll()
                         .requestMatchers("/mfa").hasAuthority("MFA_REQUIRED")
                         .anyRequest().authenticated());

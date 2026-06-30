@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <meta name="description" content="">
     <meta name="author" content="">
-    <meta name="theme-color" content="#2563eb">
-    <title>DIGI CRG | Se Connecter</title>
-    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/9732/9732800.png">
+    <meta name="theme-color" content="#15803d">
+    <title>DIGI-CREDIT | Se Connecter</title>
+    <link rel="icon" type="image/png" th:href="@{/images/digi-credit.png}">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="min-h-screen">
@@ -15,8 +15,8 @@
 <div class="min-h-screen flex items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
     <div class="w-full max-w-md">
         <div class="flex flex-col items-center">
-            <img class="w-16 h-16 sm:w-20 sm:h-20 rounded-md bg-gray-400 p-2 sm:p-3" src="https://cdn-icons-png.flaticon.com/512/9732/9732800.png" alt="DIGI CRG" width="80" height="80">
-            <h2 class="mt-4 sm:mt-5 text-xl font-semibold text-gray-800">Se Connecter</h2>
+            <img class="w-full max-w-xs h-auto" th:src="@{/images/digi-credit.png}" alt="DIGI-CREDIT — Crédit Rural de Guinée">
+            <h2 class="mt-5 sm:mt-6 text-xl font-semibold text-gray-800">Se Connecter</h2>
         </div>
         <div class="mt-6 sm:mt-8">
             <div class="w-full p-4 sm:p-6 rounded-lg border border-gray-200 bg-white shadow-sm">
@@ -37,27 +37,15 @@
                     <div class="space-y-5 sm:space-y-6">
                         <div>
                             <label for="username" class="block mb-2 text-sm font-medium text-gray-800">Email Addresse</label>
-                            <input type="email" name="username" id="username" class="border border-gray-200 text-gray-900 text-base rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-3 sm:p-2.5" placeholder="name@email.com" autocomplete="email" inputmode="email" required />
+                            <input type="email" name="username" id="username" class="border border-gray-200 text-gray-900 text-base rounded-lg focus:ring-green-600 focus:border-green-600 block w-full p-3 sm:p-2.5" placeholder="name@email.com" autocomplete="email" inputmode="email" required />
                         </div>
                         <div>
                             <label for="password" class="block mb-2 text-sm font-medium text-gray-800">Mot de passe</label>
-                            <input type="password" name="password" id="password" placeholder="••••••••" class="border border-gray-200 text-gray-800 text-base rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-3 sm:p-2.5" autocomplete="current-password" required />
+                            <input type="password" name="password" id="password" placeholder="••••••••" class="border border-gray-200 text-gray-800 text-base rounded-lg focus:ring-green-600 focus:border-green-600 block w-full p-3 sm:p-2.5" autocomplete="current-password" required />
                         </div>
-                        <button type="submit" class="w-full text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-3 sm:py-2.5 text-center">Se Connecter à son Compte</button>
+                        <button type="submit" class="w-full text-white bg-green-700 hover:bg-green-800 active:bg-green-900 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-3 sm:py-2.5 text-center">Se Connecter à son Compte</button>
                     </div>
                 </form>
-                <div class="mt-5 sm:mt-6">
-                    <div class="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-2">
-                        <a th:href="@{${@environment.getProperty('ui.app.url')} + '/auth/forgotpassword'}" class="text-sm sm:text-base text-blue-600 hover:underline">Mot de passe Oublié?</a>
-
-                        <a th:href="@{${@environment.getProperty('ui.app.url')}}" class="inline-flex justify-center items-center bg-blue-600 hover:bg-blue-700 active:bg-blue-800 px-3 py-2 rounded-md text-white text-sm">
-                            Retour à la page d'acceuil
-                            <svg xmlns="http://www.w3.org/2000/svg" stroke-linejoin="round" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke="currentColor" class="shrink-0 w-4 h-4 ml-1">
-                                <path d="m15 4.5 7.5 7.5-7.5 7.5" />
-                            </svg>
-                        </a>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
