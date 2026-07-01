@@ -66,4 +66,7 @@ public interface UserService {
     // Mise a jour rôle par userId
     void updateUserRoleById(Long userId, String role);
     void updateUserService(Long userId, String service);
+
+    // Mise a jour mot de passe par userId (admin)
+    void updateUserPasswordById(Long userId, String newPassword, String confirmPassword);
 }

@@ -723,4 +723,13 @@ public class UserQuery {
             WHERE user_id = :userId
             """;
 
+    // ========================================
+    // MISE A JOUR MOT DE PASSE UTILISATEUR PAR ID (admin)
+    // ========================================
+
+    public static final String UPDATE_USER_PASSWORD_BY_ID_QUERY =
+            """
+            UPDATE credentials SET password = :password WHERE user_id = :userId
+            """;
+
 }

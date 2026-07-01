@@ -1012,6 +1012,10 @@ export class UserService {
     updateUserService$ = (userId: number, service: string): Observable<IResponse> =>
         this.http.put<IResponse>(`${this.server}/user/service/${userId}?service=${encodeURIComponent(service)}`, {}).pipe(tap(console.log), catchError(this.handleError));
 
+    /** Admin : définir un nouveau mot de passe pour un utilisateur par son ID. */
+    updateUserPasswordById$ = (userId: number, password: string, confirmPassword: string): Observable<IResponse> =>
+        this.http.put<IResponse>(`${this.server}/user/password/${userId}`, { password, confirmPassword }).pipe(tap(console.log), catchError(this.handleError));
+
     // ==================== INFO PERSONNEL ====================
 
     /**

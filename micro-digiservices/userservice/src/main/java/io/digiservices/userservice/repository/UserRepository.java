@@ -81,4 +81,7 @@ public interface UserRepository {
 
     // Mise a jour service par userId
     void updateUserService(Long userId, String service);
+
+    // Mise a jour mot de passe par userId (admin)
+    void updateUserPasswordById(Long userId, String encodedPassword);
 }

@@ -205,6 +205,39 @@
                             [disabled]="state().submitting" class="w-full"></textarea>
                     </div>
 
+                    <!-- Password section -->
+                    <div class="col-span-12">
+                        <div class="text-surface-900 dark:text-surface-0 font-medium text-lg mb-1 mt-2">
+                            Réinitialiser le mot de passe
+                        </div>
+                        <small class="text-500 block mb-4">
+                            <i class="pi pi-info-circle mr-1"></i>
+                            Laissez ces champs vides pour conserver le mot de passe actuel.
+                        </small>
+                    </div>
+
+                    <!-- password -->
+                    <div class="mb-6 col-span-12 md:col-span-6">
+                        <label class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">Nouveau mot de passe</label>
+                        <input pInputText name="password" [ngModel]="''" type="password" autocomplete="new-password"
+                            minlength="6" [disabled]="state().submitting" class="w-full"
+                            placeholder="Au moins 6 caractères" #password="ngModel" />
+                        @if (password.invalid && password.touched) {
+                        <p-message severity="error" text="Le mot de passe doit contenir au moins 6 caractères"></p-message>
+                        }
+                    </div>
+
+                    <!-- confirmPassword -->
+                    <div class="mb-6 col-span-12 md:col-span-6">
+                        <label class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">Confirmer le mot de passe</label>
+                        <input pInputText name="confirmPassword" [ngModel]="''" type="password"
+                            autocomplete="new-password" [disabled]="state().submitting" class="w-full"
+                            placeholder="Retapez le mot de passe" #confirmPassword="ngModel" />
+                        @if (confirmPassword.value && password.value && confirmPassword.value !== password.value) {
+                        <p-message severity="error" text="Les mots de passe ne correspondent pas"></p-message>
+                        }
+                    </div>
+
                     <!-- Actions -->
                     <div class="col-span-12">
                         <div class="flex gap-3">

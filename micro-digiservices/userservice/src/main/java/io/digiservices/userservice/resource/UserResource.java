@@ -9,6 +9,7 @@ import io.digiservices.userservice.service.DelegationService;
 import io.digiservices.userservice.service.PointVenteService;
 import io.digiservices.userservice.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -864,6 +865,38 @@ public class UserResource {
             ));
         } catch (Exception e) {
             log.error("Erreur lors de la mise à jour de la localisation: {}", e.getMessage());
+            return ResponseEntity.status(BAD_REQUEST).body(getResponse(
+                    request,
+                    emptyMap(),
+                    e.getMessage(),
+                    BAD_REQUEST
+            ));
+        }
+    }
+
+    /**
+     * Modifier le mot de passe d'un utilisateur par son ID (action administrateur).
+     * PUT /user/password/{userId}
+     */
+    @PutMapping("/password/{userId}")
+    public ResponseEntity<Response> updateUserPasswordById(
+            @NotNull Authentication authentication,
+            @PathVariable("userId") Long userId,
+            @Valid @RequestBody AdminPasswordRequest passwordRequest,
+            HttpServletRequest request) {
+
+        log.info("User {} updating password for user {}", authentication.getName(), userId);
+
+        try {
+            userService.updateUserPasswordById(userId, passwordRequest.getPassword(), passwordRequest.getConfirmPassword());
+            return ResponseEntity.ok(getResponse(
+                    request,
+                    Map.of("userId", userId),
+                    "Mot de passe mis à jour avec succès",
+                    OK
+            ));
+        } catch (Exception e) {
+            log.error("Erreur lors de la mise à jour du mot de passe: {}", e.getMessage());
             return ResponseEntity.status(BAD_REQUEST).body(getResponse(
                     request,
                     emptyMap(),

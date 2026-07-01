@@ -313,6 +313,21 @@ export class EditUserComponent implements OnInit {
         const newAgenceId = this.selectedAgence?.id ?? null;
         const newPointVenteId = this.selectedPointVente?.id ?? null;
 
+        // Password change is optional: only validate/submit if the admin typed something.
+        const newPassword = (form.value.password ?? '').trim();
+        const confirmPassword = (form.value.confirmPassword ?? '').trim();
+        const wantsPasswordChange = newPassword.length > 0 || confirmPassword.length > 0;
+        if (wantsPasswordChange) {
+            if (newPassword.length < 6) {
+                this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Le mot de passe doit contenir au moins 6 caractères', life: 4000 });
+                return;
+            }
+            if (newPassword !== confirmPassword) {
+                this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Les mots de passe ne correspondent pas', life: 4000 });
+                return;
+            }
+        }
+
         const calls: Observable<unknown>[] = [];
 
         // Profile (firstName/lastName/email/phone/address/bio)
@@ -339,6 +354,9 @@ export class EditUserComponent implements OnInit {
             newPointVenteId !== this.originalPointVenteId;
         if (locationChanged && this.shouldShowLocationFields(newRole)) {
             calls.push(this.userService.updateUserLocation$(user.userId, newDelegationId, newAgenceId, newPointVenteId));
+        }
+        if (wantsPasswordChange) {
+            calls.push(this.userService.updateUserPasswordById$(user.userId, newPassword, confirmPassword));
         }
 
         this.state.update((s) => ({ ...s, submitting: true }));

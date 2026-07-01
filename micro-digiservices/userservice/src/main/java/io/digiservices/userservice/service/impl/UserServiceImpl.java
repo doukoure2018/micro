@@ -433,4 +433,16 @@ public class UserServiceImpl  implements UserService {
         userRepository.updateUserService(userId, service);
     }
 
+    @Override
+    public void updateUserPasswordById(Long userId, String newPassword, String confirmPassword) {
+        if (newPassword == null || newPassword.isBlank()) {
+            throw new ApiException("Le mot de passe ne peut pas être vide");
+        }
+        if (!Objects.equals(newPassword, confirmPassword)) {
+            throw new ApiException("Les mots de passe ne correspondent pas. Veuillez réessayer");
+        }
+        log.info("Mise à jour du mot de passe pour l'utilisateur {}", userId);
+        userRepository.updateUserPasswordById(userId, encoder.encode(newPassword));
+    }
+
 }
