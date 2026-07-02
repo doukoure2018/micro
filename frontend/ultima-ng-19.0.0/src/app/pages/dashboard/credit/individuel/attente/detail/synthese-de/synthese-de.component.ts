@@ -248,17 +248,19 @@ export class SyntheseDeComponent implements OnInit {
         if (!doc) return '';
         if (doc.startsWith('data:') || doc.startsWith('blob:')) return doc;
 
-        const marker = /\/(?:files|docs)\//i;
+        // Préserver le segment d'origine (/files/ ou /docs/), tous deux servis par le backend.
+        const match = doc.match(/\/(files|docs)\/(.+)$/i);
+        let segment = 'files';
         let fileName: string;
-        if (marker.test(doc)) {
-            const parts = doc.split(marker);
-            fileName = parts[parts.length - 1];
+        if (match) {
+            segment = match[1].toLowerCase();
+            fileName = match[2];
         } else {
             fileName = doc.substring(doc.lastIndexOf('/') + 1);
         }
         fileName = fileName.split('?')[0].split('#')[0];
         if (!fileName) return doc;
-        return `${environment.apiBaseUrl}/ecredit/files/${fileName}`;
+        return `${environment.apiBaseUrl}/ecredit/${segment}/${fileName}`;
     }
 
     isImageDocument(doc: Selection): boolean {

@@ -958,11 +958,14 @@ export class DetailComponent {
         // data URL / blob déjà exploitables : ne pas toucher
         if (doc.startsWith('data:') || doc.startsWith('blob:')) return doc;
 
-        const marker = /\/(?:files|docs)\//i;
+        // Préserver le segment d'origine (/files/ pour les documents téléversés,
+        // /docs/ pour les fichiers pré-embarqués) — les deux sont servis par le backend.
+        const match = doc.match(/\/(files|docs)\/(.+)$/i);
+        let segment = 'files';
         let fileName: string;
-        if (marker.test(doc)) {
-            const parts = doc.split(marker);
-            fileName = parts[parts.length - 1];
+        if (match) {
+            segment = match[1].toLowerCase();
+            fileName = match[2];
         } else {
             // Fallback : dernier segment du chemin/URL
             fileName = doc.substring(doc.lastIndexOf('/') + 1);
@@ -971,7 +974,7 @@ export class DetailComponent {
         fileName = fileName.split('?')[0].split('#')[0];
         if (!fileName) return doc;
 
-        return `${environment.apiBaseUrl}/ecredit/files/${fileName}`;
+        return `${environment.apiBaseUrl}/ecredit/${segment}/${fileName}`;
     }
 
     // Toutes les autres méthodes existantes restent les mêmes...
