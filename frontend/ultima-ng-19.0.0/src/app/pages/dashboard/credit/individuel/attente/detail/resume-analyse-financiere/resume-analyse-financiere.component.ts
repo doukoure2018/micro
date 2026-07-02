@@ -3,7 +3,7 @@ import { IUser } from '@/interface/user';
 import { PrintService, PrintAnalyseData } from '@/service/PrintService';
 import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, inject, Input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -270,7 +270,19 @@ export class ResumeAnalyseFinanciereComponent {
 
     demandeId: number | null = null;
 
+    /** Fournir l'ID directement (mode embarqué) au lieu de le lire dans la route. */
+    @Input() demandeIdInput?: number;
+    /** Mode embarqué : masque l'en-tête (titre + boutons Imprimer/Retour) et n'utilise pas la route. */
+    @Input() embedded = false;
+
     ngOnInit(): void {
+        // Mode embarqué (ex. synthèse DE) : l'ID vient d'un @Input, pas de la route.
+        if (this.demandeIdInput) {
+            this.demandeId = this.demandeIdInput;
+            this.chargerSynthese();
+            return;
+        }
+
         this.route.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
             this.demandeId = +params['demandeId'];
 

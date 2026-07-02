@@ -24,6 +24,11 @@
     <!-- Main Content -->
     <div *ngIf="state().demandeIndividuel" class="container mx-auto px-4 py-4 max-w-7xl">
 
+        <!-- Direction Exploitation (MANAGER + service DE) : synthèse consolidée en lecture seule -->
+        @if (isDE()) {
+        <app-synthese-de [demandeId]="state().demandeIndividuel!.demandeIndividuelId!"></app-synthese-de>
+        } @else {
+
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
         <!-- HEADER STICKY - Navigation + Statut + Actions rapides                  -->
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
@@ -1050,7 +1055,8 @@
                                     style="width: 80px; height: 80px; flex-shrink: 0;" (click)="viewDocument(doc)">
 
                                     <!-- Image -->
-                                    <img *ngIf="isImageDocument(doc)" [src]="doc.doc" [alt]="'Doc ' + (i + 1)"
+                                    <img *ngIf="isImageDocument(doc)" [src]="getFileUrl(doc.doc)" [alt]="'Doc ' + (i + 1)"
+                                        loading="lazy"
                                         class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200">
 
                                     <!-- PDF -->
@@ -1615,6 +1621,7 @@
             </span>
         </div>
 
+        }
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════════════════ -->
@@ -1727,12 +1734,13 @@
         [modal]="true" [closable]="true" [draggable]="false" [style]="{width: '90vw', maxWidth: '800px'}"
         [maximizable]="true" [blockScroll]="true">
         <div *ngIf="state().selectedDocumentForPreview" class="text-center">
-            <img [src]="state().selectedDocumentForPreview?.doc" alt="Aper&ccedil;u" class="rounded-lg shadow-lg"
+            <img [src]="getFileUrl(state().selectedDocumentForPreview?.doc)" alt="Aper&ccedil;u"
+                class="rounded-lg shadow-lg"
                 style="max-width: 100%; max-height: 70vh; object-fit: contain;">
             <div class="flex justify-center gap-3 mt-4">
                 <button pButton type="button" label="Ouvrir dans un nouvel onglet" icon="pi pi-external-link"
                     class="p-button-outlined"
-                    (click)="openDocInNewTab(state().selectedDocumentForPreview?.doc)"></button>
+                    (click)="openDocInNewTab(getFileUrl(state().selectedDocumentForPreview?.doc))"></button>
                 <button pButton type="button" label="Fermer" icon="pi pi-times"
                     class="p-button-secondary p-button-outlined" (click)="closePreviewDialog()"></button>
             </div>

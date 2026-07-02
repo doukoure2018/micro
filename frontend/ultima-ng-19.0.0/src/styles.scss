@@ -3,3 +3,29 @@
 @use './assets/layout/layout.scss';
 @use 'primeicons/primeicons.css';
 @use './assets/demo/demo.scss';
+
+/* Impression de la synthèse Direction Exploitation : masquer la coquille de l'app.
+   Activé uniquement quand <body> porte la classe `printing-synthese-de` (posée par
+   SyntheseDeComponent le temps de l'impression), pour n'affecter aucun autre écran. */
+@media print {
+    body.printing-synthese-de {
+        [app-topbar],
+        [app-sidebar],
+        [app-right-menu],
+        [app-breadcrumb],
+        [app-footer],
+        app-configurator,
+        .p-toast {
+            display: none !important;
+        }
+
+        .layout-content-wrapper {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .layout-content {
+            padding: 0 !important;
+        }
+    }
+}

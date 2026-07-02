@@ -38,6 +38,8 @@ import { Avis } from '@/interface/avis';
 import { AvatarModule } from 'primeng/avatar';
 import { ChipModule } from 'primeng/chip';
 import { TimelineModule } from 'primeng/timeline';
+import { environment } from 'src/environments/environment';
+import { SyntheseDeComponent } from './synthese-de/synthese-de.component';
 
 @Component({
     selector: 'app-detail',
@@ -68,7 +70,8 @@ import { TimelineModule } from 'primeng/timeline';
         RouterLink,
         AvatarModule,
         ChipModule,
-        TimelineModule
+        TimelineModule,
+        SyntheseDeComponent
     ],
     templateUrl: './detail.component.html',
     styleUrls: ['./detail.component.scss'],
@@ -245,6 +248,15 @@ export class DetailComponent {
 
     canSubmitForm(): boolean {
         return this.updateForm.valid;
+    }
+
+    /**
+     * Direction Exploitation : un MANAGER rattaché au service « DE ».
+     * Pour ce profil, la page détail affiche une synthèse consolidée en lecture
+     * seule (composant dédié) à la place de l'affichage standard.
+     */
+    isDE(): boolean {
+        return this.state().user?.role === 'MANAGER' && this.state().user?.service === 'DE';
     }
 
     onAgentCodeChange(codAgent: string): void {
@@ -926,6 +938,42 @@ export class DetailComponent {
         }
     }
 
+    /**
+     * Reconstruit l'URL publique d'un fichier à partir de la valeur stockée en base.
+     *
+     * Les URLs sont générées côté backend avec ServletUriComponentsBuilder
+     * (fromCurrentContextPath), qui déduit le host/scheme/chemin de la requête vue
+     * par le microservice. Derrière le reverse proxy de production, cela produit une
+     * URL inexploitable par le navigateur : mauvais host (ex. http://localhost:8087),
+     * scheme http sur une page https (mixed content), et surtout SANS le préfixe /api
+     * requis par le routage public. Les vignettes PDF/fichiers affichent une icône
+     * (elles n'ouvrent pas l'URL), mais les <img> échouent silencieusement.
+     *
+     * On ne conserve donc que le nom de fichier et on rebâtit l'URL sur l'API courante
+     * ({apiBaseUrl}/ecredit/files/{fileName}). Cela répare aussi les enregistrements
+     * existants sans migration en base.
+     */
+    getFileUrl(doc?: string | null): string {
+        if (!doc) return '';
+        // data URL / blob déjà exploitables : ne pas toucher
+        if (doc.startsWith('data:') || doc.startsWith('blob:')) return doc;
+
+        const marker = /\/(?:files|docs)\//i;
+        let fileName: string;
+        if (marker.test(doc)) {
+            const parts = doc.split(marker);
+            fileName = parts[parts.length - 1];
+        } else {
+            // Fallback : dernier segment du chemin/URL
+            fileName = doc.substring(doc.lastIndexOf('/') + 1);
+        }
+        // Retirer d'éventuels query params / ancres
+        fileName = fileName.split('?')[0].split('#')[0];
+        if (!fileName) return doc;
+
+        return `${environment.apiBaseUrl}/ecredit/files/${fileName}`;
+    }
+
     // Toutes les autres méthodes existantes restent les mêmes...
     isPDFDocument(doc: Selection): boolean {
         if (!doc.doc) return false;
@@ -965,15 +1013,17 @@ export class DetailComponent {
             return;
         }
 
+        const fileUrl = this.getFileUrl(document.doc);
+
         this.state.update((s) => ({
             ...s,
             selectedPDFDocument: document,
-            pdfBlobUrl: document.doc || null,
+            pdfBlobUrl: fileUrl || null,
             showPDFPreview: true
         }));
 
-        if (document.doc) {
-            window.open(document.doc, '_blank');
+        if (fileUrl) {
+            window.open(fileUrl, '_blank');
         }
     }
 

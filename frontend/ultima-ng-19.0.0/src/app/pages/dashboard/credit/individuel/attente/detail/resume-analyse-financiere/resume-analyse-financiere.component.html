@@ -1,5 +1,6 @@
-<div class="container-fluid p-4">
-    <!-- Header -->
+<div class="container-fluid" [class.p-4]="!embedded">
+    <!-- Header (masqué en mode embarqué : ex. synthèse DE) -->
+    @if (!embedded) {
     <div class="flex flex-wrap gap-2 items-center justify-between mb-4">
         <div>
             <h2 class="text-2xl font-bold text-900 m-0">Résumé de l'Analyse Financière</h2>
@@ -11,6 +12,7 @@
             <p-button label="Retour" icon="pi pi-arrow-left" outlined (onClick)="retour()"></p-button>
         </div>
     </div>
+    }
 
     <!-- Loading State -->
     @if (state().loading) {

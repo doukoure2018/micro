@@ -1,0 +1,39 @@
+:host {
+    display: block;
+}
+
+.synthese-de-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Éviter de couper une section au milieu lors de l'impression */
+.print-block {
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+@media print {
+    /* Masquer les éléments interactifs (boutons, dialogs) */
+    .no-print {
+        display: none !important;
+    }
+
+    .synthese-de-container {
+        max-width: none;
+        margin: 0;
+    }
+
+    /* Rendu à plat, sans ombres ni fonds coûteux à l'impression */
+    .print-block {
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+        margin-bottom: 16px !important;
+    }
+
+    /* Forcer l'impression des couleurs des bandeaux de section */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+}

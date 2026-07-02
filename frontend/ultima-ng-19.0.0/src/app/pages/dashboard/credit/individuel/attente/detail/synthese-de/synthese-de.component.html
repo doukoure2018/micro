@@ -1,0 +1,429 @@
+<div class="synthese-de-container">
+    @if (state().loading) {
+    <div class="flex justify-center items-center" style="min-height: 320px;">
+        <p-progressSpinner [style]="{ width: '50px', height: '50px' }"></p-progressSpinner>
+    </div>
+    } @else if (state().error) {
+    <div class="bg-red-50 border border-red-200 rounded-xl p-8 text-center">
+        <i class="pi pi-exclamation-triangle text-red-400 text-4xl mb-3 block"></i>
+        <p class="text-red-700 font-medium">{{ state().error }}</p>
+    </div>
+    } @else if (state().demande) {
+
+    <!-- En-tête -->
+    <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8">
+        <div class="bg-gradient-to-r from-slate-700 to-slate-900 text-white px-6 py-5 flex items-center justify-between flex-wrap gap-4">
+            <div class="flex items-center gap-3">
+                <i class="pi pi-file-check text-2xl"></i>
+                <div>
+                    <div class="font-bold text-xl uppercase tracking-wide">Synthèse de la demande de crédit</div>
+                    <span class="inline-block mt-1 bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                        <i class="pi pi-eye mr-1"></i>Vue Direction Exploitation
+                    </span>
+                </div>
+            </div>
+            <div class="flex items-center gap-6">
+                <div class="text-right">
+                    <div class="text-xs opacity-80">Montant demandé</div>
+                    <div class="text-lg font-bold text-yellow-300">{{ formatCurrency(state().demande?.montantDemande) }}</div>
+                </div>
+                <button pButton type="button" label="Retour" icon="pi pi-arrow-left"
+                    class="p-button-sm p-button-outlined no-print" (click)="goBack()"></button>
+                <button pButton type="button" label="Imprimer" icon="pi pi-print"
+                    class="p-button-sm no-print" (click)="imprimer()"></button>
+            </div>
+        </div>
+        <div class="px-6 py-3 text-sm text-gray-600 flex flex-wrap gap-x-8 gap-y-1">
+            <span><strong>N° Dossier :</strong> {{ state().demande?.demandeIndividuelId }}</span>
+            <span><strong>Client :</strong> {{ state().demande?.nom }} {{ state().demande?.prenom }}</span>
+            <span><strong>Statut :</strong> {{ state().demande?.statutDemande }}</span>
+        </div>
+    </div>
+
+    <!-- ══ 1. PRÉSENTATION DE LA DEMANDE ══ -->
+    <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8 print-block">
+        <div class="bg-blue-600 text-white px-6 py-4 flex items-center gap-3">
+            <i class="pi pi-user text-xl"></i>
+            <span class="font-bold text-lg uppercase tracking-wide">1. Présentation de la demande</span>
+        </div>
+        <div class="p-6">
+            <table class="w-full">
+                <tbody>
+                    <tr class="border-b border-gray-200">
+                        <td class="py-3 px-4 text-gray-600 font-medium w-1/4">Nom complet</td>
+                        <td class="py-3 px-4 font-semibold text-gray-800">{{ state().demande?.nom }} {{ state().demande?.prenom }}</td>
+                        <td class="py-3 px-4 text-gray-600 font-medium w-1/4">N° Membre</td>
+                        <td class="py-3 px-4 font-mono">{{ state().demande?.numeroMembre }}</td>
+                    </tr>
+                    <tr class="border-b border-gray-200">
+                        <td class="py-3 px-4 text-gray-600 font-medium">Type de pièce</td>
+                        <td class="py-3 px-4">{{ state().demande?.typePiece }}</td>
+                        <td class="py-3 px-4 text-gray-600 font-medium">N° Pièce</td>
+                        <td class="py-3 px-4 font-mono">{{ state().demande?.numId }}</td>
+                    </tr>
+                    <tr class="border-b border-gray-200">
+                        <td class="py-3 px-4 text-gray-600 font-medium">Date de naissance</td>
+                        <td class="py-3 px-4">{{ state().demande?.dateNaissance | date:'dd/MM/yyyy' }}</td>
+                        <td class="py-3 px-4 text-gray-600 font-medium">Lieu de naissance</td>
+                        <td class="py-3 px-4">{{ state().demande?.lieuxNaissance }}</td>
+                    </tr>
+                    <tr class="border-b border-gray-200">
+                        <td class="py-3 px-4 text-gray-600 font-medium">Genre</td>
+                        <td class="py-3 px-4">{{ state().demande?.genre }}</td>
+                        <td class="py-3 px-4 text-gray-600 font-medium">Situation matrimoniale</td>
+                        <td class="py-3 px-4">{{ state().demande?.situationMatrimoniale }}</td>
+                    </tr>
+                    <tr class="border-b border-gray-200">
+                        <td class="py-3 px-4 text-gray-600 font-medium">Personnes à charge</td>
+                        <td class="py-3 px-4 font-bold text-blue-600">{{ state().demande?.nombrePersonneEnCharge }}</td>
+                        <td class="py-3 px-4 text-gray-600 font-medium">Personnes scolarisées</td>
+                        <td class="py-3 px-4 font-bold text-blue-600">{{ state().demande?.nombrePersonneScolarise }}</td>
+                    </tr>
+                    <tr class="border-b border-gray-200">
+                        <td class="py-3 px-4 text-gray-600 font-medium">Adresse & Contact</td>
+                        <td class="py-3 px-4" colspan="3">{{ state().demande?.addresseDomicileContact }}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Modalités -->
+            <div class="mt-6 pt-4 border-t border-gray-200">
+                <h4 class="text-sm font-semibold text-gray-500 uppercase mb-3">Modalités de la demande</h4>
+                <table class="w-full">
+                    <tbody>
+                        <tr class="border-b border-gray-200">
+                            <td class="py-3 px-4 text-gray-600 font-medium w-1/4">Montant demandé</td>
+                            <td class="py-3 px-4 font-bold text-amber-700">{{ formatCurrency(state().demande?.montantDemande) }}</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium w-1/4">Durée</td>
+                            <td class="py-3 px-4">{{ state().demande?.dureeDemande }} mois</td>
+                        </tr>
+                        <tr class="border-b border-gray-200">
+                            <td class="py-3 px-4 text-gray-600 font-medium">Périodicité</td>
+                            <td class="py-3 px-4">{{ state().demande?.periodiciteRemboursement }}</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Échéance</td>
+                            <td class="py-3 px-4 font-semibold">{{ formatCurrency(state().demande?.echeance) }}</td>
+                        </tr>
+                        <tr class="border-b border-gray-200">
+                            <td class="py-3 px-4 text-gray-600 font-medium">Objet du crédit</td>
+                            <td class="py-3 px-4 font-semibold text-amber-700">{{ state().demande?.objectCredit }}</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Type de crédit</td>
+                            <td class="py-3 px-4">{{ state().demande?.statutCredit }}</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Détail de l'objet</td>
+                            <td class="py-3 px-4" colspan="3">{{ state().demande?.detailObjectCredit }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ 2. ACTIVITÉS ══ -->
+    <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8 print-block">
+        <div class="bg-emerald-600 text-white px-6 py-4 flex items-center gap-3">
+            <i class="pi pi-briefcase text-xl"></i>
+            <span class="font-bold text-lg uppercase tracking-wide">2. Activités</span>
+        </div>
+        <div class="p-6">
+            <table class="w-full">
+                <tbody>
+                    <tr class="border-b border-gray-200">
+                        <td class="py-3 px-4 text-gray-600 font-medium w-1/4">Type d'activité</td>
+                        <td class="py-3 px-4 font-semibold text-emerald-700">{{ state().demande?.currentActivite }}</td>
+                        <td class="py-3 px-4 text-gray-600 font-medium w-1/4">Expérience</td>
+                        <td class="py-3 px-4 font-bold text-emerald-600">{{ state().demande?.nombreAnneeActivite }} ans</td>
+                    </tr>
+                    <tr class="border-b border-gray-200">
+                        <td class="py-3 px-4 text-gray-600 font-medium">Description</td>
+                        <td class="py-3 px-4" colspan="3">{{ state().demande?.descriptionActivite }}</td>
+                    </tr>
+                    <tr class="border-b border-gray-200">
+                        <td class="py-3 px-4 text-gray-600 font-medium">Lieu d'activité</td>
+                        <td class="py-3 px-4">{{ state().demande?.lieuActivite || 'N/A' }}</td>
+                        <td class="py-3 px-4 text-gray-600 font-medium">Adresse</td>
+                        <td class="py-3 px-4">{{ state().demande?.adresseLieuActivite }}</td>
+                    </tr>
+                    <tr>
+                        <td class="py-3 px-4 text-gray-600 font-medium">Autres activités</td>
+                        <td class="py-3 px-4" colspan="3">{{ state().demande?.autreActivite || 'Aucune' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ══ 3. GARANTIES ══ -->
+    <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8 print-block">
+        <div class="bg-indigo-600 text-white px-6 py-4 flex items-center justify-between flex-wrap gap-3">
+            <div class="flex items-center gap-3">
+                <i class="pi pi-shield text-xl"></i>
+                <span class="font-bold text-lg uppercase tracking-wide">3. Garanties proposées</span>
+            </div>
+            <div class="flex gap-8 text-base">
+                <span>Total : <strong class="text-yellow-300">{{ formatCurrency(getTotalGaranties()) }}</strong></span>
+                <span>Empruntable : <strong class="text-green-300">{{ formatCurrency(getTotalEmprunte()) }}</strong></span>
+            </div>
+        </div>
+        <div class="p-6 overflow-x-auto">
+            @if (state().garanties.length > 0) {
+            <table class="w-full">
+                <thead>
+                    <tr class="bg-gray-50 border-b-2 border-gray-200 text-left">
+                        <th class="py-3 px-4 text-gray-600 font-semibold">Type de garantie</th>
+                        <th class="py-3 px-4 text-gray-600 font-semibold">Description</th>
+                        <th class="py-3 px-4 text-gray-600 font-semibold text-right">Valeur</th>
+                        <th class="py-3 px-4 text-gray-600 font-semibold text-right">Empruntable</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (g of state().garanties; track $index) {
+                    <tr class="border-b border-gray-200">
+                        <td class="py-3 px-4 font-medium text-gray-800">{{ g.typeGarantie }}</td>
+                        <td class="py-3 px-4 text-gray-600">{{ g.descriptionGarantie }}</td>
+                        <td class="py-3 px-4 text-right font-semibold">{{ formatCurrency(g.valeurGarantie) }}</td>
+                        <td class="py-3 px-4 text-right font-semibold text-green-700">{{ formatCurrency(getValeurEmprunte(g)) }}</td>
+                    </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr class="bg-gray-100 font-bold">
+                        <td class="py-3 px-4" colspan="2">TOTAL</td>
+                        <td class="py-3 px-4 text-right">{{ formatCurrency(getTotalGaranties()) }}</td>
+                        <td class="py-3 px-4 text-right text-green-700">{{ formatCurrency(getTotalEmprunte()) }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+            } @else {
+            <div class="text-center py-4 text-gray-500"><i class="pi pi-info-circle mr-2"></i>Aucune garantie proposée</div>
+            }
+        </div>
+    </div>
+
+    <!-- ══ 4. SYNTHÈSE DU BILAN ══ -->
+    <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8 print-block">
+        <div class="bg-cyan-700 text-white px-6 py-4 flex items-center gap-3">
+            <i class="pi pi-chart-bar text-xl"></i>
+            <span class="font-bold text-lg uppercase tracking-wide">4. Synthèse du bilan</span>
+        </div>
+        <div class="p-2 md:p-4">
+            @if (state().hasBilan) {
+            <app-resume-analyse-financiere [demandeIdInput]="demandeId" [embedded]="true"></app-resume-analyse-financiere>
+            } @else {
+            <div class="text-center py-6 text-gray-500">
+                <i class="pi pi-info-circle mr-2"></i>
+                Aucune analyse de bilan disponible pour cette demande.
+            </div>
+            }
+        </div>
+    </div>
+
+    <!-- ══ 5. SYNTHÈSE DE LA TRÉSORERIE (compacte) ══ -->
+    <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8 print-block">
+        <div class="bg-teal-600 text-white px-6 py-4 flex items-center gap-3">
+            <i class="pi pi-wallet text-xl"></i>
+            <span class="font-bold text-lg uppercase tracking-wide">5. Synthèse de la trésorerie</span>
+        </div>
+        <div class="p-6 overflow-x-auto">
+            @if (state().hasDossier && state().tresorerie.length > 0) {
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="bg-gray-50 border-b-2 border-gray-200 text-right">
+                        <th class="py-2 px-3 text-gray-600 font-semibold text-left">Période</th>
+                        <th class="py-2 px-3 text-gray-600 font-semibold">Solde début</th>
+                        <th class="py-2 px-3 text-gray-600 font-semibold">Total encaissements</th>
+                        <th class="py-2 px-3 text-gray-600 font-semibold">Total décaissements</th>
+                        <th class="py-2 px-3 text-gray-600 font-semibold">Excédent / Déficit</th>
+                        <th class="py-2 px-3 text-gray-600 font-semibold">Solde fin</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (row of state().tresorerie; track $index) {
+                    <tr class="border-b border-gray-100 text-right">
+                        <td class="py-2 px-3 text-left font-semibold text-gray-700">{{ row.periode }}</td>
+                        <td class="py-2 px-3">{{ formatCurrency(row.soldeDebut) }}</td>
+                        <td class="py-2 px-3 text-emerald-700">{{ formatCurrency(row.totalEncaissements) }}</td>
+                        <td class="py-2 px-3 text-red-600">{{ formatCurrency(row.totalDecaissements) }}</td>
+                        <td class="py-2 px-3" [ngClass]="row.excedentDeficit < 0 ? 'text-red-600' : 'text-emerald-700'">
+                            {{ formatCurrency(row.excedentDeficit) }}
+                        </td>
+                        <td class="py-2 px-3 font-semibold">{{ formatCurrency(row.soldeFin) }}</td>
+                    </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr class="bg-gray-100 font-bold text-right">
+                        <td class="py-2 px-3 text-left">CUMULS</td>
+                        <td class="py-2 px-3">—</td>
+                        <td class="py-2 px-3 text-emerald-700">{{ formatCurrency(getTresorerieCumul('totalEncaissements')) }}</td>
+                        <td class="py-2 px-3 text-red-600">{{ formatCurrency(getTresorerieCumul('totalDecaissements')) }}</td>
+                        <td class="py-2 px-3">{{ formatCurrency(getTresorerieCumul('excedentDeficit')) }}</td>
+                        <td class="py-2 px-3">{{ formatCurrency(getSoldeFinFinal()) }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+            } @else {
+            <div class="text-center py-6 text-gray-500">
+                <i class="pi pi-info-circle mr-2"></i>
+                Aucune analyse de trésorerie disponible pour cette demande.
+            </div>
+            }
+        </div>
+    </div>
+
+    <!-- ══ 6. PERSONNES CAUTION ══ -->
+    <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8 print-block">
+        <div class="bg-purple-600 text-white px-6 py-4 flex items-center gap-3">
+            <i class="pi pi-users text-xl"></i>
+            <span class="font-bold text-lg uppercase tracking-wide">6. Personnes caution</span>
+            <span class="ml-auto text-sm opacity-90">{{ state().cautions.length }} personne(s)</span>
+        </div>
+        <div class="p-6">
+            @if (state().cautions.length > 0) {
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                @for (caution of state().cautions; track $index) {
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <div class="font-semibold text-gray-800 mb-2">
+                        <i class="pi pi-user mr-1 text-purple-500"></i>{{ caution.prenom }} {{ caution.nom }}
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-sm">
+                        <div *ngIf="caution.telephone" class="text-gray-600"><strong>Tél :</strong> {{ caution.telephone }}</div>
+                        <div *ngIf="caution.age" class="text-gray-600"><strong>Âge :</strong> {{ caution.age }} ans</div>
+                        <div *ngIf="caution.activite" class="text-gray-600"><strong>Activité :</strong> {{ caution.activite }}</div>
+                        <div *ngIf="caution.profession" class="text-gray-600"><strong>Profession :</strong> {{ caution.profession }}</div>
+                        <div *ngIf="$any(caution).adresseComplete" class="col-span-2 text-gray-600"><strong>Adresse :</strong> {{ $any(caution).adresseComplete }}</div>
+                        <div *ngIf="$any(caution).descriptionActivite" class="col-span-2 text-gray-600"><strong>Description :</strong> {{ $any(caution).descriptionActivite }}</div>
+                    </div>
+                </div>
+                }
+            </div>
+            } @else {
+            <div class="text-center py-4 text-gray-500"><i class="pi pi-info-circle mr-2"></i>Aucune personne caution renseignée</div>
+            }
+        </div>
+    </div>
+
+    <!-- ══ 7. DOCUMENTS TÉLÉVERSÉS ══ -->
+    <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8 print-block">
+        <div class="bg-slate-600 text-white px-6 py-4 flex items-center gap-3">
+            <i class="pi pi-images text-xl"></i>
+            <span class="font-bold text-lg uppercase tracking-wide">7. Documents téléversés</span>
+            <span class="ml-auto text-sm opacity-90">{{ state().documents.length }} document(s)</span>
+        </div>
+        <div class="p-6">
+            @if (state().documents.length > 0) {
+            <div class="flex flex-wrap gap-2">
+                @for (doc of state().documents; track $index; let i = $index) {
+                <div class="relative rounded-lg overflow-hidden border border-gray-200 bg-white cursor-pointer hover:shadow-lg transition-all group"
+                    style="width: 90px; height: 90px; flex-shrink: 0;" (click)="viewDocument(doc)">
+                    <img *ngIf="isImageDocument(doc)" [src]="getFileUrl(doc.doc)" [alt]="'Doc ' + (i + 1)" loading="lazy"
+                        class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200">
+                    <div *ngIf="isPDFDocument(doc)" class="w-full h-full bg-red-50 flex flex-col items-center justify-center">
+                        <i class="pi pi-file-pdf text-2xl text-red-500"></i>
+                        <span style="font-size: 10px;" class="text-red-600 font-medium mt-1">PDF</span>
+                    </div>
+                    <div *ngIf="!isImageDocument(doc) && !isPDFDocument(doc)"
+                        class="w-full h-full bg-gray-50 flex flex-col items-center justify-center">
+                        <i class="pi pi-file text-2xl text-gray-400"></i>
+                        <span style="font-size: 10px;" class="text-gray-500 font-medium mt-1">{{ getDocumentExtension(doc) }}</span>
+                    </div>
+                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
+                        <i class="pi pi-eye text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"></i>
+                    </div>
+                </div>
+                }
+            </div>
+            } @else {
+            <div class="text-center py-4 text-gray-500"><i class="pi pi-info-circle mr-2"></i>Aucun document téléversé</div>
+            }
+        </div>
+    </div>
+
+    <!-- ══ 8. AVIS HIÉRARCHIQUES ══ -->
+    <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8 print-block">
+        <div class="bg-teal-500 text-white px-6 py-4 flex items-center gap-3">
+            <i class="pi pi-comments text-xl"></i>
+            <span class="font-bold text-lg uppercase tracking-wide">8. Avis hiérarchiques</span>
+        </div>
+        <div class="p-6">
+            <div *ngIf="state().demande?.avisAgentCredit || state().demande?.avisDa || state().demande?.avisDr" class="space-y-3 mb-6">
+                <div *ngIf="state().demande?.avisAgentCredit" class="border rounded-xl p-4 border-blue-200 bg-blue-50">
+                    <div class="flex items-center gap-3 mb-2">
+                        <p-avatar label="AC" shape="circle" [style]="{'background-color': '#3b82f6', 'color': 'white'}"></p-avatar>
+                        <div>
+                            <p class="font-semibold text-sm m-0">Agent de Crédit</p>
+                            <p-tag value="Approbation" severity="info" [rounded]="true"></p-tag>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 whitespace-pre-wrap mt-2 mb-0">{{ state().demande?.avisAgentCredit }}</p>
+                </div>
+                <div *ngIf="state().demande?.avisDa" class="border rounded-xl p-4 border-amber-200 bg-amber-50">
+                    <div class="flex items-center gap-3 mb-2">
+                        <p-avatar label="DA" shape="circle" [style]="{'background-color': '#f59e0b', 'color': 'white'}"></p-avatar>
+                        <div>
+                            <p class="font-semibold text-sm m-0">Directeur d'Agence
+                                <span *ngIf="state().demande?.validatedByDa" class="text-gray-500 font-normal">- {{ state().demande?.validatedByDa }}</span>
+                            </p>
+                            <p-tag value="Validation DA" severity="warn" [rounded]="true"></p-tag>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 whitespace-pre-wrap mt-2 mb-0">{{ state().demande?.avisDa }}</p>
+                </div>
+                <div *ngIf="state().demande?.avisDr" class="border rounded-xl p-4 border-purple-200 bg-purple-50">
+                    <div class="flex items-center gap-3 mb-2">
+                        <p-avatar label="DR" shape="circle" [style]="{'background-color': '#8b5cf6', 'color': 'white'}"></p-avatar>
+                        <div>
+                            <p class="font-semibold text-sm m-0">Délégué Régional
+                                <span *ngIf="state().demande?.validatedByDr" class="text-gray-500 font-normal">- {{ state().demande?.validatedByDr }}</span>
+                            </p>
+                            <p-tag value="Validation DR" severity="secondary" [rounded]="true"></p-tag>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 whitespace-pre-wrap mt-2 mb-0">{{ state().demande?.avisDr }}</p>
+                </div>
+            </div>
+
+            <div *ngIf="state().avisList.length > 0" class="space-y-4">
+                <div *ngIf="state().demande?.avisAgentCredit || state().demande?.avisDa || state().demande?.avisDr"
+                    class="border-t border-gray-200 pt-4">
+                    <h4 class="text-base font-semibold text-gray-700 mb-3"><i class="pi pi-comments mr-2 text-teal-500"></i>Commentaires</h4>
+                </div>
+                <div *ngFor="let avis of state().avisList" class="border border-gray-200 rounded-xl p-5 bg-white">
+                    <div class="flex items-center gap-4">
+                        <p-avatar [label]="(avis.userFullName || 'U').substring(0, 2).toUpperCase()" shape="circle" size="large"
+                            [style]="{'background-color': '#6366f1', 'color': 'white'}"></p-avatar>
+                        <div>
+                            <p class="font-semibold text-base m-0">{{ avis.userFullName || 'Utilisateur' }}</p>
+                            <p class="text-gray-500 m-0">{{ formatDate(avis.dateCreation) }}</p>
+                        </div>
+                    </div>
+                    <p class="mt-4 text-gray-700 whitespace-pre-wrap">{{ avis.libele }}</p>
+                </div>
+            </div>
+
+            <div *ngIf="state().avisList.length === 0 && !state().demande?.avisAgentCredit && !state().demande?.avisDa && !state().demande?.avisDr"
+                class="text-center py-6 text-gray-500">
+                <i class="pi pi-comments text-4xl mb-3 block opacity-50"></i>
+                <p>Aucun avis n'a encore été donné</p>
+            </div>
+        </div>
+    </div>
+
+    }
+</div>
+
+<!-- Aperçu image -->
+<p-dialog header="Aperçu du document" [visible]="state().showPreviewDialog" (onHide)="closePreviewDialog()"
+    [modal]="true" [closable]="true" [draggable]="false" [style]="{width: '90vw', maxWidth: '800px'}"
+    [maximizable]="true" [blockScroll]="true" styleClass="no-print">
+    <div *ngIf="state().selectedDocument" class="text-center">
+        <img [src]="getFileUrl(state().selectedDocument?.doc)" alt="Aperçu" class="rounded-lg shadow-lg"
+            style="max-width: 100%; max-height: 70vh; object-fit: contain;">
+        <div class="flex justify-center gap-3 mt-4">
+            <button pButton type="button" label="Ouvrir dans un nouvel onglet" icon="pi pi-external-link"
+                class="p-button-outlined" (click)="openInNewTab(getFileUrl(state().selectedDocument?.doc))"></button>
+            <button pButton type="button" label="Fermer" icon="pi pi-times"
+                class="p-button-secondary p-button-outlined" (click)="closePreviewDialog()"></button>
+        </div>
+    </div>
+</p-dialog>
