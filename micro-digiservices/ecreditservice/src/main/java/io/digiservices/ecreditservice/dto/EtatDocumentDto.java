@@ -16,9 +16,13 @@ import java.time.ZonedDateTime;
 public class EtatDocumentDto {
     private Long id;
     private StatutDocument statut;
-    @NotNull(message = "L'ID utilisateur est obligatoire")
+    // Facultatif : NULL pour les remontées publiques (sans compte connecté)
     private Long userId;
     private String motif;
+    // Localisation choisie sur le formulaire de remontée (sinon dérivée du user au backoffice)
+    private Long delegationId;
+    private Long agenceId;
+    private Long pointventeId;
     private ZonedDateTime createdAt;
     private ZonedDateTime updatedAt;
 }

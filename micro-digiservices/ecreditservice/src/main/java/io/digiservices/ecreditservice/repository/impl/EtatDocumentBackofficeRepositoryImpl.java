@@ -272,7 +272,7 @@ public class EtatDocumentBackofficeRepositoryImpl implements EtatDocumentBackoff
                 .createdAt(toZonedDateTime(rs.getTimestamp("created_at")))
                 .updatedAt(toZonedDateTime(rs.getTimestamp("updated_at")))
                 .userId(rs.getLong("user_id"))
-                .userFullName(rs.getString("first_name") + " " + rs.getString("last_name"))
+                .userFullName(buildFullName(rs.getString("first_name"), rs.getString("last_name")))
                 .userPhone(rs.getString("phone"))
                 .delegationId(getLongOrNull(rs, "delegation_id"))
                 .delegationLibele(rs.getString("delegation_libele"))
@@ -346,5 +346,11 @@ public class EtatDocumentBackofficeRepositoryImpl implements EtatDocumentBackoff
     private Long getLongOrNull(ResultSet rs, String columnName) throws SQLException {
         long value = rs.getLong(columnName);
         return rs.wasNull() ? null : value;
+    }
+
+    /** Nom complet null-safe : les remontées publiques n'ont pas d'utilisateur associé. */
+    private String buildFullName(String firstName, String lastName) {
+        String full = ((firstName != null ? firstName : "") + " " + (lastName != null ? lastName : "")).trim();
+        return full.isEmpty() ? null : full;
     }
 }

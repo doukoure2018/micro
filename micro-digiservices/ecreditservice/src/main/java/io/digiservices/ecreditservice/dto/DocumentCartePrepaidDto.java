@@ -15,7 +15,7 @@ public class DocumentCartePrepaidDto {
     private Long idEtatDoc;
     @NotBlank(message = "Le document est obligatoire")
     private String doc;
-    @NotNull(message = "L'ID utilisateur est obligatoire")
+    // Facultatif : NULL pour les remontées publiques (sans compte connecté)
     private Long userId;
     private ZonedDateTime createdAt;
     private ZonedDateTime updatedAt;

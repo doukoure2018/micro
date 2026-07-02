@@ -81,7 +81,8 @@
 
         <!-- Informations Grid -->
         <div class="info-grid">
-            <!-- Utilisateur -->
+            <!-- Utilisateur (masqué pour les remontées publiques sans utilisateur) -->
+            @if (hasUser()) {
             <div class="info-card user-card">
                 <div class="card-header">
                     <i class="fas fa-user"></i>
@@ -110,6 +111,7 @@
                     }
                 </div>
             </div>
+            }
 
             <!-- Localisation -->
             <div class="info-card location-card">
@@ -189,10 +191,10 @@
                 @for (doc of state().etat!.documents; track doc.id) {
                 <div class="document-card">
                     <!-- Preview (clic pour agrandir) -->
-                    <div class="document-preview-wrapper" (click)="isImage(doc.doc) ? openImage(doc.doc) : null">
+                    <div class="document-preview-wrapper" (click)="isImage(doc.doc) ? openImage(getFileUrl(doc.doc)) : null">
                         @if (isImage(doc.doc)) {
                         <div class="document-preview image-preview">
-                            <img [src]="doc.doc" [alt]="getFileName(doc.doc)">
+                            <img [src]="getFileUrl(doc.doc)" [alt]="getFileName(doc.doc)">
                             <div class="preview-overlay">
                                 <i class="fas fa-search-plus"></i>
                                 <span>Agrandir</span>
@@ -224,7 +226,7 @@
                         </button>
 
                         <!-- Ouvrir dans nouvel onglet -->
-                        <a [href]="doc.doc" target="_blank" class="btn btn-sm btn-outline-secondary"
+                        <a [href]="getFileUrl(doc.doc)" target="_blank" class="btn btn-sm btn-outline-secondary"
                             title="Ouvrir dans un nouvel onglet" (click)="$event.stopPropagation()">
                             <i class="fas fa-external-link-alt"></i>
                         </a>

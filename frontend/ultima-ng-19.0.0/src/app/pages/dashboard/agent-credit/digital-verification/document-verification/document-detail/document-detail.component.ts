@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DocumentCartePrepaidDto, EtatDocumentDetailDto, StatutDocument } from '@/interface/etat-document.model';
 import { UserService } from '@/service/user.service';
+import { environment } from 'src/environments/environment';
 
 interface State {
     etat: EtatDocumentDetailDto | null;
@@ -211,6 +212,35 @@ export class DocumentDetailComponent implements OnInit {
         return parts[parts.length - 1];
     }
 
+    /**
+     * Reconstruit l'URL publique du fichier à partir de la valeur stockée : le backend
+     * enregistre une URL absolue (file.base-url) sans le préfixe /api du reverse proxy,
+     * inexploitable par le navigateur. On ne garde que le nom de fichier et on rebâtit
+     * sur l'API courante.
+     */
+    getFileUrl(doc?: string | null): string {
+        if (!doc) return '';
+        if (doc.startsWith('data:') || doc.startsWith('blob:')) return doc;
+        const match = doc.match(/\/(files|docs)\/(.+)$/i);
+        let segment = 'files';
+        let fileName: string;
+        if (match) {
+            segment = match[1].toLowerCase();
+            fileName = match[2];
+        } else {
+            fileName = doc.substring(doc.lastIndexOf('/') + 1);
+        }
+        fileName = fileName.split('?')[0].split('#')[0];
+        if (!fileName) return doc;
+        return `${environment.apiBaseUrl}/ecredit/${segment}/${fileName}`;
+    }
+
+    /** Les remontées publiques n'ont pas d'utilisateur : on masque alors la section. */
+    hasUser(): boolean {
+        const user = this.state().etat?.user;
+        return !!(user && (user.firstName || user.lastName));
+    }
+
     private updateState(partial: Partial<State>): void {
         this.state.update((current) => ({ ...current, ...partial }));
     }
@@ -225,7 +255,7 @@ export class DocumentDetailComponent implements OnInit {
      */
     async downloadDocument(doc: DocumentCartePrepaidDto): Promise<void> {
         try {
-            const response = await fetch(doc.doc);
+            const response = await fetch(this.getFileUrl(doc.doc));
             const blob = await response.blob();
 
             // Créer un lien de téléchargement

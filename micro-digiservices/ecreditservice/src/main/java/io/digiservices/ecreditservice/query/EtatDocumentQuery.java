@@ -15,8 +15,8 @@ public class EtatDocumentQuery {
             """;
 
     public static final String INSERT_ETAT = """
-        INSERT INTO etat_document (statut, user_id, motif, created_at, updated_at)
-        VALUES (:statut, :userId, :motif, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        INSERT INTO etat_document (statut, user_id, motif, delegation_id, agence_id, pointvente_id, created_at, updated_at)
+        VALUES (:statut, :userId, :motif, :delegationId, :agenceId, :pointventeId, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         """;
 
     public static final String SELECT_BY_ID = """

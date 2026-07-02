@@ -1,0 +1,102 @@
+<p-toast></p-toast>
+
+<div class="cp-page">
+    <div class="cp-container">
+        <div class="cp-header">
+            <i class="pi pi-credit-card cp-header-icon"></i>
+            <div>
+                <h1 class="cp-title">Remontée des documents — Carte prépayée</h1>
+                <p class="cp-subtitle">Sélectionnez la localisation puis téléversez les images des documents.</p>
+            </div>
+        </div>
+
+        @if (!submitted()) {
+        <p-card>
+            <!-- Localisation -->
+            <form [formGroup]="locationForm">
+                <div class="cp-grid">
+                    <div class="cp-field">
+                        <label>Délégation <span class="req">*</span></label>
+                        <p-select formControlName="delegation" [options]="delegations()" optionLabel="libele"
+                            placeholder="Sélectionner une délégation" [filter]="true" filterBy="libele"
+                            [loading]="loadingDelegations()" styleClass="w-full" appendTo="body"
+                            (onChange)="onDelegationChange()"></p-select>
+                    </div>
+
+                    <div class="cp-field">
+                        <label>Agence <span class="req">*</span></label>
+                        <p-select formControlName="agence" [options]="agences()" optionLabel="libele"
+                            placeholder="Sélectionner une agence" [filter]="true" filterBy="libele"
+                            [loading]="loadingAgences()" [disabled]="!locationForm.get('delegation')?.value"
+                            styleClass="w-full" appendTo="body" (onChange)="onAgenceChange()"></p-select>
+                    </div>
+
+                    <div class="cp-field">
+                        <label>Point de service <span class="req">*</span></label>
+                        <p-select formControlName="pointVente" [options]="pointVentes()" optionLabel="libele"
+                            placeholder="Sélectionner un point de service" [filter]="true" filterBy="libele"
+                            [loading]="loadingPointVentes()" [disabled]="!locationForm.get('agence')?.value"
+                            styleClass="w-full" appendTo="body"></p-select>
+                    </div>
+                </div>
+            </form>
+
+            <p-divider></p-divider>
+
+            <!-- Documents -->
+            <div class="cp-upload-section">
+                <label class="cp-upload-label">Documents (images ou PDF) <span class="req">*</span></label>
+
+                <label class="cp-dropzone" for="cp-file-input">
+                    <i class="pi pi-cloud-upload"></i>
+                    <span>Cliquez pour choisir des fichiers</span>
+                    <small>Images (JPG, PNG…) ou PDF</small>
+                </label>
+                <input id="cp-file-input" type="file" multiple accept="image/*,application/pdf"
+                    (change)="onFilesSelected($event)" hidden />
+
+                @if (selectedFiles().length > 0) {
+                <div class="cp-files">
+                    @for (item of selectedFiles(); track $index; let i = $index) {
+                    <div class="cp-file">
+                        @if (item.preview) {
+                        <img [src]="item.preview" [alt]="item.file.name" />
+                        } @else {
+                        <div class="cp-file-icon"><i class="pi pi-file-pdf"></i></div>
+                        }
+                        <button type="button" class="cp-file-remove" (click)="removeFile(i)" title="Retirer">
+                            <i class="pi pi-times"></i>
+                        </button>
+                        <div class="cp-file-meta">
+                            <span class="cp-file-name">{{ item.file.name }}</span>
+                            <span class="cp-file-size">{{ formatSize(item.file.size) }}</span>
+                        </div>
+                    </div>
+                    }
+                </div>
+                <p class="cp-count">{{ selectedFiles().length }} fichier(s) sélectionné(s)</p>
+                }
+            </div>
+
+            <div class="cp-actions">
+                <button pButton type="button" label="Envoyer" icon="pi pi-send"
+                    [loading]="submitting()" [disabled]="!canSubmit()" (click)="submit()"></button>
+            </div>
+        </p-card>
+        } @else {
+        <!-- Confirmation -->
+        <p-card>
+            <div class="cp-success">
+                <i class="pi pi-check-circle"></i>
+                <h2>Documents remontés avec succès</h2>
+                <p>Vos documents ont bien été transmis et sont maintenant visibles dans le backoffice
+                    (statut « En cours »).</p>
+                <button pButton type="button" label="Nouvelle remontée" icon="pi pi-plus" class="p-button-outlined"
+                    (click)="reset()"></button>
+            </div>
+        </p-card>
+        }
+
+        <p class="cp-footer">CRG / DIGI-CREDIT — Remontée sécurisée des documents carte prépayée</p>
+    </div>
+</div>

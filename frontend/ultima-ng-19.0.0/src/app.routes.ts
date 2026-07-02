@@ -67,6 +67,10 @@ export const appRoutes: Routes = [
         loadComponent: () => import('@/pages/public/remontee-arrete-caisse/remontee-arrete-caisse.component').then((c) => c.RemonteeArreteCaisseComponent)
     },
     {
+        path: 'remontee-carte-prepaid',
+        loadComponent: () => import('@/pages/public/remontee-carte-prepaid/remontee-carte-prepaid.component').then((c) => c.RemonteeCartePrepaidComponent)
+    },
+    {
         path: 'landing',
         loadComponent: () => import('@/pages/landing/landing').then((c) => c.Landing)
     },

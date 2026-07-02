@@ -42,7 +42,10 @@ public class EtatDocumentRepositoryImpl implements EtatDocumentRepository {
             MapSqlParameterSource params = new MapSqlParameterSource()
                     .addValue("statut", dto.getStatut().name())
                     .addValue("userId", dto.getUserId())
-                    .addValue("motif", dto.getMotif());
+                    .addValue("motif", dto.getMotif())
+                    .addValue("delegationId", dto.getDelegationId())
+                    .addValue("agenceId", dto.getAgenceId())
+                    .addValue("pointventeId", dto.getPointventeId());
 
             jdbc.update(INSERT_ETAT, params, keyHolder, new String[]{"id"});
 

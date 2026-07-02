@@ -8,10 +8,17 @@
             </h1>
             <p class="page-subtitle">Gestion des demandes de carte prépayée par délégation</p>
         </div>
-        <button class="btn btn-primary" (click)="refresh()">
-            <i class="fas fa-sync-alt" [class.fa-spin]="state().loading"></i>
-            Actualiser
-        </button>
+        <div class="header-actions">
+            <a class="btn btn-outline-primary" href="/remontee-carte-prepaid" target="_blank" rel="noopener"
+                title="Ouvrir le formulaire public de remontée">
+                <i class="fas fa-external-link-alt"></i>
+                Lien de remontée
+            </a>
+            <button class="btn btn-primary" (click)="refresh()">
+                <i class="fas fa-sync-alt" [class.fa-spin]="state().loading"></i>
+                Actualiser
+            </button>
+        </div>
     </div>
 
     <!-- Filtres -->
