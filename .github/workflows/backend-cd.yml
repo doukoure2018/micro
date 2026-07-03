@@ -210,6 +210,41 @@ jobs:
             export POSTGRES_DB=$(grep '^POSTGRES_DB=' .env.prod | cut -d'=' -f2 | tr -d '\r\n ')
             export POSTGRES_PASSWORD=$(grep '^POSTGRES_PASSWORD=' .env.prod | cut -d'=' -f2 | tr -d '\r\n ')
 
+            # Fonction de migration Flyway, définie une fois puis appelée AVANT le "down"
+            # (base encore servie par les anciens conteneurs). Un échec interrompt le
+            # déploiement SANS couper le site (les services en place restent debout).
+            MIGRATIONS_DONE=0
+            run_migrations() {
+              echo "🗄️ Running database migrations..."
+              MIGRATION_COUNT=$(ls micro-digiservices/database-migrations/src/main/resources/db/migration/*.sql 2>/dev/null | wc -l)
+              if [ "$MIGRATION_COUNT" -eq 0 ]; then
+                echo "ℹ️ Aucune migration à appliquer"
+                return 0
+              fi
+              # Le réseau compose est indispensable pour résoudre "postgrecontainer".
+              # On REFUSE le fallback "bridge" (sinon Flyway ne joint pas la base).
+              NETWORK_NAME=$(sudo docker network ls --filter name=microservices --format "{{.Name}}" | head -1)
+              if [ -z "$NETWORK_NAME" ]; then
+                echo "❌ FATAL: réseau Docker 'microservices' introuvable — impossible de joindre la base pour les migrations."
+                exit 1
+              fi
+              echo "🔗 Réseau Flyway: $NETWORK_NAME"
+              if ! sudo docker run --rm \
+                --network "$NETWORK_NAME" \
+                -v "$(pwd)/micro-digiservices/database-migrations/src/main/resources/db/migration:/flyway/sql:ro" \
+                -e FLYWAY_URL="jdbc:postgresql://postgrecontainer:5432/${POSTGRES_DB:-localdb}" \
+                -e FLYWAY_USER="${POSTGRES_USER:-user2711}" \
+                -e FLYWAY_PASSWORD="${POSTGRES_PASSWORD:-admin2711}" \
+                -e FLYWAY_BASELINE_ON_MIGRATE="true" \
+                -e FLYWAY_OUT_OF_ORDER="true" \
+                -e FLYWAY_CONNECT_RETRIES="10" \
+                flyway/flyway:11.3.0 migrate; then
+                echo "❌ FATAL: échec des migrations Flyway. Déploiement interrompu (schéma incohérent avec le code)."
+                exit 1
+              fi
+              echo "✅ Migrations appliquées avec succès"
+            }
+
             # === GARDE-FOUS PRE-DEPLOIEMENT ===
             echo "🛡️ Pre-deployment safety checks..."
 
@@ -265,6 +300,18 @@ jobs:
 
             # === FIN GARDE-FOUS ===
 
+            # Migrations AVANT l'arrêt des services : si PostgreSQL tourne déjà, on migre
+            # maintenant. En cas d'échec, on s'arrête ici -> les services actuels restent en
+            # ligne (zéro coupure). Sinon (premier déploiement), on migrera après le démarrage
+            # de la base plus bas.
+            if sudo docker ps --format '{{.Names}}' | grep -q '^postgrecontainer$'; then
+              echo "🔎 PostgreSQL déjà actif — migrations avant l'arrêt des services (zéro coupure si échec)."
+              run_migrations
+              MIGRATIONS_DONE=1
+            else
+              echo "ℹ️ PostgreSQL non actif (premier déploiement ?) — migrations après démarrage de la base."
+            fi
+
             # Stop only services managed by this docker-compose (preserves other docker apps)
             echo "🛑 Stopping services managed by docker-compose..."
             sudo docker compose --env-file .env.prod down --remove-orphans || true
@@ -317,36 +364,12 @@ jobs:
             sudo docker compose --env-file .env.prod up -d zookeeper kafka
             sleep 10
 
-            # Run migrations
-            echo "🗄️ Running database migrations..."
-            MIGRATION_COUNT=$(ls micro-digiservices/database-migrations/src/main/resources/db/migration/*.sql 2>/dev/null | wc -l)
-
-            if [ "$MIGRATION_COUNT" -gt 0 ]; then
-              # Le réseau compose est indispensable pour résoudre "postgrecontainer".
-              # On REFUSE le fallback "bridge" : sinon Flyway ne joint pas la base et les
-              # migrations échouent silencieusement (code déployé sans le schéma correspondant).
-              NETWORK_NAME=$(sudo docker network ls --filter name=microservices --format "{{.Name}}" | head -1)
-              if [ -z "$NETWORK_NAME" ]; then
-                echo "❌ FATAL: réseau Docker 'microservices' introuvable — impossible de joindre la base pour les migrations."
-                exit 1
-              fi
-              echo "🔗 Réseau Flyway: $NETWORK_NAME"
-
-              # Un échec de migration DOIT arrêter le déploiement (pas de code sans son schéma).
-              if ! sudo docker run --rm \
-                --network "$NETWORK_NAME" \
-                -v "$(pwd)/micro-digiservices/database-migrations/src/main/resources/db/migration:/flyway/sql:ro" \
-                -e FLYWAY_URL="jdbc:postgresql://postgrecontainer:5432/${POSTGRES_DB:-localdb}" \
-                -e FLYWAY_USER="${POSTGRES_USER:-user2711}" \
-                -e FLYWAY_PASSWORD="${POSTGRES_PASSWORD:-admin2711}" \
-                -e FLYWAY_BASELINE_ON_MIGRATE="true" \
-                -e FLYWAY_OUT_OF_ORDER="true" \
-                -e FLYWAY_CONNECT_RETRIES="10" \
-                flyway/flyway:11.3.0 migrate; then
-                echo "❌ FATAL: échec des migrations Flyway. Déploiement interrompu (schéma incohérent avec le code)."
-                exit 1
-              fi
-              echo "✅ Migrations appliquées avec succès"
+            # Migrations : déjà appliquées avant le "down" si PostgreSQL tournait.
+            # Sinon (premier déploiement), on les applique maintenant que la base est démarrée.
+            if [ "$MIGRATIONS_DONE" != "1" ]; then
+              run_migrations
+            else
+              echo "🗄️ Migrations déjà appliquées avant l'arrêt des services."
             fi
 
             # Start services in order
