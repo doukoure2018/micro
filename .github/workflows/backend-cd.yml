@@ -322,16 +322,31 @@ jobs:
             MIGRATION_COUNT=$(ls micro-digiservices/database-migrations/src/main/resources/db/migration/*.sql 2>/dev/null | wc -l)
 
             if [ "$MIGRATION_COUNT" -gt 0 ]; then
+              # Le réseau compose est indispensable pour résoudre "postgrecontainer".
+              # On REFUSE le fallback "bridge" : sinon Flyway ne joint pas la base et les
+              # migrations échouent silencieusement (code déployé sans le schéma correspondant).
               NETWORK_NAME=$(sudo docker network ls --filter name=microservices --format "{{.Name}}" | head -1)
-              sudo docker run --rm \
-                --network ${NETWORK_NAME:-bridge} \
+              if [ -z "$NETWORK_NAME" ]; then
+                echo "❌ FATAL: réseau Docker 'microservices' introuvable — impossible de joindre la base pour les migrations."
+                exit 1
+              fi
+              echo "🔗 Réseau Flyway: $NETWORK_NAME"
+
+              # Un échec de migration DOIT arrêter le déploiement (pas de code sans son schéma).
+              if ! sudo docker run --rm \
+                --network "$NETWORK_NAME" \
                 -v "$(pwd)/micro-digiservices/database-migrations/src/main/resources/db/migration:/flyway/sql:ro" \
                 -e FLYWAY_URL="jdbc:postgresql://postgrecontainer:5432/${POSTGRES_DB:-localdb}" \
                 -e FLYWAY_USER="${POSTGRES_USER:-user2711}" \
                 -e FLYWAY_PASSWORD="${POSTGRES_PASSWORD:-admin2711}" \
                 -e FLYWAY_BASELINE_ON_MIGRATE="true" \
                 -e FLYWAY_OUT_OF_ORDER="true" \
-                flyway/flyway:11.3.0 migrate || echo "⚠️ Migration warnings"
+                -e FLYWAY_CONNECT_RETRIES="10" \
+                flyway/flyway:11.3.0 migrate; then
+                echo "❌ FATAL: échec des migrations Flyway. Déploiement interrompu (schéma incohérent avec le code)."
+                exit 1
+              fi
+              echo "✅ Migrations appliquées avec succès"
             fi
 
             # Start services in order
