@@ -63,10 +63,10 @@
                 </button>
                 }
 
-                @if (canReject()) {
-                <button class="btn btn-danger btn-action" [disabled]="state().processing" (click)="openRejectModal()">
-                    <i class="fas fa-times"></i>
-                    Rejeter
+                @if (canDelete()) {
+                <button class="btn btn-danger btn-action" [disabled]="state().processing" (click)="openDeleteModal()">
+                    <i class="fas fa-trash"></i>
+                    Supprimer
                 </button>
                 }
 
@@ -257,39 +257,35 @@
 </div>
 }
 
-<!-- Reject Modal -->
-@if (state().showRejectModal) {
-<div class="modal-overlay" (click)="closeRejectModal()">
+<!-- Delete Modal -->
+@if (state().showDeleteModal) {
+<div class="modal-overlay" (click)="closeDeleteModal()">
     <div class="modal-content reject-modal" (click)="$event.stopPropagation()">
         <div class="modal-header">
             <h3>
                 <i class="fas fa-exclamation-triangle text-danger"></i>
-                Rejeter la demande
+                Supprimer la demande
             </h3>
-            <button class="close-btn" (click)="closeRejectModal()">
+            <button class="close-btn" (click)="closeDeleteModal()">
                 <i class="fas fa-times"></i>
             </button>
         </div>
         <div class="modal-body">
-            <p>Êtes-vous sûr de vouloir rejeter cette demande ?</p>
-            <div class="form-group">
-                <label for="motif">Motif du rejet (optionnel)</label>
-                <textarea id="motif" class="form-control" rows="3" placeholder="Indiquez la raison du rejet..."
-                    [value]="state().rejectMotif" (input)="updateRejectMotif($event)">
-                    </textarea>
-            </div>
+            <p>Êtes-vous sûr de vouloir <strong>supprimer définitivement</strong> cette demande
+                ainsi que <strong>tous ses documents associés</strong> ?</p>
+            <p class="text-danger">Cette action est irréversible.</p>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-secondary" (click)="closeRejectModal()">
+            <button class="btn btn-secondary" (click)="closeDeleteModal()">
                 Annuler
             </button>
-            <button class="btn btn-danger" [disabled]="state().processing" (click)="rejeter()">
+            <button class="btn btn-danger" [disabled]="state().processing" (click)="supprimer()">
                 @if (state().processing) {
                 <i class="fas fa-spinner fa-spin"></i>
                 } @else {
-                <i class="fas fa-times"></i>
+                <i class="fas fa-trash"></i>
                 }
-                Confirmer le rejet
+                Confirmer la suppression
             </button>
         </div>
     </div>

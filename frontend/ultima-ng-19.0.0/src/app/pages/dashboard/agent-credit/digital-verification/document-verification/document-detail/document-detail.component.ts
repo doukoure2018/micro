@@ -12,8 +12,7 @@ interface State {
     error: string | null;
     success: string | null;
     selectedImage: string | null;
-    showRejectModal: boolean;
-    rejectMotif: string;
+    showDeleteModal: boolean;
 }
 
 @Component({
@@ -36,8 +35,7 @@ export class DocumentDetailComponent implements OnInit {
         error: null,
         success: null,
         selectedImage: null,
-        showRejectModal: false,
-        rejectMotif: ''
+        showDeleteModal: false
     });
 
     ngOnInit(): void {
@@ -107,32 +105,30 @@ export class DocumentDetailComponent implements OnInit {
         }
     }
 
-    openRejectModal(): void {
-        this.updateState({ showRejectModal: true, rejectMotif: '' });
+    openDeleteModal(): void {
+        this.updateState({ showDeleteModal: true });
     }
 
-    closeRejectModal(): void {
-        this.updateState({ showRejectModal: false, rejectMotif: '' });
+    closeDeleteModal(): void {
+        this.updateState({ showDeleteModal: false });
     }
 
-    async rejeter(): Promise<void> {
-        const { etat, rejectMotif } = this.state();
+    /**
+     * Supprime définitivement la demande et tous ses documents associés,
+     * puis revient à la liste du backoffice.
+     */
+    async supprimer(): Promise<void> {
+        const { etat } = this.state();
         if (!etat) return;
 
         this.updateState({ processing: true, error: null, success: null });
 
         try {
-            const response = await this.userService.rejeterEtatDocument$(etat.id, rejectMotif).toPromise();
-            if (response?.data?.etat) {
-                this.updateState({
-                    etat: { ...etat, statut: 'REJET' as StatutDocument },
-                    success: 'Document rejeté',
-                    showRejectModal: false
-                });
-                setTimeout(() => this.loadDetail(etat.id), 1000);
-            }
+            await this.userService.deleteEtatDocument$(etat.id).toPromise();
+            this.updateState({ showDeleteModal: false, success: 'Demande et documents supprimés' });
+            setTimeout(() => this.goBack(), 900);
         } catch (error: any) {
-            this.updateState({ error: error?.message || 'Erreur lors du rejet' });
+            this.updateState({ error: error?.message || 'Erreur lors de la suppression', showDeleteModal: false });
         } finally {
             this.updateState({ processing: false });
         }
@@ -178,9 +174,9 @@ export class DocumentDetailComponent implements OnInit {
         return this.state().etat?.statut === 'VALIDE';
     }
 
-    canReject(): boolean {
-        const statut = this.state().etat?.statut;
-        return statut === 'ENCOURS' || statut === 'VALIDE';
+    /** La suppression est possible pour toute demande chargée, quel que soit son statut. */
+    canDelete(): boolean {
+        return !!this.state().etat;
     }
 
     formatDate(dateString: string): string {
@@ -243,11 +239,6 @@ export class DocumentDetailComponent implements OnInit {
 
     private updateState(partial: Partial<State>): void {
         this.state.update((current) => ({ ...current, ...partial }));
-    }
-
-    updateRejectMotif(event: Event): void {
-        const input = event.target as HTMLTextAreaElement;
-        this.updateState({ rejectMotif: input.value });
     }
 
     /**

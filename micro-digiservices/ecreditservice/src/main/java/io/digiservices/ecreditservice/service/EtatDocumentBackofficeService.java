@@ -38,4 +38,7 @@ public interface EtatDocumentBackofficeService {
 
     EtatDocumentDto remettreEnCours(Long id);
 
+    /** Supprime définitivement un état et tous ses documents (lignes + fichiers physiques). */
+    void deleteEtat(Long id);
+
 }

@@ -80,4 +80,8 @@ public class EtatDocumentQuery {
     public static final String EXISTS_ETAT_BY_ID = """
             SELECT COUNT(*) > 0 FROM etat_document WHERE id = :id
             """;
+
+    public static final String DELETE_ETAT = """
+            DELETE FROM etat_document WHERE id = :id
+            """;
 }

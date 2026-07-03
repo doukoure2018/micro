@@ -187,6 +187,18 @@ public class EtatDocumentRepositoryImpl implements EtatDocumentRepository {
     }
 
     @Override
+    public void deleteById(Long id) {
+        try {
+            MapSqlParameterSource params = new MapSqlParameterSource().addValue("id", id);
+            jdbc.update(DELETE_ETAT, params);
+            log.info("État {} supprimé", id);
+        } catch (Exception e) {
+            log.error("Erreur lors de la suppression de l'état: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la suppression de l'état");
+        }
+    }
+
+    @Override
     public boolean existsById(Long id) {
         try {
             MapSqlParameterSource params = new MapSqlParameterSource().addValue("id", id);

@@ -1,13 +1,16 @@
 package io.digiservices.ecreditservice.service.impl;
 
 import io.digiservices.clients.domain.DelegationDto;
+import io.digiservices.ecreditservice.dto.DocumentCartePrepaidDto;
 import io.digiservices.ecreditservice.dto.EtatDocumentByDelegationDto;
 import io.digiservices.ecreditservice.dto.EtatDocumentDetailDto;
 import io.digiservices.ecreditservice.dto.EtatDocumentDto;
 import io.digiservices.ecreditservice.enumeration.StatutDocument;
 import io.digiservices.ecreditservice.exception.ApiException;
+import io.digiservices.ecreditservice.repository.DocumentCartePrepaidRepository;
 import io.digiservices.ecreditservice.repository.EtatDocumentBackofficeRepository;
 import io.digiservices.ecreditservice.repository.EtatDocumentRepository;
+import io.digiservices.ecreditservice.service.DocumentCartePrepaidService;
 import io.digiservices.ecreditservice.service.EtatDocumentBackofficeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +30,8 @@ public class EtatDocumentBackofficeServiceImpl implements EtatDocumentBackoffice
 
     private final EtatDocumentBackofficeRepository backofficeRepository;
     private final EtatDocumentRepository etatDocumentRepository;
+    private final DocumentCartePrepaidRepository documentRepository;
+    private final DocumentCartePrepaidService documentService;
 
     @Override
     public Page<EtatDocumentByDelegationDto> getEtatsByDelegation(Long delegationId, Pageable pageable) {
@@ -145,6 +150,25 @@ public class EtatDocumentBackofficeServiceImpl implements EtatDocumentBackoffice
 
         return etatDocumentRepository.findById(id)
                 .orElseThrow(() -> new ApiException("Erreur lors de la mise à jour"));
+    }
+
+    @Override
+    public void deleteEtat(Long id) {
+        log.info("Suppression de l'état {} et de tous ses documents", id);
+
+        if (!etatDocumentRepository.existsById(id)) {
+            throw new ApiException("État du document non trouvé avec l'ID: " + id);
+        }
+
+        // Supprimer chaque document associé (fichier physique + ligne en base)
+        List<DocumentCartePrepaidDto> documents = documentRepository.findByEtatId(id, Pageable.unpaged()).getContent();
+        for (DocumentCartePrepaidDto doc : documents) {
+            documentService.deleteDocument(doc.getId());
+        }
+
+        // Puis supprimer l'état lui-même
+        etatDocumentRepository.deleteById(id);
+        log.info("État {} supprimé avec {} document(s) associé(s)", id, documents.size());
     }
 
     @Override

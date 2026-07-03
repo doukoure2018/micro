@@ -18,4 +18,6 @@ public interface EtatDocumentRepository {
 
     void updateStatutWithMotif(Long id, StatutDocument statut, String motif);  // ← AJOUTÉ
     void resetToEncours(Long id);  // ← AJOUTÉ
+
+    void deleteById(Long id);
 }

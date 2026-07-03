@@ -905,6 +905,11 @@ export class UserService {
     rejeterEtatDocument$ = (etatId: number, motif?: string): Observable<IResponse> => this.http.put<IResponse>(`${this.server}/ecredit/backoffice/etats/${etatId}/rejeter`, { motif }).pipe(tap(console.log), catchError(this.handleError));
 
     /**
+     * Supprimer définitivement une demande (état) et tous ses documents associés
+     */
+    deleteEtatDocument$ = (etatId: number): Observable<IResponse> => this.http.delete<IResponse>(`${this.server}/ecredit/backoffice/etats/${etatId}`).pipe(tap(console.log), catchError(this.handleError));
+
+    /**
      * Récupérer les statistiques par délégation
      */
     getStatsEtatsDocuments$ = (): Observable<IResponse> => this.http.get<IResponse>(`${this.server}/ecredit/backoffice/stats`).pipe(tap(console.log), catchError(this.handleError));

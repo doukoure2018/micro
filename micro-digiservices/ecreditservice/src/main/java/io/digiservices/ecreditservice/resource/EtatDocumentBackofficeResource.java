@@ -142,6 +142,22 @@ public class EtatDocumentBackofficeResource {
         ), "État accepté avec succès", OK));
     }
 
+    /**
+     * Supprimer définitivement une demande (état) et tous ses documents associés.
+     */
+    @DeleteMapping("/etats/{id}")
+    public ResponseEntity<Response> deleteEtat(
+            @PathVariable(name = "id") Long id,
+            HttpServletRequest request) {
+        log.info("DELETE /backoffice/etats/{}", id);
+
+        backofficeService.deleteEtat(id);
+
+        return ResponseEntity.ok(getResponse(request, Map.of(
+                "id", id
+        ), "Demande et documents supprimés avec succès", OK));
+    }
+
     @GetMapping("/stats")
     public ResponseEntity<Response> getStatsByDelegation(HttpServletRequest request) {
         log.info("GET /backoffice/stats");
