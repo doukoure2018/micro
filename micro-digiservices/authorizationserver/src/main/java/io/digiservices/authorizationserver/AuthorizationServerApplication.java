@@ -113,20 +113,42 @@ public class AuthorizationServerApplication {
 		};
 	}
 
+	// TokenSettings cibles du client desktop : access court (15 min), refresh 24 h GLISSANTES
+	// grâce à la rotation (reuseRefreshTokens=false : chaque renouvellement émet un nouveau
+	// refresh token valable 24 h -> session prolongée tant que l'app est utilisée,
+	// re-login après 24 h d'inactivité).
+	private static final Duration DESKTOP_ACCESS_TTL = Duration.ofMinutes(15);
+	private static final Duration DESKTOP_REFRESH_TTL = Duration.ofHours(24);
+
 	/**
-	 * Enregistre (idempotent) le client desktop PUBLIC "rapprochement solde" :
+	 * Enregistre OU MET À JOUR (idempotent) le client desktop PUBLIC "rapprochement solde" :
 	 * authentification NONE (pas de secret embarqué), PKCE OBLIGATOIRE (client public, RFC 8252),
-	 * redirect en boucle locale 127.0.0.1. Scopes openid/profile/email/agent_profile.
+	 * redirect en boucle locale 127.0.0.1 (port non comparé par SAS pour les IP loopback).
+	 * Scopes openid/profile/email/agent_profile.
+	 * Contrairement à l'ancienne version (create-if-absent), les TokenSettings sont réappliqués
+	 * si divergents : indispensable avec le repository JDBC, sinon la ligne existante en base
+	 * conserve d'anciennes valeurs quel que soit le code.
 	 */
 	private void registerDesktopClient(RegisteredClientRepository repository,
 									   String clientId, String redirectUri){
-		if(repository.findByClientId(clientId) != null){
-			return;
+		var existing = repository.findByClientId(clientId);
+		if(existing != null){
+			var ts = existing.getTokenSettings();
+			boolean tokenSettingsOk = DESKTOP_ACCESS_TTL.equals(ts.getAccessTokenTimeToLive())
+					&& DESKTOP_REFRESH_TTL.equals(ts.getRefreshTokenTimeToLive())
+					&& !ts.isReuseRefreshTokens();
+			boolean redirectOk = existing.getRedirectUris().contains(redirectUri);
+			boolean pkceOk = existing.getClientSettings().isRequireProofKey();
+			if(tokenSettingsOk && redirectOk && pkceOk){
+				return;
+			}
 		}
+		// Conserve le même id pour METTRE À JOUR la ligne JDBC (sinon save() insère un doublon).
+		String id = existing != null ? existing.getId() : UUID.randomUUID().toString();
 		try {
-			var desktopClient = RegisteredClient.withId(UUID.randomUUID().toString())
+			var desktopClient = RegisteredClient.withId(id)
 					.clientId(clientId)
-					.clientAuthenticationMethod(ClientAuthenticationMethod.NONE)   // client public
+					.clientAuthenticationMethod(ClientAuthenticationMethod.NONE)   // client public, pas de secret
 					.authorizationGrantTypes(types -> {
 						types.add(AuthorizationGrantType.AUTHORIZATION_CODE);
 						types.add(AuthorizationGrantType.REFRESH_TOKEN);
@@ -143,12 +165,15 @@ public class AuthorizationServerApplication {
 							.requireAuthorizationConsent(false)
 							.build())
 					.tokenSettings(TokenSettings.builder()
-							.refreshTokenTimeToLive(Duration.ofDays(1))
-							.accessTokenTimeToLive(Duration.ofMinutes(30))
+							.accessTokenTimeToLive(DESKTOP_ACCESS_TTL)
+							.refreshTokenTimeToLive(DESKTOP_REFRESH_TTL)
+							.reuseRefreshTokens(false)           // rotation des refresh tokens
 							.build())
 					.build();
 			repository.save(desktopClient);
-			log.info("Registered desktop OIDC client: {} (redirect: {})", clientId, redirectUri);
+			log.info("Desktop OIDC client {}: {} (redirect: {}, access {} / refresh {} / rotation)",
+					existing != null ? "mis à jour" : "enregistré", clientId, redirectUri,
+					DESKTOP_ACCESS_TTL, DESKTOP_REFRESH_TTL);
 		}catch (Exception exception){
 			log.error("Failed to register desktop client {}: {}", clientId, exception.getMessage());
 		}

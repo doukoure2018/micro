@@ -23,7 +23,11 @@ public class ClientOAuth2RefreshTokenGenerator implements OAuth2TokenGenerator<O
             return null;
         } else {
             var issueAt = Instant.now();
-            var expiresAt = issueAt.plus(context.getRegisteredClient().getTokenSettings().getAccessTokenTimeToLive());
+            // Durée de vie du REFRESH token (et non de l'access token) : l'ancien code utilisait
+            // getAccessTokenTimeToLive(), ce qui plafonnait la session de TOUS les clients à la durée
+            // de leur access token (ex. 30 min pour le desktop au lieu des 24 h configurées) et rendait
+            // le refreshTokenTimeToLive des TokenSettings totalement inopérant.
+            var expiresAt = issueAt.plus(context.getRegisteredClient().getTokenSettings().getRefreshTokenTimeToLive());
             return new OAuth2RefreshToken(refreshTokenGenerator.generateKey(), issueAt, expiresAt);
         }
     }
