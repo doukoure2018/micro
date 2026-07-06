@@ -9,6 +9,7 @@ import { CardModule } from 'primeng/card';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { TagModule } from 'primeng/tag';
 
 type ResultType = 'success' | 'cooldown' | 'inactive' | 'error';
 
@@ -19,16 +20,30 @@ interface ResultState {
     suggestion?: string;
 }
 
+/** Infos abonné renvoyées par le check-decoder (parsées défensivement : la casse des
+ *  champs varie entre le doc et l'API réelle — type_recherche vs typeRecherche...). */
+interface DecoderInfo {
+    existe: boolean;
+    statut?: string;
+    nom?: string;
+    offre?: string;
+    dateFin?: string;
+    ville?: string;
+    message?: string;
+    conseil?: string;
+}
+
 /**
- * Actualisation des chaînes d'un décodeur Canal+ (réactivation).
- * GRATUIT — pour les décodeurs dont l'abonnement est encore ACTIF mais dont les
- * chaînes ne s'affichent plus. Traitement temps réel côté Canal+ (30 à 90 s),
- * limité à 1 actualisation / 10 min / décodeur, SMS de confirmation au client.
+ * Actualisation des chaînes d'un décodeur Canal+ — parcours en 2 étapes OBLIGATOIRES :
+ *  1. Vérification du statut de l'abonnement (check-decoder, ~60 s) : l'abonné doit
+ *     exister et son contrat être « Active » ; sinon ARRÊT (réabonnement à proposer).
+ *  2. Actualisation (réactivation, 30-90 s) — gratuite, SMS de confirmation au client,
+ *     1 actualisation / 10 min / décodeur.
  */
 @Component({
     selector: 'app-actualiser-decodeur',
     standalone: true,
-    imports: [CommonModule, ReactiveFormsModule, InputTextModule, ButtonModule, CardModule, MessageModule, ProgressSpinnerModule],
+    imports: [CommonModule, ReactiveFormsModule, InputTextModule, ButtonModule, CardModule, MessageModule, ProgressSpinnerModule, TagModule],
     templateUrl: './actualiser-decodeur.component.html',
     styleUrl: './actualiser-decodeur.component.scss'
 })
@@ -37,9 +52,14 @@ export class ActualiserDecodeurComponent implements OnDestroy {
     private fb = inject(FormBuilder);
     private destroyRef = inject(DestroyRef);
 
+    // Étape 1 : vérification
+    checking = signal(false);
+    decoderInfo = signal<DecoderInfo | null>(null);
+    checkedNumAbonne = signal<string>('');
+
+    // Étape 2 : actualisation
     processing = signal(false);
     result = signal<ResultState | null>(null);
-    /** Secondes restantes avant la prochaine actualisation possible (réponse 429). */
     cooldownRemaining = signal<number>(0);
     private cooldownTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -48,8 +68,84 @@ export class ActualiserDecodeurComponent implements OnDestroy {
         phoneNumber: ['', [Validators.required, Validators.pattern(/^(\+?224|00224)?[\d\s]{9,14}$/)]]
     });
 
+    constructor() {
+        // Tout changement du numéro de décodeur invalide la vérification précédente
+        this.form
+            .get('numAbonne')!
+            .valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((value) => {
+                const normalized = (value || '').replace(/\s/g, '');
+                if (this.decoderInfo() && normalized !== this.checkedNumAbonne()) {
+                    this.decoderInfo.set(null);
+                    this.result.set(null);
+                    this.stopCooldown();
+                }
+            });
+    }
+
+    /** Le contrat est actif : l'étape 2 (actualisation) est autorisée. */
+    canReactivate(): boolean {
+        const info = this.decoderInfo();
+        return !!info && info.existe && (info.statut || '').toLowerCase() === 'active';
+    }
+
+    // ==================== ÉTAPE 1 : VÉRIFICATION ====================
+
+    verifier(): void {
+        if (this.form.get('numAbonne')?.invalid || this.checking() || this.processing()) {
+            this.form.get('numAbonne')?.markAsTouched();
+            return;
+        }
+        const numAbonne = (this.form.value.numAbonne || '').replace(/\s/g, '');
+        this.checking.set(true);
+        this.decoderInfo.set(null);
+        this.result.set(null);
+        this.stopCooldown();
+
+        this.userService
+            .checkDecodeur$(numAbonne)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    this.checking.set(false);
+                    this.checkedNumAbonne.set(numAbonne);
+                    this.decoderInfo.set(this.parseDecoderInfo(response));
+                },
+                error: (err: HttpErrorResponse) => {
+                    this.checking.set(false);
+                    this.result.set({
+                        type: 'error',
+                        message: err.error?.message || 'Impossible de vérifier le décodeur. Réessayez plus tard.',
+                        decodeur: numAbonne
+                    });
+                }
+            });
+    }
+
+    /** Parsing défensif : champs à la racine ou sous data, casse variable. */
+    private parseDecoderInfo(response: any): DecoderInfo {
+        const src = response?.data && typeof response.data === 'object' && 'existe' in response.data ? response.data : response || {};
+        return {
+            existe: src.existe === true,
+            statut: src.statut ?? src.status,
+            nom: src.nom ?? src.name,
+            offre: src.offre,
+            dateFin: src.date_fin ?? src.dateFin,
+            ville: src.ville,
+            message: src.message,
+            conseil: src.conseil
+        };
+    }
+
+    statutSeverity(): 'success' | 'danger' {
+        return this.canReactivate() ? 'success' : 'danger';
+    }
+
+    // ==================== ÉTAPE 2 : ACTUALISATION ====================
+
     submit(): void {
-        if (this.form.invalid || this.processing()) {
+        // Garde-fou : jamais d'actualisation sans vérification préalable réussie (règle API)
+        if (!this.canReactivate() || this.form.invalid || this.processing()) {
             this.form.markAllAsTouched();
             return;
         }
@@ -57,7 +153,7 @@ export class ActualiserDecodeurComponent implements OnDestroy {
         this.result.set(null);
         this.processing.set(true);
 
-        const numAbonne = (this.form.value.numAbonne || '').replace(/\s/g, '');
+        const numAbonne = this.checkedNumAbonne();
         const phoneNumber = (this.form.value.phoneNumber || '').replace(/\s/g, '');
 
         this.userService
@@ -65,14 +161,13 @@ export class ActualiserDecodeurComponent implements OnDestroy {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (response) => {
-                    // 200 (déjà en cours) et 201 (déclenchée) = succès (cf. doc §4.6)
+                    // 200 (déjà en cours) et 201 (déclenchée) = succès (cf. doc §5.6)
                     this.processing.set(false);
                     this.result.set({
                         type: 'success',
                         message: response?.message || 'Actualisation des chaînes déclenchée avec succès',
                         decodeur: response?.data?.decodeur || numAbonne
                     });
-                    this.form.reset();
                 },
                 error: (err: HttpErrorResponse) => {
                     this.processing.set(false);
@@ -113,6 +208,8 @@ export class ActualiserDecodeurComponent implements OnDestroy {
         }
     }
 
+    // ==================== Cooldown / utilitaires ====================
+
     private startCooldown(seconds: number): void {
         this.cooldownRemaining.set(seconds);
         this.cooldownTimer = setInterval(() => {
@@ -140,6 +237,14 @@ export class ActualiserDecodeurComponent implements OnDestroy {
     }
 
     reset(): void {
+        this.result.set(null);
+        this.stopCooldown();
+    }
+
+    nouvelleVerification(): void {
+        this.form.reset();
+        this.decoderInfo.set(null);
+        this.checkedNumAbonne.set('');
         this.result.set(null);
         this.stopCooldown();
     }

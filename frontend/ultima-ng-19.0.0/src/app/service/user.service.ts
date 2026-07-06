@@ -910,7 +910,15 @@ export class UserService {
     deleteEtatDocument$ = (etatId: number): Observable<IResponse> => this.http.delete<IResponse>(`${this.server}/ecredit/backoffice/etats/${etatId}`).pipe(tap(console.log), catchError(this.handleError));
 
     /**
-     * Canal+ : actualiser les chaînes d'un décodeur (réactivation).
+     * Canal+ ÉTAPE 1 (obligatoire) : consulter le statut de l'abonnement du décodeur
+     * (existe ? contrat Active ?) avant toute actualisation. Traitement ~60 s.
+     */
+    checkDecodeur$ = (numAbonne: string): Observable<any> =>
+        this.http.get<any>(`${this.server}/ecredit/decodeur/check`, { params: { numAbonne } });
+
+    /**
+     * Canal+ ÉTAPE 2 : actualiser les chaînes d'un décodeur (réactivation).
+     * À n'appeler qu'après un check avec existe=true et statut=Active.
      * Pas de catchError générique : le composant a besoin du corps brut des erreurs
      * (429 cooldown avec temps restant, 422 contrat non actif, 400 CGA_ERROR...).
      */

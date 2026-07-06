@@ -63,53 +63,77 @@ public class CanalDecodeurServiceImpl implements CanalDecodeurService {
     }
 
     @Override
+    public CanalApiResult checkDecoder(String numAbonne) {
+        // ⚠ endpoint sous /securecanal/api/ (contrairement à la réactivation) — cf. doc §4.1.
+        // Paramètre en query string, pas de corps. Durée observée sur TEST : ~64 s.
+        String url = baseUrl + "/securecanal/api/check-decoder?numAbonne=" + numAbonne;
+        return callWithAuthRetry(() -> getToken(false), token -> {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(token);
+            long start = System.currentTimeMillis();
+            ResponseEntity<String> response =
+                    restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(headers), String.class);
+            log.info("Canal+ check-decoder {} -> HTTP {} en {} ms",
+                    numAbonne, response.getStatusCode().value(), System.currentTimeMillis() - start);
+            return new CanalApiResult(response.getStatusCode().value(),
+                    response.getBody() != null ? response.getBody() : "{}");
+        }, url);
+    }
+
+    @Override
     public CanalApiResult reactivation(String numAbonne, String phoneNumber) {
+        String url = baseUrl + "/securecanal/reactivation";
+        return callWithAuthRetry(() -> getToken(false), token -> {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(token);
+            var request = new HttpEntity<>(Map.of("numAbonne", numAbonne, "phoneNumber", phoneNumber), headers);
+            long start = System.currentTimeMillis();
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+            log.info("Canal+ reactivation décodeur {} -> HTTP {} en {} ms",
+                    numAbonne, response.getStatusCode().value(), System.currentTimeMillis() - start);
+            return new CanalApiResult(response.getStatusCode().value(),
+                    response.getBody() != null ? response.getBody() : "{}");
+        }, url);
+    }
+
+    /**
+     * Encadre un appel Canal+ : vérification des identifiants, obtention du token,
+     * exécution, et re-login unique si le token a expiré entre-temps (401).
+     */
+    private CanalApiResult callWithAuthRetry(java.util.function.Supplier<String> tokenSupplier,
+                                             java.util.function.Function<String, CanalApiResult> call,
+                                             String url) {
         if (username == null || username.isBlank() || password == null || password.isBlank()) {
             return errorResult(503, "Le service d'actualisation n'est pas encore configuré "
                     + "(identifiants partenaire Canal+ manquants). Contactez l'administrateur.");
         }
-
-        String token = getToken(false);
+        String token = tokenSupplier.get();
         if (token == null) {
             return errorResult(502, "Impossible de s'authentifier auprès du service Canal+. Réessayez plus tard.");
         }
-
-        CanalApiResult result = callReactivation(token, numAbonne, phoneNumber);
-
-        // Token expiré entre-temps -> re-login une seule fois puis nouvelle tentative
+        CanalApiResult result;
+        try {
+            result = call.apply(token);
+        } catch (Exception e) {
+            log.error("Erreur d'appel Canal+ ({}): {}", url, e.getMessage());
+            return errorResult(502, "Le service Canal+ est injoignable ou n'a pas répondu à temps. Réessayez dans un instant.");
+        }
         if (result.status() == 401) {
             log.info("Canal+ token expiré, ré-authentification puis nouvelle tentative");
             token = getToken(true);
             if (token == null) {
                 return errorResult(502, "Impossible de s'authentifier auprès du service Canal+. Réessayez plus tard.");
             }
-            result = callReactivation(token, numAbonne, phoneNumber);
+            try {
+                result = call.apply(token);
+            } catch (Exception e) {
+                log.error("Erreur d'appel Canal+ après re-login ({}): {}", url, e.getMessage());
+                return errorResult(502, "Le service Canal+ est injoignable ou n'a pas répondu à temps. Réessayez dans un instant.");
+            }
         }
         return result;
-    }
-
-    private CanalApiResult callReactivation(String token, String numAbonne, String phoneNumber) {
-        // ⚠ endpoint sous /securecanal/ (PAS /securecanal/api/) — cf. doc §4.1
-        String url = baseUrl + "/securecanal/reactivation";
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setBearerAuth(token);
-            var request = new HttpEntity<>(Map.of("numAbonne", numAbonne, "phoneNumber", phoneNumber), headers);
-
-            long start = System.currentTimeMillis();
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, request, String.class);
-            log.info("Canal+ reactivation décodeur {} -> HTTP {} en {} ms",
-                    numAbonne, response.getStatusCode().value(), System.currentTimeMillis() - start);
-
-            String body = response.getBody() != null ? response.getBody() : "{}";
-            return new CanalApiResult(response.getStatusCode().value(), body);
-        } catch (Exception e) {
-            log.error("Erreur d'appel Canal+ reactivation ({}): {}", url, e.getMessage());
-            return errorResult(502, "Le service Canal+ est injoignable ou n'a pas répondu à temps. "
-                    + "Si l'actualisation a été déclenchée, les chaînes reviendront sous quelques minutes ; "
-                    + "sinon réessayez dans un instant.");
-        }
     }
 
     /** Token partenaire, mis en cache 50 min (expiration réelle : 1 h). */

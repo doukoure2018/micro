@@ -66,6 +66,74 @@
     }
 }
 
+.check-row {
+    display: flex;
+    gap: 8px;
+
+    input {
+        flex: 1;
+    }
+
+    button {
+        white-space: nowrap;
+    }
+}
+
+.abonne-card {
+    border: 1px solid #86efac;
+    background: #f0fdf4;
+    border-radius: 10px;
+    padding: 14px 16px;
+
+    &.abonne-inactif {
+        border-color: #fdba74;
+        background: #fff7ed;
+    }
+
+    .abonne-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+
+        .abonne-title {
+            font-weight: 600;
+            color: #1e293b;
+        }
+    }
+
+    .abonne-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px 20px;
+
+        > div {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .k {
+            font-size: 0.72rem;
+            color: #64748b;
+            text-transform: uppercase;
+        }
+
+        .v {
+            font-weight: 600;
+            color: #1e293b;
+        }
+    }
+
+    .abonne-warning {
+        margin-top: 12px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        background: #ffedd5;
+        color: #9a3412;
+        font-size: 0.85rem;
+    }
+}
+
 .decodeur-processing {
     display: flex;
     align-items: center;

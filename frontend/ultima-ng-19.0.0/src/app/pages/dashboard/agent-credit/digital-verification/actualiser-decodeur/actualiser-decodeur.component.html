@@ -6,23 +6,71 @@
                 <h2 class="decodeur-title">Actualisation Décodeur Canal+</h2>
                 <p class="decodeur-subtitle">
                     Relance le signal d'un décodeur dont l'abonnement est <strong>encore actif</strong> mais dont
-                    les chaînes ne s'affichent plus (coupure, déplacement du décodeur…). Gratuit — le client reçoit
-                    un SMS de confirmation.
+                    les chaînes ne s'affichent plus. <strong>Étape 1 :</strong> vérifier le statut de l'abonnement —
+                    <strong>Étape 2 :</strong> actualiser (gratuit, SMS de confirmation au client).
                 </p>
             </div>
         </div>
 
         <form [formGroup]="form" (ngSubmit)="submit()" class="decodeur-form">
+            <!-- ÉTAPE 1 : numéro + vérification -->
             <div class="field">
                 <label for="numAbonne">Numéro du décodeur <span class="req">*</span></label>
-                <input pInputText id="numAbonne" formControlName="numAbonne" class="w-full"
-                    placeholder="14 chiffres — ex : 24510062007092" maxlength="20" inputmode="numeric"
-                    [attr.disabled]="processing() ? true : null" />
+                <div class="check-row">
+                    <input pInputText id="numAbonne" formControlName="numAbonne" class="w-full"
+                        placeholder="14 chiffres — ex : 24510062007092" maxlength="20" inputmode="numeric"
+                        [attr.disabled]="checking() || processing() ? true : null" />
+                    <button pButton type="button" [label]="checking() ? 'Vérification…' : 'Vérifier'"
+                        icon="pi pi-search" class="p-button-outlined" [loading]="checking()"
+                        [disabled]="form.get('numAbonne')?.invalid || checking() || processing()"
+                        (click)="verifier()"></button>
+                </div>
                 @if (form.get('numAbonne')?.invalid && form.get('numAbonne')?.touched) {
                 <small class="p-error">Le numéro de décodeur doit contenir 14 chiffres</small>
                 }
             </div>
 
+            <!-- Vérification en cours -->
+            @if (checking()) {
+            <div class="decodeur-processing">
+                <p-progressSpinner [style]="{ width: '32px', height: '32px' }"></p-progressSpinner>
+                <p>Consultation du statut de l'abonnement auprès de Canal+ — cela prend environ
+                    <strong>une minute</strong>. Ne fermez pas la page.</p>
+            </div>
+            }
+
+            <!-- Résultat de la vérification -->
+            @if (decoderInfo(); as info) {
+            @if (!info.existe) {
+            <div class="decodeur-result result-error">
+                <i class="pi pi-times-circle"></i>
+                <div>
+                    <p class="result-title">{{ info.message || 'Abonné introuvable' }}</p>
+                    <p class="result-detail">{{ info.conseil || 'Vérifiez que le numéro de décodeur est correct (14 chiffres).' }}</p>
+                </div>
+            </div>
+            } @else {
+            <div class="abonne-card" [class.abonne-inactif]="!canReactivate()">
+                <div class="abonne-header">
+                    <span class="abonne-title"><i class="pi pi-user mr-2"></i>Abonné trouvé</span>
+                    <p-tag [value]="info.statut || 'Inconnu'" [severity]="statutSeverity()"></p-tag>
+                </div>
+                <div class="abonne-grid">
+                    @if (info.nom) { <div><span class="k">Nom</span><span class="v">{{ info.nom }}</span></div> }
+                    @if (info.offre) { <div><span class="k">Offre</span><span class="v">{{ info.offre }}</span></div> }
+                    @if (info.dateFin) { <div><span class="k">Fin d'abonnement</span><span class="v">{{ info.dateFin }}</span></div> }
+                    @if (info.ville) { <div><span class="k">Ville</span><span class="v">{{ info.ville }}</span></div> }
+                </div>
+                @if (!canReactivate()) {
+                <div class="abonne-warning">
+                    <i class="pi pi-exclamation-triangle mr-2"></i>
+                    Contrat non actif : l'actualisation est impossible. Proposez le <strong>réabonnement</strong> au client.
+                </div>
+                }
+            </div>
+
+            <!-- ÉTAPE 2 : téléphone + actualisation (uniquement si contrat Actif) -->
+            @if (canReactivate()) {
             <div class="field">
                 <label for="phoneNumber">Téléphone du client <span class="req">*</span></label>
                 <input pInputText id="phoneNumber" formControlName="phoneNumber" class="w-full"
@@ -37,9 +85,12 @@
             <button pButton type="submit" [label]="processing() ? 'Traitement en cours…' : 'Actualiser les chaînes'"
                 icon="pi pi-sync" [loading]="processing()"
                 [disabled]="form.invalid || processing() || cooldownRemaining() > 0"></button>
+            }
+            }
+            }
         </form>
 
-        <!-- Traitement en cours -->
+        <!-- Actualisation en cours -->
         @if (processing()) {
         <div class="decodeur-processing">
             <p-progressSpinner [style]="{ width: '36px', height: '36px' }"></p-progressSpinner>
@@ -48,7 +99,7 @@
         </div>
         }
 
-        <!-- Résultat -->
+        <!-- Résultat de l'actualisation -->
         @if (result(); as res) {
         <div class="decodeur-result" [ngClass]="'result-' + res.type">
             @switch (res.type) {
@@ -59,6 +110,8 @@
                 <p class="result-detail">Décodeur <strong>{{ res.decodeur }}</strong> — les chaînes reviennent sous
                     quelques minutes. Un SMS de confirmation a été envoyé au client.</p>
                 <p class="result-detail">Prochaine actualisation possible dans 10 minutes pour ce décodeur.</p>
+                <button pButton type="button" label="Nouvelle vérification" icon="pi pi-plus"
+                    class="p-button-outlined p-button-sm mt-2" (click)="nouvelleVerification()"></button>
             </div>
             }
             @case ('cooldown') {

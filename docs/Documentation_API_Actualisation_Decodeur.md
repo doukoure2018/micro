@@ -14,11 +14,13 @@ Version 1.0 - Juillet 2026
 
 3.  Authentification
 
-4.  Actualisation des Chaînes d'un Décodeur
+4.  Étape 1: Consultation du Statut de l'Abonnement (OBLIGATOIRE)
 
-5.  Workflow Complet
+5.  Étape 2: Actualisation des Chaînes du Décodeur
 
-6.  Gestion des Erreurs
+6.  Workflow Complet
+
+7.  Gestion des Erreurs
 
 # 1. Présentation
 
@@ -27,12 +29,12 @@ L'**actualisation des chaînes** (réactivation) permet de relancer le signal d'
 | **Caractéristique** | **Valeur**                                                        |
 |---------------------|-------------------------------------------------------------------|
 | **Coût**            | GRATUIT — aucun débit du compte partenaire                        |
-| **Pré-requis**      | Le décodeur doit avoir un contrat **actif** (sinon → réabonnement) |
+| **Pré-requis**      | **OBLIGATOIRE** : consulter d'abord le statut de l'abonnement (Étape 1) — le contrat doit être **Active** |
 | **Limite**          | 1 actualisation toutes les **10 minutes** par décodeur            |
 | **Notification**    | Un SMS de confirmation est envoyé au client                       |
 | **Durée**           | 30 à 90 secondes (traitement temps réel côté Canal+)              |
 
-**ℹ️ Note:** Si le contrat du décodeur est expiré ou résilié, cette API renvoie une erreur 422 — utilisez alors l'API **Réabonnement** (voir *Documentation API Canal+ Réabonnement V2*).
+**⚠️ ATTENTION:** L'actualisation ne doit JAMAIS être appelée directement. Vous devez **d'abord consulter le statut du réabonnement** du décodeur (Étape 1, endpoint check-decoder). Si le contrat est expiré ou résilié, l'actualisation renvoie une erreur 422 — utilisez alors l'API **Réabonnement** (voir *Documentation API Canal+ Réabonnement V2*).
 
 # 2. Environnements et Configuration
 
@@ -58,9 +60,67 @@ L'authentification est **identique** à celle de l'API Réabonnement : obtenez u
 
 **⚠️ ATTENTION:** Le token expire après 1 heure. Utilisez le refreshToken pour en obtenir un nouveau sans vous reconnecter.
 
-# 4. Actualisation des Chaînes d'un Décodeur
+# 4. Étape 1: Consultation du Statut de l'Abonnement (OBLIGATOIRE)
+
+Avant toute actualisation, vous **devez** consulter le statut du réabonnement du décodeur. Cette étape permet de vérifier que l'abonné existe, que son contrat est **Active**, et d'afficher ses informations au client avant de déclencher l'opération.
 
 ## 4.1 - Détails de l'Endpoint
+
+| **Propriété**        | **Valeur**                                            |
+|----------------------|--------------------------------------------------------|
+| **Méthode**          | POST                                                   |
+| **Endpoint**         | {URL_DE_BASE}/securecanal/api/check-decoder            |
+| **Authentification** | Bearer Token (Obligatoire)                             |
+| **Paramètre Query**  | numAbonne (String) - Numéro du décodeur (14 chiffres)  |
+
+## 4.2 - URLs Concrètes
+
+| **Environnement** | **URL Complète**                                          |
+|-------------------|------------------------------------------------------------|
+| **TEST**          | http://162.19.114.155:8088/securecanal/api/check-decoder  |
+| **PRODUCTION**    | https://api.yigui-io.com/securecanal/api/check-decoder    |
+
+## 4.3 - Exemple d'Appel
+
+```bash
+curl -X POST \
+"{URL_DE_BASE}/securecanal/api/check-decoder?numAbonne=24510062007092" \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer {votre_token}"
+```
+
+## 4.4 - Réponse Success (200)
+
+```json
+{
+"type_recherche": "DECODEUR",
+"existe": true,
+"unique": true,
+"message": "Abonné trouvé",
+"decoder_number": "11499203",
+"nom": "KONE",
+"statut": "Active",
+"offre": "EVASION",
+"date_fin": "04/01/2027",
+"ville": "CONAKRY"
+}
+```
+
+## 4.5 - Règle de Décision (AVANT l'actualisation)
+
+| **Résultat du check-decoder**      | **Action à effectuer**                                     |
+|------------------------------------|-------------------------------------------------------------|
+| existe = false                     | ARRÊT — abonné introuvable, vérifier le numéro saisi        |
+| existe = true et statut = "Active" | ✅ Poursuivre vers l'**Étape 2 : Actualisation**            |
+| existe = true et statut ≠ "Active" | ARRÊT — proposer le **Réabonnement** (contrat expiré/résilié) |
+
+**⚠️ ATTENTION:** N'appelez l'endpoint d'actualisation (Étape 2) QUE si `existe=true` et `statut="Active"`. Dans tous les autres cas, l'actualisation échouera (422) et vous ferez patienter le client inutilement (~1 minute de traitement).
+
+**ℹ️ Note:** Pour le détail complet des champs de réponse du check-decoder, voir la section 3 de la *Documentation API Canal+ Réabonnement V2*.
+
+# 5. Étape 2: Actualisation des Chaînes du Décodeur
+
+## 5.1 - Détails de l'Endpoint
 
 | **Propriété**        | **Valeur**                              |
 |----------------------|------------------------------------------|
@@ -71,14 +131,14 @@ L'authentification est **identique** à celle de l'API Réabonnement : obtenez u
 
 **⚠️ ATTENTION:** Contrairement aux endpoints de réabonnement, cet endpoint est sous `/securecanal/` (et **non** `/securecanal/api/`).
 
-## 4.2 - URLs Concrètes
+## 5.2 - URLs Concrètes
 
 | **Environnement** | **URL Complète**                                      |
 |-------------------|--------------------------------------------------------|
 | **TEST**          | http://162.19.114.155:8088/securecanal/reactivation   |
 | **PRODUCTION**    | https://api.yigui-io.com/securecanal/reactivation     |
 
-## 4.3 - Paramètres du Corps de Requête
+## 5.3 - Paramètres du Corps de Requête
 
 | **Champ**       | **Type** | **Requis** | **Description**                                              |
 |-----------------|----------|------------|--------------------------------------------------------------|
@@ -87,7 +147,7 @@ L'authentification est **identique** à celle de l'API Réabonnement : obtenez u
 
 **⚠️ ATTENTION:** Le numéro de téléphone doit être envoyé SANS l'indicatif pays. Exemple: 621091895 (pas 00224621091895)
 
-## 4.4 - Exemple de Requête
+## 5.4 - Exemple de Requête
 
 ```json
 {
@@ -116,7 +176,7 @@ curl -X POST \
 -d '{"numAbonne": "24510062007092", "phoneNumber": "621091895"}'
 ```
 
-## 4.5 - Réponse Success (201 Created)
+## 5.5 - Réponse Success (201 Created)
 
 L'actualisation a été déclenchée avec succès côté Canal+ :
 
@@ -141,7 +201,7 @@ L'actualisation a été déclenchée avec succès côté Canal+ :
 | **data.cooldownMinutes** | Integer | Délai avant qu'une nouvelle actualisation soit possible |
 | **data.dureeExecution**  | String  | Durée du traitement côté serveur                       |
 
-## 4.6 - Réponse Success Idempotente (200 OK)
+## 5.6 - Réponse Success Idempotente (200 OK)
 
 Une réactivation était **déjà en cours** côté Canal+ pour ce décodeur — le client recevra ses chaînes sous peu, il n'y a rien d'autre à faire :
 
@@ -159,7 +219,7 @@ Une réactivation était **déjà en cours** côté Canal+ pour ce décodeur —
 
 **ℹ️ Note:** Traitez les codes 200 et 201 comme un **succès** dans votre intégration.
 
-# 5. Workflow Complet
+# 6. Workflow Complet
 
 **ÉTAPE 0: AUTHENTIFICATION**
 
@@ -167,15 +227,19 @@ Une réactivation était **déjà en cours** côté Canal+ pour ce décodeur —
 >
 > → Stocker l'accessToken pour les requêtes suivantes
 
-**ÉTAPE 1 (RECOMMANDÉE): VÉRIFICATION DE L'ABONNÉ**
+**ÉTAPE 1 (OBLIGATOIRE): CONSULTATION DU STATUT DU RÉABONNEMENT**
 
 > POST /securecanal/api/check-decoder?numAbonne=XXX
 >
 > → Vérifier existe=true et **statut=Active**
 >
-> → Si statut inactif : proposer le RÉABONNEMENT au lieu de l'actualisation
+> → Afficher les infos au client (nom, offre actuelle, date_fin)
+>
+> → Si existe=false : ARRÊT (numéro invalide)
+>
+> → Si statut ≠ Active : ARRÊT — proposer le RÉABONNEMENT au lieu de l'actualisation
 
-**ÉTAPE 2: ACTUALISATION**
+**ÉTAPE 2: ACTUALISATION (uniquement si statut = Active)**
 
 > POST /securecanal/reactivation
 >
@@ -187,9 +251,9 @@ Une réactivation était **déjà en cours** côté Canal+ pour ce décodeur —
 >
 > → 422 = contrat non actif : rediriger vers le parcours Réabonnement
 
-# 6. Gestion des Erreurs
+# 7. Gestion des Erreurs
 
-## 6.1 - Codes HTTP
+## 7.1 - Codes HTTP
 
 | **Code** | **Status**            | **Description**                                                          |
 |----------|-----------------------|--------------------------------------------------------------------------|
@@ -202,7 +266,7 @@ Une réactivation était **déjà en cours** côté Canal+ pour ce décodeur —
 | **503**  | Service Unavailable   | Service d'actualisation temporairement suspendu par l'administrateur     |
 | **500**  | Server Error          | Erreur interne du serveur                                                |
 
-## 6.2 - Codes d'Erreur Spécifiques (champ data.errorCode)
+## 7.2 - Codes d'Erreur Spécifiques (champ data.errorCode)
 
 | **errorCode**           | **Code HTTP** | **Description**                                                | **Champs additionnels**            |
 |-------------------------|---------------|----------------------------------------------------------------|-------------------------------------|
@@ -242,7 +306,7 @@ Une réactivation était **déjà en cours** côté Canal+ pour ce décodeur —
 }
 ```
 
-## 6.3 - Bonnes Pratiques
+## 7.3 - Bonnes Pratiques
 
 - **Timeout:** Configurez un timeout de **120 secondes minimum** — le traitement est effectué en temps réel côté Canal+ et prend généralement 30 à 90 secondes
 
@@ -256,7 +320,7 @@ Une réactivation était **déjà en cours** côté Canal+ pour ce décodeur —
 
 - **Logs:** Conservez les logs des requêtes et réponses pour le débogage
 
-## 6.4 - Support
+## 7.4 - Support
 
 Pour toute question technique ou problème d'intégration, contactez l'équipe de support avec:
 
