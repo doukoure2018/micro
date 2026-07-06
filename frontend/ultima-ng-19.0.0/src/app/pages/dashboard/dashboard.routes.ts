@@ -74,6 +74,11 @@ export default [
         loadComponent: () => import('./agent-credit/digital-verification/document-verification/document-verification.component').then((c) => c.DocumentVerificationComponent)
     },
     {
+        path: 'actualiser-decodeur',
+        data: { breadcrumb: 'Actualisation Décodeur Canal+' },
+        loadComponent: () => import('./agent-credit/digital-verification/actualiser-decodeur/actualiser-decodeur.component').then((c) => c.ActualiserDecodeurComponent)
+    },
+    {
         path: 'document-verification/documents/:id',
         loadComponent: () => import('./agent-credit/digital-verification/document-verification/document-detail/document-detail.component').then((c) => c.DocumentDetailComponent)
     },

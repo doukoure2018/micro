@@ -20,10 +20,11 @@ import { TabViewModule } from 'primeng/tabview';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
+import { ActualiserDecodeurComponent } from './actualiser-decodeur/actualiser-decodeur.component';
 @Component({
     selector: 'app-digital-verification',
     standalone: true,
-    imports: [CommonModule, ReactiveFormsModule, InputTextModule, ButtonModule, CardModule, TableModule, TagModule, ToastModule, ProgressSpinnerModule, DividerModule, PanelModule, TabViewModule],
+    imports: [CommonModule, ReactiveFormsModule, InputTextModule, ButtonModule, CardModule, TableModule, TagModule, ToastModule, ProgressSpinnerModule, DividerModule, PanelModule, TabViewModule, ActualiserDecodeurComponent],
     templateUrl: './digital-verification.component.html',
     styleUrl: './digital-verification.component.scss'
 })

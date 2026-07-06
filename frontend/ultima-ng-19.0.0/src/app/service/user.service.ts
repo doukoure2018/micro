@@ -910,6 +910,14 @@ export class UserService {
     deleteEtatDocument$ = (etatId: number): Observable<IResponse> => this.http.delete<IResponse>(`${this.server}/ecredit/backoffice/etats/${etatId}`).pipe(tap(console.log), catchError(this.handleError));
 
     /**
+     * Canal+ : actualiser les chaînes d'un décodeur (réactivation).
+     * Pas de catchError générique : le composant a besoin du corps brut des erreurs
+     * (429 cooldown avec temps restant, 422 contrat non actif, 400 CGA_ERROR...).
+     */
+    actualiserDecodeur$ = (numAbonne: string, phoneNumber: string): Observable<any> =>
+        this.http.post<any>(`${this.server}/ecredit/decodeur/reactivation`, { numAbonne, phoneNumber });
+
+    /**
      * Récupérer les statistiques par délégation
      */
     getStatsEtatsDocuments$ = (): Observable<IResponse> => this.http.get<IResponse>(`${this.server}/ecredit/backoffice/stats`).pipe(tap(console.log), catchError(this.handleError));

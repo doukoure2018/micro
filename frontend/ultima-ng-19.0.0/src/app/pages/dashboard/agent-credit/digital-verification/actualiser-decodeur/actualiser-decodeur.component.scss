@@ -1,0 +1,140 @@
+.decodeur-container {
+    max-width: 640px;
+    margin: 0 auto;
+}
+
+.decodeur-header {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    margin-bottom: 20px;
+
+    .decodeur-icon {
+        font-size: 1.9rem;
+        color: #4f46e5;
+        margin-top: 4px;
+    }
+
+    .decodeur-title {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .decodeur-subtitle {
+        margin: 6px 0 0;
+        color: #64748b;
+        font-size: 0.88rem;
+        line-height: 1.4;
+    }
+}
+
+.decodeur-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+
+        label {
+            font-weight: 600;
+            color: #334155;
+            font-size: 0.88rem;
+        }
+
+        .req {
+            color: #ef4444;
+        }
+
+        .hint {
+            color: #94a3b8;
+            font-size: 0.78rem;
+        }
+
+        .p-error {
+            color: #ef4444;
+            font-size: 0.78rem;
+        }
+    }
+
+    button {
+        align-self: flex-start;
+    }
+}
+
+.decodeur-processing {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 18px;
+    padding: 14px;
+    border-radius: 10px;
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
+    color: #3730a3;
+
+    p {
+        margin: 0;
+        font-size: 0.88rem;
+    }
+}
+
+.decodeur-result {
+    position: relative;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin-top: 18px;
+    padding: 16px;
+    border-radius: 10px;
+    border: 1px solid;
+
+    i {
+        font-size: 1.5rem;
+        margin-top: 2px;
+    }
+
+    .result-title {
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .result-detail {
+        margin: 6px 0 0;
+        font-size: 0.85rem;
+    }
+
+    .result-close {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+    }
+
+    &.result-success {
+        background: #f0fdf4;
+        border-color: #86efac;
+        color: #166534;
+    }
+
+    &.result-cooldown {
+        background: #fffbeb;
+        border-color: #fcd34d;
+        color: #92400e;
+    }
+
+    &.result-inactive {
+        background: #fff7ed;
+        border-color: #fdba74;
+        color: #9a3412;
+    }
+
+    &.result-error {
+        background: #fef2f2;
+        border-color: #fca5a5;
+        color: #991b1b;
+    }
+}

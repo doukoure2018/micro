@@ -166,6 +166,11 @@ export class AppMenu {
                                               routerLink: ['/dashboards/document-verification']
                                           },
                                           {
+                                              label: 'Actualiser décodeur',
+                                              icon: 'pi pi-fw pi-sync',
+                                              routerLink: ['/dashboards/actualiser-decodeur']
+                                          },
+                                          {
                                               label: 'Mes avances de salaire',
                                               icon: 'pi pi-fw pi-list',
                                               routerLink: ['/dashboards/mes-demandes-salaire']

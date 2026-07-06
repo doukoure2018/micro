@@ -148,6 +148,14 @@ rapprochement:
     grace-period-minutes: 15
     timezone: "Africa/Conakry"
 
+# API partenaire Canal+ (Yigui) — actualisation des chaînes décodeur.
+# TEST par défaut ; en prod, surcharger via CANAL_API_* (.env.prod / docker-compose).
+canal:
+  api:
+    base-url: ${CANAL_API_BASE_URL:http://162.19.114.155:8088}
+    username: ${CANAL_API_USERNAME:}
+    password: ${CANAL_API_PASSWORD:}
+
 orange:
   api:
     oauth:

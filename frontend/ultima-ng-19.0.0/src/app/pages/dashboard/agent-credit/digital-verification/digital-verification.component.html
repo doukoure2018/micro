@@ -720,4 +720,17 @@
             </p-tabPanel>
         </p-tabView>
     </div>
+
+    <!-- Actualisation Décodeur Canal+ (toujours visible, indépendant de la recherche client) -->
+    <div class="mt-4">
+        <p-panel [toggleable]="true" [collapsed]="true">
+            <ng-template pTemplate="header">
+                <span class="flex align-items-center gap-2">
+                    <i class="pi pi-sync"></i>
+                    <span class="font-semibold">Actualisation Décodeur Canal+</span>
+                </span>
+            </ng-template>
+            <app-actualiser-decodeur></app-actualiser-decodeur>
+        </p-panel>
+    </div>
 </div>

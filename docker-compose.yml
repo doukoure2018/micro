@@ -283,6 +283,10 @@ services:
       SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_QUERY_CACHE: "false"
       SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_REGION_FACTORY_CLASS: "org.hibernate.cache.internal.NoCachingRegionFactory"
       FILE_BASE_URL: https://digi-creditrural-io.com/ecredit/files
+      # API Canal+ (actualisation décodeur) — renseigner CANAL_API_* dans .env.prod
+      CANAL_API_BASE_URL: ${CANAL_API_BASE_URL:-http://162.19.114.155:8088}
+      CANAL_API_USERNAME: ${CANAL_API_USERNAME:-}
+      CANAL_API_PASSWORD: ${CANAL_API_PASSWORD:-}
     volumes:
       - ./keys:/app/keys
       - ./logs/ecreditservice:/var/log/ecreditservice

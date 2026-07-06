@@ -1,0 +1,93 @@
+<div class="decodeur-container">
+    <p-card>
+        <div class="decodeur-header">
+            <i class="pi pi-sync decodeur-icon"></i>
+            <div>
+                <h2 class="decodeur-title">Actualisation Décodeur Canal+</h2>
+                <p class="decodeur-subtitle">
+                    Relance le signal d'un décodeur dont l'abonnement est <strong>encore actif</strong> mais dont
+                    les chaînes ne s'affichent plus (coupure, déplacement du décodeur…). Gratuit — le client reçoit
+                    un SMS de confirmation.
+                </p>
+            </div>
+        </div>
+
+        <form [formGroup]="form" (ngSubmit)="submit()" class="decodeur-form">
+            <div class="field">
+                <label for="numAbonne">Numéro du décodeur <span class="req">*</span></label>
+                <input pInputText id="numAbonne" formControlName="numAbonne" class="w-full"
+                    placeholder="14 chiffres — ex : 24510062007092" maxlength="20" inputmode="numeric"
+                    [attr.disabled]="processing() ? true : null" />
+                @if (form.get('numAbonne')?.invalid && form.get('numAbonne')?.touched) {
+                <small class="p-error">Le numéro de décodeur doit contenir 14 chiffres</small>
+                }
+            </div>
+
+            <div class="field">
+                <label for="phoneNumber">Téléphone du client <span class="req">*</span></label>
+                <input pInputText id="phoneNumber" formControlName="phoneNumber" class="w-full"
+                    placeholder="Sans indicatif — ex : 621091895" maxlength="14" inputmode="tel"
+                    [attr.disabled]="processing() ? true : null" />
+                @if (form.get('phoneNumber')?.invalid && form.get('phoneNumber')?.touched) {
+                <small class="p-error">9 chiffres, sans l'indicatif pays</small>
+                }
+                <small class="hint">Le SMS de confirmation Canal+ sera envoyé à ce numéro.</small>
+            </div>
+
+            <button pButton type="submit" [label]="processing() ? 'Traitement en cours…' : 'Actualiser les chaînes'"
+                icon="pi pi-sync" [loading]="processing()"
+                [disabled]="form.invalid || processing() || cooldownRemaining() > 0"></button>
+        </form>
+
+        <!-- Traitement en cours -->
+        @if (processing()) {
+        <div class="decodeur-processing">
+            <p-progressSpinner [style]="{ width: '36px', height: '36px' }"></p-progressSpinner>
+            <p>Traitement temps réel côté Canal+ — cela prend généralement <strong>30 à 90 secondes</strong>.
+                Ne fermez pas la page.</p>
+        </div>
+        }
+
+        <!-- Résultat -->
+        @if (result(); as res) {
+        <div class="decodeur-result" [ngClass]="'result-' + res.type">
+            @switch (res.type) {
+            @case ('success') {
+            <i class="pi pi-check-circle"></i>
+            <div>
+                <p class="result-title">{{ res.message }}</p>
+                <p class="result-detail">Décodeur <strong>{{ res.decodeur }}</strong> — les chaînes reviennent sous
+                    quelques minutes. Un SMS de confirmation a été envoyé au client.</p>
+                <p class="result-detail">Prochaine actualisation possible dans 10 minutes pour ce décodeur.</p>
+            </div>
+            }
+            @case ('cooldown') {
+            <i class="pi pi-clock"></i>
+            <div>
+                <p class="result-title">{{ res.message }}</p>
+                @if (cooldownRemaining() > 0) {
+                <p class="result-detail">Réessayez dans <strong>{{ formatCooldown() }}</strong>
+                    (décodeur {{ res.decodeur }}).</p>
+                }
+            </div>
+            }
+            @case ('inactive') {
+            <i class="pi pi-exclamation-triangle"></i>
+            <div>
+                <p class="result-title">{{ res.message }}</p>
+                <p class="result-detail">{{ res.suggestion }}</p>
+            </div>
+            }
+            @default {
+            <i class="pi pi-times-circle"></i>
+            <div>
+                <p class="result-title">{{ res.message }}</p>
+            </div>
+            }
+            }
+            <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-sm result-close"
+                (click)="reset()"></button>
+        </div>
+        }
+    </p-card>
+</div>
