@@ -529,3 +529,7 @@ volumes:
 networks:
   spring:
     driver: bridge
+    # Nom explicite (identique au nom généré par compose) : déterministe pour les outils
+    # externes comme le conteneur Flyway du déploiement, même si des réseaux orphelins
+    # "microservices_*" traînent sur l'hôte.
+    name: microservices_spring

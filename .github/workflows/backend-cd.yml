@@ -221,14 +221,15 @@ jobs:
                 echo "ℹ️ Aucune migration à appliquer"
                 return 0
               fi
-              # Le réseau compose est indispensable pour résoudre "postgrecontainer".
-              # On REFUSE le fallback "bridge" (sinon Flyway ne joint pas la base).
-              NETWORK_NAME=$(sudo docker network ls --filter name=microservices --format "{{.Name}}" | head -1)
+              # Rejoindre le réseau où vit RÉELLEMENT postgrecontainer (ne pas deviner par
+              # filtre de nom : un réseau orphelin "microservices_default" passait avant
+              # "microservices_spring" avec head -1 -> UnknownHostException: postgrecontainer).
+              NETWORK_NAME=$(sudo docker inspect postgrecontainer --format '{{range $k, $v := .NetworkSettings.Networks}}{{$k}}{{"\n"}}{{end}}' 2>/dev/null | head -1)
               if [ -z "$NETWORK_NAME" ]; then
-                echo "❌ FATAL: réseau Docker 'microservices' introuvable — impossible de joindre la base pour les migrations."
+                echo "❌ FATAL: impossible de déterminer le réseau de postgrecontainer — migrations impossibles."
                 exit 1
               fi
-              echo "🔗 Réseau Flyway: $NETWORK_NAME"
+              echo "🔗 Réseau Flyway: $NETWORK_NAME (réseau effectif de postgrecontainer)"
               if ! sudo docker run --rm \
                 --network "$NETWORK_NAME" \
                 -v "$(pwd)/micro-digiservices/database-migrations/src/main/resources/db/migration:/flyway/sql:ro" \
