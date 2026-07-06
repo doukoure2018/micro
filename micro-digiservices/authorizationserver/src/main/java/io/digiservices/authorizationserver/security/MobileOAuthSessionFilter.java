@@ -23,6 +23,13 @@ public class MobileOAuthSessionFilter implements Filter {
     private static final String MOBILE_CLIENT_ID = "mobile-app-client";
     public static final String MOBILE_AUTH_COOKIE = "MOBILE_OAUTH_URL";
     public static final String MOBILE_LOGIN_DONE_COOKIE = "MOBILE_LOGIN_DONE";
+    /**
+     * Filet de sécurité pour le flux WEB : URL complète de /oauth2/authorize mémorisée en session.
+     * Si la SavedRequest standard est perdue (écrasée par une ressource non permitAll, multi-onglets,
+     * session recréée...), le successHandler du login peut reprendre le flux OAuth2 grâce à cette URL
+     * au lieu de rediriger vers la SPA sans code (cause du "double login").
+     */
+    public static final String WEB_AUTH_SESSION_KEY = "WEB_OAUTH_URL_SESSION";
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
@@ -96,6 +103,15 @@ public class MobileOAuthSessionFilter implements Filter {
                 }
 
                 log.info("✅ Mobile auth cookie set - will redirect to login");
+            } else if ("GET".equalsIgnoreCase(httpRequest.getMethod())) {
+                // Flux WEB (SPA) : mémoriser l'URL d'autorisation complète en session.
+                // Sert de fallback au successHandler si la SavedRequest standard est perdue.
+                String fullOAuthUrl = httpRequest.getRequestURL().toString();
+                if (httpRequest.getQueryString() != null) {
+                    fullOAuthUrl += "?" + httpRequest.getQueryString();
+                }
+                httpRequest.getSession(true).setAttribute(WEB_AUTH_SESSION_KEY, fullOAuthUrl);
+                log.info("🌐 Web OAuth2 request - URL saved in session as login fallback");
             }
             log.info("========================================");
         }

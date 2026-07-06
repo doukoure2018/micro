@@ -206,9 +206,26 @@ public class AuthorizationServerConfig {
                             log.info("📋 Found saved request: {}", redirectUrl);
                             if (redirectUrl.contains("/oauth2/authorize")) {
                                 log.info("➡️ Redirecting to OAuth2 flow");
+                                // Le fallback web devient inutile : on le nettoie pour éviter
+                                // une reprise obsolète lors d'un login ultérieur dans la même session.
+                                session.removeAttribute(MobileOAuthSessionFilter.WEB_AUTH_SESSION_KEY);
                                 response.sendRedirect(redirectUrl);
                                 return;
                             }
+                        }
+                    }
+
+                    // Priorité 3: Fallback web — URL /oauth2/authorize mémorisée par MobileOAuthSessionFilter.
+                    // Reprend le flux OAuth2 quand la SavedRequest a été perdue (ressource non permitAll,
+                    // multi-onglets, session recréée...) au lieu de renvoyer vers la SPA sans code,
+                    // ce qui obligeait l'utilisateur à "se connecter deux fois".
+                    if (session != null) {
+                        Object webOAuthUrl = session.getAttribute(MobileOAuthSessionFilter.WEB_AUTH_SESSION_KEY);
+                        if (webOAuthUrl != null && !webOAuthUrl.toString().isEmpty()) {
+                            log.info("🌐 Resuming OAuth2 flow from session fallback");
+                            session.removeAttribute(MobileOAuthSessionFilter.WEB_AUTH_SESSION_KEY);
+                            response.sendRedirect(webOAuthUrl.toString());
+                            return;
                         }
                     }
 

@@ -37,11 +37,18 @@ public class UserAuthenticationProvider implements AuthenticationProvider {
             if(encoder.matches((String) authentication.getCredentials(), user.getPassword())) {
                 return authenticated(user, "[PROTECTED]", commaSeparatedStringToAuthorityList(user.getRole() + "," + user.getAuthorities()));
             } else throw new BadCredentialsException("Incorrect email/password. Please try again.");
-        } catch (BadCredentialsException | ApiException | LockedException | CredentialsExpiredException |
-                 DisabledException exception) {
-            throw new ApiException(exception.getMessage());
+        } catch (AuthenticationException exception) {
+            // Laisser remonter telles quelles (BadCredentials, Locked, Disabled, CredentialsExpired...) :
+            // le filtre de login les gère (failureHandler -> /login?error) et le ProviderManager publie
+            // l'AuthenticationFailureEvent (incrément du compteur de tentatives). Les envelopper dans une
+            // RuntimeException produisait une erreur 500 brute et court-circuitait tout ce mécanisme.
+            throw exception;
+        } catch (ApiException exception) {
+            // Exception métier (ex: utilisateur introuvable) -> échec d'authentification standard
+            throw new BadCredentialsException(exception.getMessage());
         } catch (Exception exception) {
-            throw new ApiException("Unable to authenticate. Please try again.");
+            log.error("Unexpected error during authentication for {}: {}", email, exception.getMessage());
+            throw new AuthenticationServiceException("Unable to authenticate. Please try again.");
         }
     }
 
