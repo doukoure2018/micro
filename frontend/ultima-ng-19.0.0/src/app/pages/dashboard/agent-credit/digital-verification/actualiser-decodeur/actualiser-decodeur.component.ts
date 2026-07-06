@@ -64,8 +64,7 @@ export class ActualiserDecodeurComponent implements OnDestroy {
     private cooldownTimer: ReturnType<typeof setInterval> | null = null;
 
     form: FormGroup = this.fb.group({
-        numAbonne: ['', [Validators.required, Validators.pattern(/^[\d\s]{14,20}$/)]],
-        phoneNumber: ['', [Validators.required, Validators.pattern(/^(\+?224|00224)?[\d\s]{9,14}$/)]]
+        numAbonne: ['', [Validators.required, Validators.pattern(/^[\d\s]{14,20}$/)]]
     });
 
     constructor() {
@@ -154,10 +153,9 @@ export class ActualiserDecodeurComponent implements OnDestroy {
         this.processing.set(true);
 
         const numAbonne = this.checkedNumAbonne();
-        const phoneNumber = (this.form.value.phoneNumber || '').replace(/\s/g, '');
 
         this.userService
-            .actualiserDecodeur$(numAbonne, phoneNumber)
+            .actualiserDecodeur$(numAbonne)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (response) => {

@@ -7,7 +7,7 @@
                 <p class="decodeur-subtitle">
                     Relance le signal d'un décodeur dont l'abonnement est <strong>encore actif</strong> mais dont
                     les chaînes ne s'affichent plus. <strong>Étape 1 :</strong> vérifier le statut de l'abonnement —
-                    <strong>Étape 2 :</strong> actualiser (gratuit, SMS de confirmation au client).
+                    <strong>Étape 2 :</strong> actualiser (gratuit).
                 </p>
             </div>
         </div>
@@ -69,19 +69,8 @@
                 }
             </div>
 
-            <!-- ÉTAPE 2 : téléphone + actualisation (uniquement si contrat Actif) -->
+            <!-- ÉTAPE 2 : actualisation directe (uniquement si contrat Actif) -->
             @if (canReactivate()) {
-            <div class="field">
-                <label for="phoneNumber">Téléphone du client <span class="req">*</span></label>
-                <input pInputText id="phoneNumber" formControlName="phoneNumber" class="w-full"
-                    placeholder="Sans indicatif — ex : 621091895" maxlength="14" inputmode="tel"
-                    [attr.disabled]="processing() ? true : null" />
-                @if (form.get('phoneNumber')?.invalid && form.get('phoneNumber')?.touched) {
-                <small class="p-error">9 chiffres, sans l'indicatif pays</small>
-                }
-                <small class="hint">Le SMS de confirmation Canal+ sera envoyé à ce numéro.</small>
-            </div>
-
             <button pButton type="submit" [label]="processing() ? 'Traitement en cours…' : 'Actualiser les chaînes'"
                 icon="pi pi-sync" [loading]="processing()"
                 [disabled]="form.invalid || processing() || cooldownRemaining() > 0"></button>
@@ -108,7 +97,7 @@
             <div>
                 <p class="result-title">{{ res.message }}</p>
                 <p class="result-detail">Décodeur <strong>{{ res.decodeur }}</strong> — les chaînes reviennent sous
-                    quelques minutes. Un SMS de confirmation a été envoyé au client.</p>
+                    quelques minutes.</p>
                 <p class="result-detail">Prochaine actualisation possible dans 10 minutes pour ce décodeur.</p>
                 <button pButton type="button" label="Nouvelle vérification" icon="pi pi-plus"
                     class="p-button-outlined p-button-sm mt-2" (click)="nouvelleVerification()"></button>

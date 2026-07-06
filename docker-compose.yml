@@ -287,6 +287,7 @@ services:
       CANAL_API_BASE_URL: ${CANAL_API_BASE_URL:-http://162.19.114.155:8088}
       CANAL_API_USERNAME: ${CANAL_API_USERNAME:-}
       CANAL_API_PASSWORD: ${CANAL_API_PASSWORD:-}
+      CANAL_API_DEFAULT_PHONE: ${CANAL_API_DEFAULT_PHONE:-621674147}
     volumes:
       - ./keys:/app/keys
       - ./logs/ecreditservice:/var/log/ecreditservice

@@ -919,11 +919,13 @@ export class UserService {
     /**
      * Canal+ ÉTAPE 2 : actualiser les chaînes d'un décodeur (réactivation).
      * À n'appeler qu'après un check avec existe=true et statut=Active.
+     * Le téléphone n'est plus saisi par l'agent : le backend envoie un numéro
+     * de service par défaut pour le SMS de confirmation.
      * Pas de catchError générique : le composant a besoin du corps brut des erreurs
      * (429 cooldown avec temps restant, 422 contrat non actif, 400 CGA_ERROR...).
      */
-    actualiserDecodeur$ = (numAbonne: string, phoneNumber: string): Observable<any> =>
-        this.http.post<any>(`${this.server}/ecredit/decodeur/reactivation`, { numAbonne, phoneNumber });
+    actualiserDecodeur$ = (numAbonne: string): Observable<any> =>
+        this.http.post<any>(`${this.server}/ecredit/decodeur/reactivation`, { numAbonne });
 
     /**
      * Récupérer les statistiques par délégation

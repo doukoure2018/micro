@@ -31,6 +31,14 @@ public class CanalDecodeurResource {
     private final CanalDecodeurService canalDecodeurService;
 
     /**
+     * Numéro de service utilisé pour le SMS de confirmation Canal+ quand l'agent
+     * ne saisit pas le téléphone du client (parcours simplifié : décodeur -> statut
+     * -> actualisation directe). Sans indicatif pays.
+     */
+    @org.springframework.beans.factory.annotation.Value("${canal.api.default-phone:621674147}")
+    private String defaultSmsPhone;
+
+    /**
      * ÉTAPE 1 (OBLIGATOIRE) : consultation du statut de l'abonnement du décodeur.
      * À appeler AVANT toute actualisation — le frontend n'autorise l'étape 2 que si
      * existe=true et statut=Active. Traitement temps réel côté Canal+ (~60 s).
@@ -54,12 +62,16 @@ public class CanalDecodeurResource {
     public ResponseEntity<String> reactivation(Authentication authentication,
                                                @Valid @RequestBody ReactivationDecodeurRequest request) {
         String numAbonne = normalizeDigits(request.getNumAbonne());
-        String phone = normalizePhone(request.getPhoneNumber());
 
         if (!numAbonne.matches("\\d{14}")) {
             return badRequest("Le numéro de décodeur doit contenir exactement 14 chiffres");
         }
-        if (!phone.matches("\\d{9}")) {
+
+        // Téléphone facultatif : à défaut, le SMS de confirmation part vers le numéro de service.
+        String phone = normalizePhone(request.getPhoneNumber());
+        if (phone.isEmpty()) {
+            phone = defaultSmsPhone;
+        } else if (!phone.matches("\\d{9}")) {
             return badRequest("Le numéro de téléphone doit contenir 9 chiffres, sans l'indicatif pays (ex: 621091895)");
         }
 

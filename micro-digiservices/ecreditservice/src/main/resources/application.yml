@@ -155,6 +155,9 @@ canal:
     base-url: ${CANAL_API_BASE_URL:http://162.19.114.155:8088}
     username: ${CANAL_API_USERNAME:}
     password: ${CANAL_API_PASSWORD:}
+    # Numéro de service (sans indicatif) recevant le SMS de confirmation Canal+
+    # quand l'agent ne saisit pas le téléphone du client
+    default-phone: ${CANAL_API_DEFAULT_PHONE:621674147}
 
 orange:
   api:
