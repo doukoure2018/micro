@@ -17,6 +17,7 @@ import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -70,6 +71,9 @@ public class CanalDecodeurServiceImpl implements CanalDecodeurService {
         return callWithAuthRetry(() -> getToken(false), token -> {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
+            // Accept JSON explicite : sans lui, RestTemplate annonce application/xml AVANT
+            // application/json et l'API partenaire répond alors en XML (constaté en prod).
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             headers.setBearerAuth(token);
             long start = System.currentTimeMillis();
             ResponseEntity<String> response =
@@ -87,6 +91,9 @@ public class CanalDecodeurServiceImpl implements CanalDecodeurService {
         return callWithAuthRetry(() -> getToken(false), token -> {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
+            // Accept JSON explicite : sans lui, RestTemplate annonce application/xml AVANT
+            // application/json et l'API partenaire répond alors en XML (constaté en prod).
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             headers.setBearerAuth(token);
             var request = new HttpEntity<>(Map.of("numAbonne", numAbonne, "phoneNumber", phoneNumber), headers);
             long start = System.currentTimeMillis();
@@ -144,6 +151,9 @@ public class CanalDecodeurServiceImpl implements CanalDecodeurService {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
+            // Accept JSON explicite : sans lui, RestTemplate annonce application/xml AVANT
+            // application/json et l'API partenaire répond alors en XML (constaté en prod).
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             // Contrat validé sur l'environnement TEST (2026-07-06) : le champ attendu est
             // "email" (un {"username": ...} renvoie 400 "Email cannot be empty") et le token
             // est retourné sous data.access_token.
