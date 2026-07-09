@@ -15,6 +15,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -644,6 +645,7 @@ public class UserResource {
      * Mettre à jour l'autorisation d'un utilisateur
      * PUT /user/authorization/{userId}
      */
+    @PreAuthorize("hasAuthority('SUPER_ADMIN')")
     @PutMapping("/authorization/{userId}")
     public ResponseEntity<Response> updateUserAuthorization(
             @NotNull Authentication authentication,
@@ -775,6 +777,7 @@ public class UserResource {
      * Modifier le rôle d'un utilisateur par son ID
      * PUT /user/role/{userId}?role=AGENT_CREDIT
      */
+    @PreAuthorize("hasAuthority('SUPER_ADMIN')")
     @PutMapping("/role/{userId}")
     public ResponseEntity<Response> updateUserRoleById(
             @NotNull Authentication authentication,
@@ -885,6 +888,7 @@ public class UserResource {
      * Modifier le mot de passe d'un utilisateur par son ID (action administrateur).
      * PUT /user/password/{userId}
      */
+    @PreAuthorize("hasAuthority('SUPER_ADMIN')")
     @PutMapping("/password/{userId}")
     public ResponseEntity<Response> updateUserPasswordById(
             @NotNull Authentication authentication,
