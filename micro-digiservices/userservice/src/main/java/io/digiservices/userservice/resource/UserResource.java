@@ -287,7 +287,14 @@ public class UserResource {
 
     @GetMapping("/image/{filename}")
     public byte []  getPhoto(@PathVariable("filename") String filename) throws IOException {
-        return Files.readAllBytes((Paths.get(PHOTO_DIRECTORY + filename)));
+        // Garde-fou path traversal : on confine strictement la lecture au répertoire des photos.
+        // Toute tentative de sortie (../, chemins absolus) est rejetée avant l'accès disque.
+        java.nio.file.Path base = Paths.get(PHOTO_DIRECTORY).toAbsolutePath().normalize();
+        java.nio.file.Path resolved = base.resolve(filename).normalize();
+        if (!resolved.startsWith(base) || !Files.exists(resolved) || Files.isDirectory(resolved)) {
+            throw new ApiException("Image introuvable");
+        }
+        return Files.readAllBytes(resolved);
     }
 
     private URI getUri() {
