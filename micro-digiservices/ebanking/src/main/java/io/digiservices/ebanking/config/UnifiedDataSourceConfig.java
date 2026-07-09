@@ -71,10 +71,14 @@ public class UnifiedDataSourceConfig {
         config.setMaximumPoolSize(3);
         config.setMinimumIdle(0);
         config.setConnectionTimeout(180000);
-        config.setInitializationFailTimeout(180000);
+        // Résilience VPN : ne PAS bloquer/crasher au démarrage si SQL est injoignable.
+        // Le pool démarre et se (re)connecte à la demande dès que le tunnel revient.
+        config.setInitializationFailTimeout(-1);
         config.setIdleTimeout(600000);
         config.setMaxLifetime(1200000);
         config.setValidationTimeout(30000);
+        // Détecte les connexions mortes après une coupure VPN et les remplace.
+        config.setKeepaliveTime(120000);
 
         config.setConnectionTestQuery("SELECT 1");
         config.setLeakDetectionThreshold(300000);
@@ -91,8 +95,8 @@ public class UnifiedDataSourceConfig {
             testConnectionAsync(dataSource, "Production");
             return dataSource;
         } catch (Exception e) {
-            log.error("Erreur lors de la création du DataSource Production", e);
-            throw new RuntimeException("Impossible de créer le DataSource Production", e);
+            log.warn("DataSource Production non disponible au demarrage (VPN ?), les connexions seront tentees a la demande", e);
+            return new HikariDataSource(config);
         }
     }
 
@@ -116,10 +120,14 @@ public class UnifiedDataSourceConfig {
         config.setMaximumPoolSize(3);
         config.setMinimumIdle(0);
         config.setConnectionTimeout(180000);
-        config.setInitializationFailTimeout(180000);
+        // Résilience VPN : ne PAS bloquer/crasher au démarrage si SQL est injoignable.
+        // Le pool démarre et se (re)connecte à la demande dès que le tunnel revient.
+        config.setInitializationFailTimeout(-1);
         config.setIdleTimeout(600000);
         config.setMaxLifetime(1200000);
         config.setValidationTimeout(30000);
+        // Détecte les connexions mortes après une coupure VPN et les remplace.
+        config.setKeepaliveTime(120000);
 
         config.setConnectionTestQuery("SELECT 1");
         config.setLeakDetectionThreshold(300000);
@@ -136,8 +144,8 @@ public class UnifiedDataSourceConfig {
             testConnectionAsync(dataSource, "Middleware");
             return dataSource;
         } catch (Exception e) {
-            log.error("Erreur lors de la création du DataSource Middleware", e);
-            throw new RuntimeException("Impossible de créer le DataSource Middleware", e);
+            log.warn("DataSource Middleware non disponible au demarrage (VPN ?), les connexions seront tentees a la demande", e);
+            return new HikariDataSource(config);
         }
     }
 
