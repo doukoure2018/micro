@@ -4,6 +4,7 @@ import io.digiservices.agriculteurservice.dto.AgenceDto;
 import io.digiservices.agriculteurservice.dto.AgriculteurDto;
 import io.digiservices.agriculteurservice.dto.CooperativeDto;
 import io.digiservices.agriculteurservice.dto.CreditAgricoleDto;
+import io.digiservices.agriculteurservice.dto.EcheanceDto;
 import io.digiservices.agriculteurservice.dto.MembreCooperativeDto;
 import io.digiservices.agriculteurservice.dto.PageDto;
 import io.digiservices.agriculteurservice.service.AgriculteurService;
@@ -58,6 +59,12 @@ public class AgriculteurServiceImpl implements AgriculteurService {
     @Override
     public CreditAgricoleDto getCredit(Long numeroCredit) {
         return mapper.toCreditAgricole(ebankingAgriClient.getCreditDetail(numeroCredit));
+    }
+
+    @Override
+    public List<EcheanceDto> getRepaymentSchedule(Long numeroCredit) {
+        return ebankingAgriClient.getRepaymentSchedule(numeroCredit).stream()
+                .map(mapper::toEcheance).toList();
     }
 
     @Override

@@ -4,6 +4,7 @@ import io.digiservices.agriculteurservice.dto.AgenceDto;
 import io.digiservices.agriculteurservice.dto.AgriculteurDto;
 import io.digiservices.agriculteurservice.dto.CooperativeDto;
 import io.digiservices.agriculteurservice.dto.CreditAgricoleDto;
+import io.digiservices.agriculteurservice.dto.EcheanceDto;
 import io.digiservices.agriculteurservice.dto.MembreCooperativeDto;
 import io.digiservices.agriculteurservice.dto.PageDto;
 import io.digiservices.agriculteurservice.exception.BadRequestException;
@@ -74,6 +75,12 @@ public class AgriculteurResource {
     public ResponseEntity<CreditAgricoleDto> getCredit(@PathVariable("creditId") Long creditId) {
         log.info("[AGRI] GET /agriculteurs/credits/{}", creditId);
         return ResponseEntity.ok(agriculteurService.getCredit(creditId));
+    }
+
+    @GetMapping("/credits/{creditId}/repayment-schedule")
+    public ResponseEntity<List<EcheanceDto>> getRepaymentSchedule(@PathVariable("creditId") Long creditId) {
+        log.info("[AGRI] GET /agriculteurs/credits/{}/repayment-schedule", creditId);
+        return ResponseEntity.ok(agriculteurService.getRepaymentSchedule(creditId));
     }
 
     @GetMapping("/cooperatives")

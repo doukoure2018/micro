@@ -3,17 +3,25 @@ package io.digiservices.ebanking.service.impl;
 import io.digiservices.ebanking.exception.ResourceNotFoundException;
 import io.digiservices.clients.agri.AgriAgencyDto;
 import io.digiservices.clients.agri.AgriCreditDto;
+import io.digiservices.clients.agri.AgriInstallmentDto;
 import io.digiservices.clients.agri.CooperativeDto;
 import io.digiservices.clients.agri.CooperativeMemberDto;
 import io.digiservices.clients.agri.FarmerDto;
 import io.digiservices.clients.agri.PageDto;
+import io.digiservices.ebanking.paylaod.PlanPagosDto;
 import io.digiservices.ebanking.repository.AgriculteurRepository;
 import io.digiservices.ebanking.service.AgriculteurService;
+import io.digiservices.ebanking.service.PlanPagosService;
 import io.digiservices.ebanking.utils.SafTranslator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -30,8 +38,12 @@ import java.util.List;
 @Slf4j
 public class AgriculteurServiceImpl implements AgriculteurService {
 
+    /** Au-dela de ce retard (jours) sur une echeance impayee, on la marque "missed" plutot que "late". */
+    private static final int MISSED_THRESHOLD_DAYS = 90;
+
     private final AgriculteurRepository agriculteurRepository;
     private final SafTranslator safTranslator;
+    private final PlanPagosService planPagosService;
 
     @Override
     public List<AgriAgencyDto> getAllAgencies() {
@@ -83,6 +95,46 @@ public class AgriculteurServiceImpl implements AgriculteurService {
         }
         enrichCredit(credit);
         return credit;
+    }
+
+    @Override
+    public List<AgriInstallmentDto> getRepaymentSchedule(Long numCredito) {
+        LocalDate today = LocalDate.now();
+        return planPagosService.getEcheancesParCredit(numCredito).stream()
+                .map(p -> toInstallment(p, today))
+                .sorted(Comparator.comparing(AgriInstallmentDto::getDueDate,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
+    }
+
+    /**
+     * Derive une echeance publique a partir de la ligne SAF PR_PLAN_PAGOS :
+     * statut (pending/paid/late/missed) et jours de retard calcules depuis les dates.
+     */
+    private AgriInstallmentDto toInstallment(PlanPagosDto p, LocalDate today) {
+        LocalDate dueDate = p.getFecCuota() == null ? null : p.getFecCuota().toLocalDate();
+        // Date de solde effectif de l'echeance : FEC_CANCELACION, a defaut FEC_REAL_CUOTA.
+        LocalDateTime paid = p.getFEC_CANCELACION() != null ? p.getFEC_CANCELACION() : p.getFEC_REAL_CUOTA();
+        LocalDate paidDate = paid == null ? null : paid.toLocalDate();
+        BigDecimal amount = p.getMON_CUOTA();
+
+        String status;
+        long daysLate;
+        BigDecimal paidAmount;
+        if (paidDate != null) {
+            status = "paid";
+            daysLate = (dueDate == null) ? 0 : Math.max(0, ChronoUnit.DAYS.between(dueDate, paidDate));
+            paidAmount = amount; // echeance soldee
+        } else if (dueDate == null || !dueDate.isBefore(today)) {
+            status = "pending";
+            daysLate = 0;
+            paidAmount = null;
+        } else {
+            daysLate = ChronoUnit.DAYS.between(dueDate, today);
+            status = daysLate > MISSED_THRESHOLD_DAYS ? "missed" : "late";
+            paidAmount = null;
+        }
+        return new AgriInstallmentDto(dueDate, amount, status, paidDate, paidAmount, daysLate);
     }
 
     @Override

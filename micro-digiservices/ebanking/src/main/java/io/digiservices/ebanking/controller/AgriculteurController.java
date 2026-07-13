@@ -3,6 +3,7 @@ package io.digiservices.ebanking.controller;
 import io.digiservices.ebanking.exception.BlogAPIException;
 import io.digiservices.clients.agri.AgriAgencyDto;
 import io.digiservices.clients.agri.AgriCreditDto;
+import io.digiservices.clients.agri.AgriInstallmentDto;
 import io.digiservices.clients.agri.CooperativeDto;
 import io.digiservices.clients.agri.CooperativeMemberDto;
 import io.digiservices.clients.agri.FarmerDto;
@@ -79,6 +80,13 @@ public class AgriculteurController {
     public ResponseEntity<AgriCreditDto> getCreditDetail(@PathVariable("numCredito") Long numCredito) {
         log.info("[AGRI] GET /credits/{}/detail", numCredito);
         return ResponseEntity.ok(agriculteurService.getCreditDetail(numCredito));
+    }
+
+    @GetMapping("/credits/{numCredito}/repayment-schedule")
+    public ResponseEntity<List<AgriInstallmentDto>> getRepaymentSchedule(
+            @PathVariable("numCredito") Long numCredito) {
+        log.info("[AGRI] GET /credits/{}/repayment-schedule", numCredito);
+        return ResponseEntity.ok(agriculteurService.getRepaymentSchedule(numCredito));
     }
 
     @GetMapping("/cooperatives")

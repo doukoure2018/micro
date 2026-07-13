@@ -6,6 +6,7 @@ import io.digiservices.agriculteurservice.dto.AgriculteurMoraleDto;
 import io.digiservices.agriculteurservice.dto.AgriculteurPhysiqueDto;
 import io.digiservices.agriculteurservice.dto.CooperativeDto;
 import io.digiservices.agriculteurservice.dto.CreditAgricoleDto;
+import io.digiservices.agriculteurservice.dto.EcheanceDto;
 import io.digiservices.agriculteurservice.dto.MembreCooperativeDto;
 import io.digiservices.agriculteurservice.dto.PageDto;
 import lombok.RequiredArgsConstructor;
@@ -86,6 +87,14 @@ public class AgriMapper {
         dto.setCodeAssociation(src.getCodAsociacion());
         dto.setAssociation(src.getDesAsociacion());
         return dto;
+    }
+
+    public EcheanceDto toEcheance(io.digiservices.clients.agri.AgriInstallmentDto src) {
+        if (src == null) {
+            return null;
+        }
+        return new EcheanceDto(src.getDueDate(), src.getAmount(), src.getStatus(),
+                src.getPaidDate(), src.getPaidAmount(), src.getDaysLate());
     }
 
     public CooperativeDto toCooperative(io.digiservices.clients.agri.CooperativeDto src) {

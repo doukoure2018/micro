@@ -4,6 +4,7 @@ import io.digiservices.agriculteurservice.dto.AgenceDto;
 import io.digiservices.agriculteurservice.dto.AgriculteurDto;
 import io.digiservices.agriculteurservice.dto.CooperativeDto;
 import io.digiservices.agriculteurservice.dto.CreditAgricoleDto;
+import io.digiservices.agriculteurservice.dto.EcheanceDto;
 import io.digiservices.agriculteurservice.dto.MembreCooperativeDto;
 import io.digiservices.agriculteurservice.dto.PageDto;
 
@@ -26,6 +27,8 @@ public interface AgriculteurService {
     List<CreditAgricoleDto> getCreditsByFarmer(String codeClient);
 
     CreditAgricoleDto getCredit(Long numeroCredit);
+
+    List<EcheanceDto> getRepaymentSchedule(Long numeroCredit);
 
     PageDto<CooperativeDto> getCooperatives(int page, int size);
 

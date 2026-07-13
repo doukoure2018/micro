@@ -2,6 +2,7 @@ package io.digiservices.clients;
 
 import io.digiservices.clients.agri.AgriAgencyDto;
 import io.digiservices.clients.agri.AgriCreditDto;
+import io.digiservices.clients.agri.AgriInstallmentDto;
 import io.digiservices.clients.agri.CooperativeDto;
 import io.digiservices.clients.agri.CooperativeMemberDto;
 import io.digiservices.clients.agri.FarmerDto;
@@ -45,6 +46,9 @@ public interface EbankingAgriClient {
 
     @GetMapping("/ebanking/agri/credits/{numCredito}/detail")
     AgriCreditDto getCreditDetail(@PathVariable("numCredito") Long numCredito);
+
+    @GetMapping("/ebanking/agri/credits/{numCredito}/repayment-schedule")
+    List<AgriInstallmentDto> getRepaymentSchedule(@PathVariable("numCredito") Long numCredito);
 
     @GetMapping("/ebanking/agri/cooperatives")
     PageDto<CooperativeDto> getCooperatives(

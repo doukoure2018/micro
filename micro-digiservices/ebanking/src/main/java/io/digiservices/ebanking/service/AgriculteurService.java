@@ -2,6 +2,7 @@ package io.digiservices.ebanking.service;
 
 import io.digiservices.clients.agri.AgriAgencyDto;
 import io.digiservices.clients.agri.AgriCreditDto;
+import io.digiservices.clients.agri.AgriInstallmentDto;
 import io.digiservices.clients.agri.CooperativeDto;
 import io.digiservices.clients.agri.CooperativeMemberDto;
 import io.digiservices.clients.agri.FarmerDto;
@@ -26,6 +27,8 @@ public interface AgriculteurService {
     List<AgriCreditDto> getAgriculturalCreditsByClient(String codCliente);
 
     AgriCreditDto getCreditDetail(Long numCredito);
+
+    List<AgriInstallmentDto> getRepaymentSchedule(Long numCredito);
 
     PageDto<CooperativeDto> getCooperatives(int page, int size);
 
