@@ -1,14 +1,17 @@
 package io.digiservices.agriculteurservice.utils;
 
+import io.digiservices.agriculteurservice.dto.AgenceCrgDto;
 import io.digiservices.agriculteurservice.dto.AgenceDto;
 import io.digiservices.agriculteurservice.dto.AgriculteurDto;
 import io.digiservices.agriculteurservice.dto.AgriculteurMoraleDto;
 import io.digiservices.agriculteurservice.dto.AgriculteurPhysiqueDto;
 import io.digiservices.agriculteurservice.dto.CooperativeDto;
 import io.digiservices.agriculteurservice.dto.CreditAgricoleDto;
+import io.digiservices.agriculteurservice.dto.DelegationDto;
 import io.digiservices.agriculteurservice.dto.EcheanceDto;
 import io.digiservices.agriculteurservice.dto.MembreCooperativeDto;
 import io.digiservices.agriculteurservice.dto.PageDto;
+import io.digiservices.agriculteurservice.dto.PointDeVenteDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -87,6 +90,28 @@ public class AgriMapper {
         dto.setCodeAssociation(src.getCodAsociacion());
         dto.setAssociation(src.getDesAsociacion());
         return dto;
+    }
+
+    public DelegationDto toDelegation(io.digiservices.clients.domain.DelegationDto src) {
+        if (src == null) {
+            return null;
+        }
+        return new DelegationDto(src.getId(), src.getLibele());
+    }
+
+    public AgenceCrgDto toAgenceCrg(io.digiservices.clients.domain.AgenceDto src) {
+        if (src == null) {
+            return null;
+        }
+        return new AgenceCrgDto(src.getId(), src.getLibele(), src.getDelegation_id());
+    }
+
+    public PointDeVenteDto toPointDeVente(io.digiservices.clients.domain.PointVenteDto src) {
+        if (src == null) {
+            return null;
+        }
+        return new PointDeVenteDto(src.getId(), src.getLibele(), src.getCode(),
+                src.getAgence_id(), src.getDelegation_id());
     }
 
     public EcheanceDto toEcheance(io.digiservices.clients.agri.AgriInstallmentDto src) {

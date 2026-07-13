@@ -1,12 +1,15 @@
 package io.digiservices.agriculteurservice.service;
 
+import io.digiservices.agriculteurservice.dto.AgenceCrgDto;
 import io.digiservices.agriculteurservice.dto.AgenceDto;
 import io.digiservices.agriculteurservice.dto.AgriculteurDto;
 import io.digiservices.agriculteurservice.dto.CooperativeDto;
 import io.digiservices.agriculteurservice.dto.CreditAgricoleDto;
+import io.digiservices.agriculteurservice.dto.DelegationDto;
 import io.digiservices.agriculteurservice.dto.EcheanceDto;
 import io.digiservices.agriculteurservice.dto.MembreCooperativeDto;
 import io.digiservices.agriculteurservice.dto.PageDto;
+import io.digiservices.agriculteurservice.dto.PointDeVenteDto;
 
 import java.util.List;
 
@@ -35,4 +38,14 @@ public interface AgriculteurService {
     CooperativeDto getCooperative(String codeGroupe);
 
     PageDto<MembreCooperativeDto> getCooperativeMembers(String codeGroupe, int page, int size);
+
+    // --- Referentiel organisationnel (habilitation / perimetre des agents) ---
+
+    List<DelegationDto> getDelegations();
+
+    List<AgenceCrgDto> getAgencesByDelegation(Long delegationId);
+
+    List<PointDeVenteDto> getPointsDeVenteByAgence(Long agenceId);
+
+    List<PointDeVenteDto> getPointsDeVenteByDelegation(Long delegationId);
 }

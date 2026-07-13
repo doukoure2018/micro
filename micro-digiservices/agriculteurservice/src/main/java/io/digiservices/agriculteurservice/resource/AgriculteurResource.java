@@ -1,12 +1,15 @@
 package io.digiservices.agriculteurservice.resource;
 
+import io.digiservices.agriculteurservice.dto.AgenceCrgDto;
 import io.digiservices.agriculteurservice.dto.AgenceDto;
 import io.digiservices.agriculteurservice.dto.AgriculteurDto;
 import io.digiservices.agriculteurservice.dto.CooperativeDto;
 import io.digiservices.agriculteurservice.dto.CreditAgricoleDto;
+import io.digiservices.agriculteurservice.dto.DelegationDto;
 import io.digiservices.agriculteurservice.dto.EcheanceDto;
 import io.digiservices.agriculteurservice.dto.MembreCooperativeDto;
 import io.digiservices.agriculteurservice.dto.PageDto;
+import io.digiservices.agriculteurservice.dto.PointDeVenteDto;
 import io.digiservices.agriculteurservice.exception.BadRequestException;
 import io.digiservices.agriculteurservice.service.AgriculteurService;
 import lombok.RequiredArgsConstructor;
@@ -106,6 +109,39 @@ public class AgriculteurResource {
         validatePagination(page, size);
         log.info("[AGRI] GET /agriculteurs/cooperatives/{}/members page={} size={}", groupId, page, size);
         return ResponseEntity.ok(agriculteurService.getCooperativeMembers(groupId, page, size));
+    }
+
+    // ============================================================
+    //  Referentiel organisationnel (perimetre / cloisonnement des agents)
+    //  Hierarchie : delegation ("region") -> agence -> point de vente.
+    //  Les id exposes correspondent a ceux portes par le SSO des agents.
+    // ============================================================
+
+    @GetMapping("/structure/delegations")
+    public ResponseEntity<List<DelegationDto>> getDelegations() {
+        log.info("[AGRI] GET /agriculteurs/structure/delegations");
+        return ResponseEntity.ok(agriculteurService.getDelegations());
+    }
+
+    @GetMapping("/structure/delegations/{delegationId}/agences")
+    public ResponseEntity<List<AgenceCrgDto>> getAgencesByDelegation(
+            @PathVariable("delegationId") Long delegationId) {
+        log.info("[AGRI] GET /agriculteurs/structure/delegations/{}/agences", delegationId);
+        return ResponseEntity.ok(agriculteurService.getAgencesByDelegation(delegationId));
+    }
+
+    @GetMapping("/structure/agences/{agenceId}/points-de-vente")
+    public ResponseEntity<List<PointDeVenteDto>> getPointsDeVenteByAgence(
+            @PathVariable("agenceId") Long agenceId) {
+        log.info("[AGRI] GET /agriculteurs/structure/agences/{}/points-de-vente", agenceId);
+        return ResponseEntity.ok(agriculteurService.getPointsDeVenteByAgence(agenceId));
+    }
+
+    @GetMapping("/structure/delegations/{delegationId}/points-de-vente")
+    public ResponseEntity<List<PointDeVenteDto>> getPointsDeVenteByDelegation(
+            @PathVariable("delegationId") Long delegationId) {
+        log.info("[AGRI] GET /agriculteurs/structure/delegations/{}/points-de-vente", delegationId);
+        return ResponseEntity.ok(agriculteurService.getPointsDeVenteByDelegation(delegationId));
     }
 
     /** page &gt;= 0 et 1 &le; size &le; 100, sinon HTTP 400. */

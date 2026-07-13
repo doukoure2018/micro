@@ -1,20 +1,25 @@
 package io.digiservices.agriculteurservice.service.impl;
 
+import io.digiservices.agriculteurservice.dto.AgenceCrgDto;
 import io.digiservices.agriculteurservice.dto.AgenceDto;
 import io.digiservices.agriculteurservice.dto.AgriculteurDto;
 import io.digiservices.agriculteurservice.dto.CooperativeDto;
 import io.digiservices.agriculteurservice.dto.CreditAgricoleDto;
+import io.digiservices.agriculteurservice.dto.DelegationDto;
 import io.digiservices.agriculteurservice.dto.EcheanceDto;
 import io.digiservices.agriculteurservice.dto.MembreCooperativeDto;
 import io.digiservices.agriculteurservice.dto.PageDto;
+import io.digiservices.agriculteurservice.dto.PointDeVenteDto;
 import io.digiservices.agriculteurservice.service.AgriculteurService;
 import io.digiservices.agriculteurservice.utils.AgriMapper;
 import io.digiservices.clients.EbankingAgriClient;
+import io.digiservices.clients.UserClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Implementation : delegue a {@link EbankingAgriClient} (Feign) et mappe les
@@ -27,6 +32,7 @@ import java.util.List;
 public class AgriculteurServiceImpl implements AgriculteurService {
 
     private final EbankingAgriClient ebankingAgriClient;
+    private final UserClient userClient;
     private final AgriMapper mapper;
 
     @Override
@@ -81,5 +87,31 @@ public class AgriculteurServiceImpl implements AgriculteurService {
     public PageDto<MembreCooperativeDto> getCooperativeMembers(String codeGroupe, int page, int size) {
         return mapper.toPage(ebankingAgriClient.getCooperativeMembers(codeGroupe, page, size),
                 mapper::toMembre);
+    }
+
+    // --- Referentiel organisationnel : delegue a userservice (PostgreSQL, hors VPN) ---
+
+    @Override
+    public List<DelegationDto> getDelegations() {
+        return userClient.getAllDelegationOffLine().stream().map(mapper::toDelegation).toList();
+    }
+
+    @Override
+    public List<AgenceCrgDto> getAgencesByDelegation(Long delegationId) {
+        return userClient.allAgenceOfLine().stream()
+                .filter(a -> Objects.equals(delegationId, a.getDelegation_id()))
+                .map(mapper::toAgenceCrg).toList();
+    }
+
+    @Override
+    public List<PointDeVenteDto> getPointsDeVenteByAgence(Long agenceId) {
+        return userClient.getAllPointVentes(agenceId).stream().map(mapper::toPointDeVente).toList();
+    }
+
+    @Override
+    public List<PointDeVenteDto> getPointsDeVenteByDelegation(Long delegationId) {
+        return userClient.pointVenteOffline().stream()
+                .filter(p -> Objects.equals(delegationId, p.getDelegation_id()))
+                .map(mapper::toPointDeVente).toList();
     }
 }
