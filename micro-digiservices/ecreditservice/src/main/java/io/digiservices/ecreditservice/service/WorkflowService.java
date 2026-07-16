@@ -39,4 +39,12 @@ public interface WorkflowService {
     List<WorkflowDemandeDto> getValidesDE();
     void validerDE(Long demandeId, String avis, String validatedBy);
     void rejeterDE(Long demandeId, WorkflowRejetRequest request, String validatedBy);
+
+    // DG
+    List<WorkflowDemandeDto> getAValiderDG();
+    List<WorkflowDemandeDto> getRejetsDGAConfirmer();
+    List<WorkflowDemandeDto> getValidesDG();
+    void validerDG(Long demandeId, String avis, String validatedBy);
+    void rejeterDG(Long demandeId, String motifRejet, String validatedBy);
+    void confirmerRejetDG(Long demandeId, String instructions, String confirmedBy);
 }

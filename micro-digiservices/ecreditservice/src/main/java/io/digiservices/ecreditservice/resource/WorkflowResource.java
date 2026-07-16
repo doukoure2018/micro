@@ -289,4 +289,75 @@ public class WorkflowResource {
                 getResponse(httpRequest, Map.of("message", "Demande rejetée par DE"),
                         "Demande rejetée DE", OK));
     }
+
+    // ==================== DG (Directeur General) ====================
+
+    @GetMapping("/a-valider-dg")
+    public ResponseEntity<Response> getAValiderDG(HttpServletRequest httpRequest) {
+        var result = workflowService.getAValiderDG();
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("workflowDemandes", result),
+                        "Demandes à valider DG récupérées", OK));
+    }
+
+    @GetMapping("/valides-dg")
+    public ResponseEntity<Response> getValidesDG(HttpServletRequest httpRequest) {
+        var result = workflowService.getValidesDG();
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("workflowDemandes", result),
+                        "Credits vises par DG recuperes", OK));
+    }
+
+    @PutMapping("/{demandeId}/valider-dg")
+    public ResponseEntity<Response> validerDG(
+            @PathVariable Long demandeId,
+            @RequestBody WorkflowApprovalRequest request,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        String validatedBy = user.getFirstName() + " " + user.getLastName();
+        workflowService.validerDG(demandeId, request.getAvis(), validatedBy);
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("message", "Demande validee par DG"),
+                        "Visa favorable DG enregistre", OK));
+    }
+
+    @PutMapping("/{demandeId}/rejeter-dg")
+    public ResponseEntity<Response> rejeterDG(
+            @PathVariable Long demandeId,
+            @RequestBody WorkflowRejetRequest request,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        String validatedBy = user.getFirstName() + " " + user.getLastName();
+        workflowService.rejeterDG(demandeId, request.getMotifRejet(), validatedBy);
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("message", "Demande rejetee par DG"),
+                        "Rejet DG enregistre (en attente de confirmation DE)", OK));
+    }
+
+    // ==================== DE - Confirmation du rejet DG ====================
+
+    @GetMapping("/rejets-dg-a-confirmer")
+    public ResponseEntity<Response> getRejetsDGAConfirmer(HttpServletRequest httpRequest) {
+        var result = workflowService.getRejetsDGAConfirmer();
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("workflowDemandes", result),
+                        "Rejets DG a confirmer recuperes", OK));
+    }
+
+    @PutMapping("/{demandeId}/confirmer-rejet-dg")
+    public ResponseEntity<Response> confirmerRejetDG(
+            @PathVariable Long demandeId,
+            @RequestBody(required = false) WorkflowApprovalRequest request,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        String confirmedBy = user.getFirstName() + " " + user.getLastName();
+        String instructions = request != null ? request.getAvis() : null;
+        workflowService.confirmerRejetDG(demandeId, instructions, confirmedBy);
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("message", "Rejet DG confirme"),
+                        "Rejet confirme, demande renvoyee en correction", OK));
+    }
 }

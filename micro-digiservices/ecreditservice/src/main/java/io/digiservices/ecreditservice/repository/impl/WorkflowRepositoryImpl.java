@@ -333,4 +333,78 @@ public class WorkflowRepositoryImpl implements WorkflowRepository {
             throw new ApiException("Erreur lors du rejet: " + e.getMessage());
         }
     }
+
+    // ==================== DG ====================
+
+    @Override
+    public List<WorkflowDemandeDto> getAValiderDG() {
+        try {
+            return jdbcClient.sql(SELECT_A_VALIDER_DG).query(WorkflowDemandeDto.class).list();
+        } catch (Exception e) {
+            log.error("Erreur récupération demandes à valider DG: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la récupération: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public List<WorkflowDemandeDto> getRejetsDGAConfirmer() {
+        try {
+            return jdbcClient.sql(SELECT_REJETS_DG_A_CONFIRMER).query(WorkflowDemandeDto.class).list();
+        } catch (Exception e) {
+            log.error("Erreur récupération rejets DG à confirmer: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la récupération: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public List<WorkflowDemandeDto> getValidesDG() {
+        try {
+            return jdbcClient.sql(SELECT_VALIDES_DG).query(WorkflowDemandeDto.class).list();
+        } catch (Exception e) {
+            log.error("Erreur récupération crédits validés DG: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la récupération: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public int validerDG(Long demandeId, String avis, String validatedBy) {
+        try {
+            return jdbcClient.sql(UPDATE_VALIDER_DG)
+                    .param("demandeId", demandeId)
+                    .param("avis", avis)
+                    .param("validatedBy", validatedBy)
+                    .update();
+        } catch (Exception e) {
+            log.error("Erreur validation DG: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la validation: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public int rejeterDG(Long demandeId, String motifRejet, String validatedBy) {
+        try {
+            return jdbcClient.sql(UPDATE_REJETER_DG)
+                    .param("demandeId", demandeId)
+                    .param("motifRejet", motifRejet)
+                    .param("validatedBy", validatedBy)
+                    .update();
+        } catch (Exception e) {
+            log.error("Erreur rejet DG: {}", e.getMessage());
+            throw new ApiException("Erreur lors du rejet: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public int confirmerRejetDG(Long demandeId, String instructions, String confirmedBy) {
+        try {
+            return jdbcClient.sql(UPDATE_CONFIRMER_REJET_DG)
+                    .param("demandeId", demandeId)
+                    .param("instructions", instructions)
+                    .param("confirmedBy", confirmedBy)
+                    .update();
+        } catch (Exception e) {
+            log.error("Erreur confirmation rejet DG: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la confirmation: " + e.getMessage());
+        }
+    }
 }

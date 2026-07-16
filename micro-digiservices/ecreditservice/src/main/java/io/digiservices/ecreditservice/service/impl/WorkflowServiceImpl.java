@@ -179,6 +179,56 @@ public class WorkflowServiceImpl implements WorkflowService {
         }
     }
 
+    // ==================== DG ====================
+
+    @Override
+    public List<WorkflowDemandeDto> getAValiderDG() {
+        return workflowRepository.getAValiderDG();
+    }
+
+    @Override
+    public List<WorkflowDemandeDto> getRejetsDGAConfirmer() {
+        return workflowRepository.getRejetsDGAConfirmer();
+    }
+
+    @Override
+    public List<WorkflowDemandeDto> getValidesDG() {
+        return workflowRepository.getValidesDG();
+    }
+
+    @Override
+    @Transactional
+    public void validerDG(Long demandeId, String avis, String validatedBy) {
+        log.info("Visa favorable DG par {} pour demande {}", validatedBy, demandeId);
+        int rows = workflowRepository.validerDG(demandeId, avis, validatedBy);
+        if (rows == 0) {
+            throw new ApiException("Demande non trouvée ou état invalide pour la validation DG");
+        }
+    }
+
+    @Override
+    @Transactional
+    public void rejeterDG(Long demandeId, String motifRejet, String validatedBy) {
+        if (motifRejet == null || motifRejet.isBlank()) {
+            throw new ApiException("Les remarques (motif) du rejet DG sont obligatoires");
+        }
+        log.info("Rejet DG par {} pour demande {}", validatedBy, demandeId);
+        int rows = workflowRepository.rejeterDG(demandeId, motifRejet, validatedBy);
+        if (rows == 0) {
+            throw new ApiException("Demande non trouvée ou état invalide pour le rejet DG");
+        }
+    }
+
+    @Override
+    @Transactional
+    public void confirmerRejetDG(Long demandeId, String instructions, String confirmedBy) {
+        log.info("Confirmation du rejet DG par le DE {} pour demande {}", confirmedBy, demandeId);
+        int rows = workflowRepository.confirmerRejetDG(demandeId, instructions, confirmedBy);
+        if (rows == 0) {
+            throw new ApiException("Demande non trouvée ou état invalide pour la confirmation du rejet DG");
+        }
+    }
+
     private void validateRejetRequest(WorkflowRejetRequest request) {
         if (request.getMotifRejet() == null || request.getMotifRejet().isBlank()) {
             throw new ApiException("Le motif de rejet est obligatoire");

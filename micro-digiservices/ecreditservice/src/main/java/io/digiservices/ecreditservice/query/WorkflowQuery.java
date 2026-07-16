@@ -339,9 +339,14 @@ public class WorkflowQuery {
 
     // ==================== DE ACTIONS ====================
 
+    // Aiguillage montant : les credits >= 100 000 000 partent au DG (PENDING_DG) au lieu
+    // d'etre finalises directement (VALIDATED_FINAL). En dessous du seuil, comportement inchange.
     public static final String UPDATE_VALIDER_DE = """
             UPDATE demandeindividuel
-            SET validation_state = 'VALIDATED_FINAL',
+            SET validation_state = CASE
+                                       WHEN COALESCE(montant_demande, 0) >= 100000000 THEN 'PENDING_DG'
+                                       ELSE 'VALIDATED_FINAL'
+                                   END,
                 avis_de = :avis,
                 validated_by_de = :validatedBy,
                 date_validation_de = CURRENT_TIMESTAMP,
@@ -439,5 +444,117 @@ public class WorkflowQuery {
             WHERE demandeindividuel_id = :demandeId
               AND validation_state = 'SELECTION'
               AND statut_demande = 'EN_ATTENTE'
+            """;
+
+    // ==================== DG (Directeur General) ====================
+
+    /** Credits en attente de visa DG : valides par le DE avec montant >= 100M (etat PENDING_DG). National. */
+    public static final String SELECT_A_VALIDER_DG = """
+            SELECT d.demandeindividuel_id AS "demandeIndividuelId",
+                   d.nom, d.prenom, d.telephone,
+                   d.numero_membre AS "numeroMembre",
+                   d.delegation, d.agence, d.pos,
+                   d.montant_demande AS "montantDemande",
+                   d.object_credit AS "objectCredit",
+                   d.validation_state AS "validationState",
+                   d.statut_demande AS "statutDemande",
+                   d.avis_agent_credit AS "avisAgentCredit",
+                   d.avis_da AS "avisDa",
+                   d.avis_dr AS "avisDr",
+                   d.avis_de AS "avisDe",
+                   d.validated_by_de AS "validatedByDe",
+                   d.date_validation_de AS "dateValidationDe",
+                   d.createdat AS "createdAt",
+                   del.libele AS "delegationLibele",
+                   ag.libele AS "agenceLibele"
+            FROM demandeindividuel d
+            LEFT JOIN delegation del ON d.delegation = del.id
+            LEFT JOIN agence ag ON d.agence = ag.id
+            WHERE d.validation_state = 'PENDING_DG'
+            ORDER BY d.montant_demande DESC, d.createdat DESC
+            """;
+
+    /** Rejets DG en attente de confirmation par le DE. National. */
+    public static final String SELECT_REJETS_DG_A_CONFIRMER = """
+            SELECT d.demandeindividuel_id AS "demandeIndividuelId",
+                   d.nom, d.prenom, d.telephone,
+                   d.numero_membre AS "numeroMembre",
+                   d.delegation, d.agence, d.pos,
+                   d.montant_demande AS "montantDemande",
+                   d.object_credit AS "objectCredit",
+                   d.validation_state AS "validationState",
+                   d.statut_demande AS "statutDemande",
+                   d.avis_de AS "avisDe",
+                   d.motif_rejet_dg AS "motifRejetDg",
+                   d.validated_by_dg AS "validatedByDg",
+                   d.date_rejet_dg AS "dateRejetDg",
+                   d.createdat AS "createdAt",
+                   del.libele AS "delegationLibele",
+                   ag.libele AS "agenceLibele"
+            FROM demandeindividuel d
+            LEFT JOIN delegation del ON d.delegation = del.id
+            LEFT JOIN agence ag ON d.agence = ag.id
+            WHERE d.validation_state = 'REJETE_DG'
+            ORDER BY d.date_rejet_dg DESC NULLS LAST, d.createdat DESC
+            """;
+
+    /** Credits vises favorablement par le DG (historique). */
+    public static final String SELECT_VALIDES_DG = """
+            SELECT d.demandeindividuel_id AS "demandeIndividuelId",
+                   d.nom, d.prenom, d.telephone,
+                   d.numero_membre AS "numeroMembre",
+                   d.delegation, d.agence, d.pos,
+                   d.montant_demande AS "montantDemande",
+                   d.object_credit AS "objectCredit",
+                   d.validation_state AS "validationState",
+                   d.statut_demande AS "statutDemande",
+                   d.avis_de AS "avisDe",
+                   d.avis_dg AS "avisDg",
+                   d.validated_by_dg AS "validatedByDg",
+                   d.date_validation_dg AS "dateValidationDg",
+                   d.createdat AS "createdAt",
+                   del.libele AS "delegationLibele",
+                   ag.libele AS "agenceLibele"
+            FROM demandeindividuel d
+            LEFT JOIN delegation del ON d.delegation = del.id
+            LEFT JOIN agence ag ON d.agence = ag.id
+            WHERE d.validation_state = 'VALIDATED_FINAL'
+              AND d.date_validation_dg IS NOT NULL
+            ORDER BY d.date_validation_dg DESC NULLS LAST, d.createdat DESC
+            """;
+
+    public static final String UPDATE_VALIDER_DG = """
+            UPDATE demandeindividuel
+            SET validation_state = 'VALIDATED_FINAL',
+                avis_dg = :avis,
+                validated_by_dg = :validatedBy,
+                date_validation_dg = CURRENT_TIMESTAMP,
+                motif_rejet_dg = NULL,
+                date_rejet_dg = NULL
+            WHERE demandeindividuel_id = :demandeId
+              AND validation_state = 'PENDING_DG'
+            """;
+
+    /** Rejet DG : remarques simples (motif libre, pas de sections). */
+    public static final String UPDATE_REJETER_DG = """
+            UPDATE demandeindividuel
+            SET validation_state = 'REJETE_DG',
+                motif_rejet_dg = :motifRejet,
+                validated_by_dg = :validatedBy,
+                date_rejet_dg = CURRENT_TIMESTAMP,
+                date_validation_dg = NULL
+            WHERE demandeindividuel_id = :demandeId
+              AND validation_state = 'PENDING_DG'
+            """;
+
+    /** Le DE confirme le rejet DG -> la demande repart en CORRECTION vers l'agent. */
+    public static final String UPDATE_CONFIRMER_REJET_DG = """
+            UPDATE demandeindividuel
+            SET validation_state = 'CORRECTION',
+                instructions_de = :instructions,
+                confirmed_by_de = :confirmedBy,
+                date_confirmation_rejet_de = CURRENT_TIMESTAMP
+            WHERE demandeindividuel_id = :demandeId
+              AND validation_state = 'REJETE_DG'
             """;
 }

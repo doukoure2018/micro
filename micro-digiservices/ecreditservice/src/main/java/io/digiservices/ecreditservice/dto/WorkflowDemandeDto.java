@@ -60,4 +60,14 @@ public class WorkflowDemandeDto {
     private String motifRejetDe;
     private String sectionsARevoirDe;
     private String instructionsDr;
+    // Validation DG
+    private String avisDg;
+    private String motifRejetDg;
+    private String validatedByDg;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss.SSSSSS")
+    private LocalDateTime dateValidationDg;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss.SSSSSS")
+    private LocalDateTime dateRejetDg;
 }

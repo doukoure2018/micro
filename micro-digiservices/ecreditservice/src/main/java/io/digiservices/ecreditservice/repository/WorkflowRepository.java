@@ -45,4 +45,12 @@ public interface WorkflowRepository {
     // DE actions
     int validerDE(Long demandeId, String avis, String validatedBy);
     int rejeterDE(Long demandeId, WorkflowRejetRequest request, String validatedBy);
+
+    // DG
+    List<WorkflowDemandeDto> getAValiderDG();
+    List<WorkflowDemandeDto> getRejetsDGAConfirmer();
+    List<WorkflowDemandeDto> getValidesDG();
+    int validerDG(Long demandeId, String avis, String validatedBy);
+    int rejeterDG(Long demandeId, String motifRejet, String validatedBy);
+    int confirmerRejetDG(Long demandeId, String instructions, String confirmedBy);
 }
