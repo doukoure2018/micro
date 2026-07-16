@@ -604,6 +604,13 @@
                 </button>
             </div>
         </div>
+        <small *ngIf="correctionForm.invalid && !state().submitting" class="p-error block mt-2">
+            Des champs obligatoires ne sont pas renseignes (verifiez notamment : Delegation, Agence,
+            Point de service, Type d'activite / Sous-activite, Type de credit).
+        </small>
+        <small *ngIf="state().garanties.length === 0 && !state().submitting" class="p-error block mt-1">
+            Au moins une garantie est requise pour sauvegarder.
+        </small>
     </form>
 
     <!-- Dialog Garantie -->

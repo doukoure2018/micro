@@ -458,7 +458,10 @@
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
         <!-- SECTION TRAITEMENT DE LA DEMANDE (Assignment)                          -->
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
-        <div *ngIf="state().demandeIndividuel?.validationState !== 'SELECTION'"
+        <!-- Formulaire d'AFFECTATION : visible uniquement en phase d'affectation initiale
+             (action = AFFECTATION/SELECTION, cad EN_ATTENTE + NOUVEAU). En phase de validation
+             (action = VALIDATION), il est masque -> ce sont les formulaires DA/DR/DE qui prennent le relais. -->
+        <div *ngIf="state().demandeIndividuel?.statutDemande === 'EN_ATTENTE' && state().demandeIndividuel?.validationState === 'NOUVEAU'"
             class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-orange-300 mb-8">
             <div class="bg-orange-500 text-white px-6 py-4 flex items-center gap-3">
                 <i class="pi pi-send text-xl"></i>

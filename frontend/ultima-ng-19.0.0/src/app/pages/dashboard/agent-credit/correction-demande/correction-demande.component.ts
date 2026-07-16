@@ -309,32 +309,64 @@ export class CorrectionDemandeComponent implements OnInit {
     }
 
     private populateForm(demande: any): void {
-        // Find delegation/agence/PV objects from loaded lists
-        const allDelegations = this.state().allDelegations || [];
-        const allAgences = this.state().allAgences || [];
-        const allPointsVente = this.state().allPointsVente || [];
+        // Resolution robuste delegation/agence/point de vente.
+        // 1) comparaison TOLERANTE (String) -> gere les mismatchs number/string entre l'API et les listes.
+        // 2) si l'entite est absente des listes chargees (hors perimetre de l'agent correcteur),
+        //    on injecte un objet minimal pour que le p-dropdown puisse l'afficher et que le
+        //    champ 'required' reste VALIDE (sinon le bouton Sauvegarder reste bloque).
+        const allDelegations = [...(this.state().allDelegations || [])];
+        const allAgences = [...(this.state().allAgences || [])];
+        const allPointsVente = [...(this.state().allPointsVente || [])];
 
-        const delegation = allDelegations.find((d: any) => d.id === demande.delegation) || undefined;
-        const agence = allAgences.find((a: any) => a.id === demande.agence) || undefined;
-        const pos = allPointsVente.find((p: any) => p.id === demande.pos) || undefined;
+        const sameId = (a: any, b: any) => a !== null && a !== undefined && b !== null && b !== undefined && String(a) === String(b);
+        const resolveEntity = (list: any[], id: any, label: string) => {
+            if (id === null || id === undefined || id === '') return undefined;
+            let found = list.find((x: any) => sameId(x?.id, id));
+            if (!found) {
+                found = { id: isNaN(Number(id)) ? id : Number(id), libele: label };
+                list.push(found);
+            }
+            return found;
+        };
 
-        // Set up filtered lists for cascade
+        const delegation = resolveEntity(allDelegations, demande.delegation,
+            demande.delegationLibelle || demande.nomDelegation || `Delegation #${demande.delegation}`);
+        const agence = resolveEntity(allAgences, demande.agence,
+            demande.agenceLibelle || demande.nomAgence || `Agence #${demande.agence}`);
+        const pos = resolveEntity(allPointsVente, demande.pos,
+            demande.posLibelle || demande.nomPointVente || `Point de service #${demande.pos}`);
+
+        // Cascades filtrees (comparaisons tolerantes ; on garantit la presence de l'entite resolue).
+        let filteredAgences = allAgences;
+        let filteredPointsVente = allPointsVente;
         if (delegation) {
-            const filteredAgences = allAgences.filter((a: any) => {
-                const agenceDelegationId = a.delegation_id || a.delegationId || (a as any).delegation?.id || a.idDelegation;
-                return agenceDelegationId === (delegation as any).id;
+            filteredAgences = allAgences.filter((a: any) => {
+                const dId = a.delegation_id ?? a.delegationId ?? (a as any).delegation?.id ?? a.idDelegation;
+                return sameId(dId, (delegation as any).id);
             });
-            this.state.update((s) => ({ ...s, filteredAgences }));
-
-            if (agence) {
-                this.selectedAgence = agence;
-                const filteredPointsVente = allPointsVente.filter((pv: any) => {
-                    const pvAgenceId = pv.agence_id || pv.agenceId || (pv as any).agence?.id || pv.idAgence;
-                    return pvAgenceId === (agence as any).id;
-                });
-                this.state.update((s) => ({ ...s, filteredPointsVente }));
+            if (agence && !filteredAgences.some((a: any) => sameId(a?.id, (agence as any).id))) {
+                filteredAgences = [...filteredAgences, agence];
             }
         }
+        if (agence) {
+            this.selectedAgence = agence;
+            filteredPointsVente = allPointsVente.filter((pv: any) => {
+                const aId = pv.agence_id ?? pv.agenceId ?? (pv as any).agence?.id ?? pv.idAgence;
+                return sameId(aId, (agence as any).id);
+            });
+            if (pos && !filteredPointsVente.some((p: any) => sameId(p?.id, (pos as any).id))) {
+                filteredPointsVente = [...filteredPointsVente, pos];
+            }
+        }
+
+        this.state.update((s) => ({
+            ...s,
+            allDelegations,
+            allAgences,
+            allPointsVente,
+            filteredAgences,
+            filteredPointsVente
+        }));
 
         // Parse date
         let dateNaissance: Date | undefined;
@@ -435,9 +467,9 @@ export class CorrectionDemandeComponent implements OnInit {
             }
         }
 
-        // Restore type credit selection
-        if (this.formData.tipCredito) {
-            this.selectedTypeCredit = this.typesCredit.find((tc) => tc.tip_CREDITO === this.formData.tipCredito) || null;
+        // Restore type credit selection (comparaison tolerante number/string)
+        if (this.formData.tipCredito !== null && this.formData.tipCredito !== undefined) {
+            this.selectedTypeCredit = this.typesCredit.find((tc) => String(tc.tip_CREDITO) === String(this.formData.tipCredito)) || null;
         }
     }
 
