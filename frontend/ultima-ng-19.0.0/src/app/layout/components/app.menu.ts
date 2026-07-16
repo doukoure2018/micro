@@ -197,6 +197,11 @@ export class AppMenu {
                                                 label: 'Demandes Crédits validées par DE',
                                                 icon: 'pi pi-fw pi-check-circle',
                                                 routerLink: ['/dashboards/credits-valides-de']
+                                            },
+                                            {
+                                                label: 'Rejets DG à confirmer',
+                                                icon: 'pi pi-fw pi-exclamation-triangle',
+                                                routerLink: ['/dashboards/rejets-dg-a-confirmer']
                                             }
                                         ]
                                       : this.user?.service === 'Logistique'
@@ -359,7 +364,15 @@ export class AppMenu {
                                                     routerLink: ['/dashboards/changement-telephone/da']
                                                 }
                                             ]
-                                          : [])
+                                          : this.user?.role === 'DG'
+                                            ? [
+                                                  {
+                                                      label: 'Crédits à valider (≥100M)',
+                                                      icon: 'pi pi-fw pi-crown',
+                                                      routerLink: ['/dashboards/credits-a-valider-dg']
+                                                  }
+                                              ]
+                                            : [])
                 ]
             }
         ];

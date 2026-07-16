@@ -44,6 +44,16 @@ export default [
         loadComponent: () => import('./admin/de/credits-valides-de/credits-valides-de.component').then((c) => c.CreditsValidesDeComponent)
     },
     {
+        path: 'credits-a-valider-dg',
+        data: { breadcrumb: 'Crédits à valider (DG)' },
+        loadComponent: () => import('./admin/dg/credits-a-valider-dg/credits-a-valider-dg.component').then((c) => c.CreditsAValiderDgComponent)
+    },
+    {
+        path: 'rejets-dg-a-confirmer',
+        data: { breadcrumb: 'Rejets DG à confirmer' },
+        loadComponent: () => import('./admin/de/rejets-dg-a-confirmer/rejets-dg-a-confirmer.component').then((c) => c.RejetsDgAConfirmerComponent)
+    },
+    {
         path: 'stock',
         data: { breadcrumb: 'Gestion de Stock' },
         loadComponent: () => import('./agent-credit/stock-cmd/stock-cmd.component').then((c) => c.StockCmdComponent)

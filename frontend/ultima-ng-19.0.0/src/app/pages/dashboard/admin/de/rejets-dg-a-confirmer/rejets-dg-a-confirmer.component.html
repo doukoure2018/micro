@@ -1,0 +1,92 @@
+<p-toast></p-toast>
+
+<div class="card">
+    <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+            <i class="pi pi-exclamation-triangle text-2xl text-orange-600"></i>
+            <div>
+                <h2 class="text-xl font-bold m-0">Rejets DG à confirmer</h2>
+                <p class="text-gray-500 text-sm m-0">Crédits rejetés par la Direction Générale, en attente de votre confirmation</p>
+            </div>
+        </div>
+        <button pButton type="button" icon="pi pi-refresh" label="Actualiser"
+            class="p-button-outlined" (click)="refreshData()"></button>
+    </div>
+
+    <div *ngIf="loading()" class="flex justify-center p-6">
+        <p-progressSpinner strokeWidth="4" [style]="{ width: '48px', height: '48px' }"></p-progressSpinner>
+    </div>
+
+    <p-table *ngIf="!loading()" #dt [value]="demandes()" [paginator]="true" [rows]="10"
+        [rowsPerPageOptions]="[10, 25, 50]" [globalFilterFields]="['nom','prenom','numeroMembre','objectCredit']"
+        styleClass="p-datatable-striped" [tableStyle]="{ 'min-width': '60rem' }">
+        <ng-template pTemplate="caption">
+            <p-iconField iconPosition="left">
+                <p-inputIcon styleClass="pi pi-search"></p-inputIcon>
+                <input pInputText type="text" (input)="onGlobalFilter(dt, $event)"
+                    placeholder="Rechercher..." class="w-full" />
+            </p-iconField>
+        </ng-template>
+        <ng-template pTemplate="header">
+            <tr>
+                <th>Membre</th>
+                <th>Montant</th>
+                <th>Motif du rejet (DG)</th>
+                <th>Rejeté par</th>
+                <th style="width: 13rem">Actions</th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-d>
+            <tr>
+                <td>
+                    <div class="font-semibold">{{ d.prenom }} {{ d.nom }}</div>
+                    <div class="text-gray-500 text-sm">N° {{ d.numeroMembre }}</div>
+                </td>
+                <td><span class="font-bold text-orange-700">{{ formatMontantGNF(d.montantDemande) }}</span></td>
+                <td class="max-w-20rem"><span class="text-sm text-gray-700">{{ d.motifRejetDg }}</span></td>
+                <td>{{ d.validatedByDg }}</td>
+                <td>
+                    <div class="flex gap-2">
+                        <button pButton type="button" icon="pi pi-check" label="Confirmer"
+                            pTooltip="Confirmer le rejet et renvoyer en correction"
+                            class="p-button-warning p-button-sm" (click)="openConfirm(d)"></button>
+                        <button pButton type="button" icon="pi pi-eye" pTooltip="Voir le détail"
+                            class="p-button-secondary p-button-sm p-button-text"
+                            (click)="viewDemandeDetail(d.demandeIndividuelId)"></button>
+                    </div>
+                </td>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr>
+                <td colspan="5" class="text-center p-6 text-gray-500">
+                    <i class="pi pi-inbox text-3xl block mb-2"></i>
+                    Aucun rejet DG en attente de confirmation.
+                </td>
+            </tr>
+        </ng-template>
+    </p-table>
+</div>
+
+<!-- Dialog CONFIRMER LE REJET -->
+<p-dialog header="Confirmer le rejet DG" [visible]="showConfirmDialog()"
+    [modal]="true" [style]="{ width: '560px' }" [closable]="true"
+    (onHide)="showConfirmDialog.set(false)">
+    <div *ngIf="selected" class="mb-4 p-3 bg-orange-50 border-round">
+        <div class="font-semibold">{{ selected.prenom }} {{ selected.nom }}</div>
+        <div class="text-orange-700 font-bold">{{ formatMontantGNF(selected.montantDemande) }}</div>
+        <div class="text-gray-700 text-sm mt-2"><strong>Motif DG :</strong> {{ selected.motifRejetDg }}</div>
+    </div>
+    <label class="block text-sm font-semibold mb-2">Instructions pour l'agent (optionnel)</label>
+    <textarea [(ngModel)]="instructions" rows="4" class="w-full p-2 border-round border-1 surface-border"
+        placeholder="Précisions à transmettre à l'agent pour la correction..."></textarea>
+    <small class="text-gray-500 block mt-2">
+        <i class="pi pi-info-circle mr-1"></i>La demande repartira en correction vers l'agent de crédit.
+    </small>
+    <ng-template pTemplate="footer">
+        <button pButton type="button" label="Annuler" icon="pi pi-times"
+            class="p-button-secondary p-button-outlined" (click)="showConfirmDialog.set(false)"></button>
+        <button pButton type="button" label="Confirmer le rejet" icon="pi pi-check" class="p-button-warning"
+            [disabled]="submitting()" [loading]="submitting()" (click)="confirmRejet()"></button>
+    </ng-template>
+</p-dialog>
