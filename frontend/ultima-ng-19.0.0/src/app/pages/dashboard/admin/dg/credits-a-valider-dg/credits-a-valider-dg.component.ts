@@ -40,6 +40,11 @@ export class CreditsAValiderDgComponent implements OnInit {
     loading = signal(false);
     submitting = signal(false);
 
+    // Onglet "Valides par le DG"
+    valides = signal<any[]>([]);
+    loadingValides = signal(false);
+    viewMode = signal<'a-valider' | 'valides'>('a-valider');
+
     showValiderDialog = signal(false);
     showRejeterDialog = signal(false);
     selected: any = null;
@@ -133,12 +138,39 @@ export class CreditsAValiderDgComponent implements OnInit {
             });
     }
 
+    setView(mode: 'a-valider' | 'valides'): void {
+        this.viewMode.set(mode);
+        if (mode === 'valides' && this.valides().length === 0) {
+            this.loadValides();
+        }
+    }
+
+    loadValides(): void {
+        this.loadingValides.set(true);
+        this.userService.getValidesDG$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => {
+                    this.valides.set(r.data?.workflowDemandes || []);
+                    this.loadingValides.set(false);
+                },
+                error: (err) => {
+                    this.loadingValides.set(false);
+                    this.toast('error', 'Erreur', err || 'Impossible de charger les crédits validés');
+                }
+            });
+    }
+
     viewDemandeDetail(demandeId: number): void {
         this.router.navigate(['/dashboards/credit/individuel/attente/detail', demandeId]);
     }
 
     refreshData(): void {
-        this.loadData();
+        if (this.viewMode() === 'valides') {
+            this.loadValides();
+        } else {
+            this.loadData();
+        }
     }
 
     private toast(severity: string, summary: string, detail: string): void {
