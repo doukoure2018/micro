@@ -259,6 +259,11 @@ export class DetailComponent {
         return this.state().user?.role === 'MANAGER' && this.state().user?.service === 'DE';
     }
 
+    /** Directeur General : voit la meme synthese consolidee (lecture seule) que le DE. */
+    isDG(): boolean {
+        return this.state().user?.role === 'DG';
+    }
+
     onAgentCodeChange(codAgent: string): void {
         const upperValue = codAgent?.trim()?.toUpperCase();
         this.updateForm.get('codAgent')?.setValue(upperValue, { emitEvent: false });

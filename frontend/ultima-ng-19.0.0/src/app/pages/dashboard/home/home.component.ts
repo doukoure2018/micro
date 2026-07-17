@@ -17,6 +17,7 @@ import { DemandeAvanceSalaireComponent } from '../admin/demande-avance-salaire/d
 import { RhComponent } from '../admin/rh/rh.component';
 import { DfComponent } from '../admin/df/df.component';
 import { SuiviArreteCaisseComponent } from '../admin/de/suivi-arrete-caisse/suivi-arrete-caisse.component';
+import { CreditsAValiderDgComponent } from '../admin/dg/credits-a-valider-dg/credits-a-valider-dg.component';
 
 @Component({
     selector: 'app-home',
@@ -35,7 +36,8 @@ import { SuiviArreteCaisseComponent } from '../admin/de/suivi-arrete-caisse/suiv
         DemandeAvanceSalaireComponent,
         RhComponent,
         DfComponent,
-        SuiviArreteCaisseComponent
+        SuiviArreteCaisseComponent,
+        CreditsAValiderDgComponent
     ],
     templateUrl: './home.component.html'
 })

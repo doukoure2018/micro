@@ -49,6 +49,8 @@
 <app-correction-rejet-pp [user]="state().user"></app-correction-rejet-pp>
 } @else if (state().user?.role === 'RA') {
 <app-rotation-agent></app-rotation-agent>
+} @else if (state().user?.role === 'DG') {
+<app-credits-a-valider-dg [user]="state().user"></app-credits-a-valider-dg>
 } @else {
 <!-- Composant par défaut si aucun rôle ne correspond -->
 <div class="alert alert-warning">

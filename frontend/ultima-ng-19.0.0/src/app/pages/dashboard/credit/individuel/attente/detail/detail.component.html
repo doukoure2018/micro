@@ -24,8 +24,8 @@
     <!-- Main Content -->
     <div *ngIf="state().demandeIndividuel" class="container mx-auto px-4 py-4 max-w-7xl">
 
-        <!-- Direction Exploitation (MANAGER + service DE) : synthèse consolidée en lecture seule -->
-        @if (isDE()) {
+        <!-- Direction Exploitation (MANAGER + service DE) ET Directeur Général : synthèse consolidée en lecture seule -->
+        @if (isDE() || isDG()) {
         <app-synthese-de [demandeId]="state().demandeIndividuel!.demandeIndividuelId!"></app-synthese-de>
         } @else {
 
