@@ -12,20 +12,22 @@ import { TokenInterceptor } from '@/interceptors/token.interceptor';
 import { CacheInterceptor } from '@/interceptors/cache.interceptor';
 import { provideAnimations } from '@angular/platform-browser/animations';
 
+// Couleur de marque CRG / DIGI-CREDIT : vert foncé du logo (~#15803D).
+// Palette primaire ancree sur ce vert (500 = vert du logo), pour tout le thème.
 const MyPreset = definePreset(Material, {
     semantic: {
         primary: {
-            50: '{indigo.50}',
-            100: '{indigo.100}',
-            200: '{indigo.200}',
-            300: '{indigo.300}',
-            400: '{indigo.400}',
-            500: '{indigo.500}',
-            600: '{indigo.600}',
-            700: '{indigo.700}',
-            800: '{indigo.800}',
-            900: '{indigo.900}',
-            950: '{indigo.950}'
+            50: '#f0fdf4',
+            100: '#dcfce7',
+            200: '#bbf7d0',
+            300: '#86efac',
+            400: '#34c26a',
+            500: '#15803d',
+            600: '#136a34',
+            700: '#11562b',
+            800: '#0e4623',
+            900: '#0a381c',
+            950: '#052e16'
         }
     }
 });
