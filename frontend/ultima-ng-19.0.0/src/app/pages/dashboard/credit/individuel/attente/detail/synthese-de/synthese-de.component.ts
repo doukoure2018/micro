@@ -266,7 +266,7 @@ export class SyntheseDeComponent implements OnInit {
 
     private loadHistoCredits(codCliente: string): void {
         this.userService
-            .getAllCreditos$(codCliente)
+            .getHistoCreditsSaf$(codCliente)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (response: IResponse) => {

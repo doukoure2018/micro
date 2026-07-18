@@ -126,12 +126,16 @@ public interface EbankingClient {
     ResponseEntity<?> getFicheSignaletiqueWithSolde(@PathVariable(name = "codCliente") String codCliente);
 
 
-    // Synthese DG : anciennete (FEC_INGRESO) + comptes d'epargne du client
-    @GetMapping(path = "/ebanking/agri/farmers/{codCliente}")
+    // Synthese DG : lectures via la datasource SAF tertiary (dev), hors base de production
+    // et hors perimetre protege par cle API (/ebanking/agri/**).
+    @GetMapping(path = "/ebanking/saf/adhesion/{codCliente}")
     FarmerDto getFarmerInfo(@PathVariable(name = "codCliente") String codCliente);
 
-    @GetMapping(path = "/ebanking/{codClientes}/comptes")
-    List<Map<String, Object>> getComptesByClient(@PathVariable(name = "codClientes") String codClientes);
+    @GetMapping(path = "/ebanking/saf/comptes/{codCliente}")
+    List<Map<String, Object>> getComptesByClient(@PathVariable(name = "codCliente") String codCliente);
+
+    @GetMapping(path = "/ebanking/saf/creditos/{codCliente}")
+    CreditosClienteResponseDTO getCreditosSaf(@PathVariable(name = "codCliente") String codCliente);
 
 
 

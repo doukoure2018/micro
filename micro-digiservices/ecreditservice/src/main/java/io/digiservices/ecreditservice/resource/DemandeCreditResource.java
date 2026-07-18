@@ -178,6 +178,14 @@ public class DemandeCreditResource {
         return ok(getResponse(request, Map.of("comptes", ebankingClient.getComptesByClient(codCliente)), "Comptes du client", OK));
     }
 
+    // Synthese DG : historique credits + score, lu depuis le SAF tertiary (hors base prod)
+    @GetMapping("/histo-credits-saf/{codCliente}")
+    public ResponseEntity<Response> getHistoCreditsSaf(@NotNull Authentication authentication,
+                                                       @PathVariable(name = "codCliente") String codCliente,
+                                                       HttpServletRequest request) {
+        return ok(getResponse(request, Map.of("histoCredits", ebankingClient.getCreditosSaf(codCliente)), "Historique credits SAF", OK));
+    }
+
 
     @PostMapping("/addMotif/{demandeCreditId}")
     public ResponseEntity<Response> addMotif(@NotNull Authentication authentication,

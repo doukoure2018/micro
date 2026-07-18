@@ -66,6 +66,8 @@ export class UserService {
     getAgriInfo$ = (codCliente: string) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/agri-info/${codCliente}`).pipe(catchError(this.handleError));
 
     getComptesClient$ = (codCliente: string) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/comptes/${codCliente}`).pipe(catchError(this.handleError));
+
+    getHistoCreditsSaf$ = (codCliente: string) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/histo-credits-saf/${codCliente}`).pipe(catchError(this.handleError));
     // Mise en place analyse de credit
     addPromoteur$ = (promoteurData: any) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/addPromoteur`, promoteurData).pipe(tap(console.log), catchError(this.handleError));
     addEntreprise$ = (entrepriseData: any) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/addEntreprise`, entrepriseData).pipe(tap(console.log), catchError(this.handleError));

@@ -45,6 +45,8 @@ public class CreditosServiceImpl implements CreditosService {
 
     private JdbcTemplate jdbcTemplate;
 
+    private io.digiservices.ebanking.repository.SafTertiaryRepository safTertiaryRepository;
+
     @Override
     public CreditosDto createCreditos(CreditosDto pr_creditoDto) {
         Creditos credito1=mapToEntity(pr_creditoDto);
@@ -413,6 +415,50 @@ public class CreditosServiceImpl implements CreditosService {
 
         } catch (Exception e) {
             log.error("Erreur lors de l'obtention des informations du client {}: {}", codCliente, e.getMessage(), e);
+            return CreditosClienteResponseDTO.builder()
+                    .codCliente(codCliente)
+                    .creditos(List.of())
+                    .planPagos(List.of())
+                    .resumenes(List.of())
+                    .evaluationRisque(null)
+                    .mensaje("Erreur lors de l'obtention des informations: " + e.getMessage())
+                    .build();
+        }
+    }
+
+    @Override
+    public CreditosClienteResponseDTO obtenerCreditosYPlanPagosPorClienteSaf(String codCliente) {
+        log.info("Synthese credit SAF (tertiary) pour le client: {}", codCliente);
+        try {
+            List<Map<String, Object>> creditosData = safTertiaryRepository.obtenerCreditosPorCliente(codCliente);
+            if (creditosData.isEmpty()) {
+                return CreditosClienteResponseDTO.builder()
+                        .codCliente(codCliente)
+                        .creditos(List.of())
+                        .planPagos(List.of())
+                        .resumenes(List.of())
+                        .evaluationRisque(null)
+                        .mensaje("Aucun crédit n’a été trouvé pour le client: " + codCliente)
+                        .build();
+            }
+
+            List<Map<String, Object>> planPagosData = safTertiaryRepository.obtenerPlanPagosPorCliente(codCliente);
+
+            List<CreditoDTO> creditos = mapearCreditos(creditosData);
+            List<PlanPagoDTO> planPagos = mapearPlanPagos(planPagosData);
+            List<ResumenPlanPagoDTO> resumenes = generarResumenes(planPagos);
+            EvaluationRisqueDTO evaluacionRisque = calcularEvaluacionRiesgo(codCliente, planPagos);
+
+            return CreditosClienteResponseDTO.builder()
+                    .codCliente(codCliente)
+                    .creditos(creditos)
+                    .planPagos(planPagos)
+                    .resumenes(resumenes)
+                    .evaluationRisque(evaluacionRisque)
+                    .mensaje("Informations obtenues avec succès")
+                    .build();
+        } catch (Exception e) {
+            log.error("Erreur synthese credit SAF client {}: {}", codCliente, e.getMessage(), e);
             return CreditosClienteResponseDTO.builder()
                     .codCliente(codCliente)
                     .creditos(List.of())

@@ -45,6 +45,12 @@ public interface CreditosService {
     CreditosClienteResponseDTO obtenerCreditosYPlanPagosPorCliente(String codCliente);
 
     /**
+     * Variante SAF de la synthese credit lue depuis la datasource tertiary
+     * (dev 10.110.15.2) pour ne PAS solliciter la base de production.
+     */
+    CreditosClienteResponseDTO obtenerCreditosYPlanPagosPorClienteSaf(String codCliente);
+
+    /**
      * Verifica si un cliente existe y tiene créditos
      * @param codCliente Código del cliente
      * @return true si el cliente tiene créditos, false en caso contrario
