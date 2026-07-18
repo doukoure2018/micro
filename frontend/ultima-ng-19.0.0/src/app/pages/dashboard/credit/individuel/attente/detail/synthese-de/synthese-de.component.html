@@ -120,16 +120,16 @@
     </div>
 
     <!-- ══ 1A. ANCIENNETÉ / ADHÉSION (SAF) ══ -->
-    @if (hasAnciennete()) {
     <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8 print-block">
         <div class="bg-teal-600 text-white px-6 py-4 flex items-center gap-3">
             <i class="pi pi-calendar-clock text-xl"></i>
             <span class="font-bold text-lg uppercase tracking-wide">Ancienneté du membre</span>
         </div>
+        @if (farmerStatus() === 'ok') {
         <div class="p-6 flex flex-wrap gap-8 items-center">
             <div>
                 <div class="text-xs text-gray-500 uppercase">Date d'adhésion</div>
-                <div class="text-lg font-semibold text-gray-800">{{ getFecIngreso() }}</div>
+                <div class="text-lg font-semibold text-gray-800">{{ getFecIngreso() || '—' }}</div>
             </div>
             <div>
                 <div class="text-xs text-gray-500 uppercase">Membre depuis</div>
@@ -143,11 +143,12 @@
                 </div>
             </div>
         </div>
+        } @else {
+        <div class="p-6 text-center text-gray-500 italic">{{ safMessage(farmerStatus()) }}</div>
+        }
     </div>
-    }
 
     <!-- ══ 1B. COMPTES D'ÉPARGNE (SAF) ══ -->
-    @if (getComptes().length > 0) {
     <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8 print-block">
         <div class="bg-indigo-600 text-white px-6 py-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -159,6 +160,7 @@
                 <div class="text-lg font-bold text-yellow-300">{{ formatCurrency(getTotalEpargne()) }}</div>
             </div>
         </div>
+        @if (comptesStatus() === 'ok') {
         <div class="p-6 overflow-x-auto">
             <table class="w-full text-sm">
                 <thead>
@@ -192,16 +194,18 @@
                 </tfoot>
             </table>
         </div>
+        } @else {
+        <div class="p-6 text-center text-gray-500 italic">{{ safMessage(comptesStatus()) }}</div>
+        }
     </div>
-    }
 
     <!-- ══ 1C. CRÉDITS ANTÉRIEURS + SCORE DE CONFIANCE (SAF) ══ -->
-    @if (getEvaluationRisque() || getCreditsAnterieurs().length > 0) {
     <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8 print-block">
         <div class="bg-purple-700 text-white px-6 py-4 flex items-center gap-3">
             <i class="pi pi-history text-xl"></i>
             <span class="font-bold text-lg uppercase tracking-wide">Situation crédit antérieure &amp; score de confiance</span>
         </div>
+        @if (histoStatus() === 'ok') {
         <div class="p-6">
             @if (getEvaluationRisque(); as risque) {
             <div class="flex flex-wrap gap-6 items-center mb-6 bg-gray-50 rounded-lg p-4">
@@ -274,16 +278,18 @@
             <p class="text-gray-500 text-center py-4">Aucun crédit antérieur enregistré au SAF pour ce membre.</p>
             }
         </div>
+        } @else {
+        <div class="p-6 text-center text-gray-500 italic">{{ safMessage(histoStatus()) }}</div>
+        }
     </div>
-    }
 
     <!-- ══ 1D. COMPARATIF ANCIEN CRÉDIT (SAF) / CRÉDIT ACTUEL (demande) ══ -->
-    @if (getDernierCredit(); as ancien) {
     <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8 print-block">
         <div class="bg-amber-600 text-white px-6 py-4 flex items-center gap-3">
             <i class="pi pi-arrows-h text-xl"></i>
             <span class="font-bold text-lg uppercase tracking-wide">Comparatif : dernier crédit vs demande actuelle</span>
         </div>
+        @if (getDernierCredit(); as ancien) {
         <div class="p-6 overflow-x-auto">
             <table class="w-full text-sm">
                 <thead>
@@ -331,8 +337,13 @@
                 </tbody>
             </table>
         </div>
+        } @else {
+        <div class="p-6 text-center text-gray-500 italic">
+            @if (histoStatus() === 'ok') { Aucun crédit antérieur au SAF : pas de comparatif disponible. }
+            @else { {{ safMessage(histoStatus()) }} }
+        </div>
+        }
     </div>
-    }
 
     <!-- ══ 2. ACTIVITÉS ══ -->
     <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8 print-block">

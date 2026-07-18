@@ -22,6 +22,9 @@ import { ToastModule } from 'primeng/toast';
 import { environment } from 'src/environments/environment';
 import { ResumeAnalyseFinanciereComponent } from '../resume-analyse-financiere/resume-analyse-financiere.component';
 
+/** Statut de chargement d'une donnée SAF (affichage toujours visible + message adapté). */
+type SafStatus = 'loading' | 'ok' | 'empty' | 'error';
+
 /** Ligne compacte de synthèse de trésorerie (une par période). */
 interface TresorerieRow {
     periode: string;
@@ -73,6 +76,9 @@ export class SyntheseDeComponent implements OnInit {
         farmer: any | null;
         comptes: any[];
         histoCredits: CreditosClienteResponseDTO | null;
+        farmerStatus: SafStatus;
+        comptesStatus: SafStatus;
+        histoStatus: SafStatus;
         loading: boolean;
         error: string | null;
         showPreviewDialog: boolean;
@@ -89,6 +95,9 @@ export class SyntheseDeComponent implements OnInit {
         farmer: null,
         comptes: [],
         histoCredits: null,
+        farmerStatus: 'loading',
+        comptesStatus: 'loading',
+        histoStatus: 'loading',
         loading: true,
         error: null,
         showPreviewDialog: false,
@@ -142,6 +151,8 @@ export class SyntheseDeComponent implements OnInit {
                         this.loadAgriInfo(codCliente);
                         this.loadComptes(codCliente);
                         this.loadHistoCredits(codCliente);
+                    } else {
+                        this.state.update((s) => ({ ...s, farmerStatus: 'error', comptesStatus: 'error', histoStatus: 'error' }));
                     }
                 },
                 error: (error) => {
@@ -232,9 +243,10 @@ export class SyntheseDeComponent implements OnInit {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (response: IResponse) => {
-                    this.state.update((s) => ({ ...s, farmer: (response.data as any)?.farmer || null }));
+                    const farmer = (response.data as any)?.farmer || null;
+                    this.state.update((s) => ({ ...s, farmer, farmerStatus: farmer ? 'ok' : 'empty' }));
                 },
-                error: () => this.state.update((s) => ({ ...s, farmer: null }))
+                error: () => this.state.update((s) => ({ ...s, farmer: null, farmerStatus: 'error' }))
             });
     }
 
@@ -245,9 +257,10 @@ export class SyntheseDeComponent implements OnInit {
             .subscribe({
                 next: (response: IResponse) => {
                     const comptes = (response.data as any)?.comptes;
-                    this.state.update((s) => ({ ...s, comptes: Array.isArray(comptes) ? comptes : [] }));
+                    const list = Array.isArray(comptes) ? comptes : [];
+                    this.state.update((s) => ({ ...s, comptes: list, comptesStatus: list.length ? 'ok' : 'empty' }));
                 },
-                error: () => this.state.update((s) => ({ ...s, comptes: [] }))
+                error: () => this.state.update((s) => ({ ...s, comptes: [], comptesStatus: 'error' }))
             });
     }
 
@@ -257,11 +270,27 @@ export class SyntheseDeComponent implements OnInit {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (response: IResponse) => {
-                    this.state.update((s) => ({ ...s, histoCredits: (response.data as any)?.histoCredits || null }));
+                    const histoCredits = (response.data as any)?.histoCredits || null;
+                    const hasData = !!(histoCredits && (histoCredits.evaluationRisque || (histoCredits.creditos && histoCredits.creditos.length)));
+                    this.state.update((s) => ({ ...s, histoCredits, histoStatus: hasData ? 'ok' : 'empty' }));
                 },
-                error: () => this.state.update((s) => ({ ...s, histoCredits: null }))
+                error: () => this.state.update((s) => ({ ...s, histoCredits: null, histoStatus: 'error' }))
             });
     }
+
+    /** Message à afficher quand une section SAF n'a pas (encore) de données. */
+    safMessage(status: SafStatus): string {
+        switch (status) {
+            case 'loading': return 'Chargement des données SAF…';
+            case 'error': return 'Donnée SAF momentanément indisponible (connexion à la base bancaire).';
+            case 'empty': return 'Aucune donnée trouvée au SAF pour ce membre.';
+            default: return '';
+        }
+    }
+
+    farmerStatus = () => this.state().farmerStatus;
+    comptesStatus = () => this.state().comptesStatus;
+    histoStatus = () => this.state().histoStatus;
 
     // Ancienneté (B1)
     hasAnciennete(): boolean {
