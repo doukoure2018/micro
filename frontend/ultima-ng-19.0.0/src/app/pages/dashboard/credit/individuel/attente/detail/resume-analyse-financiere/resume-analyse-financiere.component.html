@@ -528,15 +528,21 @@
         <div class="col-12 mb-3">
             <p-card>
                 <ng-template pTemplate="header">
-                    <div class="flex items-center gap-2 p-3 bg-green-50">
-                        <i class="pi pi-building text-green-600 text-xl"></i>
-                        <h4 class="m-0 text-green-800">ACTIF</h4>
+                    <div class="flex items-center justify-between p-3 bg-green-50">
+                        <div class="flex items-center gap-2">
+                            <i class="pi pi-building text-green-600 text-xl"></i>
+                            <h4 class="m-0 text-green-800">ACTIF</h4>
+                        </div>
+                        <button pButton type="button" class="p-button-text p-button-sm"
+                            [label]="isDetailExpanded('actif') ? 'Masquer le détail' : 'Voir le détail'"
+                            [icon]="isDetailExpanded('actif') ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+                            (click)="toggleDetail('actif')"></button>
                     </div>
                 </ng-template>
 
                 <!-- Actif Immobilisé -->
                 <h5 class="text-green-700 mb-2 mt-0">Actif Immobilisé</h5>
-                <p-table [value]="getBilanActifImmobiliseData()" [tableStyle]="{'min-width': '100%'}"
+                <p-table [value]="rowsFor('actif', getBilanActifImmobiliseData())" [tableStyle]="{'min-width': '100%'}"
                     styleClass="p-datatable-sm p-datatable-striped">
                     <ng-template pTemplate="header">
                         <tr>
@@ -558,7 +564,7 @@
 
                 <!-- Actif Circulant -->
                 <h5 class="text-green-700 mb-2 mt-4">Actif Circulant</h5>
-                <p-table [value]="getBilanActifCirculantData()" [tableStyle]="{'min-width': '100%'}"
+                <p-table [value]="rowsFor('actif', getBilanActifCirculantData())" [tableStyle]="{'min-width': '100%'}"
                     styleClass="p-datatable-sm p-datatable-striped">
                     <ng-template pTemplate="header">
                         <tr>
@@ -598,13 +604,19 @@
         <div class="col-12 mb-3">
             <p-card>
                 <ng-template pTemplate="header">
-                    <div class="flex items-center gap-2 p-3 bg-red-50">
-                        <i class="pi pi-wallet text-red-600 text-xl"></i>
-                        <h4 class="m-0 text-red-800">PASSIF</h4>
+                    <div class="flex items-center justify-between p-3 bg-red-50">
+                        <div class="flex items-center gap-2">
+                            <i class="pi pi-wallet text-red-600 text-xl"></i>
+                            <h4 class="m-0 text-red-800">PASSIF</h4>
+                        </div>
+                        <button pButton type="button" class="p-button-text p-button-sm"
+                            [label]="isDetailExpanded('passif') ? 'Masquer le détail' : 'Voir le détail'"
+                            [icon]="isDetailExpanded('passif') ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+                            (click)="toggleDetail('passif')"></button>
                     </div>
                 </ng-template>
 
-                <p-table [value]="getBilanPassifData()" [tableStyle]="{'min-width': '100%'}"
+                <p-table [value]="rowsFor('passif', getBilanPassifData())" [tableStyle]="{'min-width': '100%'}"
                     styleClass="p-datatable-sm p-datatable-striped">
                     <ng-template pTemplate="header">
                         <tr>
@@ -636,12 +648,19 @@
         <div class="col-12">
             <p-card>
                 <ng-template pTemplate="header">
-                    <div class="flex items-center gap-2 p-3 bg-blue-50">
-                        <i class="pi pi-chart-line text-blue-600 text-xl"></i>
-                        <h4 class="m-0 text-blue-800">Indicateurs Financiers</h4>
+                    <div class="flex items-center justify-between p-3 bg-blue-50">
+                        <div class="flex items-center gap-2">
+                            <i class="pi pi-chart-line text-blue-600 text-xl"></i>
+                            <h4 class="m-0 text-blue-800">Indicateurs Financiers</h4>
+                        </div>
+                        <button pButton type="button" class="p-button-text p-button-sm"
+                            [label]="isDetailExpanded('indicateurs') ? 'Masquer le détail' : 'Voir le détail'"
+                            [icon]="isDetailExpanded('indicateurs') ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+                            (click)="toggleDetail('indicateurs')"></button>
                     </div>
                 </ng-template>
 
+                @if (isDetailExpanded('indicateurs')) {
                 <p-table [value]="getBilanIndicateursData()" [tableStyle]="{'min-width': '100%'}"
                     styleClass="p-datatable-sm p-datatable-striped">
                     <ng-template pTemplate="header">
@@ -659,6 +678,9 @@
                         </tr>
                     </ng-template>
                 </p-table>
+                } @else {
+                <div class="text-center text-500 text-sm p-3">Détail replié — cliquez sur « Voir le détail ».</div>
+                }
             </p-card>
         </div>
 
@@ -676,13 +698,19 @@
         <div class="col-12 mb-3">
             <p-card>
                 <ng-template pTemplate="header">
-                    <div class="flex items-center gap-2 p-3 bg-teal-50">
-                        <i class="pi pi-dollar text-teal-600 text-xl"></i>
-                        <h4 class="m-0 text-teal-800">Produits</h4>
+                    <div class="flex items-center justify-between p-3 bg-teal-50">
+                        <div class="flex items-center gap-2">
+                            <i class="pi pi-dollar text-teal-600 text-xl"></i>
+                            <h4 class="m-0 text-teal-800">Produits</h4>
+                        </div>
+                        <button pButton type="button" class="p-button-text p-button-sm"
+                            [label]="isDetailExpanded('produits') ? 'Masquer le détail' : 'Voir le détail'"
+                            [icon]="isDetailExpanded('produits') ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+                            (click)="toggleDetail('produits')"></button>
                     </div>
                 </ng-template>
 
-                <p-table [value]="getRentabiliteProduitsData()" [tableStyle]="{'min-width': '100%'}"
+                <p-table [value]="rowsFor('produits', getRentabiliteProduitsData())" [tableStyle]="{'min-width': '100%'}"
                     styleClass="p-datatable-sm p-datatable-striped">
                     <ng-template pTemplate="header">
                         <tr>
@@ -711,13 +739,19 @@
         <div class="col-12 mb-3">
             <p-card>
                 <ng-template pTemplate="header">
-                    <div class="flex items-center gap-2 p-3 bg-orange-50">
-                        <i class="pi pi-minus-circle text-orange-600 text-xl"></i>
-                        <h4 class="m-0 text-orange-800">Charges d'Exploitation</h4>
+                    <div class="flex items-center justify-between p-3 bg-orange-50">
+                        <div class="flex items-center gap-2">
+                            <i class="pi pi-minus-circle text-orange-600 text-xl"></i>
+                            <h4 class="m-0 text-orange-800">Charges d'Exploitation</h4>
+                        </div>
+                        <button pButton type="button" class="p-button-text p-button-sm"
+                            [label]="isDetailExpanded('charges') ? 'Masquer le détail' : 'Voir le détail'"
+                            [icon]="isDetailExpanded('charges') ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+                            (click)="toggleDetail('charges')"></button>
                     </div>
                 </ng-template>
 
-                <p-table [value]="getRentabiliteChargesData()" [tableStyle]="{'min-width': '100%'}"
+                <p-table [value]="rowsFor('charges', getRentabiliteChargesData())" [tableStyle]="{'min-width': '100%'}"
                     styleClass="p-datatable-sm p-datatable-striped">
                     <ng-template pTemplate="header">
                         <tr>
@@ -791,13 +825,19 @@
         <div class="col-12 lg:col-6">
             <p-card>
                 <ng-template pTemplate="header">
-                    <div class="flex items-center gap-2 p-3 bg-cyan-50">
-                        <i class="pi pi-briefcase text-cyan-600 text-xl"></i>
-                        <h4 class="m-0 text-cyan-800">Besoin en Investissement</h4>
+                    <div class="flex items-center justify-between p-3 bg-cyan-50">
+                        <div class="flex items-center gap-2">
+                            <i class="pi pi-briefcase text-cyan-600 text-xl"></i>
+                            <h4 class="m-0 text-cyan-800">Besoin en Investissement</h4>
+                        </div>
+                        <button pButton type="button" class="p-button-text p-button-sm"
+                            [label]="isDetailExpanded('besoinInv') ? 'Masquer le détail' : 'Voir le détail'"
+                            [icon]="isDetailExpanded('besoinInv') ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+                            (click)="toggleDetail('besoinInv')"></button>
                     </div>
                 </ng-template>
 
-                <p-table [value]="getBesoinInvestissementData()" [tableStyle]="{'min-width': '100%'}"
+                <p-table [value]="rowsFor('besoinInv', getBesoinInvestissementData())" [tableStyle]="{'min-width': '100%'}"
                     styleClass="p-datatable-sm p-datatable-striped">
                     <ng-template pTemplate="header">
                         <tr>
@@ -823,13 +863,19 @@
         <div class="col-12 lg:col-6">
             <p-card>
                 <ng-template pTemplate="header">
-                    <div class="flex items-center gap-2 p-3 bg-cyan-50">
-                        <i class="pi pi-shopping-cart text-cyan-600 text-xl"></i>
-                        <h4 class="m-0 text-cyan-800">Besoin en Exploitation</h4>
+                    <div class="flex items-center justify-between p-3 bg-cyan-50">
+                        <div class="flex items-center gap-2">
+                            <i class="pi pi-shopping-cart text-cyan-600 text-xl"></i>
+                            <h4 class="m-0 text-cyan-800">Besoin en Exploitation</h4>
+                        </div>
+                        <button pButton type="button" class="p-button-text p-button-sm"
+                            [label]="isDetailExpanded('besoinExpl') ? 'Masquer le détail' : 'Voir le détail'"
+                            [icon]="isDetailExpanded('besoinExpl') ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+                            (click)="toggleDetail('besoinExpl')"></button>
                     </div>
                 </ng-template>
 
-                <p-table [value]="getBesoinExploitationData()" [tableStyle]="{'min-width': '100%'}"
+                <p-table [value]="rowsFor('besoinExpl', getBesoinExploitationData())" [tableStyle]="{'min-width': '100%'}"
                     styleClass="p-datatable-sm p-datatable-striped">
                     <ng-template pTemplate="header">
                         <tr>

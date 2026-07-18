@@ -352,6 +352,24 @@ export class ResumeAnalyseFinanciereComponent {
         return role === 'MANAGER' || role === 'DA' || role === 'DR' || role === 'RA' || role === 'DG';
     }
 
+    // ── Collapse des details : par defaut on n'affiche que les totaux, ─────────────
+    //    le detail (lignes non-totales) est depliable par bloc. ──────────────────────
+    private detailExpanded = signal<Record<string, boolean>>({});
+
+    toggleDetail(key: string): void {
+        this.detailExpanded.update((m) => ({ ...m, [key]: !m[key] }));
+    }
+
+    isDetailExpanded(key: string): boolean {
+        return !!this.detailExpanded()[key];
+    }
+
+    /** Lignes a afficher pour un tableau : uniquement les totaux si replie, tout si deplie. */
+    rowsFor(key: string, data: any[] | null | undefined): any[] {
+        const rows = data || [];
+        return this.isDetailExpanded(key) ? rows : rows.filter((r) => r?.isTotal);
+    }
+
     /**
      * Vérifie si le montant proposé existe et est > 0
      */
