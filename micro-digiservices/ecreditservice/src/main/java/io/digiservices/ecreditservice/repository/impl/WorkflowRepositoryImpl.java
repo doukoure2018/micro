@@ -171,6 +171,20 @@ public class WorkflowRepositoryImpl implements WorkflowRepository {
         }
     }
 
+    @Override
+    public List<WorkflowDemandeDto> getAApprouverAC(Long agenceId, Long pointventeId) {
+        try {
+            return jdbcClient.sql(SELECT_A_APPROUVER_AC)
+                    .param("agenceId", agenceId)
+                    .param("pointventeId", pointventeId)
+                    .query(WorkflowDemandeDto.class)
+                    .list();
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des demandes à approuver AC: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la récupération: " + e.getMessage());
+        }
+    }
+
     // ==================== DA - DEMANDES AFFECTEES ====================
 
     @Override

@@ -24,6 +24,7 @@ public interface WorkflowRepository {
     List<WorkflowDemandeDto> getEnCorrectionDEForAC(Long agenceId, Long pointventeId);
     List<WorkflowDemandeDto> getEnAttenteDA(Long agenceId, Long pointventeId);
     List<WorkflowDemandeDto> getSuiviValidationAC(Long agenceId, Long pointventeId);
+    List<WorkflowDemandeDto> getAApprouverAC(Long agenceId, Long pointventeId);
 
     // DR lists
     List<WorkflowDemandeDto> getAValiderDR(Long delegationId);

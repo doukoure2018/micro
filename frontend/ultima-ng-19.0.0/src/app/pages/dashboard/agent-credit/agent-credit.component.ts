@@ -43,6 +43,7 @@ export class AgentCreditComponent implements OnInit {
         workflowCorrectionDR: any[];
         workflowCorrectionDE: any[];
         workflowSuiviValidation: any[];
+        workflowAApprouver: any[];
         loading: boolean;
         message: string | undefined;
         error: string | any;
@@ -58,6 +59,7 @@ export class AgentCreditComponent implements OnInit {
         workflowCorrectionDR: [],
         workflowCorrectionDE: [],
         workflowSuiviValidation: [],
+        workflowAApprouver: [],
         isAgentActive: undefined,
         checkingStatus: false
     });
@@ -206,6 +208,7 @@ export class AgentCreditComponent implements OnInit {
                         this.loadWorkflowCorrectionDR();
                         this.loadWorkflowCorrectionDE();
                         this.loadSuiviValidation();
+                        this.loadWorkflowAApprouver();
                     }
                 },
                 error: (error) => {
@@ -443,6 +446,24 @@ export class AgentCreditComponent implements OnInit {
                 },
                 error: () => {}
             });
+    }
+
+    private loadWorkflowAApprouver(): void {
+        this.userService.getAApprouverAC$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    this.state.update(s => ({
+                        ...s,
+                        workflowAApprouver: response.data?.workflowDemandes || []
+                    }));
+                },
+                error: () => {}
+            });
+    }
+
+    hasWorkflowAApprouver(): boolean {
+        return this.state().workflowAApprouver.length > 0;
     }
 
     hasWorkflowEnCorrection(): boolean {

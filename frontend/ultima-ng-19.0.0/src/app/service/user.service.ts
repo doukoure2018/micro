@@ -1494,6 +1494,9 @@ export class UserService {
 
     getSuiviValidationAC$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/suivi-validation`).pipe(catchError(this.handleError));
 
+    // Demandes renseignées (analyse soumise) mais NON approuvées par l'agent -> rappel
+    getAApprouverAC$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/a-approuver-ac`).pipe(catchError(this.handleError));
+
     getEnCorrectionDR$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/en-correction-dr`).pipe(catchError(this.handleError));
 
     // DR

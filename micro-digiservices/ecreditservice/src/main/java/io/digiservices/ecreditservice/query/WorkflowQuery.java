@@ -13,6 +13,35 @@ public class WorkflowQuery {
               AND validation_state IN ('SELECTION', 'CORRECTION')
             """;
 
+    /**
+     * Demandes RENSEIGNEES mais NON APPROUVEES par l'agent : l'analyse financiere a ete
+     * soumise (bilan/tresorerie/cautions saisis) mais la demande est restee en SELECTION
+     * faute d'un clic sur "Approuver". A afficher en rappel sur le tableau de bord de l'agent.
+     */
+    public static final String SELECT_A_APPROUVER_AC = """
+            SELECT d.demandeindividuel_id AS "demandeIndividuelId",
+                   d.nom, d.prenom, d.telephone,
+                   d.numero_membre AS "numeroMembre",
+                   d.delegation, d.agence, d.pos,
+                   d.montant_demande AS "montantDemande",
+                   d.object_credit AS "objectCredit",
+                   d.validation_state AS "validationState",
+                   d.statut_demande AS "statutDemande",
+                   d.cod_usuarios AS "codUsuarios",
+                   d.avis_agent_credit AS "avisAgentCredit",
+                   d.createdat AS "createdAt"
+            FROM demandeindividuel d
+            INNER JOIN analyse_financiere af ON af.demandeindividuel_id = d.demandeindividuel_id
+            WHERE d.validation_state = 'SELECTION'
+              AND d.statut_demande = 'EN_ATTENTE'
+              AND af.statut = 'SOUMISE'
+              AND (
+                  (CAST(:agenceId AS BIGINT) IS NOT NULL AND CAST(:pointventeId AS BIGINT) IS NULL AND d.agence = CAST(:agenceId AS BIGINT)) OR
+                  (CAST(:pointventeId AS BIGINT) IS NOT NULL AND d.pos = CAST(:pointventeId AS BIGINT))
+              )
+            ORDER BY d.createdat DESC
+            """;
+
     // ==================== DA LISTS ====================
 
     public static final String SELECT_A_VALIDER_DA = """

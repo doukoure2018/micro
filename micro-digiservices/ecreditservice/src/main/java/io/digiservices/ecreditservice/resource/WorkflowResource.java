@@ -153,6 +153,17 @@ public class WorkflowResource {
                         "Suivi validation récupéré", OK));
     }
 
+    @GetMapping("/a-approuver-ac")
+    public ResponseEntity<Response> getAApprouverAC(
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        var result = workflowService.getAApprouverAC(user.getAgenceId(), user.getPointventeId());
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("workflowDemandes", result),
+                        "Demandes à approuver récupérées", OK));
+    }
+
     // ==================== DA - DEMANDES AFFECTEES ====================
 
     @GetMapping("/demandes-affectees-da")

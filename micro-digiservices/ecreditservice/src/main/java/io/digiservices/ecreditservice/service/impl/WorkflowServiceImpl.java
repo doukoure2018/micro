@@ -91,6 +91,11 @@ public class WorkflowServiceImpl implements WorkflowService {
         return workflowRepository.getSuiviValidationAC(agenceId, pointventeId);
     }
 
+    @Override
+    public List<WorkflowDemandeDto> getAApprouverAC(Long agenceId, Long pointventeId) {
+        return workflowRepository.getAApprouverAC(agenceId, pointventeId);
+    }
+
     // ==================== DA - DEMANDES AFFECTEES ====================
 
     @Override

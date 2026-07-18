@@ -161,6 +161,86 @@
     </div>
     }
 
+    <!-- Section: Demandes a APPROUVER (analyse saisie mais non approuvee par l'AC) -->
+    @if(hasWorkflowAApprouver()) {
+    <div class="card mt-5 border-l-4 border-orange-500 bg-orange-50">
+        <div class="flex flex-wrap gap-3 items-center justify-between mb-3">
+            <h3 class="text-xl font-semibold m-0 text-orange-800">
+                <i class="pi pi-bell mr-2 text-orange-600"></i>
+                Demandes a approuver (action requise)
+                <p-badge [value]="state().workflowAApprouver.length.toString()" severity="warn"
+                    class="ml-2"></p-badge>
+            </h3>
+            <p-button icon="pi pi-refresh" (click)="refresh()" severity="secondary" size="small"></p-button>
+        </div>
+
+        <p-message severity="warn" styleClass="w-full mb-4">
+            <span class="text-sm">
+                L'analyse (bilan, tresorerie, cautions) a ete saisie mais la demande <b>n'est pas encore approuvee</b>.
+                Tant que vous ne cliquez pas sur <b>Approuver</b>, la demande reste en attente et ne progresse pas
+                dans le circuit de validation. Ouvrez chaque demande ci-dessous pour finaliser l'approbation.
+            </span>
+        </p-message>
+
+        <p-table #dtAApprouver [value]="state().workflowAApprouver" [paginator]="true" [rows]="10"
+            [showCurrentPageReport]="true" responsiveLayout="scroll"
+            currentPageReportTemplate="Affichage de {first} a {last} sur {totalRecords}"
+            [rowsPerPageOptions]="[10, 25, 50]"
+            [globalFilterFields]="['nom', 'prenom', 'numeroMembre', 'objectCredit']"
+            styleClass="p-datatable-striped">
+
+            <ng-template pTemplate="caption">
+                <div class="flex flex-wrap gap-3 items-center justify-between">
+                    <p-icon-field class="w-full sm:w-80">
+                        <p-inputicon class="pi pi-search" />
+                        <input pInputText type="text" (input)="onGlobalFilter(dtAApprouver, $event)"
+                            placeholder="Rechercher..." class="w-full" />
+                    </p-icon-field>
+                </div>
+            </ng-template>
+
+            <ng-template pTemplate="header">
+                <tr>
+                    <th pSortableColumn="createdAt" style="width:12%">Date <p-sortIcon field="createdAt"></p-sortIcon>
+                    </th>
+                    <th pSortableColumn="nom" style="width:26%">Client <p-sortIcon field="nom"></p-sortIcon></th>
+                    <th class="text-right" style="width:18%">Montant</th>
+                    <th style="width:24%">Objet</th>
+                    <th class="text-center" style="width:20%">Actions</th>
+                </tr>
+            </ng-template>
+
+            <ng-template pTemplate="body" let-demande>
+                <tr class="hover:bg-surface-50">
+                    <td>{{ demande.createdAt | date:'dd/MM/yyyy' }}</td>
+                    <td>
+                        <div class="flex flex-col gap-1">
+                            <span class="font-semibold">{{ demande.prenom }} {{ demande.nom }}</span>
+                            <small class="text-500">{{ demande.numeroMembre }}</small>
+                        </div>
+                    </td>
+                    <td class="text-right font-bold">{{ formatMontantGNF(demande.montantDemande) }}</td>
+                    <td>{{ demande.objectCredit }}</td>
+                    <td class="text-center">
+                        <p-button icon="pi pi-check-circle" label="Approuver"
+                            (click)="viewDemandeDetail(demande.demandeIndividuelId)"
+                            size="small" severity="warn"></p-button>
+                    </td>
+                </tr>
+            </ng-template>
+
+            <ng-template pTemplate="emptymessage">
+                <tr>
+                    <td colspan="5" class="text-center p-6">
+                        <i class="pi pi-check-circle text-4xl text-green-500 mb-3"></i>
+                        <p class="text-600">Aucune demande en attente d'approbation</p>
+                    </td>
+                </tr>
+            </ng-template>
+        </p-table>
+    </div>
+    }
+
     <!-- Section: Demandes a Corriger (rejetees par DA) -->
     @if(hasWorkflowEnCorrection()) {
     <div class="card mt-5 border-l-4 border-red-500">
