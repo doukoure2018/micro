@@ -1,17 +1,21 @@
 spring:
   application:
     name: gateway
-  codec:
-    # Autorise des reponses volumineuses a transiter par le gateway (defaut 256KB)
-    max-in-memory-size: 10MB
+  # IMPORTANT : ce gateway est spring-cloud-starter-gateway-mvc (servlet). Son client
+  # HTTP de proxy lit spring.http.client.* ; le read-timeout par defaut coupe les appels
+  # lents (lectures SAF de la synthese DG ~10s). On le releve a 120s.
+  http:
+    client:
+      connect-timeout: 15s
+      read-timeout: 120s
   cloud:
     discovery:
       enabled: true
     gateway:
-      httpclient:
-        connect-timeout: 15000
-        # Lectures SAF (synthese DG) parfois lentes : ne pas couper avant 120s
-        response-timeout: 120s
+      mvc:
+        http-client:
+          connect-timeout: 15s
+          read-timeout: 120s
       discovery:
         locator:
           enabled: true
