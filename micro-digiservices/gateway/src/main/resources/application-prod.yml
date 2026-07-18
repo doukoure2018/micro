@@ -1,10 +1,17 @@
 spring:
   application:
     name: gateway
+  codec:
+    # Autorise des reponses volumineuses a transiter par le gateway (defaut 256KB)
+    max-in-memory-size: 10MB
   cloud:
     discovery:
       enabled: true
     gateway:
+      httpclient:
+        connect-timeout: 15000
+        # Lectures SAF (synthese DG) parfois lentes : ne pas couper avant 120s
+        response-timeout: 120s
       discovery:
         locator:
           enabled: true

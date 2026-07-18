@@ -426,6 +426,82 @@ public class CreditosServiceImpl implements CreditosService {
         }
     }
 
+    /**
+     * Score de confiance au NIVEAU CREDIT (sans la requete planPagos, lente).
+     * Pour chaque credit : compare la date de cloture (FEC_CANCELACION) a l'echeance
+     * (FEC_VENCIMIENTO). Credit solde a temps = 100 ; retard gradue ; credit en cours
+     * echu avec solde restant = penalise. Ponderation par recence (24 derniers mois x2).
+     */
+    private EvaluationRisqueDTO calcularEvaluacionRiesgoDesdeCreditos(List<CreditoDTO> creditos) {
+        LocalDateTime maintenant = LocalDateTime.now();
+        LocalDateTime seuilRecent = maintenant.minusMonths(24);
+
+        double sommePoints = 0.0, sommePoids = 0.0;
+        int analyses = 0, respectees = 0, enRetard = 0, nbAvecRetard = 0;
+        long totalJoursRetard = 0;
+
+        for (CreditoDTO c : creditos) {
+            if (c.getFecApertura() == null) continue;
+            boolean solde = "C".equals(c.getIndEstado()) && c.getFecCancelacion() != null;
+
+            long joursRetard;
+            if (solde && c.getFecVencimiento() != null) {
+                joursRetard = ChronoUnit.DAYS.between(c.getFecVencimiento(), c.getFecCancelacion());
+                if (joursRetard < 0) joursRetard = 0; // solde en avance = a temps
+            } else if (!solde && c.getFecVencimiento() != null && c.getFecVencimiento().isBefore(maintenant)
+                    && c.getMonSaldo() != null && c.getMonSaldo().signum() > 0) {
+                joursRetard = ChronoUnit.DAYS.between(c.getFecVencimiento(), maintenant); // en cours, echu, impaye
+            } else {
+                joursRetard = 0; // en cours non echu : pas d'element negatif
+            }
+
+            analyses++;
+            double points;
+            if (joursRetard <= 15) points = 100.0;
+            else if (joursRetard <= 60) points = 70.0;
+            else if (joursRetard <= 180) points = 40.0;
+            else points = solde ? 10.0 : 0.0;
+
+            if (points >= 100.0) respectees++;
+            else { enRetard++; totalJoursRetard += joursRetard; nbAvecRetard++; }
+
+            double poids = c.getFecApertura().isAfter(seuilRecent) ? 2.0 : 1.0;
+            sommePoints += points * poids;
+            sommePoids += 100.0 * poids;
+        }
+
+        if (analyses == 0) {
+            return EvaluationRisqueDTO.builder()
+                    .niveauRisque("INDÉTERMINÉ").pourcentageRisque(new BigDecimal("100"))
+                    .scoreConfiance(BigDecimal.ZERO).creditsAnalyses(0).echeancesAnalysees(0)
+                    .echeancesRespectees(0).echeancesEnRetard(0).retardMoyenJours(0)
+                    .historiqueRemboursement("Aucun historique").build();
+        }
+
+        BigDecimal scoreConfiance = new BigDecimal(sommePoints * 100.0 / sommePoids).setScale(2, BigDecimal.ROUND_HALF_UP);
+        BigDecimal pourcentageRisque = new BigDecimal("100").subtract(scoreConfiance);
+        int retardMoyenJours = nbAvecRetard > 0 ? (int) (totalJoursRetard / nbAvecRetard) : 0;
+
+        String niveauRisque, historiqueRemboursement;
+        if (scoreConfiance.compareTo(new BigDecimal("90")) >= 0) { niveauRisque = "TRÈS FAIBLE"; historiqueRemboursement = "Excellent"; }
+        else if (scoreConfiance.compareTo(new BigDecimal("75")) >= 0) { niveauRisque = "FAIBLE"; historiqueRemboursement = "Bon"; }
+        else if (scoreConfiance.compareTo(new BigDecimal("60")) >= 0) { niveauRisque = "MODÉRÉ"; historiqueRemboursement = "Moyen"; }
+        else if (scoreConfiance.compareTo(new BigDecimal("40")) >= 0) { niveauRisque = "ÉLEVÉ"; historiqueRemboursement = "Faible"; }
+        else { niveauRisque = "TRÈS ÉLEVÉ"; historiqueRemboursement = "Très faible"; }
+
+        return EvaluationRisqueDTO.builder()
+                .niveauRisque(niveauRisque)
+                .pourcentageRisque(pourcentageRisque)
+                .scoreConfiance(scoreConfiance)
+                .creditsAnalyses(analyses)
+                .echeancesAnalysees(analyses)
+                .echeancesRespectees(respectees)
+                .echeancesEnRetard(enRetard)
+                .retardMoyenJours(retardMoyenJours)
+                .historiqueRemboursement(historiqueRemboursement)
+                .build();
+    }
+
     @Override
     public CreditosClienteResponseDTO obtenerCreditosYPlanPagosPorClienteSaf(String codCliente) {
         log.info("Synthese credit SAF (tertiary) pour le client: {}", codCliente);
@@ -442,15 +518,11 @@ public class CreditosServiceImpl implements CreditosService {
                         .build();
             }
 
-            List<Map<String, Object>> planPagosData = safTertiaryRepository.obtenerPlanPagosPorCliente(codCliente);
-
+            // Synthese DG : UNE SEULE requete (credits). Le score est calcule au niveau
+            // credit (date de cancelacion vs echeance) sans la requete planPagos, lente sur
+            // la base dev. planPagos/resumenes ne sont pas renvoyes (inutiles a l'ecran).
             List<CreditoDTO> creditos = mapearCreditos(creditosData);
-            List<PlanPagoDTO> planPagos = mapearPlanPagos(planPagosData);
-            // Le score est calcule ici (serveur) a partir des echeances ; la synthese DG
-            // n'a besoin cote client que des credits + evaluationRisque. On N'ENVOIE PAS
-            // planPagos/resumenes (potentiellement des centaines de lignes) pour eviter
-            // une reponse volumineuse (limite de buffer du gateway) et accelerer le transfert.
-            EvaluationRisqueDTO evaluacionRisque = calcularEvaluacionRiesgo(codCliente, planPagos);
+            EvaluationRisqueDTO evaluacionRisque = calcularEvaluacionRiesgoDesdeCreditos(creditos);
 
             return CreditosClienteResponseDTO.builder()
                     .codCliente(codCliente)
