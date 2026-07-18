@@ -446,14 +446,17 @@ public class CreditosServiceImpl implements CreditosService {
 
             List<CreditoDTO> creditos = mapearCreditos(creditosData);
             List<PlanPagoDTO> planPagos = mapearPlanPagos(planPagosData);
-            List<ResumenPlanPagoDTO> resumenes = generarResumenes(planPagos);
+            // Le score est calcule ici (serveur) a partir des echeances ; la synthese DG
+            // n'a besoin cote client que des credits + evaluationRisque. On N'ENVOIE PAS
+            // planPagos/resumenes (potentiellement des centaines de lignes) pour eviter
+            // une reponse volumineuse (limite de buffer du gateway) et accelerer le transfert.
             EvaluationRisqueDTO evaluacionRisque = calcularEvaluacionRiesgo(codCliente, planPagos);
 
             return CreditosClienteResponseDTO.builder()
                     .codCliente(codCliente)
                     .creditos(creditos)
-                    .planPagos(planPagos)
-                    .resumenes(resumenes)
+                    .planPagos(List.of())
+                    .resumenes(List.of())
                     .evaluationRisque(evaluacionRisque)
                     .mensaje("Informations obtenues avec succès")
                     .build();
