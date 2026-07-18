@@ -349,7 +349,7 @@ export class ResumeAnalyseFinanciereComponent {
 
     canViewRatios(): boolean {
         const role = this.state().user?.role;
-        return role === 'MANAGER' || role === 'DA' || role === 'DR' || role === 'RA';
+        return role === 'MANAGER' || role === 'DA' || role === 'DR' || role === 'RA' || role === 'DG';
     }
 
     /**
