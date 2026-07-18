@@ -29,12 +29,15 @@ public class JacksonConfig {
             // Configurer le module JavaTime avec format personnalisé
             JavaTimeModule javaTimeModule = new JavaTimeModule();
 
-            // Configurer le serializer/deserializer pour LocalDateTime
+            // Serialisation : format fixe avec microsecondes (sortie stable).
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_TIME_FORMAT);
             javaTimeModule.addSerializer(LocalDateTime.class,
                     new LocalDateTimeSerializer(formatter));
+            // Deserialisation TOLERANTE : accepte l'ISO avec 0 a 9 decimales de seconde
+            // (ex. "2027-06-16T00:00:00", "...07.247", "...59.123456"). L'ancien format
+            // rigide en .SSSSSS faisait echouer le decodage des reponses Feign (ebanking/SAF).
             javaTimeModule.addDeserializer(LocalDateTime.class,
-                    new LocalDateTimeDeserializer(formatter));
+                    new LocalDateTimeDeserializer(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
 
             builder.modules(javaTimeModule);
         };
