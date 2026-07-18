@@ -129,7 +129,7 @@ public interface EbankingClient {
     // Synthese DG : lectures via la datasource SAF tertiary (dev), hors base de production
     // et hors perimetre protege par cle API (/ebanking/agri/**).
     @GetMapping(path = "/ebanking/saf/adhesion/{codCliente}")
-    FarmerDto getFarmerInfo(@PathVariable(name = "codCliente") String codCliente);
+    Map<String, Object> getFarmerInfo(@PathVariable(name = "codCliente") String codCliente);
 
     @GetMapping(path = "/ebanking/saf/comptes/{codCliente}")
     List<Map<String, Object>> getComptesByClient(@PathVariable(name = "codCliente") String codCliente);

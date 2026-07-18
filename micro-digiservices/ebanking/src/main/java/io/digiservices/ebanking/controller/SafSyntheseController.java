@@ -1,8 +1,6 @@
 package io.digiservices.ebanking.controller;
 
-import io.digiservices.clients.agri.FarmerDto;
 import io.digiservices.ebanking.domain.CreditosClienteResponseDTO;
-import io.digiservices.ebanking.repository.AgriculteurRepository;
 import io.digiservices.ebanking.repository.SafTertiaryRepository;
 import io.digiservices.ebanking.service.CreditosService;
 import lombok.RequiredArgsConstructor;
@@ -26,14 +24,14 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SafSyntheseController {
 
-    private final AgriculteurRepository agriculteurRepository;
     private final SafTertiaryRepository safTertiaryRepository;
     private final CreditosService creditosService;
 
-    /** Anciennete : infos membre dont la date d'adhesion (FEC_INGRESO). */
+    /** Anciennete : date d'adhesion (FEC_INGRESO). Requete legere ; null si client inconnu. */
     @GetMapping("/adhesion/{codCliente}")
-    public FarmerDto getAdhesion(@PathVariable("codCliente") String codCliente) {
-        return agriculteurRepository.findFarmerById(codCliente);
+    public Map<String, Object> getAdhesion(@PathVariable("codCliente") String codCliente) {
+        List<Map<String, Object>> rows = safTertiaryRepository.obtenerAdhesion(codCliente);
+        return rows.isEmpty() ? null : rows.get(0);
     }
 
     /** Comptes d'epargne du client (soldes). */

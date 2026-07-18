@@ -171,3 +171,12 @@ orange:
       credentials: Basic VExqQ1BlQ1ZDdUxTRURLUjc2Z0RZcXo5QWw4a3h5M3A6bVV6Y0tsTHhRdkp1Z1lpTWN2UFdjT2lMN3ppc3RSdDFCRjVvajIxNEwxRGs=
     sender:
       address: tel:+224622459305
+
+# Feign : les lectures SAF (synthese DG via ebanking) peuvent etre lentes (base dev),
+# on relance le readTimeout au-dela du defaut (60s) pour eviter les coupures.
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 15000
+        readTimeout: 120000

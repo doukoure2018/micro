@@ -55,6 +55,18 @@ public class SafTertiaryRepository {
                 codCliente);
     }
 
+    /**
+     * Anciennete : date d'adhesion (FEC_INGRESO) du client, requete legere et rapide
+     * (contrairement a AgriculteurRepository.findFarmerById qui fait une grosse jointure).
+     * Pas de filtre agricole : fonctionne pour tout client.
+     */
+    public List<Map<String, Object>> obtenerAdhesion(String codCliente) {
+        return tertiaryJdbcTemplate.queryForList(
+                "SELECT TOP 1 FEC_INGRESO AS fecIngreso, NOM_CLIENTE AS nomCliente, COD_CLIENTE AS codCliente " +
+                "FROM CL.CL_CLIENTES WHERE COD_CLIENTE = ?",
+                codCliente);
+    }
+
     /** Comptes d'epargne du client (soldes) depuis CC.CC_CUENTA_EFECTIVO. */
     public List<Map<String, Object>> obtenerComptesByClient(String codCliente) {
         return tertiaryJdbcTemplate.queryForList(
