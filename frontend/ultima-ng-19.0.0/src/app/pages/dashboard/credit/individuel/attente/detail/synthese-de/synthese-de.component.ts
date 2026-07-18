@@ -1,4 +1,5 @@
 import { DemandeIndividuel } from '@/interface/demande-individuel.interface';
+import { CreditosClienteResponseDTO } from '@/interface/CreditosClienteResponseDTO';
 import { Personnecaution } from '@/interface/personnecaution';
 import { IResponse } from '@/interface/response';
 import { Selection } from '@/interface/selection';
@@ -69,6 +70,9 @@ export class SyntheseDeComponent implements OnInit {
         hasDossier: boolean;
         hasBilan: boolean;
         tresorerie: TresorerieRow[];
+        farmer: any | null;
+        comptes: any[];
+        histoCredits: CreditosClienteResponseDTO | null;
         loading: boolean;
         error: string | null;
         showPreviewDialog: boolean;
@@ -82,6 +86,9 @@ export class SyntheseDeComponent implements OnInit {
         hasDossier: false,
         hasBilan: false,
         tresorerie: [],
+        farmer: null,
+        comptes: [],
+        histoCredits: null,
         loading: true,
         error: null,
         showPreviewDialog: false,
@@ -127,6 +134,14 @@ export class SyntheseDeComponent implements OnInit {
 
                     if (dossierId) {
                         this.loadTresorerie(dossierId);
+                    }
+
+                    // Synthese DG : donnees SAF liees au membre (codCliente = numeroMembre)
+                    const codCliente = demande?.numeroMembre;
+                    if (codCliente) {
+                        this.loadAgriInfo(codCliente);
+                        this.loadComptes(codCliente);
+                        this.loadHistoCredits(codCliente);
                     }
                 },
                 error: (error) => {
@@ -207,6 +222,134 @@ export class SyntheseDeComponent implements OnInit {
                 },
                 error: () => this.state.update((s) => ({ ...s, tresorerie: [] }))
             });
+    }
+
+    // ── Synthèse DG : SAF (ancienneté, épargne, historique crédits) ─────────────
+
+    private loadAgriInfo(codCliente: string): void {
+        this.userService
+            .getAgriInfo$(codCliente)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    this.state.update((s) => ({ ...s, farmer: (response.data as any)?.farmer || null }));
+                },
+                error: () => this.state.update((s) => ({ ...s, farmer: null }))
+            });
+    }
+
+    private loadComptes(codCliente: string): void {
+        this.userService
+            .getComptesClient$(codCliente)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    const comptes = (response.data as any)?.comptes;
+                    this.state.update((s) => ({ ...s, comptes: Array.isArray(comptes) ? comptes : [] }));
+                },
+                error: () => this.state.update((s) => ({ ...s, comptes: [] }))
+            });
+    }
+
+    private loadHistoCredits(codCliente: string): void {
+        this.userService
+            .getAllCreditos$(codCliente)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    this.state.update((s) => ({ ...s, histoCredits: (response.data as any)?.histoCredits || null }));
+                },
+                error: () => this.state.update((s) => ({ ...s, histoCredits: null }))
+            });
+    }
+
+    // Ancienneté (B1)
+    hasAnciennete(): boolean {
+        return !!this.state().farmer?.fecIngreso;
+    }
+
+    getFecIngreso(): string {
+        const f = this.state().farmer?.fecIngreso;
+        if (!f) return '';
+        const d = this.parseDate(f);
+        return d ? d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+    }
+
+    getAncienneteAnnees(): number | null {
+        const f = this.state().farmer?.fecIngreso;
+        const d = f ? this.parseDate(f) : null;
+        if (!d) return null;
+        const diff = Date.now() - d.getTime();
+        return Math.max(0, Math.floor(diff / (365.25 * 24 * 3600 * 1000)));
+    }
+
+    getAncienneteMois(): number | null {
+        const f = this.state().farmer?.fecIngreso;
+        const d = f ? this.parseDate(f) : null;
+        if (!d) return null;
+        const now = new Date();
+        return Math.max(0, (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth()));
+    }
+
+    private parseDate(value: any): Date | null {
+        if (!value) return null;
+        // LocalDate peut arriver en "yyyy-MM-dd", en tableau [y,m,d] ou en Date
+        if (Array.isArray(value) && value.length >= 3) return new Date(value[0], value[1] - 1, value[2]);
+        const d = new Date(value);
+        return isNaN(d.getTime()) ? null : d;
+    }
+
+    // Comptes d'épargne (B2)
+    getComptes(): any[] {
+        return this.state().comptes || [];
+    }
+
+    getSolde(compte: any, champ: string): number {
+        const v = compte?.[champ];
+        return typeof v === 'number' ? v : Number(v) || 0;
+    }
+
+    getTotalEpargne(): number {
+        return this.getComptes().reduce((total, c) => total + this.getSolde(c, 'SAL_DISPONIBLE'), 0);
+    }
+
+    getNumCompte(compte: any): string {
+        return compte?.comptePKId?.NUM_CUENTA ?? compte?.comptePKId?.num_cuenta ?? compte?.NUM_CUENTA ?? '—';
+    }
+
+    // Historique crédits + score (B3)
+    getEvaluationRisque(): any | null {
+        return this.state().histoCredits?.evaluationRisque || null;
+    }
+
+    getCreditsAnterieurs(): any[] {
+        return this.state().histoCredits?.creditos || [];
+    }
+
+    getScoreSeverity(): 'success' | 'info' | 'warn' | 'danger' {
+        const score = Number(this.getEvaluationRisque()?.scoreConfiance ?? 0);
+        if (score >= 90) return 'success';
+        if (score >= 75) return 'info';
+        if (score >= 60) return 'warn';
+        return 'danger';
+    }
+
+    // Comparatif ancien / actuel (B4)
+    getDernierCredit(): any | null {
+        const credits = this.getCreditsAnterieurs();
+        if (!credits.length) return null;
+        return credits
+            .slice()
+            .sort((a, b) => {
+                const da = this.parseDate(a.fecApertura)?.getTime() ?? 0;
+                const db = this.parseDate(b.fecApertura)?.getTime() ?? 0;
+                return db - da;
+            })[0];
+    }
+
+    formatDateShort(value: any): string {
+        const d = this.parseDate(value);
+        return d ? d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
     }
 
     // ── Garanties ─────────────────────────────────────────────────────────────

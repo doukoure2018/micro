@@ -5,5 +5,7 @@ export interface EvaluationRisqueDTO {
     creditsAnalyses: number;
     echeancesAnalysees: number;
     echeancesRespectees: number;
+    echeancesEnRetard?: number;
+    retardMoyenJours?: number;
     historiqueRemboursement: string;
 }

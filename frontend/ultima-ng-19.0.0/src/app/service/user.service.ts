@@ -61,6 +61,11 @@ export class UserService {
     getAllCreditos$ = (codCliente: string) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/seachCreditos/${codCliente}`).pipe(tap(console.log), catchError(this.handleError));
 
     getAllPlanPagosByCreditos$ = (numCredito: string) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/getPlanPagos/${numCredito}`).pipe(tap(console.log), catchError(this.handleError));
+
+    // Synthese DG : anciennete du membre (date d'adhesion) + comptes d'epargne (soldes SAF)
+    getAgriInfo$ = (codCliente: string) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/agri-info/${codCliente}`).pipe(catchError(this.handleError));
+
+    getComptesClient$ = (codCliente: string) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/comptes/${codCliente}`).pipe(catchError(this.handleError));
     // Mise en place analyse de credit
     addPromoteur$ = (promoteurData: any) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/addPromoteur`, promoteurData).pipe(tap(console.log), catchError(this.handleError));
     addEntreprise$ = (entrepriseData: any) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/addEntreprise`, entrepriseData).pipe(tap(console.log), catchError(this.handleError));

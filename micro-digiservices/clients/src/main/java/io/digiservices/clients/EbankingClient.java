@@ -1,6 +1,7 @@
 package io.digiservices.clients;
 
 import io.digiservices.clients.domain.*;
+import io.digiservices.clients.agri.FarmerDto;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -123,6 +124,14 @@ public interface EbankingClient {
 
     @GetMapping(path = "/ebanking/fiche-signaletique-solde/{codCliente}")
     ResponseEntity<?> getFicheSignaletiqueWithSolde(@PathVariable(name = "codCliente") String codCliente);
+
+
+    // Synthese DG : anciennete (FEC_INGRESO) + comptes d'epargne du client
+    @GetMapping(path = "/ebanking/agri/farmers/{codCliente}")
+    FarmerDto getFarmerInfo(@PathVariable(name = "codCliente") String codCliente);
+
+    @GetMapping(path = "/ebanking/{codClientes}/comptes")
+    List<Map<String, Object>> getComptesByClient(@PathVariable(name = "codClientes") String codClientes);
 
 
 

@@ -19,6 +19,8 @@ public class EvaluationRisqueDTO {
     private Integer creditsAnalyses;
     private Integer echeancesAnalysees;
     private Integer echeancesRespectees;
+    private Integer echeancesEnRetard;
+    private Integer retardMoyenJours;
     private String historiqueRemboursement;
     //private List<DetailRisqueCreditDTO> detailsParCredit;
 }

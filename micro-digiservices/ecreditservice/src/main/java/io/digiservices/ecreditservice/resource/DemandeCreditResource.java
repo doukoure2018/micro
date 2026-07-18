@@ -159,6 +159,25 @@ public class DemandeCreditResource {
         return ok(getResponse(request, Map.of("histoCredits", ebankingClient.obtenerCreditosYPlanPagosPorCliente(codCliente)), "Historoque Credits Client", OK));
     }
 
+    // Synthese DG : anciennete du membre (date d'adhesion FEC_INGRESO) via SAF
+    @GetMapping("/agri-info/{codCliente}")
+    public ResponseEntity<Response> getAgriInfo(@NotNull Authentication authentication,
+                                                @PathVariable(name = "codCliente") String codCliente,
+                                                HttpServletRequest request) {
+        var farmer = ebankingClient.getFarmerInfo(codCliente);
+        var data = new java.util.HashMap<String, Object>();
+        data.put("farmer", farmer); // peut etre null (client hors filtre agri ou SAF indisponible)
+        return ok(getResponse(request, data, "Information adhesion du membre", OK));
+    }
+
+    // Synthese DG : liste des comptes d'epargne du client (soldes SAF)
+    @GetMapping("/comptes/{codCliente}")
+    public ResponseEntity<Response> getComptesClient(@NotNull Authentication authentication,
+                                                     @PathVariable(name = "codCliente") String codCliente,
+                                                     HttpServletRequest request) {
+        return ok(getResponse(request, Map.of("comptes", ebankingClient.getComptesByClient(codCliente)), "Comptes du client", OK));
+    }
+
 
     @PostMapping("/addMotif/{demandeCreditId}")
     public ResponseEntity<Response> addMotif(@NotNull Authentication authentication,

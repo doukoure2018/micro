@@ -29,6 +29,7 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -468,11 +469,27 @@ public class CreditosServiceImpl implements CreditosService {
     }
 
 
+    /**
+     * Score de confiance ameliore.
+     *
+     * Ameliorations par rapport a l'ancienne version (binaire, meme-mois, 3 credits) :
+     *  - Notation GRADUEE selon le nombre de jours de retard de chaque echeance
+     *    (a temps=100, 1-30j=70, 31-90j=40, >90j=10 si payee / 0 si jamais payee).
+     *  - Ponderation par RECENCE : les echeances des 18 derniers mois comptent double
+     *    (le comportement recent pese davantage).
+     *  - Analyse ELARGIE a tous les credits du client (et non plus seulement les 3 derniers).
+     *  - Metriques de transparence : echeances en retard et retard moyen (jours).
+     */
     private EvaluationRisqueDTO calcularEvaluacionRiesgo(String codCliente, List<PlanPagoDTO> todosLosPagos) {
-        // Obtener los 3 últimos créditos
-        List<Map<String, Object>> ultimosCreditos = creditosRepository.obtenerUltimosTresCreditos(codCliente);
+        LocalDateTime maintenant = LocalDateTime.now();
 
-        if (ultimosCreditos.isEmpty()) {
+        // Toutes les echeances echues (hors ouverture numCuota==0), tous credits confondus
+        List<PlanPagoDTO> pagosAnalizar = todosLosPagos.stream()
+                .filter(p -> p.getNumCuota() != 0)
+                .filter(p -> p.getFecCuota() != null && p.getFecCuota().isBefore(maintenant))
+                .collect(Collectors.toList());
+
+        if (pagosAnalizar.isEmpty()) {
             return EvaluationRisqueDTO.builder()
                     .niveauRisque("INDÉTERMINÉ")
                     .pourcentageRisque(new BigDecimal("100"))
@@ -480,40 +497,69 @@ public class CreditosServiceImpl implements CreditosService {
                     .creditsAnalyses(0)
                     .echeancesAnalysees(0)
                     .echeancesRespectees(0)
+                    .echeancesEnRetard(0)
+                    .retardMoyenJours(0)
                     .historiqueRemboursement("Aucun historique")
                     .build();
         }
 
-        // Filtrar solo los pagos de los últimos 3 créditos
-        Set<Long> creditosAnalizar = ultimosCreditos.stream()
-                .map(c -> convertirALong(c.get("NUM_CREDITO")))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
+        // Fenetre de recence : echeances dues dans les 18 derniers mois => poids double
+        LocalDateTime seuilRecent = maintenant.minusMonths(18);
+        // Tolerance : un retard <= 5 jours est considere comme respecte
+        final long TOLERANCE_JOURS = 5;
 
-        // IMPORTANT: Excluir les échéances d'ouverture (numCuota == 0)
-        List<PlanPagoDTO> pagosAnalizar = todosLosPagos.stream()
-                .filter(p -> creditosAnalizar.contains(p.getNumCredito()))
-                .filter(p -> p.getNumCuota() != 0) // Exclure les ouvertures
-                .filter(p -> p.getFecCuota() != null && p.getFecCuota().isBefore(LocalDateTime.now()))
-                .collect(Collectors.toList());
-
-        // Calcular métricas
-        int totalEcheances = pagosAnalizar.size();
+        double sommePoints = 0.0; // points ponderes obtenus
+        double sommePoids = 0.0;  // poids maximal atteignable
         int echeancesRespectees = 0;
+        int echeancesEnRetard = 0;
+        long totalJoursRetard = 0;
+        int nbAvecRetard = 0;
 
         for (PlanPagoDTO pago : pagosAnalizar) {
-            if ("C".equals(pago.getIndEstado()) && pago.getFecCancelacion() != null && pago.getFecCuota() != null) {
-                // Verificar si se pagó en el mismo mes
-                if (pago.getFecCancelacion().getYear() == pago.getFecCuota().getYear() &&
-                        pago.getFecCancelacion().getMonth() == pago.getFecCuota().getMonth()) {
-                    echeancesRespectees++;
-                }
+            boolean payee = "C".equals(pago.getIndEstado()) && pago.getFecCancelacion() != null;
+
+            long joursRetard;
+            if (payee) {
+                joursRetard = ChronoUnit.DAYS.between(pago.getFecCuota(), pago.getFecCancelacion());
+                if (joursRetard < 0) joursRetard = 0; // payee en avance = a temps
+            } else {
+                // Impayee et echue : retard = de l'echeance a aujourd'hui
+                joursRetard = ChronoUnit.DAYS.between(pago.getFecCuota(), maintenant);
             }
+
+            double points;
+            if (joursRetard <= TOLERANCE_JOURS) {
+                points = 100.0;
+            } else if (joursRetard <= 30) {
+                points = 70.0;
+            } else if (joursRetard <= 90) {
+                points = 40.0;
+            } else {
+                points = payee ? 10.0 : 0.0; // payee tres en retard vs jamais payee
+            }
+
+            if (points >= 100.0) {
+                echeancesRespectees++;
+            } else {
+                echeancesEnRetard++;
+                totalJoursRetard += joursRetard;
+                nbAvecRetard++;
+            }
+
+            double poids = pago.getFecCuota().isAfter(seuilRecent) ? 2.0 : 1.0;
+            sommePoints += points * poids;
+            sommePoids += 100.0 * poids;
         }
 
-        // Calcular scores
-        BigDecimal scoreConfiance = totalEcheances > 0
-                ? new BigDecimal(echeancesRespectees * 100.0 / totalEcheances).setScale(2, BigDecimal.ROUND_HALF_UP)
+        int totalEcheances = pagosAnalizar.size();
+        int creditsAnalyses = (int) pagosAnalizar.stream()
+                .map(PlanPagoDTO::getNumCredito)
+                .distinct()
+                .count();
+        int retardMoyenJours = nbAvecRetard > 0 ? (int) (totalJoursRetard / nbAvecRetard) : 0;
+
+        BigDecimal scoreConfiance = sommePoids > 0
+                ? new BigDecimal(sommePoints * 100.0 / sommePoids).setScale(2, BigDecimal.ROUND_HALF_UP)
                 : BigDecimal.ZERO;
 
         BigDecimal pourcentageRisque = new BigDecimal("100").subtract(scoreConfiance);
@@ -542,9 +588,11 @@ public class CreditosServiceImpl implements CreditosService {
                 .niveauRisque(niveauRisque)
                 .pourcentageRisque(pourcentageRisque)
                 .scoreConfiance(scoreConfiance)
-                .creditsAnalyses(creditosAnalizar.size())
+                .creditsAnalyses(creditsAnalyses)
                 .echeancesAnalysees(totalEcheances)
                 .echeancesRespectees(echeancesRespectees)
+                .echeancesEnRetard(echeancesEnRetard)
+                .retardMoyenJours(retardMoyenJours)
                 .historiqueRemboursement(historiqueRemboursement)
                 .build();
     }
