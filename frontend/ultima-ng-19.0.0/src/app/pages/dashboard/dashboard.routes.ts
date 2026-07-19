@@ -223,6 +223,11 @@ export default [
         loadComponent: () => import('./admin/config-reseau/config-reseau.component').then((c) => c.ConfigReseauComponent)
     },
     {
+        path: 'reseau-geo',
+        data: { breadcrumb: 'Réseau — Géolocalisation' },
+        loadComponent: () => import('./admin/reseau-geo/reseau-geo.component').then((c) => c.ReseauGeoComponent)
+    },
+    {
         path: 'analytics',
         data: { breadcrumb: 'Analytics Dashboard' },
         loadComponent: () => import('./analytics/dashboardanalytics').then((c) => c.DashboardAnalytics)

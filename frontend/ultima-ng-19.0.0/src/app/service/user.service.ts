@@ -68,6 +68,23 @@ export class UserService {
     getComptesClient$ = (codCliente: string) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/comptes/${codCliente}`).pipe(catchError(this.handleError));
 
     getHistoCreditsSaf$ = (codCliente: string) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/histo-credits-saf/${codCliente}`).pipe(catchError(this.handleError));
+
+    // Reseau geolocalise des points de vente (SUPER_ADMIN import/export + carte)
+    importReseau$ = (file: File) => {
+        const fd = new FormData();
+        fd.append('file', file);
+        return <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/user/reseau/import`, fd).pipe(catchError(this.handleError));
+    };
+
+    exportReseau$ = () => this.http.get(`${this.server}/user/reseau/export`, { responseType: 'blob' });
+
+    getReseauPoints$ = (delegation?: string, type?: string) => {
+        const q: string[] = [];
+        if (delegation) q.push(`delegation=${encodeURIComponent(delegation)}`);
+        if (type) q.push(`type=${encodeURIComponent(type)}`);
+        const qs = q.length ? `?${q.join('&')}` : '';
+        return <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/user/reseau/points${qs}`).pipe(catchError(this.handleError));
+    };
     // Mise en place analyse de credit
     addPromoteur$ = (promoteurData: any) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/addPromoteur`, promoteurData).pipe(tap(console.log), catchError(this.handleError));
     addEntreprise$ = (entrepriseData: any) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/addEntreprise`, entrepriseData).pipe(tap(console.log), catchError(this.handleError));

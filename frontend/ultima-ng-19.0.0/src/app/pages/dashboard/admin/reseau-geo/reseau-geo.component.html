@@ -1,0 +1,148 @@
+<p-toast></p-toast>
+
+<div class="p-4">
+    <!-- En-tête -->
+    <div class="bg-white rounded-xl shadow-md border border-gray-200 mb-6 overflow-hidden">
+        <div class="bg-gradient-to-r from-green-700 to-green-900 text-white px-6 py-5 flex items-center justify-between flex-wrap gap-4">
+            <div class="flex items-center gap-3">
+                <i class="pi pi-map-marker text-2xl"></i>
+                <div>
+                    <div class="font-bold text-xl uppercase tracking-wide">Réseau — Géolocalisation des points de vente</div>
+                    <span class="inline-block mt-1 bg-white/20 text-xs font-semibold px-3 py-1 rounded-full">
+                        <i class="pi pi-lock mr-1"></i>Réservé SUPER_ADMIN
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="px-6 py-3 text-sm text-gray-600">
+            Importez le fichier Excel du réseau (colonnes : DELEGATION, AGENCE, PS, NOMS, CONTACT, TYPE, LONGITUDE, LATITUDE).
+            L'import <strong>remplace tout le réseau</strong>. Les coordonnées permutées de l'Excel sont corrigées automatiquement.
+        </div>
+    </div>
+
+    <div class="grid">
+        <!-- Import -->
+        <div class="col-12 lg:col-6">
+            <p-card>
+                <ng-template pTemplate="header">
+                    <div class="flex items-center gap-2 p-3 bg-green-50">
+                        <i class="pi pi-upload text-green-600 text-xl"></i>
+                        <h4 class="m-0 text-green-800">Importer le fichier Excel</h4>
+                    </div>
+                </ng-template>
+
+                <div class="flex flex-col gap-3">
+                    <p-fileUpload mode="basic" chooseLabel="Choisir un fichier .xlsx"
+                        accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        [auto]="false" [showUploadButton]="false" [showCancelButton]="false"
+                        (onSelect)="onFileSelect($event)" (onClear)="onFileClear()"></p-fileUpload>
+
+                    @if (state().selectedFile) {
+                    <div class="text-sm text-gray-600">
+                        <i class="pi pi-file-excel text-green-600 mr-1"></i>{{ state().selectedFile?.name }}
+                    </div>
+                    }
+
+                    <div>
+                        <button pButton type="button" label="Importer dans la base"
+                            icon="pi pi-database" (click)="importer()"
+                            [disabled]="!state().selectedFile || state().importing"
+                            [loading]="state().importing" severity="success"></button>
+                    </div>
+
+                    @if (state().report; as report) {
+                    <div class="mt-2 rounded-lg border border-gray-200 p-3 bg-gray-50">
+                        <div class="flex flex-wrap gap-4 text-sm mb-2">
+                            <span>Lignes lues : <strong>{{ report.totalLignes }}</strong></span>
+                            <span class="text-green-700">Importées : <strong>{{ report.importes }}</strong></span>
+                            <span class="text-red-600">Ignorées : <strong>{{ report.ignorees }}</strong></span>
+                        </div>
+                        @if (report.erreurs.length) {
+                        <details>
+                            <summary class="cursor-pointer text-sm text-red-600">Voir les {{ report.erreurs.length }} ligne(s) rejetée(s)</summary>
+                            <ul class="text-xs text-gray-600 mt-2 max-h-40 overflow-auto">
+                                @for (e of report.erreurs; track $index) { <li>{{ e }}</li> }
+                            </ul>
+                        </details>
+                        }
+                    </div>
+                    }
+                </div>
+            </p-card>
+        </div>
+
+        <!-- Export -->
+        <div class="col-12 lg:col-6">
+            <p-card>
+                <ng-template pTemplate="header">
+                    <div class="flex items-center gap-2 p-3 bg-blue-50">
+                        <i class="pi pi-download text-blue-600 text-xl"></i>
+                        <h4 class="m-0 text-blue-800">Exporter le réseau</h4>
+                    </div>
+                </ng-template>
+                <div class="flex flex-col gap-3">
+                    <p class="text-sm text-gray-600 m-0">
+                        Télécharge l'ensemble des points de vente actuellement en base au format Excel
+                        (même structure que le fichier d'import).
+                    </p>
+                    <div>
+                        <button pButton type="button" label="Exporter (.xlsx)" icon="pi pi-file-excel"
+                            (click)="exporter()" [loading]="state().exporting" severity="info"></button>
+                    </div>
+                </div>
+            </p-card>
+        </div>
+    </div>
+
+    <!-- Liste des points -->
+    <div class="bg-white rounded-xl shadow-md border border-gray-200 mt-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-gray-100">
+            <h3 class="m-0 text-lg font-semibold">
+                <i class="pi pi-list mr-2 text-green-600"></i>Points de vente ({{ state().points.length }})
+            </h3>
+            <div class="flex flex-wrap gap-3">
+                <p-dropdown [options]="delegationOptions" [(ngModel)]="filterDelegation"
+                    (onChange)="onFilterChange()" placeholder="Délégation" [style]="{ 'min-width': '200px' }"></p-dropdown>
+                <p-dropdown [options]="typeOptions" [(ngModel)]="filterType"
+                    (onChange)="onFilterChange()" placeholder="Type" [style]="{ 'min-width': '160px' }"></p-dropdown>
+                <button pButton type="button" icon="pi pi-refresh" (click)="loadPoints()"
+                    severity="secondary" size="small"></button>
+            </div>
+        </div>
+
+        @if (state().loading) {
+        <div class="flex justify-center p-8"><p-progressSpinner [style]="{ width: '40px', height: '40px' }"></p-progressSpinner></div>
+        } @else {
+        <p-table [value]="state().points" [paginator]="true" [rows]="15" [rowsPerPageOptions]="[15, 30, 50]"
+            responsiveLayout="scroll" styleClass="p-datatable-sm p-datatable-striped">
+            <ng-template pTemplate="header">
+                <tr>
+                    <th>Délégation</th>
+                    <th>Agence</th>
+                    <th>Point de vente</th>
+                    <th>Nom</th>
+                    <th>Contact</th>
+                    <th class="text-center">Type</th>
+                    <th class="text-right">Latitude</th>
+                    <th class="text-right">Longitude</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-p>
+                <tr>
+                    <td>{{ p.delegation }}</td>
+                    <td>{{ p.agence }}</td>
+                    <td>{{ p.pointVente }}</td>
+                    <td class="font-semibold">{{ p.nom }}</td>
+                    <td>{{ p.contact }}</td>
+                    <td class="text-center"><p-tag [value]="p.type" [severity]="typeSeverity(p.type)"></p-tag></td>
+                    <td class="text-right">{{ p.latitude }}</td>
+                    <td class="text-right">{{ p.longitude }}</td>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+                <tr><td colspan="8" class="text-center p-6 text-gray-500">Aucun point de vente. Importez un fichier Excel.</td></tr>
+            </ng-template>
+        </p-table>
+        }
+    </div>
+</div>
