@@ -1,6 +1,7 @@
 import { IResponse } from '@/interface/response';
 import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { AfterViewInit, Component, DestroyRef, ElementRef, inject, OnDestroy, signal, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -20,6 +21,13 @@ interface ReseauPoint {
     type: string;
     latitude?: number;
     longitude?: number;
+    commune?: string; // deduite par point-dans-polygone
+}
+
+interface CommuneFeature {
+    name: string;
+    bbox: [number, number, number, number];
+    geom: any;
 }
 
 @Component({
@@ -53,20 +61,24 @@ export class DigiMapComponent implements AfterViewInit, OnDestroy {
     // Filtres
     searchTerm = '';
     selectedDelegation: string | null = null;
-    selectedAgence: string | null = null; // "commune / zone"
+    selectedCommune: string | null = null;
     typeVisible: Record<string, boolean> = { ABT: true, PS: true, KIOSQUE: true, GUICHET: true, PART: true };
 
     state = signal<{ points: ReseauPoint[]; loading: boolean }>({ points: [], loading: true });
 
     private map!: L.Map;
     private markersLayer = L.layerGroup();
+    private communeLayer = L.layerGroup();
     private markerById: Record<number, L.Marker> = {};
+    private communeFeatures: CommuneFeature[] = [];
 
     private userService = inject(UserService);
+    private http = inject(HttpClient);
     private destroyRef = inject(DestroyRef);
 
     ngAfterViewInit(): void {
         this.initMap();
+        this.loadCommunes();
         this.loadPoints();
     }
 
@@ -87,8 +99,25 @@ export class DigiMapComponent implements AfterViewInit, OnDestroy {
             maxZoom: 19,
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(this.map);
+        this.communeLayer.addTo(this.map); // sous les marqueurs
         this.markersLayer.addTo(this.map);
         setTimeout(() => this.map.invalidateSize(), 200);
+    }
+
+    // ── Chargement ──────────────────────────────────────────────────────────────
+    private loadCommunes(): void {
+        this.http
+            .get<any>('/geo/guinea-communes.geojson')
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (fc) => {
+                    this.communeFeatures = (fc?.features || [])
+                        .filter((f: any) => f?.geometry && f?.properties?.name)
+                        .map((f: any) => ({ name: f.properties.name, bbox: this.computeBbox(f.geometry), geom: f.geometry }));
+                    this.assignCommunesIfReady();
+                },
+                error: () => {}
+            });
     }
 
     private loadPoints(): void {
@@ -99,49 +128,106 @@ export class DigiMapComponent implements AfterViewInit, OnDestroy {
             .subscribe({
                 next: (response: IResponse) => {
                     const points: ReseauPoint[] = (response.data as any)?.points || [];
-                    // Delegations reelles presentes dans les donnees
                     const delegations = Array.from(new Set(points.map((p) => p.delegation).filter(Boolean))).sort();
                     this.delegationOptions = [{ label: 'Toutes les délégations', value: null }, ...delegations.map((d) => ({ label: d, value: d }))];
                     this.state.update((s) => ({ ...s, points, loading: false }));
+                    this.assignCommunesIfReady();
                     this.renderMarkers();
                 },
                 error: () => this.state.update((s) => ({ ...s, points: [], loading: false }))
             });
     }
 
+    /** Assigne la commune à chaque point dès que points ET géométries sont dispo. */
+    private assignCommunesIfReady(): void {
+        const pts = this.state().points;
+        if (!this.communeFeatures.length || !pts.length) return;
+        pts.forEach((p) => {
+            if (p.latitude != null && p.longitude != null) {
+                p.commune = this.findCommune(p.longitude, p.latitude) || 'Hors commune';
+            }
+        });
+        this.state.update((s) => ({ ...s, points: [...s.points] })); // rafraîchit liste/options
+    }
+
+    // ── Point-dans-polygone ──────────────────────────────────────────────────────
+    private findCommune(lng: number, lat: number): string | null {
+        for (const c of this.communeFeatures) {
+            const [minX, minY, maxX, maxY] = c.bbox;
+            if (lng < minX || lng > maxX || lat < minY || lat > maxY) continue;
+            if (this.geomContains(c.geom, lng, lat)) return c.name;
+        }
+        return null;
+    }
+
+    private geomContains(geom: any, lng: number, lat: number): boolean {
+        if (geom.type === 'Polygon') return this.ringsContain(geom.coordinates, lng, lat);
+        if (geom.type === 'MultiPolygon') return geom.coordinates.some((poly: any) => this.ringsContain(poly, lng, lat));
+        return false;
+    }
+
+    /** Ray-casting even-odd sur tous les anneaux d'un polygone (gère les trous). */
+    private ringsContain(rings: number[][][], lng: number, lat: number): boolean {
+        let inside = false;
+        for (const ring of rings) {
+            for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+                const xi = ring[i][0], yi = ring[i][1], xj = ring[j][0], yj = ring[j][1];
+                const intersect = yi > lat !== yj > lat && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi;
+                if (intersect) inside = !inside;
+            }
+        }
+        return inside;
+    }
+
+    private computeBbox(geom: any): [number, number, number, number] {
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        const scan = (coords: any): void => {
+            if (typeof coords[0] === 'number') {
+                const x = coords[0], y = coords[1];
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+            } else {
+                coords.forEach(scan);
+            }
+        };
+        scan(geom.coordinates);
+        return [minX, minY, maxX, maxY];
+    }
+
+    // ── Filtres / liste ──────────────────────────────────────────────────────────
     filteredPoints(): ReseauPoint[] {
         const term = this.searchTerm.trim().toLowerCase();
         return this.state().points.filter((p) => {
             if (this.selectedDelegation && p.delegation !== this.selectedDelegation) return false;
-            if (this.selectedAgence && p.agence !== this.selectedAgence) return false;
+            if (this.selectedCommune && p.commune !== this.selectedCommune) return false;
             if (this.typeVisible[p.type] === false) return false;
             if (p.latitude == null || p.longitude == null) return false;
             if (term) {
-                const hay = `${p.nom} ${p.agence} ${p.pointVente || ''} ${p.type} ${p.delegation} ${p.contact || ''}`.toLowerCase();
+                const hay = `${p.nom} ${p.agence} ${p.pointVente || ''} ${p.type} ${p.delegation} ${p.commune || ''} ${p.contact || ''}`.toLowerCase();
                 if (!hay.includes(term)) return false;
             }
             return true;
         });
     }
 
-    /** Zones (communes) = agences distinctes, éventuellement limitées à la délégation choisie. */
-    getAgenceOptions(): { label: string; value: string | null }[] {
-        const agences = Array.from(
+    /** Communes présentes (dans la délégation choisie), pour le sélecteur de zone. */
+    getCommuneOptions(): { label: string; value: string | null }[] {
+        const communes = Array.from(
             new Set(
                 this.state()
-                    .points.filter((p) => !this.selectedDelegation || p.delegation === this.selectedDelegation)
-                    .map((p) => p.agence)
-                    .filter(Boolean)
+                    .points.filter((p) => (!this.selectedDelegation || p.delegation === this.selectedDelegation) && p.commune)
+                    .map((p) => p.commune as string)
             )
         ).sort();
-        return [{ label: 'Toutes les zones', value: null }, ...agences.map((a) => ({ label: a, value: a }))];
+        return [{ label: 'Toutes les communes', value: null }, ...communes.map((c) => ({ label: c, value: c }))];
     }
 
-    /** Points filtrés regroupés par zone (agence), pour la liste latérale. */
     groupedByZone(): { zone: string; points: ReseauPoint[] }[] {
         const groups: Record<string, ReseauPoint[]> = {};
         this.filteredPoints().forEach((p) => {
-            const z = p.agence || '—';
+            const z = p.commune || 'Hors commune';
             (groups[z] = groups[z] || []).push(p);
         });
         return Object.keys(groups)
@@ -151,12 +237,18 @@ export class DigiMapComponent implements AfterViewInit, OnDestroy {
 
     countByType(type: string): number {
         return this.state().points.filter(
-            (p) => p.type === type && (!this.selectedDelegation || p.delegation === this.selectedDelegation) && (!this.selectedAgence || p.agence === this.selectedAgence)
+            (p) => p.type === type && (!this.selectedDelegation || p.delegation === this.selectedDelegation) && (!this.selectedCommune || p.commune === this.selectedCommune)
         ).length;
     }
 
     onDelegationChange(): void {
-        this.selectedAgence = null; // réinitialise la zone quand la délégation change
+        this.selectedCommune = null;
+        this.drawCommuneBoundary(null);
+        this.renderMarkers();
+    }
+
+    onCommuneChange(): void {
+        this.drawCommuneBoundary(this.selectedCommune);
         this.renderMarkers();
     }
 
@@ -164,7 +256,11 @@ export class DigiMapComponent implements AfterViewInit, OnDestroy {
         this.renderMarkers();
     }
 
-    /** Centre la carte sur un point et ouvre son popup (depuis la liste). */
+    toggleType(type: string): void {
+        this.typeVisible[type] = !this.typeVisible[type];
+        this.renderMarkers();
+    }
+
     locatePoint(p: ReseauPoint): void {
         if (p.latitude == null || p.longitude == null || !this.map) return;
         this.map.setView([p.latitude, p.longitude], 15, { animate: true });
@@ -172,9 +268,17 @@ export class DigiMapComponent implements AfterViewInit, OnDestroy {
         if (m) m.openPopup();
     }
 
-    toggleType(type: string): void {
-        this.typeVisible[type] = !this.typeVisible[type];
-        this.renderMarkers();
+    // ── Carte ────────────────────────────────────────────────────────────────────
+    private drawCommuneBoundary(name: string | null): void {
+        this.communeLayer.clearLayers();
+        if (!name) return;
+        this.communeFeatures
+            .filter((c) => c.name === name)
+            .forEach((c) => {
+                L.geoJSON({ type: 'Feature', geometry: c.geom } as any, {
+                    style: { color: '#0891b2', weight: 2, fillColor: '#22d3ee', fillOpacity: 0.12 }
+                }).addTo(this.communeLayer);
+            });
     }
 
     private renderMarkers(): void {
@@ -212,6 +316,7 @@ export class DigiMapComponent implements AfterViewInit, OnDestroy {
               <div style="font-weight:700;margin-bottom:4px">${this.escape(p.nom)}</div>
               <div style="display:inline-block;background:${color};color:#fff;font-size:11px;padding:1px 8px;border-radius:10px;margin-bottom:6px">${this.escape(this.TYPE_LABELS[p.type] || p.type)}</div>
               <div style="font-size:12px;color:#444">
+                ${p.commune ? `<div><b>Commune :</b> ${this.escape(p.commune)}</div>` : ''}
                 <div><b>Délégation :</b> ${this.escape(p.delegation)}</div>
                 <div><b>Agence :</b> ${this.escape(p.agence)}</div>
                 ${p.pointVente ? `<div><b>Point de vente :</b> ${this.escape(p.pointVente)}</div>` : ''}

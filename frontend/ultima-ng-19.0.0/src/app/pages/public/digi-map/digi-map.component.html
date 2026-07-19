@@ -28,8 +28,8 @@
                 </span>
                 <p-dropdown [options]="delegationOptions" [(ngModel)]="selectedDelegation"
                     (onChange)="onDelegationChange()" placeholder="Délégation" [style]="{ 'min-width': '200px' }"></p-dropdown>
-                <p-dropdown [options]="getAgenceOptions()" [(ngModel)]="selectedAgence" [filter]="true"
-                    (onChange)="onFilterChange()" placeholder="Commune / Zone" [style]="{ 'min-width': '200px' }"></p-dropdown>
+                <p-dropdown [options]="getCommuneOptions()" [(ngModel)]="selectedCommune" [filter]="true"
+                    (onChange)="onCommuneChange()" placeholder="Commune" [style]="{ 'min-width': '200px' }"></p-dropdown>
                 <span class="text-sm text-gray-600 whitespace-nowrap">
                     <i class="pi pi-map-marker text-cyan-600 mr-1"></i>{{ filteredPoints().length }} résultat(s)
                 </span>
