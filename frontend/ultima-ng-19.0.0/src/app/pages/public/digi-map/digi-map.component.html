@@ -1,7 +1,7 @@
 <div class="min-h-screen bg-gray-100 flex flex-col">
     <!-- Barre supérieure -->
     <header class="bg-gray-900 text-white shadow-lg">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between flex-wrap gap-3">
+        <div class="max-w-screen-2xl mx-auto px-4 py-4 flex items-center justify-between flex-wrap gap-3">
             <div class="flex items-center gap-3">
                 <i class="pi pi-map text-2xl text-cyan-400"></i>
                 <div>
@@ -18,16 +18,18 @@
 
     <!-- Recherche + filtres -->
     <div class="bg-white border-b border-gray-200 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col gap-3">
+        <div class="max-w-screen-2xl mx-auto px-4 py-3 flex flex-col gap-3">
             <div class="flex flex-wrap items-center gap-3">
-                <span class="p-input-icon-left flex-1" style="min-width: 260px; position: relative;">
+                <span class="flex-1" style="min-width: 240px; position: relative;">
                     <i class="pi pi-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#9ca3af;"></i>
                     <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="onFilterChange()"
                         placeholder="Rechercher un point de service, un ABT, un partenaire, une agence…"
                         class="w-full rounded-full border border-gray-300 py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400" />
                 </span>
                 <p-dropdown [options]="delegationOptions" [(ngModel)]="selectedDelegation"
-                    (onChange)="onFilterChange()" placeholder="Délégation" [style]="{ 'min-width': '220px' }"></p-dropdown>
+                    (onChange)="onDelegationChange()" placeholder="Délégation" [style]="{ 'min-width': '200px' }"></p-dropdown>
+                <p-dropdown [options]="getAgenceOptions()" [(ngModel)]="selectedAgence" [filter]="true"
+                    (onChange)="onFilterChange()" placeholder="Commune / Zone" [style]="{ 'min-width': '200px' }"></p-dropdown>
                 <span class="text-sm text-gray-600 whitespace-nowrap">
                     <i class="pi pi-map-marker text-cyan-600 mr-1"></i>{{ filteredPoints().length }} résultat(s)
                 </span>
@@ -49,13 +51,53 @@
         </div>
     </div>
 
-    <!-- Carte -->
-    <div class="flex-1 relative">
-        @if (state().loading) {
-        <div class="absolute inset-0 z-[500] flex items-center justify-center bg-white/60">
-            <p-progressSpinner [style]="{ width: '48px', height: '48px' }"></p-progressSpinner>
+    <!-- Contenu : liste par zone + carte -->
+    <div class="flex-1 max-w-screen-2xl w-full mx-auto flex flex-col lg:flex-row gap-0 lg:gap-4 lg:px-4 lg:py-4">
+        <!-- Liste des points groupés par zone (commune) -->
+        <aside class="w-full lg:w-96 bg-white lg:rounded-xl lg:shadow-md border-y lg:border border-gray-200 overflow-y-auto max-h-[45vh] lg:max-h-[70vh]">
+            <div class="sticky top-0 bg-gray-50 px-4 py-3 border-b border-gray-100 z-10">
+                <h3 class="m-0 text-sm font-semibold text-gray-700">
+                    <i class="pi pi-list mr-2 text-cyan-600"></i>Points de services par zone
+                </h3>
+            </div>
+
+            @if (state().loading) {
+            <div class="p-6 text-center text-gray-400 text-sm"><i class="pi pi-spin pi-spinner mr-2"></i>Chargement…</div>
+            } @else if (!groupedByZone().length) {
+            <div class="p-6 text-center text-gray-400 text-sm">Aucun point pour ces filtres.</div>
+            } @else {
+            @for (g of groupedByZone(); track g.zone) {
+            <div>
+                <div class="px-4 py-2 bg-cyan-50 text-cyan-800 text-xs font-bold uppercase tracking-wide sticky top-[45px] z-[5]">
+                    {{ g.zone }} <span class="text-cyan-500">({{ g.points.length }})</span>
+                </div>
+                @for (p of g.points; track p.id) {
+                <button type="button" (click)="locatePoint(p)"
+                    class="w-full text-left px-4 py-2 border-b border-gray-50 hover:bg-gray-50 flex items-start gap-2">
+                    <span class="inline-block rounded-full mt-1 flex-shrink-0" style="width:10px;height:10px"
+                        [style.background]="TYPE_COLORS[p.type] || '#6b7280'"></span>
+                    <span class="flex-1 min-w-0">
+                        <span class="block font-medium text-sm text-gray-800 truncate">{{ p.nom }}</span>
+                        <span class="block text-xs text-gray-500">
+                            {{ TYPE_LABELS[p.type] || p.type }}@if (p.contact) { · {{ p.contact }} }
+                        </span>
+                    </span>
+                    <i class="pi pi-map-marker text-gray-300 mt-1"></i>
+                </button>
+                }
+            </div>
+            }
+            }
+        </aside>
+
+        <!-- Carte -->
+        <div class="flex-1 bg-white lg:rounded-xl lg:shadow-md border border-gray-200 overflow-hidden relative">
+            @if (state().loading) {
+            <div class="absolute inset-0 z-[500] flex items-center justify-center bg-white/60">
+                <p-progressSpinner [style]="{ width: '48px', height: '48px' }"></p-progressSpinner>
+            </div>
+            }
+            <div #mapContainer style="height: 60vh; min-height: 420px; width: 100%;"></div>
         </div>
-        }
-        <div #mapContainer style="height: calc(100vh - 168px); min-height: 420px; width: 100%;"></div>
     </div>
 </div>

@@ -53,12 +53,14 @@ export class DigiMapComponent implements AfterViewInit, OnDestroy {
     // Filtres
     searchTerm = '';
     selectedDelegation: string | null = null;
+    selectedAgence: string | null = null; // "commune / zone"
     typeVisible: Record<string, boolean> = { ABT: true, PS: true, KIOSQUE: true, GUICHET: true, PART: true };
 
     state = signal<{ points: ReseauPoint[]; loading: boolean }>({ points: [], loading: true });
 
     private map!: L.Map;
     private markersLayer = L.layerGroup();
+    private markerById: Record<number, L.Marker> = {};
 
     private userService = inject(UserService);
     private destroyRef = inject(DestroyRef);
@@ -111,6 +113,7 @@ export class DigiMapComponent implements AfterViewInit, OnDestroy {
         const term = this.searchTerm.trim().toLowerCase();
         return this.state().points.filter((p) => {
             if (this.selectedDelegation && p.delegation !== this.selectedDelegation) return false;
+            if (this.selectedAgence && p.agence !== this.selectedAgence) return false;
             if (this.typeVisible[p.type] === false) return false;
             if (p.latitude == null || p.longitude == null) return false;
             if (term) {
@@ -121,12 +124,52 @@ export class DigiMapComponent implements AfterViewInit, OnDestroy {
         });
     }
 
+    /** Zones (communes) = agences distinctes, éventuellement limitées à la délégation choisie. */
+    getAgenceOptions(): { label: string; value: string | null }[] {
+        const agences = Array.from(
+            new Set(
+                this.state()
+                    .points.filter((p) => !this.selectedDelegation || p.delegation === this.selectedDelegation)
+                    .map((p) => p.agence)
+                    .filter(Boolean)
+            )
+        ).sort();
+        return [{ label: 'Toutes les zones', value: null }, ...agences.map((a) => ({ label: a, value: a }))];
+    }
+
+    /** Points filtrés regroupés par zone (agence), pour la liste latérale. */
+    groupedByZone(): { zone: string; points: ReseauPoint[] }[] {
+        const groups: Record<string, ReseauPoint[]> = {};
+        this.filteredPoints().forEach((p) => {
+            const z = p.agence || '—';
+            (groups[z] = groups[z] || []).push(p);
+        });
+        return Object.keys(groups)
+            .sort()
+            .map((zone) => ({ zone, points: groups[zone].sort((a, b) => a.nom.localeCompare(b.nom)) }));
+    }
+
     countByType(type: string): number {
-        return this.state().points.filter((p) => p.type === type && (!this.selectedDelegation || p.delegation === this.selectedDelegation)).length;
+        return this.state().points.filter(
+            (p) => p.type === type && (!this.selectedDelegation || p.delegation === this.selectedDelegation) && (!this.selectedAgence || p.agence === this.selectedAgence)
+        ).length;
+    }
+
+    onDelegationChange(): void {
+        this.selectedAgence = null; // réinitialise la zone quand la délégation change
+        this.renderMarkers();
     }
 
     onFilterChange(): void {
         this.renderMarkers();
+    }
+
+    /** Centre la carte sur un point et ouvre son popup (depuis la liste). */
+    locatePoint(p: ReseauPoint): void {
+        if (p.latitude == null || p.longitude == null || !this.map) return;
+        this.map.setView([p.latitude, p.longitude], 15, { animate: true });
+        const m = p.id != null ? this.markerById[p.id] : undefined;
+        if (m) m.openPopup();
     }
 
     toggleType(type: string): void {
@@ -137,11 +180,13 @@ export class DigiMapComponent implements AfterViewInit, OnDestroy {
     private renderMarkers(): void {
         if (!this.map) return;
         this.markersLayer.clearLayers();
+        this.markerById = {};
         const pts = this.filteredPoints();
         pts.forEach((p) => {
             const marker = L.marker([p.latitude!, p.longitude!], { icon: this.markerIcon(p.type) });
             marker.bindPopup(this.popupHtml(p));
             marker.addTo(this.markersLayer);
+            if (p.id != null) this.markerById[p.id] = marker;
         });
         if (pts.length) {
             const bounds = L.latLngBounds(pts.map((p) => L.latLng(p.latitude!, p.longitude!)));
