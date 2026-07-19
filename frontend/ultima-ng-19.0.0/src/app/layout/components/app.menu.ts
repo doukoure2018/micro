@@ -138,6 +138,11 @@ export class AppMenu {
                                     label: 'Réseau — Géolocalisation',
                                     icon: 'pi pi-fw pi-map-marker',
                                     routerLink: ['/dashboards/reseau-geo']
+                                },
+                                {
+                                    label: 'Réseau — Carte',
+                                    icon: 'pi pi-fw pi-map',
+                                    routerLink: ['/dashboards/reseau-carte']
                                 }
                             ]
                           : this.user?.role === 'CAISSE'

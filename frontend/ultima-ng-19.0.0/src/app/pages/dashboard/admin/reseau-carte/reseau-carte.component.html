@@ -1,0 +1,50 @@
+<div class="p-4">
+    <!-- En-tête -->
+    <div class="bg-white rounded-xl shadow-md border border-gray-200 mb-4 overflow-hidden">
+        <div class="bg-gradient-to-r from-green-700 to-green-900 text-white px-6 py-4 flex items-center justify-between flex-wrap gap-4">
+            <div class="flex items-center gap-3">
+                <i class="pi pi-map text-2xl"></i>
+                <div class="font-bold text-xl uppercase tracking-wide">Réseau — Carte des points de vente (Guinée)</div>
+            </div>
+            <a routerLink="/dashboards/reseau-geo">
+                <button pButton type="button" label="Import / Export" icon="pi pi-database"
+                    class="p-button-sm p-button-outlined"></button>
+            </a>
+        </div>
+
+        <!-- Filtres + légende cliquable -->
+        <div class="px-6 py-3 flex flex-wrap items-center gap-4 border-b border-gray-100">
+            <p-dropdown [options]="delegationOptions" [(ngModel)]="selectedDelegation"
+                (onChange)="onDelegationChange()" placeholder="Délégation" [style]="{ 'min-width': '210px' }"></p-dropdown>
+
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="text-xs text-gray-500 uppercase mr-1">Type :</span>
+                @for (t of TYPES; track t) {
+                <button type="button" (click)="toggleType(t)"
+                    class="flex items-center gap-2 px-3 py-1 rounded-full border text-sm transition-all"
+                    [class.opacity-40]="!typeVisible[t]"
+                    [style.border-color]="TYPE_COLORS[t]">
+                    <span class="inline-block rounded-full" style="width:12px;height:12px"
+                        [style.background]="TYPE_COLORS[t]"></span>
+                    <span class="font-medium">{{ t }}</span>
+                    <span class="text-gray-500">({{ countByType(t) }})</span>
+                </button>
+                }
+            </div>
+
+            <span class="ml-auto text-sm text-gray-600">
+                <i class="pi pi-map-marker text-green-600 mr-1"></i>{{ filteredPoints().length }} point(s) affiché(s)
+            </span>
+        </div>
+    </div>
+
+    <!-- Carte -->
+    <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden relative">
+        @if (state().loading) {
+        <div class="absolute inset-0 z-10 flex items-center justify-center bg-white/60">
+            <p-progressSpinner [style]="{ width: '48px', height: '48px' }"></p-progressSpinner>
+        </div>
+        }
+        <div #mapContainer style="height: 72vh; width: 100%;"></div>
+    </div>
+</div>

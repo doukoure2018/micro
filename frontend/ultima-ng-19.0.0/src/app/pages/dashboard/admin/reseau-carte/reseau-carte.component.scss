@@ -1,0 +1,20 @@
+:host ::ng-deep {
+    // Marqueur "goutte" colore par type (le HTML est genere par Leaflet, hors encapsulation)
+    .reseau-pin {
+        background: transparent;
+        border: none;
+    }
+    .reseau-pin span {
+        display: block;
+        width: 20px;
+        height: 20px;
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+        border: 2px solid #fff;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+    }
+
+    .leaflet-popup-content {
+        margin: 10px 12px;
+    }
+}

@@ -228,6 +228,11 @@ export default [
         loadComponent: () => import('./admin/reseau-geo/reseau-geo.component').then((c) => c.ReseauGeoComponent)
     },
     {
+        path: 'reseau-carte',
+        data: { breadcrumb: 'Réseau — Carte' },
+        loadComponent: () => import('./admin/reseau-carte/reseau-carte.component').then((c) => c.ReseauCarteComponent)
+    },
+    {
         path: 'analytics',
         data: { breadcrumb: 'Analytics Dashboard' },
         loadComponent: () => import('./analytics/dashboardanalytics').then((c) => c.DashboardAnalytics)
