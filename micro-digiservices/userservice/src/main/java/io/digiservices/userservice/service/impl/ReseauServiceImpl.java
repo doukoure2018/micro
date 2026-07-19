@@ -184,22 +184,49 @@ public class ReseauServiceImpl implements ReseauService {
         if (idx == null) return null;
         Cell c = row.getCell(idx);
         if (c == null) return null;
-        String v = fmt.formatCellValue(c).trim();
-        return v.isEmpty() ? null : v;
+        String v = effectiveString(c, fmt);
+        return (v == null || v.trim().isEmpty()) ? null : v.trim();
     }
 
     private Double num(Row row, Integer idx, DataFormatter fmt) {
         if (idx == null) return null;
         Cell c = row.getCell(idx);
         if (c == null) return null;
-        if (c.getCellType() == CellType.NUMERIC) return c.getNumericCellValue();
-        String s = fmt.formatCellValue(c).trim().replace(",", ".");
+        CellType type = (c.getCellType() == CellType.FORMULA) ? c.getCachedFormulaResultType() : c.getCellType();
+        if (type == CellType.NUMERIC) return c.getNumericCellValue();
+        String s = effectiveString(c, fmt);
+        if (s == null) return null;
+        s = s.trim().replace(",", ".");
         if (s.isEmpty()) return null;
         try {
             return Double.parseDouble(s);
         } catch (NumberFormatException e) {
             return null;
         }
+    }
+
+    /**
+     * Valeur "affichable" d'une cellule. Pour les cellules FORMULE (ex. la colonne
+     * DELEGATION = XLOOKUP), on lit la valeur EN CACHE calculee par Excel plutot que le
+     * texte de la formule (_XLFN.XLOOKUP(...)) ; on ne re-evalue PAS (XLOOKUP non supporte
+     * par POI).
+     */
+    private String effectiveString(Cell cell, DataFormatter fmt) {
+        if (cell == null) return null;
+        if (cell.getCellType() == CellType.FORMULA) {
+            switch (cell.getCachedFormulaResultType()) {
+                case STRING:
+                    return cell.getStringCellValue();
+                case NUMERIC:
+                    double d = cell.getNumericCellValue();
+                    return (d == Math.floor(d) && !Double.isInfinite(d)) ? String.valueOf((long) d) : String.valueOf(d);
+                case BOOLEAN:
+                    return String.valueOf(cell.getBooleanCellValue());
+                default:
+                    return null;
+            }
+        }
+        return fmt.formatCellValue(cell);
     }
 
     private String up(String s) {

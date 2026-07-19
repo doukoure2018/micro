@@ -71,6 +71,10 @@ export const appRoutes: Routes = [
         loadComponent: () => import('@/pages/public/remontee-carte-prepaid/remontee-carte-prepaid.component').then((c) => c.RemonteeCartePrepaidComponent)
     },
     {
+        path: 'digi-map',
+        loadComponent: () => import('@/pages/public/digi-map/digi-map.component').then((c) => c.DigiMapComponent)
+    },
+    {
         path: 'landing',
         loadComponent: () => import('@/pages/landing/landing').then((c) => c.Landing)
     },

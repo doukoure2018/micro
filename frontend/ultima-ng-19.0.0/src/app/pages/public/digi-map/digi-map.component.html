@@ -1,0 +1,61 @@
+<div class="min-h-screen bg-gray-100 flex flex-col">
+    <!-- Barre supérieure -->
+    <header class="bg-gray-900 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between flex-wrap gap-3">
+            <div class="flex items-center gap-3">
+                <i class="pi pi-map text-2xl text-cyan-400"></i>
+                <div>
+                    <div class="text-xl font-bold">DIGI-MAP</div>
+                    <div class="text-xs text-gray-400">Géolocalisation de nos points de services</div>
+                </div>
+            </div>
+            <a routerLink="/">
+                <button pButton type="button" label="Accueil" icon="pi pi-home"
+                    class="p-button-sm p-button-outlined p-button-secondary"></button>
+            </a>
+        </div>
+    </header>
+
+    <!-- Recherche + filtres -->
+    <div class="bg-white border-b border-gray-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col gap-3">
+            <div class="flex flex-wrap items-center gap-3">
+                <span class="p-input-icon-left flex-1" style="min-width: 260px; position: relative;">
+                    <i class="pi pi-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#9ca3af;"></i>
+                    <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="onFilterChange()"
+                        placeholder="Rechercher un point de service, un ABT, un partenaire, une agence…"
+                        class="w-full rounded-full border border-gray-300 py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400" />
+                </span>
+                <p-dropdown [options]="delegationOptions" [(ngModel)]="selectedDelegation"
+                    (onChange)="onFilterChange()" placeholder="Délégation" [style]="{ 'min-width': '220px' }"></p-dropdown>
+                <span class="text-sm text-gray-600 whitespace-nowrap">
+                    <i class="pi pi-map-marker text-cyan-600 mr-1"></i>{{ filteredPoints().length }} résultat(s)
+                </span>
+            </div>
+
+            <!-- Légende cliquable (filtre par type) -->
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="text-xs text-gray-500 uppercase mr-1">Type :</span>
+                @for (t of TYPES; track t) {
+                <button type="button" (click)="toggleType(t)"
+                    class="flex items-center gap-2 px-3 py-1 rounded-full border text-sm transition-all"
+                    [class.opacity-40]="!typeVisible[t]" [style.border-color]="TYPE_COLORS[t]">
+                    <span class="inline-block rounded-full" style="width:12px;height:12px" [style.background]="TYPE_COLORS[t]"></span>
+                    <span class="font-medium">{{ TYPE_LABELS[t] }}</span>
+                    <span class="text-gray-500">({{ countByType(t) }})</span>
+                </button>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Carte -->
+    <div class="flex-1 relative">
+        @if (state().loading) {
+        <div class="absolute inset-0 z-[500] flex items-center justify-center bg-white/60">
+            <p-progressSpinner [style]="{ width: '48px', height: '48px' }"></p-progressSpinner>
+        </div>
+        }
+        <div #mapContainer style="height: calc(100vh - 168px); min-height: 420px; width: 100%;"></div>
+    </div>
+</div>
