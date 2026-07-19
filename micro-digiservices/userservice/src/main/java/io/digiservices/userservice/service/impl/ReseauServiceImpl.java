@@ -10,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
@@ -29,7 +28,6 @@ public class ReseauServiceImpl implements ReseauService {
             {"DELEGATION", "AGENCE", "PS", "NOMS", "CONTACT", "TYPE", "LONGITUDE", "LATITUDE", "LOCALISATION"};
 
     @Override
-    @Transactional
     public ReseauImportReport importExcel(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new ApiException("Fichier Excel manquant ou vide");

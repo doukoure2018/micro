@@ -50,8 +50,8 @@ public class ReseauResource {
     }
 
     @GetMapping("/points")
-    public ResponseEntity<Response> points(@RequestParam(required = false) String delegation,
-                                           @RequestParam(required = false) String type,
+    public ResponseEntity<Response> points(@RequestParam(name = "delegation", required = false) String delegation,
+                                           @RequestParam(name = "type", required = false) String type,
                                            HttpServletRequest request) {
         var points = reseauService.getPoints(delegation, type);
         return ok(getResponse(request, Map.of("points", points), "Points du reseau", OK));
