@@ -69,6 +69,11 @@ export class UserService {
 
     getHistoCreditsSaf$ = (codCliente: string) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/histo-credits-saf/${codCliente}`).pipe(catchError(this.handleError));
 
+    // Flux mouvements (depots/retraits) des comptes d'epargne — synthese DG
+    getMouvementsResume$ = (codCliente: string) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/mouvements-resume/${codCliente}`).pipe(catchError(this.handleError));
+
+    getMouvementsCompte$ = (numCuenta: string) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/mouvements-compte/${numCuenta}`).pipe(catchError(this.handleError));
+
     // Reseau geolocalise des points de vente (SUPER_ADMIN import/export + carte)
     importReseau$ = (file: File) => {
         const fd = new FormData();

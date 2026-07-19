@@ -186,6 +186,22 @@ public class DemandeCreditResource {
         return ok(getResponse(request, Map.of("histoCredits", ebankingClient.getCreditosSaf(codCliente)), "Historique credits SAF", OK));
     }
 
+    // Synthese DG : flux mouvements (depots/retraits) - resume mensuel par compte, 6 mois
+    @GetMapping("/mouvements-resume/{codCliente}")
+    public ResponseEntity<Response> getMouvementsResume(@NotNull Authentication authentication,
+                                                        @PathVariable(name = "codCliente") String codCliente,
+                                                        HttpServletRequest request) {
+        return ok(getResponse(request, Map.of("resume", ebankingClient.getMouvementsResume(codCliente)), "Resume des mouvements", OK));
+    }
+
+    // Synthese DG : detail des mouvements d'un compte (au clic sur "voir le detail")
+    @GetMapping("/mouvements-compte/{numCuenta}")
+    public ResponseEntity<Response> getMouvementsCompte(@NotNull Authentication authentication,
+                                                        @PathVariable(name = "numCuenta") String numCuenta,
+                                                        HttpServletRequest request) {
+        return ok(getResponse(request, Map.of("mouvements", ebankingClient.getMouvementsCompte(numCuenta)), "Mouvements du compte", OK));
+    }
+
 
     @PostMapping("/addMotif/{demandeCreditId}")
     public ResponseEntity<Response> addMotif(@NotNull Authentication authentication,

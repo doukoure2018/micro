@@ -137,6 +137,13 @@ public interface EbankingClient {
     @GetMapping(path = "/ebanking/saf/creditos/{codCliente}")
     CreditosClienteResponseDTO getCreditosSaf(@PathVariable(name = "codCliente") String codCliente);
 
+    // Flux des mouvements (depots/retraits) des comptes d'epargne, 6 mois glissants
+    @GetMapping(path = "/ebanking/saf/mouvements-resume/{codCliente}")
+    List<Map<String, Object>> getMouvementsResume(@PathVariable(name = "codCliente") String codCliente);
+
+    @GetMapping(path = "/ebanking/saf/mouvements-compte/{numCuenta}")
+    List<Map<String, Object>> getMouvementsCompte(@PathVariable(name = "numCuenta") String numCuenta);
+
 
 
 

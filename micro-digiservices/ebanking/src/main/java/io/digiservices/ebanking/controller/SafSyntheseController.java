@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -44,5 +45,17 @@ public class SafSyntheseController {
     @GetMapping("/creditos/{codCliente}")
     public CreditosClienteResponseDTO getCreditos(@PathVariable("codCliente") String codCliente) {
         return creditosService.obtenerCreditosYPlanPagosPorClienteSaf(codCliente);
+    }
+
+    /** Resume mensuel des mouvements (depots/retraits) par compte, 6 mois glissants. */
+    @GetMapping("/mouvements-resume/{codCliente}")
+    public List<Map<String, Object>> getMouvementsResume(@PathVariable("codCliente") String codCliente) {
+        return safTertiaryRepository.obtenerMouvementsResume(codCliente, LocalDate.now().minusMonths(6));
+    }
+
+    /** Detail des mouvements d'un compte, 6 mois glissants. */
+    @GetMapping("/mouvements-compte/{numCuenta}")
+    public List<Map<String, Object>> getMouvementsCompte(@PathVariable("numCuenta") String numCuenta) {
+        return safTertiaryRepository.obtenerMouvementsCompte(numCuenta, LocalDate.now().minusMonths(6));
     }
 }

@@ -76,6 +76,7 @@ export class SyntheseDeComponent implements OnInit {
         farmer: any | null;
         comptes: any[];
         histoCredits: CreditosClienteResponseDTO | null;
+        mouvementsResume: any[];
         farmerStatus: SafStatus;
         comptesStatus: SafStatus;
         histoStatus: SafStatus;
@@ -95,6 +96,7 @@ export class SyntheseDeComponent implements OnInit {
         farmer: null,
         comptes: [],
         histoCredits: null,
+        mouvementsResume: [],
         farmerStatus: 'loading',
         comptesStatus: 'loading',
         histoStatus: 'loading',
@@ -151,6 +153,7 @@ export class SyntheseDeComponent implements OnInit {
                         this.loadAgriInfo(codCliente);
                         this.loadComptes(codCliente);
                         this.loadHistoCredits(codCliente);
+                        this.loadMouvementsResume(codCliente);
                     } else {
                         this.state.update((s) => ({ ...s, farmerStatus: 'error', comptesStatus: 'error', histoStatus: 'error' }));
                     }
@@ -276,6 +279,105 @@ export class SyntheseDeComponent implements OnInit {
                 },
                 error: () => this.state.update((s) => ({ ...s, histoCredits: null, histoStatus: 'error' }))
             });
+    }
+
+    // ── Flux des mouvements (dépôts/retraits) par compte, 6 mois ────────────────
+    expandedComptes: Record<string, boolean> = {};
+    mouvementDetails: Record<string, any[]> = {};
+    loadingDetail: Record<string, boolean> = {};
+
+    private loadMouvementsResume(codCliente: string): void {
+        this.userService
+            .getMouvementsResume$(codCliente)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => this.state.update((s) => ({ ...s, mouvementsResume: (r.data as any)?.resume || [] })),
+                error: () => this.state.update((s) => ({ ...s, mouvementsResume: [] }))
+            });
+    }
+
+    numCuenta(compte: any): string {
+        return compte?.NUM_CUENTA ?? compte?.comptePKId?.NUM_CUENTA ?? '';
+    }
+
+    /** 6 derniers mois au format YYYYMM (du plus ancien au plus récent). */
+    private derniersMois(): string[] {
+        const arr: string[] = [];
+        const now = new Date();
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            arr.push(`${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`);
+        }
+        return arr;
+    }
+
+    private resumeRows(numCuenta: string): any[] {
+        return this.state().mouvementsResume.filter((r) => String(r.numCuenta) === String(numCuenta));
+    }
+
+    hasFlux(numCuenta: string): boolean {
+        return this.resumeRows(numCuenta).length > 0;
+    }
+
+    getFluxTotals(numCuenta: string): { depots: number; retraits: number; net: number; nb: number } {
+        const rows = this.resumeRows(numCuenta);
+        const depots = rows.reduce((t, r) => t + (Number(r.totalDepots) || 0), 0);
+        const retraits = rows.reduce((t, r) => t + (Number(r.totalRetraits) || 0), 0);
+        const nb = rows.reduce((t, r) => t + (Number(r.nbOperations) || 0), 0);
+        return { depots, retraits, net: depots - retraits, nb };
+    }
+
+    getMonthlySeries(numCuenta: string): { mois: string; depots: number; retraits: number }[] {
+        const rows = this.resumeRows(numCuenta);
+        const byMonth: Record<string, { depots: number; retraits: number }> = {};
+        rows.forEach((r) => {
+            byMonth[String(r.mois)] = { depots: Number(r.totalDepots) || 0, retraits: Number(r.totalRetraits) || 0 };
+        });
+        return this.derniersMois().map((m) => ({
+            mois: `${m.substring(4)}/${m.substring(2, 4)}`,
+            depots: byMonth[m]?.depots || 0,
+            retraits: byMonth[m]?.retraits || 0
+        }));
+    }
+
+    getFluxMax(numCuenta: string): number {
+        const s = this.getMonthlySeries(numCuenta);
+        return Math.max(1, ...s.map((x) => Math.max(x.depots, x.retraits)));
+    }
+
+    barHeight(value: number, max: number): number {
+        return Math.max(value > 0 ? 4 : 0, Math.round((value / max) * 100));
+    }
+
+    toggleCompteDetail(numCuenta: string): void {
+        const open = !this.expandedComptes[numCuenta];
+        this.expandedComptes[numCuenta] = open;
+        if (open && !this.mouvementDetails[numCuenta]) {
+            this.loadingDetail[numCuenta] = true;
+            this.userService
+                .getMouvementsCompte$(numCuenta)
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe({
+                    next: (r: IResponse) => {
+                        this.mouvementDetails[numCuenta] = (r.data as any)?.mouvements || [];
+                        this.loadingDetail[numCuenta] = false;
+                    },
+                    error: () => {
+                        this.mouvementDetails[numCuenta] = [];
+                        this.loadingDetail[numCuenta] = false;
+                    }
+                });
+        }
+    }
+
+    isCompteExpanded(numCuenta: string): boolean {
+        return !!this.expandedComptes[numCuenta];
+    }
+    getCompteDetail(numCuenta: string): any[] {
+        return this.mouvementDetails[numCuenta] || [];
+    }
+    isLoadingDetail(numCuenta: string): boolean {
+        return !!this.loadingDetail[numCuenta];
     }
 
     /** Message à afficher quand une section SAF n'a pas (encore) de données. */
