@@ -194,7 +194,7 @@ export class HomeComponent {
     ];
 
     navigateToNewDemande() {
-        this.router.navigate(['/auth/credit/demandeInd']);
+        this.router.navigate(['/dashboards/nouvelle-demande']);
     }
 
     navigateToMyDemandes() {

@@ -1,11 +1,18 @@
 import { Routes } from '@angular/router';
 import { RapprochementCutoffGuard } from '@/service/rapprochement-cutoff.guard';
+import { AgentCreditGuard } from '@/service/agent-credit.guard';
 
 export default [
     {
         path: '',
         data: { breadcrumb: 'Home' },
         loadComponent: () => import('./home/home.component').then((c) => c.HomeComponent)
+    },
+    {
+        path: 'nouvelle-demande',
+        canActivate: [AgentCreditGuard],
+        data: { breadcrumb: 'Nouvelle demande de crédit' },
+        loadComponent: () => import('../auth/credit/demande-ind/demande-ind.component').then((c) => c.DemandeIndComponent)
     },
     {
         path: 'home',

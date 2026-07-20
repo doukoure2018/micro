@@ -44,7 +44,7 @@ export class AppMenu {
                               {
                                   label: 'Nouvelle demande de crédit',
                                   icon: 'pi pi-fw pi-file-edit',
-                                  routerLink: ['/auth/credit/demandeInd']
+                                  routerLink: ['/dashboards/nouvelle-demande']
                               },
                               //   {
                               //       label: 'Analyse de Credit',

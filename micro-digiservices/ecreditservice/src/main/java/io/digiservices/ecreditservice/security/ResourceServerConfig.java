@@ -35,9 +35,11 @@ public class ResourceServerConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                // .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests( authorize -> authorize
-                        .requestMatchers("/actuator/health","/actuator/info","/user/register/**", "/user/verify/account/**","/user/verify/password/**", "/user/resetpassword/**", "/user/image/**","/ecredit/addDemandeInd/**","/ecredit/docs/**","/user/getUser/**","/ecredit/search/**","/ecredit/newDemandeInd/**","/ecredit/edg/**").permitAll()
+                        .requestMatchers("/actuator/health","/actuator/info","/user/register/**", "/user/verify/account/**","/user/verify/password/**", "/user/resetpassword/**", "/user/image/**","/ecredit/docs/**","/user/getUser/**","/ecredit/search/**","/ecredit/edg/**").permitAll()
                         .requestMatchers("/ecredit/files/**").permitAll()
                         .requestMatchers("/ecredit/public/**").permitAll()
+                        // Creation d'une demande de credit : reservee au role AGENT_CREDIT
+                        .requestMatchers("/ecredit/addDemandeInd/**","/ecredit/newDemandeInd/**").hasAuthority("AGENT_CREDIT")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .accessDeniedHandler(new CustomAccessDeniedHandler())
