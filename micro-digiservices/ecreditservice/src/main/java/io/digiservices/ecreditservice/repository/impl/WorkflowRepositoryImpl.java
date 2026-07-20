@@ -99,6 +99,50 @@ public class WorkflowRepositoryImpl implements WorkflowRepository {
         }
     }
 
+    // ==================== RENVOI DA -> AGENT ====================
+
+    @Override
+    public int renvoyerAgent(Long demandeId, String motif, String renvoyePar) {
+        try {
+            return jdbcClient.sql(UPDATE_RENVOYER_AGENT)
+                    .param("demandeId", demandeId)
+                    .param("motif", motif)
+                    .param("renvoyePar", renvoyePar)
+                    .update();
+        } catch (Exception e) {
+            log.error("Erreur lors du renvoi à l'agent: {}", e.getMessage());
+            throw new ApiException("Erreur lors du renvoi: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public List<WorkflowDemandeDto> getRenvoyeesAC(String codUsuarios) {
+        try {
+            return jdbcClient.sql(SELECT_RENVOYEES_AC)
+                    .param("codUsuarios", codUsuarios)
+                    .query(WorkflowDemandeDto.class)
+                    .list();
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des renvois AC: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la récupération: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public int resoumettreDA(Long demandeId, Long delegation, Long agence, Long pos) {
+        try {
+            return jdbcClient.sql(UPDATE_RESOUMETTRE_DA)
+                    .param("demandeId", demandeId)
+                    .param("delegation", delegation)
+                    .param("agence", agence)
+                    .param("pos", pos)
+                    .update();
+        } catch (Exception e) {
+            log.error("Erreur lors de la resoumission DA: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la resoumission: " + e.getMessage());
+        }
+    }
+
     // ==================== AC LISTS ====================
 
     @Override

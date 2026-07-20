@@ -18,6 +18,11 @@ public interface WorkflowRepository {
     int validerDA(Long demandeId, String avis, String validatedBy);
     int rejeterDA(Long demandeId, WorkflowRejetRequest request, String validatedBy);
 
+    // Renvoi DA -> agent (erreur de destination)
+    int renvoyerAgent(Long demandeId, String motif, String renvoyePar);
+    List<WorkflowDemandeDto> getRenvoyeesAC(String codUsuarios);
+    int resoumettreDA(Long demandeId, Long delegation, Long agence, Long pos);
+
     // AC lists
     List<WorkflowDemandeDto> getEnCorrectionAC(Long agenceId, Long pointventeId);
     List<WorkflowDemandeDto> getEnCorrectionDRForAC(Long agenceId, Long pointventeId);

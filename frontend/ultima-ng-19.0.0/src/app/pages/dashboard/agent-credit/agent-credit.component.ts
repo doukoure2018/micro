@@ -7,11 +7,14 @@ import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject, signal, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { BadgeModule } from 'primeng/badge';
 import { ButtonModule } from 'primeng/button';
 import { ChipModule } from 'primeng/chip';
+import { DialogModule } from 'primeng/dialog';
+import { DropdownModule } from 'primeng/dropdown';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
@@ -25,7 +28,7 @@ import { ToastModule } from 'primeng/toast';
 @Component({
     selector: 'app-agent-credit',
     standalone: true,
-    imports: [CommonModule, ButtonModule, RippleModule, MessageModule, RouterLink, TableModule, IconFieldModule, InputIconModule, InputTextModule, TagModule, ToastModule, BadgeModule, ChipModule, ProgressSpinnerModule],
+    imports: [CommonModule, FormsModule, ButtonModule, RippleModule, MessageModule, RouterLink, TableModule, IconFieldModule, InputIconModule, InputTextModule, TagModule, ToastModule, BadgeModule, ChipModule, ProgressSpinnerModule, DialogModule, DropdownModule],
     templateUrl: './agent-credit.component.html',
     providers: [MessageService]
 })
@@ -44,6 +47,7 @@ export class AgentCreditComponent implements OnInit {
         workflowCorrectionDE: any[];
         workflowSuiviValidation: any[];
         workflowAApprouver: any[];
+        workflowRenvoyees: any[];
         loading: boolean;
         message: string | undefined;
         error: string | any;
@@ -60,6 +64,7 @@ export class AgentCreditComponent implements OnInit {
         workflowCorrectionDE: [],
         workflowSuiviValidation: [],
         workflowAApprouver: [],
+        workflowRenvoyees: [],
         isAgentActive: undefined,
         checkingStatus: false
     });
@@ -209,6 +214,7 @@ export class AgentCreditComponent implements OnInit {
                         this.loadWorkflowCorrectionDE();
                         this.loadSuiviValidation();
                         this.loadWorkflowAApprouver();
+                        this.loadWorkflowRenvoyees();
                     }
                 },
                 error: (error) => {
@@ -464,6 +470,103 @@ export class AgentCreditComponent implements OnInit {
 
     hasWorkflowAApprouver(): boolean {
         return this.state().workflowAApprouver.length > 0;
+    }
+
+    // ── Demandes renvoyées par le DA (erreur de destination) ─────────────────────
+    showRenvoiDialog = false;
+    renvoiDemande: any = null;
+    renvoiDelegations: any[] = [];
+    renvoiAgences: any[] = [];
+    renvoiPointventes: any[] = [];
+    renvoiDelegationId: number | null = null;
+    renvoiAgenceId: number | null = null;
+    renvoiPosId: number | null = null;
+    renvoiSubmitting = false;
+
+    private loadWorkflowRenvoyees(): void {
+        this.userService.getRenvoyeesAC$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    this.state.update(s => ({ ...s, workflowRenvoyees: response.data?.workflowDemandes || [] }));
+                },
+                error: () => {}
+            });
+    }
+
+    hasWorkflowRenvoyees(): boolean {
+        return this.state().workflowRenvoyees.length > 0;
+    }
+
+    ouvrirRenvoiDialog(demande: any): void {
+        this.renvoiDemande = demande;
+        this.renvoiDelegationId = null;
+        this.renvoiAgenceId = null;
+        this.renvoiPosId = null;
+        this.renvoiAgences = [];
+        this.renvoiPointventes = [];
+        this.showRenvoiDialog = true;
+        this.userService.getAllDelegation$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => (this.renvoiDelegations = (r.data as any)?.delegations || r.data || []),
+                error: () => (this.renvoiDelegations = [])
+            });
+    }
+
+    onRenvoiDelegationChange(): void {
+        this.renvoiAgenceId = null;
+        this.renvoiPosId = null;
+        this.renvoiAgences = [];
+        this.renvoiPointventes = [];
+        if (!this.renvoiDelegationId) return;
+        this.userService.getAllAgenceByDelegationId$(this.renvoiDelegationId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => (this.renvoiAgences = (r.data as any)?.agences || r.data || []),
+                error: () => (this.renvoiAgences = [])
+            });
+    }
+
+    onRenvoiAgenceChange(): void {
+        this.renvoiPosId = null;
+        this.renvoiPointventes = [];
+        if (!this.renvoiAgenceId) return;
+        this.userService.getAllPointventesByAgenceId$(this.renvoiAgenceId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => (this.renvoiPointventes = (r.data as any)?.pointVentes || r.data || []),
+                error: () => (this.renvoiPointventes = [])
+            });
+    }
+
+    confirmerResoumission(): void {
+        if (!this.renvoiDemande) return;
+        if (!this.renvoiDelegationId || !this.renvoiAgenceId) {
+            this.messageService.add({ severity: 'warn', summary: 'Destination requise', detail: 'Choisissez la délégation et l\'agence' });
+            return;
+        }
+        this.renvoiSubmitting = true;
+        this.userService
+            .resoumettreDA$(this.renvoiDemande.demandeIndividuelId, {
+                delegationId: this.renvoiDelegationId,
+                agenceId: this.renvoiAgenceId,
+                posId: this.renvoiPosId
+            })
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.renvoiSubmitting = false;
+                    this.showRenvoiDialog = false;
+                    this.messageService.add({ severity: 'success', summary: 'Renvoyée', detail: 'Demande renvoyée au DA' });
+                    this.loadWorkflowRenvoyees();
+                    this.loadSuiviValidation();
+                },
+                error: (e) => {
+                    this.renvoiSubmitting = false;
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: e?.message || 'Échec du renvoi' });
+                }
+            });
     }
 
     hasWorkflowEnCorrection(): boolean {

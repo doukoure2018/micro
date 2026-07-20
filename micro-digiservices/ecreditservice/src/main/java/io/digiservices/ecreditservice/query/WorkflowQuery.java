@@ -135,6 +135,51 @@ public class WorkflowQuery {
             ORDER BY d.createdat DESC
             """;
 
+    // ==================== RENVOI DA -> AGENT (erreur de destination) ====================
+
+    /** Le DA renvoie une demande "a valider" (APPROVED) vers l'agent createur. */
+    public static final String UPDATE_RENVOYER_AGENT = """
+            UPDATE demandeindividuel
+            SET validation_state = 'RETOUR_AGENT',
+                renvoi_agent_motif = :motif,
+                renvoi_agent_by = :renvoyePar
+            WHERE demandeindividuel_id = :demandeId
+              AND validation_state = 'APPROVED'
+            """;
+
+    /** Demandes renvoyees a l'agent createur (identifie par cod_usuarios = nom complet). */
+    public static final String SELECT_RENVOYEES_AC = """
+            SELECT d.demandeindividuel_id AS "demandeIndividuelId",
+                   d.nom, d.prenom, d.telephone,
+                   d.numero_membre AS "numeroMembre",
+                   d.delegation, d.agence, d.pos,
+                   d.montant_demande AS "montantDemande",
+                   d.object_credit AS "objectCredit",
+                   d.validation_state AS "validationState",
+                   d.statut_demande AS "statutDemande",
+                   d.cod_usuarios AS "codUsuarios",
+                   d.renvoi_agent_motif AS "renvoiAgentMotif",
+                   d.renvoi_agent_by AS "renvoiAgentBy",
+                   d.createdat AS "createdAt"
+            FROM demandeindividuel d
+            WHERE d.validation_state = 'RETOUR_AGENT'
+              AND d.cod_usuarios = :codUsuarios
+            ORDER BY d.createdat DESC
+            """;
+
+    /** L'agent corrige la destination et renvoie la demande au bon DA (-> APPROVED). */
+    public static final String UPDATE_RESOUMETTRE_DA = """
+            UPDATE demandeindividuel
+            SET delegation = :delegation,
+                agence = :agence,
+                pos = :pos,
+                validation_state = 'APPROVED',
+                renvoi_agent_motif = NULL,
+                renvoi_agent_by = NULL
+            WHERE demandeindividuel_id = :demandeId
+              AND validation_state = 'RETOUR_AGENT'
+            """;
+
     public static final String SELECT_EN_ATTENTE_DA = """
             SELECT d.demandeindividuel_id AS "demandeIndividuelId",
                    d.nom, d.prenom, d.telephone,

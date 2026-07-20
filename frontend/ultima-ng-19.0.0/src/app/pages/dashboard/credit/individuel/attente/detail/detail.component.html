@@ -1149,9 +1149,34 @@
                         class="p-button-danger p-button-outlined px-8 py-3 font-bold" icon="pi pi-times-circle"
                         label="REJETER">
                     </button>
+                    <button pButton type="button" (click)="ouvrirRenvoiAgent()"
+                        class="p-button-warning p-button-outlined px-8 py-3 font-bold" icon="pi pi-reply"
+                        label="RENVOYER À L'AGENT" pTooltip="Erreur d'agence : renvoyer à l'agent pour correction">
+                    </button>
                 </div>
             </div>
         </div>
+
+        <!-- Modal Renvoi à l'agent (erreur de destination) -->
+        <p-dialog header="Renvoyer la demande à l'agent" [visible]="state().showRenvoiAgentDialog" [modal]="true"
+            [style]="{ width: '520px' }" [closable]="true"
+            (onHide)="state.update(mergeState({showRenvoiAgentDialog: false}))">
+            <div class="flex flex-col gap-3">
+                <p class="text-sm text-gray-600 m-0">
+                    À utiliser si la demande a été envoyée à la mauvaise agence. L'agent de crédit pourra corriger
+                    la destination (délégation / agence / point de vente) puis renvoyer la demande.
+                </p>
+                <label class="text-sm font-semibold">Motif du renvoi <span class="text-red-500">*</span></label>
+                <textarea pTextarea [(ngModel)]="renvoiAgentMotif" rows="3"
+                    placeholder="Ex. Demande destinée à une autre agence" class="w-full"></textarea>
+            </div>
+            <ng-template pTemplate="footer">
+                <button pButton type="button" label="Annuler" icon="pi pi-times" class="p-button-text"
+                    (click)="state.update(mergeState({showRenvoiAgentDialog: false}))"></button>
+                <button pButton type="button" label="Confirmer le renvoi" icon="pi pi-reply" severity="warn"
+                    (click)="confirmerRenvoiAgent()"></button>
+            </ng-template>
+        </p-dialog>
 
         <!-- Modal Rejet Workflow DA -->
         <p-dialog header="Rejeter la demande" [visible]="state().showWorkflowRejetDA" [modal]="true"

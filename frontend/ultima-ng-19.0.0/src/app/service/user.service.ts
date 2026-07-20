@@ -1535,6 +1535,15 @@ export class UserService {
     rejeterDA$ = (demandeId: number, body: { motifRejet: string; sectionsARevoir: string[]; instructions?: string }) =>
         <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/rejeter-da`, body).pipe(catchError(this.handleError));
 
+    // Renvoi DA -> agent (erreur de destination) puis resoumission par l'agent
+    renvoyerAgent$ = (demandeId: number, motif: string) =>
+        <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/renvoyer-agent`, { motif }).pipe(catchError(this.handleError));
+
+    getRenvoyeesAC$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/renvoyees-ac`).pipe(catchError(this.handleError));
+
+    resoumettreDA$ = (demandeId: number, body: { delegationId: number | null; agenceId: number | null; posId: number | null }) =>
+        <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/resoumettre-da`, body).pipe(catchError(this.handleError));
+
     getDemandesAffecteesDA$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/demandes-affectees-da`).pipe(catchError(this.handleError));
 
     annulerAffectation$ = (demandeId: number) => <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/annuler-affectation`, {}).pipe(catchError(this.handleError));

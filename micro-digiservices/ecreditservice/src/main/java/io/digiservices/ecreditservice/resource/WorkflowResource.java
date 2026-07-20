@@ -96,6 +96,55 @@ public class WorkflowResource {
                         "Demande rejetée DA", OK));
     }
 
+    // ==================== RENVOI DA -> AGENT (erreur de destination) ====================
+
+    @PutMapping("/{demandeId}/renvoyer-agent")
+    public ResponseEntity<Response> renvoyerAgent(
+            @PathVariable Long demandeId,
+            @RequestBody Map<String, Object> body,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        String renvoyePar = user.getFirstName() + " " + user.getLastName();
+        String motif = body.get("motif") != null ? String.valueOf(body.get("motif")) : null;
+        workflowService.renvoyerAgent(demandeId, motif, renvoyePar);
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("message", "Demande renvoyée à l'agent"), "Demande renvoyée", OK));
+    }
+
+    @GetMapping("/renvoyees-ac")
+    public ResponseEntity<Response> getRenvoyeesAC(Authentication authentication, HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        String codUsuarios = user.getFirstName() + " " + user.getLastName();
+        var result = workflowService.getRenvoyeesAC(codUsuarios);
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("workflowDemandes", result), "Demandes renvoyées récupérées", OK));
+    }
+
+    @PutMapping("/{demandeId}/resoumettre-da")
+    public ResponseEntity<Response> resoumettreDA(
+            @PathVariable Long demandeId,
+            @RequestBody Map<String, Object> body,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        Long delegation = toLong(body.get("delegationId"));
+        Long agence = toLong(body.get("agenceId"));
+        Long pos = toLong(body.get("posId"));
+        workflowService.resoumettreDA(demandeId, delegation, agence, pos);
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("message", "Demande renvoyée au DA"), "Demande resoumise", OK));
+    }
+
+    private Long toLong(Object o) {
+        if (o == null) return null;
+        if (o instanceof Number n) return n.longValue();
+        try {
+            return Long.valueOf(String.valueOf(o).trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     // ==================== AC LISTS ====================
 
     @GetMapping("/en-correction")

@@ -64,6 +64,39 @@ public class WorkflowServiceImpl implements WorkflowService {
         }
     }
 
+    // ==================== RENVOI DA -> AGENT ====================
+
+    @Override
+    @Transactional
+    public void renvoyerAgent(Long demandeId, String motif, String renvoyePar) {
+        if (motif == null || motif.isBlank()) {
+            throw new ApiException("Le motif du renvoi est obligatoire");
+        }
+        log.info("Renvoi à l'agent par {} pour demande {}: {}", renvoyePar, demandeId, motif);
+        int rows = workflowRepository.renvoyerAgent(demandeId, motif, renvoyePar);
+        if (rows == 0) {
+            throw new ApiException("Demande non trouvée ou état invalide pour le renvoi à l'agent");
+        }
+    }
+
+    @Override
+    public List<WorkflowDemandeDto> getRenvoyeesAC(String codUsuarios) {
+        return workflowRepository.getRenvoyeesAC(codUsuarios);
+    }
+
+    @Override
+    @Transactional
+    public void resoumettreDA(Long demandeId, Long delegation, Long agence, Long pos) {
+        if (delegation == null || agence == null) {
+            throw new ApiException("La délégation et l'agence de destination sont obligatoires");
+        }
+        log.info("Resoumission au DA pour demande {} (delegation={}, agence={}, pos={})", demandeId, delegation, agence, pos);
+        int rows = workflowRepository.resoumettreDA(demandeId, delegation, agence, pos);
+        if (rows == 0) {
+            throw new ApiException("Demande non trouvée ou état invalide pour la resoumission");
+        }
+    }
+
     // ==================== AC LISTS ====================
 
     @Override

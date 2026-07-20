@@ -53,6 +53,8 @@ public class WorkflowDemandeDto {
     private String motifRejetDa;
     private String sectionsARevoirDa;
     private String instructionsAc;
+    private String renvoiAgentMotif;
+    private String renvoiAgentBy;
     private String motifRejetDr;
     private String sectionsARevoirDr;
     private String instructionsDa;

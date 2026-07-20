@@ -241,6 +241,91 @@
     </div>
     }
 
+    <!-- Section: Demandes renvoyées par le DA (erreur de destination) -->
+    @if(hasWorkflowRenvoyees()) {
+    <div class="card mt-5 border-l-4 border-amber-500 bg-amber-50">
+        <div class="flex flex-wrap gap-3 items-center justify-between mb-3">
+            <h3 class="text-xl font-semibold m-0 text-amber-800">
+                <i class="pi pi-reply mr-2 text-amber-600"></i>
+                Demandes renvoyées par le DA (à corriger)
+                <p-badge [value]="state().workflowRenvoyees.length.toString()" severity="warn" class="ml-2"></p-badge>
+            </h3>
+            <p-button icon="pi pi-refresh" (click)="refresh()" severity="secondary" size="small"></p-button>
+        </div>
+        <p-message severity="warn" styleClass="w-full mb-4">
+            <span class="text-sm">Ces demandes ont été renvoyées par le DA (souvent une erreur d'agence).
+                Corrigez la destination (délégation / agence / point de vente) puis renvoyez-les au bon DA.</span>
+        </p-message>
+        <p-table [value]="state().workflowRenvoyees" [paginator]="true" [rows]="10" responsiveLayout="scroll"
+            styleClass="p-datatable-striped">
+            <ng-template pTemplate="header">
+                <tr>
+                    <th style="width:12%">Date</th>
+                    <th style="width:24%">Client</th>
+                    <th class="text-right" style="width:16%">Montant</th>
+                    <th style="width:16%">Objet</th>
+                    <th style="width:20%">Motif du renvoi</th>
+                    <th class="text-center" style="width:12%">Actions</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-demande>
+                <tr class="hover:bg-surface-50">
+                    <td>{{ demande.createdAt | date:'dd/MM/yyyy' }}</td>
+                    <td>
+                        <div class="flex flex-col gap-1">
+                            <span class="font-semibold">{{ demande.prenom }} {{ demande.nom }}</span>
+                            <small class="text-500">{{ demande.numeroMembre }}</small>
+                        </div>
+                    </td>
+                    <td class="text-right font-bold">{{ formatMontantGNF(demande.montantDemande) }}</td>
+                    <td>{{ demande.objectCredit }}</td>
+                    <td class="text-sm text-amber-800">{{ demande.renvoiAgentMotif }}</td>
+                    <td class="text-center">
+                        <p-button icon="pi pi-directions" label="Corriger &amp; renvoyer"
+                            (click)="ouvrirRenvoiDialog(demande)" size="small" severity="warn"></p-button>
+                    </td>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+                <tr><td colspan="6" class="text-center p-6 text-gray-500">Aucune demande renvoyée</td></tr>
+            </ng-template>
+        </p-table>
+    </div>
+    }
+
+    <p-dialog header="Corriger la destination &amp; renvoyer au DA" [(visible)]="showRenvoiDialog" [modal]="true"
+        [style]="{ width: '520px' }">
+        @if(renvoiDemande) {
+        <div class="flex flex-col gap-3">
+            <div class="text-sm text-gray-600">Demande : <b>{{ renvoiDemande.prenom }} {{ renvoiDemande.nom }}</b>
+                — {{ formatMontantGNF(renvoiDemande.montantDemande) }}</div>
+            <div>
+                <label class="block text-sm font-semibold mb-1">Délégation *</label>
+                <p-dropdown [options]="renvoiDelegations" [(ngModel)]="renvoiDelegationId" optionLabel="libele"
+                    optionValue="id" (onChange)="onRenvoiDelegationChange()" placeholder="Choisir la délégation"
+                    [filter]="true" [style]="{ width: '100%' }"></p-dropdown>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold mb-1">Agence *</label>
+                <p-dropdown [options]="renvoiAgences" [(ngModel)]="renvoiAgenceId" optionLabel="libele" optionValue="id"
+                    (onChange)="onRenvoiAgenceChange()" placeholder="Choisir l'agence" [disabled]="!renvoiDelegationId"
+                    [filter]="true" [style]="{ width: '100%' }"></p-dropdown>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold mb-1">Point de vente</label>
+                <p-dropdown [options]="renvoiPointventes" [(ngModel)]="renvoiPosId" optionLabel="libele" optionValue="id"
+                    placeholder="Choisir le point de vente (optionnel)" [disabled]="!renvoiAgenceId" [showClear]="true"
+                    [filter]="true" [style]="{ width: '100%' }"></p-dropdown>
+            </div>
+        </div>
+        }
+        <ng-template pTemplate="footer">
+            <button pButton type="button" label="Annuler" class="p-button-text" (click)="showRenvoiDialog=false"></button>
+            <button pButton type="button" label="Renvoyer au DA" icon="pi pi-send" severity="success"
+                (click)="confirmerResoumission()" [loading]="renvoiSubmitting"></button>
+        </ng-template>
+    </p-dialog>
+
     <!-- Section: Demandes a Corriger (rejetees par DA) -->
     @if(hasWorkflowEnCorrection()) {
     <div class="card mt-5 border-l-4 border-red-500">
