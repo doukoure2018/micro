@@ -20,6 +20,7 @@ import { PasswordModule } from 'primeng/password';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { RippleModule } from 'primeng/ripple';
 import { TextareaModule } from 'primeng/textarea';
+import { ToastModule } from 'primeng/toast';
 
 // Service interface
 interface Service {
@@ -29,7 +30,7 @@ interface Service {
 
 @Component({
     selector: 'app-create-user',
-    imports: [CommonModule, InputText, TextareaModule, FileUploadModule, FormsModule, ButtonModule, InputGroupModule, RippleModule, MessageModule, ProgressSpinnerModule, PasswordModule, DropdownModule],
+    imports: [CommonModule, InputText, TextareaModule, FileUploadModule, FormsModule, ButtonModule, InputGroupModule, RippleModule, MessageModule, ProgressSpinnerModule, PasswordModule, DropdownModule, ToastModule],
     templateUrl: './create-user.component.html',
     providers: [MessageService]
 })
@@ -421,11 +422,13 @@ export class CreateUserComponent {
 
     createAccout(form: NgForm): void {
         if (form.invalid) {
+            // Marque tous les champs comme "touched" pour afficher les erreurs inline
+            Object.values(form.controls).forEach((c) => c.markAsTouched());
             this.messageService.add({
                 severity: 'error',
-                summary: 'Error',
-                detail: 'Please fill all required fields correctly',
-                life: 3000
+                summary: 'Champs manquants',
+                detail: 'Veuillez remplir tous les champs obligatoires (*) correctement.',
+                life: 4000
             });
             return;
         }

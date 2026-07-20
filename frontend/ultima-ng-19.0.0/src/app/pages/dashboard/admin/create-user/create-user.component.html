@@ -1,3 +1,4 @@
+<p-toast></p-toast>
 <div class="card">
     <span class="text-surface-900 dark:text-surface-0 text-xl font-bold mb-6 block">
         Formulaire de Création de Compte
@@ -250,9 +251,9 @@
 
                     <div class="col-span-12">
                         <div class="flex gap-3">
-                            <button pButton pRipple type="submit" label="Enregister" icon="pi pi-save"
+                            <button pButton pRipple type="submit" label="Enregistrer" icon="pi pi-save"
                                 [loading]="state().submitting"
-                                [disabled]="userForm && userForm.invalid || state().submitting"
+                                [disabled]="state().submitting"
                                 class="w-auto mt-3"></button>
                             <button pButton pRipple type="button" label="Annuler" icon="pi pi-times"
                                 (click)="userForm.resetForm(); selectedService = null" [disabled]="state().submitting"
