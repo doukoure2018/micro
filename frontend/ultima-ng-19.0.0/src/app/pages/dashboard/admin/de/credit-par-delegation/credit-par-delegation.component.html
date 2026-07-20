@@ -78,10 +78,12 @@
                                 <div class="flex gap-2 justify-center">
                                     <p-button icon="pi pi-eye" (click)="viewDemandeDetail(demande.demandeIndividuelId)"
                                         size="small" severity="info" pTooltip="Voir detail"></p-button>
+                                    @if (user?.role !== 'DG') {
                                     <p-button icon="pi pi-check" (click)="ouvrirValidation(demande)"
                                         size="small" severity="success" pTooltip="Valider"></p-button>
                                     <p-button icon="pi pi-times" (click)="ouvrirRejet(demande)"
                                         size="small" severity="danger" pTooltip="Rejeter"></p-button>
+                                    }
                                 </div>
                             </td>
                         </tr>

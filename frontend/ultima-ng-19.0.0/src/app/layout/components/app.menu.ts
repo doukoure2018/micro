@@ -380,6 +380,11 @@ export class AppMenu {
                                                       label: 'Crédits à valider (≥100M)',
                                                       icon: 'pi pi-fw pi-crown',
                                                       routerLink: ['/dashboards/credits-a-valider-dg']
+                                                  },
+                                                  {
+                                                      label: 'Suivi Direction Exploitation',
+                                                      icon: 'pi pi-fw pi-chart-line',
+                                                      routerLink: ['/dashboards/dg-vue-de']
                                                   }
                                               ]
                                             : [])

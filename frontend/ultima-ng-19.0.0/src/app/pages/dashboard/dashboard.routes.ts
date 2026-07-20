@@ -44,6 +44,11 @@ export default [
         loadComponent: () => import('./admin/de/credits-valides-de/credits-valides-de.component').then((c) => c.CreditsValidesDeComponent)
     },
     {
+        path: 'dg-vue-de',
+        data: { breadcrumb: 'Suivi DE — Vue DG' },
+        loadComponent: () => import('./admin/dg/vue-de/vue-de.component').then((c) => c.DgVueDeComponent)
+    },
+    {
         path: 'credits-a-valider-dg',
         data: { breadcrumb: 'Crédits à valider (DG)' },
         loadComponent: () => import('./admin/dg/credits-a-valider-dg/credits-a-valider-dg.component').then((c) => c.CreditsAValiderDgComponent)

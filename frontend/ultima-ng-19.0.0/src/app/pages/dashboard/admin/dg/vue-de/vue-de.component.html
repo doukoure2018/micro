@@ -1,0 +1,22 @@
+<div class="p-2">
+    <!-- Bandeau -->
+    <div class="bg-white rounded-xl shadow-md border border-gray-200 mb-4 overflow-hidden">
+        <div class="bg-gradient-to-r from-slate-700 to-slate-900 text-white px-6 py-4 flex items-center gap-3">
+            <i class="pi pi-eye text-2xl"></i>
+            <div>
+                <div class="font-bold text-xl uppercase tracking-wide">Environnement Direction Exploitation</div>
+                <span class="inline-block mt-1 bg-white/20 text-xs font-semibold px-3 py-1 rounded-full">
+                    Vue DG (lecture seule) — Suivi global des crédits &amp; demandes en attente de validation DE
+                </span>
+            </div>
+        </div>
+    </div>
+
+    @if (state().loading) {
+    <div class="flex justify-center p-8"><p-progressSpinner [style]="{ width: '48px', height: '48px' }"></p-progressSpinner></div>
+    } @else if (state().user) {
+    <app-de [user]="state().user"></app-de>
+    } @else {
+    <div class="p-6 text-center text-gray-500">Impossible de charger l'utilisateur.</div>
+    }
+</div>
