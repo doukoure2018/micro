@@ -268,6 +268,18 @@ export class DigiMapComponent implements AfterViewInit, OnDestroy {
         if (m) m.openPopup();
     }
 
+    /** URL Google Maps en mode itinéraire : origine = position de l'appareil, destination = point. */
+    itineraireUrl(p: ReseauPoint): string {
+        return `https://www.google.com/maps/dir/?api=1&destination=${p.latitude},${p.longitude}&travelmode=driving`;
+    }
+
+    /** Ouvre la navigation (Google Maps / app de cartes) vers le point. */
+    openItineraire(p: ReseauPoint, event?: Event): void {
+        event?.stopPropagation();
+        if (p.latitude == null || p.longitude == null) return;
+        window.open(this.itineraireUrl(p), '_blank', 'noopener');
+    }
+
     // ── Carte ────────────────────────────────────────────────────────────────────
     private drawCommuneBoundary(name: string | null): void {
         this.communeLayer.clearLayers();
@@ -322,6 +334,10 @@ export class DigiMapComponent implements AfterViewInit, OnDestroy {
                 ${p.pointVente ? `<div><b>Point de vente :</b> ${this.escape(p.pointVente)}</div>` : ''}
                 ${p.contact ? `<div><b>Contact :</b> ${this.escape(p.contact)}</div>` : ''}
               </div>
+              <a href="${this.itineraireUrl(p)}" target="_blank" rel="noopener"
+                 style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;background:#0891b2;color:#fff;font-size:12px;font-weight:600;padding:5px 12px;border-radius:6px;text-decoration:none">
+                &#10148; M'y rendre
+              </a>
             </div>`;
     }
 
