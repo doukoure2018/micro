@@ -1014,6 +1014,23 @@ export class UserService {
         }
     };
 
+    /** Rôles/autorités du JWT (claim "authorities", sans préfixe ROLE_). */
+    getAuthorities = (): string[] => {
+        try {
+            const token = this.storage.get(Key.TOKEN);
+            if (!token) return [];
+            const decoded: any = this.jwt.decodeToken(token);
+            const auth = decoded?.authorities ?? decoded?.role;
+            if (Array.isArray(auth)) return auth.map((a) => String(a).trim());
+            if (typeof auth === 'string') return auth.split(',').map((a) => a.trim());
+            return [];
+        } catch {
+            return [];
+        }
+    };
+
+    hasRole = (role: string): boolean => this.getAuthorities().includes(role);
+
     isAuthenticated = (): boolean => {
         const token = this.storage.get(Key.TOKEN);
 

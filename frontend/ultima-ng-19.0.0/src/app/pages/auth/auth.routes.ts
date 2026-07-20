@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { AgentCreditGuard } from '@/service/agent-credit.guard';
 
 export default [
     {
@@ -6,7 +7,7 @@ export default [
         loadComponent: () => import('./auth.component').then((c) => c.AuthComponent),
         children: [
             { path: '', loadComponent: () => import('../home/home.component').then((c) => c.HomeComponent) },
-            { path: 'credit/demandeInd', loadComponent: () => import('./credit/demande-ind/demande-ind.component').then((c) => c.DemandeIndComponent) },
+            { path: 'credit/demandeInd', canActivate: [AgentCreditGuard], loadComponent: () => import('./credit/demande-ind/demande-ind.component').then((c) => c.DemandeIndComponent) },
             { path: 'error', loadComponent: () => import('./error').then((c) => c.Error) },
             { path: 'error2', loadComponent: () => import('./error2').then((c) => c.Error2) },
             { path: 'access', loadComponent: () => import('./accessdenied').then((c) => c.AccessDenied) },

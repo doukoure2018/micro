@@ -41,6 +41,11 @@ export class AppMenu {
                     },
                     ...(this.user?.role === 'AGENT_CREDIT'
                         ? [
+                              {
+                                  label: 'Nouvelle demande de crédit',
+                                  icon: 'pi pi-fw pi-file-edit',
+                                  routerLink: ['/auth/credit/demandeInd']
+                              },
                               //   {
                               //       label: 'Analyse de Credit',
                               //       icon: 'pi pi-fw pi-hourglass',
