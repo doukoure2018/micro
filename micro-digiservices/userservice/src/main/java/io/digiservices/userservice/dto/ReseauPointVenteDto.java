@@ -23,4 +23,6 @@ public class ReseauPointVenteDto {
     private String type;
     private Double latitude;
     private Double longitude;
+    private String source; // EXCEL | PUBLIC
+    private String statut; // EN_ATTENTE | VALIDE | REJETE
 }

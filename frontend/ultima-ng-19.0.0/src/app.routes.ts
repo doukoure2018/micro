@@ -75,6 +75,10 @@ export const appRoutes: Routes = [
         loadComponent: () => import('@/pages/public/digi-map/digi-map.component').then((c) => c.DigiMapComponent)
     },
     {
+        path: 'ajout-point',
+        loadComponent: () => import('@/pages/public/ajout-point/ajout-point.component').then((c) => c.AjoutPointComponent)
+    },
+    {
         path: 'landing',
         loadComponent: () => import('@/pages/landing/landing').then((c) => c.Landing)
     },

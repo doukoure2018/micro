@@ -93,8 +93,8 @@ public class ReseauServiceImpl implements ReseauService {
             throw new ApiException("Fichier Excel illisible : " + e.getMessage());
         }
 
-        // Remplacement complet (le fichier = source de verite)
-        repository.deleteAll();
+        // Remplacement des seules lignes EXCEL (les points PUBLIC valides survivent)
+        repository.deleteExcelPoints();
         for (ReseauPointVenteDto p : aInserer) {
             repository.insert(p);
         }
@@ -157,6 +157,39 @@ public class ReseauServiceImpl implements ReseauService {
     @Override
     public List<ReseauPointVenteDto> getPoints(String delegation, String type) {
         return repository.findAll(blankToNull(delegation), blankToNull(up(type)));
+    }
+
+    @Override
+    public void soumettrePublic(ReseauPointVenteDto dto) {
+        if (dto == null) throw new ApiException("Données manquantes");
+        String type = up(dto.getType());
+        if (type == null || !TYPES_AUTORISES.contains(type)) throw new ApiException("Type invalide");
+        if (dto.getNom() == null || dto.getNom().isBlank()) throw new ApiException("Le nom est obligatoire");
+        if (dto.getLatitude() == null || dto.getLongitude() == null) throw new ApiException("Position GPS manquante");
+        dto.setType(type);
+        dto.setDelegation(up(dto.getDelegation()));
+        repository.insertSoumission(dto);
+    }
+
+    @Override
+    public List<ReseauPointVenteDto> getSoumissions() {
+        return repository.findSoumissions();
+    }
+
+    @Override
+    public void validerSoumission(Long id, ReseauPointVenteDto localisation) {
+        if (localisation != null
+                && (localisation.getDelegation() != null || localisation.getAgence() != null || localisation.getPointVente() != null)) {
+            repository.updateLocalisation(id, up(localisation.getDelegation()), localisation.getAgence(), localisation.getPointVente());
+        }
+        int rows = repository.updateStatut(id, "VALIDE");
+        if (rows == 0) throw new ApiException("Soumission introuvable ou déjà traitée");
+    }
+
+    @Override
+    public void rejeterSoumission(Long id) {
+        int rows = repository.updateStatut(id, "REJETE");
+        if (rows == 0) throw new ApiException("Soumission introuvable ou déjà traitée");
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────────

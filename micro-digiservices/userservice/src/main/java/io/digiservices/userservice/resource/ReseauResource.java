@@ -1,6 +1,7 @@
 package io.digiservices.userservice.resource;
 
 import io.digiservices.userservice.domain.Response;
+import io.digiservices.userservice.dto.ReseauPointVenteDto;
 import io.digiservices.userservice.service.ReseauService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -55,5 +56,36 @@ public class ReseauResource {
                                            HttpServletRequest request) {
         var points = reseauService.getPoints(delegation, type);
         return ok(getResponse(request, Map.of("points", points), "Points du reseau", OK));
+    }
+
+    // ── Soumission publique (lien WhatsApp, sans login) ─────────────────────────
+    @PostMapping("/public/soumettre")
+    public ResponseEntity<Response> soumettre(@RequestBody ReseauPointVenteDto dto, HttpServletRequest request) {
+        reseauService.soumettrePublic(dto);
+        return ok(getResponse(request, Map.of("ok", true),
+                "Merci ! Votre point a été soumis et sera vérifié avant publication.", OK));
+    }
+
+    // ── Moderation (SUPER_ADMIN) ────────────────────────────────────────────────
+    @PreAuthorize("hasAuthority('SUPER_ADMIN')")
+    @GetMapping("/soumissions")
+    public ResponseEntity<Response> soumissions(HttpServletRequest request) {
+        return ok(getResponse(request, Map.of("soumissions", reseauService.getSoumissions()), "Soumissions en attente", OK));
+    }
+
+    @PreAuthorize("hasAuthority('SUPER_ADMIN')")
+    @PostMapping("/soumissions/{id}/valider")
+    public ResponseEntity<Response> valider(@PathVariable("id") Long id,
+                                            @RequestBody(required = false) ReseauPointVenteDto localisation,
+                                            HttpServletRequest request) {
+        reseauService.validerSoumission(id, localisation);
+        return ok(getResponse(request, Map.of("ok", true), "Soumission validée", OK));
+    }
+
+    @PreAuthorize("hasAuthority('SUPER_ADMIN')")
+    @PostMapping("/soumissions/{id}/rejeter")
+    public ResponseEntity<Response> rejeter(@PathVariable("id") Long id, HttpServletRequest request) {
+        reseauService.rejeterSoumission(id);
+        return ok(getResponse(request, Map.of("ok", true), "Soumission rejetée", OK));
     }
 }

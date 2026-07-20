@@ -98,6 +98,63 @@
         </div>
     </div>
 
+    <!-- Lien public + soumissions en attente -->
+    <div class="bg-white rounded-xl shadow-md border border-gray-200 mt-4 p-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+                <h3 class="m-0 text-lg font-semibold"><i class="pi pi-share-alt mr-2 text-green-600"></i>Lien public d'ajout de point</h3>
+                <p class="text-sm text-gray-500 m-0 mt-1">À partager par WhatsApp. La position GPS est captée automatiquement ; les points ajoutés attendent votre validation.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <input type="text" [value]="publicUrl" readonly
+                    class="rounded-lg border border-gray-300 px-3 py-2 text-sm w-72 max-w-full bg-gray-50" />
+                <button pButton type="button" icon="pi pi-copy" label="Copier" (click)="copierLienPublic()" severity="secondary"></button>
+                <a [href]="publicUrl" target="_blank">
+                    <button pButton type="button" icon="pi pi-external-link" label="Ouvrir" class="p-button-outlined"></button>
+                </a>
+            </div>
+        </div>
+
+        @if (state().soumissions.length) {
+        <div class="mt-5">
+            <h4 class="text-orange-700 font-semibold mb-3"><i class="pi pi-clock mr-2"></i>Soumissions en attente ({{ state().soumissions.length }})</h4>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-600 uppercase text-xs">
+                            <th class="py-2 px-2 text-center">Type</th>
+                            <th class="py-2 px-2 text-left">Nom</th>
+                            <th class="py-2 px-2 text-left">Contact</th>
+                            <th class="py-2 px-2 text-left">Région / Délégation</th>
+                            <th class="py-2 px-2 text-left">Préfecture / Agence</th>
+                            <th class="py-2 px-2 text-left">Commune / PDV</th>
+                            <th class="py-2 px-2 text-center">Position</th>
+                            <th class="py-2 px-2 text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (s of state().soumissions; track s.id) {
+                        <tr class="border-b border-gray-100">
+                            <td class="py-2 px-2 text-center"><p-tag [value]="s.type" [severity]="typeSeverity(s.type)"></p-tag></td>
+                            <td class="py-2 px-2 font-semibold">{{ s.nom }}</td>
+                            <td class="py-2 px-2">{{ s.contact }}</td>
+                            <td class="py-2 px-2"><input [(ngModel)]="s.delegation" class="w-32 rounded border border-gray-200 px-1 py-1 text-xs" /></td>
+                            <td class="py-2 px-2"><input [(ngModel)]="s.agence" class="w-28 rounded border border-gray-200 px-1 py-1 text-xs" /></td>
+                            <td class="py-2 px-2"><input [(ngModel)]="s.pointVente" class="w-28 rounded border border-gray-200 px-1 py-1 text-xs" /></td>
+                            <td class="py-2 px-2 text-center"><a [href]="mapsUrl(s)" target="_blank" class="text-cyan-700"><i class="pi pi-map-marker"></i> voir</a></td>
+                            <td class="py-2 px-2 text-center whitespace-nowrap">
+                                <button pButton type="button" icon="pi pi-check" (click)="validerSoumission(s)" severity="success" size="small" title="Valider"></button>
+                                <button pButton type="button" icon="pi pi-times" (click)="rejeterSoumission(s)" severity="danger" size="small" class="ml-1" title="Rejeter"></button>
+                            </td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        }
+    </div>
+
     <!-- Liste des points -->
     <div class="bg-white rounded-xl shadow-md border border-gray-200 mt-4">
         <div class="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-gray-100">

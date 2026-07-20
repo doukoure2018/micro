@@ -68,6 +68,7 @@ export class ReseauGeoComponent implements OnInit {
 
     state = signal<{
         points: ReseauPoint[];
+        soumissions: any[];
         report: ImportReport | null;
         selectedFile: File | null;
         loading: boolean;
@@ -75,6 +76,7 @@ export class ReseauGeoComponent implements OnInit {
         exporting: boolean;
     }>({
         points: [],
+        soumissions: [],
         report: null,
         selectedFile: null,
         loading: false,
@@ -82,12 +84,65 @@ export class ReseauGeoComponent implements OnInit {
         exporting: false
     });
 
+    get publicUrl(): string {
+        return `${window.location.origin}/ajout-point`;
+    }
+
     private userService = inject(UserService);
     private destroyRef = inject(DestroyRef);
     private messageService = inject(MessageService);
 
     ngOnInit(): void {
         this.loadPoints();
+        this.loadSoumissions();
+    }
+
+    loadSoumissions(): void {
+        this.userService
+            .getSoumissions$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => this.state.update((s) => ({ ...s, soumissions: (r.data as any)?.soumissions || [] })),
+                error: () => this.state.update((s) => ({ ...s, soumissions: [] }))
+            });
+    }
+
+    validerSoumission(soum: any): void {
+        this.userService
+            .validerSoumission$(soum.id, { delegation: soum.delegation, agence: soum.agence, pointVente: soum.pointVente })
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.messageService.add({ severity: 'success', summary: 'Validé', detail: `${soum.nom} publié sur la carte` });
+                    this.loadSoumissions();
+                    this.loadPoints();
+                },
+                error: (e) => this.messageService.add({ severity: 'error', summary: 'Erreur', detail: e?.message || 'Échec' })
+            });
+    }
+
+    rejeterSoumission(soum: any): void {
+        this.userService
+            .rejeterSoumission$(soum.id)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.messageService.add({ severity: 'warn', summary: 'Rejeté', detail: `${soum.nom} rejeté` });
+                    this.loadSoumissions();
+                },
+                error: (e) => this.messageService.add({ severity: 'error', summary: 'Erreur', detail: e?.message || 'Échec' })
+            });
+    }
+
+    copierLienPublic(): void {
+        navigator.clipboard?.writeText(this.publicUrl).then(
+            () => this.messageService.add({ severity: 'info', summary: 'Lien copié', detail: 'Collez-le dans WhatsApp' }),
+            () => {}
+        );
+    }
+
+    mapsUrl(soum: any): string {
+        return `https://www.google.com/maps?q=${soum.latitude},${soum.longitude}`;
     }
 
     loadPoints(): void {

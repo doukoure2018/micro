@@ -16,4 +16,16 @@ public interface ReseauService {
 
     /** Liste des points (pour la carte), filtrable par delegation/type. */
     List<ReseauPointVenteDto> getPoints(String delegation, String type);
+
+    /** Soumission publique d'un nouveau point (lien public, GPS auto) -> EN_ATTENTE. */
+    void soumettrePublic(ReseauPointVenteDto dto);
+
+    /** Soumissions publiques en attente de moderation (SUPER_ADMIN). */
+    List<ReseauPointVenteDto> getSoumissions();
+
+    /** Valider une soumission (optionnellement completer delegation/agence/point de vente). */
+    void validerSoumission(Long id, ReseauPointVenteDto localisation);
+
+    /** Rejeter une soumission. */
+    void rejeterSoumission(Long id);
 }

@@ -90,6 +90,15 @@ export class UserService {
         const qs = q.length ? `?${q.join('&')}` : '';
         return <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/user/reseau/points${qs}`).pipe(catchError(this.handleError));
     };
+
+    // Soumission publique d'un point (lien WhatsApp, GPS auto) + moderation SUPER_ADMIN
+    soumettrePoint$ = (dto: any) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/user/reseau/public/soumettre`, dto).pipe(catchError(this.handleError));
+
+    getSoumissions$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/user/reseau/soumissions`).pipe(catchError(this.handleError));
+
+    validerSoumission$ = (id: number, localisation?: any) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/user/reseau/soumissions/${id}/valider`, localisation || {}).pipe(catchError(this.handleError));
+
+    rejeterSoumission$ = (id: number) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/user/reseau/soumissions/${id}/rejeter`, {}).pipe(catchError(this.handleError));
     // Mise en place analyse de credit
     addPromoteur$ = (promoteurData: any) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/addPromoteur`, promoteurData).pipe(tap(console.log), catchError(this.handleError));
     addEntreprise$ = (entrepriseData: any) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/addEntreprise`, entrepriseData).pipe(tap(console.log), catchError(this.handleError));
