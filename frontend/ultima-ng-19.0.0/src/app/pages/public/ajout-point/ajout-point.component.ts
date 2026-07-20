@@ -1,7 +1,7 @@
 import { IResponse } from '@/interface/response';
 import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
-import { AfterViewInit, Component, ElementRef, inject, signal, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, inject, NgZone, signal, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -16,7 +16,7 @@ import * as L from 'leaflet';
     styleUrl: './ajout-point.component.scss'
 })
 export class AjoutPointComponent implements AfterViewInit {
-    @ViewChild('mapContainer', { static: true }) mapContainer!: ElementRef<HTMLDivElement>;
+    @ViewChild('mapContainer') mapContainer?: ElementRef<HTMLDivElement>;
 
     readonly REGIONS = ['CONAKRY', 'BASSE GUINEE', 'MOYENNE GUINEE', 'HAUTE GUINEE', 'GUINEE FORESTIERE'];
     regionOptions = this.REGIONS.map((r) => ({ label: r, value: r }));
@@ -46,10 +46,12 @@ export class AjoutPointComponent implements AfterViewInit {
     private map!: L.Map;
     private marker?: L.Marker;
     private userService = inject(UserService);
+    private zone = inject(NgZone);
 
     ngAfterViewInit(): void {
-        this.initMap();
+        // La géolocalisation est prioritaire et indépendante de la carte.
         this.captureGps();
+        if (this.mapContainer) this.initMap();
     }
 
     /** Types "terrain" (territoire administratif) vs points de service (structure CRG). */
@@ -64,17 +66,20 @@ export class AjoutPointComponent implements AfterViewInit {
         }
         this.geoStatus.set('loading');
         navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                this.coords.set({ lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy });
-                this.geoStatus.set('ok');
-                this.showOnMap();
-            },
-            (err) => this.geoStatus.set(err.code === 1 ? 'denied' : 'error'),
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+            (pos) =>
+                // Le callback s'exécute hors zone Angular -> on réintègre la zone pour rafraîchir la vue.
+                this.zone.run(() => {
+                    this.coords.set({ lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy });
+                    this.geoStatus.set('ok');
+                    this.showOnMap();
+                }),
+            (err) => this.zone.run(() => this.geoStatus.set(err.code === 1 ? 'denied' : 'error')),
+            { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
         );
     }
 
     private initMap(): void {
+        if (!this.mapContainer) return;
         this.map = L.map(this.mapContainer.nativeElement, { center: [10.4, -11.3], zoom: 6 });
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(this.map);
         setTimeout(() => this.map.invalidateSize(), 200);
