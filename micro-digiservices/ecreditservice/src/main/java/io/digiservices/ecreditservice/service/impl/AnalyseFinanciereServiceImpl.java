@@ -36,8 +36,11 @@ public class AnalyseFinanciereServiceImpl implements AnalyseFinanciereService {
                                                String codUsuario, String nomAnalyste) {
         AnalyseFinanciereValidator.validateCreateAnalyseRequest(request);
 
+        // Idempotent : si une analyse existe deja pour cette demande, on la renvoie
+        // (au lieu d'echouer) -> l'ecran d'analyse recupere l'analyseId et s'affiche.
         if (repository.demandeHasAnalyse(request.getDemandeindividuelId())) {
-            throw new ApiException("Une analyse existe deja pour cette demande");
+            log.info("Analyse deja existante pour la demande {} : renvoi de l'existante", request.getDemandeindividuelId());
+            return repository.getAnalyseByDemandeId(request.getDemandeindividuelId());
         }
 
         Long analyseId = repository.createAnalyse(request, codUsuario, nomAnalyste);

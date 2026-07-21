@@ -1724,11 +1724,13 @@ export class AnalyseBilanActiviteComponent {
                             analyseId: newAnalyseId,
                             analyseExiste: true
                         }));
-                        this.messageService.add({
-                            severity: 'success',
-                            summary: 'Succès',
-                            detail: 'Analyse créée avec succès'
-                        });
+                        this.selectedHypotheseCa = analyse.hypotheseCa || this.selectedHypotheseCa;
+                        this.selectedTypeMarge = analyse.typeMarge || this.selectedTypeMarge;
+                        // Charge le detail de l'analyse (creation idempotente cote backend :
+                        // renvoie l'existante si deja creee).
+                        if (newAnalyseId) {
+                            this.loadAnalyseDetails(newAnalyseId);
+                        }
                     }
                 },
                 error: (error) => {
