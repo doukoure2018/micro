@@ -9,13 +9,9 @@ import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, ActivatedRoute, RouterModule, ParamMap } from '@angular/router';
 import { FormsModule, NgForm } from '@angular/forms';
-import { MenuItem, MessageService } from 'primeng/api';
+import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { DropdownModule } from 'primeng/dropdown';
-import { IconFieldModule } from 'primeng/iconfield';
-import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
-import { MenuModule } from 'primeng/menu';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { DialogModule } from 'primeng/dialog';
 import { InputGroupModule } from 'primeng/inputgroup';
@@ -27,22 +23,87 @@ import { environment } from 'src/environments/environment';
 
 @Component({
     selector: 'app-home',
-    imports: [ProgressSpinnerModule, RouterModule, IconFieldModule, InputIconModule, InputTextModule, Topbar, DropdownModule, ButtonModule, MenuModule, DialogModule, FormsModule, InputGroupModule, InputGroupAddonModule, MessageModule, ToastModule],
+    imports: [ProgressSpinnerModule, RouterModule, InputTextModule, Topbar, ButtonModule, DialogModule, FormsModule, InputGroupModule, InputGroupAddonModule, MessageModule, ToastModule],
     templateUrl: './home.component.html',
     styles: `
-        ::placeholder {
-            color: #fff;
+        /* Grille décorative du hero */
+        .hero-grid {
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+            background-size: 48px 48px;
+            mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%);
         }
-        ::ng-deep .custom-dropdown {
-            .p-dropdown {
-                border-radius: 1.5rem !important;
-                border: none !important;
-            }
 
-            .p-dropdown-label {
-                color: #10b981 !important;
-                font-weight: 500 !important;
-            }
+        /* Cartes services */
+        .service-card {
+            background: var(--surface-card, #fff);
+            border: 1px solid var(--surface-border, #e5e7eb);
+            border-radius: 1.25rem;
+            padding: 1.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .service-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 20px 40px -12px rgba(6, 78, 59, 0.18);
+            border-color: rgba(16, 185, 129, 0.4);
+        }
+
+        /* Tuiles "à propos" et "KUMY" */
+        .about-tile {
+            background: var(--surface-card, #fff);
+            border: 1px solid var(--surface-border, #e5e7eb);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .about-tile:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 14px 30px -12px rgba(6, 78, 59, 0.18);
+            border-color: rgba(16, 185, 129, 0.4);
+        }
+
+        .kumy-tile {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            backdrop-filter: blur(4px);
+        }
+
+        /* Boutons du hero */
+        ::ng-deep .hero-cta-primary .p-button {
+            background: #fff !important;
+            border-color: #fff !important;
+            color: #065f46 !important;
+            font-weight: 600;
+        }
+
+        ::ng-deep .hero-cta-primary .p-button:hover {
+            background: #d1fae5 !important;
+            border-color: #d1fae5 !important;
+        }
+
+        ::ng-deep .hero-cta-secondary .p-button {
+            border-color: rgba(255, 255, 255, 0.4) !important;
+            color: #fff !important;
+        }
+
+        ::ng-deep .hero-cta-secondary .p-button:hover {
+            background: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        /* Boutons des cartes services */
+        ::ng-deep .service-btn-emerald .p-button {
+            background: #059669 !important;
+            border-color: #059669 !important;
+        }
+
+        ::ng-deep .service-btn-emerald .p-button:hover {
+            background: #047857 !important;
+            border-color: #047857 !important;
         }
 
         ::ng-deep .p-menu {
@@ -86,6 +147,7 @@ import { environment } from 'src/environments/environment';
 export class HomeComponent {
     loading = signal<boolean>(true);
     isAuthenticatedAndRedirecting = signal<boolean>(false);
+    currentYear = new Date().getFullYear();
 
     // Dialog Personnel
     showPersonnelDialog = signal<boolean>(false);
@@ -125,6 +187,10 @@ export class HomeComponent {
                         return this.userService.validateCode$(this.formData(code));
                     } else {
                         this.loading.set(false);
+                        // Lien "Souscrire · Avance sur salaire" du menu → ouvre le dialog personnel
+                        if (params.get('souscription') === 'personnel') {
+                            this.openPersonnelDialog();
+                        }
                         return EMPTY;
                     }
                 }),
@@ -179,26 +245,8 @@ export class HomeComponent {
         const savedToken = this.storage.get(Key.TOKEN);
         console.log('✅ Token sauvegardé et vérifié:', savedToken ? 'Oui' : 'Non');
     };
-    // Ajoutez les autres méthodes si elles sont utilisées dans le template
-    demandesItems: MenuItem[] = [
-        {
-            label: 'Demande de Crédit',
-            icon: 'pi pi-plus',
-            command: () => this.navigateToNewDemande()
-        }
-        // {
-        //     label: 'Demande de Crédit Groupe',
-        //     icon: 'pi pi-list',
-        //     command: () => this.navigateToMyDemandes()
-        // }
-    ];
-
-    navigateToNewDemande() {
-        this.router.navigate(['/dashboards/nouvelle-demande']);
-    }
-
-    navigateToMyDemandes() {
-        // Logique de navigation
+    scrollToSolutions() {
+        document.getElementById('solutions')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     // ==================== GESTION DU PERSONNEL ====================

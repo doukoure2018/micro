@@ -1,156 +1,377 @@
 @if(loading() || isAuthenticatedAndRedirecting()){
-<div class="text-center">
-    <div class="relative">
-        <p-progress-spinner ariaLabel="Verifying account" [style]="{'width': '5rem', 'height': '5rem'}" strokeWidth="4"
-            animationDuration=".5s" class="text-primary" />
-    </div>
+<div class="min-h-screen flex flex-col items-center justify-center bg-surface-50 dark:bg-surface-950 text-center px-4">
+    <p-progress-spinner ariaLabel="Verifying account" [style]="{'width': '5rem', 'height': '5rem'}" strokeWidth="4"
+        animationDuration=".5s" class="text-primary mb-6" />
     <h2 class="text-2xl font-semibold mb-2">Vérification du compte ...</h2>
-    <p class="text-surface-600 dark:text-surface-300">Veuillez patienter pendant que nous vérifions vos identifiants.
-    </p>
+    <p class="text-surface-600 dark:text-surface-300">Veuillez patienter pendant que nous vérifions vos identifiants.</p>
 </div>
 } @else {
-<div class="bg-surface-50 dark:bg-surface-950">
+<div class="min-h-screen bg-surface-50 dark:bg-surface-950">
     <topbar />
-    <div class="h-screen">
-        <div style="perspective: 101px"
-            class="h-screen overflow-x-hidden overflow-y-auto absolute top-0 left-0 right-0 bottom-0">
-            <div id="parallaxBody" class="lg:top-0 block absolute left-0 right-0 h-full z-20">
-                <div class="card">
-                    <br><br><br>
-                    <!-- Modern Cards Layout - Grille 12 colonnes -->
-                    <div class="grid grid-cols-12 gap-6 mb-8 max-w-7xl mx-auto px-4">
-                        <!-- LIGNE 1 -->
-                        <!-- GESTION ECREDIT Card -->
-                        <div
-                            class="col-span-12 md:col-span-4 bg-green-500 rounded-2xl p-8 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer">
-                            <div class="flex items-center mb-6">
-                                <i class="pi pi-credit-card text-3xl mr-4"></i>
-                                <h3 class="text-xl font-bold">GESTION ECREDIT</h3>
-                            </div>
-                            <p class="text-green-100 mb-6 text-sm leading-relaxed">
-                                Faire une nouvelle demande de Crédit
-                            </p>
 
-                            <!-- PrimeNG Menu Dropdowns -->
-                            <div class="flex gap-4">
-                                <!-- Premier Menu -->
-                                <p-button label="Demandes" icon="pi pi-chevron-down" iconPos="right"
-                                    (click)="demandesMenu.toggle($event)"
-                                    [style]="{'background': 'white', 'color': '#10b981', 'border': 'none', 'border-radius': '1.5rem'}"
-                                    class="p-button-sm">
-                                </p-button>
-                                <p-menu #demandesMenu [model]="demandesItems" [popup]="true"></p-menu>
-                            </div>
-                        </div>
+    <!-- ============ HERO : LE CRG ============ -->
+    <section class="relative overflow-hidden bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-900">
+        <!-- Décor : halos lumineux -->
+        <div class="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-emerald-500/20 blur-3xl pointer-events-none"></div>
+        <div class="absolute top-1/3 -right-32 w-[28rem] h-[28rem] rounded-full bg-teal-400/10 blur-3xl pointer-events-none"></div>
+        <div class="absolute bottom-0 left-1/3 w-80 h-80 rounded-full bg-cyan-400/10 blur-3xl pointer-events-none"></div>
+        <!-- Décor : grille -->
+        <div class="absolute inset-0 hero-grid pointer-events-none"></div>
 
-                        <!-- GESTION RECLAMATIONS Card -->
-                        <div
-                            class="col-span-12 md:col-span-4 bg-orange-500 rounded-2xl p-8 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer">
-                            <div class="flex items-center mb-6">
-                                <i class="pi pi-headphones text-3xl mr-4"></i>
-                                <h3 class="text-xl font-bold"><strong>GESTION RECLAMATIONS</strong></h3>
-                            </div>
-                            <p class="text-orange-100 mb-6 text-sm leading-relaxed">
-                                Gestion des réclamations et incidents
-                            </p>
-                            <button
-                                class="bg-white text-orange-500 px-6 py-2 rounded-full font-medium hover:bg-gray-100 transition-colors">
-                                Acceder
-                            </button>
-                            <div class="mt-4 flex items-center text-orange-200 font-semibold">
-                                <i class="pi pi-info-circle mr-2"></i>
-                                <span>En cours</span>
-                            </div>
-                        </div>
+        <div class="relative max-w-7xl mx-auto px-6 pt-40 pb-24 lg:pt-48 lg:pb-32">
+            <div class="max-w-3xl">
+                <span
+                    class="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-4 py-1.5 text-sm font-medium text-emerald-200 mb-6 animate-fadein">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Institution de microfinance — République de Guinée
+                </span>
 
-                        <!-- ESOCIETARIAT Card -->
-                        <div
-                            class="col-span-12 md:col-span-4 bg-cyan-600 rounded-2xl p-8 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer">
-                            <div class="flex items-center mb-6">
-                                <i class="pi pi-users text-3xl mr-4"></i>
-                                <h3 class="text-xl font-bold"><strong>ESOCIETARIAT</strong></h3>
-                            </div>
-                            <p class="text-cyan-100 mb-6 text-sm leading-relaxed">
-                                Gestion pour l'assainissement du sociétariat
-                            </p>
-                            <button
-                                class="bg-gray-800 text-white px-6 py-2 rounded-full font-medium hover:bg-gray-700 transition-colors">
-                                Acceder
-                            </button>
-                            <div class="mt-4 flex items-center text-orange-200 font-semibold">
-                                <i class="pi pi-info-circle mr-2"></i>
-                                <span>En cours</span>
-                            </div>
-                        </div>
-                        <!-- ARRETE DE CAISSE Card -->
-                        <div class="col-span-12 md:col-span-4 rounded-2xl p-8 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer"
-                            style="background-color: #7c3aed;">
-                            <div class="flex items-center mb-6">
-                                <i class="pi pi-video text-3xl mr-4"></i>
-                                <h3 class="text-xl font-bold"><strong>GESTION ARRETE DE CAISSE</strong></h3>
-                            </div>
-                            <p class="mb-6 text-sm leading-relaxed" style="color: #ddd6fe;">
-                                Gestion pour la remontée des arrêtés de caisse
-                            </p>
-                            <button
-                                class="bg-white px-6 py-2 rounded-full font-medium hover:bg-gray-100 transition-colors"
-                                style="color: #7c3aed;">
-                                Acceder
-                            </button>
-                            <div class="mt-4 flex items-center text-orange-200 font-semibold">
-                                <i class="pi pi-info-circle mr-2"></i>
-                                <span>En cours</span>
-                            </div>
-                        </div>
+                <h1 class="text-4xl lg:text-6xl font-bold text-white leading-tight mb-6">
+                    Crédit Rural de Guinée,
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-cyan-300">
+                        la microfinance au service du monde rural
+                    </span>
+                </h1>
 
-                        <!-- GESTION DU PERSONNEL Card -->
-                        <div class="col-span-12 md:col-span-4 rounded-2xl p-8 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer"
-                            style="background-color: #059669;" (click)="openPersonnelDialog()">
-                            <div class="flex items-center mb-6">
-                                <i class="pi pi-user-plus text-3xl mr-4"></i>
-                                <h3 class="text-xl font-bold"><strong>GESTION DU PERSONNEL</strong></h3>
-                            </div>
-                            <p class="mb-6 text-sm leading-relaxed" style="color: #d1fae5;">
-                                Gestion avance salaire et des tâcherons
-                            </p>
-                            <button
-                                class="bg-white px-6 py-2 rounded-full font-medium hover:bg-gray-100 transition-colors"
-                                style="color: #059669;">
-                                Souscrire
-                            </button>
-                            <div class="mt-4 flex items-center" style="color: #d1fae5;">
-                                <i class="pi pi-check-circle mr-2"></i>
-                                <span>Disponible</span>
-                            </div>
-                        </div>
+                <p class="text-lg lg:text-xl text-emerald-100/80 leading-relaxed mb-10 max-w-2xl">
+                    Pionnier de la microfinance en Guinée, le CRG accompagne depuis plus de trois décennies les
+                    agriculteurs, commerçants et populations rurales avec des services d'épargne et de crédit de
+                    proximité. Aujourd'hui, l'institution accélère sa transformation digitale avec des solutions
+                    développées en interne.
+                </p>
 
-                        <!-- DIGI-MAP Card -->
-                        <div
-                            class="col-span-12 md:col-span-4 bg-gray-900 rounded-2xl p-8 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer">
-                            <div class="flex items-center mb-6">
-                                <i class="pi pi-bars text-3xl mr-4"></i>
-                                <h3 class="text-xl font-bold"><strong>DIGI-MAP</strong></h3>
-                            </div>
-                            <p class="text-gray-300 mb-6 text-sm leading-relaxed">
-                                Géolocalisation de nos points de services
-                            </p>
-                            <a routerLink="/digi-map">
-                                <button
-                                    class="bg-cyan-500 text-white px-6 py-2 rounded-full font-medium hover:bg-cyan-400 transition-colors">
-                                    Acceder
-                                </button>
-                            </a>
-                            <div class="mt-4 flex items-center text-green-300 font-semibold">
-                                <i class="pi pi-check-circle mr-2"></i>
-                                <span>Disponible</span>
-                            </div>
-                        </div>
+                <div class="flex flex-wrap items-center gap-4">
+                    <p-button label="Découvrir nos solutions" icon="pi pi-chevron-down" iconPos="right"
+                        (click)="scrollToSolutions()" styleClass="hero-cta-primary" size="large" rounded />
+                    <a routerLink="/digi-map">
+                        <p-button label="Notre réseau sur la carte" icon="pi pi-map-marker" iconPos="right"
+                            styleClass="hero-cta-secondary" size="large" rounded outlined />
+                    </a>
+                </div>
+            </div>
 
+            <!-- Bandeau chiffres clés -->
+            <div class="mt-16 grid grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl">
+                <div class="rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm px-6 py-5">
+                    <p class="text-3xl font-bold text-white mb-1">+30 ans</p>
+                    <p class="text-sm text-emerald-200/70">Au service du monde rural</p>
+                </div>
+                <div class="rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm px-6 py-5">
+                    <p class="text-3xl font-bold text-white mb-1">+140</p>
+                    <p class="text-sm text-emerald-200/70">Points de service</p>
+                </div>
+                <div class="rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm px-6 py-5">
+                    <p class="text-3xl font-bold text-white mb-1">7</p>
+                    <p class="text-sm text-emerald-200/70">Solutions digitales internes</p>
+                </div>
+                <div class="rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm px-6 py-5">
+                    <p class="text-3xl font-bold text-white mb-1">100%</p>
+                    <p class="text-sm text-emerald-200/70">Couverture nationale</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Séparateur en vague -->
+        <svg class="absolute bottom-0 left-0 right-0 w-full text-surface-50 dark:text-surface-950" viewBox="0 0 1440 60"
+            fill="currentColor" preserveAspectRatio="none" style="height: 60px">
+            <path d="M0,32 C360,72 720,0 1080,24 C1260,36 1380,48 1440,40 L1440,60 L0,60 Z"></path>
+        </svg>
+    </section>
+
+    <!-- ============ A PROPOS DU CRG ============ -->
+    <section class="max-w-7xl mx-auto px-6 py-20">
+        <div class="grid grid-cols-12 gap-10 items-center">
+            <div class="col-span-12 lg:col-span-6">
+                <span class="inline-block text-sm font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-3">
+                    Qui sommes-nous
+                </span>
+                <h2 class="text-3xl lg:text-4xl font-bold text-surface-900 dark:text-surface-0 mb-5">
+                    Une institution enracinée dans le monde rural guinéen
+                </h2>
+                <p class="text-surface-600 dark:text-surface-300 leading-relaxed mb-4">
+                    Le Crédit Rural de Guinée (CRG) est l'une des premières institutions de microfinance du pays.
+                    Sa mission : rendre les services financiers accessibles aux populations exclues du système
+                    bancaire classique — agriculteurs, éleveurs, artisans, commerçants et groupements villageois.
+                </p>
+                <p class="text-surface-600 dark:text-surface-300 leading-relaxed">
+                    Son réseau est organisé en trois niveaux — <strong>délégations régionales</strong>,
+                    <strong>agences</strong> et <strong>points de vente</strong> — qui assurent une présence de
+                    proximité sur l'ensemble du territoire, des grandes villes aux zones rurales les plus reculées.
+                </p>
+            </div>
+            <div class="col-span-12 lg:col-span-6">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="about-tile">
+                        <i class="pi pi-wallet text-2xl text-emerald-600 dark:text-emerald-400 mb-3"></i>
+                        <h3 class="font-bold text-surface-900 dark:text-surface-0 mb-1">Épargne &amp; crédit</h3>
+                        <p class="text-sm text-surface-600 dark:text-surface-300">Produits adaptés aux cycles agricoles et aux petites activités.</p>
+                    </div>
+                    <div class="about-tile">
+                        <i class="pi pi-sitemap text-2xl text-emerald-600 dark:text-emerald-400 mb-3"></i>
+                        <h3 class="font-bold text-surface-900 dark:text-surface-0 mb-1">Réseau à 3 niveaux</h3>
+                        <p class="text-sm text-surface-600 dark:text-surface-300">Délégations, agences et points de vente au plus près des clients.</p>
+                    </div>
+                    <div class="about-tile">
+                        <i class="pi pi-sync text-2xl text-emerald-600 dark:text-emerald-400 mb-3"></i>
+                        <h3 class="font-bold text-surface-900 dark:text-surface-0 mb-1">Transformation digitale</h3>
+                        <p class="text-sm text-surface-600 dark:text-surface-300">Des processus métiers digitalisés par nos équipes internes.</p>
+                    </div>
+                    <div class="about-tile">
+                        <i class="pi pi-globe text-2xl text-emerald-600 dark:text-emerald-400 mb-3"></i>
+                        <h3 class="font-bold text-surface-900 dark:text-surface-0 mb-1">Partenariats</h3>
+                        <p class="text-sm text-surface-600 dark:text-surface-300">Des alliances technologiques comme KUMY pour le financement agricole.</p>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    </section>
+
+    <!-- ============ NOS SOLUTIONS INTERNES ============ -->
+    <section id="solutions" class="bg-surface-100/60 dark:bg-surface-900/40">
+        <div class="max-w-7xl mx-auto px-6 py-20">
+            <div class="text-center mb-14">
+                <span class="inline-block text-sm font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-3">
+                    Nos solutions développées en interne
+                </span>
+                <h2 class="text-3xl lg:text-4xl font-bold text-surface-900 dark:text-surface-0 mb-4">
+                    Une plateforme de microservices construite par le CRG
+                </h2>
+                <p class="text-surface-600 dark:text-surface-300 max-w-2xl mx-auto">
+                    Chaque métier de l'institution est progressivement digitalisé par nos équipes, sur une
+                    architecture moderne, sécurisée et évolutive.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-12 gap-6">
+                <!-- E-CREDIT -->
+                <div class="col-span-12 md:col-span-6 xl:col-span-4 service-card group">
+                    <div class="flex items-start justify-between mb-5">
+                        <div class="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-500/15 flex items-center justify-center
+                                    group-hover:scale-110 transition-transform duration-300">
+                            <i class="pi pi-credit-card text-2xl text-emerald-600 dark:text-emerald-400"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-lg font-bold text-surface-900 dark:text-surface-0 mb-2">E-Crédit</h3>
+                    <p class="text-sm text-surface-600 dark:text-surface-300 leading-relaxed">
+                        Le cœur du dispositif : tout le circuit de crédit est digitalisé, de la saisie de la demande
+                        par l'agent de crédit jusqu'à la décision finale — analyse du dossier et du bilan, validation
+                        par l'agence, la délégation régionale puis la direction, et passage en comité de crédit pour
+                        les grands montants. Chaque dossier est tracé à chaque étape.
+                    </p>
+                </div>
+
+                <!-- E-SOCIETARIAT -->
+                <div class="col-span-12 md:col-span-6 xl:col-span-4 service-card group">
+                    <div class="flex items-start justify-between mb-5">
+                        <div class="w-14 h-14 rounded-2xl bg-cyan-100 dark:bg-cyan-500/15 flex items-center justify-center
+                                    group-hover:scale-110 transition-transform duration-300">
+                            <i class="pi pi-users text-2xl text-cyan-600 dark:text-cyan-400"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-lg font-bold text-surface-900 dark:text-surface-0 mb-2">E-Sociétariat</h3>
+                    <p class="text-sm text-surface-600 dark:text-surface-300 leading-relaxed">
+                        Assainissement et fiabilisation de la base des sociétaires du réseau : identification des
+                        membres, mise à jour de leurs informations et suivi des parts sociales, pour un sociétariat
+                        propre et conforme.
+                    </p>
+                </div>
+
+                <!-- RECLAMATIONS -->
+                <div class="col-span-12 md:col-span-6 xl:col-span-4 service-card group">
+                    <div class="flex items-start justify-between mb-5">
+                        <div class="w-14 h-14 rounded-2xl bg-orange-100 dark:bg-orange-500/15 flex items-center justify-center
+                                    group-hover:scale-110 transition-transform duration-300">
+                            <i class="pi pi-headphones text-2xl text-orange-500 dark:text-orange-400"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-lg font-bold text-surface-900 dark:text-surface-0 mb-2">Réclamations &amp; incidents</h3>
+                    <p class="text-sm text-surface-600 dark:text-surface-300 leading-relaxed">
+                        Enregistrement centralisé des réclamations clients et des incidents survenus en agence,
+                        avec traçabilité complète et suivi de la résolution jusqu'à la clôture.
+                    </p>
+                </div>
+
+                <!-- PERSONNEL -->
+                <div class="col-span-12 md:col-span-6 xl:col-span-4 service-card group">
+                    <div class="flex items-start justify-between mb-5">
+                        <div class="w-14 h-14 rounded-2xl bg-teal-100 dark:bg-teal-500/15 flex items-center justify-center
+                                    group-hover:scale-110 transition-transform duration-300">
+                            <i class="pi pi-user-plus text-2xl text-teal-600 dark:text-teal-400"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-lg font-bold text-surface-900 dark:text-surface-0 mb-2">Gestion du personnel</h3>
+                    <p class="text-sm text-surface-600 dark:text-surface-300 leading-relaxed mb-6">
+                        Le personnel du CRG souscrit en ligne à l'avance sur salaire et l'institution gère ses
+                        tâcherons de façon dématérialisée. La souscription est accessible depuis le menu
+                        « Souscrire · Avance sur salaire ».
+                    </p>
+                    <p-button label="Souscrire" icon="pi pi-arrow-right" iconPos="right" size="small" rounded
+                        (click)="openPersonnelDialog()" styleClass="service-btn-emerald" />
+                </div>
+
+                <!-- ARRETE DE CAISSE -->
+                <div class="col-span-12 md:col-span-6 xl:col-span-4 service-card group">
+                    <div class="flex items-start justify-between mb-5">
+                        <div class="w-14 h-14 rounded-2xl bg-violet-100 dark:bg-violet-500/15 flex items-center justify-center
+                                    group-hover:scale-110 transition-transform duration-300">
+                            <i class="pi pi-calculator text-2xl text-violet-600 dark:text-violet-400"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-lg font-bold text-surface-900 dark:text-surface-0 mb-2">Arrêtés de caisse</h3>
+                    <p class="text-sm text-surface-600 dark:text-surface-300 leading-relaxed">
+                        Remontée digitalisée des arrêtés de caisse quotidiens des agences et points de vente vers le
+                        siège : fin des transmissions manuelles, consolidation plus rapide et plus fiable.
+                    </p>
+                </div>
+
+                <!-- RAPPROCHEMENT CAISSE -->
+                <div class="col-span-12 md:col-span-6 xl:col-span-4 service-card group">
+                    <div class="flex items-start justify-between mb-5">
+                        <div class="w-14 h-14 rounded-2xl bg-rose-100 dark:bg-rose-500/15 flex items-center justify-center
+                                    group-hover:scale-110 transition-transform duration-300">
+                            <i class="pi pi-arrow-right-arrow-left text-2xl text-rose-600 dark:text-rose-400"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-lg font-bold text-surface-900 dark:text-surface-0 mb-2">Rapprochement caisse</h3>
+                    <p class="text-sm text-surface-600 dark:text-surface-300 leading-relaxed">
+                        Contrôle automatisé des opérations de caisse du réseau : les écarts sont détectés et
+                        expliqués rapidement, au lieu de rapprochements manuels longs et sujets aux erreurs.
+                    </p>
+                </div>
+
+                <!-- RAPPROCHEMENT SOLDE -->
+                <div class="col-span-12 md:col-span-6 xl:col-span-4 service-card group">
+                    <div class="flex items-start justify-between mb-5">
+                        <div class="w-14 h-14 rounded-2xl bg-sky-100 dark:bg-sky-500/15 flex items-center justify-center
+                                    group-hover:scale-110 transition-transform duration-300">
+                            <i class="pi pi-chart-line text-2xl text-sky-600 dark:text-sky-400"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-lg font-bold text-surface-900 dark:text-surface-0 mb-2">Rapprochement solde</h3>
+                    <p class="text-sm text-surface-600 dark:text-surface-300 leading-relaxed">
+                        Application sécurisée réservée aux équipes de contrôle : elle compare automatiquement les
+                        soldes entre le système bancaire et la plateforme monétique, met en évidence les écarts et
+                        facilite leur justification.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ PARTENARIAT KUMY ============ -->
+    <section class="max-w-7xl mx-auto px-6 py-20">
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-800 px-8 py-12 lg:px-16 lg:py-16">
+            <div class="absolute -top-16 -right-16 w-72 h-72 rounded-full bg-cyan-400/10 blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-20 -left-10 w-72 h-72 rounded-full bg-emerald-400/10 blur-3xl pointer-events-none"></div>
+
+            <div class="relative">
+                <span class="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-4 py-1.5 text-sm font-medium text-emerald-200 mb-6">
+                    <i class="pi pi-sparkles text-xs"></i>
+                    Partenariat technologique
+                </span>
+                <h2 class="text-3xl lg:text-4xl font-bold text-white mb-4">
+                    CRG <span class="text-emerald-300">×</span> KUMY — le scoring au service du crédit agricole
+                </h2>
+                <p class="text-emerald-100/85 leading-relaxed max-w-3xl mb-10">
+                    Le CRG collabore avec <strong>KUMY</strong> autour de sa plateforme <strong>AgriScore</strong>,
+                    dédiée à l'évaluation du risque agricole. Cette alliance combine la connaissance du terrain du
+                    CRG avec les outils d'analyse de KUMY pour financer mieux, et plus vite, les agriculteurs guinéens.
+                </p>
+
+                <div class="grid grid-cols-12 gap-6">
+                    <div class="col-span-12 md:col-span-4 kumy-tile">
+                        <div class="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center mb-4">
+                            <i class="pi pi-key text-xl text-emerald-300"></i>
+                        </div>
+                        <h3 class="font-bold text-white mb-2">Authentification unique</h3>
+                        <p class="text-sm text-emerald-100/75 leading-relaxed">
+                            Les agents du CRG accèdent à AgriScore avec leurs identifiants CRG, grâce à une
+                            fédération d'identité sécurisée portée par notre propre serveur d'authentification.
+                        </p>
+                    </div>
+                    <div class="col-span-12 md:col-span-4 kumy-tile">
+                        <div class="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center mb-4">
+                            <i class="pi pi-database text-xl text-emerald-300"></i>
+                        </div>
+                        <h3 class="font-bold text-white mb-2">Données partagées en sécurité</h3>
+                        <p class="text-sm text-emerald-100/75 leading-relaxed">
+                            Une API dédiée expose le portefeuille agricole du CRG — agriculteurs, coopératives,
+                            crédits et échéanciers de remboursement — pour alimenter le scoring d'AgriScore.
+                        </p>
+                    </div>
+                    <div class="col-span-12 md:col-span-4 kumy-tile">
+                        <div class="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center mb-4">
+                            <i class="pi pi-sitemap text-xl text-emerald-300"></i>
+                        </div>
+                        <h3 class="font-bold text-white mb-2">Organisation alignée</h3>
+                        <p class="text-sm text-emerald-100/75 leading-relaxed">
+                            La hiérarchie du CRG — délégation, agence, point de vente — structure les habilitations
+                            dans AgriScore : chaque agent y retrouve son périmètre et son portefeuille.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ POSITION STRATEGIQUE / CARTE ============ -->
+    <section class="max-w-7xl mx-auto px-6 pb-20">
+        <div class="grid grid-cols-12 gap-10 items-center rounded-3xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 p-8 lg:p-14">
+            <div class="col-span-12 lg:col-span-7">
+                <span class="inline-block text-sm font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-3">
+                    Notre position stratégique
+                </span>
+                <h2 class="text-3xl lg:text-4xl font-bold text-surface-900 dark:text-surface-0 mb-5">
+                    Un maillage unique du territoire guinéen
+                </h2>
+                <p class="text-surface-600 dark:text-surface-300 leading-relaxed mb-4">
+                    Avec ses délégations régionales, ses agences et ses points de vente, le CRG dispose de l'un des
+                    réseaux de proximité les plus denses du pays. Cette présence, jusque dans les zones rurales les
+                    plus enclavées, est notre principal atout stratégique : là où les banques classiques sont
+                    absentes, le CRG est présent.
+                </p>
+                <p class="text-surface-600 dark:text-surface-300 leading-relaxed mb-8">
+                    Chaque point de service est géolocalisé sur <strong>Digi-Map</strong>, notre carte interactive :
+                    explorez le réseau, trouvez le point de vente le plus proche et ouvrez l'itinéraire directement
+                    dans Google Maps.
+                </p>
+                <div class="flex flex-wrap items-center gap-4">
+                    <a routerLink="/digi-map">
+                        <p-button label="Explorer Digi-Map" icon="pi pi-map" iconPos="right" rounded
+                            styleClass="service-btn-emerald" />
+                    </a>
+                    <a href="https://www.google.com/maps/search/Cr%C3%A9dit+Rural+de+Guin%C3%A9e" target="_blank"
+                        rel="noopener">
+                        <p-button label="Ouvrir dans Google Maps" icon="pi pi-external-link" iconPos="right" rounded
+                            outlined severity="secondary" />
+                    </a>
+                </div>
+            </div>
+            <div class="col-span-12 lg:col-span-5">
+                <div class="relative rounded-2xl overflow-hidden border border-surface-200 dark:border-surface-800 bg-emerald-50 dark:bg-emerald-950/40 p-10 text-center">
+                    <i class="pi pi-map-marker text-6xl text-emerald-600 dark:text-emerald-400 mb-4"></i>
+                    <p class="text-2xl font-bold text-surface-900 dark:text-surface-0 mb-1">+140 points de service</p>
+                    <p class="text-surface-600 dark:text-surface-300 text-sm">
+                        géolocalisés sur l'ensemble du territoire national
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="border-t border-surface-200 dark:border-surface-800">
+        <div class="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <img src="/layout/images/logo/digi-credit.png" alt="Digi-Crédit" class="h-9 w-auto" [attr.draggable]="false" />
+            <p class="text-sm text-surface-500 dark:text-surface-400">
+                &copy; {{ currentYear }} Crédit Rural de Guinée — Tous droits réservés
+            </p>
+            <div class="flex items-center gap-2 text-sm text-surface-500 dark:text-surface-400">
+                <i class="pi pi-shield text-emerald-600"></i>
+                <span>Plateforme sécurisée</span>
+            </div>
+        </div>
+    </footer>
 </div>
 
 <!-- Dialog Inscription Personnel -->

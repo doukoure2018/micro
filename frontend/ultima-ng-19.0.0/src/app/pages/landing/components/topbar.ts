@@ -30,6 +30,19 @@ import { environment } from 'src/environments/environment';
 
                     <li>
                         <a
+                            [routerLink]="['/']"
+                            [queryParams]="{ souscription: 'personnel' }"
+                            class="flex m-0 md:ml-8 px-0 py-4 lg:!text-surface-0 text-surface-900 leading-normal"
+                            pStyleClass="#menu"
+                            enterFromClass="hidden"
+                            leaveToClass="hidden"
+                        >
+                            <span>Souscrire · Avance sur salaire</span>
+                        </a>
+                    </li>
+
+                    <li>
+                        <a
                             [routerLink]="['/auth/forgotpassword']"
                             class="flex m-0 md:ml-8 px-0 py-4 lg:!text-surface-0 text-surface-900 leading-normal"
                             (click)="handleScroll('collaboration')"
