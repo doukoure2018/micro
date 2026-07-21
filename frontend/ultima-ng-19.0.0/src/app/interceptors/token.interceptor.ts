@@ -35,7 +35,9 @@ export const TokenInterceptor: HttpInterceptorFn = (request: HttpRequest<unknown
 
 // Helper functions
 function shouldSkipAuthorization(request: HttpRequest<unknown>): boolean {
-    const skipUrls = ['verify', 'login', 'refresh', 'resetpassword', 'oauth2/token', 'search', 'typeCredit', 'agences', 'pointventes', 'addDemandeInd', 'newDemandeInd'];
+    // NB: addDemandeInd / newDemandeInd NE doivent PAS etre ici : ces endpoints sont
+    // desormais securises (AGENT_CREDIT) cote backend -> le token doit etre joint.
+    const skipUrls = ['verify', 'login', 'refresh', 'resetpassword', 'oauth2/token', 'search', 'typeCredit', 'agences', 'pointventes'];
     return skipUrls.some((url) => request.url.includes(url));
 }
 

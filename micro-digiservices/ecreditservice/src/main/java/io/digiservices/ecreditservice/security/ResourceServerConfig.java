@@ -39,7 +39,8 @@ public class ResourceServerConfig {
                         .requestMatchers("/ecredit/files/**").permitAll()
                         .requestMatchers("/ecredit/public/**").permitAll()
                         // Creation d'une demande de credit : reservee au role AGENT_CREDIT
-                        .requestMatchers("/ecredit/addDemandeInd/**","/ecredit/newDemandeInd/**").hasAuthority("AGENT_CREDIT")
+                        // (chemins exacts + sous-chemins pour couvrir tous les matchers)
+                        .requestMatchers("/ecredit/addDemandeInd","/ecredit/addDemandeInd/**","/ecredit/newDemandeInd","/ecredit/newDemandeInd/**").hasAuthority("AGENT_CREDIT")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .accessDeniedHandler(new CustomAccessDeniedHandler())
