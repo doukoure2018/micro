@@ -320,6 +320,17 @@ public class WorkflowResource {
                         "Demandes validées par DE récupérées", OK));
     }
 
+    // ==================== DI - INSPECTION ====================
+
+    @GetMapping("/inspection-credits-dr")
+    public ResponseEntity<Response> getInspectionCreditsDR(
+            HttpServletRequest httpRequest) {
+        var result = workflowService.getInspectionCreditsDR();
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("workflowDemandes", result),
+                        "Inspection des crédits validés DR récupérée", OK));
+    }
+
     // ==================== DE ACTIONS ====================
 
     @PutMapping("/{demandeId}/valider-de")

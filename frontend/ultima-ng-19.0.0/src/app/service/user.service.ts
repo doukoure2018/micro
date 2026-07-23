@@ -1578,6 +1578,9 @@ export class UserService {
 
     getValidesDE$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/valides-de`).pipe(catchError(this.handleError));
 
+    // DI (Direction Inspection) - credits valides par le DR, tout le reseau
+    getInspectionCreditsDR$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/inspection-credits-dr`).pipe(catchError(this.handleError));
+
     validerDE$ = (demandeId: number, avis: string) => <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/valider-de`, { avis }).pipe(catchError(this.handleError));
 
     rejeterDE$ = (demandeId: number, body: { motifRejet: string; sectionsARevoir: string[]; instructions?: string }) =>

@@ -357,6 +357,18 @@ public class WorkflowRepositoryImpl implements WorkflowRepository {
         }
     }
 
+    @Override
+    public List<WorkflowDemandeDto> getInspectionCreditsDR() {
+        try {
+            return jdbcClient.sql(SELECT_INSPECTION_CREDITS_DR)
+                    .query(WorkflowDemandeDto.class)
+                    .list();
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération de l'inspection des crédits validés DR: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la récupération: " + e.getMessage());
+        }
+    }
+
     // ==================== DE ACTIONS ====================
 
     @Override

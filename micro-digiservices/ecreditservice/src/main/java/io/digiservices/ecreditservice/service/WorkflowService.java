@@ -43,6 +43,9 @@ public interface WorkflowService {
     List<WorkflowDemandeDto> getAValiderDE();
     List<WorkflowDemandeDto> getSuiviGlobalDE();
     List<WorkflowDemandeDto> getValidesDE();
+
+    // DI - inspection (credits valides par le DR, tout le reseau)
+    List<WorkflowDemandeDto> getInspectionCreditsDR();
     void validerDE(Long demandeId, String avis, String validatedBy);
     void rejeterDE(Long demandeId, WorkflowRejetRequest request, String validatedBy);
 

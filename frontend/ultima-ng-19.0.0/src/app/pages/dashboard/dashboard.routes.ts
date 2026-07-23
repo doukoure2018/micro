@@ -330,5 +330,10 @@ export default [
         path: 'changement-telephone/inspection',
         data: { breadcrumb: 'Inspection Changement Telephone' },
         loadComponent: () => import('./changement-telephone/inspection-telephone.component').then((c) => c.InspectionTelephoneComponent)
+    },
+    {
+        path: 'inspection-credits',
+        data: { breadcrumb: 'Inspection - Credits valides DR' },
+        loadComponent: () => import('./admin/di/inspection-credits/inspection-credits.component').then((c) => c.InspectionCreditsComponent)
     }
 ] as Routes;

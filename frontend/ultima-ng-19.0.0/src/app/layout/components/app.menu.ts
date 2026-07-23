@@ -257,6 +257,11 @@ export class AppMenu {
                                                           routerLink: ['/dashboards/suivi-arrete-caisse']
                                                       },
                                                       {
+                                                          label: 'Inspection Crédits (validés DR)',
+                                                          icon: 'pi pi-fw pi-search-plus',
+                                                          routerLink: ['/dashboards/inspection-credits']
+                                                      },
+                                                      {
                                                           label: 'Inspection Changement Téléphone',
                                                           icon: 'pi pi-fw pi-phone',
                                                           routerLink: ['/dashboards/changement-telephone/inspection']
