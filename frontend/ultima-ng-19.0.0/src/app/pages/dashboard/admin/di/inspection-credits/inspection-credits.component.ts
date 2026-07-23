@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject, OnInit, signal, computed } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { IconFieldModule } from 'primeng/iconfield';
@@ -14,6 +15,7 @@ import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
+import { TooltipModule } from 'primeng/tooltip';
 
 type Tranche = 'GROS' | 'PETIT';
 type TrancheFilter = 'ALL' | Tranche;
@@ -23,7 +25,7 @@ type TrancheFilter = 'ALL' | Tranche;
     standalone: true,
     imports: [
         CommonModule, FormsModule, TableModule, ButtonModule, TagModule, ToastModule,
-        IconFieldModule, InputIconModule, InputTextModule, ProgressSpinnerModule, SelectModule
+        IconFieldModule, InputIconModule, InputTextModule, ProgressSpinnerModule, SelectModule, TooltipModule
     ],
     templateUrl: './inspection-credits.component.html',
     providers: [MessageService]
@@ -42,6 +44,7 @@ export class InspectionCreditsComponent implements OnInit {
     selectedPointvente = signal<string | null>(null);
 
     private userService = inject(UserService);
+    private router = inject(Router);
     private destroyRef = inject(DestroyRef);
     private messageService = inject(MessageService);
 
@@ -141,6 +144,10 @@ export class InspectionCreditsComponent implements OnInit {
 
     setTranche(t: TrancheFilter): void {
         this.trancheFilter.set(t);
+    }
+
+    viewDemandeDetail(demandeId: number): void {
+        this.router.navigate(['/dashboards/credit/individuel/attente/detail', demandeId]);
     }
 
     onDelegationChange(value: string | null): void {
