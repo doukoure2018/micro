@@ -113,9 +113,9 @@ public class RegulatoryRepository {
     // ============================================================
 
     private static final String SQL_FIND_COMPTES = """
-            SELECT ct.NUM_CUENTA, ct.COD_MONEDA, ct.IND_DEFECTO
-            FROM CL.CL_CTAS_CLIENTE ct
-            WHERE ct.COD_CLIENTE = :codCliente
+            SELECT ce.NUM_CUENTA, ce.COD_MONEDA, ce.COD_PRODUCTO, ce.IND_ESTADO
+            FROM CC.CC_CUENTA_EFECTIVO ce
+            WHERE ce.COD_CLIENTE = :codCliente
             """;
 
     private static final String SQL_FIND_PIECES = """
@@ -362,7 +362,7 @@ public class RegulatoryRepository {
     };
 
     private static final RowMapper<RegCompteDto> COMPTE_MAPPER = (rs, n) -> new RegCompteDto(
-            null, str(rs, "NUM_CUENTA"), str(rs, "COD_MONEDA"), str(rs, "IND_DEFECTO"));
+            str(rs, "NUM_CUENTA"), str(rs, "COD_MONEDA"), str(rs, "COD_PRODUCTO"), str(rs, "IND_ESTADO"));
 
     private static final RowMapper<RegPieceDto> PIECE_MAPPER = (rs, n) -> new RegPieceDto(
             str(rs, "COD_TIPO_ID"), str(rs, "NUM_ID"), dt(rs, "FEC_VENCIM"));

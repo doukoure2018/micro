@@ -5,15 +5,15 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Compte associe a un client (source SAF : CL.CL_CTAS_CLIENTE).
+ * Compte d'epargne du client au CRG (source SAF : CC.CC_CUENTA_EFECTIVO).
  * Contrat brut ebanking &lt;-&gt; bcrgservice.
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class RegCompteDto {
-    private String codAgencia;
-    private String numCuenta;
-    private String codMoneda;
-    private String indDefecto;
+    private String numCuenta;    // NUM_CUENTA
+    private String codMoneda;    // COD_MONEDA
+    private String codProducto;  // COD_PRODUCTO (type de produit)
+    private String indEstado;    // IND_ESTADO (statut du compte)
 }

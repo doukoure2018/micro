@@ -130,7 +130,7 @@ public class BcrgMapper {
     private List<CompteAssocieDto> toComptes(String idClt, String codAgce, List<RegCompteDto> comptes) {
         if (comptes == null) return null;
         return comptes.stream().map(c -> new CompteAssocieDto(
-                idClt, codAgce, c.getNumCuenta(), null, null)).toList();
+                idClt, codAgce, c.getNumCuenta(), c.getCodProducto(), c.getIndEstado())).toList();
     }
 
     private List<PieceDto> toPieces(String idClt, List<RegPieceDto> pieces) {
