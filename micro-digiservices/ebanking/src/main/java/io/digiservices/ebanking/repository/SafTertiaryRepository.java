@@ -10,24 +10,25 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Lectures SAF pour la synthese DG, executees sur la datasource TERTIARY
- * (base 10.110.15.2 en configuration actuelle) afin de NE PAS solliciter la
- * base de production. Requetes en lecture seule, robustes a l'indisponibilite
- * (les exceptions remontent et sont traitees gracieusement cote appelant).
+ * Lectures SAF pour la synthese DG, executees sur la datasource PRIMARY
+ * (BDCRG PROD, 10.220.220.8). Le dev/tertiary 10.110.15.2 n'etant plus joignable
+ * par le VPN actuel, et l'analyse portant de toute facon sur les donnees reelles
+ * du client, ces lectures se font en production. Requetes en lecture seule,
+ * robustes a l'indisponibilite (exceptions traitees gracieusement cote appelant).
  */
 @Slf4j
 @Repository
 public class SafTertiaryRepository {
 
-    private final JdbcTemplate tertiaryJdbcTemplate;
+    private final JdbcTemplate primary;
 
-    public SafTertiaryRepository(@Qualifier("tertiaryJdbcTemplate") JdbcTemplate tertiaryJdbcTemplate) {
-        this.tertiaryJdbcTemplate = tertiaryJdbcTemplate;
+    public SafTertiaryRepository(@Qualifier("jdbcTemplate") JdbcTemplate jdbcTemplate) {
+        this.primary = jdbcTemplate;
     }
 
     /** Credits du client (memes colonnes que CreditosRepository.obtenerCreditosPorCliente). */
     public List<Map<String, Object>> obtenerCreditosPorCliente(String codCliente) {
-        return tertiaryJdbcTemplate.queryForList(
+        return primary.queryForList(
                 "SELECT C.COD_EMPRESA, C.COD_AGENCIA, C.NUM_CREDITO, C.TIP_CREDITO, " +
                 "C.COD_CLIENTE, C.MON_CREDITO, C.MON_SALDO, C.MON_DESEMBOLSADO, " +
                 "C.MON_PAGADO_PRINCIPAL, C.MON_PAGADO_INTERESES, C.TASA_INTERES, " +
@@ -40,7 +41,7 @@ public class SafTertiaryRepository {
 
     /** Plan de paiements du client (memes colonnes que CreditosRepository.obtenerPlanPagosPorCliente). */
     public List<Map<String, Object>> obtenerPlanPagosPorCliente(String codCliente) {
-        return tertiaryJdbcTemplate.queryForList(
+        return primary.queryForList(
                 "SELECT PP.COD_EMPRESA, PP.COD_AGENCIA, PP.NUM_CREDITO, PP.NUM_CUOTA, " +
                 "PP.FEC_CUOTA, PP.FEC_REAL_CUOTA, PP.TIP_CUOTA, PP.MON_CUOTA, " +
                 "PP.MON_PRINCIPAL, PP.MON_INT, PP.MON_COMISION, PP.SAL_PRINCIPAL, " +
@@ -62,7 +63,7 @@ public class SafTertiaryRepository {
      * Pas de filtre agricole : fonctionne pour tout client.
      */
     public List<Map<String, Object>> obtenerAdhesion(String codCliente) {
-        return tertiaryJdbcTemplate.queryForList(
+        return primary.queryForList(
                 "SELECT TOP 1 FEC_INGRESO AS fecIngreso, NOM_CLIENTE AS nomCliente, COD_CLIENTE AS codCliente " +
                 "FROM CL.CL_CLIENTES WHERE COD_CLIENTE = ?",
                 codCliente);
@@ -70,7 +71,7 @@ public class SafTertiaryRepository {
 
     /** Comptes d'epargne du client (soldes) depuis CC.CC_CUENTA_EFECTIVO. */
     public List<Map<String, Object>> obtenerComptesByClient(String codCliente) {
-        return tertiaryJdbcTemplate.queryForList(
+        return primary.queryForList(
                 "SELECT NUM_CUENTA, COD_PRODUCTO AS codProducto, COD_MONEDA, IND_ESTADO, " +
                 "SAL_DISPONIBLE, SAL_PROMEDIO, SAL_CONGELADO, SAL_RESERVA, FEC_APERTURA " +
                 "FROM CC.CC_CUENTA_EFECTIVO WHERE COD_CLIENTE = ?",
@@ -87,7 +88,7 @@ public class SafTertiaryRepository {
      * Retourne : numCuenta, mois (YYYYMM), totalDepots, totalRetraits, nbOperations.
      */
     public List<Map<String, Object>> obtenerMouvementsResume(String codCliente, LocalDate depuis) {
-        return tertiaryJdbcTemplate.queryForList(
+        return primary.queryForList(
                 "SELECT m.NUM_CUENTA AS numCuenta, " +
                 "       CONVERT(char(6), m.FEC_MOVIMIENTO, 112) AS mois, " +
                 "       SUM(CASE WHEN " + COND_RETRAIT + " THEN 0 ELSE m.MON_MOVIMIENTO END) AS totalDepots, " +
@@ -106,7 +107,7 @@ public class SafTertiaryRepository {
      * Detail des mouvements d'UN compte depuis CC.CC_MOVIMTO_MENSUAL (6 mois glissants).
      */
     public List<Map<String, Object>> obtenerMouvementsCompte(String numCuenta, LocalDate depuis) {
-        return tertiaryJdbcTemplate.queryForList(
+        return primary.queryForList(
                 "SELECT m.NUM_MOVIMIENTO AS numMovimiento, " +
                 "       m.FEC_MOVIMIENTO AS fecMovimiento, " +
                 "       m.TIP_TRANSACCION AS tipTransaccion, " +
