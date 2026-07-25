@@ -29,18 +29,19 @@ import java.util.function.Supplier;
 /**
  * Acces lecture seule au perimetre reglementaire (declaration BCRG) de SAF2000.
  *
- * <p><b>Regle absolue :</b> comme {@link AgriculteurRepository}, ce repository utilise
- * UNIQUEMENT la datasource {@code tertiaryJdbcTemplate} (le meme acces VPN eprouve que
- * le credit agricole). Il ne touche PAS la base de production primary.</p>
+ * <p><b>Source de donnees :</b> datasource {@code primary} (BDCRG PROD, {@code 10.220.220.8}).
+ * La declaration a la banque centrale porte sur les donnees de PRODUCTION (vrais clients,
+ * vrais engagements). C'est aussi le reseau joignable par le VPN actuel (le dev/tertiary
+ * {@code 10.110.15.2} ne l'est plus).</p>
  */
 @Repository
 @Slf4j
 public class RegulatoryRepository {
 
-    private final NamedParameterJdbcTemplate tertiary;
+    private final NamedParameterJdbcTemplate primary;
 
-    public RegulatoryRepository(@Qualifier("tertiaryJdbcTemplate") JdbcTemplate tertiaryJdbcTemplate) {
-        this.tertiary = new NamedParameterJdbcTemplate(tertiaryJdbcTemplate);
+    public RegulatoryRepository(@Qualifier("jdbcTemplate") JdbcTemplate jdbcTemplate) {
+        this.primary = new NamedParameterJdbcTemplate(jdbcTemplate);
     }
 
     // ============================================================
@@ -193,18 +194,18 @@ public class RegulatoryRepository {
 
     public long countPersonnesPhysiques() {
         return execute("countPersonnesPhysiques",
-                () -> nullSafe(tertiary.queryForObject(SQL_COUNT_PP, new MapSqlParameterSource(), Long.class)));
+                () -> nullSafe(primary.queryForObject(SQL_COUNT_PP, new MapSqlParameterSource(), Long.class)));
     }
 
     public List<RegPersonnePhysiqueDto> findPersonnesPhysiques(int offset, int size) {
         MapSqlParameterSource p = new MapSqlParameterSource().addValue("offset", offset).addValue("size", size);
-        return execute("findPersonnesPhysiques", () -> tertiary.query(SQL_FIND_PP, p, PP_MAPPER));
+        return execute("findPersonnesPhysiques", () -> primary.query(SQL_FIND_PP, p, PP_MAPPER));
     }
 
     public RegPersonnePhysiqueDto findPersonnePhysiqueById(String codCliente) {
         MapSqlParameterSource p = new MapSqlParameterSource("codCliente", codCliente);
         RegPersonnePhysiqueDto dto = execute("findPersonnePhysiqueById",
-                () -> first(tertiary.query(SQL_FIND_PP_BY_ID, p, PP_MAPPER)));
+                () -> first(primary.query(SQL_FIND_PP_BY_ID, p, PP_MAPPER)));
         if (dto != null) {
             dto.setComptes(findComptes(codCliente));
             dto.setPieces(findPieces(codCliente));
@@ -215,18 +216,18 @@ public class RegulatoryRepository {
 
     public long countPersonnesMorales() {
         return execute("countPersonnesMorales",
-                () -> nullSafe(tertiary.queryForObject(SQL_COUNT_PM, new MapSqlParameterSource(), Long.class)));
+                () -> nullSafe(primary.queryForObject(SQL_COUNT_PM, new MapSqlParameterSource(), Long.class)));
     }
 
     public List<RegPersonneMoraleDto> findPersonnesMorales(int offset, int size) {
         MapSqlParameterSource p = new MapSqlParameterSource().addValue("offset", offset).addValue("size", size);
-        return execute("findPersonnesMorales", () -> tertiary.query(SQL_FIND_PM, p, PM_MAPPER));
+        return execute("findPersonnesMorales", () -> primary.query(SQL_FIND_PM, p, PM_MAPPER));
     }
 
     public RegPersonneMoraleDto findPersonneMoraleById(String codCliente) {
         MapSqlParameterSource p = new MapSqlParameterSource("codCliente", codCliente);
         RegPersonneMoraleDto dto = execute("findPersonneMoraleById",
-                () -> first(tertiary.query(SQL_FIND_PM_BY_ID, p, PM_MAPPER)));
+                () -> first(primary.query(SQL_FIND_PM_BY_ID, p, PM_MAPPER)));
         if (dto != null) {
             dto.setComptes(findComptes(codCliente));
             dto.setPieces(findPieces(codCliente));
@@ -239,24 +240,24 @@ public class RegulatoryRepository {
 
     public long countEngagements() {
         return execute("countEngagements",
-                () -> nullSafe(tertiary.queryForObject(SQL_COUNT_ENG, new MapSqlParameterSource(), Long.class)));
+                () -> nullSafe(primary.queryForObject(SQL_COUNT_ENG, new MapSqlParameterSource(), Long.class)));
     }
 
     public List<RegEngagementDto> findEngagements(int offset, int size) {
         MapSqlParameterSource p = new MapSqlParameterSource().addValue("offset", offset).addValue("size", size);
-        return execute("findEngagements", () -> tertiary.query(SQL_FIND_ENG, p, ENG_MAPPER));
+        return execute("findEngagements", () -> primary.query(SQL_FIND_ENG, p, ENG_MAPPER));
     }
 
     public RegEngagementDto findEngagementById(Long numCredito) {
         MapSqlParameterSource p = new MapSqlParameterSource("numCredito", numCredito);
-        return execute("findEngagementById", () -> first(tertiary.query(SQL_FIND_ENG_BY_ID, p, ENG_MAPPER)));
+        return execute("findEngagementById", () -> first(primary.query(SQL_FIND_ENG_BY_ID, p, ENG_MAPPER)));
     }
 
     // ---- Encours (a une periode d'arrete) ----
 
     public long countEncours() {
         return execute("countEncours",
-                () -> nullSafe(tertiary.queryForObject(SQL_COUNT_ENCOURS, new MapSqlParameterSource(), Long.class)));
+                () -> nullSafe(primary.queryForObject(SQL_COUNT_ENCOURS, new MapSqlParameterSource(), Long.class)));
     }
 
     public List<RegEncoursDto> findEncours(LocalDate periodEnd, int offset, int size) {
@@ -264,22 +265,22 @@ public class RegulatoryRepository {
                 .addValue("periodEnd", java.sql.Date.valueOf(periodEnd))
                 .addValue("offset", offset)
                 .addValue("size", size);
-        return execute("findEncours", () -> tertiary.query(SQL_FIND_ENCOURS, p, ENCOURS_MAPPER));
+        return execute("findEncours", () -> primary.query(SQL_FIND_ENCOURS, p, ENCOURS_MAPPER));
     }
 
     private List<RegAdresseDto> findAdresses(String codCliente) {
         MapSqlParameterSource p = new MapSqlParameterSource("codCliente", codCliente);
-        return execute("findAdresses", () -> tertiary.query(SQL_FIND_ADRESSES, p, ADRESSE_MAPPER));
+        return execute("findAdresses", () -> primary.query(SQL_FIND_ADRESSES, p, ADRESSE_MAPPER));
     }
 
     private List<RegCompteDto> findComptes(String codCliente) {
         MapSqlParameterSource p = new MapSqlParameterSource("codCliente", codCliente);
-        return execute("findComptes", () -> tertiary.query(SQL_FIND_COMPTES, p, COMPTE_MAPPER));
+        return execute("findComptes", () -> primary.query(SQL_FIND_COMPTES, p, COMPTE_MAPPER));
     }
 
     private List<RegPieceDto> findPieces(String codCliente) {
         MapSqlParameterSource p = new MapSqlParameterSource("codCliente", codCliente);
-        return execute("findPieces", () -> tertiary.query(SQL_FIND_PIECES, p, PIECE_MAPPER));
+        return execute("findPieces", () -> primary.query(SQL_FIND_PIECES, p, PIECE_MAPPER));
     }
 
     // ============================================================
@@ -293,7 +294,7 @@ public class RegulatoryRepository {
             log.debug("[REG] {} OK en {} ms", op, System.currentTimeMillis() - start);
             return result;
         } catch (DataAccessResourceFailureException | QueryTimeoutException e) {
-            log.error("[REG] {} : datasource tertiary (BDCRG) indisponible - {}", op, e.getMessage());
+            log.error("[REG] {} : datasource primary (BDCRG PROD) indisponible - {}", op, e.getMessage());
             throw new TertiaryUnavailableException("Base SAF (BDCRG) momentanement indisponible", e);
         } catch (DataAccessException e) {
             log.error("[REG] {} : erreur d'acces aux donnees - {}", op, e.getMessage());

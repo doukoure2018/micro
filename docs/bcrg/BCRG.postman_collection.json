@@ -1,0 +1,131 @@
+{
+  "info": {
+    "name": "BCRG - Declaration reglementaire (CRG)",
+    "description": "API de declaration BCRG exposee par bcrgservice. Auth par header X-API-Key (BCRG_PUBLIC_API_KEY). Base: https://digi-creditrural-io.com/bcrg",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://digi-creditrural-io.com/bcrg" },
+    { "key": "apiKey", "value": "" },
+    { "key": "idClient", "value": "" },
+    { "key": "refEng", "value": "" },
+    { "key": "periode", "value": "2026-06" }
+  ],
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      { "key": "key", "value": "X-API-Key" },
+      { "key": "value", "value": "{{apiKey}}" },
+      { "key": "in", "value": "header" }
+    ]
+  },
+  "item": [
+    {
+      "name": "M1 - Personnes Physiques (liste)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/personnes-physiques?page=0&size=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["personnes-physiques"],
+          "query": [
+            { "key": "page", "value": "0" },
+            { "key": "size", "value": "10" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "M1 - Personne Physique (detail par id)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/personnes-physiques/{{idClient}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["personnes-physiques", "{{idClient}}"]
+        }
+      }
+    },
+    {
+      "name": "M1 - Personnes Morales (liste)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/personnes-morales?page=0&size=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["personnes-morales"],
+          "query": [
+            { "key": "page", "value": "0" },
+            { "key": "size", "value": "10" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "M1 - Personne Morale (detail par id)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/personnes-morales/{{idClient}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["personnes-morales", "{{idClient}}"]
+        }
+      }
+    },
+    {
+      "name": "M2 - Engagements (liste)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/engagements?page=0&size=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["engagements"],
+          "query": [
+            { "key": "page", "value": "0" },
+            { "key": "size", "value": "10" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "M2 - Engagement (detail par ref)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/engagements/{{refEng}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["engagements", "{{refEng}}"]
+        }
+      }
+    },
+    {
+      "name": "M4 - Encours (periode AAAA-MM)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/encours?periode={{periode}}&page=0&size=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["encours"],
+          "query": [
+            { "key": "periode", "value": "{{periode}}" },
+            { "key": "page", "value": "0" },
+            { "key": "size", "value": "10" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Test securite - sans cle (attendu 401)",
+      "request": {
+        "method": "GET",
+        "auth": { "type": "noauth" },
+        "url": {
+          "raw": "{{baseUrl}}/personnes-physiques?size=1",
+          "host": ["{{baseUrl}}"],
+          "path": ["personnes-physiques"],
+          "query": [ { "key": "size", "value": "1" } ]
+        }
+      }
+    }
+  ]
+}
