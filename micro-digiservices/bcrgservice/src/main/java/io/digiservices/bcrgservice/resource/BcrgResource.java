@@ -1,0 +1,89 @@
+package io.digiservices.bcrgservice.resource;
+
+import io.digiservices.bcrgservice.dto.EncoursDto;
+import io.digiservices.bcrgservice.dto.EngagementDto;
+import io.digiservices.bcrgservice.dto.PageDto;
+import io.digiservices.bcrgservice.dto.PersonneMoraleDto;
+import io.digiservices.bcrgservice.dto.PersonnePhysiqueDto;
+import io.digiservices.bcrgservice.exception.BadRequestException;
+import io.digiservices.bcrgservice.service.BcrgService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * API publique de declaration reglementaire exposee a la plateforme BCRG.
+ * Protegee par cle API ({@code X-API-Key}). Module M1 : Personnes Physiques et Morales.
+ */
+@RestController
+@RequestMapping("/bcrg")
+@RequiredArgsConstructor
+@Slf4j
+public class BcrgResource {
+
+    private static final int MAX_PAGE_SIZE = 100;
+
+    private final BcrgService bcrgService;
+
+    @GetMapping("/personnes-physiques")
+    public ResponseEntity<PageDto<PersonnePhysiqueDto>> getPersonnesPhysiques(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size) {
+        validatePagination(page, size);
+        return ResponseEntity.ok(bcrgService.getPersonnesPhysiques(page, size));
+    }
+
+    @GetMapping("/personnes-physiques/{idClient}")
+    public ResponseEntity<PersonnePhysiqueDto> getPersonnePhysique(@PathVariable("idClient") String idClient) {
+        return ResponseEntity.ok(bcrgService.getPersonnePhysique(idClient));
+    }
+
+    @GetMapping("/personnes-morales")
+    public ResponseEntity<PageDto<PersonneMoraleDto>> getPersonnesMorales(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size) {
+        validatePagination(page, size);
+        return ResponseEntity.ok(bcrgService.getPersonnesMorales(page, size));
+    }
+
+    @GetMapping("/personnes-morales/{idClient}")
+    public ResponseEntity<PersonneMoraleDto> getPersonneMorale(@PathVariable("idClient") String idClient) {
+        return ResponseEntity.ok(bcrgService.getPersonneMorale(idClient));
+    }
+
+    @GetMapping("/engagements")
+    public ResponseEntity<PageDto<EngagementDto>> getEngagements(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size) {
+        validatePagination(page, size);
+        return ResponseEntity.ok(bcrgService.getEngagements(page, size));
+    }
+
+    @GetMapping("/engagements/{refEng}")
+    public ResponseEntity<EngagementDto> getEngagement(@PathVariable("refEng") Long refEng) {
+        return ResponseEntity.ok(bcrgService.getEngagement(refEng));
+    }
+
+    @GetMapping("/encours")
+    public ResponseEntity<PageDto<EncoursDto>> getEncours(
+            @RequestParam(name = "periode") String periode,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size) {
+        validatePagination(page, size);
+        return ResponseEntity.ok(bcrgService.getEncours(periode, page, size));
+    }
+
+    private void validatePagination(int page, int size) {
+        if (page < 0) {
+            throw new BadRequestException("Le parametre 'page' doit etre >= 0");
+        }
+        if (size < 1 || size > MAX_PAGE_SIZE) {
+            throw new BadRequestException("Le parametre 'size' doit etre compris entre 1 et " + MAX_PAGE_SIZE);
+        }
+    }
+}

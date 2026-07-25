@@ -74,6 +74,11 @@ application:
 agripilot:
   api-key: ${AGRIPILOT_API_KEY:}
 
+# Configuration BCRG - cle API protegeant les endpoints reglementaires /ebanking/reg/**
+# Defaut vide => fail-closed (401) tant que BCRG_INTERNAL_API_KEY n'est pas defini.
+bcrg:
+  api-key: ${BCRG_INTERNAL_API_KEY:}
+
 # Configuration Serveur
 server:
   port: 8081

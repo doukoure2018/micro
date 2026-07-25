@@ -20,6 +20,7 @@
 		<module>notificationservice</module>
         <module>ecreditservice</module>
         <module>agriculteurservice</module>
+        <module>bcrgservice</module>
         <module>clients</module>
         <module>database-migrations</module>
     </modules>

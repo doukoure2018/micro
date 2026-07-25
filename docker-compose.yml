@@ -358,6 +358,46 @@ services:
       retries: 3
       start_period: 90s
 
+  bcrgservice:
+    image: doukoure93/bcrgservice:latest
+    container_name: bcrgservice
+    ports:
+      - "8089:8089"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://admin:admin2711@discoveryserver:5002/eureka/"
+      # Cle PUBLIQUE : protege /bcrg/** (plateforme BCRG -> bcrgservice)
+      BCRG_PUBLIC_API_KEY: ${BCRG_PUBLIC_API_KEY:-}
+      # Cle INTERNE : doit valoir la MEME cle que BCRG_INTERNAL_API_KEY cote ebanking
+      EBANKING_REG_API_KEY: ${BCRG_INTERNAL_API_KEY:-}
+      JAVA_TOOL_OPTIONS: "-Xms256m -Xmx512m"
+    volumes:
+      - ./logs/bcrgservice:/var/log/bcrgservice
+    networks:
+      - spring
+    depends_on:
+      discoveryserver:
+        condition: service_started
+      authorizationserver:
+        condition: service_started
+      ebankingservice:
+        condition: service_started
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8089/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+
   ebankingservice:
     image: doukoure93/ebanking:latest
     container_name: ebankingservice
@@ -373,6 +413,8 @@ services:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://admin:admin2711@discoveryserver:5002/eureka/"
       JWKS_URI: "http://authorizationserver:8080/oauth2/jwks"
       AGRIPILOT_API_KEY: ${AGRIPILOT_API_KEY:-}
+      # Cle INTERNE protegeant /ebanking/reg/** (bcrgservice -> ebanking). Meme valeur que EBANKING_REG_API_KEY.
+      BCRG_INTERNAL_API_KEY: ${BCRG_INTERNAL_API_KEY:-}
       SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_SECOND_LEVEL_CACHE: "false"
       SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_QUERY_CACHE: "false"
       SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_REGION_FACTORY_CLASS: "org.hibernate.cache.internal.NoCachingRegionFactory"

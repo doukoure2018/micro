@@ -1,0 +1,61 @@
+spring:
+  application:
+    name: bcrgservice
+  profiles:
+    active: default
+  main:
+    allow-bean-definition-overriding: true
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+      indent-output: true
+    deserialization:
+      fail-on-unknown-properties: false
+    date-format: yyyy-MM-dd'T'HH:mm:ss.SSS
+    time-zone: UTC
+
+# Pas de section datasource : bcrgservice n'a PAS de base propre,
+# il consomme ebanking (/ebanking/reg/**) via Feign.
+
+server:
+  port: 8089
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://admin:admin2711@localhost:5002/eureka/}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+# Cle API PUBLIQUE : protege /bcrg/** (plateforme BCRG -> bcrgservice)
+bcrg:
+  public-api-key: ${BCRG_PUBLIC_API_KEY:}
+
+# Cle API INTERNE : pour appeler le perimetre reglementaire d'ebanking (bcrgservice -> ebanking)
+# Doit valoir la MEME cle que BCRG_INTERNAL_API_KEY cote ebanking.
+ebanking:
+  reg:
+    api-key: ${EBANKING_REG_API_KEY:}
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 30000
+        readTimeout: 120000
+
+logging:
+  level:
+    io.digiservices.bcrgservice: DEBUG

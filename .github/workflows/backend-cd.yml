@@ -161,6 +161,15 @@ jobs:
           docker push doukoure93/agriculteurservice:${{ steps.build-number.outputs.BUILD_NUMBER }}
           docker push doukoure93/agriculteurservice:latest
 
+      - name: Build and push BCRG Service
+        working-directory: ./micro-digiservices/bcrgservice
+        run: |
+          mvn -ntp -B verify -DskipTests jib:dockerBuild
+          docker tag doukoure93/bcrgservice:0.0.1-SNAPSHOT doukoure93/bcrgservice:${{ steps.build-number.outputs.BUILD_NUMBER }}
+          docker tag doukoure93/bcrgservice:0.0.1-SNAPSHOT doukoure93/bcrgservice:latest
+          docker push doukoure93/bcrgservice:${{ steps.build-number.outputs.BUILD_NUMBER }}
+          docker push doukoure93/bcrgservice:latest
+
 
       - name: Notify images pushed
         run: >
@@ -195,7 +204,7 @@ jobs:
 
             # Create directories
             echo "📁 Creating required directories..."
-            mkdir -p logs/{discoveryserver,gateway,authorizationserver,userservice,ecreditservice,ebankingservice,notificationservice,frontend}
+            mkdir -p logs/{discoveryserver,gateway,authorizationserver,userservice,ecreditservice,ebankingservice,notificationservice,agriculteurservice,bcrgservice,frontend}
             mkdir -p keys
 
             # Check .env.prod
