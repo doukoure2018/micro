@@ -209,13 +209,14 @@ public class AuthorizationServerConfig {
                                 // Le fallback web devient inutile : on le nettoie pour éviter
                                 // une reprise obsolète lors d'un login ultérieur dans la même session.
                                 session.removeAttribute(MobileOAuthSessionFilter.WEB_AUTH_SESSION_KEY);
+                                clearWebOAuthCookie(response);
                                 response.sendRedirect(redirectUrl);
                                 return;
                             }
                         }
                     }
 
-                    // Priorité 3: Fallback web — URL /oauth2/authorize mémorisée par MobileOAuthSessionFilter.
+                    // Priorité 3: Fallback web SESSION — URL /oauth2/authorize mémorisée par MobileOAuthSessionFilter.
                     // Reprend le flux OAuth2 quand la SavedRequest a été perdue (ressource non permitAll,
                     // multi-onglets, session recréée...) au lieu de renvoyer vers la SPA sans code,
                     // ce qui obligeait l'utilisateur à "se connecter deux fois".
@@ -224,9 +225,31 @@ public class AuthorizationServerConfig {
                         if (webOAuthUrl != null && !webOAuthUrl.toString().isEmpty()) {
                             log.info("🌐 Resuming OAuth2 flow from session fallback");
                             session.removeAttribute(MobileOAuthSessionFilter.WEB_AUTH_SESSION_KEY);
+                            clearWebOAuthCookie(response);
                             response.sendRedirect(webOAuthUrl.toString());
                             return;
                         }
+                    }
+
+                    // Priorité 4: Fallback web COOKIE — survit à une recréation/perte de session HTTP
+                    // (cause du retour intermittent sur la home au lieu du profil). Dernier recours
+                    // avant la redirection par défaut.
+                    String webCookieUrl = null;
+                    if (cookies != null) {
+                        for (Cookie cookie : cookies) {
+                            if (MobileOAuthSessionFilter.WEB_AUTH_COOKIE.equals(cookie.getName())
+                                    && cookie.getValue() != null && !cookie.getValue().isEmpty()) {
+                                webCookieUrl = java.net.URLDecoder.decode(
+                                        cookie.getValue(), java.nio.charset.StandardCharsets.UTF_8);
+                                break;
+                            }
+                        }
+                    }
+                    if (webCookieUrl != null && webCookieUrl.contains("/oauth2/authorize")) {
+                        log.info("🍪 Resuming OAuth2 flow from cookie fallback");
+                        clearWebOAuthCookie(response);
+                        response.sendRedirect(webCookieUrl);
+                        return;
                     }
 
                     // Vérifier MFA
@@ -310,6 +333,17 @@ public class AuthorizationServerConfig {
     @Bean
     public SavedRequestAwareAuthenticationSuccessHandler authenticationSuccessHandler() {
         return new SavedRequestAwareAuthenticationSuccessHandler();
+    }
+
+    /** Efface le cookie de fallback web OAuth2 (apres reprise du flux ou redirection standard). */
+    private static void clearWebOAuthCookie(HttpServletResponse response) {
+        Cookie cookie = new Cookie(MobileOAuthSessionFilter.WEB_AUTH_COOKIE, "");
+        cookie.setPath("/");
+        cookie.setMaxAge(0);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(true);
+        cookie.setAttribute("SameSite", "Lax");
+        response.addCookie(cookie);
     }
 
     @Bean

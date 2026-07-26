@@ -31,6 +31,15 @@ public class MobileOAuthSessionFilter implements Filter {
      */
     public static final String WEB_AUTH_SESSION_KEY = "WEB_OAUTH_URL_SESSION";
 
+    /**
+     * Filet de sécurité SUPPLÉMENTAIRE pour le flux WEB, cette fois dans un COOKIE.
+     * Contrairement à {@link #WEB_AUTH_SESSION_KEY} (session), ce cookie survit à une
+     * recréation/perte de session HTTP entre /oauth2/authorize et le POST /login — cause
+     * du retour intermittent sur la home au lieu du profil. Le successHandler le lit en
+     * dernier recours pour reprendre le flux OAuth2.
+     */
+    public static final String WEB_AUTH_COOKIE = "WEB_OAUTH_URL";
+
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
@@ -104,14 +113,24 @@ public class MobileOAuthSessionFilter implements Filter {
 
                 log.info("✅ Mobile auth cookie set - will redirect to login");
             } else if ("GET".equalsIgnoreCase(httpRequest.getMethod())) {
-                // Flux WEB (SPA) : mémoriser l'URL d'autorisation complète en session.
+                // Flux WEB (SPA) : mémoriser l'URL d'autorisation complète.
                 // Sert de fallback au successHandler si la SavedRequest standard est perdue.
                 String fullOAuthUrl = httpRequest.getRequestURL().toString();
                 if (httpRequest.getQueryString() != null) {
                     fullOAuthUrl += "?" + httpRequest.getQueryString();
                 }
+                // (1) En session (comportement historique).
                 httpRequest.getSession(true).setAttribute(WEB_AUTH_SESSION_KEY, fullOAuthUrl);
-                log.info("🌐 Web OAuth2 request - URL saved in session as login fallback");
+                // (2) ET dans un cookie, qui survit a une recreation de session HTTP.
+                Cookie webAuthCookie = new Cookie(WEB_AUTH_COOKIE,
+                        URLEncoder.encode(fullOAuthUrl, StandardCharsets.UTF_8));
+                webAuthCookie.setPath("/");
+                webAuthCookie.setMaxAge(300);
+                webAuthCookie.setHttpOnly(true);
+                webAuthCookie.setSecure(true);
+                webAuthCookie.setAttribute("SameSite", "Lax");
+                httpResponse.addCookie(webAuthCookie);
+                log.info("🌐 Web OAuth2 request - URL saved in session + cookie as login fallback");
             }
             log.info("========================================");
         }
