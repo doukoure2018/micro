@@ -311,7 +311,9 @@ export class DetailComponent {
                         if (demandeData.statutDemande === 'EN_ATTENTE' && demandeData.validationState === 'NOUVEAU') {
                             statusOptions.push({ label: 'AFFECTATION', value: 'SELECTION' });
                         } else {
-                            statusOptions.push({ label: 'Validation', value: 'VALIDATION' });
+                            // Bloc "Traitement" masque hors phase d'affectation : la validation passe
+                            // par les formulaires DA/DR/DE/DG. Pas d'etat 'VALIDATION' (non valide dans
+                            // la machine a etats) — on ne propose aucune option ici.
                         }
 
                         const responseData = response.data as any;
