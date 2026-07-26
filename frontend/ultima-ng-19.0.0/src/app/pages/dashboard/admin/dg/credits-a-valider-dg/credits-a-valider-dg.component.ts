@@ -2,7 +2,7 @@ import { IResponse } from '@/interface/response';
 import { IUser } from '@/interface/user';
 import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, inject, Input, OnInit, signal } from '@angular/core';
+import { Component, DestroyRef, inject, Input, OnInit, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
@@ -43,7 +43,28 @@ export class CreditsAValiderDgComponent implements OnInit {
     // Onglet "Valides par le DG"
     valides = signal<any[]>([]);
     loadingValides = signal(false);
-    viewMode = signal<'a-valider' | 'valides'>('a-valider');
+    viewMode = signal<'a-valider' | 'valides' | 'synthese'>('a-valider');
+
+    /** Synthese : cumul des credits vises par le DG, agrege par mois (date de visa DG). */
+    syntheseParPeriode = computed(() => {
+        const map = new Map<string, { periode: string; count: number; montant: number }>();
+        for (const d of this.valides()) {
+            const raw = d.dateValidationDg || d.createdAt;
+            const periode = raw ? String(raw).slice(0, 7) : 'N/A'; // YYYY-MM
+            const e = map.get(periode) || { periode, count: 0, montant: 0 };
+            e.count += 1;
+            e.montant += Number(d.montantDemande || 0);
+            map.set(periode, e);
+        }
+        return [...map.values()].sort((a, b) => b.periode.localeCompare(a.periode));
+    });
+
+    totalValidesCount = computed(() => this.valides().length);
+    totalValidesMontant = computed(() => this.valides().reduce((s, d) => s + Number(d.montantDemande || 0), 0));
+    montantMoyen = computed(() => {
+        const n = this.totalValidesCount();
+        return n > 0 ? this.totalValidesMontant() / n : 0;
+    });
 
     showValiderDialog = signal(false);
     showRejeterDialog = signal(false);
@@ -138,11 +159,20 @@ export class CreditsAValiderDgComponent implements OnInit {
             });
     }
 
-    setView(mode: 'a-valider' | 'valides'): void {
+    setView(mode: 'a-valider' | 'valides' | 'synthese'): void {
         this.viewMode.set(mode);
-        if (mode === 'valides' && this.valides().length === 0) {
+        if ((mode === 'valides' || mode === 'synthese') && this.valides().length === 0) {
             this.loadValides();
         }
+    }
+
+    /** "YYYY-MM" -> "Juillet 2026". */
+    periodeLabel(p: string): string {
+        if (!p || p === 'N/A') return 'Non daté';
+        const [y, m] = p.split('-');
+        const mois = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+            'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+        return (mois[Number(m) - 1] || m) + ' ' + y;
     }
 
     loadValides(): void {
@@ -166,7 +196,7 @@ export class CreditsAValiderDgComponent implements OnInit {
     }
 
     refreshData(): void {
-        if (this.viewMode() === 'valides') {
+        if (this.viewMode() === 'valides' || this.viewMode() === 'synthese') {
             this.loadValides();
         } else {
             this.loadData();

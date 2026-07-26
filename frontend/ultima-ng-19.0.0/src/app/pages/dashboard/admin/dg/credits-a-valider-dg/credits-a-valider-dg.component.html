@@ -22,6 +22,9 @@
         <button pButton type="button" icon="pi pi-check-circle" label="Validés par le DG"
             [class]="viewMode() === 'valides' ? 'p-button-success' : 'p-button-outlined'"
             (click)="setView('valides')"></button>
+        <button pButton type="button" icon="pi pi-chart-bar" label="Synthèse / Volumes"
+            [class]="viewMode() === 'synthese' ? 'p-button-help' : 'p-button-outlined'"
+            (click)="setView('synthese')"></button>
     </div>
 
     <!-- ===================== ONGLET : A VALIDER ===================== -->
@@ -136,6 +139,88 @@
                 </tr>
             </ng-template>
         </p-table>
+    </div>
+
+    <!-- ===================== ONGLET : SYNTHESE / VOLUMES ===================== -->
+    <div *ngIf="viewMode() === 'synthese'">
+        <div *ngIf="loadingValides()" class="flex justify-center p-6">
+            <p-progressSpinner strokeWidth="4" [style]="{ width: '48px', height: '48px' }"></p-progressSpinner>
+        </div>
+
+        <div *ngIf="!loadingValides()">
+            <!-- Cartes de cumul -->
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;" class="mb-5">
+                <div class="border rounded-xl p-4 bg-indigo-50 border-indigo-200">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center bg-indigo-100">
+                            <i class="pi pi-briefcase text-xl text-indigo-700"></i>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-2xl font-bold text-indigo-700">{{ totalValidesCount() }}</span>
+                            <span class="text-sm font-medium text-700">Engagements approuvés (DG)</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="border rounded-xl p-4 bg-green-50 border-green-200">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center bg-green-100">
+                            <i class="pi pi-money-bill text-xl text-green-700"></i>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-xl font-bold text-green-700">{{ formatMontantGNF(totalValidesMontant()) }}</span>
+                            <span class="text-sm font-medium text-700">Montant cumulé approuvé</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="border rounded-xl p-4 bg-amber-50 border-amber-200">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center bg-amber-100">
+                            <i class="pi pi-calculator text-xl text-amber-700"></i>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-xl font-bold text-amber-700">{{ formatMontantGNF(montantMoyen()) }}</span>
+                            <span class="text-sm font-medium text-700">Montant moyen par engagement</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tableau par periode (mois) -->
+            <p-table [value]="syntheseParPeriode()" styleClass="p-datatable-striped"
+                [tableStyle]="{ 'min-width': '40rem' }">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Période</th>
+                        <th class="text-center">Nombre d'engagements</th>
+                        <th class="text-right">Montant total approuvé</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-p>
+                    <tr>
+                        <td class="font-semibold">{{ periodeLabel(p.periode) }}</td>
+                        <td class="text-center">
+                            <p-tag [value]="p.count.toString()" severity="info"></p-tag>
+                        </td>
+                        <td class="text-right font-bold text-green-700">{{ formatMontantGNF(p.montant) }}</td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="3" class="text-center p-6 text-gray-500">
+                            <i class="pi pi-chart-bar text-3xl block mb-2"></i>
+                            Aucun engagement approuvé à agréger.
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="footer">
+                    <tr>
+                        <td class="font-bold">Total</td>
+                        <td class="text-center font-bold">{{ totalValidesCount() }}</td>
+                        <td class="text-right font-bold text-green-800">{{ formatMontantGNF(totalValidesMontant()) }}</td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
     </div>
 </div>
 
