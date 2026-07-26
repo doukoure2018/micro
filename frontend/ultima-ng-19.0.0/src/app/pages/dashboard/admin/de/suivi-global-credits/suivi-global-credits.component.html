@@ -129,8 +129,44 @@
         }
     </div>
 
+    <!-- Alertes SLA (delais cibles) -->
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;" class="mb-5">
+        <div class="border rounded-xl p-4 cursor-pointer hover:shadow-lg bg-red-50 border-red-200"
+            [ngClass]="{ 'ring-2 ring-red-500 shadow-md': slaFilter() === 'RETARD' }"
+            (click)="toggleSlaFilter('RETARD')">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 bg-red-100">
+                    <i class="pi pi-exclamation-triangle text-xl text-red-700"></i>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-2xl font-bold text-red-700">{{ nbRetard() }}</span>
+                    <span class="text-sm font-medium text-700">Dossiers en retard (SLA depasse)</span>
+                </div>
+            </div>
+        </div>
+        <div class="border rounded-xl p-4 cursor-pointer hover:shadow-lg bg-amber-50 border-amber-200"
+            [ngClass]="{ 'ring-2 ring-amber-500 shadow-md': slaFilter() === 'VIGILANCE' }"
+            (click)="toggleSlaFilter('VIGILANCE')">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 bg-amber-100">
+                    <i class="pi pi-clock text-xl text-amber-700"></i>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-2xl font-bold text-amber-700">{{ nbVigilance() }}</span>
+                    <span class="text-sm font-medium text-700">Dossiers en vigilance (delai proche)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Filtre profil actif -->
     <div class="flex items-center gap-3 mb-4">
+        @if (slaFilter() !== 'ALL') {
+        <p-tag [value]="slaFilter() === 'RETARD' ? 'SLA : en retard' : 'SLA : vigilance'"
+            [severity]="slaFilter() === 'RETARD' ? 'danger' : 'warn'"></p-tag>
+        <p-button icon="pi pi-times" label="Retirer le filtre SLA" (click)="slaFilter.set('ALL')"
+            severity="secondary" size="small" [text]="true"></p-button>
+        }
         @if (selectedProfil() !== 'ALL') {
         <p-button icon="pi pi-filter-slash" label="Voir tout"
             (click)="filterByProfil('ALL')" severity="secondary" size="small"></p-button>
@@ -171,6 +207,7 @@
                 <th style="width:8%">Agent</th>
                 <th pSortableColumn="validationState" class="text-center" style="width:11%">Profil <p-sortIcon field="validationState"></p-sortIcon></th>
                 <th pSortableColumn="joursAttente" class="text-center" style="width:8%">Attente <p-sortIcon field="joursAttente"></p-sortIcon></th>
+                <th class="text-center" style="width:9%">SLA</th>
                 <th class="text-center" style="width:13%">Etape</th>
             </tr>
         </ng-template>
@@ -198,6 +235,11 @@
                         [severity]="getJoursAttenteSeverity(demande.joursAttente)"></p-tag>
                 </td>
                 <td class="text-center">
+                    <p-tag [value]="slaLabel(demande)" [severity]="slaSeverity(demande)"
+                        [pTooltip]="'Objectif : ' + slaCible(demande) + ' j pour le niveau ' + niveauResponsable(demande.validationState)"
+                        tooltipPosition="top"></p-tag>
+                </td>
+                <td class="text-center">
                     <small>{{ getEtapeLabel(demande.validationState) }}</small>
                 </td>
             </tr>
@@ -205,7 +247,7 @@
 
         <ng-template pTemplate="emptymessage">
             <tr>
-                <td colspan="10" class="text-center p-6">
+                <td colspan="11" class="text-center p-6">
                     <div class="flex flex-col items-center gap-3">
                         <i class="pi pi-check-circle text-4xl text-green-500"></i>
                         <span class="text-600 font-medium">Aucune demande en cours</span>

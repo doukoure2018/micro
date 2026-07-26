@@ -19,6 +19,7 @@ import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
+import { TooltipModule } from 'primeng/tooltip';
 
 interface ProfilCount {
     label: string;
@@ -35,7 +36,7 @@ interface ProfilCount {
     imports: [
         CommonModule, FormsModule, TableModule, ButtonModule, TagModule, ToastModule,
         BadgeModule, IconFieldModule, InputIconModule, InputTextModule,
-        ProgressSpinnerModule, ChipModule, SelectModule, DatePickerModule
+        ProgressSpinnerModule, ChipModule, SelectModule, DatePickerModule, TooltipModule
     ],
     templateUrl: './suivi-global-credits.component.html',
     providers: [MessageService]
@@ -49,9 +50,22 @@ export class SuiviGlobalCreditsComponent implements OnInit {
     /** Seuil entre petit et gros credit (50M GNF) */
     private static readonly SEUIL_PETIT_GROS_GNF = 50_000_000;
 
+    /**
+     * Objectifs SLA (en jours) par niveau responsable de l'attente courante.
+     * Au-dela de la cible : "Vigilance" ; au-dela du double : "En retard".
+     * Valeurs a ajuster selon la politique interne.
+     */
+    static readonly SLA_JOURS: Record<string, number> = {
+        AGENT: 5,   // instruction / correction par l'agent de credit
+        DA: 3,      // validation Directeur d'Agence
+        DR: 3,      // validation Delegue Regional
+        DE: 3       // validation Direction de l'Exploitation
+    };
+
     allDemandes = signal<any[]>([]);
     loading = signal(false);
     selectedProfil = signal<string>('ALL');
+    slaFilter = signal<'ALL' | 'RETARD' | 'VIGILANCE'>('ALL');
     private _creditTypeFilter = signal<'ALL' | 'PETIT' | 'GROS'>('ALL');
 
     // Filtres
@@ -215,26 +229,37 @@ export class SuiviGlobalCreditsComponent implements OnInit {
 
     filteredDemandes = computed(() => {
         const profil = this.selectedProfil();
-        const demandes = this.baseFilteredDemandes();
-        if (profil === 'ALL') return demandes;
+        let demandes = this.baseFilteredDemandes();
 
-        const stateMap: Record<string, string[]> = {
-            AGENT_CREDIT: ['NOUVEAU', 'SELECTION', 'APPROVED'],
-            DA: ['APPROVED'],
-            DR: ['VALIDATED_DA'],
-            CORRECTION_AC: ['CORRECTION'],
-            CORRECTION_DR: ['CORRECTION_DR'],
-            CORRECTION_DE: ['CORRECTION_DE'],
-            VALIDATED_DR: ['VALIDATED_DR']
-        };
-        const states = stateMap[profil] || [];
-        return demandes.filter(d => states.includes(d.validationState));
+        if (profil !== 'ALL') {
+            const stateMap: Record<string, string[]> = {
+                AGENT_CREDIT: ['NOUVEAU', 'SELECTION', 'APPROVED'],
+                DA: ['APPROVED'],
+                DR: ['VALIDATED_DA'],
+                CORRECTION_AC: ['CORRECTION'],
+                CORRECTION_DR: ['CORRECTION_DR'],
+                CORRECTION_DE: ['CORRECTION_DE'],
+                VALIDATED_DR: ['VALIDATED_DR']
+            };
+            const states = stateMap[profil] || [];
+            demandes = demandes.filter(d => states.includes(d.validationState));
+        }
+
+        const sla = this.slaFilter();
+        if (sla !== 'ALL') {
+            demandes = demandes.filter(d => this.slaStatut(d) === sla);
+        }
+        return demandes;
     });
+
+    // Compteurs SLA (sur le perimetre filtre, tous profils confondus)
+    nbRetard = computed(() => this.baseFilteredDemandes().filter(d => this.slaStatut(d) === 'RETARD').length);
+    nbVigilance = computed(() => this.baseFilteredDemandes().filter(d => this.slaStatut(d) === 'VIGILANCE').length);
 
     hasActiveFilters = computed(() => {
         return this.dateDebut() !== null || this.dateFin() !== null ||
             this.selectedDelegation() !== null || this.selectedAgence() !== null ||
-            this.selectedPointvente() !== null;
+            this.selectedPointvente() !== null || this.slaFilter() !== 'ALL';
     });
 
     ngOnInit(): void {
@@ -287,6 +312,7 @@ export class SuiviGlobalCreditsComponent implements OnInit {
         this.selectedAgence.set(null);
         this.selectedPointvente.set(null);
         this.selectedProfil.set('ALL');
+        this.slaFilter.set('ALL');
     }
 
     filterByProfil(profil: string): void {
@@ -340,6 +366,47 @@ export class SuiviGlobalCreditsComponent implements OnInit {
         if (jours <= 5) return 'info';
         if (jours <= 10) return 'warn';
         return 'danger';
+    }
+
+    // ==================== SLA (delais cibles par niveau) ====================
+
+    /** Niveau qui detient actuellement le dossier (responsable du delai courant). */
+    niveauResponsable(validationState: string): 'AGENT' | 'DA' | 'DR' | 'DE' {
+        switch (validationState) {
+            case 'APPROVED': return 'DA';        // en attente validation DA
+            case 'VALIDATED_DA': return 'DR';    // en attente validation DR
+            case 'VALIDATED_DR': return 'DE';    // en attente validation DE
+            default: return 'AGENT';             // NOUVEAU, SELECTION, CORRECTION*, RETOUR_AGENT
+        }
+    }
+
+    /** Objectif SLA (jours) applicable au dossier selon son niveau courant. */
+    slaCible(demande: any): number {
+        return SuiviGlobalCreditsComponent.SLA_JOURS[this.niveauResponsable(demande.validationState)] ?? 5;
+    }
+
+    /** Statut SLA : OK (<= cible), VIGILANCE (<= 2x cible), RETARD (> 2x cible). */
+    slaStatut(demande: any): 'OK' | 'VIGILANCE' | 'RETARD' {
+        const cible = this.slaCible(demande);
+        const jours = Number(demande.joursAttente || 0);
+        if (jours <= cible) return 'OK';
+        if (jours <= cible * 2) return 'VIGILANCE';
+        return 'RETARD';
+    }
+
+    slaSeverity(demande: any): 'success' | 'warn' | 'danger' {
+        const s = this.slaStatut(demande);
+        return s === 'OK' ? 'success' : s === 'VIGILANCE' ? 'warn' : 'danger';
+    }
+
+    slaLabel(demande: any): string {
+        const s = this.slaStatut(demande);
+        return s === 'OK' ? 'Dans les delais' : s === 'VIGILANCE' ? 'Vigilance' : 'En retard';
+    }
+
+    /** Bascule le filtre SLA (clic sur une carte). Re-clic = desactive. */
+    toggleSlaFilter(value: 'RETARD' | 'VIGILANCE'): void {
+        this.slaFilter.set(this.slaFilter() === value ? 'ALL' : value);
     }
 
     formatMontantGNF(montant: number): string {
