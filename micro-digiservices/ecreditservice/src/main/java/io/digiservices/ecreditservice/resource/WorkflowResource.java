@@ -420,13 +420,14 @@ public class WorkflowResource {
     @PutMapping("/{demandeId}/confirmer-rejet-dg")
     public ResponseEntity<Response> confirmerRejetDG(
             @PathVariable Long demandeId,
-            @RequestBody(required = false) WorkflowApprovalRequest request,
+            @RequestBody(required = false) WorkflowRejetRequest request,
             Authentication authentication,
             HttpServletRequest httpRequest) {
         var user = userClient.getUserByUuid(authentication.getName());
         String confirmedBy = user.getFirstName() + " " + user.getLastName();
-        String instructions = request != null ? request.getAvis() : null;
-        workflowService.confirmerRejetDG(demandeId, instructions, confirmedBy);
+        String instructions = request != null ? request.getInstructions() : null;
+        java.util.List<String> sectionsARevoir = request != null ? request.getSectionsARevoir() : null;
+        workflowService.confirmerRejetDG(demandeId, instructions, sectionsARevoir, confirmedBy);
         return ResponseEntity.ok(
                 getResponse(httpRequest, Map.of("message", "Rejet DG confirme"),
                         "Rejet confirme, demande renvoyee en correction", OK));

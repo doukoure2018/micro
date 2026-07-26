@@ -55,5 +55,5 @@ public interface WorkflowService {
     List<WorkflowDemandeDto> getValidesDG();
     void validerDG(Long demandeId, String avis, String validatedBy);
     void rejeterDG(Long demandeId, String motifRejet, String validatedBy);
-    void confirmerRejetDG(Long demandeId, String instructions, String confirmedBy);
+    void confirmerRejetDG(Long demandeId, String instructions, java.util.List<String> sectionsARevoir, String confirmedBy);
 }

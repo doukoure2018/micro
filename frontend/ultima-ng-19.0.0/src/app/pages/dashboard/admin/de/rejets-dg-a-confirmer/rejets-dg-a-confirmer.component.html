@@ -77,16 +77,37 @@
         <div class="text-orange-700 font-bold">{{ formatMontantGNF(selected.montantDemande) }}</div>
         <div class="text-gray-700 text-sm mt-2"><strong>Motif DG :</strong> {{ selected.motifRejetDg }}</div>
     </div>
+    <label class="block text-sm font-semibold mb-2">
+        Sections à revoir <span class="text-red-500">*</span>
+        <small class="font-normal text-gray-500 ml-1">(cochez les points à améliorer pour guider l'agent)</small>
+    </label>
+    <div class="grid grid-cols-2 gap-2 mb-3 p-3 border-1 surface-border border-round">
+        @for (opt of workflowSectionsOptions; track opt.value) {
+        <label class="flex items-center gap-2 cursor-pointer text-sm">
+            <input type="checkbox" [checked]="isSectionChecked(opt.value)"
+                (change)="toggleSection(opt.value, $any($event.target).checked)" />
+            <span>{{ opt.label }}</span>
+        </label>
+        }
+    </div>
+    @if (sectionsARevoir.length === 0) {
+    <small class="text-orange-600 block mb-3">
+        <i class="pi pi-exclamation-circle mr-1"></i>Au moins une section doit être cochée.
+    </small>
+    }
+
     <label class="block text-sm font-semibold mb-2">Instructions pour l'agent (optionnel)</label>
     <textarea [(ngModel)]="instructions" rows="4" class="w-full p-2 border-round border-1 surface-border"
         placeholder="Précisions à transmettre à l'agent pour la correction..."></textarea>
     <small class="text-gray-500 block mt-2">
-        <i class="pi pi-info-circle mr-1"></i>La demande repartira en correction vers l'agent de crédit.
+        <i class="pi pi-info-circle mr-1"></i>La demande repartira en correction vers l'agent de crédit avec le motif
+        du DG, les sections cochées et vos instructions.
     </small>
     <ng-template pTemplate="footer">
         <button pButton type="button" label="Annuler" icon="pi pi-times"
             class="p-button-secondary p-button-outlined" (click)="showConfirmDialog.set(false)"></button>
         <button pButton type="button" label="Confirmer le rejet" icon="pi pi-check" class="p-button-warning"
-            [disabled]="submitting()" [loading]="submitting()" (click)="confirmRejet()"></button>
+            [disabled]="submitting() || sectionsARevoir.length === 0" [loading]="submitting()"
+            (click)="confirmRejet()"></button>
     </ng-template>
 </p-dialog>

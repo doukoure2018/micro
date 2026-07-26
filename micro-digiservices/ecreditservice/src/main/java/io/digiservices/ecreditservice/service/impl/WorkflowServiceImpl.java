@@ -264,9 +264,13 @@ public class WorkflowServiceImpl implements WorkflowService {
 
     @Override
     @Transactional
-    public void confirmerRejetDG(Long demandeId, String instructions, String confirmedBy) {
+    public void confirmerRejetDG(Long demandeId, String instructions, java.util.List<String> sectionsARevoir, String confirmedBy) {
         log.info("Confirmation du rejet DG par le DE {} pour demande {}", confirmedBy, demandeId);
-        int rows = workflowRepository.confirmerRejetDG(demandeId, instructions, confirmedBy);
+        if (sectionsARevoir == null || sectionsARevoir.isEmpty()) {
+            throw new ApiException("Veuillez cocher au moins une section à revoir pour guider la correction");
+        }
+        String sectionsJoined = String.join(",", sectionsARevoir);
+        int rows = workflowRepository.confirmerRejetDG(demandeId, instructions, sectionsJoined, confirmedBy);
         if (rows == 0) {
             throw new ApiException("Demande non trouvée ou état invalide pour la confirmation du rejet DG");
         }

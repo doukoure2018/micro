@@ -465,11 +465,12 @@ public class WorkflowRepositoryImpl implements WorkflowRepository {
     }
 
     @Override
-    public int confirmerRejetDG(Long demandeId, String instructions, String confirmedBy) {
+    public int confirmerRejetDG(Long demandeId, String instructions, String sectionsARevoir, String confirmedBy) {
         try {
             return jdbcClient.sql(UPDATE_CONFIRMER_REJET_DG)
                     .param("demandeId", demandeId)
                     .param("instructions", instructions)
+                    .param("sectionsARevoir", sectionsARevoir)
                     .param("confirmedBy", confirmedBy)
                     .update();
         } catch (Exception e) {

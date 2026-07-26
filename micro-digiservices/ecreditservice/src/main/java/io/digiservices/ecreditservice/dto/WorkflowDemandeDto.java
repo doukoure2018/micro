@@ -62,6 +62,11 @@ public class WorkflowDemandeDto {
     private String motifRejetDe;
     private String sectionsARevoirDe;
     private String instructionsDr;
+    // Analyse financiere (garde-fou AC : BROUILLON = a finaliser, SOUMISE = a approuver)
+    private String statutAnalyse;
+    // Confirmation de rejet DG par le DE (feedback vers l'agent)
+    private String instructionsDe;
+    private String confirmedByDe;
     // Validation DG
     private String avisDg;
     private String motifRejetDg;

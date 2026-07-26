@@ -19,8 +19,9 @@ import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
 
 /**
- * Ecran DE : credits rejetes par le DG (etat REJETE_DG). Le DE confirme le rejet,
- * ce qui renvoie la demande en CORRECTION vers l'agent (avec instructions optionnelles).
+ * Ecran DE : credits rejetes par le DG (etat REJETE_DG). Le DE confirme le rejet
+ * en cochant les sections a revoir (obligatoire) et en ajoutant des instructions,
+ * ce qui renvoie la demande en CORRECTION vers l'agent avec un feedback actionnable.
  */
 @Component({
     selector: 'app-rejets-dg-a-confirmer',
@@ -42,6 +43,21 @@ export class RejetsDgAConfirmerComponent implements OnInit {
     showConfirmDialog = signal(false);
     selected: any = null;
     instructions = '';
+    sectionsARevoir: string[] = [];
+
+    /** Sections cochables, alignees sur les dialogs de rejet DA/DR/DE (detail.component). */
+    workflowSectionsOptions = [
+        { label: 'Collecte des donnees', value: 'COLLECTE' },
+        { label: "Bilan d'activite", value: 'BILAN_ACTIVITE' },
+        { label: 'Flux de tresorerie', value: 'FLUX_TRESORERIE' },
+        { label: 'Amortissements', value: 'AMORTISSEMENTS' },
+        { label: 'Rentabilite', value: 'RENTABILITE' },
+        { label: 'Ratios financiers', value: 'RATIOS' },
+        { label: 'Personne caution', value: 'PERSONNE_CAUTION' },
+        { label: 'Garantie proposee', value: 'GARANTIE' },
+        { label: 'Documents incomplets', value: 'DOCUMENTS_INCOMPLETS' },
+        { label: 'Demande complete', value: 'DEMANDE_COMPLETE' }
+    ];
 
     private userService = inject(UserService);
     private router = inject(Router);
@@ -83,13 +99,32 @@ export class RejetsDgAConfirmerComponent implements OnInit {
     openConfirm(d: any): void {
         this.selected = d;
         this.instructions = '';
+        this.sectionsARevoir = [];
         this.showConfirmDialog.set(true);
+    }
+
+    toggleSection(value: string, checked: boolean): void {
+        if (checked) {
+            if (!this.sectionsARevoir.includes(value)) {
+                this.sectionsARevoir = [...this.sectionsARevoir, value];
+            }
+        } else {
+            this.sectionsARevoir = this.sectionsARevoir.filter((v) => v !== value);
+        }
+    }
+
+    isSectionChecked(value: string): boolean {
+        return this.sectionsARevoir.includes(value);
     }
 
     confirmRejet(): void {
         if (!this.selected) return;
+        if (this.sectionsARevoir.length === 0) {
+            this.toast('warn', 'Sections requises', 'Cochez au moins une section a revoir pour guider la correction');
+            return;
+        }
         this.submitting.set(true);
-        this.userService.confirmerRejetDG$(this.selected.demandeIndividuelId, this.instructions.trim())
+        this.userService.confirmerRejetDG$(this.selected.demandeIndividuelId, this.instructions.trim(), this.sectionsARevoir)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => {

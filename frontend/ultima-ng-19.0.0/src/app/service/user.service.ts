@@ -1601,7 +1601,8 @@ export class UserService {
     // DE : confirmation du rejet DG
     getRejetsDGAConfirmer$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/rejets-dg-a-confirmer`).pipe(catchError(this.handleError));
 
-    confirmerRejetDG$ = (demandeId: number, avis: string) => <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/confirmer-rejet-dg`, { avis }).pipe(catchError(this.handleError));
+    confirmerRejetDG$ = (demandeId: number, instructions: string, sectionsARevoir: string[]) =>
+        <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/confirmer-rejet-dg`, { instructions, sectionsARevoir }).pipe(catchError(this.handleError));
 
     // ==================== CORRECTION DEMANDE COMPLETE ====================
 

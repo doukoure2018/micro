@@ -29,12 +29,13 @@ public class WorkflowQuery {
                    d.statut_demande AS "statutDemande",
                    d.cod_usuarios AS "codUsuarios",
                    d.avis_agent_credit AS "avisAgentCredit",
+                   af.statut AS "statutAnalyse",
                    d.createdat AS "createdAt"
             FROM demandeindividuel d
             INNER JOIN analyse_financiere af ON af.demandeindividuel_id = d.demandeindividuel_id
             WHERE d.validation_state = 'SELECTION'
               AND d.statut_demande = 'EN_ATTENTE'
-              AND af.statut = 'SOUMISE'
+              AND af.statut IN ('BROUILLON', 'SOUMISE')
               AND (
                   (CAST(:agenceId AS BIGINT) IS NOT NULL AND CAST(:pointventeId AS BIGINT) IS NULL AND d.agence = CAST(:agenceId AS BIGINT)) OR
                   (CAST(:pointventeId AS BIGINT) IS NOT NULL AND d.pos = CAST(:pointventeId AS BIGINT))
@@ -125,6 +126,10 @@ public class WorkflowQuery {
                    d.sections_a_revoir_da AS "sectionsARevoirDa",
                    d.instructions_ac AS "instructionsAc",
                    d.validated_by_da AS "validatedByDa",
+                   d.motif_rejet_dg AS "motifRejetDg",
+                   d.sections_a_revoir_de AS "sectionsARevoirDe",
+                   d.instructions_de AS "instructionsDe",
+                   d.confirmed_by_de AS "confirmedByDe",
                    d.createdat AS "createdAt"
             FROM demandeindividuel d
             WHERE d.validation_state = 'CORRECTION'
@@ -667,6 +672,7 @@ public class WorkflowQuery {
             UPDATE demandeindividuel
             SET validation_state = 'CORRECTION',
                 instructions_de = :instructions,
+                sections_a_revoir_de = :sectionsARevoir,
                 confirmed_by_de = :confirmedBy,
                 date_confirmation_rejet_de = CURRENT_TIMESTAMP
             WHERE demandeindividuel_id = :demandeId

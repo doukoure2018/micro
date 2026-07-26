@@ -61,5 +61,5 @@ public interface WorkflowRepository {
     List<WorkflowDemandeDto> getValidesDG();
     int validerDG(Long demandeId, String avis, String validatedBy);
     int rejeterDG(Long demandeId, String motifRejet, String validatedBy);
-    int confirmerRejetDG(Long demandeId, String instructions, String confirmedBy);
+    int confirmerRejetDG(Long demandeId, String instructions, String sectionsARevoir, String confirmedBy);
 }
