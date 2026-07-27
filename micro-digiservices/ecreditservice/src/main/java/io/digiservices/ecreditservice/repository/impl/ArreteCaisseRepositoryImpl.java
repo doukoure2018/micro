@@ -2,6 +2,7 @@ package io.digiservices.ecreditservice.repository.impl;
 
 
 import io.digiservices.ecreditservice.dto.ArreteCaisseDto;
+import io.digiservices.ecreditservice.dto.SituationPointVenteDto;
 import io.digiservices.ecreditservice.query.ArreteCaisseQuery;
 import io.digiservices.ecreditservice.repository.ArreteCaisseRepository;
 import lombok.RequiredArgsConstructor;
@@ -203,6 +204,35 @@ public class ArreteCaisseRepositoryImpl implements ArreteCaisseRepository {
     public List<ArreteCaisseDto> findAllForSuivi() {
         return jdbcClient.sql(ArreteCaisseQuery.SELECT_ALL_FOR_SUIVI)
                 .query(ArreteCaisseDto.class)
+                .list();
+    }
+
+    private static final RowMapper<SituationPointVenteDto> SITUATION_ROW_MAPPER = (rs, rowNum) ->
+            SituationPointVenteDto.builder()
+                    .pointventeId(rs.getLong("pointvente_id"))
+                    .pointventeNom(rs.getString("pointvente_nom"))
+                    .pointventeCode(rs.getString("pointvente_code"))
+                    .agenceId(rs.getObject("agence_id") != null ? rs.getLong("agence_id") : null)
+                    .agenceNom(rs.getString("agence_nom"))
+                    .delegationId(rs.getObject("delegation_id") != null ? rs.getLong("delegation_id") : null)
+                    .delegationNom(rs.getString("delegation_nom"))
+                    .arreteId(rs.getObject("arrete_id") != null ? rs.getLong("arrete_id") : null)
+                    .montant(rs.getBigDecimal("montant"))
+                    .statut(rs.getString("statut"))
+                    .dateArreteCaisse(rs.getDate("date_arrete_caisse") != null ? rs.getDate("date_arrete_caisse").toLocalDate() : null)
+                    .dateRemonte(rs.getTimestamp("date_remonte") != null ? rs.getTimestamp("date_remonte").toLocalDateTime() : null)
+                    .document(rs.getString("document"))
+                    .nomUser(rs.getString("nom_user"))
+                    .prenomUser(rs.getString("prenom_user"))
+                    .etat(rs.getString("etat"))
+                    .joursRetard(rs.getObject("jours_retard") != null ? rs.getInt("jours_retard") : null)
+                    .build();
+
+    @Override
+    public List<SituationPointVenteDto> findSituationParPointvente(LocalDate dateLimite) {
+        return jdbcClient.sql(ArreteCaisseQuery.SELECT_SITUATION_PAR_POINTVENTE)
+                .param("dateLimite", dateLimite)
+                .query(SITUATION_ROW_MAPPER)
                 .list();
     }
 }

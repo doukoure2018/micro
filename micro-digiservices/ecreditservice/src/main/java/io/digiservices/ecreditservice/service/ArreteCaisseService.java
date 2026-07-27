@@ -40,4 +40,11 @@ public interface ArreteCaisseService {
      * Récupérer tous les arrêtés pour le suivi
      */
     List<ArreteCaisseDto> findAllForSuivi();
+
+    /**
+     * Situation de conformité par point de vente à une date de référence
+     * (règle : tolérance J-1 ouvré, week-end non ouvré).
+     * Retourne la liste, le résumé par état et les dates de référence/limite.
+     */
+    Map<String, Object> getSituationParPointvente(LocalDate dateReference);
 }

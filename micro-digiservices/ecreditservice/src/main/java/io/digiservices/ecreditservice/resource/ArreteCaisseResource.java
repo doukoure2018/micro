@@ -261,6 +261,19 @@ public class ArreteCaisseResource {
     }
 
     /**
+     * Situation de conformité par point de vente (tolérance J-1 ouvré, week-end non ouvré).
+     * Date de référence optionnelle (défaut : aujourd'hui) pour consulter un jour passé.
+     */
+    @GetMapping("/suivi/situation")
+    public ResponseEntity<Response> getSituationParPointvente(
+            @RequestParam(name = "date", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            HttpServletRequest request) {
+        log.info("API: Situation des arrêtés par point de vente - date: {}", date);
+        Map<String, Object> situation = arreteCaisseService.getSituationParPointvente(date);
+        return ResponseEntity.ok(getResponse(request, situation, "Situation des points de vente récupérée", OK));
+    }
+
+    /**
      * Récupérer tous les arrêtés pour le suivi
      */
     @GetMapping("/suivi")

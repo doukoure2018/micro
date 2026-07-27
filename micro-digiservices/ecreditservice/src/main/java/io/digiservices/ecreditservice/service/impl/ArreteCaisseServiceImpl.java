@@ -2,6 +2,7 @@ package io.digiservices.ecreditservice.service.impl;
 
 import io.digiservices.clients.domain.User;
 import io.digiservices.ecreditservice.dto.ArreteCaisseDto;
+import io.digiservices.ecreditservice.dto.SituationPointVenteDto;
 import io.digiservices.ecreditservice.exception.ApiException;
 import io.digiservices.ecreditservice.repository.ArreteCaisseRepository;
 import io.digiservices.ecreditservice.service.ArreteCaisseService;
@@ -13,10 +14,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -213,6 +216,37 @@ public class ArreteCaisseServiceImpl implements ArreteCaisseService {
     @Override
     public List<ArreteCaisseDto> findAllForSuivi() {
         return arreteCaisseRepository.findAllForSuivi();
+    }
+
+    @Override
+    public Map<String, Object> getSituationParPointvente(LocalDate dateReference) {
+        LocalDate reference = dateReference != null ? dateReference : LocalDate.now();
+        LocalDate dateLimite = dernierJourOuvre(reference);
+
+        List<SituationPointVenteDto> situation = arreteCaisseRepository.findSituationParPointvente(dateLimite);
+
+        Map<String, Long> resume = situation.stream()
+                .collect(Collectors.groupingBy(SituationPointVenteDto::getEtat, Collectors.counting()));
+
+        return Map.of(
+                "situation", situation,
+                "resume", resume,
+                "dateReference", reference,
+                "dateLimite", dateLimite
+        );
+    }
+
+    /**
+     * Dernier jour ouvré strictement avant la date donnée (tolérance J-1,
+     * samedi et dimanche non ouvrés). Un arrêté daté de ce jour ou après
+     * est considéré à jour.
+     */
+    private LocalDate dernierJourOuvre(LocalDate date) {
+        LocalDate d = date.minusDays(1);
+        while (d.getDayOfWeek() == DayOfWeek.SATURDAY || d.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            d = d.minusDays(1);
+        }
+        return d;
     }
 
     private void validateInput(BigDecimal montant, LocalDate dateArreteCaisse) {

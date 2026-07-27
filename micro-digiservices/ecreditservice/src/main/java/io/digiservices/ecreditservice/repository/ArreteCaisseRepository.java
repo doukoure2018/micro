@@ -2,6 +2,7 @@ package io.digiservices.ecreditservice.repository;
 
 
 import io.digiservices.ecreditservice.dto.ArreteCaisseDto;
+import io.digiservices.ecreditservice.dto.SituationPointVenteDto;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -42,4 +43,10 @@ public interface ArreteCaisseRepository {
      * Récupérer tous les arrêtés pour le suivi
      */
     List<ArreteCaisseDto> findAllForSuivi();
+
+    /**
+     * Situation de conformité par point de vente (dernier arrêté + état calculé).
+     * dateLimite = dernier jour ouvré toléré.
+     */
+    List<SituationPointVenteDto> findSituationParPointvente(LocalDate dateLimite);
 }

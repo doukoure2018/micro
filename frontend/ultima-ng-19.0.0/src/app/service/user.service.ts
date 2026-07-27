@@ -1454,6 +1454,14 @@ export class UserService {
     }
 
     /**
+     * Situation de conformité des arrêtés par point de vente (tolérance J-1 ouvré)
+     */
+    getSituationArretesPointvente$(date?: string): Observable<IResponse> {
+        const params = date ? `?date=${date}` : '';
+        return this.http.get<IResponse>(`${this.server}/ecredit/arrete-caisse/suivi/situation${params}`);
+    }
+
+    /**
      * Helper: Parser une date (String ISO ou Array Java)
      */
     parseDate(date: string | number[] | null): Date | null {

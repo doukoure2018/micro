@@ -172,6 +172,52 @@ public class ArreteCaisseQuery {
     """;
 
     /**
+     * Situation de conformité par point de vente : part de la table pointvente
+     * (LEFT JOIN LATERAL) pour faire apparaître aussi les points de vente
+     * n'ayant jamais remonté d'arrêté.
+     * :dateLimite = dernier jour ouvré toléré (règle J-1 ouvré, week-end non ouvré).
+     */
+    public static final String SELECT_SITUATION_PAR_POINTVENTE = """
+    SELECT p.id AS pointvente_id, p.libele AS pointvente_nom, p.code AS pointvente_code,
+           a.id AS agence_id, a.libele AS agence_nom,
+           d.id AS delegation_id, d.libele AS delegation_nom,
+           la.id AS arrete_id, la.montant, la.statut, la.date_arrete_caisse,
+           la.date_remonte, la.document,
+           u.first_name AS nom_user, u.last_name AS prenom_user,
+           CASE
+               WHEN la.id IS NULL THEN 'JAMAIS_REMONTE'
+               WHEN la.date_arrete_caisse < :dateLimite THEN 'EN_RETARD'
+               WHEN la.statut = 'VALIDE' THEN 'A_JOUR'
+               ELSE 'A_VALIDER'
+           END AS etat,
+           CASE
+               WHEN la.id IS NULL THEN NULL
+               WHEN la.date_arrete_caisse < :dateLimite THEN (:dateLimite - la.date_arrete_caisse)
+               ELSE 0
+           END AS jours_retard
+    FROM pointvente p
+    LEFT JOIN agence a ON a.id = p.agence_id
+    LEFT JOIN delegation d ON d.id = p.delegation_id
+    LEFT JOIN LATERAL (
+        SELECT ac.id, ac.id_user, ac.montant, ac.statut, ac.date_arrete_caisse,
+               ac.date_remonte, ac.document
+        FROM arrete_caisse ac
+        WHERE ac.pointvente_id = p.id
+        ORDER BY ac.date_arrete_caisse DESC, ac.created_at DESC
+        LIMIT 1
+    ) la ON TRUE
+    LEFT JOIN users u ON u.user_id = la.id_user
+    ORDER BY CASE
+                 WHEN la.id IS NULL THEN 0
+                 WHEN la.date_arrete_caisse < :dateLimite THEN 1
+                 WHEN la.statut = 'ENCOURS' THEN 2
+                 ELSE 3
+             END,
+             jours_retard DESC NULLS LAST,
+             pointvente_nom
+    """;
+
+    /**
      * Récupérer tous les arrêtés avec filtres pour le suivi
      */
     public static final String SELECT_ALL_FOR_SUIVI = """
