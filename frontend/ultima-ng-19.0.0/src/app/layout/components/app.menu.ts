@@ -395,6 +395,11 @@ export class AppMenu {
                                                       label: 'Suivi Direction Exploitation',
                                                       icon: 'pi pi-fw pi-chart-line',
                                                       routerLink: ['/dashboards/dg-vue-de']
+                                                  },
+                                                  {
+                                                      label: 'Suivi des Arrêtés de Caisse',
+                                                      icon: 'pi pi-fw pi-money-bill',
+                                                      routerLink: ['/dashboards/suivi-arrete-caisse']
                                                   }
                                               ]
                                             : [])
