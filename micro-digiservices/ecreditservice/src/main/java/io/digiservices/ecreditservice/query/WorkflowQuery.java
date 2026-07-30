@@ -495,6 +495,76 @@ public class WorkflowQuery {
             ORDER BY d.createdat DESC
             """;
 
+    // ==================== DA / DR - SUIVI DES CREDITS DE MON RESEAU ====================
+
+    /**
+     * Suivi reseau (DA = son agence, DR = sa delegation) : tous les dossiers en cours du
+     * circuit + ceux en attente de visa DG, rejetes DG et definitivement valides DE/DG
+     * (VALIDATED_FINAL, limites aux 12 derniers mois). Un seul des deux parametres est
+     * renseigne — agenceId pour un DA, delegationId pour un DR — le perimetre etant impose
+     * cote serveur depuis le compte de l'appelant.
+     */
+    public static final String SELECT_SUIVI_GLOBAL_RESEAU = """
+            SELECT d.demandeindividuel_id AS "demandeIndividuelId",
+                   d.nom, d.prenom, d.telephone,
+                   d.numero_membre AS "numeroMembre",
+                   d.delegation, d.agence, d.pos,
+                   d.montant_demande AS "montantDemande",
+                   d.object_credit AS "objectCredit",
+                   d.validation_state AS "validationState",
+                   d.statut_demande AS "statutDemande",
+                   d.cod_usuarios AS "codUsuarios",
+                   d.avis_agent_credit AS "avisAgentCredit",
+                   d.avis_da AS "avisDa",
+                   d.avis_dr AS "avisDr",
+                   d.avis_de AS "avisDe",
+                   d.avis_dg AS "avisDg",
+                   d.validated_by_da AS "validatedByDa",
+                   d.validated_by_dr AS "validatedByDr",
+                   d.validated_by_de AS "validatedByDe",
+                   d.validated_by_dg AS "validatedByDg",
+                   d.date_validation_da AS "dateValidationDa",
+                   d.date_validation_dr AS "dateValidationDr",
+                   d.date_validation_de AS "dateValidationDe",
+                   d.date_validation_dg AS "dateValidationDg",
+                   d.createdat AS "createdAt",
+                   del.libele AS "delegationLibele",
+                   ag.libele AS "agenceLibele",
+                   pv.libele AS "pointventeLibele",
+                   CASE
+                       WHEN d.validation_state = 'VALIDATED_FINAL' THEN 0
+                       WHEN d.validation_state IN ('NOUVEAU', 'SELECTION', 'RETOUR_AGENT') THEN
+                           (CURRENT_DATE - DATE(d.createdat))
+                       WHEN d.validation_state IN ('APPROVED', 'CORRECTION') THEN
+                           (CURRENT_DATE - DATE(COALESCE(d.date_validation_da, d.createdat)))
+                       WHEN d.validation_state IN ('VALIDATED_DA', 'CORRECTION_DR') THEN
+                           (CURRENT_DATE - DATE(COALESCE(d.date_validation_da, d.createdat)))
+                       WHEN d.validation_state IN ('VALIDATED_DR', 'CORRECTION_DE') THEN
+                           (CURRENT_DATE - DATE(COALESCE(d.date_validation_dr, d.createdat)))
+                       WHEN d.validation_state IN ('PENDING_DG', 'REJETE_DG') THEN
+                           (CURRENT_DATE - DATE(COALESCE(d.date_validation_de, d.createdat)))
+                       ELSE (CURRENT_DATE - DATE(d.createdat))
+                   END AS "joursAttente"
+            FROM demandeindividuel d
+            LEFT JOIN delegation del ON d.delegation = del.id
+            LEFT JOIN agence ag ON d.agence = ag.id
+            LEFT JOIN pointvente pv ON d.pos = pv.id
+            WHERE ((CAST(:agenceId AS BIGINT) IS NOT NULL AND d.agence = CAST(:agenceId AS BIGINT))
+                OR (CAST(:agenceId AS BIGINT) IS NULL AND CAST(:delegationId AS BIGINT) IS NOT NULL
+                    AND d.delegation = CAST(:delegationId AS BIGINT)))
+              AND (
+                    (d.statut_demande = 'EN_ATTENTE' AND d.validation_state IN (
+                        'NOUVEAU', 'SELECTION', 'APPROVED',
+                        'CORRECTION', 'CORRECTION_DR', 'CORRECTION_DE', 'RETOUR_AGENT',
+                        'VALIDATED_DA', 'VALIDATED_DR', 'PENDING_DG', 'REJETE_DG'
+                    ))
+                 OR (d.validation_state = 'VALIDATED_FINAL'
+                     AND COALESCE(d.date_validation_dg, d.date_validation_de, d.createdat)
+                         >= CURRENT_DATE - INTERVAL '12 months')
+              )
+            ORDER BY d.createdat DESC
+            """;
+
     // ==================== DI - INSPECTION (credits valides par le DR) ====================
 
     /**

@@ -4,7 +4,7 @@
     <div class="flex flex-wrap gap-3 items-center justify-between mb-5">
         <h2 class="text-2xl font-semibold m-0">
             <i class="pi pi-chart-bar mr-2 text-primary"></i>
-            Suivi Global des Credits en Cours
+            {{ titre }}
             <p-badge [value]="allDemandes().length.toString()" severity="info" class="ml-2"></p-badge>
         </h2>
         <p-button icon="pi pi-refresh" label="Actualiser" (click)="refreshData()" [loading]="loading()"
@@ -21,7 +21,7 @@
                 severity="secondary" size="small" class="ml-auto"></p-button>
             }
         </div>
-        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; align-items: end;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; align-items: end;">
             <!-- Date debut -->
             <div class="flex flex-col gap-1">
                 <label class="text-xs font-medium text-600">Date debut</label>
@@ -36,20 +36,24 @@
                     dateFormat="dd/mm/yy" [showIcon]="true" placeholder="JJ/MM/AAAA"
                     [style]="{'width': '100%'}" inputStyleClass="w-full"></p-datepicker>
             </div>
-            <!-- Delegation -->
+            <!-- Delegation (vue nationale uniquement) -->
+            @if (showDelegationFilter) {
             <div class="flex flex-col gap-1">
                 <label class="text-xs font-medium text-600">Delegation</label>
                 <p-select [options]="delegationOptions()" [ngModel]="selectedDelegation()"
                     (ngModelChange)="onDelegationChange($event)" optionLabel="label" optionValue="value"
                     placeholder="Toutes" [showClear]="true" [style]="{'width': '100%'}"></p-select>
             </div>
-            <!-- Agence -->
+            }
+            <!-- Agence (masquee pour un DA : une seule agence) -->
+            @if (showAgenceFilter) {
             <div class="flex flex-col gap-1">
                 <label class="text-xs font-medium text-600">Agence</label>
                 <p-select [options]="agenceOptions()" [ngModel]="selectedAgence()"
                     (ngModelChange)="onAgenceChange($event)" optionLabel="label" optionValue="value"
                     placeholder="Toutes" [showClear]="true" [style]="{'width': '100%'}"></p-select>
             </div>
+            }
             <!-- Point de service -->
             <div class="flex flex-col gap-1">
                 <label class="text-xs font-medium text-600">Point de service</label>
@@ -128,6 +132,37 @@
         </div>
         }
     </div>
+
+    <!-- Ligne 3 (mode RESEAU) : En attente DG - Valides DE/DG - Rejetes DG -->
+    @if (profilCountsRow3().length > 0) {
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;" class="mb-5">
+        @for (profil of profilCountsRow3(); track profil.value) {
+        <div class="border rounded-xl p-4 cursor-pointer hover:shadow-lg"
+            [ngClass]="{
+                'bg-yellow-50 border-yellow-200': profil.value === 'PENDING_DG',
+                'bg-teal-50 border-teal-200': profil.value === 'VALIDES',
+                'bg-red-50 border-red-200': profil.value === 'REJETE_DG',
+                'ring-2 ring-primary shadow-md': selectedProfil() === profil.value
+            }"
+            (click)="filterByProfil(profil.value)">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
+                    [ngClass]="{
+                        'bg-yellow-100': profil.value === 'PENDING_DG',
+                        'bg-teal-100': profil.value === 'VALIDES',
+                        'bg-red-100': profil.value === 'REJETE_DG'
+                    }">
+                    <i [ngClass]="profil.icon + ' text-xl ' + profil.color"></i>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-2xl font-bold" [ngClass]="profil.color">{{ profil.count }}</span>
+                    <span class="text-sm font-medium text-700">{{ profil.label }}</span>
+                </div>
+            </div>
+        </div>
+        }
+    </div>
+    }
 
     <!-- Alertes SLA (delais cibles) -->
     <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;" class="mb-5">

@@ -42,6 +42,9 @@ public interface WorkflowService {
     // DE
     List<WorkflowDemandeDto> getAValiderDE();
     List<WorkflowDemandeDto> getSuiviGlobalDE();
+
+    // DA / DR - suivi des credits de leur reseau (agence / delegation)
+    List<WorkflowDemandeDto> getSuiviGlobalReseau(Long delegationId, Long agenceId);
     List<WorkflowDemandeDto> getValidesDE();
 
     // DI - inspection (credits valides par le DR, tout le reseau)

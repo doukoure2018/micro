@@ -192,6 +192,11 @@ public class WorkflowServiceImpl implements WorkflowService {
     }
 
     @Override
+    public List<WorkflowDemandeDto> getSuiviGlobalReseau(Long delegationId, Long agenceId) {
+        return workflowRepository.getSuiviGlobalReseau(delegationId, agenceId);
+    }
+
+    @Override
     public List<WorkflowDemandeDto> getValidesDE() {
         return workflowRepository.getValidesDE();
     }

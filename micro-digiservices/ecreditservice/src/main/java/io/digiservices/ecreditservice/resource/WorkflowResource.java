@@ -3,6 +3,7 @@ package io.digiservices.ecreditservice.resource;
 import io.digiservices.clients.UserClient;
 import io.digiservices.ecreditservice.domain.Response;
 import io.digiservices.ecreditservice.dto.WorkflowApprovalRequest;
+import io.digiservices.ecreditservice.exception.ApiException;
 import io.digiservices.ecreditservice.dto.WorkflowRejetRequest;
 import io.digiservices.ecreditservice.service.WorkflowService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -309,6 +310,33 @@ public class WorkflowResource {
         return ResponseEntity.ok(
                 getResponse(httpRequest, Map.of("workflowDemandes", result),
                         "Suivi global DE récupéré", OK));
+    }
+
+    // ==================== DA / DR - SUIVI DES CREDITS DE MON RESEAU ====================
+
+    /**
+     * Suivi en lecture seule des credits du reseau de l'appelant : un DA voit son agence,
+     * un DR voit sa delegation. Le perimetre est deduit du compte connecte (jamais fourni
+     * par le client) — tout autre role est refuse.
+     */
+    @GetMapping("/suivi-global-reseau")
+    public ResponseEntity<Response> getSuiviGlobalReseau(
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        Long delegationId = null;
+        Long agenceId = null;
+        if ("DA".equals(user.getRole()) && user.getAgenceId() != null) {
+            agenceId = user.getAgenceId();
+        } else if ("DR".equals(user.getRole()) && user.getDelegationId() != null) {
+            delegationId = user.getDelegationId();
+        } else {
+            throw new ApiException("Accès réservé aux DA et DR rattachés à une agence ou une délégation");
+        }
+        var result = workflowService.getSuiviGlobalReseau(delegationId, agenceId);
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("workflowDemandes", result),
+                        "Suivi des crédits du réseau récupéré", OK));
     }
 
     @GetMapping("/valides-de")

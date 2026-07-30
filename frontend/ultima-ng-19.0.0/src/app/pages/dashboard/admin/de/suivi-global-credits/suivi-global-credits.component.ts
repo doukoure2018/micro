@@ -43,6 +43,12 @@ interface ProfilCount {
 })
 export class SuiviGlobalCreditsComponent implements OnInit {
     @Input() user?: IUser;
+    /**
+     * Perimetre de la vue : 'DE' = national (endpoint suivi-global-de, comportement historique),
+     * 'RESEAU' = reseau de l'appelant (DA = son agence, DR = sa delegation), incluant les
+     * dossiers en attente DG, rejetes DG et valides DE/DG.
+     */
+    @Input() scope: 'DE' | 'RESEAU' = 'DE';
     @Input() set creditTypeFilter(value: 'ALL' | 'PETIT' | 'GROS' | undefined) {
         this._creditTypeFilter.set(value || 'ALL');
     }
@@ -59,7 +65,8 @@ export class SuiviGlobalCreditsComponent implements OnInit {
         AGENT: 5,   // instruction / correction par l'agent de credit
         DA: 3,      // validation Directeur d'Agence
         DR: 3,      // validation Delegue Regional
-        DE: 3       // validation Direction de l'Exploitation
+        DE: 3,      // validation Direction de l'Exploitation
+        DG: 5       // visa Direction Generale (credits >= 100M)
     };
 
     allDemandes = signal<any[]>([]);
@@ -215,6 +222,30 @@ export class SuiviGlobalCreditsComponent implements OnInit {
                 icon: 'pi pi-check-circle',
                 color: 'text-indigo-700',
                 bgColor: 'bg-indigo-50 border-indigo-200'
+            },
+            {
+                label: 'En attente visa DG',
+                value: 'PENDING_DG',
+                count: demandes.filter(d => d.validationState === 'PENDING_DG').length,
+                icon: 'pi pi-crown',
+                color: 'text-yellow-700',
+                bgColor: 'bg-yellow-50 border-yellow-200'
+            },
+            {
+                label: 'Validés (DE/DG)',
+                value: 'VALIDES',
+                count: demandes.filter(d => d.validationState === 'VALIDATED_FINAL').length,
+                icon: 'pi pi-verified',
+                color: 'text-teal-700',
+                bgColor: 'bg-teal-50 border-teal-200'
+            },
+            {
+                label: 'Rejetés DG',
+                value: 'REJETE_DG',
+                count: demandes.filter(d => d.validationState === 'REJETE_DG').length,
+                icon: 'pi pi-times-circle',
+                color: 'text-red-700',
+                bgColor: 'bg-red-50 border-red-200'
             }
         ];
     });
@@ -225,6 +256,12 @@ export class SuiviGlobalCreditsComponent implements OnInit {
 
     profilCountsRow2 = computed(() => {
         return this.profilCounts().filter(p => ['CORRECTION_AC', 'CORRECTION_DR', 'CORRECTION_DE', 'VALIDATED_DR'].includes(p.value));
+    });
+
+    /** Ligne supplementaire en mode RESEAU : dossiers au niveau DG et issue finale. */
+    profilCountsRow3 = computed(() => {
+        if (this.scope !== 'RESEAU') return [];
+        return this.profilCounts().filter(p => ['PENDING_DG', 'VALIDES', 'REJETE_DG'].includes(p.value));
     });
 
     filteredDemandes = computed(() => {
@@ -239,7 +276,10 @@ export class SuiviGlobalCreditsComponent implements OnInit {
                 CORRECTION_AC: ['CORRECTION'],
                 CORRECTION_DR: ['CORRECTION_DR'],
                 CORRECTION_DE: ['CORRECTION_DE'],
-                VALIDATED_DR: ['VALIDATED_DR']
+                VALIDATED_DR: ['VALIDATED_DR'],
+                PENDING_DG: ['PENDING_DG'],
+                VALIDES: ['VALIDATED_FINAL'],
+                REJETE_DG: ['REJETE_DG']
             };
             const states = stateMap[profil] || [];
             demandes = demandes.filter(d => states.includes(d.validationState));
@@ -262,13 +302,28 @@ export class SuiviGlobalCreditsComponent implements OnInit {
             this.selectedPointvente() !== null || this.slaFilter() !== 'ALL';
     });
 
+    /** Le filtre Delegation n'a de sens qu'en vue nationale. */
+    get showDelegationFilter(): boolean {
+        return this.scope !== 'RESEAU';
+    }
+
+    /** Le filtre Agence est inutile pour un DA (une seule agence : la sienne). */
+    get showAgenceFilter(): boolean {
+        return this.scope !== 'RESEAU' || this.user?.role === 'DR';
+    }
+
+    get titre(): string {
+        return this.scope === 'RESEAU' ? 'Suivi des Crédits de mon Réseau' : 'Suivi Global des Credits en Cours';
+    }
+
     ngOnInit(): void {
         this.loadSuiviGlobal();
     }
 
     private loadSuiviGlobal(): void {
         this.loading.set(true);
-        this.userService.getSuiviGlobalDE$()
+        const source$ = this.scope === 'RESEAU' ? this.userService.getSuiviGlobalReseau$() : this.userService.getSuiviGlobalDE$();
+        source$
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (response: IResponse) => {
@@ -328,7 +383,11 @@ export class SuiviGlobalCreditsComponent implements OnInit {
             VALIDATED_DR: 'DE (en attente)',
             CORRECTION: 'Correction AC',
             CORRECTION_DR: 'Correction DR',
-            CORRECTION_DE: 'Correction DE'
+            CORRECTION_DE: 'Correction DE',
+            RETOUR_AGENT: 'Renvoyé à l\'agent',
+            PENDING_DG: 'DG (en attente)',
+            VALIDATED_FINAL: 'Validé',
+            REJETE_DG: 'Rejet DG'
         };
         return labels[validationState] || validationState;
     }
@@ -342,7 +401,11 @@ export class SuiviGlobalCreditsComponent implements OnInit {
             VALIDATED_DR: 'contrast',
             CORRECTION: 'danger',
             CORRECTION_DR: 'danger',
-            CORRECTION_DE: 'danger'
+            CORRECTION_DE: 'danger',
+            RETOUR_AGENT: 'danger',
+            PENDING_DG: 'warn',
+            VALIDATED_FINAL: 'success',
+            REJETE_DG: 'danger'
         };
         return severities[validationState] || 'info';
     }
@@ -356,7 +419,11 @@ export class SuiviGlobalCreditsComponent implements OnInit {
             VALIDATED_DR: 'Valide par DR, en attente DE',
             CORRECTION: 'Rejete par DA, en correction AC',
             CORRECTION_DR: 'Rejete par DR, en correction',
-            CORRECTION_DE: 'Rejete par DE, en correction'
+            CORRECTION_DE: 'Rejete par DE, en correction',
+            RETOUR_AGENT: 'Renvoye a l\'agent (erreur de destination)',
+            PENDING_DG: 'Valide par DE, en attente visa DG',
+            VALIDATED_FINAL: 'Credit valide (DE/DG)',
+            REJETE_DG: 'Rejete par DG, confirmation DE en attente'
         };
         return labels[validationState] || validationState;
     }
@@ -371,11 +438,13 @@ export class SuiviGlobalCreditsComponent implements OnInit {
     // ==================== SLA (delais cibles par niveau) ====================
 
     /** Niveau qui detient actuellement le dossier (responsable du delai courant). */
-    niveauResponsable(validationState: string): 'AGENT' | 'DA' | 'DR' | 'DE' {
+    niveauResponsable(validationState: string): 'AGENT' | 'DA' | 'DR' | 'DE' | 'DG' {
         switch (validationState) {
             case 'APPROVED': return 'DA';        // en attente validation DA
             case 'VALIDATED_DA': return 'DR';    // en attente validation DR
             case 'VALIDATED_DR': return 'DE';    // en attente validation DE
+            case 'PENDING_DG': return 'DG';      // en attente visa DG
+            case 'REJETE_DG': return 'DE';       // en attente confirmation du rejet par le DE
             default: return 'AGENT';             // NOUVEAU, SELECTION, CORRECTION*, RETOUR_AGENT
         }
     }

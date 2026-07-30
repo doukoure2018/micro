@@ -323,6 +323,11 @@ export class AppMenu {
                                               label: 'suivi des Arrete de caisse',
                                               icon: 'pi pi-fw pi-money-bill',
                                               routerLink: ['/dashboards/suivi-arrete-caisse']
+                                          },
+                                          {
+                                              label: 'Suivi Crédits de ma délégation',
+                                              icon: 'pi pi-fw pi-chart-line',
+                                              routerLink: ['/dashboards/suivi-credits-reseau']
                                           }
                                       ]
                                     : this.user?.role === 'USER' && this.user?.service === 'Personnel'
@@ -382,6 +387,11 @@ export class AppMenu {
                                                     label: 'Validation Changement Téléphone',
                                                     icon: 'pi pi-fw pi-phone',
                                                     routerLink: ['/dashboards/changement-telephone/da']
+                                                },
+                                                {
+                                                    label: 'Suivi Crédits de mon agence',
+                                                    icon: 'pi pi-fw pi-chart-line',
+                                                    routerLink: ['/dashboards/suivi-credits-reseau']
                                                 }
                                             ]
                                           : this.user?.role === 'DG'

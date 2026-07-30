@@ -56,6 +56,11 @@ export default [
         loadComponent: () => import('./admin/dg/vue-de/vue-de.component').then((c) => c.DgVueDeComponent)
     },
     {
+        path: 'suivi-credits-reseau',
+        data: { breadcrumb: 'Suivi des crédits de mon réseau' },
+        loadComponent: () => import('./admin/reseau/suivi-credits-reseau/suivi-credits-reseau.component').then((c) => c.SuiviCreditsReseauComponent)
+    },
+    {
         path: 'credits-a-valider-dg',
         data: { breadcrumb: 'Crédits à valider (DG)' },
         loadComponent: () => import('./admin/dg/credits-a-valider-dg/credits-a-valider-dg.component').then((c) => c.CreditsAValiderDgComponent)

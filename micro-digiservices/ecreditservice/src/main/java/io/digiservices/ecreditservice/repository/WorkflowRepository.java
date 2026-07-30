@@ -46,6 +46,7 @@ public interface WorkflowRepository {
     // DE lists
     List<WorkflowDemandeDto> getAValiderDE();
     List<WorkflowDemandeDto> getSuiviGlobalDE();
+    List<WorkflowDemandeDto> getSuiviGlobalReseau(Long delegationId, Long agenceId);
     List<WorkflowDemandeDto> getValidesDE();
 
     // DI - inspection (credits valides par le DR, tout le reseau)

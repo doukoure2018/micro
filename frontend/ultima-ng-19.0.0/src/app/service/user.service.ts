@@ -1588,6 +1588,9 @@ export class UserService {
 
     getSuiviGlobalDE$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/suivi-global-de`).pipe(catchError(this.handleError));
 
+    // DA / DR - suivi des credits de leur reseau (perimetre impose cote serveur : agence pour DA, delegation pour DR)
+    getSuiviGlobalReseau$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/suivi-global-reseau`).pipe(catchError(this.handleError));
+
     getValidesDE$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/valides-de`).pipe(catchError(this.handleError));
 
     // DI (Direction Inspection) - credits valides par le DR, tout le reseau

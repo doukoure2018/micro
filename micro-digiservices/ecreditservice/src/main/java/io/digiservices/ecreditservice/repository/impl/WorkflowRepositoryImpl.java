@@ -346,6 +346,21 @@ public class WorkflowRepositoryImpl implements WorkflowRepository {
     }
 
     @Override
+    public List<WorkflowDemandeDto> getSuiviGlobalReseau(Long delegationId, Long agenceId) {
+        try {
+            return jdbcClient.sql(SELECT_SUIVI_GLOBAL_RESEAU)
+                    .param("delegationId", delegationId)
+                    .param("agenceId", agenceId)
+                    .query(WorkflowDemandeDto.class)
+                    .list();
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération du suivi réseau (delegation={}, agence={}): {}",
+                    delegationId, agenceId, e.getMessage());
+            throw new ApiException("Erreur lors de la récupération: " + e.getMessage());
+        }
+    }
+
+    @Override
     public List<WorkflowDemandeDto> getValidesDE() {
         try {
             return jdbcClient.sql(SELECT_VALIDES_DE)
