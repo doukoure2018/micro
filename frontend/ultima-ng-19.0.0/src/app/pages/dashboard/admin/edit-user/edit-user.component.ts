@@ -375,6 +375,36 @@ export class EditUserComponent implements OnInit {
             });
     }
 
+    /** Activer / désactiver le compte de l'utilisateur (action immédiate, indépendante du formulaire). */
+    toggleAccountEnabled(): void {
+        const user = this.state().user;
+        if (!user) return;
+        this.state.update((s) => ({ ...s, submitting: true }));
+        this.userService
+            .toggleUserEnabled$(user.userId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    const updated = response.data?.user as IUser | undefined;
+                    this.state.update((s) => ({
+                        ...s,
+                        user: updated ? { ...s.user!, enabled: updated.enabled } : s.user,
+                        submitting: false
+                    }));
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Succès',
+                        detail: updated?.enabled ? 'Compte activé avec succès' : 'Compte désactivé avec succès',
+                        life: 3000
+                    });
+                },
+                error: (err) => {
+                    this.state.update((s) => ({ ...s, submitting: false }));
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err?.message || 'Échec du changement de statut du compte', life: 5000 });
+                }
+            });
+    }
+
     cancel(): void {
         this.router.navigate(['/dashboards/admin']);
     }

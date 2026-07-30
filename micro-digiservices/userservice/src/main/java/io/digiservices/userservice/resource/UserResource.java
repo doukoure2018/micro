@@ -205,6 +205,19 @@ public class UserResource {
         return ok(getResponse(request, Map.of("user", updatedUser), "User profile updated successfully", OK));
     }
 
+    // Admin update : activer / désactiver le compte d'un utilisateur par son userId
+    @PreAuthorize("hasAuthority('SUPER_ADMIN')")
+    @PatchMapping("/enabled/{userId}")
+    public ResponseEntity<Response> toggleAccountEnabledById(
+            @NotNull Authentication authentication,
+            @PathVariable("userId") Long userId,
+            HttpServletRequest request) {
+        log.info("Admin {} toggling enabled state for user {}", authentication.getName(), userId);
+        var user = userService.toggleAccountEnabledById(userId);
+        return ok(getResponse(request, Map.of("user", user),
+                user.isEnabled() ? "Compte activé avec succès" : "Compte désactivé avec succès", OK));
+    }
+
     // When user is  logged in
     @PatchMapping("/{updateRole}")
     public ResponseEntity<Response> updateRole(@NotNull Authentication authentication, @RequestBody RoleRequest role, HttpServletRequest request) {

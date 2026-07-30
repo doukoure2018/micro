@@ -71,6 +71,12 @@ public class UserServiceImpl  implements UserService {
     }
 
     @Override
+    public User toggleAccountEnabledById(Long userId) {
+        User existing = userRepository.getUserById(userId);
+        return userRepository.toggleAccountEnabled(existing.getUserUuid());
+    }
+
+    @Override
     public void createUser(String firstName, String lastName, String email, String username, String password, String matricule, String phone)
     {
         // firstly get the token

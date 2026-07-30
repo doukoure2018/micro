@@ -1094,6 +1094,10 @@ export class UserService {
     updateUserPasswordById$ = (userId: number, password: string, confirmPassword: string): Observable<IResponse> =>
         this.http.put<IResponse>(`${this.server}/user/password/${userId}`, { password, confirmPassword }).pipe(tap(console.log), catchError(this.handleError));
 
+    /** Admin : activer / désactiver le compte d'un utilisateur par son ID. */
+    toggleUserEnabled$ = (userId: number): Observable<IResponse> =>
+        this.http.patch<IResponse>(`${this.server}/user/enabled/${userId}`, {}).pipe(tap(console.log), catchError(this.handleError));
+
     // ==================== INFO PERSONNEL ====================
 
     /**

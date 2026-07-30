@@ -19,6 +19,18 @@
             <div class="text-sm text-500 mb-2">
                 <i class="pi pi-user mr-1"></i> &#64;{{ state().user!.username }}
             </div>
+            <div class="text-sm mb-3">
+                <span class="font-medium" [ngClass]="state().user!.enabled ? 'text-green-600' : 'text-red-600'">
+                    <i class="pi mr-1" [ngClass]="state().user!.enabled ? 'pi-check-circle' : 'pi-ban'"></i>
+                    {{ state().user!.enabled ? 'Compte actif' : 'Compte désactivé' }}
+                </span>
+            </div>
+            <button pButton pRipple type="button"
+                [label]="state().user!.enabled ? 'Désactiver le compte' : 'Activer le compte'"
+                [icon]="state().user!.enabled ? 'pi pi-ban' : 'pi pi-check-circle'"
+                [class]="state().user!.enabled ? 'p-button-danger p-button-outlined w-full' : 'p-button-success w-full'"
+                [disabled]="state().submitting"
+                (click)="toggleAccountEnabled()"></button>
             @if (state().submitting) {
             <div class="flex justify-center mt-4">
                 <p-progressSpinner [style]="{ width: '50px', height: '50px' }"></p-progressSpinner>
