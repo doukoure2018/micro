@@ -88,9 +88,47 @@ public class UserQuery {
             FROM users u JOIN user_roles ur ON ur.user_id = u.user_id JOIN roles r ON r.role_id = ur.role_id WHERE u.email =:email;
             """;
     public static final String UPDATE_USER_FUNCTION=
-                                """
-                                   SELECT * FROM Users;
-                                """;
+            """
+            WITH updated AS (
+                UPDATE users
+                SET first_name = :firstName,
+                    last_name  = :lastName,
+                    email      = :email,
+                    phone      = :phone,
+                    bio        = :bio,
+                    address    = :address,
+                    updated_at = NOW()
+                WHERE user_uuid = :userUuid
+                RETURNING *
+            )
+            SELECT   r.name AS role,
+            r.authority AS authorities,
+            u.qr_code_image_uri,
+            u.member_id,
+            u.account_non_expired,
+            u.account_non_locked,
+            u.created_at,
+            u.email,
+            u.username,
+            u.enabled,
+            u.first_name,
+            u.user_id,
+            u.image_url,
+            u.last_login,
+            u.last_name,
+            u.updated_at,
+            u.user_uuid,
+            u.bio,
+            u.phone,
+            u.address,
+            u.delegation_id,
+            u.agence_id,
+            u.pointvente_id,
+            u.service,
+            u.is_authorized,
+            u.matricule
+            FROM updated u JOIN user_roles ur ON ur.user_id = u.user_id JOIN roles r ON r.role_id = ur.role_id;
+            """;
     public static final String CREATE_USER_STORED_PROCEDURE=
                                 """
                                    CALL create_user(:userUuid, :firstName, :lastName, :email, :username, :password, :credentialUuid, :token, :memberId, :matricule, :phone)

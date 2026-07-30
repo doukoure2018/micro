@@ -82,6 +82,9 @@ public class UserRepositoryImpl implements UserRepository {
         }catch (EmptyResultDataAccessException exception){
             log.error(exception.getMessage());
             throw  new ApiException("No user found by userUuid");
+        }catch (DuplicateKeyException exception){
+            log.error(exception.getMessage());
+            throw  new ApiException("Email is already in Use. Please try again");
         }catch (Exception e){
             log.error(e.getMessage());
             throw  new ApiException("An error occurred please try again");
