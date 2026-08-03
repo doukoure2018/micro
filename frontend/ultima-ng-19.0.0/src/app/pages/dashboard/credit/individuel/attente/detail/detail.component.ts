@@ -118,7 +118,6 @@ export class DetailComponent {
         showModalRejetBilan: boolean;
         showModalRejetFlux: boolean;
         showWorkflowRejetDA: boolean;
-        showRenvoiAgentDialog: boolean;
         showWorkflowRejetDR: boolean;
     }>({
         loading: false,
@@ -143,7 +142,6 @@ export class DetailComponent {
         showModalRejetBilan: false,
         showModalRejetFlux: false,
         showWorkflowRejetDA: false,
-        showRenvoiAgentDialog: false,
         showWorkflowRejetDR: false
     });
 
@@ -2355,35 +2353,6 @@ export class DetailComponent {
                 error: (err: any) => {
                     this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || 'Erreur lors du rejet', life: 5000 });
                 }
-            });
-    }
-
-    // ==================== RENVOI DA -> AGENT (erreur de destination) ====================
-
-    renvoiAgentMotif = '';
-
-    ouvrirRenvoiAgent(): void {
-        this.renvoiAgentMotif = '';
-        this.state.update(this.mergeState({ showRenvoiAgentDialog: true }));
-    }
-
-    confirmerRenvoiAgent(): void {
-        const demandeId = this.state().demandeIndividuel?.demandeIndividuelId;
-        if (!demandeId) return;
-        if (!this.renvoiAgentMotif?.trim()) {
-            this.messageService.add({ severity: 'warn', summary: 'Motif requis', detail: 'Indiquez le motif du renvoi', life: 3000 });
-            return;
-        }
-        this.userService
-            .renvoyerAgent$(+demandeId, this.renvoiAgentMotif.trim())
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: () => {
-                    this.messageService.add({ severity: 'info', summary: 'Renvoyée', detail: "Demande renvoyée à l'agent de crédit", life: 3000 });
-                    this.state.update(this.mergeState({ showRenvoiAgentDialog: false }));
-                    this.loadDemandeWithGaranties();
-                },
-                error: (err: any) => this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || 'Erreur lors du renvoi', life: 5000 })
             });
     }
 
