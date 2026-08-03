@@ -23,7 +23,10 @@ import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 /**
@@ -131,6 +134,27 @@ public class RegulatoryRepository {
             WHERE dc.COD_CLIENTE = :codCliente
             """;
 
+    // Variantes groupees (enrichissement d'une page entiere en 3 requetes, pas de N+1)
+
+    private static final String SQL_FIND_COMPTES_BULK = """
+            SELECT ce.COD_CLIENTE, ce.NUM_CUENTA, ce.COD_MONEDA, ce.COD_PRODUCTO, ce.IND_ESTADO
+            FROM CC.CC_CUENTA_EFECTIVO ce
+            WHERE ce.COD_CLIENTE IN (:codClientes)
+            """;
+
+    private static final String SQL_FIND_PIECES_BULK = """
+            SELECT id.COD_CLIENTE, id.COD_TIPO_ID, id.NUM_ID, id.FEC_VENCIM
+            FROM CL.CL_ID_CLIENTES id
+            WHERE id.COD_CLIENTE IN (:codClientes)
+            """;
+
+    private static final String SQL_FIND_ADRESSES_BULK = """
+            SELECT dc.COD_CLIENTE, dc.TIP_DIRECCION, dc.DET_DIRECCION, dc.COD_PAIS,
+                   dc.COD_PROVINCIA, dc.COD_CANTON, dc.COD_DISTRITO
+            FROM CL.CL_DIR_CLIENTES dc
+            WHERE dc.COD_CLIENTE IN (:codClientes)
+            """;
+
     // ============================================================
     //  Engagements (PR_CREDITOS)
     // ============================================================
@@ -199,7 +223,18 @@ public class RegulatoryRepository {
 
     public List<RegPersonnePhysiqueDto> findPersonnesPhysiques(int offset, int size) {
         MapSqlParameterSource p = new MapSqlParameterSource().addValue("offset", offset).addValue("size", size);
-        return execute("findPersonnesPhysiques", () -> primary.query(SQL_FIND_PP, p, PP_MAPPER));
+        List<RegPersonnePhysiqueDto> content =
+                execute("findPersonnesPhysiques", () -> primary.query(SQL_FIND_PP, p, PP_MAPPER));
+        List<String> ids = content.stream().map(RegPersonnePhysiqueDto::getCodCliente).toList();
+        Map<String, List<RegCompteDto>> comptes = findComptesByClients(ids);
+        Map<String, List<RegPieceDto>> pieces = findPiecesByClients(ids);
+        Map<String, List<RegAdresseDto>> adresses = findAdressesByClients(ids);
+        content.forEach(d -> {
+            d.setComptes(comptes.getOrDefault(d.getCodCliente(), List.of()));
+            d.setPieces(pieces.getOrDefault(d.getCodCliente(), List.of()));
+            d.setAdresses(adresses.getOrDefault(d.getCodCliente(), List.of()));
+        });
+        return content;
     }
 
     public RegPersonnePhysiqueDto findPersonnePhysiqueById(String codCliente) {
@@ -221,7 +256,18 @@ public class RegulatoryRepository {
 
     public List<RegPersonneMoraleDto> findPersonnesMorales(int offset, int size) {
         MapSqlParameterSource p = new MapSqlParameterSource().addValue("offset", offset).addValue("size", size);
-        return execute("findPersonnesMorales", () -> primary.query(SQL_FIND_PM, p, PM_MAPPER));
+        List<RegPersonneMoraleDto> content =
+                execute("findPersonnesMorales", () -> primary.query(SQL_FIND_PM, p, PM_MAPPER));
+        List<String> ids = content.stream().map(RegPersonneMoraleDto::getCodCliente).toList();
+        Map<String, List<RegCompteDto>> comptes = findComptesByClients(ids);
+        Map<String, List<RegPieceDto>> pieces = findPiecesByClients(ids);
+        Map<String, List<RegAdresseDto>> adresses = findAdressesByClients(ids);
+        content.forEach(d -> {
+            d.setComptes(comptes.getOrDefault(d.getCodCliente(), List.of()));
+            d.setPieces(pieces.getOrDefault(d.getCodCliente(), List.of()));
+            d.setAdresses(adresses.getOrDefault(d.getCodCliente(), List.of()));
+        });
+        return content;
     }
 
     public RegPersonneMoraleDto findPersonneMoraleById(String codCliente) {
@@ -281,6 +327,48 @@ public class RegulatoryRepository {
     private List<RegPieceDto> findPieces(String codCliente) {
         MapSqlParameterSource p = new MapSqlParameterSource("codCliente", codCliente);
         return execute("findPieces", () -> primary.query(SQL_FIND_PIECES, p, PIECE_MAPPER));
+    }
+
+    private Map<String, List<RegCompteDto>> findComptesByClients(List<String> codClientes) {
+        if (codClientes.isEmpty()) return Map.of();
+        MapSqlParameterSource p = new MapSqlParameterSource("codClientes", codClientes);
+        return execute("findComptesByClients", () -> {
+            Map<String, List<RegCompteDto>> map = new HashMap<>();
+            primary.query(SQL_FIND_COMPTES_BULK, p, rs -> {
+                map.computeIfAbsent(str(rs, "COD_CLIENTE"), k -> new ArrayList<>())
+                        .add(new RegCompteDto(str(rs, "NUM_CUENTA"), str(rs, "COD_MONEDA"),
+                                str(rs, "COD_PRODUCTO"), str(rs, "IND_ESTADO")));
+            });
+            return map;
+        });
+    }
+
+    private Map<String, List<RegPieceDto>> findPiecesByClients(List<String> codClientes) {
+        if (codClientes.isEmpty()) return Map.of();
+        MapSqlParameterSource p = new MapSqlParameterSource("codClientes", codClientes);
+        return execute("findPiecesByClients", () -> {
+            Map<String, List<RegPieceDto>> map = new HashMap<>();
+            primary.query(SQL_FIND_PIECES_BULK, p, rs -> {
+                map.computeIfAbsent(str(rs, "COD_CLIENTE"), k -> new ArrayList<>())
+                        .add(new RegPieceDto(str(rs, "COD_TIPO_ID"), str(rs, "NUM_ID"), dt(rs, "FEC_VENCIM")));
+            });
+            return map;
+        });
+    }
+
+    private Map<String, List<RegAdresseDto>> findAdressesByClients(List<String> codClientes) {
+        if (codClientes.isEmpty()) return Map.of();
+        MapSqlParameterSource p = new MapSqlParameterSource("codClientes", codClientes);
+        return execute("findAdressesByClients", () -> {
+            Map<String, List<RegAdresseDto>> map = new HashMap<>();
+            primary.query(SQL_FIND_ADRESSES_BULK, p, rs -> {
+                map.computeIfAbsent(str(rs, "COD_CLIENTE"), k -> new ArrayList<>())
+                        .add(new RegAdresseDto(str(rs, "TIP_DIRECCION"), str(rs, "DET_DIRECCION"),
+                                str(rs, "COD_PAIS"), str(rs, "COD_PROVINCIA"),
+                                str(rs, "COD_CANTON"), str(rs, "COD_DISTRITO")));
+            });
+            return map;
+        });
     }
 
     // ============================================================
