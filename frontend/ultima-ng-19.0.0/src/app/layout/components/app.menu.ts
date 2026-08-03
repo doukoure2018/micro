@@ -414,6 +414,17 @@ export class AppMenu {
                                               ]
                                             : [])
                 ]
+            },
+            {
+                label: 'Aide',
+                icon: 'pi pi-question-circle',
+                items: [
+                    {
+                        label: "Guide d'utilisation — Circuit de crédit",
+                        icon: 'pi pi-fw pi-book',
+                        routerLink: ['/dashboards/guide-circuit-credit']
+                    }
+                ]
             }
         ];
     }

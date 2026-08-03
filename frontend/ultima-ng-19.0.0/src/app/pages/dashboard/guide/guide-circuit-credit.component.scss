@@ -1,0 +1,325 @@
+.guide-wrapper {
+    max-width: 1100px;
+    margin: 0 auto;
+
+    h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 0 0 0.25rem;
+        color: var(--text-color);
+    }
+
+    h2 {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-size: 1.2rem;
+        font-weight: 700;
+        margin: 0 0 1rem;
+        color: var(--text-color);
+
+        .num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.9rem;
+            height: 1.9rem;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: var(--primary-color-text);
+            font-size: 0.95rem;
+            flex-shrink: 0;
+        }
+    }
+
+    h3 {
+        font-size: 1.02rem;
+        font-weight: 600;
+        margin: 1.25rem 0 0.5rem;
+        color: var(--text-color);
+    }
+
+    p,
+    li {
+        line-height: 1.65;
+        color: var(--text-color-secondary);
+    }
+
+    code {
+        background: var(--surface-100);
+        border: 1px solid var(--surface-border);
+        border-radius: 4px;
+        padding: 0.1rem 0.35rem;
+        font-size: 0.85em;
+        color: var(--text-color);
+    }
+}
+
+/* ---------- En-tête ---------- */
+.guide-hero {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    border-left: 6px solid var(--primary-color);
+
+    .subtitle {
+        font-size: 1.05rem;
+        font-weight: 500;
+        color: var(--text-color);
+        margin: 0 0 0.35rem;
+    }
+
+    .meta {
+        font-size: 0.85rem;
+        color: var(--text-color-secondary);
+        margin: 0;
+    }
+}
+
+/* ---------- Diagramme du circuit ---------- */
+.circuit-flow {
+    display: flex;
+    align-items: stretch;
+    gap: 0.5rem;
+    margin: 1.5rem 0;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+
+    .flow-arrow {
+        align-self: center;
+        color: var(--text-color-secondary);
+        flex-shrink: 0;
+    }
+
+    .flow-step {
+        flex: 1 1 0;
+        min-width: 165px;
+        border: 1px solid var(--surface-border);
+        border-radius: 10px;
+        padding: 0.9rem 0.8rem;
+        text-align: center;
+        background: var(--surface-card);
+
+        .flow-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.4rem;
+            height: 2.4rem;
+            border-radius: 50%;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 0.5rem;
+
+            &.ac { background: #0ea5e9; }
+            &.da { background: #8b5cf6; }
+            &.dr { background: #f59e0b; }
+            &.de { background: #10b981; }
+            &.dg { background: #ef4444; }
+        }
+
+        .flow-title {
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 0.4rem;
+            font-size: 0.92rem;
+        }
+
+        .flow-states {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            justify-content: center;
+            margin-bottom: 0.4rem;
+        }
+
+        .flow-desc {
+            font-size: 0.8rem;
+            color: var(--text-color-secondary);
+        }
+    }
+}
+
+/* ---------- Badges d'état ---------- */
+.state {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+
+    &.nouveau   { background: #e0f2fe; color: #075985; }
+    &.selection { background: #ede9fe; color: #5b21b6; }
+    &.approved  { background: #dbeafe; color: #1e40af; }
+    &.validated { background: #d1fae5; color: #065f46; }
+    &.pending   { background: #fef3c7; color: #92400e; }
+    &.final     { background: #059669; color: #ffffff; }
+    &.correction{ background: #fee2e2; color: #991b1b; }
+    &.retour    { background: #ffedd5; color: #9a3412; }
+    &.rejete    { background: #b91c1c; color: #ffffff; }
+    &.attente   { background: var(--surface-200); color: var(--text-color); }
+}
+
+/* ---------- Tables ---------- */
+.table-scroll {
+    overflow-x: auto;
+}
+
+.guide-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+
+    th,
+    td {
+        border: 1px solid var(--surface-border);
+        padding: 0.6rem 0.75rem;
+        text-align: left;
+        vertical-align: top;
+        color: var(--text-color-secondary);
+    }
+
+    th {
+        background: var(--surface-100);
+        color: var(--text-color);
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    tbody tr:nth-child(even) {
+        background: var(--surface-50);
+    }
+}
+
+/* ---------- Encadrés ---------- */
+.note {
+    display: flex;
+    gap: 0.6rem;
+    align-items: flex-start;
+    background: var(--surface-50);
+    border: 1px solid var(--surface-border);
+    border-left: 4px solid var(--primary-color);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-top: 1rem;
+
+    i {
+        color: var(--primary-color);
+        margin-top: 0.2rem;
+    }
+}
+
+.seuil-box {
+    border: 1px solid var(--surface-border);
+    border-radius: 10px;
+    padding: 1rem;
+    margin: 0.75rem 0 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    background: var(--surface-50);
+
+    .seuil-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+
+        .seuil-cond {
+            font-family: monospace;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .seuil-effet {
+            color: var(--text-color-secondary);
+            font-size: 0.88rem;
+        }
+
+        i {
+            color: var(--text-color-secondary);
+        }
+    }
+}
+
+.volet-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.6rem;
+    margin: 0.5rem 0 0.75rem;
+
+    .volet {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        border: 1px solid var(--surface-border);
+        border-radius: 8px;
+        padding: 0.7rem 0.9rem;
+        font-weight: 500;
+        color: var(--text-color);
+        background: var(--surface-card);
+
+        i {
+            color: var(--primary-color);
+        }
+    }
+}
+
+/* ---------- Points forts / axes ---------- */
+.grid-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+
+    @media (max-width: 900px) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.points-forts-icon { color: #059669; }
+.axes-icon        { color: #d97706; }
+
+.fancy-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+
+    li {
+        position: relative;
+        padding: 0.45rem 0 0.45rem 1.6rem;
+
+        &::before {
+            position: absolute;
+            left: 0;
+            top: 0.55rem;
+            font-family: 'primeicons';
+            font-size: 0.85rem;
+        }
+    }
+
+    &.forts li::before {
+        content: '\e909'; /* pi-check */
+        color: #059669;
+    }
+
+    &.axes li::before {
+        content: '\e922'; /* pi-exclamation-triangle */
+        color: #d97706;
+    }
+}
+
+/* ---------- Impression ---------- */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+
+    .guide-wrapper .card {
+        box-shadow: none;
+        border: none;
+        page-break-inside: avoid;
+    }
+}

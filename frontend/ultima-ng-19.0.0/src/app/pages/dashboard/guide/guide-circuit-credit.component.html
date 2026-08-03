@@ -1,0 +1,409 @@
+<div class="guide-wrapper">
+    <!-- En-tête -->
+    <div class="guide-hero card">
+        <div class="guide-hero-text">
+            <h1>Guide d'utilisation — Circuit de traitement d'une demande de crédit</h1>
+            <p class="subtitle">De la mise en place par l'Agent de Crédit jusqu'à la validation de la Direction Générale</p>
+            <p class="meta">Crédit Rural de Guinée — Plateforme digitale de crédit (e-Crédit) · Document établi le 26 juillet 2026</p>
+        </div>
+        <button pButton type="button" icon="pi pi-print" label="Imprimer / PDF" class="p-button-outlined no-print" (click)="imprimer()"></button>
+    </div>
+
+    <!-- 1. Vue d'ensemble -->
+    <div class="card">
+        <h2><span class="num">1</span> Vue d'ensemble du circuit</h2>
+        <p>
+            Le traitement d'une demande de crédit individuel suit un circuit de validation hiérarchique à <strong>cinq niveaux</strong>, entièrement digitalisé. Chaque dossier est matérialisé par un état
+            (<code>validation_state</code>) qui trace précisément sa position dans le circuit.
+        </p>
+
+        <div class="circuit-flow">
+            <div class="flow-step">
+                <div class="flow-badge ac">AC</div>
+                <div class="flow-title">Agent de Crédit</div>
+                <div class="flow-states"><span class="state nouveau">NOUVEAU</span> <span class="state selection">SELECTION</span> <span class="state approved">APPROVED</span></div>
+                <div class="flow-desc">Création · Analyse · Approbation</div>
+            </div>
+            <i class="pi pi-arrow-right flow-arrow"></i>
+            <div class="flow-step">
+                <div class="flow-badge da">DA</div>
+                <div class="flow-title">Directeur d'Agence</div>
+                <div class="flow-states"><span class="state validated">VALIDATED_DA</span></div>
+                <div class="flow-desc">1er contrôle (agence)</div>
+            </div>
+            <i class="pi pi-arrow-right flow-arrow"></i>
+            <div class="flow-step">
+                <div class="flow-badge dr">DR</div>
+                <div class="flow-title">Délégué Régional</div>
+                <div class="flow-states"><span class="state validated">VALIDATED_DR</span></div>
+                <div class="flow-desc">2e contrôle (délégation)</div>
+            </div>
+            <i class="pi pi-arrow-right flow-arrow"></i>
+            <div class="flow-step">
+                <div class="flow-badge de">DE</div>
+                <div class="flow-title">Direction Exploitation</div>
+                <div class="flow-states"><span class="state final">&lt; 100M → VALIDATED_FINAL</span> <span class="state pending">≥ 100M → PENDING_DG</span></div>
+                <div class="flow-desc">Validation nationale / aiguillage</div>
+            </div>
+            <i class="pi pi-arrow-right flow-arrow"></i>
+            <div class="flow-step">
+                <div class="flow-badge dg">DG</div>
+                <div class="flow-title">Direction Générale</div>
+                <div class="flow-states"><span class="state final">VALIDATED_FINAL</span></div>
+                <div class="flow-desc">Visa des crédits ≥ 100M GNF</div>
+            </div>
+        </div>
+
+        <p class="note">
+            <i class="pi pi-info-circle"></i>
+            À chaque niveau, le valideur peut <strong>valider</strong> (le dossier monte), <strong>rejeter</strong> (le dossier redescend en correction avec motif, sections à revoir et instructions), et — pour le DA
+            uniquement — <strong>renvoyer à l'agent</strong> en cas d'erreur de destination. Chaque action est horodatée et nominative, garantissant une traçabilité complète.
+        </p>
+    </div>
+
+    <!-- 2. Acteurs -->
+    <div class="card">
+        <h2><span class="num">2</span> Acteurs et responsabilités</h2>
+        <div class="table-scroll">
+            <table class="guide-table">
+                <thead>
+                    <tr>
+                        <th>Acteur</th>
+                        <th>Rôle système</th>
+                        <th>Périmètre</th>
+                        <th>Responsabilité</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Agent de Crédit (AC)</strong></td>
+                        <td><code>AGENT_CREDIT</code></td>
+                        <td>Son point de vente</td>
+                        <td>Création du dossier, analyse financière, approbation initiale, corrections</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Directeur d'Agence (DA)</strong></td>
+                        <td><code>DA</code></td>
+                        <td>Son agence</td>
+                        <td>1er contrôle : cohérence du dossier et de l'analyse</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Délégué Régional (DR)</strong></td>
+                        <td><code>DR</code></td>
+                        <td>Sa délégation</td>
+                        <td>2e contrôle : validation régionale</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Direction de l'Exploitation (DE)</strong></td>
+                        <td><code>MANAGER</code> + service <code>DE</code></td>
+                        <td><strong>National</strong></td>
+                        <td>Validation finale (&lt; 100M) ou transmission au DG (≥ 100M) ; supervision globale</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Directeur Général (DG)</strong></td>
+                        <td><code>DG</code></td>
+                        <td>National</td>
+                        <td>Visa des gros crédits (≥ 100 000 000 GNF)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Direction de l'Inspection (DI)</strong></td>
+                        <td><code>MANAGER</code> + service <code>DI</code></td>
+                        <td>National</td>
+                        <td>Consultation de tous les crédits validés DR (lecture seule)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 3. Étape 1 : Agent de crédit -->
+    <div class="card">
+        <h2><span class="num">3</span> Étape 1 — Mise en place par l'Agent de Crédit</h2>
+
+        <h3>3.1 Création de la demande</h3>
+        <p>L'agent saisit la demande depuis son espace sécurisé (« Nouvelle demande de crédit », accès réservé au rôle AGENT_CREDIT). Le formulaire couvre l'intégralité du dossier :</p>
+        <ul>
+            <li><strong>Identification du membre</strong> : nom, prénom, téléphone, numéro de membre, date/lieu de naissance, genre, situation matrimoniale, pièce d'identité ;</li>
+            <li><strong>Rattachement réseau</strong> : délégation → agence → point de vente ;</li>
+            <li><strong>Situation personnelle</strong> : personnes à charge, scolarisées, type de propriété, ancienneté d'habitation ;</li>
+            <li><strong>Activité économique</strong> : type/sous-type d'activité, description, ancienneté, localisation ;</li>
+            <li><strong>Modalités du crédit sollicité</strong> : montant, durée, périodicité, taux, différé, nombre d'échéances, objet du crédit ;</li>
+            <li><strong>Garanties proposées</strong> : type, description et valeur de chaque garantie.</li>
+        </ul>
+        <p>
+            À la création : <span class="state attente">EN_ATTENTE</span> + <span class="state nouveau">NOUVEAU</span>
+        </p>
+
+        <h3>3.2 Sélection (prise en charge)</h3>
+        <p>
+            La demande nouvellement créée est <strong>prise en charge</strong> (état <span class="state selection">SELECTION</span>) : l'agent s'affecte le dossier pour instruction. Une affectation peut être
+            <strong>annulée</strong> (retour à <span class="state nouveau">NOUVEAU</span>) tant que l'analyse n'est pas engagée.
+        </p>
+
+        <h3>3.3 Analyse financière</h3>
+        <p>L'agent instruit ensuite le dossier à travers quatre volets d'analyse :</p>
+        <div class="volet-grid">
+            <div class="volet"><i class="pi pi-briefcase"></i> Analyse du bilan de l'activité</div>
+            <div class="volet"><i class="pi pi-chart-line"></i> Analyse des flux de trésorerie</div>
+            <div class="volet"><i class="pi pi-file"></i> Résumé de l'analyse financière</div>
+            <div class="volet"><i class="pi pi-users"></i> Personnes caution</div>
+        </div>
+
+        <h3>3.4 Approbation par l'agent</h3>
+        <p>
+            L'agent formule son <strong>avis</strong> et approuve le dossier → état <span class="state approved">APPROVED</span>. Son nom complet est enregistré comme créateur, ce qui servira à lui réadresser le dossier
+            en cas de correction ou de renvoi.
+        </p>
+        <p class="note">
+            <i class="pi pi-shield"></i>
+            <strong>Garde-fou anti-oubli</strong> : un dossier dont l'analyse financière est soumise mais non approuvée remonte automatiquement en tête du tableau de bord de l'agent dans une section « Demandes à
+            approuver » — le dossier ne peut pas être oublié en cours de route.
+        </p>
+    </div>
+
+    <!-- 4. Étape 2 : DA -->
+    <div class="card">
+        <h2><span class="num">4</span> Étape 2 — Validation du Directeur d'Agence (DA)</h2>
+        <p>Le DA voit les dossiers <span class="state approved">APPROVED</span> <strong>de son agence uniquement</strong>, avec l'avis de l'agent. Depuis le détail du dossier, trois décisions possibles :</p>
+        <div class="table-scroll">
+            <table class="guide-table">
+                <thead>
+                    <tr>
+                        <th>Décision</th>
+                        <th>Effet</th>
+                        <th>État résultant</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Valider</strong> (avis obligatoire)</td>
+                        <td>Le dossier monte au DR ; horodatage + nom du DA</td>
+                        <td><span class="state validated">VALIDATED_DA</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Rejeter</strong> (motif + sections à revoir + instructions)</td>
+                        <td>Retour à l'agent pour correction</td>
+                        <td><span class="state correction">CORRECTION</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Renvoyer à l'agent</strong> (motif)</td>
+                        <td>Cas particulier : le dossier a été adressé au <strong>mauvais DA</strong> (erreur de délégation/agence/PDV)</td>
+                        <td><span class="state retour">RETOUR_AGENT</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <p>
+            Dans le cas du <strong>renvoi</strong>, l'agent créateur retrouve le dossier dans une section « Demandes renvoyées », <strong>corrige la destination</strong> (délégation/agence/point de vente en cascade) et
+            resoumet : le dossier repart en <span class="state approved">APPROVED</span> vers le bon DA — sans ressaisie du dossier.
+        </p>
+    </div>
+
+    <!-- 5. Étape 3 : DR -->
+    <div class="card">
+        <h2><span class="num">5</span> Étape 3 — Validation du Délégué Régional (DR)</h2>
+        <p>Le DR voit les dossiers <span class="state validated">VALIDATED_DA</span> <strong>de sa délégation</strong>, avec l'historique des avis (agent + DA). Deux décisions :</p>
+        <ul>
+            <li><strong>Valider</strong> → <span class="state validated">VALIDATED_DR</span> (le dossier monte au DE), horodaté et nominatif ;</li>
+            <li>
+                <strong>Rejeter</strong> (motif + sections + instructions au DA) → <span class="state correction">CORRECTION_DR</span> : le dossier redescend, le DA et l'agent voient le retour du DR et le dossier est
+                corrigé puis re-validé par le DA.
+            </li>
+        </ul>
+        <p class="note">
+            <i class="pi pi-eye"></i>
+            C'est l'étape DR qui alimente également l'<strong>environnement d'inspection (DI)</strong> : tout crédit ayant franchi ce niveau devient visible par la Direction de l'Inspection, sur tout le réseau.
+        </p>
+    </div>
+
+    <!-- 6. Étape 4 : DE -->
+    <div class="card">
+        <h2><span class="num">6</span> Étape 4 — Validation de la Direction de l'Exploitation (DE)</h2>
+        <p>Le DE opère à l'échelle <strong>nationale</strong> avec trois outils :</p>
+        <ol>
+            <li><strong>File « À valider DE »</strong> : tous les dossiers <span class="state validated">VALIDATED_DR</span> du réseau, présentés par délégation ;</li>
+            <li><strong>Suivi global des crédits</strong> : tableau de bord de toutes les demandes en cours, avec <strong>calcul du délai d'attente par étape</strong>, filtres par délégation/agence/PDV ;</li>
+            <li><strong>Historique « Crédits validés DE »</strong>.</li>
+        </ol>
+
+        <h3>6.1 La règle du seuil de 100 millions</h3>
+        <div class="seuil-box">
+            <div class="seuil-row">
+                <span class="seuil-cond">montant ≥ 100 000 000 GNF</span>
+                <i class="pi pi-arrow-right"></i>
+                <span class="state pending">PENDING_DG</span>
+                <span class="seuil-effet">visa DG requis</span>
+            </div>
+            <div class="seuil-row">
+                <span class="seuil-cond">montant &lt; 100 000 000 GNF</span>
+                <i class="pi pi-arrow-right"></i>
+                <span class="state final">VALIDATED_FINAL</span>
+                <span class="seuil-effet">crédit définitivement validé</span>
+            </div>
+        </div>
+        <p>En cas de <strong>rejet DE</strong> (motif + sections + instructions au DR) → <span class="state correction">CORRECTION_DE</span>, visible par le DR et par l'agent pour correction.</p>
+
+        <h3>6.2 Aide à la décision : la synthèse enrichie</h3>
+        <p>Au moment de statuer, le DE (et le DG) dispose d'une <strong>synthèse consolidée du dossier</strong>, croisant les données saisies avec les <strong>données réelles du système bancaire (SAF2000)</strong> :</p>
+        <ol>
+            <li><strong>Ancienneté du membre</strong> — date d'adhésion réelle dans l'institution ;</li>
+            <li><strong>Comptes d'épargne du client</strong> — comptes et soldes (disponible, moyen, gelé), plus les <strong>mouvements dépôts/retraits sur 6 mois glissants</strong> par compte ;</li>
+            <li>
+                <strong>Situation des crédits antérieurs + score de confiance</strong> — historique complet des crédits, avec un <strong>score gradué</strong> calculé sur le comportement de remboursement (≤ 5 j = 100, ≤
+                30 j = 70, ≤ 90 j = 40, &gt; 90 j = 10/0, pondération ×2 des 18 derniers mois) ;
+            </li>
+            <li><strong>Comparatif dernier crédit vs demande actuelle</strong> — pour situer la nouvelle sollicitation dans la trajectoire du client.</li>
+        </ol>
+        <p class="note">
+            <i class="pi pi-database"></i>
+            La synthèse regroupe aussi les garanties, cautions, documents, la trésorerie prévisionnelle et l'ensemble des avis émis. En cas d'indisponibilité de la liaison bancaire, ces sections se masquent proprement
+            sans bloquer la validation (dégradation gracieuse).
+        </p>
+    </div>
+
+    <!-- 7. Étape 5 : DG -->
+    <div class="card">
+        <h2><span class="num">7</span> Étape 5 — Visa de la Direction Générale (DG, crédits ≥ 100M)</h2>
+        <p>
+            Le DG dispose d'un espace dédié « Crédits à valider (≥ 100M) » listant les dossiers <span class="state pending">PENDING_DG</span> <strong>triés par montant décroissant</strong>, avec l'historique complet des
+            avis (agent, DA, DR, DE). Deux décisions :
+        </p>
+        <ul>
+            <li><strong>Valider</strong> (avis) → <span class="state final">VALIDATED_FINAL</span> : le crédit est définitivement approuvé ;</li>
+            <li><strong>Rejeter</strong> (motif libre) → <span class="state rejete">REJETE_DG</span>.</li>
+        </ul>
+
+        <h3>7.1 Le circuit de rejet DG — double contrôle</h3>
+        <p>
+            Un rejet DG <strong>ne redescend pas directement</strong> à l'agent : il passe par une <strong>confirmation du DE</strong> (« Rejets DG à confirmer »). Le DE prend connaissance du motif du DG, formule ses
+            <strong>instructions</strong> et confirme → le dossier repart en <span class="state correction">CORRECTION</span> chez l'agent créateur. Ce maillon garantit que la Direction de l'Exploitation reste informée
+            et cadre la reprise du dossier.
+        </p>
+        <p class="note">
+            <i class="pi pi-eye"></i>
+            Le DG dispose en outre d'une <strong>vue miroir en lecture seule</strong> du tableau de bord du DE (« Suivi Direction Exploitation »), lui donnant la même visibilité sans capacité d'action sur les dossiers de
+            niveau DE.
+        </p>
+    </div>
+
+    <!-- 8. Table des états -->
+    <div class="card">
+        <h2><span class="num">8</span> Table de référence des états</h2>
+        <div class="table-scroll">
+            <table class="guide-table">
+                <thead>
+                    <tr>
+                        <th>État</th>
+                        <th>Posé par</th>
+                        <th>Signification</th>
+                        <th>Prochain acteur</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="state nouveau">NOUVEAU</span></td>
+                        <td>Création (AC)</td>
+                        <td>Demande créée, non prise en charge</td>
+                        <td>AC</td>
+                    </tr>
+                    <tr>
+                        <td><span class="state selection">SELECTION</span></td>
+                        <td>AC</td>
+                        <td>En cours d'instruction (analyse financière)</td>
+                        <td>AC</td>
+                    </tr>
+                    <tr>
+                        <td><span class="state approved">APPROVED</span></td>
+                        <td>AC (approbation)</td>
+                        <td>Analysée et approuvée par l'agent</td>
+                        <td>DA</td>
+                    </tr>
+                    <tr>
+                        <td><span class="state validated">VALIDATED_DA</span></td>
+                        <td>DA</td>
+                        <td>Validée par l'agence</td>
+                        <td>DR</td>
+                    </tr>
+                    <tr>
+                        <td><span class="state validated">VALIDATED_DR</span></td>
+                        <td>DR</td>
+                        <td>Validée par la délégation</td>
+                        <td>DE</td>
+                    </tr>
+                    <tr>
+                        <td><span class="state pending">PENDING_DG</span></td>
+                        <td>DE (≥ 100M)</td>
+                        <td>Validée DE, en attente de visa DG</td>
+                        <td>DG</td>
+                    </tr>
+                    <tr>
+                        <td><span class="state final">VALIDATED_FINAL</span></td>
+                        <td>DE (&lt; 100M) ou DG</td>
+                        <td><strong>Crédit définitivement validé</strong></td>
+                        <td>— (mise en place)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="state correction">CORRECTION</span></td>
+                        <td>Rejet DA ou rejet DG confirmé</td>
+                        <td>À corriger par l'agent</td>
+                        <td>AC</td>
+                    </tr>
+                    <tr>
+                        <td><span class="state correction">CORRECTION_DR</span></td>
+                        <td>Rejet DR</td>
+                        <td>À corriger (retour visible DA + AC)</td>
+                        <td>AC → DA</td>
+                    </tr>
+                    <tr>
+                        <td><span class="state correction">CORRECTION_DE</span></td>
+                        <td>Rejet DE</td>
+                        <td>À corriger (retour visible DR + AC)</td>
+                        <td>AC → DR</td>
+                    </tr>
+                    <tr>
+                        <td><span class="state retour">RETOUR_AGENT</span></td>
+                        <td>Renvoi DA</td>
+                        <td>Erreur de destination à corriger</td>
+                        <td>AC</td>
+                    </tr>
+                    <tr>
+                        <td><span class="state rejete">REJETE_DG</span></td>
+                        <td>Rejet DG</td>
+                        <td>En attente de confirmation du DE</td>
+                        <td>DE</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="note">
+            <i class="pi pi-history"></i>
+            Chaque niveau conserve ses colonnes propres : <code>avis_X</code>, <code>validated_by_X</code>, <code>date_validation_X</code>, <code>motif_rejet_X</code>, <code>sections_a_revoir_X</code>,
+            <code>instructions_X</code> — l'historique complet du dossier est reconstituable à tout moment.
+        </p>
+    </div>
+
+    <!-- 9 & 10. Points forts / axes -->
+    <div class="grid-2col">
+        <div class="card">
+            <h2><i class="pi pi-check-circle points-forts-icon"></i> Points forts du dispositif</h2>
+            <ul class="fancy-list forts">
+                <li><strong>Traçabilité intégrale</strong> : chaque décision est nominative, horodatée et motivée ; les avis de tous les niveaux restent attachés au dossier.</li>
+                <li><strong>Séparation des pouvoirs</strong> : quatre regards indépendants (AC, DA, DR, DE) + un cinquième pour les grands engagements (DG), avec des périmètres étanches.</li>
+                <li><strong>Boucles de correction ciblées</strong> : le rejet précise motif, sections à revoir et instructions ; le dossier corrigé reprend le circuit sans ressaisie.</li>
+                <li><strong>Gestion des erreurs d'aiguillage</strong> : le renvoi à l'agent traite proprement le cas du dossier adressé à la mauvaise agence.</li>
+                <li><strong>Aide à la décision objective</strong> : la synthèse enrichie ancre la décision dans les données réelles de production du système bancaire.</li>
+                <li><strong>Garde-fous opérationnels</strong> : rappel « à approuver » côté agent, suivi global DE avec délais d'attente, double contrôle DE sur les rejets DG.</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h2><i class="pi pi-wrench axes-icon"></i> Axes d'amélioration identifiés</h2>
+            <ul class="fancy-list axes">
+                <li><strong>Notifications</strong> : aucune notification automatique (e-mail/SMS) aux changements d'état — notifier l'acteur suivant accélérerait le cycle.</li>
+                <li><strong>Contrainte d'intégrité des états</strong> : <code>validation_state</code> est un champ libre en base ; une contrainte le sécuriserait.</li>
+                <li><strong>Délais cibles (SLA)</strong> : aucun seuil d'alerte n'est défini (ex. dossier &gt; N jours au même niveau → alerte).</li>
+                <li><strong>Délégation de signature</strong> : en cas d'absence d'un valideur (DA/DR), aucun mécanisme d'intérim n'existe.</li>
+                <li><strong>Tableau de bord DG dédié aux volumes</strong> : un cumul des engagements approuvés par période compléterait la vue du DG.</li>
+            </ul>
+        </div>
+    </div>
+</div>

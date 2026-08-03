@@ -3,7 +3,6 @@ import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
 import { AfterViewInit, Component, ElementRef, inject, NgZone, signal, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { DropdownModule } from 'primeng/dropdown';
 import * as L from 'leaflet';
@@ -11,7 +10,7 @@ import * as L from 'leaflet';
 @Component({
     selector: 'app-ajout-point',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterLink, ButtonModule, DropdownModule],
+    imports: [CommonModule, FormsModule, ButtonModule, DropdownModule],
     templateUrl: './ajout-point.component.html',
     styleUrl: './ajout-point.component.scss'
 })

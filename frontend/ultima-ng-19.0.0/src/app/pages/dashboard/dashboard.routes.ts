@@ -340,5 +340,10 @@ export default [
         path: 'inspection-credits',
         data: { breadcrumb: 'Inspection - Credits valides DR' },
         loadComponent: () => import('./admin/di/inspection-credits/inspection-credits.component').then((c) => c.InspectionCreditsComponent)
+    },
+    {
+        path: 'guide-circuit-credit',
+        data: { breadcrumb: "Guide d'utilisation - Circuit de crédit" },
+        loadComponent: () => import('./guide/guide-circuit-credit.component').then((c) => c.GuideCircuitCreditComponent)
     }
 ] as Routes;
