@@ -1,5 +1,6 @@
 package io.digiservices.ecreditservice.service;
 
+import io.digiservices.ecreditservice.dto.AgentAgenceDto;
 import io.digiservices.ecreditservice.dto.WorkflowDemandeDto;
 import io.digiservices.ecreditservice.dto.WorkflowRejetRequest;
 
@@ -8,7 +9,7 @@ import java.util.List;
 public interface WorkflowService {
 
     // AC
-    void approuverAC(Long demandeId, String avis, String codUsuarios);
+    void approuverAC(Long demandeId, String avis, String codUsuarios, Long userId);
 
     // DA
     List<WorkflowDemandeDto> getAValiderDA(Long agenceId);
@@ -21,13 +22,13 @@ public interface WorkflowService {
     List<WorkflowDemandeDto> getRenvoyeesAC(String codUsuarios);
     void resoumettreDA(Long demandeId, Long delegation, Long agence, Long pos);
 
-    // AC lists
-    List<WorkflowDemandeDto> getEnCorrectionAC(Long agenceId, Long pointventeId);
-    List<WorkflowDemandeDto> getEnCorrectionDRForAC(Long agenceId, Long pointventeId);
-    List<WorkflowDemandeDto> getEnCorrectionDEForAC(Long agenceId, Long pointventeId);
-    List<WorkflowDemandeDto> getEnAttenteDA(Long agenceId, Long pointventeId);
-    List<WorkflowDemandeDto> getSuiviValidationAC(Long agenceId, Long pointventeId);
-    List<WorkflowDemandeDto> getAApprouverAC(Long agenceId, Long pointventeId);
+    // AC lists (filtrees par proprietaire du dossier)
+    List<WorkflowDemandeDto> getEnCorrectionAC(Long agenceId, Long pointventeId, Long userId);
+    List<WorkflowDemandeDto> getEnCorrectionDRForAC(Long agenceId, Long pointventeId, Long userId);
+    List<WorkflowDemandeDto> getEnCorrectionDEForAC(Long agenceId, Long pointventeId, Long userId);
+    List<WorkflowDemandeDto> getEnAttenteDA(Long agenceId, Long pointventeId, Long userId);
+    List<WorkflowDemandeDto> getSuiviValidationAC(Long agenceId, Long pointventeId, Long userId);
+    List<WorkflowDemandeDto> getAApprouverAC(Long agenceId, Long pointventeId, Long userId);
 
     // DA - demandes affectees
     List<WorkflowDemandeDto> getDemandesAffecteesDA(Long agenceId);
@@ -59,4 +60,20 @@ public interface WorkflowService {
     void validerDG(Long demandeId, String avis, String validatedBy);
     void rejeterDG(Long demandeId, String motifRejet, String validatedBy);
     void confirmerRejetDG(Long demandeId, String instructions, java.util.List<String> sectionsARevoir, String confirmedBy);
+
+    // Accueil (reception des demandes, affectation directe a un agent de credit)
+    void marquerReception(Long demandeId, Long userId, String codUsuarios, Long agentUserId, String affectePar, Long agenceIdAccueil);
+    List<AgentAgenceDto> getAgentsCreditEligibles(Long agenceId);
+    List<WorkflowDemandeDto> getAAffecterDA(Long agenceId);
+    void affecterAC(Long demandeId, Long agentUserId, String affectePar, Long agenceIdDA);
+    void annulerAccueil(Long demandeId, String motif);
+    List<WorkflowDemandeDto> getMesReceptions(Long userId);
+    void rediligenterAccueil(Long demandeId, Long userId);
+    List<WorkflowDemandeDto> getMesAffectationsAC(Long userId);
+    void prendreEnChargeAC(Long demandeId, Long userId);
+
+    // DA - gestion des fonctions d'agence
+    List<AgentAgenceDto> getAgentsAgence(Long agenceId);
+    void setAgentFonction(Long userId, String fonction, boolean actif, Long affectePar, Long agenceIdDA);
+    List<String> getMesFonctions(Long userId);
 }

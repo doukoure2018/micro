@@ -1,0 +1,282 @@
+import { IResponse } from '@/interface/response';
+import { UserService } from '@/service/user.service';
+import { CommonModule } from '@angular/common';
+import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { MessageService } from 'primeng/api';
+import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
+import { DropdownModule } from 'primeng/dropdown';
+import { TableModule } from 'primeng/table';
+import { TagModule } from 'primeng/tag';
+import { TextareaModule } from 'primeng/textarea';
+import { ToastModule } from 'primeng/toast';
+import { TooltipModule } from 'primeng/tooltip';
+
+/**
+ * DA — File de réception : demandes saisies par l'accueil (EN_ATTENTE_DA)
+ * à affecter à un agent de crédit, ou à annuler avec motif (retour accueil).
+ * Les demandes déjà AFFECTEE restent visibles et peuvent être réaffectées.
+ */
+@Component({
+    selector: 'app-receptions-a-affecter',
+    standalone: true,
+    imports: [CommonModule, FormsModule, TableModule, ButtonModule, TagModule, ToastModule, TooltipModule, DialogModule, DropdownModule, TextareaModule, RouterLink],
+    providers: [MessageService],
+    template: `
+        <p-toast></p-toast>
+        <div class="card">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold m-0">Affectations & réorientation</h2>
+                <button pButton icon="pi pi-refresh" class="p-button-text" (click)="load()" [loading]="state().loading"></button>
+            </div>
+            <p class="text-sm text-gray-500">
+                Les demandes sont affectées directement par l'agent d'accueil à un agent de crédit, qui en est l'unique responsable. Cet écran vous permet de
+                <strong>réorienter un dossier vers un autre agent</strong> lorsque son responsable n'est plus disponible (l'état d'instruction est conservé), ou d'annuler une demande fraîchement réceptionnée (retour à
+                l'accueil avec motif).
+            </p>
+
+            <p-table [value]="state().demandes" [loading]="state().loading" [paginator]="state().demandes.length > 10" [rows]="10" responsiveLayout="scroll">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Membre</th>
+                        <th>Point de vente</th>
+                        <th>Montant</th>
+                        <th>Objet</th>
+                        <th>Saisie par</th>
+                        <th>Statut</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-d>
+                    <tr>
+                        <td>{{ d.prenom }} {{ d.nom }}<br /><span class="text-xs text-gray-500">{{ d.numeroMembre }}</span></td>
+                        <td>{{ d.pointventeLibele || d.pos }}</td>
+                        <td>{{ d.montantDemande | currency: 'GNF ' : 'symbol' : '1.0-0' }}</td>
+                        <td>{{ d.objectCredit }}</td>
+                        <td>{{ d.codUsuarios }}</td>
+                        <td>
+                            <p-tag [value]="labelEtat(d.validationState)" [severity]="severiteEtat(d.validationState)"></p-tag>
+                            <div *ngIf="d.agentAffecteNom" class="text-xs text-gray-500 mt-1"><i class="pi pi-user"></i> {{ d.agentAffecteNom }}</div>
+                        </td>
+                        <td>{{ d.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                        <td>
+                            <div class="flex gap-2">
+                                <button
+                                    pButton
+                                    icon="pi pi-eye"
+                                    class="p-button-sm p-button-text"
+                                    pTooltip="Voir le détail"
+                                    [routerLink]="['/dashboards/credit/individuel/attente/detail', d.demandeIndividuelId]"
+                                ></button>
+                                <button
+                                    *ngIf="d.validationState !== 'CORRECTION_ACCUEIL'"
+                                    pButton
+                                    [icon]="d.agentCreditAffecte ? 'pi pi-sync' : 'pi pi-user-plus'"
+                                    class="p-button-sm"
+                                    [pTooltip]="d.agentCreditAffecte ? 'Réorienter vers un autre agent' : 'Affecter à un agent de crédit'"
+                                    (click)="ouvrirAffectation(d)"
+                                ></button>
+                                <button
+                                    *ngIf="d.validationState === 'EN_ATTENTE_DA' || d.validationState === 'AFFECTEE'"
+                                    pButton
+                                    icon="pi pi-times"
+                                    class="p-button-sm p-button-danger p-button-outlined"
+                                    pTooltip="Annuler (retour accueil)"
+                                    (click)="ouvrirAnnulation(d)"
+                                ></button>
+                            </div>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="8" class="text-center py-6 text-gray-500">Aucune demande en attente d'affectation.</td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+
+        <!-- Dialog affectation / réorientation -->
+        <p-dialog header="Réorienter la demande vers un agent de crédit" [visible]="state().showAffecter" [modal]="true" [style]="{ width: '480px' }" (onHide)="fermerDialogs()" [closable]="true">
+            <div class="flex flex-col gap-3" *ngIf="state().selected as d">
+                <p class="m-0">
+                    <strong>{{ d.prenom }} {{ d.nom }}</strong> — {{ d.montantDemande | currency: 'GNF ' : 'symbol' : '1.0-0' }}
+                </p>
+                <label class="text-sm font-semibold">Agent de crédit <span class="text-red-500">*</span></label>
+                <p-dropdown
+                    [options]="agentsCredit()"
+                    [(ngModel)]="agentSelectionne"
+                    optionLabel="label"
+                    placeholder="Sélectionner un agent"
+                    [filter]="true"
+                    filterBy="label"
+                    styleClass="w-full"
+                    appendTo="body"
+                ></p-dropdown>
+            </div>
+            <ng-template pTemplate="footer">
+                <button pButton label="Annuler" icon="pi pi-times" class="p-button-text" (click)="fermerDialogs()"></button>
+                <button pButton label="Affecter" icon="pi pi-check" [disabled]="!agentSelectionne" (click)="confirmerAffectation()"></button>
+            </ng-template>
+        </p-dialog>
+
+        <!-- Dialog annulation -->
+        <p-dialog header="Annuler la demande (retour accueil)" [visible]="state().showAnnuler" [modal]="true" [style]="{ width: '480px' }" (onHide)="fermerDialogs()" [closable]="true">
+            <div class="flex flex-col gap-3" *ngIf="state().selected as d">
+                <p class="m-0 text-sm text-gray-600">La demande retournera à l'agent d'accueil qui l'a saisie, avec votre motif, pour correction puis rediligence.</p>
+                <label class="text-sm font-semibold">Motif de l'annulation <span class="text-red-500">*</span></label>
+                <textarea pTextarea [(ngModel)]="motifAnnulation" rows="3" class="w-full" placeholder="Ex. informations du membre incomplètes"></textarea>
+            </div>
+            <ng-template pTemplate="footer">
+                <button pButton label="Fermer" icon="pi pi-times" class="p-button-text" (click)="fermerDialogs()"></button>
+                <button pButton label="Confirmer l'annulation" icon="pi pi-check" severity="danger" [disabled]="!motifAnnulation.trim()" (click)="confirmerAnnulation()"></button>
+            </ng-template>
+        </p-dialog>
+    `
+})
+export class ReceptionsAAffecterComponent implements OnInit {
+    private userService = inject(UserService);
+    private messageService = inject(MessageService);
+    private destroyRef = inject(DestroyRef);
+
+    state = signal<{
+        demandes: any[];
+        agents: any[];
+        loading: boolean;
+        showAffecter: boolean;
+        showAnnuler: boolean;
+        selected: any | null;
+    }>({ demandes: [], agents: [], loading: false, showAffecter: false, showAnnuler: false, selected: null });
+
+    agentSelectionne: { label: string; value: number } | null = null;
+    motifAnnulation = '';
+
+    ngOnInit(): void {
+        this.load();
+        this.loadAgents();
+    }
+
+    load(): void {
+        this.state.update((s) => ({ ...s, loading: true }));
+        this.userService
+            .getAAffecterDA$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => this.state.update((s) => ({ ...s, demandes: response.data?.workflowDemandes || [], loading: false })),
+                error: (err) => {
+                    this.state.update((s) => ({ ...s, loading: false }));
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || 'Chargement impossible', life: 5000 });
+                }
+            });
+    }
+
+    loadAgents(): void {
+        this.userService
+            .getAgentsAgence$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => this.state.update((s) => ({ ...s, agents: response.data?.agents || [] })),
+                error: () => {}
+            });
+    }
+
+    /**
+     * Agents éligibles à l'analyse : rôle AGENT_CREDIT SANS fonction Accueil active.
+     * Exclusivité réception/analyse : un agent habilité à saisir des demandes
+     * ne peut pas en recevoir pour analyse (contrôle également appliqué côté backend).
+     */
+    agentsCredit(): { label: string; value: number }[] {
+        return this.state()
+            .agents.filter((a) => a.role === 'AGENT_CREDIT' && !a.fonctionAccueil)
+            .map((a) => ({ label: `${a.firstName} ${a.lastName}${a.pointventeLibele ? ' — ' + a.pointventeLibele : ''}`, value: a.userId }));
+    }
+
+    ouvrirAffectation(d: any): void {
+        this.agentSelectionne = null;
+        this.state.update((s) => ({ ...s, selected: d, showAffecter: true, showAnnuler: false }));
+    }
+
+    ouvrirAnnulation(d: any): void {
+        this.motifAnnulation = '';
+        this.state.update((s) => ({ ...s, selected: d, showAnnuler: true, showAffecter: false }));
+    }
+
+    fermerDialogs(): void {
+        this.state.update((s) => ({ ...s, showAffecter: false, showAnnuler: false, selected: null }));
+    }
+
+    labelEtat(etat: string): string {
+        switch (etat) {
+            case 'EN_ATTENTE_DA':
+                return 'À affecter';
+            case 'AFFECTEE':
+                return 'Affectée';
+            case 'SELECTION':
+                return 'En instruction';
+            case 'CORRECTION':
+                return 'En correction';
+            case 'CORRECTION_ACCUEIL':
+                return 'Retour accueil';
+            case 'CORRECTION_DR':
+                return 'Correction DR';
+            case 'CORRECTION_DE':
+                return 'Correction DE';
+            default:
+                return etat;
+        }
+    }
+
+    severiteEtat(etat: string): 'info' | 'warn' | 'success' | 'danger' | 'secondary' {
+        switch (etat) {
+            case 'EN_ATTENTE_DA':
+                return 'warn';
+            case 'AFFECTEE':
+                return 'success';
+            case 'SELECTION':
+                return 'info';
+            case 'CORRECTION':
+            case 'CORRECTION_ACCUEIL':
+            case 'CORRECTION_DR':
+            case 'CORRECTION_DE':
+                return 'danger';
+            default:
+                return 'secondary';
+        }
+    }
+
+    confirmerAffectation(): void {
+        const d = this.state().selected;
+        if (!d || !this.agentSelectionne) return;
+        this.userService
+            .affecterAC$(d.demandeIndividuelId, this.agentSelectionne.value)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.messageService.add({ severity: 'success', summary: 'Affectée', detail: "Demande affectée à l'agent de crédit", life: 4000 });
+                    this.fermerDialogs();
+                    this.load();
+                },
+                error: (err) => this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || "Échec de l'affectation", life: 5000 })
+            });
+    }
+
+    confirmerAnnulation(): void {
+        const d = this.state().selected;
+        if (!d || !this.motifAnnulation.trim()) return;
+        this.userService
+            .annulerAccueil$(d.demandeIndividuelId, this.motifAnnulation.trim())
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.messageService.add({ severity: 'info', summary: 'Annulée', detail: "Demande renvoyée à l'agent d'accueil", life: 4000 });
+                    this.fermerDialogs();
+                    this.load();
+                },
+                error: (err) => this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || "Échec de l'annulation", life: 5000 })
+            });
+    }
+}

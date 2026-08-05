@@ -1,5 +1,6 @@
 package io.digiservices.ecreditservice.repository.impl;
 
+import io.digiservices.ecreditservice.dto.AgentAgenceDto;
 import io.digiservices.ecreditservice.dto.WorkflowDemandeDto;
 import io.digiservices.ecreditservice.dto.WorkflowRejetRequest;
 import io.digiservices.ecreditservice.exception.ApiException;
@@ -23,12 +24,13 @@ public class WorkflowRepositoryImpl implements WorkflowRepository {
     // ==================== AC ====================
 
     @Override
-    public int approuverAC(Long demandeId, String avis, String codUsuarios) {
+    public int approuverAC(Long demandeId, String avis, String codUsuarios, Long userId) {
         try {
             return jdbcClient.sql(UPDATE_APPROUVER_AC)
                     .param("demandeId", demandeId)
                     .param("avis", avis)
                     .param("codUsuarios", codUsuarios)
+                    .param("userId", userId)
                     .update();
         } catch (Exception e) {
             log.error("Erreur lors de l'approbation AC: {}", e.getMessage());
@@ -146,11 +148,12 @@ public class WorkflowRepositoryImpl implements WorkflowRepository {
     // ==================== AC LISTS ====================
 
     @Override
-    public List<WorkflowDemandeDto> getEnCorrectionAC(Long agenceId, Long pointventeId) {
+    public List<WorkflowDemandeDto> getEnCorrectionAC(Long agenceId, Long pointventeId, Long userId) {
         try {
             return jdbcClient.sql(SELECT_EN_CORRECTION_AC)
                     .param("agenceId", agenceId)
                     .param("pointventeId", pointventeId)
+                    .param("userId", userId)
                     .query(WorkflowDemandeDto.class)
                     .list();
         } catch (Exception e) {
@@ -160,11 +163,12 @@ public class WorkflowRepositoryImpl implements WorkflowRepository {
     }
 
     @Override
-    public List<WorkflowDemandeDto> getEnCorrectionDRForAC(Long agenceId, Long pointventeId) {
+    public List<WorkflowDemandeDto> getEnCorrectionDRForAC(Long agenceId, Long pointventeId, Long userId) {
         try {
             return jdbcClient.sql(SELECT_EN_CORRECTION_DR_FOR_AC)
                     .param("agenceId", agenceId)
                     .param("pointventeId", pointventeId)
+                    .param("userId", userId)
                     .query(WorkflowDemandeDto.class)
                     .list();
         } catch (Exception e) {
@@ -174,11 +178,12 @@ public class WorkflowRepositoryImpl implements WorkflowRepository {
     }
 
     @Override
-    public List<WorkflowDemandeDto> getEnCorrectionDEForAC(Long agenceId, Long pointventeId) {
+    public List<WorkflowDemandeDto> getEnCorrectionDEForAC(Long agenceId, Long pointventeId, Long userId) {
         try {
             return jdbcClient.sql(SELECT_EN_CORRECTION_DE_FOR_AC)
                     .param("agenceId", agenceId)
                     .param("pointventeId", pointventeId)
+                    .param("userId", userId)
                     .query(WorkflowDemandeDto.class)
                     .list();
         } catch (Exception e) {
@@ -188,11 +193,12 @@ public class WorkflowRepositoryImpl implements WorkflowRepository {
     }
 
     @Override
-    public List<WorkflowDemandeDto> getEnAttenteDA(Long agenceId, Long pointventeId) {
+    public List<WorkflowDemandeDto> getEnAttenteDA(Long agenceId, Long pointventeId, Long userId) {
         try {
             return jdbcClient.sql(SELECT_EN_ATTENTE_DA)
                     .param("agenceId", agenceId)
                     .param("pointventeId", pointventeId)
+                    .param("userId", userId)
                     .query(WorkflowDemandeDto.class)
                     .list();
         } catch (Exception e) {
@@ -202,11 +208,12 @@ public class WorkflowRepositoryImpl implements WorkflowRepository {
     }
 
     @Override
-    public List<WorkflowDemandeDto> getSuiviValidationAC(Long agenceId, Long pointventeId) {
+    public List<WorkflowDemandeDto> getSuiviValidationAC(Long agenceId, Long pointventeId, Long userId) {
         try {
             return jdbcClient.sql(SELECT_SUIVI_VALIDATION_AC)
                     .param("agenceId", agenceId)
                     .param("pointventeId", pointventeId)
+                    .param("userId", userId)
                     .query(WorkflowDemandeDto.class)
                     .list();
         } catch (Exception e) {
@@ -216,11 +223,12 @@ public class WorkflowRepositoryImpl implements WorkflowRepository {
     }
 
     @Override
-    public List<WorkflowDemandeDto> getAApprouverAC(Long agenceId, Long pointventeId) {
+    public List<WorkflowDemandeDto> getAApprouverAC(Long agenceId, Long pointventeId, Long userId) {
         try {
             return jdbcClient.sql(SELECT_A_APPROUVER_AC)
                     .param("agenceId", agenceId)
                     .param("pointventeId", pointventeId)
+                    .param("userId", userId)
                     .query(WorkflowDemandeDto.class)
                     .list();
         } catch (Exception e) {
@@ -491,6 +499,186 @@ public class WorkflowRepositoryImpl implements WorkflowRepository {
         } catch (Exception e) {
             log.error("Erreur confirmation rejet DG: {}", e.getMessage());
             throw new ApiException("Erreur lors de la confirmation: " + e.getMessage());
+        }
+    }
+
+    // ==================== ACCUEIL (reception des demandes) ====================
+
+    @Override
+    public int marquerReception(Long demandeId, Long userId, String codUsuarios, Long agentUserId, String affectePar) {
+        try {
+            return jdbcClient.sql(UPDATE_MARQUER_RECEPTION)
+                    .param("demandeId", demandeId)
+                    .param("userId", userId)
+                    .param("codUsuarios", codUsuarios)
+                    .param("agentUserId", agentUserId)
+                    .param("affectePar", affectePar)
+                    .update();
+        } catch (Exception e) {
+            log.error("Erreur lors du marquage reception: {}", e.getMessage());
+            throw new ApiException("Erreur lors du marquage de la reception: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public List<WorkflowDemandeDto> getAAffecterDA(Long agenceId) {
+        try {
+            return jdbcClient.sql(SELECT_A_AFFECTER_DA)
+                    .param("agenceId", agenceId)
+                    .query(WorkflowDemandeDto.class)
+                    .list();
+        } catch (Exception e) {
+            log.error("Erreur lors de la recuperation des demandes a affecter DA: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la recuperation: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public int affecterAC(Long demandeId, Long agentUserId, String affectePar) {
+        try {
+            return jdbcClient.sql(UPDATE_AFFECTER_AC)
+                    .param("demandeId", demandeId)
+                    .param("agentUserId", agentUserId)
+                    .param("affectePar", affectePar)
+                    .update();
+        } catch (Exception e) {
+            log.error("Erreur lors de l'affectation AC: {}", e.getMessage());
+            throw new ApiException("Erreur lors de l'affectation: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public int annulerAccueil(Long demandeId, String motif) {
+        try {
+            return jdbcClient.sql(UPDATE_ANNULER_ACCUEIL)
+                    .param("demandeId", demandeId)
+                    .param("motif", motif)
+                    .update();
+        } catch (Exception e) {
+            log.error("Erreur lors de l'annulation accueil: {}", e.getMessage());
+            throw new ApiException("Erreur lors de l'annulation: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public List<WorkflowDemandeDto> getMesReceptions(Long userId) {
+        try {
+            return jdbcClient.sql(SELECT_MES_RECEPTIONS)
+                    .param("userId", userId)
+                    .query(WorkflowDemandeDto.class)
+                    .list();
+        } catch (Exception e) {
+            log.error("Erreur lors de la recuperation des receptions: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la recuperation: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public int rediligenterAccueil(Long demandeId, Long userId) {
+        try {
+            return jdbcClient.sql(UPDATE_REDILIGENTER_ACCUEIL)
+                    .param("demandeId", demandeId)
+                    .param("userId", userId)
+                    .update();
+        } catch (Exception e) {
+            log.error("Erreur lors de la rediligence accueil: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la rediligence: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public List<WorkflowDemandeDto> getMesAffectationsAC(Long userId) {
+        try {
+            return jdbcClient.sql(SELECT_MES_AFFECTATIONS_AC)
+                    .param("userId", userId)
+                    .query(WorkflowDemandeDto.class)
+                    .list();
+        } catch (Exception e) {
+            log.error("Erreur lors de la recuperation des affectations AC: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la recuperation: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public int prendreEnChargeAC(Long demandeId, Long userId) {
+        try {
+            return jdbcClient.sql(UPDATE_PRENDRE_EN_CHARGE_AC)
+                    .param("demandeId", demandeId)
+                    .param("userId", userId)
+                    .update();
+        } catch (Exception e) {
+            log.error("Erreur lors de la prise en charge AC: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la prise en charge: " + e.getMessage());
+        }
+    }
+
+    // ==================== DA - GESTION DES FONCTIONS D'AGENCE ====================
+
+    @Override
+    public List<AgentAgenceDto> getAgentsAgence(Long agenceId) {
+        try {
+            return jdbcClient.sql(SELECT_AGENTS_AGENCE)
+                    .param("agenceId", agenceId)
+                    .query(AgentAgenceDto.class)
+                    .list();
+        } catch (Exception e) {
+            log.error("Erreur lors de la recuperation des agents de l'agence: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la recuperation: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public int upsertAgentFonction(Long userId, String fonction, boolean actif, Long affectePar) {
+        try {
+            return jdbcClient.sql(UPSERT_AGENT_FONCTION)
+                    .param("userId", userId)
+                    .param("fonction", fonction)
+                    .param("actif", actif)
+                    .param("affectePar", affectePar)
+                    .update();
+        } catch (Exception e) {
+            log.error("Erreur lors de la mise a jour de la fonction agent: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la mise a jour de la fonction: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public Long getAgenceOfUser(Long userId) {
+        try {
+            return jdbcClient.sql(SELECT_AGENCE_OF_USER)
+                    .param("userId", userId)
+                    .query(Long.class)
+                    .optional()
+                    .orElse(null);
+        } catch (Exception e) {
+            log.error("Erreur lors de la recuperation de l'agence de l'utilisateur: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la recuperation: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public List<String> getMesFonctions(Long userId) {
+        try {
+            return jdbcClient.sql(SELECT_MES_FONCTIONS)
+                    .param("userId", userId)
+                    .query(String.class)
+                    .list();
+        } catch (Exception e) {
+            log.error("Erreur lors de la recuperation des fonctions: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la recuperation: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public List<String> getRolesOfUser(Long userId) {
+        try {
+            return jdbcClient.sql(SELECT_ROLES_OF_USER)
+                    .param("userId", userId)
+                    .query(String.class)
+                    .list();
+        } catch (Exception e) {
+            log.error("Erreur lors de la recuperation des roles: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la recuperation: " + e.getMessage());
         }
     }
 }

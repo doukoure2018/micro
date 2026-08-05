@@ -9,7 +9,7 @@ import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule, NgForm } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CalendarModule } from 'primeng/calendar';
@@ -283,10 +283,40 @@ export class DemandeIndComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
     private creditService = inject(UserService);
     private messageService = inject(MessageService);
+    private activatedRoute = inject(ActivatedRoute);
+
+    /** Mode reception : la demande est saisie par un agent d'accueil et affectee directement a un agent de credit. */
+    isAccueilMode = false;
+
+    /** Agents de credit eligibles (agence de l'accueil, sans fonction Accueil) et selection. */
+    agentsEligibles: { label: string; value: number }[] = [];
+    agentAffectation: { label: string; value: number } | null = null;
 
     ngOnInit(): void {
+        this.isAccueilMode = this.activatedRoute.snapshot.data['mode'] === 'accueil';
         this.loadInitialData();
         this.initializeOptions();
+        if (this.isAccueilMode) {
+            this.loadAgentsEligibles();
+        }
+    }
+
+    private loadAgentsEligibles(): void {
+        this.creditService
+            .getAgentsCreditEligibles$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    const agents = (response.data as any)?.agents || [];
+                    this.agentsEligibles = agents.map((a: any) => ({
+                        label: `${a.firstName} ${a.lastName}${a.pointventeLibele ? ' — ' + a.pointventeLibele : ''}`,
+                        value: a.userId
+                    }));
+                },
+                error: () => {
+                    this.messageService.add({ severity: 'warn', summary: 'Agents indisponibles', detail: 'Impossible de charger la liste des agents de crédit', life: 5000 });
+                }
+            });
     }
 
     /**
@@ -746,7 +776,7 @@ export class DemandeIndComponent implements OnInit {
                 typeGarantie: this.convertTypeGarantie(g.typeGarantie!)
             })),
             statutDemande: 'EN_ATTENTE',
-            validationState: 'NOUVEAU',
+            validationState: this.isAccueilMode ? 'EN_ATTENTE_DA' : 'NOUVEAU',
             currentActivite: this.getActiviteLibelle(),
             codUsuarios: ''
         } as DemandeIndividuel;
@@ -759,16 +789,26 @@ export class DemandeIndComponent implements OnInit {
             .subscribe({
                 next: (response) => {
                     console.log('Réponse:', response);
+                    const demandeId = response.data?.demandeId;
+                    if (this.isAccueilMode && demandeId && this.agentAffectation) {
+                        this.creditService
+                            .marquerReception$(+demandeId, this.agentAffectation.value)
+                            .pipe(takeUntilDestroyed(this.destroyRef))
+                            .subscribe();
+                    }
                     this.messageService.add({
                         severity: 'success',
                         summary: 'Succès',
-                        detail: `Demande créée avec succès. ID: ${response.data?.demandeId || 'N/A'}`,
+                        detail: this.isAccueilMode
+                            ? `Demande réceptionnée et affectée à ${this.agentAffectation?.label}. ID: ${demandeId || 'N/A'}`
+                            : `Demande créée avec succès. ID: ${demandeId || 'N/A'}`,
                         life: 5000
                     });
                     this.state.update((state) => ({ ...state, submitting: false, garanties: [], filteredAgences: [], filteredPointsVente: [] }));
                     form.resetForm();
                     this.resetForm();
-                    setTimeout(() => this.router.navigate(['/']), 2000);
+                    const target = this.isAccueilMode ? ['/dashboards/accueil/mes-receptions'] : ['/'];
+                    setTimeout(() => this.router.navigate(target), 2000);
                 },
                 error: (error) => {
                     console.error('Erreur:', error);

@@ -154,6 +154,18 @@ public class UserRepositoryImpl implements UserRepository {
                                 password, token, phone, bio,service, delegationId, agenceId, pointventeId))
                         .update();
 
+            } else if(roleName.equalsIgnoreCase("AGENT_ACCUEIL")) {
+                // Validate required parameters for AGENT_ACCUEIL (meme perimetre que AGENT_CREDIT)
+                if(delegationId == null || agenceId == null || pointventeId == null) {
+                    throw new ApiException("AGENT_ACCUEIL role requires delegation, agence, and point vente selection");
+                }
+
+                log.info("Creating AGENT_ACCUEIL account");
+                jdbcClient.sql(CREATE_ACCOUNT_AGENT_ACCUEIL_STORED_PROCEDURE)
+                        .paramSource(getParamSourceAccountAgentCredit(firstName, lastName, email, username,
+                                password, token, phone, bio, service, delegationId, agenceId, pointventeId))
+                        .update();
+
             } else if(roleName.equalsIgnoreCase("CAISSE")) {
                 // Validate required parameters for CAISSE
                 if(delegationId == null || agenceId == null || pointventeId == null) {

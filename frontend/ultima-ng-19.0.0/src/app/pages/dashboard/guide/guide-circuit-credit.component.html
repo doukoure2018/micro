@@ -19,10 +19,24 @@
 
         <div class="circuit-flow">
             <div class="flow-step">
+                <div class="flow-badge aa">AA</div>
+                <div class="flow-title">Agent d'Accueil</div>
+                <div class="flow-states"><span class="state selection">AFFECTEE</span></div>
+                <div class="flow-desc">Réception · Saisie · Affectation directe à un AC</div>
+            </div>
+            <i class="pi pi-arrow-right flow-arrow"></i>
+            <div class="flow-step">
+                <div class="flow-badge da">DA</div>
+                <div class="flow-title">DA — Supervision</div>
+                <div class="flow-states"><span class="state correction">CORRECTION_ACCUEIL</span></div>
+                <div class="flow-desc">Réorientation si agent indisponible · Annulation</div>
+            </div>
+            <i class="pi pi-arrow-right flow-arrow"></i>
+            <div class="flow-step">
                 <div class="flow-badge ac">AC</div>
                 <div class="flow-title">Agent de Crédit</div>
-                <div class="flow-states"><span class="state nouveau">NOUVEAU</span> <span class="state selection">SELECTION</span> <span class="state approved">APPROVED</span></div>
-                <div class="flow-desc">Création · Analyse · Approbation</div>
+                <div class="flow-states"><span class="state selection">SELECTION</span> <span class="state approved">APPROVED</span></div>
+                <div class="flow-desc">Prise en charge · Analyse · Approbation</div>
             </div>
             <i class="pi pi-arrow-right flow-arrow"></i>
             <div class="flow-step">
@@ -76,6 +90,12 @@
                 </thead>
                 <tbody>
                     <tr>
+                        <td><strong>Agent d'Accueil (AA)</strong></td>
+                        <td><code>AGENT_ACCUEIL</code></td>
+                        <td>Son point de vente</td>
+                        <td>Réception et saisie des demandes de crédit ; correction après annulation du DA</td>
+                    </tr>
+                    <tr>
                         <td><strong>Agent de Crédit (AC)</strong></td>
                         <td><code>AGENT_CREDIT</code></td>
                         <td>Son point de vente</td>
@@ -116,12 +136,44 @@
         </div>
     </div>
 
+    <!-- 2bis. Étape 0 : Réception par l'accueil -->
+    <div class="card">
+        <h2><span class="num">0</span> Étape 0 — Réception par l'Agent d'Accueil (circuit accueil)</h2>
+        <p>
+            La demande de crédit entre dans le circuit par le guichet : elle est <strong>réceptionnée et saisie par un Agent d'Accueil</strong> (seul habilité à créer une nouvelle demande), qui
+            <strong>l'affecte directement à un Agent de Crédit nommé</strong> de son agence — pas d'affectation au point de service ni de file d'attente DA. La demande passe en
+            <span class="state selection">AFFECTEE</span>.
+        </p>
+        <ul>
+            <li>
+                <strong>Responsable unique</strong> : l'agent de crédit désigné est le <strong>seul responsable du dossier tout au long du processus</strong> — lui seul le voit dans ses listes, le prend en charge
+                (passage en <span class="state selection">SELECTION</span>), l'instruit, l'approuve et traite ses corrections (DA, DR, DE) ;
+            </li>
+            <li>
+                <strong>Réorientation par le DA</strong> : si l'agent responsable n'est plus disponible (congé, absence, départ), le DA réoriente le dossier vers un autre agent de crédit depuis
+                « Affectations &amp; réorientation » — l'état d'instruction est conservé, seule la responsabilité change ;
+            </li>
+            <li>
+                <strong>Annulation</strong> : le DA peut annuler une demande fraîchement réceptionnée (motif obligatoire) → <span class="state correction">CORRECTION_ACCUEIL</span> : l'agent d'accueil la corrige puis la
+                <strong>rediligente</strong> — elle retourne directement à l'agent de crédit affecté.
+            </li>
+        </ul>
+        <p class="note">
+            <i class="pi pi-users"></i>
+            <strong>Qui est agent d'accueil ?</strong> Le rôle <code>AGENT_ACCUEIL</code> est posé à la création du compte, mais le DA gère aussi des <strong>fonctions d'agence</strong> : depuis « Gestion des agents », il
+            peut activer la fonction Accueil pour un Agent de Crédit, et la désactiver à tout moment. <strong>Réception et analyse sont exclusives</strong> : tant que sa fonction Accueil est active, l'agent saisit les
+            demandes mais ne peut plus recevoir d'affectations ni analyser de dossiers. Chaque changement est horodaté et nominatif.
+        </p>
+    </div>
+
     <!-- 3. Étape 1 : Agent de crédit -->
     <div class="card">
         <h2><span class="num">3</span> Étape 1 — Mise en place par l'Agent de Crédit</h2>
 
-        <h3>3.1 Création de la demande</h3>
-        <p>L'agent saisit la demande depuis son espace sécurisé (« Nouvelle demande de crédit », accès réservé au rôle AGENT_CREDIT). Le formulaire couvre l'intégralité du dossier :</p>
+        <h3>3.1 Contenu du dossier</h3>
+        <p>
+            La demande est saisie par l'Agent d'Accueil (Étape 0) puis affectée à l'Agent de Crédit par le DA. Le formulaire de saisie couvre l'intégralité du dossier :
+        </p>
         <ul>
             <li><strong>Identification du membre</strong> : nom, prénom, téléphone, numéro de membre, date/lieu de naissance, genre, situation matrimoniale, pièce d'identité ;</li>
             <li><strong>Rattachement réseau</strong> : délégation → agence → point de vente ;</li>
@@ -365,6 +417,18 @@
                         <td>Renvoi DA</td>
                         <td>Erreur de destination à corriger</td>
                         <td>AC</td>
+                    </tr>
+                    <tr>
+                        <td><span class="state selection">AFFECTEE</span></td>
+                        <td>Saisie accueil (AA)</td>
+                        <td>Réceptionnée et affectée directement à l'agent de crédit responsable (prise en charge → SELECTION) ; réorientable par le DA</td>
+                        <td>AC</td>
+                    </tr>
+                    <tr>
+                        <td><span class="state correction">CORRECTION_ACCUEIL</span></td>
+                        <td>Annulation DA</td>
+                        <td>À corriger par l'agent d'accueil (motif du DA), puis rediligence vers l'agent affecté</td>
+                        <td>AA</td>
                     </tr>
                     <tr>
                         <td><span class="state rejete">REJETE_DG</span></td>

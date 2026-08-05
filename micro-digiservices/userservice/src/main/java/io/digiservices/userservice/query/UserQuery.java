@@ -144,6 +144,11 @@ public class UserQuery {
             CALL create_user_agent_credit(:userUuid, :firstName, :lastName, :email, :username, :password, :credentialUuid, :token, :memberId, :delegationId, :agenceId, :pointventeId, :phone, :bio, :service)
             """;
 
+    public static final String CREATE_ACCOUNT_AGENT_ACCUEIL_STORED_PROCEDURE =
+            """
+            CALL create_user_agent_accueil(:userUuid, :firstName, :lastName, :email, :username, :password, :credentialUuid, :token, :memberId, :delegationId, :agenceId, :pointventeId, :phone, :bio, :service)
+            """;
+
     public static final String CREATE_ACCOUNT_DR_STORED_PROCEDURE =
             """
             CALL create_user_dr(:userUuid, :firstName, :lastName, :email, :username, :password, :credentialUuid, :token, :memberId, :delegationId, :phone, :bio, :service)

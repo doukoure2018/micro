@@ -37,7 +37,7 @@ public class WorkflowResource {
             HttpServletRequest httpRequest) {
         var user = userClient.getUserByUuid(authentication.getName());
         String codUsuarios = user.getFirstName() + " " + user.getLastName();
-        workflowService.approuverAC(demandeId, request.getAvis(), codUsuarios);
+        workflowService.approuverAC(demandeId, request.getAvis(), codUsuarios, user.getUserId());
         return ResponseEntity.ok(
                 getResponse(httpRequest, Map.of("message", "Demande approuvée par AC"),
                         "Demande approuvée avec succès", OK));
@@ -153,7 +153,7 @@ public class WorkflowResource {
             Authentication authentication,
             HttpServletRequest httpRequest) {
         var user = userClient.getUserByUuid(authentication.getName());
-        var result = workflowService.getEnCorrectionAC(user.getAgenceId(), user.getPointventeId());
+        var result = workflowService.getEnCorrectionAC(user.getAgenceId(), user.getPointventeId(), user.getUserId());
         return ResponseEntity.ok(
                 getResponse(httpRequest, Map.of("workflowDemandes", result),
                         "Demandes en correction AC récupérées", OK));
@@ -164,7 +164,7 @@ public class WorkflowResource {
             Authentication authentication,
             HttpServletRequest httpRequest) {
         var user = userClient.getUserByUuid(authentication.getName());
-        var result = workflowService.getEnAttenteDA(user.getAgenceId(), user.getPointventeId());
+        var result = workflowService.getEnAttenteDA(user.getAgenceId(), user.getPointventeId(), user.getUserId());
         return ResponseEntity.ok(
                 getResponse(httpRequest, Map.of("workflowDemandes", result),
                         "Demandes en attente DA récupérées", OK));
@@ -175,7 +175,7 @@ public class WorkflowResource {
             Authentication authentication,
             HttpServletRequest httpRequest) {
         var user = userClient.getUserByUuid(authentication.getName());
-        var result = workflowService.getEnCorrectionDRForAC(user.getAgenceId(), user.getPointventeId());
+        var result = workflowService.getEnCorrectionDRForAC(user.getAgenceId(), user.getPointventeId(), user.getUserId());
         return ResponseEntity.ok(
                 getResponse(httpRequest, Map.of("workflowDemandes", result),
                         "Demandes en correction DR pour AC récupérées", OK));
@@ -186,7 +186,7 @@ public class WorkflowResource {
             Authentication authentication,
             HttpServletRequest httpRequest) {
         var user = userClient.getUserByUuid(authentication.getName());
-        var result = workflowService.getEnCorrectionDEForAC(user.getAgenceId(), user.getPointventeId());
+        var result = workflowService.getEnCorrectionDEForAC(user.getAgenceId(), user.getPointventeId(), user.getUserId());
         return ResponseEntity.ok(
                 getResponse(httpRequest, Map.of("workflowDemandes", result),
                         "Demandes en correction DE pour AC récupérées", OK));
@@ -197,7 +197,7 @@ public class WorkflowResource {
             Authentication authentication,
             HttpServletRequest httpRequest) {
         var user = userClient.getUserByUuid(authentication.getName());
-        var result = workflowService.getSuiviValidationAC(user.getAgenceId(), user.getPointventeId());
+        var result = workflowService.getSuiviValidationAC(user.getAgenceId(), user.getPointventeId(), user.getUserId());
         return ResponseEntity.ok(
                 getResponse(httpRequest, Map.of("workflowDemandes", result),
                         "Suivi validation récupéré", OK));
@@ -208,7 +208,7 @@ public class WorkflowResource {
             Authentication authentication,
             HttpServletRequest httpRequest) {
         var user = userClient.getUserByUuid(authentication.getName());
-        var result = workflowService.getAApprouverAC(user.getAgenceId(), user.getPointventeId());
+        var result = workflowService.getAApprouverAC(user.getAgenceId(), user.getPointventeId(), user.getUserId());
         return ResponseEntity.ok(
                 getResponse(httpRequest, Map.of("workflowDemandes", result),
                         "Demandes à approuver récupérées", OK));
@@ -459,5 +459,184 @@ public class WorkflowResource {
         return ResponseEntity.ok(
                 getResponse(httpRequest, Map.of("message", "Rejet DG confirme"),
                         "Rejet confirme, demande renvoyee en correction", OK));
+    }
+
+    // ==================== ACCUEIL (reception des demandes) ====================
+
+    /**
+     * L'accueil marque sa saisie comme receptionnee avec AFFECTATION DIRECTE a
+     * l'agent de credit choisi (-> AFFECTEE) : plus de file d'attente DA.
+     */
+    @PutMapping("/{demandeId}/marquer-reception")
+    public ResponseEntity<Response> marquerReception(
+            @PathVariable Long demandeId,
+            @RequestBody Map<String, Object> body,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        requireFonctionAccueil(user);
+        Long agentUserId = toLong(body.get("agentUserId"));
+        String codUsuarios = user.getFirstName() + " " + user.getLastName();
+        workflowService.marquerReception(demandeId, user.getUserId(), codUsuarios, agentUserId, codUsuarios, user.getAgenceId());
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("message", "Demande receptionnee et affectee"),
+                        "Demande affectee a l'agent de credit", OK));
+    }
+
+    /** Agents de credit eligibles a une affectation (accueil et DA) : role AGENT_CREDIT sans fonction Accueil. */
+    @GetMapping("/agents-credit-eligibles")
+    public ResponseEntity<Response> getAgentsCreditEligibles(Authentication authentication, HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        if (user.getAgenceId() == null) {
+            throw new ApiException("Compte non rattache a une agence");
+        }
+        var result = workflowService.getAgentsCreditEligibles(user.getAgenceId());
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("agents", result), "Agents eligibles recuperes", OK));
+    }
+
+    @GetMapping("/mes-receptions")
+    public ResponseEntity<Response> getMesReceptions(Authentication authentication, HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        requireFonctionAccueil(user);
+        var result = workflowService.getMesReceptions(user.getUserId());
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("workflowDemandes", result), "Receptions recuperees", OK));
+    }
+
+    @PutMapping("/{demandeId}/rediligenter-accueil")
+    public ResponseEntity<Response> rediligenterAccueil(
+            @PathVariable Long demandeId,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        requireFonctionAccueil(user);
+        workflowService.rediligenterAccueil(demandeId, user.getUserId());
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("message", "Demande rediligentee"),
+                        "Demande renvoyee au Directeur d'Agence", OK));
+    }
+
+    // ==================== DA - RECEPTION / AFFECTATION ====================
+
+    @GetMapping("/a-affecter-da")
+    public ResponseEntity<Response> getAAffecterDA(Authentication authentication, HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        requireDA(user);
+        var result = workflowService.getAAffecterDA(user.getAgenceId());
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("workflowDemandes", result),
+                        "Demandes a affecter recuperees", OK));
+    }
+
+    @PutMapping("/{demandeId}/affecter-ac")
+    public ResponseEntity<Response> affecterAC(
+            @PathVariable Long demandeId,
+            @RequestBody Map<String, Object> body,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        requireDA(user);
+        Long agentUserId = toLong(body.get("agentUserId"));
+        if (agentUserId == null) {
+            throw new ApiException("L'agent de credit destinataire est obligatoire");
+        }
+        String affectePar = user.getFirstName() + " " + user.getLastName();
+        workflowService.affecterAC(demandeId, agentUserId, affectePar, user.getAgenceId());
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("message", "Demande affectee"),
+                        "Demande affectee a l'agent de credit", OK));
+    }
+
+    @PutMapping("/{demandeId}/annuler-accueil")
+    public ResponseEntity<Response> annulerAccueil(
+            @PathVariable Long demandeId,
+            @RequestBody Map<String, Object> body,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        requireDA(user);
+        String motif = body.get("motif") != null ? String.valueOf(body.get("motif")) : null;
+        workflowService.annulerAccueil(demandeId, motif);
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("message", "Demande annulee"),
+                        "Demande renvoyee a l'agent d'accueil pour correction", OK));
+    }
+
+    // ==================== AC - DEMANDES AFFECTEES PAR LE DA ====================
+
+    @GetMapping("/mes-affectations-ac")
+    public ResponseEntity<Response> getMesAffectationsAC(Authentication authentication, HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        var result = workflowService.getMesAffectationsAC(user.getUserId());
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("workflowDemandes", result),
+                        "Demandes affectees recuperees", OK));
+    }
+
+    @PutMapping("/{demandeId}/prendre-en-charge-ac")
+    public ResponseEntity<Response> prendreEnChargeAC(
+            @PathVariable Long demandeId,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        workflowService.prendreEnChargeAC(demandeId, user.getUserId());
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("message", "Demande prise en charge"),
+                        "Demande prise en charge (selection)", OK));
+    }
+
+    // ==================== DA - GESTION DES FONCTIONS D'AGENCE ====================
+
+    @GetMapping("/agents-agence")
+    public ResponseEntity<Response> getAgentsAgence(Authentication authentication, HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        requireDA(user);
+        var result = workflowService.getAgentsAgence(user.getAgenceId());
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("agents", result), "Agents de l'agence recuperes", OK));
+    }
+
+    @PutMapping("/agents/{userId}/fonction")
+    public ResponseEntity<Response> setAgentFonction(
+            @PathVariable("userId") Long agentUserId,
+            @RequestBody Map<String, Object> body,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        requireDA(user);
+        String fonction = body.get("fonction") != null ? String.valueOf(body.get("fonction")) : null;
+        boolean actif = Boolean.parseBoolean(String.valueOf(body.get("actif")));
+        workflowService.setAgentFonction(agentUserId, fonction, actif, user.getUserId(), user.getAgenceId());
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("message", "Fonction mise a jour"),
+                        "Fonction " + fonction + (actif ? " activee" : " desactivee"), OK));
+    }
+
+    /** Fonctions actives de l'utilisateur connecte (pilote l'affichage du menu cote frontend). */
+    @GetMapping("/mes-fonctions")
+    public ResponseEntity<Response> getMesFonctions(Authentication authentication, HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        var result = workflowService.getMesFonctions(user.getUserId());
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("fonctions", result), "Fonctions recuperees", OK));
+    }
+
+    private void requireDA(io.digiservices.clients.domain.User user) {
+        if (!"DA".equals(user.getRole()) || user.getAgenceId() == null) {
+            throw new ApiException("Acces reserve au Directeur d'Agence");
+        }
+    }
+
+    /** Accueil = role AGENT_ACCUEIL, ou AGENT_CREDIT avec fonction ACCUEIL activee par le DA. */
+    private void requireFonctionAccueil(io.digiservices.clients.domain.User user) {
+        if ("AGENT_ACCUEIL".equals(user.getRole())) {
+            return;
+        }
+        if ("AGENT_CREDIT".equals(user.getRole())
+                && workflowService.getMesFonctions(user.getUserId()).contains("ACCUEIL")) {
+            return;
+        }
+        throw new ApiException("Acces reserve aux agents d'accueil");
     }
 }

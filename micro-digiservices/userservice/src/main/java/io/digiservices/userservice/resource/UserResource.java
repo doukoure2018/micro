@@ -114,7 +114,7 @@ public class UserResource {
     }
 
     private boolean isLocationBasedRole(String roleName) {
-        return "AGENT_CREDIT".equalsIgnoreCase(roleName) || "DA".equalsIgnoreCase(roleName) || "DR".equalsIgnoreCase(roleName) || "RA".equalsIgnoreCase(roleName) || "CAISSE".equalsIgnoreCase(roleName) || "AGENT_CORRECTEUR".equalsIgnoreCase(roleName);
+        return "AGENT_CREDIT".equalsIgnoreCase(roleName) || "AGENT_ACCUEIL".equalsIgnoreCase(roleName) || "DA".equalsIgnoreCase(roleName) || "DR".equalsIgnoreCase(roleName) || "RA".equalsIgnoreCase(roleName) || "CAISSE".equalsIgnoreCase(roleName) || "AGENT_CORRECTEUR".equalsIgnoreCase(roleName);
     }
     // When user is not logged in
     @GetMapping("/verify/account")
