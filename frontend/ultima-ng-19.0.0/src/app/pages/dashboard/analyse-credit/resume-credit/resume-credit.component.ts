@@ -578,25 +578,26 @@ export class ResumeCreditComponent {
         return chiffreAffaires + autresRevenus;
     }
 
-    // NOUVELLES MÉTHODES POUR LES RATIOS DE DÉPENDANCE
+    // RATIOS DE DÉPENDANCE (formule alignée sur la vue SQL v_synthese_analyse, qui fait foi)
+    // = Autres revenus / (Résultat d'exploitation + Autres revenus)
     calculerRatioDependanceActuel(): number {
         const exploitation = this.state().resumeCredit?.exploitation_actuelle;
         if (!exploitation) return 0;
 
-        const revenus = this.calculerRevenusTotauxActuel();
         const autresRevenus = exploitation.autres_revenus || 0;
+        const denominateur = this.calculerResultatExploitationActuel() + autresRevenus;
 
-        return revenus > 0 ? autresRevenus / revenus : 0;
+        return denominateur > 0 ? autresRevenus / denominateur : 0;
     }
 
     calculerRatioDependancePrevisionnel(): number {
         const exploitation = this.state().resumeCredit?.exploitation_previsionnelle;
         if (!exploitation) return 0;
 
-        const revenus = this.calculerRevenusTotauxPrevisionnel();
         const autresRevenus = exploitation.autres_revenus || 0;
+        const denominateur = this.calculerResultatExploitationPrevisionnel() + autresRevenus;
 
-        return revenus > 0 ? autresRevenus / revenus : 0;
+        return denominateur > 0 ? autresRevenus / denominateur : 0;
     }
 
     // MÉTHODES DE MARGE BRUTE MODIFIÉES POUR UTILISER REVENUS TOTAUX
@@ -1190,19 +1191,42 @@ export class ResumeCreditComponent {
     }
 
     // R5 - RATIO DE DÉPENDANCE
-    // Formule: Autres revenus / Revenus totaux
+    // Formule (alignée sur la vue SQL v_synthese_analyse, qui fait foi) :
+    // Autres revenus / (Résultat d'exploitation + Autres revenus)
 
     /**
      * Calcule R5 - Ratio de dépendance
      */
     calculerR5Dependance(): string {
         const autresRevenus = this.getAutresRevenus();
-        const revenusTorauxPrevisionnel = this.getRevenusTorauxPrevisionnel();
+        const denominateur = this.calculerResultatExploitationPrevisionnel() + autresRevenus;
 
-        if (revenusTorauxPrevisionnel === 0) return '0.0';
+        if (denominateur <= 0) return 'N/A';
 
-        const ratio = (autresRevenus / revenusTorauxPrevisionnel) * 100;
+        const ratio = (autresRevenus / denominateur) * 100;
         return ratio.toFixed(1);
+    }
+
+    /** Résultat d'exploitation prévisionnel = (CA - coût marchandises) - charges d'exploitation. */
+    calculerResultatExploitationPrevisionnel(): number {
+        const exploitation = this.state().resumeCredit?.exploitation_previsionnelle;
+        if (!exploitation) return 0;
+
+        const chiffreAffaires = exploitation.chiffre_affaires || 0;
+        const coutMarchandises = exploitation.cout_marchandises || 0;
+
+        return chiffreAffaires - coutMarchandises - this.calculerTotalChargesPrevisionnelles();
+    }
+
+    /** Résultat d'exploitation actuel = (CA - coût marchandises) - charges d'exploitation. */
+    calculerResultatExploitationActuel(): number {
+        const exploitation = this.state().resumeCredit?.exploitation_actuelle;
+        if (!exploitation) return 0;
+
+        const chiffreAffaires = exploitation.chiffre_affaires || 0;
+        const coutMarchandises = exploitation.cout_marchandises || 0;
+
+        return chiffreAffaires - coutMarchandises - this.calculerTotalChargesActuelles();
     }
 
     getRevenusTorauxPrevisionnel(): number {
@@ -1211,12 +1235,14 @@ export class ResumeCreditComponent {
 
     getStatutR5(): string {
         const ratio = parseFloat(this.calculerR5Dependance());
+        if (isNaN(ratio)) return 'Info manquante';
         if (ratio < 50) return 'CONFORME';
         return 'NON CONFORME';
     }
 
     getSeveriteR5(): PrimeSeverity {
         const ratio = parseFloat(this.calculerR5Dependance());
+        if (isNaN(ratio)) return 'warn';
         if (ratio < 50) return 'success';
         return 'danger';
     }

@@ -9,6 +9,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
+import { DialogModule } from 'primeng/dialog';
 import { DividerModule } from 'primeng/divider';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { TableModule } from 'primeng/table';
@@ -56,6 +57,7 @@ interface AnalyseSynthese {
     facteurCycle: number;
     typeCdr: string;
     valeurGarantie: number;
+    totalValeurEmprunte: number;
 
     // Demande data
     montantDemande: number;
@@ -242,10 +244,36 @@ interface AnalyseSynthese {
 
 type PrimeSeverity = 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast';
 
+// ══════ Détail pédagogique d'un ratio (modal au clic) ══════
+interface RatioLigne {
+    label: string;
+    valeur: string;
+    source: string;
+    isTotal?: boolean;
+}
+
+interface RatioApplication {
+    titre: string;
+    calcul: string;
+    resultat: string;
+    statut: string;
+    severite: PrimeSeverity;
+}
+
+interface RatioDetail {
+    code: string;
+    titre: string;
+    norme: string;
+    formule: string;
+    explication: string;
+    composantes: RatioLigne[];
+    applications: RatioApplication[];
+}
+
 @Component({
     selector: 'app-resume-analyse-financiere',
     standalone: true,
-    imports: [CommonModule, CardModule, TableModule, TagModule, ButtonModule, ProgressSpinnerModule, ToastModule, DividerModule],
+    imports: [CommonModule, CardModule, TableModule, TagModule, ButtonModule, ProgressSpinnerModule, ToastModule, DividerModule, DialogModule],
     templateUrl: './resume-analyse-financiere.component.html',
     styleUrl: './resume-analyse-financiere.component.scss',
     providers: [MessageService]
@@ -688,6 +716,172 @@ export class ResumeAnalyseFinanciereComponent {
             return value >= threshold ? 'success' : 'danger';
         } else {
             return value < threshold ? 'success' : 'danger';
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // MODAL DE DÉTAIL D'UN RATIO (clic sur la ligne du ratio)
+    // Formules alignées sur la vue SQL v_synthese_analyse (V89), qui fait foi.
+    // ══════════════════════════════════════════════════════════════════════════
+
+    showRatioDetail = false;
+    ratioDetail: RatioDetail | null = null;
+
+    ouvrirDetailRatio(code: 'R1' | 'R2' | 'R3' | 'R4' | 'R5' | 'R6'): void {
+        const s = this.state().synthese;
+        if (!s) return;
+        this.ratioDetail = this.buildRatioDetail(code, s);
+        this.showRatioDetail = true;
+    }
+
+    fermerDetailRatio(): void {
+        this.showRatioDetail = false;
+        this.ratioDetail = null;
+    }
+
+    private application(titre: string, calcul: string, value: number | null | undefined, threshold: number, isGreaterBetter: boolean): RatioApplication {
+        return {
+            titre,
+            calcul,
+            resultat: value !== null && value !== undefined ? this.formatPercent(value) : 'Information manquante',
+            statut: this.getStatutRatio(value, threshold, isGreaterBetter),
+            severite: this.getSeveriteRatio(value, threshold, isGreaterBetter)
+        };
+    }
+
+    private buildRatioDetail(code: string, s: AnalyseSynthese): RatioDetail {
+        const fc = (v: number | null | undefined) => this.formatCurrency(v);
+        const RENT = "Rentabilité de l'activité — période N (saisie de l'analyse financière)";
+        const BILAN = "Bilan — période N (saisie de l'analyse financière)";
+        const DEMANDE = 'Demande de crédit (saisie à la réception)';
+
+        switch (code) {
+            case 'R1': {
+                const capacite = s.capaciteRemboursementN || 0;
+                return {
+                    code: 'R.1',
+                    titre: 'R.1 Capacité de remboursement calculée',
+                    norme: '≥ 200%',
+                    formule: 'Capacité de remboursement / Traite  =  (Cash Flow + Autres revenus) / Échéance',
+                    explication:
+                        "La capacité de remboursement mesure ce que le membre peut réellement consacrer chaque période au remboursement. Elle part du chiffre d'affaires, retire toutes les charges décaissées de l'activité, réintègre les amortissements (charge comptable non décaissée), puis ajoute les revenus hors activité. La norme exige que cette capacité couvre au moins 2 fois la traite.",
+                    composantes: [
+                        { label: "Chiffre d'affaires", valeur: fc(s.chiffreAffairesN), source: RENT },
+                        { label: "− Coût d'achat des marchandises", valeur: fc(s.coutAchatMarchandisesN), source: RENT },
+                        { label: '= Marge brute', valeur: fc(s.margeBruteN), source: 'Calculé' },
+                        { label: "− Total charges d'exploitation", valeur: fc(s.totalChargesExploitationN), source: 'Somme des charges saisies (salaires, loyers, transport, impôts…)' },
+                        { label: '− Amortissements / Provisions', valeur: fc(s.amortissementsProvisionsN), source: RENT },
+                        { label: "= Résultat d'exploitation", valeur: fc(s.resultatExploitationN), source: 'Calculé' },
+                        { label: '+ Amortissements réintégrés (non décaissés)', valeur: fc(s.amortissementsProvisionsN), source: 'Calculé' },
+                        { label: '= Cash Flow', valeur: fc(s.cashFlowN), source: 'Calculé' },
+                        { label: '+ Autres revenus hors activité', valeur: fc(s.autresRevenusHorsActiviteN), source: RENT },
+                        { label: '= CAPACITÉ DE REMBOURSEMENT', valeur: fc(capacite), source: 'Calculé', isTotal: true },
+                        { label: 'Traite (échéance sollicitée)', valeur: fc(s.echeance), source: DEMANDE },
+                        ...(this.hasMontantPropose() ? [{ label: 'Traite (échéance proposée)', valeur: fc(s.echeanceProposee), source: "Proposition de l'agent" }] : [])
+                    ],
+                    applications: [
+                        this.application('Montant sollicité', `${fc(capacite)} / ${fc(s.echeance)}`, s.calcR1Sollicite, 2, true),
+                        ...(this.hasMontantPropose() ? [this.application('Montant proposé', `${fc(capacite)} / ${fc(s.echeanceProposee)}`, s.calcR1Propose, 2, true)] : [])
+                    ]
+                };
+            }
+            case 'R2': {
+                return {
+                    code: 'R.2',
+                    titre: 'R.2 Ratio de solvabilité',
+                    norme: '≥ 35%',
+                    formule: 'Capitaux propres / Total Actif',
+                    explication:
+                        "La solvabilité mesure la part du patrimoine de l'activité réellement détenue par le membre (après déduction des dettes). Plus elle est élevée, moins l'activité dépend de financements extérieurs. Les capitaux propres sont obtenus par différence : Total Actif − Total Dettes.",
+                    composantes: [
+                        { label: 'Total Actif (immobilisations + actif circulant)', valeur: fc(s.totalActifN), source: BILAN },
+                        { label: '− Total Dettes (emprunts LT/CT + autres dettes)', valeur: fc(s.totalDettesN), source: BILAN },
+                        { label: '= Capitaux propres', valeur: fc(s.capitauxPropresN), source: 'Calculé', isTotal: true }
+                    ],
+                    applications: [this.application('Période N', `${fc(s.capitauxPropresN)} / ${fc(s.totalActifN)}`, s.calcR2, 0.35, true)]
+                };
+            }
+            case 'R3': {
+                const numerateur = (s.creancesClientsN || 0) + (s.tresorerieCaisseBanqueN || 0);
+                const denominateur = (s.empruntCourtTermeN || 0) + (s.autresDettesN || 0);
+                return {
+                    code: 'R.3',
+                    titre: 'R.3 Ratio de liquidité à échéance',
+                    norme: '≥ 100%',
+                    formule: '(Créances clients + Trésorerie) / (Emprunts court terme + Autres dettes)',
+                    explication:
+                        "La liquidité vérifie que les ressources rapidement mobilisables (argent en caisse/banque + créances à encaisser) suffisent à couvrir les dettes exigibles à court terme. En dessous de 100 %, le membre ne pourrait pas honorer ses dettes immédiates sans vendre des actifs.",
+                    composantes: [
+                        { label: 'Créances clients', valeur: fc(s.creancesClientsN), source: BILAN },
+                        { label: '+ Trésorerie (caisse + banque)', valeur: fc(s.tresorerieCaisseBanqueN), source: BILAN },
+                        { label: '= Liquidités mobilisables', valeur: fc(numerateur), source: 'Calculé', isTotal: true },
+                        { label: 'Emprunts à court terme', valeur: fc(s.empruntCourtTermeN), source: BILAN },
+                        { label: '+ Autres dettes', valeur: fc(s.autresDettesN), source: BILAN },
+                        { label: '= Dettes à court terme', valeur: fc(denominateur), source: 'Calculé', isTotal: true }
+                    ],
+                    applications: [this.application('Période N', `${fc(numerateur)} / ${fc(denominateur)}`, s.calcR3, 1, true)]
+                };
+            }
+            case 'R4': {
+                return {
+                    code: 'R.4',
+                    titre: "R.4 Ratio d'endettement",
+                    norme: '< 50%',
+                    formule: '(Dettes totales + Crédit) / (Total Actif + Crédit)',
+                    explication:
+                        "L'endettement simule la situation APRÈS l'octroi du crédit : le montant demandé s'ajoute aux dettes (à rembourser) et à l'actif (l'argent reçu). Si, après octroi, plus de la moitié du patrimoine est financée par des dettes, le dossier est jugé trop endetté.",
+                    composantes: [
+                        { label: 'Total Dettes actuelles', valeur: fc(s.totalDettesN), source: BILAN },
+                        { label: 'Total Actif actuel', valeur: fc(s.totalActifN), source: BILAN },
+                        { label: 'Crédit sollicité', valeur: fc(s.montantDemande), source: DEMANDE },
+                        ...(this.hasMontantPropose() ? [{ label: 'Crédit proposé', valeur: fc(s.montantPropose), source: "Proposition de l'agent" }] : [])
+                    ],
+                    applications: [
+                        this.application('Montant sollicité', `(${fc(s.totalDettesN)} + ${fc(s.montantDemande)}) / (${fc(s.totalActifN)} + ${fc(s.montantDemande)})`, s.calcR4Sollicite, 0.5, false),
+                        ...(this.hasMontantPropose()
+                            ? [this.application('Montant proposé', `(${fc(s.totalDettesN)} + ${fc(s.montantPropose)}) / (${fc(s.totalActifN)} + ${fc(s.montantPropose)})`, s.calcR4Propose, 0.5, false)]
+                            : [])
+                    ]
+                };
+            }
+            case 'R5': {
+                const denominateur = (s.resultatExploitationN || 0) + (s.autresRevenusHorsActiviteN || 0);
+                return {
+                    code: 'R.5',
+                    titre: 'R.5 Ratio de dépendance',
+                    norme: '< 50%',
+                    formule: "Autres revenus / (Résultat d'exploitation + Autres revenus)",
+                    explication:
+                        "La dépendance mesure la part des revenus nets du membre qui NE provient PAS de l'activité financée (salaire du conjoint, loyers, autre commerce…). Au-delà de 50 %, le remboursement dépendrait majoritairement de sources extérieures à l'activité créditée — que l'institution ne maîtrise pas.",
+                    composantes: [
+                        { label: "Résultat d'exploitation (marge brute − charges − amortissements)", valeur: fc(s.resultatExploitationN), source: RENT },
+                        { label: '+ Autres revenus hors activité', valeur: fc(s.autresRevenusHorsActiviteN), source: RENT },
+                        { label: '= Revenus nets totaux', valeur: fc(denominateur), source: 'Calculé', isTotal: true }
+                    ],
+                    applications: [this.application('Période N', `${fc(s.autresRevenusHorsActiviteN)} / ${fc(denominateur)}`, s.calcR5, 0.5, false)]
+                };
+            }
+            case 'R6':
+            default: {
+                const garanties = s.totalValeurEmprunte ?? s.valeurGarantie;
+                return {
+                    code: 'R.6',
+                    titre: 'R.6 Ratio de couverture de la garantie',
+                    norme: '> 150%',
+                    formule: 'Somme des valeurs empruntées des garanties / Crédit',
+                    explication:
+                        "La couverture vérifie que les garanties proposées valent au moins 1,5 fois le crédit. La valeur retenue pour chaque garantie est sa « valeur empruntée » (valeur prudente, décotée par rapport à la valeur déclarée), sommée sur toutes les garanties du dossier.",
+                    composantes: [
+                        { label: 'Somme des valeurs empruntées des garanties', valeur: fc(garanties), source: 'Garanties proposées du dossier (valeur empruntée par garantie)' },
+                        { label: 'Crédit sollicité', valeur: fc(s.montantDemande), source: DEMANDE },
+                        ...(this.hasMontantPropose() ? [{ label: 'Crédit proposé', valeur: fc(s.montantPropose), source: "Proposition de l'agent" }] : [])
+                    ],
+                    applications: [
+                        this.application('Montant sollicité', `${fc(garanties)} / ${fc(s.montantDemande)}`, s.calcR6Sollicite, 1.5, true),
+                        ...(this.hasMontantPropose() ? [this.application('Montant proposé', `${fc(garanties)} / ${fc(s.montantPropose)}`, s.calcR6Propose, 1.5, true)] : [])
+                    ]
+                };
+            }
         }
     }
 

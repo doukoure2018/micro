@@ -123,8 +123,9 @@
                 <tbody>
                     <!-- R.1 Capacité de remboursement -->
                     <tr>
-                        <td style="border: 1px solid #000; padding: 10px;">
-                            <div style="font-weight: bold;">R.1 Capacité de remboursement calculée</div>
+                        <td style="border: 1px solid #000; padding: 10px; cursor: pointer;" (click)="ouvrirDetailRatio('R1')"
+                            title="Cliquer pour voir le détail du calcul">
+                            <div style="font-weight: bold;">R.1 Capacité de remboursement calculée <i class="pi pi-info-circle" style="color: #3b82f6; font-size: 13px;"></i></div>
                             <div style="font-size: 12px; color: #666; margin-top: 4px;">(Cash Flow + Autres revenus) /
                                 Traite</div>
                         </td>
@@ -173,8 +174,9 @@
 
                     <!-- R.2 Solvabilité -->
                     <tr>
-                        <td style="border: 1px solid #000; padding: 10px;">
-                            <div style="font-weight: bold;">R.2 Ratio de solvabilité</div>
+                        <td style="border: 1px solid #000; padding: 10px; cursor: pointer;" (click)="ouvrirDetailRatio('R2')"
+                            title="Cliquer pour voir le détail du calcul">
+                            <div style="font-weight: bold;">R.2 Ratio de solvabilité <i class="pi pi-info-circle" style="color: #3b82f6; font-size: 13px;"></i></div>
                             <div style="font-size: 12px; color: #666; margin-top: 4px;">Capitaux propres / Total Actif
                             </div>
                         </td>
@@ -221,8 +223,9 @@
 
                     <!-- R.3 Liquidité -->
                     <tr>
-                        <td style="border: 1px solid #000; padding: 10px;">
-                            <div style="font-weight: bold;">R.3 Ratio de liquidité à échéance</div>
+                        <td style="border: 1px solid #000; padding: 10px; cursor: pointer;" (click)="ouvrirDetailRatio('R3')"
+                            title="Cliquer pour voir le détail du calcul">
+                            <div style="font-weight: bold;">R.3 Ratio de liquidité à échéance <i class="pi pi-info-circle" style="color: #3b82f6; font-size: 13px;"></i></div>
                             <div style="font-size: 12px; color: #666; margin-top: 4px;">(Créances+Trésorerie) / Dettes à
                                 court terme</div>
                         </td>
@@ -269,8 +272,9 @@
 
                     <!-- R.4 Endettement -->
                     <tr>
-                        <td style="border: 1px solid #000; padding: 10px;">
-                            <div style="font-weight: bold;">R.4 Ratio d'endettement</div>
+                        <td style="border: 1px solid #000; padding: 10px; cursor: pointer;" (click)="ouvrirDetailRatio('R4')"
+                            title="Cliquer pour voir le détail du calcul">
+                            <div style="font-weight: bold;">R.4 Ratio d'endettement <i class="pi pi-info-circle" style="color: #3b82f6; font-size: 13px;"></i></div>
                             <div style="font-size: 12px; color: #666; margin-top: 4px;">(Dettes totales + Crédit) /
                                 (Total Actif + Crédit)</div>
                         </td>
@@ -319,10 +323,11 @@
 
                     <!-- R.5 Dépendance -->
                     <tr>
-                        <td style="border: 1px solid #000; padding: 10px;">
-                            <div style="font-weight: bold;">R.5 Ratio de dépendance</div>
-                            <div style="font-size: 12px; color: #666; margin-top: 4px;">Autres revenus / Revenus totaux
-                            </div>
+                        <td style="border: 1px solid #000; padding: 10px; cursor: pointer;" (click)="ouvrirDetailRatio('R5')"
+                            title="Cliquer pour voir le détail du calcul">
+                            <div style="font-weight: bold;">R.5 Ratio de dépendance <i class="pi pi-info-circle" style="color: #3b82f6; font-size: 13px;"></i></div>
+                            <div style="font-size: 12px; color: #666; margin-top: 4px;">Autres revenus / (Résultat
+                                d'exploitation + Autres revenus)</div>
                         </td>
                         <td style="border: 1px solid #000; padding: 10px; text-align: center; font-weight: bold;">
                             &lt; 50%
@@ -367,8 +372,9 @@
 
                     <!-- R.6 Couverture Garantie -->
                     <tr>
-                        <td style="border: 1px solid #000; padding: 10px;">
-                            <div style="font-weight: bold;">R.6 Ratio de couverture de la garantie</div>
+                        <td style="border: 1px solid #000; padding: 10px; cursor: pointer;" (click)="ouvrirDetailRatio('R6')"
+                            title="Cliquer pour voir le détail du calcul">
+                            <div style="font-weight: bold;">R.6 Ratio de couverture de la garantie <i class="pi pi-info-circle" style="color: #3b82f6; font-size: 13px;"></i></div>
                             <div style="font-size: 12px; color: #666; margin-top: 4px;">Valeur de la garantie / Crédit
                             </div>
                         </td>
@@ -936,3 +942,67 @@
 </div>
 
 <p-toast></p-toast>
+
+<!-- ══════ Modal de détail d'un ratio (formule, provenance des valeurs, application numérique) ══════ -->
+<p-dialog [header]="ratioDetail?.titre || 'Détail du ratio'" [visible]="showRatioDetail" [modal]="true"
+    [style]="{ width: '720px', maxWidth: '95vw' }" [closable]="true" [dismissableMask]="true"
+    (onHide)="fermerDetailRatio()">
+    @if (ratioDetail; as detail) {
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+
+        <!-- Formule et norme -->
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 12px;">
+            <div style="font-size: 12px; color: #1e40af; font-weight: 600; margin-bottom: 4px;">FORMULE</div>
+            <div style="font-family: monospace; font-weight: bold; font-size: 14px;">{{ detail.formule }}</div>
+            <div style="margin-top: 8px; font-size: 13px;">Norme de conformité : <strong>{{ detail.norme }}</strong></div>
+        </div>
+
+        <!-- Explication -->
+        <div style="font-size: 13px; line-height: 1.6; color: #374151;">{{ detail.explication }}</div>
+
+        <!-- Provenance des valeurs -->
+        <div>
+            <div style="font-weight: 600; margin-bottom: 8px;">Comment les valeurs sont obtenues</div>
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <thead>
+                    <tr style="background: #f3f4f6;">
+                        <th style="border: 1px solid #d1d5db; padding: 6px 10px; text-align: left;">Élément</th>
+                        <th style="border: 1px solid #d1d5db; padding: 6px 10px; text-align: right;">Valeur</th>
+                        <th style="border: 1px solid #d1d5db; padding: 6px 10px; text-align: left;">Source</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (ligne of detail.composantes; track ligne.label) {
+                    <tr [style.background]="ligne.isTotal ? '#fef9c3' : 'transparent'"
+                        [style.font-weight]="ligne.isTotal ? 'bold' : 'normal'">
+                        <td style="border: 1px solid #d1d5db; padding: 6px 10px;">{{ ligne.label }}</td>
+                        <td style="border: 1px solid #d1d5db; padding: 6px 10px; text-align: right; white-space: nowrap;">{{ ligne.valeur }}</td>
+                        <td style="border: 1px solid #d1d5db; padding: 6px 10px; color: #6b7280; font-size: 12px;">{{ ligne.source }}</td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Application numérique -->
+        <div>
+            <div style="font-weight: 600; margin-bottom: 8px;">Application numérique</div>
+            @for (app of detail.applications; track app.titre) {
+            <div style="border: 1px solid #d1d5db; border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                <div>
+                    <div style="font-size: 12px; color: #6b7280;">{{ app.titre }}</div>
+                    <div style="font-family: monospace; font-size: 13px; margin-top: 2px;">{{ app.calcul }}</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-weight: bold; font-size: 18px;">{{ app.resultat }}</div>
+                    <p-tag [value]="app.statut" [severity]="app.severite" size="small"></p-tag>
+                </div>
+            </div>
+            }
+        </div>
+    </div>
+    }
+    <ng-template pTemplate="footer">
+        <button pButton label="Fermer" icon="pi pi-times" class="p-button-text" (click)="fermerDetailRatio()"></button>
+    </ng-template>
+</p-dialog>
