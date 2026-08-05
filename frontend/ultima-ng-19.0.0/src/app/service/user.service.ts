@@ -1575,6 +1575,75 @@ export class UserService {
 
     getEnCorrectionDR$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/en-correction-dr`).pipe(catchError(this.handleError));
 
+    // ==================== ACCUEIL (reception des demandes) ====================
+
+    marquerReception$ = (demandeId: number, agentUserId: number) =>
+        <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/marquer-reception`, { agentUserId }).pipe(catchError(this.handleError));
+
+    getAgentsCreditEligibles$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/agents-credit-eligibles`).pipe(catchError(this.handleError));
+
+    getMesReceptions$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/mes-receptions`).pipe(catchError(this.handleError));
+
+    rediligenterAccueil$ = (demandeId: number) => <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/rediligenter-accueil`, {}).pipe(catchError(this.handleError));
+
+    // DA - reception / affectation
+    getAAffecterDA$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/a-affecter-da`).pipe(catchError(this.handleError));
+
+    affecterAC$ = (demandeId: number, agentUserId: number) =>
+        <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/affecter-ac`, { agentUserId }).pipe(catchError(this.handleError));
+
+    annulerAccueil$ = (demandeId: number, motif: string) =>
+        <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/annuler-accueil`, { motif }).pipe(catchError(this.handleError));
+
+    // AC - demandes affectees par le DA
+    getMesAffectationsAC$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/mes-affectations-ac`).pipe(catchError(this.handleError));
+
+    prendreEnChargeAC$ = (demandeId: number) => <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/prendre-en-charge-ac`, {}).pipe(catchError(this.handleError));
+
+    // DA - gestion des fonctions d'agence
+    getAgentsAgence$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/agents-agence`).pipe(catchError(this.handleError));
+
+    setAgentFonction$ = (userId: number, fonction: 'ACCUEIL' | 'CREDIT', actif: boolean) =>
+        <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/agents/${userId}/fonction`, { fonction, actif }).pipe(catchError(this.handleError));
+
+    getMesFonctions$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/mes-fonctions`).pipe(catchError(this.handleError));
+
+    // ==================== CAMPAGNES SMS (environnement digital) ====================
+
+    creerCampagneSms$ = (nom: string, message: string) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/sms/campagnes`, { nom, message }).pipe(catchError(this.handleError));
+
+    chargerRepertoireCampagne$ = (campagneId: number, repertoireId: number) =>
+        <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/sms/campagnes/${campagneId}/charger-repertoire/${repertoireId}`, {}).pipe(catchError(this.handleError));
+
+    // Repertoires de diffusion (charges en amont par le responsable digital)
+    getRepertoiresSms$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/sms/repertoires`).pipe(catchError(this.handleError));
+
+    rechargerRepertoireSms$ = (repertoireId: number, fichier: File) => {
+        const formData = new FormData();
+        formData.append('fichier', fichier);
+        return <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/sms/repertoires/${repertoireId}/recharger`, formData).pipe(catchError(this.handleError));
+    };
+
+    getNumerosRepertoireSms$ = (repertoireId: number, page = 0, size = 50) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/sms/repertoires/${repertoireId}/numeros?page=${page}&size=${size}`).pipe(catchError(this.handleError));
+
+    getCampagnesSms$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/sms/campagnes`).pipe(catchError(this.handleError));
+
+    getCampagneSmsStats$ = (campagneId: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/sms/campagnes/${campagneId}/stats`).pipe(catchError(this.handleError));
+
+    getDestinatairesSms$ = (campagneId: number, statut?: string, page = 0, size = 50) => {
+        const filtre = statut ? `&statut=${statut}` : '';
+        return <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/sms/campagnes/${campagneId}/destinataires?page=${page}&size=${size}${filtre}`).pipe(catchError(this.handleError));
+    };
+
+    lancerCampagneSms$ = (campagneId: number) => <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/sms/campagnes/${campagneId}/lancer`, {}).pipe(catchError(this.handleError));
+
+    pauseCampagneSms$ = (campagneId: number) => <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/sms/campagnes/${campagneId}/pause`, {}).pipe(catchError(this.handleError));
+
+    reprendreCampagneSms$ = (campagneId: number) => <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/sms/campagnes/${campagneId}/reprendre`, {}).pipe(catchError(this.handleError));
+
+    annulerCampagneSms$ = (campagneId: number) => <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/sms/campagnes/${campagneId}/annuler`, {}).pipe(catchError(this.handleError));
+
     // DR
     getAValiderDR$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/a-valider-dr`).pipe(catchError(this.handleError));
 

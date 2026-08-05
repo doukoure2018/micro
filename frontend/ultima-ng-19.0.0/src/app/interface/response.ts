@@ -279,5 +279,14 @@ export interface IResponse {
         demandesRejetees?: any[];
         demandesValideesIds?: number[];
         workflowDemandes?: any[];
+        agents?: any[];
+        fonctions?: string[];
+        campagnes?: any[];
+        campagne?: any;
+        rapport?: any;
+        destinataires?: any[];
+        repertoires?: any[];
+        repertoire?: any;
+        numeros?: string[];
     };
 }

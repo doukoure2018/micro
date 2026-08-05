@@ -1,18 +1,13 @@
 import { Routes } from '@angular/router';
 import { RapprochementCutoffGuard } from '@/service/rapprochement-cutoff.guard';
 import { AgentCreditGuard } from '@/service/agent-credit.guard';
+import { AgentAccueilGuard } from '@/service/agent-accueil.guard';
 
 export default [
     {
         path: '',
         data: { breadcrumb: 'Home' },
         loadComponent: () => import('./home/home.component').then((c) => c.HomeComponent)
-    },
-    {
-        path: 'nouvelle-demande',
-        canActivate: [AgentCreditGuard],
-        data: { breadcrumb: 'Nouvelle demande de crédit' },
-        loadComponent: () => import('../auth/credit/demande-ind/demande-ind.component').then((c) => c.DemandeIndComponent)
     },
     {
         path: 'home',
@@ -345,5 +340,48 @@ export default [
         path: 'guide-circuit-credit',
         data: { breadcrumb: "Guide d'utilisation - Circuit de crédit" },
         loadComponent: () => import('./guide/guide-circuit-credit.component').then((c) => c.GuideCircuitCreditComponent)
+    },
+    {
+        path: 'accueil/reception-demande',
+        canActivate: [AgentAccueilGuard],
+        data: { breadcrumb: 'Réception demande de crédit', mode: 'accueil' },
+        loadComponent: () => import('../auth/credit/demande-ind/demande-ind.component').then((c) => c.DemandeIndComponent)
+    },
+    {
+        path: 'accueil/mes-receptions',
+        canActivate: [AgentAccueilGuard],
+        data: { breadcrumb: 'Mes demandes réceptionnées' },
+        loadComponent: () => import('./accueil/mes-receptions/mes-receptions.component').then((c) => c.MesReceptionsComponent)
+    },
+    {
+        path: 'da/receptions-a-affecter',
+        data: { breadcrumb: 'Affectations & réorientation' },
+        loadComponent: () => import('./admin/da/receptions-a-affecter/receptions-a-affecter.component').then((c) => c.ReceptionsAAffecterComponent)
+    },
+    {
+        path: 'da/gestion-agents',
+        data: { breadcrumb: 'Gestion des agents' },
+        loadComponent: () => import('./admin/da/gestion-agents/gestion-agents.component').then((c) => c.GestionAgentsComponent)
+    },
+    {
+        path: 'agent-credit/demandes-affectees',
+        canActivate: [AgentCreditGuard],
+        data: { breadcrumb: 'Demandes affectées par mon DA' },
+        loadComponent: () => import('./agent-credit/demandes-affectees/demandes-affectees.component').then((c) => c.DemandesAffecteesComponent)
+    },
+    {
+        path: 'campagnes-sms',
+        data: { breadcrumb: 'Campagnes SMS' },
+        loadComponent: () => import('./digital/campagnes-sms/campagnes-sms.component').then((c) => c.CampagnesSmsComponent)
+    },
+    {
+        path: 'repertoires-sms',
+        data: { breadcrumb: 'Répertoires SMS' },
+        loadComponent: () => import('./digital/repertoires-sms/repertoires-sms.component').then((c) => c.RepertoiresSmsComponent)
+    },
+    {
+        path: 'campagnes-sms/:campagneId',
+        data: { breadcrumb: 'Suivi campagne SMS' },
+        loadComponent: () => import('./digital/campagnes-sms/campagne-sms-detail.component').then((c) => c.CampagneSmsDetailComponent)
     }
 ] as Routes;
