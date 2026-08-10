@@ -283,8 +283,8 @@ Une **collection Postman** prête à l'emploi (`BCRG.postman_collection.json`) e
 Pour toute question technique (accès, clé API, structure des données) ou fonctionnelle (règles de gestion, complétude) :
 
 **Crédit Rural de Guinée S.A. — Direction des Systèmes d'Information**
-E-mail : *(à compléter)*
-Téléphone : *(à compléter)*
+E-mail : *(salifou.doucoure@creditruralgn.com)*
+Téléphone : *(+224 621 09 18 95)*
 
 ---
 

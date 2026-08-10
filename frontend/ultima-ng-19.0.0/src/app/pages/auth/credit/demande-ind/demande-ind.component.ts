@@ -285,38 +285,13 @@ export class DemandeIndComponent implements OnInit {
     private messageService = inject(MessageService);
     private activatedRoute = inject(ActivatedRoute);
 
-    /** Mode reception : la demande est saisie par un agent d'accueil et affectee directement a un agent de credit. */
+    /** Mode reception : la demande est saisie par un agent d'accueil puis transmise au DA pour affectation. */
     isAccueilMode = false;
-
-    /** Agents de credit eligibles (agence de l'accueil, sans fonction Accueil) et selection. */
-    agentsEligibles: { label: string; value: number }[] = [];
-    agentAffectation: { label: string; value: number } | null = null;
 
     ngOnInit(): void {
         this.isAccueilMode = this.activatedRoute.snapshot.data['mode'] === 'accueil';
         this.loadInitialData();
         this.initializeOptions();
-        if (this.isAccueilMode) {
-            this.loadAgentsEligibles();
-        }
-    }
-
-    private loadAgentsEligibles(): void {
-        this.creditService
-            .getAgentsCreditEligibles$()
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: (response) => {
-                    const agents = (response.data as any)?.agents || [];
-                    this.agentsEligibles = agents.map((a: any) => ({
-                        label: `${a.firstName} ${a.lastName}${a.pointventeLibele ? ' — ' + a.pointventeLibele : ''}`,
-                        value: a.userId
-                    }));
-                },
-                error: () => {
-                    this.messageService.add({ severity: 'warn', summary: 'Agents indisponibles', detail: 'Impossible de charger la liste des agents de crédit', life: 5000 });
-                }
-            });
     }
 
     /**
@@ -790,9 +765,9 @@ export class DemandeIndComponent implements OnInit {
                 next: (response) => {
                     console.log('Réponse:', response);
                     const demandeId = response.data?.demandeId;
-                    if (this.isAccueilMode && demandeId && this.agentAffectation) {
+                    if (this.isAccueilMode && demandeId) {
                         this.creditService
-                            .marquerReception$(+demandeId, this.agentAffectation.value)
+                            .marquerReception$(+demandeId)
                             .pipe(takeUntilDestroyed(this.destroyRef))
                             .subscribe();
                     }
@@ -800,7 +775,7 @@ export class DemandeIndComponent implements OnInit {
                         severity: 'success',
                         summary: 'Succès',
                         detail: this.isAccueilMode
-                            ? `Demande réceptionnée et affectée à ${this.agentAffectation?.label}. ID: ${demandeId || 'N/A'}`
+                            ? `Demande réceptionnée et transmise au Directeur d'Agence pour affectation. ID: ${demandeId || 'N/A'}`
                             : `Demande créée avec succès. ID: ${demandeId || 'N/A'}`,
                         life: 5000
                     });

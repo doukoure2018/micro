@@ -505,14 +505,12 @@ public class WorkflowRepositoryImpl implements WorkflowRepository {
     // ==================== ACCUEIL (reception des demandes) ====================
 
     @Override
-    public int marquerReception(Long demandeId, Long userId, String codUsuarios, Long agentUserId, String affectePar) {
+    public int marquerReception(Long demandeId, Long userId, String codUsuarios) {
         try {
             return jdbcClient.sql(UPDATE_MARQUER_RECEPTION)
                     .param("demandeId", demandeId)
                     .param("userId", userId)
                     .param("codUsuarios", codUsuarios)
-                    .param("agentUserId", agentUserId)
-                    .param("affectePar", affectePar)
                     .update();
         } catch (Exception e) {
             log.error("Erreur lors du marquage reception: {}", e.getMessage());

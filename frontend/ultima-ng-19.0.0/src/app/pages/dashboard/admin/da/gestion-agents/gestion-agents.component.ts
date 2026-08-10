@@ -15,7 +15,8 @@ import { TooltipModule } from 'primeng/tooltip';
 /**
  * DA — Gestion des agents de l'agence : activation/désactivation des fonctions
  * ACCUEIL et CREDIT pour chaque AGENT_CREDIT / AGENT_ACCUEIL.
- * Un AGENT_CREDIT avec la fonction ACCUEIL active cumule les deux environnements.
+ * Un AGENT_CREDIT avec la fonction ACCUEIL active cumule saisie ET analyse
+ * (points de service mono-agent) : il reste éligible aux affectations du DA.
  */
 @Component({
     selector: 'app-gestion-agents',
@@ -30,8 +31,9 @@ import { TooltipModule } from 'primeng/tooltip';
                 <button pButton icon="pi pi-refresh" class="p-button-text" (click)="load()" [loading]="state().loading"></button>
             </div>
             <p class="text-sm text-gray-500">
-                Activez ou désactivez les fonctions <strong>Accueil</strong> (réception des demandes) et <strong>Crédit</strong> (analyse) de vos agents. <strong>Les deux fonctions sont exclusives</strong> : tant que la
-                fonction Accueil d'un agent de crédit est active, il saisit les demandes mais ne peut plus recevoir d'affectations ni analyser. Chaque changement est horodaté et nominatif.
+                Activez ou désactivez les fonctions <strong>Accueil</strong> (réception des demandes) et <strong>Crédit</strong> (analyse) de vos agents. <strong>Le cumul est autorisé</strong> : un agent de crédit avec
+                la fonction Accueil active saisit les demandes <em>et</em> reste éligible aux affectations pour analyse (utile dans les points de service mono-agent). Les demandes qu'il saisit passent toujours par vous
+                pour affectation, et une alerte vous signale toute auto-affectation. Chaque changement est horodaté et nominatif.
             </p>
 
             <p-table [value]="state().agents" [loading]="state().loading" responsiveLayout="scroll">

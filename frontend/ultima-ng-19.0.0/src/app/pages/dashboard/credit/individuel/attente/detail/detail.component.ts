@@ -246,6 +246,68 @@ export class DetailComponent {
         this.loadDemandeWithGaranties();
     }
 
+    // ======================== AFFECTATION DA (circuit accueil) ========================
+
+    /** Agents de credit eligibles (agence du DA, sans fonction Accueil) et selection. */
+    agentsEligibles: { label: string; value: number }[] = [];
+    agentAffectation: { label: string; value: number } | null = null;
+    affectationEnCours = false;
+
+    /** La demande a ete receptionnee par l'accueil : le DA doit l'affecter a un agent de credit. */
+    isAffectationDA(): boolean {
+        return this.state().user?.role === 'DA' && this.state().demandeIndividuel?.validationState === 'EN_ATTENTE_DA';
+    }
+
+    private loadAgentsEligibles(): void {
+        this.userService
+            .getAgentsCreditEligibles$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    const agents = (response.data as any)?.agents || [];
+                    this.agentsEligibles = agents.map((a: any) => ({
+                        label: `${a.firstName} ${a.lastName}${a.pointventeLibele ? ' — ' + a.pointventeLibele : ''}${a.fonctionAccueil ? ' (accueil + crédit)' : ''}`,
+                        value: a.userId
+                    }));
+                },
+                error: () => {
+                    this.messageService.add({ severity: 'warn', summary: 'Agents indisponibles', detail: 'Impossible de charger la liste des agents de crédit', life: 5000 });
+                }
+            });
+    }
+
+    /** Le DA affecte la demande receptionnee a l'agent de credit choisi (-> AFFECTEE). */
+    affecterDemande(): void {
+        const demandeId = this.state().demandeIndividuel?.demandeIndividuelId;
+        if (!demandeId || !this.agentAffectation) return;
+
+        this.affectationEnCours = true;
+        this.userService
+            .affecterAC$(+demandeId, this.agentAffectation.value)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Demande affectée',
+                        detail: `Demande affectée à ${this.agentAffectation?.label}`,
+                        life: 4000
+                    });
+                    this.affectationEnCours = false;
+                    setTimeout(() => this.router.navigate(['/dashboards/credit/individuel/attente']), 1500);
+                },
+                error: (error) => {
+                    this.affectationEnCours = false;
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Erreur',
+                        detail: error.error?.message || error.message || "Échec de l'affectation",
+                        life: 6000
+                    });
+                }
+            });
+    }
+
     canSubmitForm(): boolean {
         return this.updateForm.valid;
     }
@@ -340,6 +402,11 @@ export class DetailComponent {
 
                         if (demandeData.agence) {
                             this.loadPointVentes(demandeData.agence);
+                        }
+
+                        // Circuit accueil : la demande attend son affectation par le DA
+                        if (responseData.user?.role === 'DA' && demandeData.validationState === 'EN_ATTENTE_DA') {
+                            this.loadAgentsEligibles();
                         }
 
                         this.loadDocuments(+demandeData.demandeIndividuelId!);

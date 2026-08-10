@@ -759,21 +759,18 @@ public class WorkflowQuery {
     // ==================== ACCUEIL (reception des demandes) ====================
 
     /**
-     * Marque une demande fraichement creee comme receptionnee par l'agent d'accueil,
-     * avec AFFECTATION DIRECTE a l'agent de credit choisi par l'accueil (pas de file DA) :
-     * traceur de saisie + proprietaire du dossier + passage en AFFECTEE.
+     * Marque une demande fraichement creee comme receptionnee par l'agent d'accueil :
+     * traceur de saisie uniquement. L'accueil n'affecte pas ; la demande part en
+     * file EN_ATTENTE_DA et c'est le DA qui choisit l'agent de credit.
      */
     public static final String UPDATE_MARQUER_RECEPTION = """
             UPDATE demandeindividuel
-            SET validation_state = 'AFFECTEE',
+            SET validation_state = 'EN_ATTENTE_DA',
                 saisie_par = :userId,
                 saisie_par_role = 'AGENT_ACCUEIL',
-                cod_usuarios = :codUsuarios,
-                agent_credit_affecte = :agentUserId,
-                affecte_par_da = :affectePar,
-                date_affectation_ac = CURRENT_TIMESTAMP
+                cod_usuarios = :codUsuarios
             WHERE demandeindividuel_id = :demandeId
-              AND validation_state IN ('NOUVEAU', 'EN_ATTENTE_DA', 'AFFECTEE')
+              AND validation_state IN ('NOUVEAU', 'EN_ATTENTE_DA')
             """;
 
     /**

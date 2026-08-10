@@ -71,7 +71,7 @@
 <!-- Table des demandes -->
 <div class="card">
     <p-table #dt [value]="filteredDemandes()" [paginator]="true" paginatorDropdownAppendTo="body" [rows]="15"
-        [showCurrentPageReport]="true" responsiveLayout="scroll"
+        [showCurrentPageReport]="true" responsiveLayout="scroll" [rowHover]="true"
         currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} entrées"
         [rowsPerPageOptions]="[15, 30, 50]" groupRowsBy="dateGroup" rowGroupMode="subheader" sortField="dateGroup"
         [sortOrder]="-1"
@@ -158,7 +158,9 @@
         </ng-template>
 
         <ng-template pTemplate="body" let-demande>
-            <tr>
+            <!-- Ligne cliquable : ouvre le detail de la demande -->
+            <tr class="cursor-pointer"
+                (click)="viewDetailDemandeAttente(demande.demandeIndividuelId || demande.demandeindividuel_id)">
                 <td>
                     <span class="font-bold text-primary">
                         #{{ demande.demandeIndividuelId || demande.demandeindividuel_id }}
@@ -260,13 +262,13 @@
                     <div class="flex gap-2 justify-center">
                         <button pButton icon="pi pi-eye" class="p-button-rounded p-button-text p-button-sm"
                             pTooltip="Voir détails complets"
-                            (click)="viewDetailDemandeAttente(demande.demandeIndividuelId || demande.demandeindividuel_id)">
+                            (click)="$event.stopPropagation(); viewDetailDemandeAttente(demande.demandeIndividuelId || demande.demandeindividuel_id)">
                         </button>
                         @if(demande.garanties && demande.garanties.length > 0) {
                         <button pButton icon="pi pi-shield"
                             class="p-button-rounded p-button-text p-button-sm p-button-success"
                             [pTooltip]="'Voir ' + demande.garanties.length + ' garantie(s)'"
-                            (click)="viewDetailDemandeAttente(demande.demandeIndividuelId || demande.demandeindividuel_id)">
+                            (click)="$event.stopPropagation(); viewDetailDemandeAttente(demande.demandeIndividuelId || demande.demandeindividuel_id)">
                         </button>
                         }
                     </div>

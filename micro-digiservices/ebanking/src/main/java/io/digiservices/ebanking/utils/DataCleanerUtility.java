@@ -86,20 +86,28 @@ public class DataCleanerUtility {
      * Mappe le type d'habitation
      */
     public String mapTypeHabitat(String type) {
-        if (type == null) return null;
+        if (type == null || type.trim().isEmpty()) return null;
 
         String upperType = type.toUpperCase().trim();
-        return TYPE_HABITAT_MAP.getOrDefault(upperType, truncate(upperType, 2));
+        if (TYPE_HABITAT_MAP.containsKey(upperType)) return TYPE_HABITAT_MAP.get(upperType);
+        // Déjà un code SAF valide (PR, AL, AN, PC, CU, PO) → transmis tel quel
+        if (TYPE_HABITAT_MAP.containsValue(upperType)) return upperType;
+        // Valeur inconnue : ne rien envoyer plutôt que violer CHK_TENENCIA_VIVIENDA
+        return null;
     }
 
     /**
      * Mappe le type d'entreprise
      */
     public String mapTypeEntreprise(String type) {
-        if (type == null) return null;
+        if (type == null || type.trim().isEmpty()) return null;
 
         String upperType = type.toUpperCase().trim();
-        return TYPE_ENTREPRISE_MAP.getOrDefault(upperType, truncate(upperType, 2));
+        if (TYPE_ENTREPRISE_MAP.containsKey(upperType)) return TYPE_ENTREPRISE_MAP.get(upperType);
+        // Déjà un code SAF valide (PR, AL) → transmis tel quel
+        if (TYPE_ENTREPRISE_MAP.containsValue(upperType)) return upperType;
+        // Valeur inconnue : ne rien envoyer plutôt que violer CHK_TENENCIA_PUESTO
+        return null;
     }
 
     /**

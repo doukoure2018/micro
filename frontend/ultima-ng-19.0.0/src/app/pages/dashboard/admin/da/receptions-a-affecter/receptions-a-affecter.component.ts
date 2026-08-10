@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -23,7 +23,7 @@ import { TooltipModule } from 'primeng/tooltip';
 @Component({
     selector: 'app-receptions-a-affecter',
     standalone: true,
-    imports: [CommonModule, FormsModule, TableModule, ButtonModule, TagModule, ToastModule, TooltipModule, DialogModule, DropdownModule, TextareaModule, RouterLink],
+    imports: [CommonModule, FormsModule, TableModule, ButtonModule, TagModule, ToastModule, TooltipModule, DialogModule, DropdownModule, TextareaModule],
     providers: [MessageService],
     template: `
         <p-toast></p-toast>
@@ -33,12 +33,12 @@ import { TooltipModule } from 'primeng/tooltip';
                 <button pButton icon="pi pi-refresh" class="p-button-text" (click)="load()" [loading]="state().loading"></button>
             </div>
             <p class="text-sm text-gray-500">
-                Les demandes sont affectées directement par l'agent d'accueil à un agent de crédit, qui en est l'unique responsable. Cet écran vous permet de
-                <strong>réorienter un dossier vers un autre agent</strong> lorsque son responsable n'est plus disponible (l'état d'instruction est conservé), ou d'annuler une demande fraîchement réceptionnée (retour à
-                l'accueil avec motif).
+                Les demandes réceptionnées par l'agent d'accueil arrivent ici en <strong>attente d'affectation</strong> : choisissez l'agent de crédit qui sera l'unique responsable du dossier. Vous pouvez aussi
+                <strong>réorienter un dossier vers un autre agent</strong> lorsque son responsable n'est plus disponible (l'état d'instruction est conservé), ou annuler une demande fraîchement réceptionnée (retour à
+                l'accueil avec motif). Cliquez sur une ligne pour voir le détail de la demande.
             </p>
 
-            <p-table [value]="state().demandes" [loading]="state().loading" [paginator]="state().demandes.length > 10" [rows]="10" responsiveLayout="scroll">
+            <p-table [value]="state().demandes" [loading]="state().loading" [paginator]="state().demandes.length > 10" [rows]="10" responsiveLayout="scroll" [rowHover]="true">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Membre</th>
@@ -52,7 +52,8 @@ import { TooltipModule } from 'primeng/tooltip';
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-d>
-                    <tr>
+                    <!-- Ligne cliquable : ouvre le detail de la demande -->
+                    <tr class="cursor-pointer" (click)="voirDetail(d)">
                         <td>{{ d.prenom }} {{ d.nom }}<br /><span class="text-xs text-gray-500">{{ d.numeroMembre }}</span></td>
                         <td>{{ d.pointventeLibele || d.pos }}</td>
                         <td>{{ d.montantDemande | currency: 'GNF ' : 'symbol' : '1.0-0' }}</td>
@@ -70,7 +71,7 @@ import { TooltipModule } from 'primeng/tooltip';
                                     icon="pi pi-eye"
                                     class="p-button-sm p-button-text"
                                     pTooltip="Voir le détail"
-                                    [routerLink]="['/dashboards/credit/individuel/attente/detail', d.demandeIndividuelId]"
+                                    (click)="$event.stopPropagation(); voirDetail(d)"
                                 ></button>
                                 <button
                                     *ngIf="d.validationState !== 'CORRECTION_ACCUEIL'"
@@ -78,7 +79,7 @@ import { TooltipModule } from 'primeng/tooltip';
                                     [icon]="d.agentCreditAffecte ? 'pi pi-sync' : 'pi pi-user-plus'"
                                     class="p-button-sm"
                                     [pTooltip]="d.agentCreditAffecte ? 'Réorienter vers un autre agent' : 'Affecter à un agent de crédit'"
-                                    (click)="ouvrirAffectation(d)"
+                                    (click)="$event.stopPropagation(); ouvrirAffectation(d)"
                                 ></button>
                                 <button
                                     *ngIf="d.validationState === 'EN_ATTENTE_DA' || d.validationState === 'AFFECTEE'"
@@ -86,7 +87,7 @@ import { TooltipModule } from 'primeng/tooltip';
                                     icon="pi pi-times"
                                     class="p-button-sm p-button-danger p-button-outlined"
                                     pTooltip="Annuler (retour accueil)"
-                                    (click)="ouvrirAnnulation(d)"
+                                    (click)="$event.stopPropagation(); ouvrirAnnulation(d)"
                                 ></button>
                             </div>
                         </td>
@@ -117,6 +118,10 @@ import { TooltipModule } from 'primeng/tooltip';
                     styleClass="w-full"
                     appendTo="body"
                 ></p-dropdown>
+                <div *ngIf="autoAffectation()" class="p-2 border-round border-1 border-orange-200 bg-orange-50 text-orange-700 text-sm">
+                    <i class="pi pi-exclamation-triangle mr-1"></i>
+                    Cet agent a <strong>saisi cette demande lui-même</strong> (cumul accueil + crédit). Confirmez l'affectation en connaissance de cause.
+                </div>
             </div>
             <ng-template pTemplate="footer">
                 <button pButton label="Annuler" icon="pi pi-times" class="p-button-text" (click)="fermerDialogs()"></button>
@@ -142,6 +147,7 @@ export class ReceptionsAAffecterComponent implements OnInit {
     private userService = inject(UserService);
     private messageService = inject(MessageService);
     private destroyRef = inject(DestroyRef);
+    private router = inject(Router);
 
     state = signal<{
         demandes: any[];
@@ -185,14 +191,28 @@ export class ReceptionsAAffecterComponent implements OnInit {
     }
 
     /**
-     * Agents éligibles à l'analyse : rôle AGENT_CREDIT SANS fonction Accueil active.
-     * Exclusivité réception/analyse : un agent habilité à saisir des demandes
-     * ne peut pas en recevoir pour analyse (contrôle également appliqué côté backend).
+     * Agents éligibles à l'analyse : rôle AGENT_CREDIT. Le cumul accueil + crédit
+     * est autorisé (points de service mono-agent) : ces agents sont signalés
+     * « accueil + crédit » dans la liste, et une alerte s'affiche si le DA affecte
+     * une demande à l'agent qui l'a lui-même saisie.
      */
     agentsCredit(): { label: string; value: number }[] {
         return this.state()
-            .agents.filter((a) => a.role === 'AGENT_CREDIT' && !a.fonctionAccueil)
-            .map((a) => ({ label: `${a.firstName} ${a.lastName}${a.pointventeLibele ? ' — ' + a.pointventeLibele : ''}`, value: a.userId }));
+            .agents.filter((a) => a.role === 'AGENT_CREDIT')
+            .map((a) => ({
+                label: `${a.firstName} ${a.lastName}${a.pointventeLibele ? ' — ' + a.pointventeLibele : ''}${a.fonctionAccueil ? ' (accueil + crédit)' : ''}`,
+                value: a.userId
+            }));
+    }
+
+    /** L'agent choisi est celui qui a saisi la demande (cumul accueil + crédit). */
+    autoAffectation(): boolean {
+        const d = this.state().selected;
+        return !!d?.saisiePar && !!this.agentSelectionne && Number(d.saisiePar) === Number(this.agentSelectionne.value);
+    }
+
+    voirDetail(d: any): void {
+        this.router.navigate(['/dashboards/credit/individuel/attente/detail', d.demandeIndividuelId]);
     }
 
     ouvrirAffectation(d: any): void {

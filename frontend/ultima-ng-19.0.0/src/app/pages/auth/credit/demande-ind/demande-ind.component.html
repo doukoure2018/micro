@@ -631,21 +631,13 @@
             </table>
         </div>
 
-        <!-- Affectation directe (mode réception accueil) -->
+        <!-- Mode réception accueil : la demande sera affectée par le DA -->
         @if (isAccueilMode) {
         <div class="card" style="border-left: 4px solid #6366f1; margin-top: 1rem;">
-            <div class="font-bold mb-2"><i class="pi pi-user-plus" style="color: #6366f1;"></i> Affectation à un agent de crédit</div>
-            <p class="text-sm" style="color: #6b7280; margin-top: 0;">
-                Sélectionnez l'agent de crédit qui sera <strong>l'unique responsable</strong> de ce dossier tout au long du processus.
-                Seul le DA pourra le réorienter vers un autre agent en cas d'indisponibilité.
+            <div class="font-bold mb-2"><i class="pi pi-info-circle" style="color: #6366f1;"></i> Transmission au Directeur d'Agence</div>
+            <p class="text-sm" style="color: #6b7280; margin: 0;">
+                Après soumission, la demande sera transmise au <strong>Directeur d'Agence</strong> qui l'affectera à un agent de crédit.
             </p>
-            <p-dropdown [(ngModel)]="agentAffectation" name="agentAffectation" [options]="agentsEligibles"
-                optionLabel="label" placeholder="Choisir l'agent de crédit destinataire *" [filter]="true" filterBy="label"
-                [style]="{ minWidth: '340px' }" [disabled]="state().submitting" appendTo="body">
-            </p-dropdown>
-            @if (!agentAffectation) {
-            <div class="text-sm mt-2" style="color: #ea580c;"><i class="pi pi-exclamation-circle"></i> L'agent destinataire est obligatoire pour soumettre la demande.</div>
-            }
         </div>
         }
 
@@ -660,7 +652,7 @@
                 </button>
                 <button type="submit" pButton icon="pi pi-save" label="Soumettre la demande"
                     [loading]="state().submitting"
-                    [disabled]="demandeForm.invalid || state().submitting || state().garanties.length === 0 || (isAccueilMode && !agentAffectation)">
+                    [disabled]="demandeForm.invalid || state().submitting || state().garanties.length === 0">
                 </button>
             </div>
         </div>

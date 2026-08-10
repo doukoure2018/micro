@@ -66,7 +66,7 @@ public interface WorkflowRepository {
     int confirmerRejetDG(Long demandeId, String instructions, String sectionsARevoir, String confirmedBy);
 
     // Accueil (reception des demandes, affectation directe a un agent de credit)
-    int marquerReception(Long demandeId, Long userId, String codUsuarios, Long agentUserId, String affectePar);
+    int marquerReception(Long demandeId, Long userId, String codUsuarios);
     List<WorkflowDemandeDto> getAAffecterDA(Long agenceId);
     int affecterAC(Long demandeId, Long agentUserId, String affectePar);
     int annulerAccueil(Long demandeId, String motif);

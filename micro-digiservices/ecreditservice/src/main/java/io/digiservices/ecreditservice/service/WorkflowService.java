@@ -62,7 +62,7 @@ public interface WorkflowService {
     void confirmerRejetDG(Long demandeId, String instructions, java.util.List<String> sectionsARevoir, String confirmedBy);
 
     // Accueil (reception des demandes, affectation directe a un agent de credit)
-    void marquerReception(Long demandeId, Long userId, String codUsuarios, Long agentUserId, String affectePar, Long agenceIdAccueil);
+    void marquerReception(Long demandeId, Long userId, String codUsuarios);
     List<AgentAgenceDto> getAgentsCreditEligibles(Long agenceId);
     List<WorkflowDemandeDto> getAAffecterDA(Long agenceId);
     void affecterAC(Long demandeId, Long agentUserId, String affectePar, Long agenceIdDA);

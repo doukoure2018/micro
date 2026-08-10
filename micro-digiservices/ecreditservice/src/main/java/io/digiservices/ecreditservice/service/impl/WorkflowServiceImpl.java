@@ -286,27 +286,28 @@ public class WorkflowServiceImpl implements WorkflowService {
 
     @Override
     @Transactional
-    public void marquerReception(Long demandeId, Long userId, String codUsuarios, Long agentUserId, String affectePar, Long agenceIdAccueil) {
-        if (agentUserId == null) {
-            throw new ApiException("L'agent de credit destinataire est obligatoire");
-        }
-        verifierEligibiliteAgent(agentUserId, agenceIdAccueil);
-        log.info("Reception demande {} par l'accueil {} — affectee directement a l'agent {}", demandeId, codUsuarios, agentUserId);
-        int rows = workflowRepository.marquerReception(demandeId, userId, codUsuarios, agentUserId, affectePar);
+    public void marquerReception(Long demandeId, Long userId, String codUsuarios) {
+        log.info("Reception demande {} par l'accueil {} — en attente d'affectation par le DA", demandeId, codUsuarios);
+        int rows = workflowRepository.marquerReception(demandeId, userId, codUsuarios);
         if (rows == 0) {
             throw new ApiException("Demande non trouvee ou etat invalide pour la reception");
         }
     }
 
-    /** Agents de credit eligibles a une affectation : role AGENT_CREDIT, sans fonction ACCUEIL active. */
+    /**
+     * Agents de credit eligibles a une affectation : role AGENT_CREDIT.
+     * Le cumul accueil + credit est autorise (points de service mono-agent) :
+     * un agent avec la fonction ACCUEIL active saisit ET analyse. Le garde-fou
+     * est le DA, qui affecte chaque demande en voyant qui l'a saisie.
+     */
     @Override
     public java.util.List<AgentAgenceDto> getAgentsCreditEligibles(Long agenceId) {
         return workflowRepository.getAgentsAgence(agenceId).stream()
-                .filter(a -> "AGENT_CREDIT".equals(a.getRole()) && !Boolean.TRUE.equals(a.getFonctionAccueil()))
+                .filter(a -> "AGENT_CREDIT".equals(a.getRole()))
                 .toList();
     }
 
-    /** Exclusivite reception/analyse + perimetre agence, partages entre accueil et DA. */
+    /** Perimetre agence + role : seul un agent de credit de l'agence peut recevoir une affectation. */
     private void verifierEligibiliteAgent(Long agentUserId, Long agenceId) {
         Long agenceAgent = workflowRepository.getAgenceOfUser(agentUserId);
         if (agenceAgent == null || !agenceAgent.equals(agenceId)) {
@@ -314,9 +315,6 @@ public class WorkflowServiceImpl implements WorkflowService {
         }
         if (!workflowRepository.getRolesOfUser(agentUserId).contains("AGENT_CREDIT")) {
             throw new ApiException("Seul un agent de credit peut recevoir une affectation");
-        }
-        if (workflowRepository.getMesFonctions(agentUserId).contains("ACCUEIL")) {
-            throw new ApiException("Cet agent a la fonction Accueil active : il saisit les demandes et ne peut pas en recevoir pour analyse");
         }
     }
 
@@ -372,10 +370,8 @@ public class WorkflowServiceImpl implements WorkflowService {
     @Override
     @Transactional
     public void prendreEnChargeAC(Long demandeId, Long userId) {
-        // Exclusivite reception/analyse : la fonction ACCUEIL active bloque l'instruction.
-        if (workflowRepository.getMesFonctions(userId).contains("ACCUEIL")) {
-            throw new ApiException("Votre fonction Accueil est active : vous ne pouvez pas analyser de demandes. Rapprochez-vous de votre DA");
-        }
+        // Cumul accueil + credit autorise : la fonction ACCUEIL active ne bloque plus
+        // l'instruction (points de service mono-agent). Le DA reste le garde-fou a l'affectation.
         log.info("Prise en charge de la demande {} par l'agent de credit {}", demandeId, userId);
         int rows = workflowRepository.prendreEnChargeAC(demandeId, userId);
         if (rows == 0) {

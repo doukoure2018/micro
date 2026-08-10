@@ -1577,8 +1577,8 @@ export class UserService {
 
     // ==================== ACCUEIL (reception des demandes) ====================
 
-    marquerReception$ = (demandeId: number, agentUserId: number) =>
-        <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/marquer-reception`, { agentUserId }).pipe(catchError(this.handleError));
+    marquerReception$ = (demandeId: number) =>
+        <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/marquer-reception`, {}).pipe(catchError(this.handleError));
 
     getAgentsCreditEligibles$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/agents-credit-eligibles`).pipe(catchError(this.handleError));
 

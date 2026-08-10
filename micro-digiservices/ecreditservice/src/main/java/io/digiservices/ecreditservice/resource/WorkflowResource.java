@@ -464,26 +464,24 @@ public class WorkflowResource {
     // ==================== ACCUEIL (reception des demandes) ====================
 
     /**
-     * L'accueil marque sa saisie comme receptionnee avec AFFECTATION DIRECTE a
-     * l'agent de credit choisi (-> AFFECTEE) : plus de file d'attente DA.
+     * L'accueil marque sa saisie comme receptionnee : la demande part en file
+     * EN_ATTENTE_DA et c'est le DA qui l'affecte a un agent de credit.
      */
     @PutMapping("/{demandeId}/marquer-reception")
     public ResponseEntity<Response> marquerReception(
             @PathVariable Long demandeId,
-            @RequestBody Map<String, Object> body,
             Authentication authentication,
             HttpServletRequest httpRequest) {
         var user = userClient.getUserByUuid(authentication.getName());
         requireFonctionAccueil(user);
-        Long agentUserId = toLong(body.get("agentUserId"));
         String codUsuarios = user.getFirstName() + " " + user.getLastName();
-        workflowService.marquerReception(demandeId, user.getUserId(), codUsuarios, agentUserId, codUsuarios, user.getAgenceId());
+        workflowService.marquerReception(demandeId, user.getUserId(), codUsuarios);
         return ResponseEntity.ok(
-                getResponse(httpRequest, Map.of("message", "Demande receptionnee et affectee"),
-                        "Demande affectee a l'agent de credit", OK));
+                getResponse(httpRequest, Map.of("message", "Demande receptionnee"),
+                        "Demande transmise au DA pour affectation", OK));
     }
 
-    /** Agents de credit eligibles a une affectation (accueil et DA) : role AGENT_CREDIT sans fonction Accueil. */
+    /** Agents de credit eligibles a une affectation (DA) : role AGENT_CREDIT, cumul accueil + credit autorise. */
     @GetMapping("/agents-credit-eligibles")
     public ResponseEntity<Response> getAgentsCreditEligibles(Authentication authentication, HttpServletRequest httpRequest) {
         var user = userClient.getUserByUuid(authentication.getName());

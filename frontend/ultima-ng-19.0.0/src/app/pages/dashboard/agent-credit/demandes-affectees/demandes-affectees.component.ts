@@ -30,9 +30,9 @@ import { TooltipModule } from 'primeng/tooltip';
             </div>
             <p class="text-sm text-gray-500">Demandes réceptionnées à l'accueil et que votre Directeur d'Agence vous a affectées pour analyse. Prenez-les en charge pour démarrer l'instruction.</p>
 
-            <div *ngIf="state().fonctionAccueil" class="p-3 mb-3 rounded border border-orange-300 bg-orange-50 text-orange-800 text-sm flex items-center gap-2">
-                <i class="pi pi-lock"></i>
-                Votre fonction <strong>Accueil</strong> est active : vous saisissez les demandes et ne pouvez pas en analyser. La prise en charge est désactivée — rapprochez-vous de votre DA.
+            <div *ngIf="state().fonctionAccueil" class="p-3 mb-3 rounded border border-blue-300 bg-blue-50 text-blue-800 text-sm flex items-center gap-2">
+                <i class="pi pi-info-circle"></i>
+                Votre fonction <strong>Accueil</strong> est active en plus de la fonction Crédit : vous saisissez les demandes <strong>et</strong> analysez celles que votre DA vous affecte.
             </div>
 
             <p-table [value]="state().demandes" [loading]="state().loading" [paginator]="state().demandes.length > 10" [rows]="10" responsiveLayout="scroll">
@@ -63,8 +63,6 @@ import { TooltipModule } from 'primeng/tooltip';
                                 label="Prendre en charge"
                                 icon="pi pi-play"
                                 class="p-button-sm"
-                                [disabled]="state().fonctionAccueil"
-                                [pTooltip]="state().fonctionAccueil ? 'Fonction Accueil active : analyse non autorisée' : ''"
                                 (click)="prendreEnCharge(d)"
                             ></button>
                         </td>
@@ -89,7 +87,7 @@ export class DemandesAffecteesComponent implements OnInit {
 
     ngOnInit(): void {
         this.load();
-        // Exclusivité réception/analyse : la fonction Accueil active bloque la prise en charge
+        // Cumul accueil + crédit autorisé : la fonction Accueil est simplement signalée (bandeau info)
         this.userService
             .getMesFonctions$()
             .pipe(takeUntilDestroyed(this.destroyRef))
