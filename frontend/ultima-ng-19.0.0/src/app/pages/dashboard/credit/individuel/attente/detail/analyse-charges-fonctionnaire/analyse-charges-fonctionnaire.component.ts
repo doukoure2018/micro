@@ -1,4 +1,4 @@
-import { AnalyseChargesFonctionnaire, DemandeIndividuel, PieceJointeDemande, TAUX_QUOTITE_FONCTIONNAIRE } from '@/interface/demande-individuel.interface';
+import { AnalyseChargesFonctionnaire, DemandeIndividuel, PieceJointeDemande, quotiteCessibleFonctionnaire } from '@/interface/demande-individuel.interface';
 import { UserService } from '@/service/user.service';
 import { CommonModule, registerLocaleData } from '@angular/common';
 import localeFr from '@angular/common/locales/fr';
@@ -12,7 +12,6 @@ import { ButtonModule } from 'primeng/button';
 import { DropdownModule } from 'primeng/dropdown';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { TagModule } from 'primeng/tag';
-import { TextareaModule } from 'primeng/textarea';
 import { ToastModule } from 'primeng/toast';
 
 registerLocaleData(localeFr, 'fr-FR');
@@ -25,7 +24,7 @@ registerLocaleData(localeFr, 'fr-FR');
 @Component({
     selector: 'app-analyse-charges-fonctionnaire',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule, ButtonModule, DropdownModule, InputNumberModule, TagModule, TextareaModule, ToastModule],
+    imports: [CommonModule, FormsModule, RouterModule, ButtonModule, DropdownModule, InputNumberModule, TagModule, ToastModule],
     templateUrl: './analyse-charges-fonctionnaire.component.html',
     providers: [MessageService]
 })
@@ -59,11 +58,10 @@ export class AnalyseChargesFonctionnaireComponent implements OnInit {
     state = signal<{
         loading: boolean;
         saving: boolean;
-        soumission: boolean;
         uploading: boolean;
         demande?: DemandeIndividuel;
         pieces: PieceJointeDemande[];
-    }>({ loading: true, saving: false, soumission: false, uploading: false, pieces: [] });
+    }>({ loading: true, saving: false, uploading: false, pieces: [] });
 
     typePieceOptions = [
         { label: 'Bulletin de salaire', value: 'BULLETIN_SALAIRE' },
@@ -114,7 +112,7 @@ export class AnalyseChargesFonctionnaireComponent implements OnInit {
     }
 
     quotiteCessible(): number {
-        return Math.round(this.salaireNet() * TAUX_QUOTITE_FONCTIONNAIRE);
+        return quotiteCessibleFonctionnaire(this.salaireNet());
     }
 
     capaciteResiduelle(): number {
@@ -153,36 +151,6 @@ export class AnalyseChargesFonctionnaireComponent implements OnInit {
                 error: (error) => {
                     this.state.update((s) => ({ ...s, saving: false }));
                     this.messageService.add({ severity: 'error', summary: 'Erreur', detail: error.message || "Échec de l'enregistrement", life: 7000 });
-                }
-            });
-    }
-
-    /** L'AC peut soumettre depuis SELECTION (instruction) ou CORRECTION (retour DA). */
-    peutSoumettre(): boolean {
-        const vs = this.state().demande?.validationState || '';
-        return (vs === 'SELECTION' || vs === 'CORRECTION') && this.analyse.analyseChargesId != null;
-    }
-
-    /** Soumet le dossier à la validation DA ; le backend re-vérifie quotité et capacité (bloquant). */
-    soumettreValidation(): void {
-        this.state.update((s) => ({ ...s, soumission: true }));
-        this.userService
-            .approuverAC$(this.demandeIndividuelId, this.analyse.avisAgent || 'Analyse charges & quotité complétée')
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: () => {
-                    this.messageService.add({
-                        severity: 'success',
-                        summary: 'Dossier soumis',
-                        detail: "La demande a été transmise au Directeur d'Agence pour validation",
-                        life: 5000
-                    });
-                    this.state.update((s) => ({ ...s, soumission: false }));
-                    setTimeout(() => this.retourDetail(), 1500);
-                },
-                error: (error) => {
-                    this.state.update((s) => ({ ...s, soumission: false }));
-                    this.messageService.add({ severity: 'error', summary: 'Soumission refusée', detail: error.message || 'Échec de la soumission', life: 9000 });
                 }
             });
     }
@@ -258,8 +226,7 @@ export class AnalyseChargesFonctionnaireComponent implements OnInit {
             chargeCasSociaux: 0,
             chargeAbonnementImage: 0,
             chargeServiceSalubrite: 0,
-            autresRevenusRetenus: 0,
-            avisAgent: ''
+            autresRevenusRetenus: 0
         };
     }
 }

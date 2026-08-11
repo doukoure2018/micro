@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +23,9 @@ public class AnalyseChargesFonctionnaireServiceImpl implements AnalyseChargesFon
 
     public static final String VERDICT_FINANCABLE = "FINANCABLE";
     public static final String VERDICT_NON_FINANCABLE = "NON_FINANCABLE";
+
+    /** États où l'AC instruit le dossier : seuls moments où l'analyse peut être (ré)écrite. */
+    private static final Set<String> ETATS_MODIFIABLES = Set.of("SELECTION", "CORRECTION");
 
     private final AnalyseChargesFonctionnaireRepository repository;
 
@@ -39,6 +43,10 @@ public class AnalyseChargesFonctionnaireServiceImpl implements AnalyseChargesFon
         }
         if (!CreditFonctionnaireValidator.NATURE_FONCTIONNAIRE.equals(ctx.natureClient())) {
             throw new ValidationException("L'analyse des charges est réservée aux demandes de nature Fonctionnaire");
+        }
+        if (!ETATS_MODIFIABLES.contains(ctx.validationState())) {
+            throw new ValidationException(
+                    "L'analyse des charges ne peut plus être modifiée : le dossier n'est plus en instruction par l'agent de crédit");
         }
         if (ctx.salaireNetMensuel() == null || ctx.salaireNetMensuel().compareTo(BigDecimal.ZERO) <= 0) {
             throw new ValidationException("Le salaire net de la demande fonctionnaire est manquant : corrigez la demande avant l'analyse");

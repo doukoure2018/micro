@@ -8,6 +8,7 @@ public class AnalyseChargesFonctionnaireQuery {
     public static final String SELECT_CONTEXTE_FONCTIONNAIRE = """
         SELECT d.demandeindividuel_id,
                d.nature_client,
+               d.validation_state,
                d.echeance,
                d.periodicite_remboursement,
                df.salaire_net_mensuel,

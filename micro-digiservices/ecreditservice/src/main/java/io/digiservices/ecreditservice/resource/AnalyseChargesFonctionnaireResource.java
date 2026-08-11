@@ -3,11 +3,9 @@ package io.digiservices.ecreditservice.resource;
 import io.digiservices.clients.UserClient;
 import io.digiservices.ecreditservice.domain.Response;
 import io.digiservices.ecreditservice.dto.AnalyseChargesFonctionnaireDto;
-import io.digiservices.ecreditservice.dto.PieceJointeDto;
-import io.digiservices.ecreditservice.exception.ApiException;
-import io.digiservices.ecreditservice.repository.DemandePieceJointeRepository;
+import io.digiservices.ecreditservice.exception.ValidationException;
 import io.digiservices.ecreditservice.service.AnalyseChargesFonctionnaireService;
-import io.digiservices.ecreditservice.service.FileStorageService;
+import io.digiservices.ecreditservice.service.DemandePieceJointeService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,8 +32,7 @@ import static org.springframework.http.HttpStatus.OK;
 public class AnalyseChargesFonctionnaireResource {
 
     private final AnalyseChargesFonctionnaireService analyseChargesService;
-    private final DemandePieceJointeRepository pieceJointeRepository;
-    private final FileStorageService fileStorageService;
+    private final DemandePieceJointeService pieceJointeService;
     private final UserClient userClient;
 
     @GetMapping("/analyse-charges/{demandeId}")
@@ -55,6 +52,9 @@ public class AnalyseChargesFonctionnaireResource {
             Authentication authentication,
             HttpServletRequest httpRequest) {
         var user = userClient.getUserByUuid(authentication.getName());
+        if (!"AGENT_CREDIT".equals(user.getRole())) {
+            throw new ValidationException("Seul l'agent de crédit peut enregistrer l'analyse des charges");
+        }
         String analysePar = user.getFirstName() + " " + user.getLastName();
         var result = analyseChargesService.enregistrer(demandeId, dto, analysePar);
         return ResponseEntity.ok(
@@ -69,7 +69,7 @@ public class AnalyseChargesFonctionnaireResource {
             @PathVariable Long demandeId,
             HttpServletRequest httpRequest) {
         return ResponseEntity.ok(
-                getResponse(httpRequest, Map.of("pieces", pieceJointeRepository.findByDemandeId(demandeId)),
+                getResponse(httpRequest, Map.of("pieces", pieceJointeService.getByDemandeId(demandeId)),
                         "Pièces jointes récupérées", OK));
     }
 
@@ -81,14 +81,8 @@ public class AnalyseChargesFonctionnaireResource {
             Authentication authentication,
             HttpServletRequest httpRequest) {
         var user = userClient.getUserByUuid(authentication.getName());
-        String fileUrl = fileStorageService.storeFile(file);
-        var piece = pieceJointeRepository.insert(PieceJointeDto.builder()
-                .demandeindividuelId(demandeId)
-                .typePiece(typePiece)
-                .nomFichier(file.getOriginalFilename())
-                .urlFichier(fileUrl)
-                .ajoutePar(user.getFirstName() + " " + user.getLastName())
-                .build());
+        var piece = pieceJointeService.upload(demandeId, typePiece, file,
+                user.getFirstName() + " " + user.getLastName());
         return ResponseEntity.ok(
                 getResponse(httpRequest, Map.of("piece", piece),
                         "Pièce jointe enregistrée", OK));
@@ -98,14 +92,7 @@ public class AnalyseChargesFonctionnaireResource {
     public ResponseEntity<Response> deletePiece(
             @PathVariable Long pieceJointeId,
             HttpServletRequest httpRequest) {
-        var piece = pieceJointeRepository.findById(pieceJointeId)
-                .orElseThrow(() -> new ApiException("Pièce jointe non trouvée"));
-        pieceJointeRepository.delete(pieceJointeId);
-        try {
-            fileStorageService.deleteFile(piece.getUrlFichier());
-        } catch (Exception e) {
-            log.warn("Fichier de la pièce {} introuvable ou non supprimé: {}", pieceJointeId, e.getMessage());
-        }
+        pieceJointeService.delete(pieceJointeId);
         return ResponseEntity.ok(
                 getResponse(httpRequest, Map.of("message", "Pièce supprimée"),
                         "Pièce jointe supprimée", OK));

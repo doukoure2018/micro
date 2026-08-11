@@ -17,6 +17,7 @@ public interface AnalyseChargesFonctionnaireRepository {
     record ContexteFonctionnaire(
             Long demandeindividuelId,
             String natureClient,
+            String validationState,
             BigDecimal echeance,
             String periodiciteRemboursement,
             BigDecimal salaireNetMensuel,

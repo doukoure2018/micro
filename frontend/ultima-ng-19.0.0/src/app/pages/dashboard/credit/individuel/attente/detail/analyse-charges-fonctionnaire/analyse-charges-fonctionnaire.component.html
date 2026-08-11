@@ -185,7 +185,7 @@
                         <td class="p-3 text-gray-500">{{ piece.ajoutePar || 'N/A' }}</td>
                         <td class="p-3 text-right">
                             <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-danger p-button-sm"
-                                [disabled]="state().saving || state().soumission" (click)="supprimerPiece(piece)"></button>
+                                [disabled]="state().saving" (click)="supprimerPiece(piece)"></button>
                         </td>
                     </tr>
                     }

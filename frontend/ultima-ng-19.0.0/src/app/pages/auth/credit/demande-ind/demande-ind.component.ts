@@ -1,6 +1,6 @@
 import { Agence } from '@/interface/agence';
 import { Delegation } from '@/interface/delegation';
-import { DemandeFonctionnaire, DemandeIndividuel, GarantiePropose, TAUX_QUOTITE_FONCTIONNAIRE } from '@/interface/demande-individuel.interface';
+import { DemandeFonctionnaire, DemandeIndividuel, GarantiePropose, NATURE_CREDIT_FONCTIONNAIRE, TYPE_CONTRAT_OPTIONS_FONCTIONNAIRE, demandeFonctionnaireVide, quotiteCessibleFonctionnaire } from '@/interface/demande-individuel.interface';
 import { PointVente } from '@/interface/point.vente';
 import { TypeCreditDto } from '@/interface/typeCredit.model';
 import { Activite, CreditActiviteData, SousActivite, SousSousActivite, TypeCredit } from '@/service/credit-activite.model';
@@ -11,6 +11,8 @@ import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 
 registerLocaleData(localeFr, 'fr-FR');
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { forkJoin, Observable, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { FormsModule, NgForm } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -230,11 +232,7 @@ export class DemandeIndComponent implements OnInit {
     fichierBulletinSalaire: File | null = null;
     fichierAttestationService: File | null = null;
 
-    typeContratOptions = [
-        { label: 'Titulaire', value: 'Titulaire' },
-        { label: 'Contractuel', value: 'Contractuel' },
-        { label: 'Retraité', value: 'Retraite' }
-    ];
+    typeContratOptions = TYPE_CONTRAT_OPTIONS_FONCTIONNAIRE;
 
     // Options pour les dropdowns d'activités - value doit être number
     activiteOptions: { label: string; value: number; data: Activite }[] = [];
@@ -370,12 +368,12 @@ export class DemandeIndComponent implements OnInit {
     }
 
     isFonctionnaire(): boolean {
-        return this.formData.natureClient === 'Demande de credit Pour Fonctionnaire';
+        return this.formData.natureClient === NATURE_CREDIT_FONCTIONNAIRE;
     }
 
     /** Quotité cessible = salaire net x 35 % : plafond de l'échéance mensuelle. */
     quotiteCessible(): number {
-        return Math.round((this.fonctionnaire.salaireNetMensuel || 0) * TAUX_QUOTITE_FONCTIONNAIRE);
+        return quotiteCessibleFonctionnaire(this.fonctionnaire.salaireNetMensuel);
     }
 
     /** Vrai si l'échéance saisie dépasse la quotité cessible (blocage de soumission). */
@@ -384,17 +382,7 @@ export class DemandeIndComponent implements OnInit {
     }
 
     private getInitialFonctionnaire(): DemandeFonctionnaire {
-        return {
-            serviceEmployeur: '',
-            departementMinistere: '',
-            ancienneteAnnees: undefined,
-            typeContrat: '',
-            matricule: '',
-            salaireNetMensuel: 0,
-            autresRevenus: 0,
-            nombreEpouses: 0,
-            domiciliationSalaire: false
-        };
+        return demandeFonctionnaireVide();
     }
 
     onPieceSelected(event: Event, type: 'bulletin' | 'attestation'): void {
@@ -407,28 +395,37 @@ export class DemandeIndComponent implements OnInit {
         }
     }
 
-    /** Upload des pièces du dossier fonctionnaire après création de la demande. */
-    private uploadPiecesFonctionnaire(demandeId: number): void {
+    /**
+     * Upload des pièces du dossier fonctionnaire après création de la demande.
+     * Retourne un observable qui se termine quand tous les envois sont finis :
+     * la navigation doit l'attendre, sinon la destruction du composant annule
+     * les requêtes en cours et les pièces manquent silencieusement au dossier.
+     */
+    private uploadPiecesFonctionnaire(demandeId: number): Observable<unknown> {
         const uploads: { typePiece: string; file: File }[] = [];
         if (this.fichierBulletinSalaire) uploads.push({ typePiece: 'BULLETIN_SALAIRE', file: this.fichierBulletinSalaire });
         if (this.fichierAttestationService) uploads.push({ typePiece: 'ATTESTATION_SERVICE', file: this.fichierAttestationService });
+        this.fichierBulletinSalaire = null;
+        this.fichierAttestationService = null;
 
-        uploads.forEach(({ typePiece, file }) => {
-            this.creditService
-                .uploadPieceDemande$(demandeId, typePiece, file)
-                .pipe(takeUntilDestroyed(this.destroyRef))
-                .subscribe({
-                    error: () =>
+        if (uploads.length === 0) {
+            return of(null);
+        }
+        return forkJoin(
+            uploads.map(({ typePiece, file }) =>
+                this.creditService.uploadPieceDemande$(demandeId, typePiece, file).pipe(
+                    catchError(() => {
                         this.messageService.add({
                             severity: 'warn',
                             summary: 'Pièce non jointe',
                             detail: `Échec de l'envoi de « ${file.name} » — elle pourra être rattachée depuis l'écran d'analyse`,
                             life: 7000
-                        })
-                });
-        });
-        this.fichierBulletinSalaire = null;
-        this.fichierAttestationService = null;
+                        });
+                        return of(null);
+                    })
+                )
+            )
+        );
     }
 
     // ======================== INITIALISATION ========================
@@ -880,12 +877,17 @@ export class DemandeIndComponent implements OnInit {
             prefecture: this.formData.prefecture || '',
             sousPrefecture: this.formData.sousPrefecture || '',
             email: this.formData.email || '',
-            tipCredito: this.isFonctionnaire() ? (this.formData.tipCredito ?? 7) : this.formData.tipCredito,
+            // Fonctionnaire : type 7 (CREDIT FONCTIONNAIRES EPARGNANTS) imposé, même si un
+            // autre type avait été choisi avant une bascule de nature (le champ est masqué)
+            tipCredito: this.isFonctionnaire() ? 7 : this.formData.tipCredito,
             descriptionActivite: this.formData.descriptionActivite || '',
-            garanties: this.state().garanties.map((g) => ({
-                ...g,
-                typeGarantie: this.convertTypeGarantie(g.typeGarantie!)
-            })),
+            // Fonctionnaire : aucune garantie classique — on écarte celles saisies avant une bascule de nature
+            garanties: this.isFonctionnaire()
+                ? []
+                : this.state().garanties.map((g) => ({
+                      ...g,
+                      typeGarantie: this.convertTypeGarantie(g.typeGarantie!)
+                  })),
             statutDemande: 'EN_ATTENTE',
             validationState: this.isAccueilMode ? 'EN_ATTENTE_DA' : 'NOUVEAU',
             currentActivite: this.getActiviteLibelle(),
@@ -901,9 +903,7 @@ export class DemandeIndComponent implements OnInit {
                 next: (response) => {
                     console.log('Réponse:', response);
                     const demandeId = response.data?.demandeId;
-                    if (demandeId && this.isFonctionnaire()) {
-                        this.uploadPiecesFonctionnaire(+demandeId);
-                    }
+                    const pieces$ = demandeId && this.isFonctionnaire() ? this.uploadPiecesFonctionnaire(+demandeId) : of(null);
                     if (this.isAccueilMode && demandeId) {
                         this.creditService
                             .marquerReception$(+demandeId)
@@ -922,7 +922,10 @@ export class DemandeIndComponent implements OnInit {
                     form.resetForm();
                     this.resetForm();
                     const target = this.isAccueilMode ? ['/dashboards/accueil/mes-receptions'] : ['/'];
-                    setTimeout(() => this.router.navigate(target), 2000);
+                    // On ne quitte l'écran qu'une fois les pièces jointes envoyées (la navigation détruirait les requêtes)
+                    pieces$.subscribe({
+                        complete: () => setTimeout(() => this.router.navigate(target), 1500)
+                    });
                 },
                 error: (error) => {
                     console.error('Erreur:', error);

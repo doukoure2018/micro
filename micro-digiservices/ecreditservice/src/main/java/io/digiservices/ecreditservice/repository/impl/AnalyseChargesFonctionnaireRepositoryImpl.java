@@ -76,6 +76,7 @@ public class AnalyseChargesFonctionnaireRepositoryImpl implements AnalyseCharges
                     .query((rs, rowNum) -> new ContexteFonctionnaire(
                             rs.getLong("demandeindividuel_id"),
                             rs.getString("nature_client"),
+                            rs.getString("validation_state"),
                             rs.getBigDecimal("echeance"),
                             rs.getString("periodicite_remboursement"),
                             rs.getBigDecimal("salaire_net_mensuel"),

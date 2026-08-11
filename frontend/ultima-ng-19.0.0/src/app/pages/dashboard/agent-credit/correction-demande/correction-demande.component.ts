@@ -1,6 +1,6 @@
 import { Agence } from '@/interface/agence';
 import { Delegation } from '@/interface/delegation';
-import { DemandeFonctionnaire, DemandeIndividuel, GarantiePropose, TAUX_QUOTITE_FONCTIONNAIRE } from '@/interface/demande-individuel.interface';
+import { DemandeFonctionnaire, DemandeIndividuel, GarantiePropose, NATURE_CREDIT_FONCTIONNAIRE, TYPE_CONTRAT_OPTIONS_FONCTIONNAIRE, demandeFonctionnaireVide, quotiteCessibleFonctionnaire } from '@/interface/demande-individuel.interface';
 import { PointVente } from '@/interface/point.vente';
 import { TypeCreditDto } from '@/interface/typeCredit.model';
 import { Activite, CreditActiviteData, SousActivite, SousSousActivite, TypeCredit } from '@/service/credit-activite.model';
@@ -140,11 +140,7 @@ export class CorrectionDemandeComponent implements OnInit {
     // Extension fonctionnaire (nature « Fonctionnaire ») — hors formData pour ne pas polluer form.value
     fonctionnaire: DemandeFonctionnaire = this.getInitialFonctionnaire();
 
-    typeContratOptions = [
-        { label: 'Titulaire', value: 'Titulaire' },
-        { label: 'Contractuel', value: 'Contractuel' },
-        { label: 'Retraité', value: 'Retraite' }
-    ];
+    typeContratOptions = TYPE_CONTRAT_OPTIONS_FONCTIONNAIRE;
 
     activiteOptions: { label: string; value: number; data: Activite }[] = [];
     sousActiviteOptions: { label: string; value: number; data: SousActivite }[] = [];
@@ -526,12 +522,12 @@ export class CorrectionDemandeComponent implements OnInit {
     }
 
     isFonctionnaire(): boolean {
-        return this.formData.natureClient === 'Demande de credit Pour Fonctionnaire';
+        return this.formData.natureClient === NATURE_CREDIT_FONCTIONNAIRE;
     }
 
     /** Quotité cessible = salaire net x 35 % : plafond de l'échéance mensuelle. */
     quotiteCessible(): number {
-        return Math.round((this.fonctionnaire.salaireNetMensuel || 0) * TAUX_QUOTITE_FONCTIONNAIRE);
+        return quotiteCessibleFonctionnaire(this.fonctionnaire.salaireNetMensuel);
     }
 
     /** Vrai si l'échéance saisie dépasse la quotité cessible (blocage de soumission). */
@@ -540,17 +536,7 @@ export class CorrectionDemandeComponent implements OnInit {
     }
 
     private getInitialFonctionnaire(): DemandeFonctionnaire {
-        return {
-            serviceEmployeur: '',
-            departementMinistere: '',
-            ancienneteAnnees: undefined,
-            typeContrat: '',
-            matricule: '',
-            salaireNetMensuel: 0,
-            autresRevenus: 0,
-            nombreEpouses: 0,
-            domiciliationSalaire: false
-        };
+        return demandeFonctionnaireVide();
     }
 
     // ======================== CASCADE: DELEGATION -> AGENCE -> PV ========================
