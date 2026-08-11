@@ -643,7 +643,8 @@ public class WorkflowQuery {
             LEFT JOIN agence ag ON d.agence = ag.id
             LEFT JOIN pointvente pv ON d.pos = pv.id
             WHERE d.date_validation_dr IS NOT NULL
-            ORDER BY d.montant_demande DESC, d.date_validation_dr DESC
+               OR (d.validation_state = 'VALIDATED_FINAL' AND d.date_validation_da IS NOT NULL)
+            ORDER BY d.montant_demande DESC, COALESCE(d.date_validation_dr, d.date_validation_da) DESC
             """;
 
     // ==================== DA - DEMANDES AFFECTEES ====================
