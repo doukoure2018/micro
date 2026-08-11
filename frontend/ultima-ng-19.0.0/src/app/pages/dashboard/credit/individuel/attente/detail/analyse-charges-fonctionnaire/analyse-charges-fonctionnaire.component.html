@@ -104,6 +104,48 @@
         </div>
     </div>
 
+    <!-- Pièces du dossier -->
+    <div class="border-2 border-gray-200 rounded-xl p-5 mb-6 bg-white">
+        <h2 class="text-lg font-bold text-gray-800 mt-0 mb-1">Pièces du dossier</h2>
+        <p class="text-sm text-gray-500 mt-0 mb-4">Bulletin de salaire et attestation de service obligatoires au dossier fonctionnaire.</p>
+
+        @if (state().pieces.length > 0) {
+        <ul class="list-none p-0 m-0 mb-4">
+            @for (piece of state().pieces; track piece.pieceJointeId) {
+            <li class="flex items-center justify-between py-2 border-b border-gray-100">
+                <div class="flex items-center gap-2">
+                    <i class="pi pi-paperclip text-gray-500"></i>
+                    <a [href]="piece.urlFichier" target="_blank" rel="noopener" class="text-blue-600 no-underline hover:underline">
+                        {{ piece.nomFichier || 'Fichier' }}
+                    </a>
+                    <p-tag [value]="libelleTypePiece(piece.typePiece)" severity="info"></p-tag>
+                </div>
+                <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-danger p-button-sm"
+                    [disabled]="state().saving || state().soumission" (click)="supprimerPiece(piece)"></button>
+            </li>
+            }
+        </ul>
+        } @else {
+        <p class="text-sm text-orange-600 mb-4"><i class="pi pi-exclamation-triangle mr-1"></i>Aucune pièce jointe au dossier.</p>
+        }
+
+        <div class="flex flex-wrap items-end gap-3">
+            <div>
+                <label class="block text-sm text-gray-600 mb-1">Type de pièce</label>
+                <p-dropdown [(ngModel)]="nouvellePieceType" name="nouvellePieceType" [options]="typePieceOptions"
+                    optionLabel="label" optionValue="value" [disabled]="state().uploading" [appendTo]="'body'">
+                </p-dropdown>
+            </div>
+            <div>
+                <label class="block text-sm text-gray-600 mb-1">Fichier (PDF ou image)</label>
+                <input type="file" accept=".pdf,.jpg,.jpeg,.png" [disabled]="state().uploading"
+                    (change)="onNouvellePieceSelected($event)">
+            </div>
+            <button pButton type="button" icon="pi pi-upload" label="Joindre" [loading]="state().uploading"
+                [disabled]="!nouvellePieceFichier" (click)="ajouterPiece()"></button>
+        </div>
+    </div>
+
     <!-- Avis de l'agent -->
     <div class="border-2 border-gray-200 rounded-xl p-5 mb-6 bg-white">
         <label class="block text-sm text-gray-600 mb-2 font-semibold">Avis de l'agent de crédit</label>

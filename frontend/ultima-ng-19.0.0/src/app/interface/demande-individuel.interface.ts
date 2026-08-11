@@ -75,6 +75,20 @@ export interface AnalyseChargesFonctionnaire {
 }
 
 /**
+ * Pièce jointe d'une demande (V121). Types crédit fonctionnaire :
+ * BULLETIN_SALAIRE, ATTESTATION_SERVICE, AUTRE.
+ */
+export interface PieceJointeDemande {
+    pieceJointeId?: number;
+    demandeindividuelId?: number;
+    typePiece: 'BULLETIN_SALAIRE' | 'ATTESTATION_SERVICE' | 'AUTRE';
+    nomFichier?: string;
+    urlFichier?: string;
+    ajoutePar?: string;
+    createdAt?: Date | string;
+}
+
+/**
  * Interface principale pour une demande individuelle
  * Version V80 avec email et sigle
  */

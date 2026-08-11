@@ -1,4 +1,4 @@
-import { AnalyseChargesFonctionnaire, DemandeIndividuel, TAUX_QUOTITE_FONCTIONNAIRE } from '@/interface/demande-individuel.interface';
+import { AnalyseChargesFonctionnaire, DemandeIndividuel, PieceJointeDemande, TAUX_QUOTITE_FONCTIONNAIRE } from '@/interface/demande-individuel.interface';
 import { UserService } from '@/service/user.service';
 import { CommonModule, registerLocaleData } from '@angular/common';
 import localeFr from '@angular/common/locales/fr';
@@ -9,6 +9,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
+import { DropdownModule } from 'primeng/dropdown';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
@@ -24,7 +25,7 @@ registerLocaleData(localeFr, 'fr-FR');
 @Component({
     selector: 'app-analyse-charges-fonctionnaire',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule, ButtonModule, InputNumberModule, TagModule, TextareaModule, ToastModule],
+    imports: [CommonModule, FormsModule, RouterModule, ButtonModule, DropdownModule, InputNumberModule, TagModule, TextareaModule, ToastModule],
     templateUrl: './analyse-charges-fonctionnaire.component.html',
     providers: [MessageService]
 })
@@ -59,11 +60,22 @@ export class AnalyseChargesFonctionnaireComponent implements OnInit {
         loading: boolean;
         saving: boolean;
         soumission: boolean;
+        uploading: boolean;
         demande?: DemandeIndividuel;
-    }>({ loading: true, saving: false, soumission: false });
+        pieces: PieceJointeDemande[];
+    }>({ loading: true, saving: false, soumission: false, uploading: false, pieces: [] });
+
+    typePieceOptions = [
+        { label: 'Bulletin de salaire', value: 'BULLETIN_SALAIRE' },
+        { label: 'Attestation de service', value: 'ATTESTATION_SERVICE' },
+        { label: 'Autre pièce', value: 'AUTRE' }
+    ];
+    nouvellePieceType: 'BULLETIN_SALAIRE' | 'ATTESTATION_SERVICE' | 'AUTRE' = 'BULLETIN_SALAIRE';
+    nouvellePieceFichier: File | null = null;
 
     ngOnInit(): void {
         this.demandeIndividuelId = +this.route.snapshot.paramMap.get('demandeindividuelId')!;
+        this.chargerPieces();
         forkJoin({
             demande: this.userService.getDemandeWithGaranties$(this.demandeIndividuelId),
             analyse: this.userService.getAnalyseChargesFonctionnaire$(this.demandeIndividuelId)
@@ -177,6 +189,59 @@ export class AnalyseChargesFonctionnaireComponent implements OnInit {
 
     retourDetail(): void {
         this.router.navigate(['/dashboards/credit/individuel/attente/detail', this.demandeIndividuelId]);
+    }
+
+    // ==================== PIECES JOINTES ====================
+
+    chargerPieces(): void {
+        this.userService
+            .getPiecesDemande$(this.demandeIndividuelId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => this.state.update((s) => ({ ...s, pieces: response.data?.pieces || [] })),
+                error: () => this.state.update((s) => ({ ...s, pieces: [] }))
+            });
+    }
+
+    onNouvellePieceSelected(event: Event): void {
+        const input = event.target as HTMLInputElement;
+        this.nouvellePieceFichier = input.files && input.files.length > 0 ? input.files[0] : null;
+    }
+
+    ajouterPiece(): void {
+        if (!this.nouvellePieceFichier) return;
+        this.state.update((s) => ({ ...s, uploading: true }));
+        this.userService
+            .uploadPieceDemande$(this.demandeIndividuelId, this.nouvellePieceType, this.nouvellePieceFichier)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.nouvellePieceFichier = null;
+                    this.state.update((s) => ({ ...s, uploading: false }));
+                    this.chargerPieces();
+                    this.messageService.add({ severity: 'success', summary: 'Pièce jointe', detail: 'Pièce enregistrée', life: 3000 });
+                },
+                error: (error) => {
+                    this.state.update((s) => ({ ...s, uploading: false }));
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: error.message || "Échec de l'envoi de la pièce", life: 7000 });
+                }
+            });
+    }
+
+    supprimerPiece(piece: PieceJointeDemande): void {
+        if (!piece.pieceJointeId) return;
+        this.userService
+            .deletePieceDemande$(piece.pieceJointeId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => this.chargerPieces(),
+                error: (error) => this.messageService.add({ severity: 'error', summary: 'Erreur', detail: error.message || 'Suppression impossible', life: 5000 })
+            });
+    }
+
+    libelleTypePiece(type?: string): string {
+        const option = this.typePieceOptions.find((o) => o.value === type);
+        return option ? option.label : type || 'Pièce';
     }
 
     private emptyAnalyse(): AnalyseChargesFonctionnaire {

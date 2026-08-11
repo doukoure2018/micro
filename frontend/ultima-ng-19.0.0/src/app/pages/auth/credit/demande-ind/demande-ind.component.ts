@@ -226,6 +226,10 @@ export class DemandeIndComponent implements OnInit {
     // Extension fonctionnaire (nature « Fonctionnaire ») — hors formData pour ne pas polluer form.value
     fonctionnaire: DemandeFonctionnaire = this.getInitialFonctionnaire();
 
+    // Pièces du dossier fonctionnaire, uploadées après création de la demande
+    fichierBulletinSalaire: File | null = null;
+    fichierAttestationService: File | null = null;
+
     typeContratOptions = [
         { label: 'Titulaire', value: 'Titulaire' },
         { label: 'Contractuel', value: 'Contractuel' },
@@ -391,6 +395,40 @@ export class DemandeIndComponent implements OnInit {
             nombreEpouses: 0,
             domiciliationSalaire: false
         };
+    }
+
+    onPieceSelected(event: Event, type: 'bulletin' | 'attestation'): void {
+        const input = event.target as HTMLInputElement;
+        const file = input.files && input.files.length > 0 ? input.files[0] : null;
+        if (type === 'bulletin') {
+            this.fichierBulletinSalaire = file;
+        } else {
+            this.fichierAttestationService = file;
+        }
+    }
+
+    /** Upload des pièces du dossier fonctionnaire après création de la demande. */
+    private uploadPiecesFonctionnaire(demandeId: number): void {
+        const uploads: { typePiece: string; file: File }[] = [];
+        if (this.fichierBulletinSalaire) uploads.push({ typePiece: 'BULLETIN_SALAIRE', file: this.fichierBulletinSalaire });
+        if (this.fichierAttestationService) uploads.push({ typePiece: 'ATTESTATION_SERVICE', file: this.fichierAttestationService });
+
+        uploads.forEach(({ typePiece, file }) => {
+            this.creditService
+                .uploadPieceDemande$(demandeId, typePiece, file)
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe({
+                    error: () =>
+                        this.messageService.add({
+                            severity: 'warn',
+                            summary: 'Pièce non jointe',
+                            detail: `Échec de l'envoi de « ${file.name} » — elle pourra être rattachée depuis l'écran d'analyse`,
+                            life: 7000
+                        })
+                });
+        });
+        this.fichierBulletinSalaire = null;
+        this.fichierAttestationService = null;
     }
 
     // ======================== INITIALISATION ========================
@@ -791,6 +829,15 @@ export class DemandeIndComponent implements OnInit {
                 });
                 return;
             }
+            if (!this.fichierBulletinSalaire || !this.fichierAttestationService) {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Pièces manquantes',
+                    detail: 'Le bulletin de salaire et l’attestation de service sont obligatoires pour un crédit fonctionnaire',
+                    life: 6000
+                });
+                return;
+            }
         }
 
         if (this.state().garanties.length === 0) {
@@ -858,6 +905,9 @@ export class DemandeIndComponent implements OnInit {
                 next: (response) => {
                     console.log('Réponse:', response);
                     const demandeId = response.data?.demandeId;
+                    if (demandeId && this.isFonctionnaire()) {
+                        this.uploadPiecesFonctionnaire(+demandeId);
+                    }
                     if (this.isAccueilMode && demandeId) {
                         this.creditService
                             .marquerReception$(+demandeId)

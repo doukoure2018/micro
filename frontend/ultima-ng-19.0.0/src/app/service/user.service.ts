@@ -1608,6 +1608,19 @@ export class UserService {
     saveAnalyseChargesFonctionnaire$ = (demandeId: number, analyse: any) =>
         <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/fonctionnaire/analyse-charges/${demandeId}`, analyse).pipe(catchError(this.handleError));
 
+    getPiecesDemande$ = (demandeId: number) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/fonctionnaire/pieces/${demandeId}`).pipe(catchError(this.handleError));
+
+    uploadPieceDemande$ = (demandeId: number, typePiece: string, file: File) => {
+        const formData = new FormData();
+        formData.append('typePiece', typePiece);
+        formData.append('file', file);
+        return <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/fonctionnaire/pieces/${demandeId}`, formData).pipe(catchError(this.handleError));
+    };
+
+    deletePieceDemande$ = (pieceJointeId: number) =>
+        <Observable<IResponse>>this.http.delete<IResponse>(`${this.server}/ecredit/fonctionnaire/pieces/${pieceJointeId}`).pipe(catchError(this.handleError));
+
     // DA - gestion des fonctions d'agence
     getAgentsAgence$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/agents-agence`).pipe(catchError(this.handleError));
 

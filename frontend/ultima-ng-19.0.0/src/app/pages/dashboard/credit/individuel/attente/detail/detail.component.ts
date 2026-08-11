@@ -1,4 +1,4 @@
-import { DemandeIndividuel } from '@/interface/demande-individuel.interface';
+import { AnalyseChargesFonctionnaire, DemandeIndividuel, TAUX_QUOTITE_FONCTIONNAIRE } from '@/interface/demande-individuel.interface';
 import { DemandeCredit } from '@/interface/demande.credit';
 import { PointVente } from '@/interface/point.vente';
 import { IResponse } from '@/interface/response';
@@ -119,6 +119,7 @@ export class DetailComponent {
         showModalRejetFlux: boolean;
         showWorkflowRejetDA: boolean;
         showWorkflowRejetDR: boolean;
+        analyseChargesFonctionnaire?: AnalyseChargesFonctionnaire | null;
     }>({
         loading: false,
         message: undefined,
@@ -417,6 +418,11 @@ export class DetailComponent {
 
                         // Charger les statuts de validation DA
                         this.loadValidationDA(+demandeData.demandeIndividuelId!);
+
+                        // Crédit fonctionnaire : analyse charges & quotité (affichage + impression)
+                        if (demandeData.natureClient === 'Demande de credit Pour Fonctionnaire') {
+                            this.loadAnalyseChargesFonctionnaire(+demandeData.demandeIndividuelId!);
+                        }
 
                         if (demandeData.pos) {
                             this.loadPointVenteInfo(demandeData.pos);
@@ -1407,6 +1413,109 @@ export class DetailComponent {
         return this.state().demandeIndividuel?.natureClient === 'Demande de credit Pour Fonctionnaire';
     }
 
+    private loadAnalyseChargesFonctionnaire(demandeId: number): void {
+        this.userService
+            .getAnalyseChargesFonctionnaire$(demandeId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => this.state.update((s) => ({ ...s, analyseChargesFonctionnaire: response.data?.analyseCharges || null })),
+                error: () => this.state.update((s) => ({ ...s, analyseChargesFonctionnaire: null }))
+            });
+    }
+
+    /** Section imprimable du dossier fonctionnaire : emploi, salaire, quotité et grille des charges. */
+    private genererSectionFonctionnaire(): string {
+        const demande = this.state().demandeIndividuel;
+        const fct = demande?.demandeFonctionnaire;
+        if (!this.isFonctionnaireNature() || !fct) return '';
+
+        const fmt = (montant?: number | null) => (montant != null ? Number(montant).toLocaleString('fr-FR') + ' GNF' : 'N/A');
+        const quotite = fct.quotiteCessible != null ? fct.quotiteCessible : Math.round((fct.salaireNetMensuel || 0) * TAUX_QUOTITE_FONCTIONNAIRE);
+        const analyse = this.state().analyseChargesFonctionnaire;
+
+        const lignesCharges: [string, number | undefined][] = analyse
+            ? [
+                  ['Loyer', analyse.chargeLoyer],
+                  ['Transport', analyse.chargeTransport],
+                  ['Nourriture', analyse.chargeNourriture],
+                  ['Vignette', analyse.chargeVignette],
+                  ['Assurance', analyse.chargeAssurance],
+                  ['Électricité', analyse.chargeElectricite],
+                  ['Eau', analyse.chargeEau],
+                  ['Assurance maladie', analyse.chargeAssuranceMaladie],
+                  ['Scolarité', analyse.chargeScolarite],
+                  ['Cas sociaux', analyse.chargeCasSociaux],
+                  ['Abonnement image', analyse.chargeAbonnementImage],
+                  ['Service salubrité', analyse.chargeServiceSalubrite]
+              ]
+            : [];
+
+        return `
+                <!-- Section Fonctionnaire -->
+                <div class="section">
+                    <h2>SITUATION PROFESSIONNELLE DU FONCTIONNAIRE</h2>
+                    <table class="info-table">
+                        <tr>
+                            <td class="label">Service employeur:</td>
+                            <td class="value">${fct.serviceEmployeur || 'N/A'}</td>
+                            <td class="label">Département / Ministère:</td>
+                            <td class="value">${fct.departementMinistere || 'N/A'}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Type de contrat:</td>
+                            <td class="value">${fct.typeContrat || 'N/A'}</td>
+                            <td class="label">Matricule / Ancienneté:</td>
+                            <td class="value">${fct.matricule || 'N/A'} / ${fct.ancienneteAnnees != null ? fct.ancienneteAnnees + ' an(s)' : 'N/A'}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Salaire net mensuel:</td>
+                            <td class="value">${fmt(fct.salaireNetMensuel)}</td>
+                            <td class="label">Autres revenus:</td>
+                            <td class="value">${fmt(fct.autresRevenus)}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Quotité cessible (35 %):</td>
+                            <td class="value"><strong>${fmt(quotite)}</strong></td>
+                            <td class="label">Domiciliation du salaire au CRG:</td>
+                            <td class="value">${fct.domiciliationSalaire ? 'OUI (engagement signé)' : 'NON'}</td>
+                        </tr>
+                    </table>
+                    ${
+                        analyse
+                            ? `
+                    <h2 style="margin-top:16px">ANALYSE CHARGES &amp; QUOTITÉ</h2>
+                    <table class="info-table">
+                        ${lignesCharges
+                            .reduce<string[]>((rows, [libelle, montant], index) => {
+                                if (index % 2 === 0) {
+                                    rows.push(`<tr><td class="label">${libelle}:</td><td class="value">${fmt(montant)}</td>`);
+                                } else {
+                                    rows[rows.length - 1] += `<td class="label">${libelle}:</td><td class="value">${fmt(montant)}</td></tr>`;
+                                }
+                                return rows;
+                            }, [])
+                            .join('')}
+                        <tr>
+                            <td class="label">Total des charges:</td>
+                            <td class="value"><strong>${fmt(analyse.totalCharges)}</strong></td>
+                            <td class="label">Capacité résiduelle:</td>
+                            <td class="value"><strong>${fmt(analyse.capaciteResiduelle)}</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="label">Verdict:</td>
+                            <td class="value"><strong>${analyse.verdict === 'FINANCABLE' ? 'DOSSIER FINANÇABLE' : 'NON FINANÇABLE'}</strong></td>
+                            <td class="label">Analysé par:</td>
+                            <td class="value">${analyse.analysePar || 'N/A'}</td>
+                        </tr>
+                        ${analyse.avisAgent ? `<tr><td class="label">Avis de l'agent:</td><td class="value" colspan="3">${analyse.avisAgent}</td></tr>` : ''}
+                    </table>
+                    `
+                            : ''
+                    }
+                </div>
+        `;
+    }
+
     getNatureClientLabel(natureClient?: string): string {
         if (!natureClient) return 'Particulier';
         if (natureClient.includes('PME')) return 'Entreprise (PME/PMI)';
@@ -1485,6 +1594,8 @@ export class DetailComponent {
                 `
                         : ''
                 }
+
+                ${this.genererSectionFonctionnaire()}
 
                 <!-- Section 1: Informations sur le membre/client -->
                 <div class="section">
