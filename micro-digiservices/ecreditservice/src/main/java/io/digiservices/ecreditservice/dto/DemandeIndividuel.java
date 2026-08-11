@@ -40,10 +40,12 @@ public class DemandeIndividuel {
      * - "Demande credit Pour Particulier" (par défaut)
      * - "Demande de Credit Pour PME/PMI"
      * - "Demande de credit Pour Professionnels"
+     * - "Demande de credit Pour Fonctionnaire" (V120)
      */
     private String natureClient = "Demande credit Pour Particulier";
     private String nomPersonneMorale; // Nom de l'entreprise (obligatoire si PME/PMI)
     private String sigle; // NOUVEAU V80: Sigle de l'entreprise (pour PME/PMI)
+    private DemandeFonctionnaire demandeFonctionnaire; // NOUVEAU V120: extension fonctionnaire (obligatoire si Fonctionnaire)
 
     // ==================== INFORMATIONS PERSONNELLES ====================
     private String typePiece;

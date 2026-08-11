@@ -15,7 +15,33 @@ export interface GarantiePropose {
 /**
  * Type pour la nature du client
  */
-export type NatureClient = 'Demande de credit Pour Professionnels' | 'Demande de Credit Pour PME/PMI' | 'Demande credit Pour Particulier';
+export type NatureClient = 'Demande de credit Pour Professionnels' | 'Demande de Credit Pour PME/PMI' | 'Demande credit Pour Particulier' | 'Demande de credit Pour Fonctionnaire';
+
+/**
+ * Taux de quotité cessible du crédit fonctionnaire (fixe) :
+ * l'échéance mensuelle ne doit jamais dépasser 35 % du salaire net.
+ */
+export const TAUX_QUOTITE_FONCTIONNAIRE = 0.35;
+
+/**
+ * Extension fonctionnaire d'une demande individuelle (V120).
+ */
+export interface DemandeFonctionnaire {
+    demandeFonctionnaireId?: number;
+    demandeindividuelId?: number;
+    serviceEmployeur: string;
+    departementMinistere: string;
+    ancienneteAnnees?: number;
+    typeContrat: string;
+    matricule?: string;
+    salaireNetMensuel: number;
+    autresRevenus?: number;
+    nombreEpouses?: number;
+    domiciliationSalaire: boolean;
+    quotiteCessible?: number; // calculée côté backend (lecture seule)
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
+}
 
 /**
  * Interface principale pour une demande individuelle
@@ -44,6 +70,7 @@ export interface DemandeIndividuel {
     natureClient?: NatureClient;
     nomPersonneMorale?: string;
     sigle?: string; // NOUVEAU V80: Sigle de l'entreprise (pour PME/PMI)
+    demandeFonctionnaire?: DemandeFonctionnaire; // NOUVEAU V120: obligatoire si nature Fonctionnaire
 
     // ==================== INFORMATIONS PERSONNELLES ====================
     typePiece: "Carte nationale d'identite" | "Carte d'identite Biometrique" | "Possession d'état" | "Carte d'identite personnelle" | 'Passeport';
@@ -178,6 +205,12 @@ export const NATURE_CLIENT_OPTIONS = [
         value: 'Demande de credit Pour Professionnels',
         icon: 'pi pi-briefcase',
         description: 'Pour les professionnels et artisans'
+    },
+    {
+        label: 'Fonctionnaire',
+        value: 'Demande de credit Pour Fonctionnaire',
+        icon: 'pi pi-id-card',
+        description: 'Pour les fonctionnaires et salariés (crédit sur salaire)'
     }
 ] as const;
 

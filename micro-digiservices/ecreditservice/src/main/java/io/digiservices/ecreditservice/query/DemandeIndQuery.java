@@ -423,6 +423,19 @@ public class DemandeIndQuery {
                     "?, ?, ?)";              // 51-57
 
     /**
+     * V120 : insertion (ou mise a jour en correction accueil) de l'extension
+     * fonctionnaire d'une demande, dans la meme transaction que la demande.
+     */
+    public static final String CALL_INSERT_DEMANDE_FONCTIONNAIRE_FUNC =
+            "SELECT fn_inserer_demande_fonctionnaire(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+    /**
+     * V120 : lecture de l'extension fonctionnaire d'une demande.
+     */
+    public static final String SELECT_DEMANDE_FONCTIONNAIRE_BY_DEMANDE_ID =
+            "SELECT * FROM demande_fonctionnaire WHERE demandeindividuel_id = :demandeindividuelId";
+
+    /**
      * Requête pour récupérer une demande avec ses garanties
      */
     public static final String SELECT_DEMANDE_WITH_GARANTIES =

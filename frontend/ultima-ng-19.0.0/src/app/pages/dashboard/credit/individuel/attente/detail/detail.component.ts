@@ -1406,6 +1406,7 @@ export class DetailComponent {
         if (!natureClient) return 'Particulier';
         if (natureClient.includes('PME')) return 'Entreprise (PME/PMI)';
         if (natureClient.includes('Professionnel')) return 'Professionnel';
+        if (natureClient.includes('Fonctionnaire')) return 'Fonctionnaire';
         return 'Particulier';
     }
 
