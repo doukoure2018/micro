@@ -153,7 +153,8 @@
         <div class="nature-client-card" [ngClass]="{
                 'nature-pme': state().demandeIndividuel?.natureClient?.includes('PME'),
                 'nature-professionnel': state().demandeIndividuel?.natureClient?.includes('Professionnel'),
-                'nature-particulier': !state().demandeIndividuel?.natureClient?.includes('PME') && !state().demandeIndividuel?.natureClient?.includes('Professionnel')
+                'nature-fonctionnaire': isFonctionnaireNature(),
+                'nature-particulier': !state().demandeIndividuel?.natureClient?.includes('PME') && !state().demandeIndividuel?.natureClient?.includes('Professionnel') && !isFonctionnaireNature()
             }">
             <div class="nature-client-header">
                 <div class="flex items-center justify-between">
@@ -162,15 +163,14 @@
                             <i [ngClass]="{
                                     'pi pi-building': state().demandeIndividuel?.natureClient?.includes('PME'),
                                     'pi pi-briefcase': state().demandeIndividuel?.natureClient?.includes('Professionnel'),
-                                    'pi pi-user': !state().demandeIndividuel?.natureClient?.includes('PME') && !state().demandeIndividuel?.natureClient?.includes('Professionnel')
+                                    'pi pi-id-card': isFonctionnaireNature(),
+                                    'pi pi-user': !state().demandeIndividuel?.natureClient?.includes('PME') && !state().demandeIndividuel?.natureClient?.includes('Professionnel') && !isFonctionnaireNature()
                                 }"></i>
                         </div>
                         <div>
                             <p class="nature-label">Nature du Client</p>
                             <h2 class="nature-title">
-                                {{ state().demandeIndividuel?.natureClient?.includes('PME') ? 'Entreprise (PME/PMI)' :
-                                state().demandeIndividuel?.natureClient?.includes('Professionnel') ? 'Professionnel' :
-                                'Particulier' }}
+                                {{ getNatureClientLabel(state().demandeIndividuel?.natureClient) }}
                             </h2>
                             <!-- Affichage conditionnel pour PME -->
                             <p *ngIf="state().demandeIndividuel?.natureClient?.includes('PME') && state().demandeIndividuel?.nomPersonneMorale"
@@ -179,11 +179,23 @@
                                     state().demandeIndividuel?.sigle }} - </span>
                                 {{ state().demandeIndividuel?.nomPersonneMorale }}
                             </p>
+                            <!-- Affichage conditionnel pour Fonctionnaire -->
+                            <p *ngIf="isFonctionnaireNature() && state().demandeIndividuel?.demandeFonctionnaire?.serviceEmployeur"
+                                class="nature-subtitle">
+                                {{ state().demandeIndividuel?.demandeFonctionnaire?.serviceEmployeur }}
+                                <span *ngIf="state().demandeIndividuel?.demandeFonctionnaire?.departementMinistere">
+                                    — {{ state().demandeIndividuel?.demandeFonctionnaire?.departementMinistere }}</span>
+                            </p>
                         </div>
                     </div>
                     <div class="nature-category">
+                        @if (isFonctionnaireNature()) {
+                        <p class="category-label">Type de contrat</p>
+                        <p class="category-value">{{ state().demandeIndividuel?.demandeFonctionnaire?.typeContrat || 'Non spécifié' }}</p>
+                        } @else {
                         <p class="category-label">Catégorie</p>
                         <p class="category-value">{{ state().demandeIndividuel?.categorie || 'Non spécifiée' }}</p>
+                        }
                     </div>
                 </div>
             </div>
