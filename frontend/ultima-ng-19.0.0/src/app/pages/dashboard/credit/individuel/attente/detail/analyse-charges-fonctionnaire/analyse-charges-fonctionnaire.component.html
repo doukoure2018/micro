@@ -217,36 +217,22 @@
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════════════════ -->
-    <!-- SECTION 4: AVIS DE L'AGENT DE CRÉDIT                                    -->
-    <!-- ═══════════════════════════════════════════════════════════════════════ -->
-    <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8">
-        <div class="bg-gray-600 text-white px-6 py-4 flex items-center gap-3">
-            <i class="pi pi-comment text-xl"></i>
-            <span class="font-bold text-lg uppercase tracking-wide">4. Avis de l'Agent de Crédit</span>
-        </div>
-        <div class="p-6">
-            <textarea pTextarea [(ngModel)]="analyse.avisAgent" name="avisAgent" rows="4" class="w-full"
-                [disabled]="state().saving"
-                placeholder="Observations sur la situation du fonctionnaire, la stabilité de l'emploi, la moralité..."></textarea>
-        </div>
-    </div>
-
-    <!-- ═══════════════════════════════════════════════════════════════════════ -->
     <!-- ACTIONS                                                                  -->
     <!-- ═══════════════════════════════════════════════════════════════════════ -->
     <div class="bg-white rounded-xl shadow-md border border-gray-200 p-5 mb-8">
         <div class="flex items-center justify-between flex-wrap gap-3">
             <p class="text-sm text-gray-500 m-0 max-w-xl">
-                Enregistrez d'abord l'analyse ; la soumission est bloquée tant que le dossier n'est pas finançable
-                (échéance ≤ quotité et capacité résiduelle ≥ 0). Le backend re-vérifie ces règles à la soumission et à la validation DA.
+                Enregistrez l'analyse puis retournez au détail de la demande : comme pour les autres crédits,
+                vous y donnerez votre avis (section « Mon Avis sur le Dossier ») et approuverez la demande
+                pour la transmettre au DA. L'approbation est bloquée tant que le dossier n'est pas finançable
+                (échéance ≤ quotité et capacité résiduelle ≥ 0).
             </p>
             <div class="flex gap-2">
                 <button pButton type="button" icon="pi pi-save" label="Enregistrer l'analyse" [loading]="state().saving"
-                    [disabled]="state().soumission" (click)="enregistrer()"></button>
-                <button pButton type="button" icon="pi pi-send" label="Soumettre à la validation DA"
-                    class="p-button-success" [loading]="state().soumission"
-                    [disabled]="state().saving || !peutSoumettre() || !financable()"
-                    (click)="soumettreValidation()"></button>
+                    (click)="enregistrer()"></button>
+                <button pButton type="button" icon="pi pi-arrow-right" label="Donner mon avis et approuver"
+                    class="p-button-success" [disabled]="state().saving || !analyse.analyseChargesId"
+                    (click)="retourDetail()"></button>
             </div>
         </div>
     </div>

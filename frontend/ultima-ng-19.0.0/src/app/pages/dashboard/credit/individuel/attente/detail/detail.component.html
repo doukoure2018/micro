@@ -1570,9 +1570,10 @@
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
-        <!-- SECTION AVIS - AGENT DE CRÉDIT (après flux)                            -->
+        <!-- SECTION AVIS - AGENT DE CRÉDIT (après flux, ou après analyse charges    -->
+        <!-- pour le crédit fonctionnaire)                                           -->
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
-        <div *ngIf="state().user?.role === 'AGENT_CREDIT' && state().hasDossierCredit"
+        <div *ngIf="state().user?.role === 'AGENT_CREDIT' && (state().hasDossierCredit || (isFonctionnaireNature() && state().analyseChargesFonctionnaire))"
             class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-teal-200 mb-8 mt-10">
             <div class="bg-teal-500 text-white px-6 py-4 flex items-center justify-between">
                 <div class="flex items-center gap-3">

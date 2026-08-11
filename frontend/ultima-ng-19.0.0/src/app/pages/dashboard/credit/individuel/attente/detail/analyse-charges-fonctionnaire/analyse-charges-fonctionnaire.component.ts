@@ -146,7 +146,7 @@ export class AnalyseChargesFonctionnaireComponent implements OnInit {
                     this.messageService.add({
                         severity: saved?.verdict === 'FINANCABLE' ? 'success' : 'warn',
                         summary: 'Analyse enregistrée',
-                        detail: saved?.verdict === 'FINANCABLE' ? 'Dossier finançable : vous pouvez soumettre la demande à la validation.' : 'Analyse enregistrée mais dossier NON finançable en l’état : la soumission sera bloquée.',
+                        detail: saved?.verdict === 'FINANCABLE' ? 'Dossier finançable : donnez votre avis et approuvez la demande depuis le détail.' : 'Analyse enregistrée mais dossier NON finançable en l’état : l’approbation sera bloquée.',
                         life: 7000
                     });
                 },
