@@ -692,7 +692,7 @@
                 <button type="submit" pButton icon="pi pi-check" label="Sauvegarder les corrections"
                     class="p-button-warning"
                     [loading]="state().submitting"
-                    [disabled]="correctionForm.invalid || state().submitting || state().garanties.length === 0 || echeanceDepasseQuotite() || (isFonctionnaire() && !fonctionnaire.domiciliationSalaire)">
+                    [disabled]="correctionForm.invalid || state().submitting || (!isFonctionnaire() && state().garanties.length === 0) || echeanceDepasseQuotite() || (isFonctionnaire() && !fonctionnaire.domiciliationSalaire)">
                 </button>
             </div>
         </div>
@@ -700,7 +700,7 @@
             Des champs obligatoires ne sont pas renseignes (verifiez notamment : Delegation, Agence,
             Point de service, Type d'activite / Sous-activite, Type de credit).
         </small>
-        <small *ngIf="state().garanties.length === 0 && !state().submitting" class="p-error block mt-1">
+        <small *ngIf="!isFonctionnaire() && state().garanties.length === 0 && !state().submitting" class="p-error block mt-1">
             Au moins une garantie est requise pour sauvegarder.
         </small>
     </form>

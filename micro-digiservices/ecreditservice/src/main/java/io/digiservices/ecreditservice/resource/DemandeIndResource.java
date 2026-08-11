@@ -83,8 +83,11 @@ public class DemandeIndResource {
             // Validation de la nature du client
             validateNatureClient(demandeIndividuel);
 
-            // Validation des types de garanties
-            validateGaranties(demandeIndividuel.getGaranties());
+            // Validation des types de garanties (non requises pour un crédit fonctionnaire :
+            // la garantie est la domiciliation du salaire, contrôlée par CreditFonctionnaireValidator)
+            if (!CreditFonctionnaireValidator.isFonctionnaire(demandeIndividuel)) {
+                validateGaranties(demandeIndividuel.getGaranties());
+            }
 
             // Validation des nouveaux champs obligatoires selon la nature du client
             validateNewFields(demandeIndividuel);

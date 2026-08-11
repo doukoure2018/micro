@@ -162,7 +162,10 @@ public class DemandeIndValidator {
      */
     public static void validateAll(DemandeIndividuel demande) {
         validateNatureClient(demande);
-        validateGaranties(demande.getGaranties());
+        // Garanties non requises pour un crédit fonctionnaire (garantie = domiciliation du salaire)
+        if (!CreditFonctionnaireValidator.isFonctionnaire(demande)) {
+            validateGaranties(demande.getGaranties());
+        }
         validateNewFields(demande);
     }
 }

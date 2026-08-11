@@ -843,7 +843,8 @@ export class CorrectionDemandeComponent implements OnInit {
             }
         }
 
-        if (this.state().garanties.length === 0) {
+        // Crédit fonctionnaire : pas de garanties classiques (la garantie est la domiciliation du salaire)
+        if (!this.isFonctionnaire() && this.state().garanties.length === 0) {
             this.messageService.add({
                 severity: 'warn',
                 summary: 'Attention',

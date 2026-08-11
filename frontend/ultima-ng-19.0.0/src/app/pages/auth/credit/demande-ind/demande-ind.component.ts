@@ -840,7 +840,8 @@ export class DemandeIndComponent implements OnInit {
             }
         }
 
-        if (this.state().garanties.length === 0) {
+        // Crédit fonctionnaire : pas de garanties classiques (la garantie est la domiciliation du salaire)
+        if (!this.isFonctionnaire() && this.state().garanties.length === 0) {
             this.messageService.add({
                 severity: 'warn',
                 summary: 'Attention',
@@ -865,9 +866,13 @@ export class DemandeIndComponent implements OnInit {
             natureClient: this.formData.natureClient || 'Demande credit Pour Particulier',
             nomPersonneMorale: this.isPME() ? this.formData.nomPersonneMorale : '',
             sigle: this.isPME() ? this.formData.sigle : '',
-            // Extension fonctionnaire : envoyée uniquement pour la nature Fonctionnaire
+            // Extension fonctionnaire : envoyée uniquement pour la nature Fonctionnaire.
+            // Champs non affichés sur le formulaire allégé : échéances mensuelles = durée,
+            // type de crédit 7 (CREDIT FONCTIONNAIRES EPARGNANTS), détail objet = objet du prêt.
             demandeFonctionnaire: this.isFonctionnaire() ? { ...this.fonctionnaire } : undefined,
             periodiciteRemboursement: this.isFonctionnaire() ? 'Mensuelle' : this.formData.periodiciteRemboursement!,
+            nombreEcheance: this.isFonctionnaire() ? this.formData.dureeDemande || 1 : this.formData.nombreEcheance!,
+            detailObjectCredit: this.isFonctionnaire() ? this.formData.detailObjectCredit || this.formData.objectCredit || '' : this.formData.detailObjectCredit!,
             sernom: this.formData.sernom || '',
             // Champs activite: vides pour Particulier
             categorie: this.isParticulier() ? '' : this.formData.categorie || '',
@@ -884,7 +889,7 @@ export class DemandeIndComponent implements OnInit {
             prefecture: this.formData.prefecture || '',
             sousPrefecture: this.formData.sousPrefecture || '',
             email: this.formData.email || '',
-            tipCredito: this.formData.tipCredito,
+            tipCredito: this.isFonctionnaire() ? (this.formData.tipCredito ?? 7) : this.formData.tipCredito,
             descriptionActivite: this.formData.descriptionActivite || '',
             garanties: this.state().garanties.map((g) => ({
                 ...g,

@@ -12,3 +12,6 @@ nul
 
 # Clés RSA OIDC — JAMAIS committées (montées sur le serveur, cf. keys/README.md)
 keys/*.key
+
+# Dumps de base de donnees (donnees reelles, ne jamais committer)
+*.dump
