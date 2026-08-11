@@ -1402,6 +1402,11 @@ export class DetailComponent {
     /**
      * Obtenir le libellé de la nature du client
      */
+    /** Nature Fonctionnaire : l'analyse bilan/flux est remplacée par l'analyse charges & quotité. */
+    isFonctionnaireNature(): boolean {
+        return this.state().demandeIndividuel?.natureClient === 'Demande de credit Pour Fonctionnaire';
+    }
+
     getNatureClientLabel(natureClient?: string): string {
         if (!natureClient) return 'Particulier';
         if (natureClient.includes('PME')) return 'Entreprise (PME/PMI)';

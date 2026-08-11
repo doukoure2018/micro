@@ -225,6 +225,11 @@ export default [
         loadComponent: () => import('./credit/individuel/attente/detail/analyse-flux-tresorerie/analyse-flux-tresorerie.component').then((c) => c.AnalyseFluxTresorerieComponent)
     },
     {
+        path: 'credit/individuel/detail/analyse-charges-fonctionnaire/:demandeindividuelId',
+        data: { breadcrumb: 'Analyse Charges & Quotité (Fonctionnaire)' },
+        loadComponent: () => import('./credit/individuel/attente/detail/analyse-charges-fonctionnaire/analyse-charges-fonctionnaire.component').then((c) => c.AnalyseChargesFonctionnaireComponent)
+    },
+    {
         path: 'credit/individuel/detail/personne-caution/:demandeindividuelId',
         data: { breadcrumb: 'Personnes Caution' },
         loadComponent: () => import('./credit/individuel/attente/detail/personne-caution/personne-caution.component').then((c) => c.PersonneCautionComponent)

@@ -648,8 +648,30 @@
 
                 <!-- Grid des 4 analyses -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Crédit Fonctionnaire : Analyse Charges & Quotité (remplace bilan/flux) -->
+                    <div *ngIf="isFonctionnaireNature()"
+                        class="border-2 rounded-xl p-5 transition-all hover:shadow-md overflow-visible border-amber-300 bg-amber-50">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white bg-amber-500">
+                                <i class="pi pi-percentage text-lg"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold text-base text-gray-800">1. Analyse Charges &amp; Quotit&eacute;</div>
+                                <div class="text-sm font-medium text-amber-700">
+                                    Cr&eacute;dit fonctionnaire — &eacute;ch&eacute;ance plafonn&eacute;e &agrave; 35 % du salaire net
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <a [routerLink]="['/dashboards/credit/individuel/detail/analyse-charges-fonctionnaire', state().demandeIndividuel?.demandeIndividuelId]"
+                                class="flex items-center justify-center w-full bg-amber-600 hover:bg-amber-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors no-underline">
+                                <i class="pi pi-calculator mr-2"></i>Ouvrir l'analyse charges &amp; quotit&eacute;
+                            </a>
+                        </div>
+                    </div>
+
                     <!-- 1. Bilan d'Activité (uniquement si montant >= 50 000 000 GNF) -->
-                    <div *ngIf="isBilanRequired()"
+                    <div *ngIf="isBilanRequired() && !isFonctionnaireNature()"
                         class="border-2 rounded-xl p-5 transition-all hover:shadow-md overflow-visible"
                         [ngClass]="isBilanNeedsCorrection() ? 'border-red-400 bg-red-50' :
                                    state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'border-green-300 bg-green-50' :
@@ -707,8 +729,9 @@
                         </div>
                     </div>
 
-                    <!-- 2. Flux de Trésorerie -->
-                    <div class="border-2 rounded-xl p-5 transition-all hover:shadow-md overflow-visible"
+                    <!-- 2. Flux de Trésorerie (non applicable au crédit fonctionnaire) -->
+                    <div *ngIf="!isFonctionnaireNature()"
+                        class="border-2 rounded-xl p-5 transition-all hover:shadow-md overflow-visible"
                         [ngClass]="isFluxNeedsCorrection() ? 'border-red-400 bg-red-50' :
                                    state().hasDossierCredit ? 'border-green-300 bg-green-50' : 'border-orange-300 bg-orange-50'">
                         <div class="flex items-center gap-3 mb-4">

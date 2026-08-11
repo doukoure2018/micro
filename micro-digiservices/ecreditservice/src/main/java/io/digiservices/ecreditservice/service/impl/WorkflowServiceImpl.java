@@ -5,6 +5,7 @@ import io.digiservices.ecreditservice.dto.WorkflowDemandeDto;
 import io.digiservices.ecreditservice.dto.WorkflowRejetRequest;
 import io.digiservices.ecreditservice.exception.ApiException;
 import io.digiservices.ecreditservice.repository.WorkflowRepository;
+import io.digiservices.ecreditservice.service.AnalyseChargesFonctionnaireService;
 import io.digiservices.ecreditservice.service.WorkflowService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +20,7 @@ import java.util.List;
 public class WorkflowServiceImpl implements WorkflowService {
 
     private final WorkflowRepository workflowRepository;
+    private final AnalyseChargesFonctionnaireService analyseChargesFonctionnaireService;
 
     // ==================== AC ====================
 
@@ -26,6 +28,8 @@ public class WorkflowServiceImpl implements WorkflowService {
     @Transactional
     public void approuverAC(Long demandeId, String avis, String codUsuarios, Long userId) {
         log.info("Approbation AC par {} pour demande {}", codUsuarios, demandeId);
+        // Crédit fonctionnaire : blocage si l'analyse charges & quotité n'est pas finançable
+        analyseChargesFonctionnaireService.verifierFinancableSiFonctionnaire(demandeId);
         int rows = workflowRepository.approuverAC(demandeId, avis, codUsuarios, userId);
         if (rows == 0) {
             throw new ApiException("Demande non trouvée, état invalide ou dossier affecté à un autre agent");
@@ -48,6 +52,8 @@ public class WorkflowServiceImpl implements WorkflowService {
     @Transactional
     public void validerDA(Long demandeId, String avis, String validatedBy) {
         log.info("Validation DA par {} pour demande {}", validatedBy, demandeId);
+        // Crédit fonctionnaire : re-contrôle de la quotité à la validation DA
+        analyseChargesFonctionnaireService.verifierFinancableSiFonctionnaire(demandeId);
         int rows = workflowRepository.validerDA(demandeId, avis, validatedBy);
         if (rows == 0) {
             throw new ApiException("Demande non trouvée ou état invalide pour la validation DA");

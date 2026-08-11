@@ -1,0 +1,129 @@
+<p-toast position="top-right"></p-toast>
+
+<div class="max-w-5xl mx-auto p-4">
+    <!-- En-tête -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 m-0">Analyse Charges &amp; Quotité — Crédit Fonctionnaire</h1>
+            @if (state().demande) {
+            <p class="text-gray-500 mt-1 mb-0">
+                {{ state().demande?.prenom }} {{ state().demande?.nom }} — Membre {{ state().demande?.numeroMembre }}
+                @if (state().demande?.demandeFonctionnaire) {
+                · {{ state().demande?.demandeFonctionnaire?.serviceEmployeur }}
+                ({{ state().demande?.demandeFonctionnaire?.departementMinistere }})
+                }
+            </p>
+            }
+        </div>
+        <button pButton type="button" icon="pi pi-arrow-left" label="Retour au détail" class="p-button-secondary"
+            (click)="retourDetail()"></button>
+    </div>
+
+    @if (state().loading) {
+    <div class="text-center py-10 text-gray-500"><i class="pi pi-spinner pi-spin mr-2"></i>Chargement...</div>
+    } @else if (!state().demande?.demandeFonctionnaire) {
+    <div class="border-2 border-red-300 bg-red-50 rounded-xl p-5 text-red-700">
+        <i class="pi pi-exclamation-triangle mr-2"></i>
+        Cette demande n'a pas d'informations fonctionnaire (nature de la demande incorrecte ou données manquantes).
+    </div>
+    } @else {
+
+    <!-- Synthèse revenus / prêt -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="border-2 border-blue-300 bg-blue-50 rounded-xl p-4">
+            <div class="text-sm text-gray-600">Salaire net mensuel</div>
+            <div class="text-xl font-bold text-gray-800">{{ salaireNet() | number:'1.0-0':'fr-FR' }} GNF</div>
+            <div class="text-xs text-gray-500 mt-1">Repris de la demande — non modifiable à l'analyse</div>
+        </div>
+        <div class="border-2 border-amber-300 bg-amber-50 rounded-xl p-4">
+            <div class="text-sm text-gray-600">Quotité cessible (35 %)</div>
+            <div class="text-xl font-bold text-amber-700">{{ quotiteCessible() | number:'1.0-0':'fr-FR' }} GNF</div>
+            <div class="text-xs mt-1" [class.text-red-600]="echeanceDepasseQuotite()" [class.text-gray-500]="!echeanceDepasseQuotite()">
+                Échéance du prêt : {{ echeance() | number:'1.0-0':'fr-FR' }} GNF
+                @if (echeanceDepasseQuotite()) { — dépasse la quotité ! }
+            </div>
+        </div>
+        <div class="border-2 rounded-xl p-4"
+            [ngClass]="capaciteResiduelle() >= 0 ? 'border-green-300 bg-green-50' : 'border-red-300 bg-red-50'">
+            <div class="text-sm text-gray-600">Capacité résiduelle</div>
+            <div class="text-xl font-bold" [ngClass]="capaciteResiduelle() >= 0 ? 'text-green-700' : 'text-red-700'">
+                {{ capaciteResiduelle() | number:'1.0-0':'fr-FR' }} GNF
+            </div>
+            <div class="text-xs text-gray-500 mt-1">65 % du salaire + autres revenus − charges</div>
+        </div>
+    </div>
+
+    <!-- Grille des charges -->
+    <div class="border-2 border-gray-200 rounded-xl p-5 mb-6 bg-white">
+        <h2 class="text-lg font-bold text-gray-800 mt-0 mb-4">Charges mensuelles du ménage (GNF)</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            @for (poste of postes; track poste.key) {
+            <div>
+                <label class="block text-sm text-gray-600 mb-1">{{ poste.libelle }}</label>
+                <p-inputNumber [(ngModel)]="analyse[poste.key]" [name]="poste.key" [min]="0" mode="currency"
+                    currency="GNF" locale="fr-FR" styleClass="w-full" [disabled]="state().saving">
+                </p-inputNumber>
+            </div>
+            }
+        </div>
+        <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
+            <div>
+                <label class="block text-sm text-gray-600 mb-1">Autres revenus mensuels retenus</label>
+                <p-inputNumber [(ngModel)]="analyse.autresRevenusRetenus" name="autresRevenusRetenus" [min]="0"
+                    mode="currency" currency="GNF" locale="fr-FR" [disabled]="state().saving">
+                </p-inputNumber>
+            </div>
+            <div class="text-right">
+                <div class="text-sm text-gray-600">Total des charges</div>
+                <div class="text-2xl font-bold text-gray-800">{{ totalCharges() | number:'1.0-0':'fr-FR' }} GNF</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Verdict -->
+    <div class="border-2 rounded-xl p-5 mb-6"
+        [ngClass]="financable() ? 'border-green-400 bg-green-50' : 'border-red-400 bg-red-50'">
+        <div class="flex items-center gap-3">
+            <i class="pi text-2xl" [ngClass]="financable() ? 'pi-check-circle text-green-600' : 'pi-times-circle text-red-600'"></i>
+            <div>
+                <div class="font-bold text-lg" [ngClass]="financable() ? 'text-green-700' : 'text-red-700'">
+                    {{ financable() ? 'Dossier finançable' : 'Dossier NON finançable en l’état' }}
+                </div>
+                <div class="text-sm text-gray-600">
+                    @if (echeanceDepasseQuotite()) {
+                    L'échéance dépasse la quotité cessible : réduire le montant ou allonger la durée du prêt.
+                    } @else if (capaciteResiduelle() < 0) {
+                    Les charges dépassent 65 % du salaire + autres revenus.
+                    } @else if (echeance() <= 0) {
+                    L'échéance mensuelle n'est pas renseignée sur la demande.
+                    } @else {
+                    L'échéance respecte la quotité et la capacité résiduelle est positive.
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Avis de l'agent -->
+    <div class="border-2 border-gray-200 rounded-xl p-5 mb-6 bg-white">
+        <label class="block text-sm text-gray-600 mb-2 font-semibold">Avis de l'agent de crédit</label>
+        <textarea pTextarea [(ngModel)]="analyse.avisAgent" name="avisAgent" rows="4" class="w-full"
+            [disabled]="state().saving"
+            placeholder="Observations sur la situation du fonctionnaire, la stabilité de l'emploi, la moralité..."></textarea>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex justify-end gap-2">
+        <button pButton type="button" icon="pi pi-save" label="Enregistrer l'analyse" [loading]="state().saving"
+            [disabled]="state().soumission" (click)="enregistrer()"></button>
+        <button pButton type="button" icon="pi pi-send" label="Soumettre à la validation DA"
+            class="p-button-success" [loading]="state().soumission"
+            [disabled]="state().saving || !peutSoumettre() || !financable()"
+            (click)="soumettreValidation()"></button>
+    </div>
+    <p class="text-xs text-gray-500 text-right mt-2">
+        Enregistrez d'abord l'analyse ; la soumission est bloquée tant que le dossier n'est pas finançable
+        (échéance ≤ quotité et capacité résiduelle ≥ 0). Le backend re-vérifie ces règles à la soumission et à la validation DA.
+    </p>
+    }
+</div>

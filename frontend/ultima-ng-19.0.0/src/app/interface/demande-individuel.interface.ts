@@ -44,6 +44,37 @@ export interface DemandeFonctionnaire {
 }
 
 /**
+ * Analyse charges & quotité du crédit fonctionnaire (V120) — grille saisie par l'AC,
+ * résultats (quotité, capacité, verdict) recalculés côté backend.
+ */
+export interface AnalyseChargesFonctionnaire {
+    analyseChargesId?: number;
+    demandeindividuelId?: number;
+    chargeLoyer: number;
+    chargeTransport: number;
+    chargeNourriture: number;
+    chargeVignette: number;
+    chargeAssurance: number;
+    chargeElectricite: number;
+    chargeEau: number;
+    chargeAssuranceMaladie: number;
+    chargeScolarite: number;
+    chargeCasSociaux: number;
+    chargeAbonnementImage: number;
+    chargeServiceSalubrite: number;
+    salaireNetRetenu?: number;
+    autresRevenusRetenus?: number;
+    totalCharges?: number;
+    quotiteCessible?: number;
+    capaciteResiduelle?: number;
+    verdict?: 'FINANCABLE' | 'NON_FINANCABLE';
+    avisAgent?: string;
+    analysePar?: string;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
+}
+
+/**
  * Interface principale pour une demande individuelle
  * Version V80 avec email et sigle
  */

@@ -18,7 +18,7 @@ import { CreditosClienteResponseDTO } from './CreditosClienteResponseDTO';
 import { CreditResponse } from './creditResponse';
 import { Delegation } from './delegation';
 import { DelegationCreditDto } from './delegation-credit-dto.interface';
-import { DemandeIndividuel } from './demande-individuel.interface';
+import { AnalyseChargesFonctionnaire, DemandeIndividuel } from './demande-individuel.interface';
 import { DemandeCredit } from './demande.credit';
 import { DossierCreditRequest } from './dossierCreditRequest';
 import { Entreprise } from './entreprise';
@@ -105,6 +105,7 @@ export interface IResponse {
         typeCreditos: TypeCreditDto[];
         typeCredito: TypeCreditDto;
         demandeIndividuel: DemandeIndividuel;
+        analyseCharges?: AnalyseChargesFonctionnaire | null;
         demandeAttentes: DemandeIndividuel[];
         delegations: Delegation[];
         delegation: Delegation;

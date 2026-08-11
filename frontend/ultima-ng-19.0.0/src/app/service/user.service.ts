@@ -1600,6 +1600,14 @@ export class UserService {
 
     prendreEnChargeAC$ = (demandeId: number) => <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/prendre-en-charge-ac`, {}).pipe(catchError(this.handleError));
 
+    // ==================== CREDIT FONCTIONNAIRE (analyse charges & quotite) ====================
+
+    getAnalyseChargesFonctionnaire$ = (demandeId: number) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/fonctionnaire/analyse-charges/${demandeId}`).pipe(catchError(this.handleError));
+
+    saveAnalyseChargesFonctionnaire$ = (demandeId: number, analyse: any) =>
+        <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/fonctionnaire/analyse-charges/${demandeId}`, analyse).pipe(catchError(this.handleError));
+
     // DA - gestion des fonctions d'agence
     getAgentsAgence$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/agents-agence`).pipe(catchError(this.handleError));
 
