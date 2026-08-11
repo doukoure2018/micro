@@ -484,9 +484,16 @@
                             <td class="py-3 px-4 font-semibold text-amber-700">{{
                                 state().demandeIndividuel?.objectCredit }}</td>
                         </tr>
-                        <tr>
+                        <tr class="border-b border-gray-200">
                             <td class="py-3 px-4 text-gray-600 font-medium">Détail de l'objet</td>
                             <td class="py-3 px-4" colspan="3">{{ state().demandeIndividuel?.detailObjectCredit }}</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Niveau de validation requis</td>
+                            <td class="py-3 px-4" colspan="3">
+                                <p-tag [value]="niveauFinal() + ' — ' + libelleNiveauFinal()" severity="info"></p-tag>
+                                <span class="text-gray-500 text-sm ml-2">selon l'échelle de délégation (DA ≤ 25M, DR ≤ 50M, DE ≤ 100M, DG au-delà)</span>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
@@ -1415,8 +1422,11 @@
                                     : isBilanRequired()
                                     ? 'Le bilan et le flux de tresorerie ont ete renseignes.'
                                     : 'Le flux de tresorerie a ete renseigne (bilan non requis pour ce montant).' }}</p>
-                            <p class="text-green-700 text-sm m-0 mt-1">Vous pouvez maintenant valider ou rejeter cette
-                                demande pour la transmettre au Delegue Regional.</p>
+                            <p class="text-green-700 text-sm m-0 mt-1">
+                                {{ isValidationFinaleDA()
+                                    ? 'Montant dans votre plafond de délégation (≤ 25 000 000 GNF) : votre validation est FINALE, le crédit sera définitivement approuvé.'
+                                    : 'Montant au-delà de votre plafond (25 000 000 GNF) : après votre validation, la demande sera transmise au ' + libelleNiveauFinal() + ' via le circuit hiérarchique.' }}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -1437,7 +1447,8 @@
                     <button pButton type="button" (click)="confirmerWorkflowValidationDA()"
                         [disabled]="workflowDAForm.invalid || state().loading"
                         class="px-8 py-3 font-bold shadow-lg bg-gradient-to-r from-green-500 to-emerald-600"
-                        icon="pi pi-check-circle" label="VALIDER ET TRANSMETTRE AU DR">
+                        icon="pi pi-check-circle"
+                        [label]="isValidationFinaleDA() ? 'VALIDATION FINALE DU CREDIT' : 'VALIDER ET TRANSMETTRE AU DR'">
                     </button>
                     <button pButton type="button" (click)="ouvrirWorkflowRejetDA()"
                         class="p-button-danger p-button-outlined px-8 py-3 font-bold" icon="pi pi-times-circle"
@@ -1525,8 +1536,11 @@
                         <div>
                             <p class="font-semibold text-purple-800 m-0">La demande a ete validee par le Directeur
                                 d'Agence.</p>
-                            <p class="text-purple-700 text-sm m-0 mt-1">Vous pouvez maintenant valider ou rejeter cette
-                                demande pour la transmettre a la Direction d'Exploitation.</p>
+                            <p class="text-purple-700 text-sm m-0 mt-1">
+                                {{ isValidationFinaleDR()
+                                    ? 'Montant dans votre plafond de délégation (≤ 50 000 000 GNF) : votre validation est FINALE, le crédit sera définitivement approuvé.'
+                                    : 'Montant au-delà de votre plafond (50 000 000 GNF) : après votre validation, la demande sera transmise à la Direction de l\'Exploitation' + (niveauFinal() === 'DG' ? ' puis au Directeur Général pour visa final.' : ' pour validation finale.') }}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -1565,7 +1579,8 @@
                     <button pButton type="button" (click)="confirmerWorkflowValidationDR()"
                         [disabled]="workflowDRForm.invalid || state().loading"
                         class="px-8 py-3 font-bold shadow-lg bg-gradient-to-r from-purple-500 to-violet-600"
-                        icon="pi pi-check-circle" label="VALIDER ET TRANSMETTRE A LA DE">
+                        icon="pi pi-check-circle"
+                        [label]="isValidationFinaleDR() ? 'VALIDATION FINALE DU CREDIT' : 'VALIDER ET TRANSMETTRE A LA DE'">
                     </button>
                     <button pButton type="button" (click)="ouvrirWorkflowRejetDR()"
                         class="p-button-danger p-button-outlined px-8 py-3 font-bold" icon="pi pi-times-circle"

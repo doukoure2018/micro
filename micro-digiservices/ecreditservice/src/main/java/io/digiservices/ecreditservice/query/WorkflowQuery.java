@@ -91,9 +91,22 @@ public class WorkflowQuery {
 
     // ==================== DA ACTIONS ====================
 
+    /*
+     * Echelle de delegation de pouvoirs (decision 2026-08-11) — le circuit s'arrete
+     * au niveau competent pour le montant demande :
+     *   1 a 25 000 000            -> validation finale DA
+     *   25 000 001 a 50 000 000   -> validation finale DR
+     *   50 000 001 a 100 000 000  -> validation finale DE
+     *   100 000 001 et plus       -> visa final DG (PENDING_DG apres le DE)
+     * Chaque UPDATE_VALIDER_X fait un CASE sur montant_demande : etat final si le
+     * montant est dans son plafond, sinon transmission au niveau suivant.
+     */
     public static final String UPDATE_VALIDER_DA = """
             UPDATE demandeindividuel
-            SET validation_state = 'VALIDATED_DA',
+            SET validation_state = CASE
+                                       WHEN COALESCE(montant_demande, 0) <= 25000000 THEN 'VALIDATED_FINAL'
+                                       ELSE 'VALIDATED_DA'
+                                   END,
                 avis_da = :avis,
                 validated_by_da = :validatedBy,
                 date_validation_da = CURRENT_TIMESTAMP,
@@ -350,9 +363,13 @@ public class WorkflowQuery {
 
     // ==================== DR ACTIONS ====================
 
+    // Echelle de delegation : <= 50M le DR est le validateur final, au-dela transmission au DE.
     public static final String UPDATE_VALIDER_DR = """
             UPDATE demandeindividuel
-            SET validation_state = 'VALIDATED_DR',
+            SET validation_state = CASE
+                                       WHEN COALESCE(montant_demande, 0) <= 50000000 THEN 'VALIDATED_FINAL'
+                                       ELSE 'VALIDATED_DR'
+                                   END,
                 avis_dr = :avis,
                 validated_by_dr = :validatedBy,
                 date_validation_dr = CURRENT_TIMESTAMP,
@@ -438,12 +455,12 @@ public class WorkflowQuery {
 
     // ==================== DE ACTIONS ====================
 
-    // Aiguillage montant : les credits >= 100 000 000 partent au DG (PENDING_DG) au lieu
-    // d'etre finalises directement (VALIDATED_FINAL). En dessous du seuil, comportement inchange.
+    // Echelle de delegation : <= 100M le DE est le validateur final, au-dela (100 000 001 et plus)
+    // le dossier part au DG (PENDING_DG) pour visa final.
     public static final String UPDATE_VALIDER_DE = """
             UPDATE demandeindividuel
             SET validation_state = CASE
-                                       WHEN COALESCE(montant_demande, 0) >= 100000000 THEN 'PENDING_DG'
+                                       WHEN COALESCE(montant_demande, 0) > 100000000 THEN 'PENDING_DG'
                                        ELSE 'VALIDATED_FINAL'
                                    END,
                 avis_de = :avis,

@@ -19,7 +19,7 @@ import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
 
 /**
- * Ecran DG : credits valides par le DE avec montant >= 100M (etat PENDING_DG),
+ * Ecran DG : credits valides par le DE avec montant > 100M (etat PENDING_DG),
  * en attente du visa du Directeur General. Le DG valide (avis) ou rejette (remarques).
  */
 @Component({

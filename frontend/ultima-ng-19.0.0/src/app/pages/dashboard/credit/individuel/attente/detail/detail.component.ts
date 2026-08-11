@@ -1,4 +1,5 @@
 import { AnalyseChargesFonctionnaire, DemandeIndividuel, PieceJointeDemande, quotiteCessibleFonctionnaire } from '@/interface/demande-individuel.interface';
+import { NiveauValidationFinale, libelleNiveauValidation, niveauValidationFinale } from '@/interface/validation-seuils';
 import { registerLocaleData } from '@angular/common';
 import localeFr from '@angular/common/locales/fr';
 
@@ -2399,6 +2400,25 @@ export class DetailComponent {
 
     // ==================== WORKFLOW HIERARCHIQUE ====================
 
+    /** Niveau dont la validation est finale pour le montant de la demande (échelle de délégation). */
+    niveauFinal(): NiveauValidationFinale {
+        return niveauValidationFinale(this.state().demandeIndividuel?.montantDemande);
+    }
+
+    libelleNiveauFinal(): string {
+        return libelleNiveauValidation(this.niveauFinal());
+    }
+
+    /** Le DA est le validateur final (montant <= 25 000 000 GNF). */
+    isValidationFinaleDA(): boolean {
+        return this.niveauFinal() === 'DA';
+    }
+
+    /** Le DR est le validateur final (montant <= 50 000 000 GNF). */
+    isValidationFinaleDR(): boolean {
+        return this.niveauFinal() === 'DR';
+    }
+
     getWorkflowSteps(): { label: string; state: string; active: boolean; completed: boolean }[] {
         const vs = this.state().demandeIndividuel?.validationState || '';
         const stateOrder = ['NOUVEAU', 'SELECTION', 'APPROVED', 'VALIDATED_DA', 'VALIDATED_DR', 'VALIDATED_FINAL'];
@@ -2409,15 +2429,22 @@ export class DetailComponent {
         };
         const effectiveState = correctionStates[vs] || vs;
         const currentIdx = stateOrder.indexOf(effectiveState);
+        const niveau = this.niveauFinal();
 
-        return [
+        const steps = [
             { label: 'Demande', state: 'NOUVEAU', active: effectiveState === 'NOUVEAU', completed: currentIdx > 0 },
             { label: 'Selection', state: 'SELECTION', active: effectiveState === 'SELECTION', completed: currentIdx > 1 },
-            { label: 'AC Approuve', state: 'APPROVED', active: effectiveState === 'APPROVED', completed: currentIdx > 2 },
-            { label: 'DA Valide', state: 'VALIDATED_DA', active: effectiveState === 'VALIDATED_DA', completed: currentIdx > 3 },
-            { label: 'DR Valide', state: 'VALIDATED_DR', active: effectiveState === 'VALIDATED_DR', completed: currentIdx > 4 },
-            { label: 'Valide Final', state: 'VALIDATED_FINAL', active: effectiveState === 'VALIDATED_FINAL', completed: false }
+            { label: 'AC Approuve', state: 'APPROVED', active: effectiveState === 'APPROVED', completed: currentIdx > 2 }
         ];
+        // Échelle de délégation : on n'affiche que les maillons traversés pour ce montant
+        if (niveau !== 'DA') {
+            steps.push({ label: 'DA Valide', state: 'VALIDATED_DA', active: effectiveState === 'VALIDATED_DA', completed: currentIdx > 3 });
+        }
+        if (niveau === 'DE' || niveau === 'DG') {
+            steps.push({ label: 'DR Valide', state: 'VALIDATED_DR', active: effectiveState === 'VALIDATED_DR', completed: currentIdx > 4 });
+        }
+        steps.push({ label: `Valide Final (${niveau})`, state: 'VALIDATED_FINAL', active: effectiveState === 'VALIDATED_FINAL', completed: false });
+        return steps;
     }
 
     isInCorrectionState(): boolean {
@@ -2562,7 +2589,12 @@ export class DetailComponent {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => {
-                    this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Demande validee et transmise au DR', life: 3000 });
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Succes',
+                        detail: this.isValidationFinaleDA() ? 'Credit valide definitivement (plafond Directeur d’Agence)' : 'Demande validee et transmise au DR',
+                        life: 4000
+                    });
                     this.workflowDAForm.reset();
                     this.loadDemandeWithGaranties();
                 },
@@ -2617,7 +2649,12 @@ export class DetailComponent {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => {
-                    this.messageService.add({ severity: 'success', summary: 'Succes', detail: "Demande validee et transmise a la Direction d'Exploitation", life: 3000 });
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Succes',
+                        detail: this.isValidationFinaleDR() ? 'Credit valide definitivement (plafond Delegue Regional)' : "Demande validee et transmise a la Direction d'Exploitation",
+                        life: 4000
+                    });
                     this.workflowDRForm.reset();
                     this.loadDemandeWithGaranties();
                 },

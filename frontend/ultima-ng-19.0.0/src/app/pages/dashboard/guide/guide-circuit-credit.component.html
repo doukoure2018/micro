@@ -42,29 +42,29 @@
             <div class="flow-step">
                 <div class="flow-badge da">DA</div>
                 <div class="flow-title">Directeur d'Agence</div>
-                <div class="flow-states"><span class="state validated">VALIDATED_DA</span></div>
-                <div class="flow-desc">1er contrôle (agence)</div>
+                <div class="flow-states"><span class="state final">&le; 25M → VALIDATED_FINAL</span> <span class="state validated">&gt; 25M → VALIDATED_DA</span></div>
+                <div class="flow-desc">1er contrôle · validation finale &le; 25M GNF</div>
             </div>
             <i class="pi pi-arrow-right flow-arrow"></i>
             <div class="flow-step">
                 <div class="flow-badge dr">DR</div>
                 <div class="flow-title">Délégué Régional</div>
-                <div class="flow-states"><span class="state validated">VALIDATED_DR</span></div>
-                <div class="flow-desc">2e contrôle (délégation)</div>
+                <div class="flow-states"><span class="state final">&le; 50M → VALIDATED_FINAL</span> <span class="state validated">&gt; 50M → VALIDATED_DR</span></div>
+                <div class="flow-desc">2e contrôle · validation finale &le; 50M GNF</div>
             </div>
             <i class="pi pi-arrow-right flow-arrow"></i>
             <div class="flow-step">
                 <div class="flow-badge de">DE</div>
                 <div class="flow-title">Direction Exploitation</div>
-                <div class="flow-states"><span class="state final">&lt; 100M → VALIDATED_FINAL</span> <span class="state pending">≥ 100M → PENDING_DG</span></div>
-                <div class="flow-desc">Validation nationale / aiguillage</div>
+                <div class="flow-states"><span class="state final">&le; 100M → VALIDATED_FINAL</span> <span class="state pending">&gt; 100M → PENDING_DG</span></div>
+                <div class="flow-desc">Validation finale &le; 100M / aiguillage DG</div>
             </div>
             <i class="pi pi-arrow-right flow-arrow"></i>
             <div class="flow-step">
                 <div class="flow-badge dg">DG</div>
                 <div class="flow-title">Direction Générale</div>
                 <div class="flow-states"><span class="state final">VALIDATED_FINAL</span></div>
-                <div class="flow-desc">Visa des crédits ≥ 100M GNF</div>
+                <div class="flow-desc">Visa des crédits &gt; 100M GNF</div>
             </div>
         </div>
 
@@ -105,25 +105,25 @@
                         <td><strong>Directeur d'Agence (DA)</strong></td>
                         <td><code>DA</code></td>
                         <td>Son agence</td>
-                        <td>1er contrôle : cohérence du dossier et de l'analyse</td>
+                        <td>1er contrôle : cohérence du dossier et de l'analyse ; <strong>validation finale des crédits &le; 25M GNF</strong></td>
                     </tr>
                     <tr>
                         <td><strong>Délégué Régional (DR)</strong></td>
                         <td><code>DR</code></td>
                         <td>Sa délégation</td>
-                        <td>2e contrôle : validation régionale</td>
+                        <td>2e contrôle : validation régionale ; <strong>validation finale des crédits &le; 50M GNF</strong></td>
                     </tr>
                     <tr>
                         <td><strong>Direction de l'Exploitation (DE)</strong></td>
                         <td><code>MANAGER</code> + service <code>DE</code></td>
                         <td><strong>National</strong></td>
-                        <td>Validation finale (&lt; 100M) ou transmission au DG (≥ 100M) ; supervision globale</td>
+                        <td>Validation finale des crédits &le; 100M GNF ou transmission au DG (&gt; 100M) ; supervision globale</td>
                     </tr>
                     <tr>
                         <td><strong>Directeur Général (DG)</strong></td>
                         <td><code>DG</code></td>
                         <td>National</td>
-                        <td>Visa des gros crédits (≥ 100 000 000 GNF)</td>
+                        <td>Visa des gros crédits (&gt; 100 000 000 GNF)</td>
                     </tr>
                     <tr>
                         <td><strong>Direction de l'Inspection (DI)</strong></td>
@@ -278,19 +278,24 @@
             <li><strong>Historique « Crédits validés DE »</strong>.</li>
         </ol>
 
-        <h3>6.1 La règle du seuil de 100 millions</h3>
+        <h3>6.1 L'échelle de délégation de pouvoirs (par montant)</h3>
         <div class="seuil-box">
             <div class="seuil-row">
-                <span class="seuil-cond">montant ≥ 100 000 000 GNF</span>
+                <span class="seuil-cond">montant &gt; 100 000 000 GNF</span>
                 <i class="pi pi-arrow-right"></i>
                 <span class="state pending">PENDING_DG</span>
                 <span class="seuil-effet">visa DG requis</span>
             </div>
             <div class="seuil-row">
-                <span class="seuil-cond">montant &lt; 100 000 000 GNF</span>
+                <span class="seuil-cond">montant &le; 100 000 000 GNF</span>
                 <i class="pi pi-arrow-right"></i>
                 <span class="state final">VALIDATED_FINAL</span>
                 <span class="seuil-effet">crédit définitivement validé</span>
+            </div>
+            <div class="seuil-row">
+                <span class="seuil-cond">Rappel de l'échelle complète</span>
+                <i class="pi pi-arrow-right"></i>
+                <span class="seuil-effet">DA &le; 25M · DR &le; 50M · DE &le; 100M · DG au-delà — chaque niveau valide définitivement dans son plafond, le dossier ne monte plus</span>
             </div>
         </div>
         <p>En cas de <strong>rejet DE</strong> (motif + sections + instructions au DR) → <span class="state correction">CORRECTION_DE</span>, visible par le DR et par l'agent pour correction.</p>
@@ -315,9 +320,9 @@
 
     <!-- 7. Étape 5 : DG -->
     <div class="card">
-        <h2><span class="num">7</span> Étape 5 — Visa de la Direction Générale (DG, crédits ≥ 100M)</h2>
+        <h2><span class="num">7</span> Étape 5 — Visa de la Direction Générale (DG, crédits &gt; 100M)</h2>
         <p>
-            Le DG dispose d'un espace dédié « Crédits à valider (≥ 100M) » listant les dossiers <span class="state pending">PENDING_DG</span> <strong>triés par montant décroissant</strong>, avec l'historique complet des
+            Le DG dispose d'un espace dédié « Crédits à valider (&gt; 100M) » listant les dossiers <span class="state pending">PENDING_DG</span> <strong>triés par montant décroissant</strong>, avec l'historique complet des
             avis (agent, DA, DR, DE). Deux décisions :
         </p>
         <ul>
@@ -384,13 +389,13 @@
                     </tr>
                     <tr>
                         <td><span class="state pending">PENDING_DG</span></td>
-                        <td>DE (≥ 100M)</td>
+                        <td>DE (&gt; 100M)</td>
                         <td>Validée DE, en attente de visa DG</td>
                         <td>DG</td>
                     </tr>
                     <tr>
                         <td><span class="state final">VALIDATED_FINAL</span></td>
-                        <td>DE (&lt; 100M) ou DG</td>
+                        <td>DA/DR/DE (selon plafond) ou DG</td>
                         <td><strong>Crédit définitivement validé</strong></td>
                         <td>— (mise en place)</td>
                     </tr>
