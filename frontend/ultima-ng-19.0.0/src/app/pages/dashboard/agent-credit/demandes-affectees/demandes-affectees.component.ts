@@ -4,8 +4,9 @@ import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
@@ -19,10 +20,11 @@ import { TooltipModule } from 'primeng/tooltip';
 @Component({
     selector: 'app-demandes-affectees',
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, TagModule, ToastModule, TooltipModule],
-    providers: [MessageService],
+    imports: [CommonModule, TableModule, ButtonModule, ConfirmDialogModule, TagModule, ToastModule, TooltipModule],
+    providers: [MessageService, ConfirmationService],
     template: `
         <p-toast></p-toast>
+        <p-confirmDialog [style]="{ width: '430px' }"></p-confirmDialog>
         <div class="card">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold m-0">Demandes affectées par mon DA</h2>
@@ -80,6 +82,7 @@ import { TooltipModule } from 'primeng/tooltip';
 export class DemandesAffecteesComponent implements OnInit {
     private userService = inject(UserService);
     private messageService = inject(MessageService);
+    private confirmationService = inject(ConfirmationService);
     private destroyRef = inject(DestroyRef);
     private router = inject(Router);
 
@@ -115,6 +118,20 @@ export class DemandesAffecteesComponent implements OnInit {
     }
 
     prendreEnCharge(d: any): void {
+        this.confirmationService.confirm({
+            header: 'Confirmation de prise en charge',
+            message: `Êtes-vous sûr de vouloir prendre en charge la demande de ${d.prenom} ${d.nom} (${d.montantDemande?.toLocaleString('fr-FR') || '?'} GNF) ? Elle passera en sélection et vous en deviendrez responsable pour l'instruction.`,
+            icon: 'pi pi-question-circle',
+            acceptLabel: 'Oui, prendre en charge',
+            rejectLabel: 'Annuler',
+            acceptIcon: 'pi pi-check',
+            rejectIcon: 'pi pi-times',
+            rejectButtonStyleClass: 'p-button-text',
+            accept: () => this.confirmerPriseEnCharge(d)
+        });
+    }
+
+    private confirmerPriseEnCharge(d: any): void {
         this.userService
             .prendreEnChargeAC$(d.demandeIndividuelId)
             .pipe(takeUntilDestroyed(this.destroyRef))
