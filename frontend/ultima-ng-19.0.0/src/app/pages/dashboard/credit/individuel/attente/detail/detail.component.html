@@ -172,19 +172,32 @@
                             <h2 class="nature-title">
                                 {{ getNatureClientLabel(state().demandeIndividuel?.natureClient) }}
                             </h2>
-                            <!-- Affichage conditionnel pour PME -->
+                            <!-- Sous-titre dynamique selon la nature -->
+                            <!-- PME : sigle + raison sociale -->
                             <p *ngIf="state().demandeIndividuel?.natureClient?.includes('PME') && state().demandeIndividuel?.nomPersonneMorale"
                                 class="nature-subtitle">
                                 <span *ngIf="state().demandeIndividuel?.sigle" class="font-bold">{{
                                     state().demandeIndividuel?.sigle }} - </span>
                                 {{ state().demandeIndividuel?.nomPersonneMorale }}
                             </p>
-                            <!-- Affichage conditionnel pour Fonctionnaire -->
+                            <!-- Fonctionnaire : service + ministère -->
                             <p *ngIf="isFonctionnaireNature() && state().demandeIndividuel?.demandeFonctionnaire?.serviceEmployeur"
                                 class="nature-subtitle">
                                 {{ state().demandeIndividuel?.demandeFonctionnaire?.serviceEmployeur }}
                                 <span *ngIf="state().demandeIndividuel?.demandeFonctionnaire?.departementMinistere">
                                     — {{ state().demandeIndividuel?.demandeFonctionnaire?.departementMinistere }}</span>
+                            </p>
+                            <!-- Particulier : profession + secteur d'activité -->
+                            <p *ngIf="state().demandeIndividuel?.natureClient?.includes('Particulier') && (state().demandeIndividuel?.profession || state().demandeIndividuel?.secteurActivite)"
+                                class="nature-subtitle">
+                                {{ state().demandeIndividuel?.profession }}
+                                <span *ngIf="state().demandeIndividuel?.profession && state().demandeIndividuel?.secteurActivite"> — </span>
+                                {{ state().demandeIndividuel?.secteurActivite }}
+                            </p>
+                            <!-- Professionnel : activité exercée -->
+                            <p *ngIf="state().demandeIndividuel?.natureClient?.includes('Professionnel') && (state().demandeIndividuel?.natureActivite || state().demandeIndividuel?.currentActivite)"
+                                class="nature-subtitle">
+                                {{ state().demandeIndividuel?.natureActivite || state().demandeIndividuel?.currentActivite }}
                             </p>
                         </div>
                     </div>
@@ -192,9 +205,15 @@
                         @if (isFonctionnaireNature()) {
                         <p class="category-label">Type de contrat</p>
                         <p class="category-value">{{ state().demandeIndividuel?.demandeFonctionnaire?.typeContrat || 'Non spécifié' }}</p>
+                        } @else if (state().demandeIndividuel?.natureClient?.includes('Particulier')) {
+                        <p class="category-label">Profession</p>
+                        <p class="category-value">{{ state().demandeIndividuel?.profession || 'Non spécifiée' }}</p>
+                        } @else if (state().demandeIndividuel?.natureClient?.includes('PME')) {
+                        <p class="category-label">Catégorie</p>
+                        <p class="category-value">{{ state().demandeIndividuel?.categorie || state().demandeIndividuel?.titreDirecteur || 'Non spécifiée' }}</p>
                         } @else {
                         <p class="category-label">Catégorie</p>
-                        <p class="category-value">{{ state().demandeIndividuel?.categorie || 'Non spécifiée' }}</p>
+                        <p class="category-value">{{ state().demandeIndividuel?.categorie || state().demandeIndividuel?.currentActivite || 'Non spécifiée' }}</p>
                         }
                     </div>
                 </div>
