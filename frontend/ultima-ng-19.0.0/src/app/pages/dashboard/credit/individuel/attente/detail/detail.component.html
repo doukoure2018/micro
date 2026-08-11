@@ -323,9 +323,65 @@
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <!-- SECTION 2 (Fonctionnaire): SITUATION PROFESSIONNELLE                    -->
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <div *ngIf="isFonctionnaireNature()"
+            class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8">
+            <div class="bg-emerald-600 text-white px-6 py-4 flex items-center gap-3">
+                <i class="pi pi-id-card text-xl"></i>
+                <span class="font-bold text-lg uppercase tracking-wide">2. Situation Professionnelle</span>
+            </div>
+            <div class="p-6">
+                <table class="w-full">
+                    <tbody>
+                        <tr class="border-b border-gray-200">
+                            <td class="py-3 px-4 text-gray-600 font-medium w-1/4">Service employeur</td>
+                            <td class="py-3 px-4 font-semibold text-emerald-700">
+                                {{ state().demandeIndividuel?.demandeFonctionnaire?.serviceEmployeur || 'N/A' }}</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium w-1/4">Département / Ministère</td>
+                            <td class="py-3 px-4">
+                                {{ state().demandeIndividuel?.demandeFonctionnaire?.departementMinistere || 'N/A' }}</td>
+                        </tr>
+                        <tr class="border-b border-gray-200">
+                            <td class="py-3 px-4 text-gray-600 font-medium">Type de contrat</td>
+                            <td class="py-3 px-4">
+                                {{ state().demandeIndividuel?.demandeFonctionnaire?.typeContrat || 'N/A' }}</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Matricule / Ancienneté</td>
+                            <td class="py-3 px-4">
+                                {{ state().demandeIndividuel?.demandeFonctionnaire?.matricule || 'N/A' }} /
+                                {{ state().demandeIndividuel?.demandeFonctionnaire?.ancienneteAnnees != null ?
+                                   state().demandeIndividuel?.demandeFonctionnaire?.ancienneteAnnees + ' an(s)' : 'N/A' }}</td>
+                        </tr>
+                        <tr class="border-b border-gray-200">
+                            <td class="py-3 px-4 text-gray-600 font-medium">Salaire net mensuel</td>
+                            <td class="py-3 px-4 font-bold text-emerald-600">
+                                {{ state().demandeIndividuel?.demandeFonctionnaire?.salaireNetMensuel | number:'1.0-0':'fr-FR' }} GNF</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Autres revenus</td>
+                            <td class="py-3 px-4">
+                                {{ (state().demandeIndividuel?.demandeFonctionnaire?.autresRevenus || 0) | number:'1.0-0':'fr-FR' }} GNF</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Quotité cessible (35 %)</td>
+                            <td class="py-3 px-4 font-bold text-amber-600">
+                                {{ state().demandeIndividuel?.demandeFonctionnaire?.quotiteCessible | number:'1.0-0':'fr-FR' }} GNF</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Domiciliation du salaire au CRG</td>
+                            <td class="py-3 px-4">
+                                <p-tag [value]="state().demandeIndividuel?.demandeFonctionnaire?.domiciliationSalaire ? 'OUI — engagement signé' : 'NON'"
+                                    [severity]="state().demandeIndividuel?.demandeFonctionnaire?.domiciliationSalaire ? 'success' : 'danger'"></p-tag>
+                                <span class="ml-3 text-gray-500 text-sm">Nombre d'épouses :
+                                    {{ state().demandeIndividuel?.demandeFonctionnaire?.nombreEpouses || 0 }}</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
         <!-- SECTION 2: ACTIVITÉS - Tableau simple                                  -->
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
-        <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8">
+        <div *ngIf="!isFonctionnaireNature()"
+            class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8">
             <div class="bg-emerald-600 text-white px-6 py-4 flex items-center gap-3">
                 <i class="pi pi-briefcase text-xl"></i>
                 <span class="font-bold text-lg uppercase tracking-wide">2. Activités</span>
@@ -407,9 +463,10 @@
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
-        <!-- SECTION 4: GARANTIES PROPOSÉES                                         -->
+        <!-- SECTION 4: GARANTIES PROPOSÉES (non applicable au crédit fonctionnaire) -->
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
-        <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8">
+        <div *ngIf="!isFonctionnaireNature()"
+            class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8">
             <div class="bg-indigo-600 text-white px-6 py-4 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <i class="pi pi-shield text-xl"></i>
