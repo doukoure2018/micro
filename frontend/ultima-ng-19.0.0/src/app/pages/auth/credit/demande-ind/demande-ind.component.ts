@@ -829,15 +829,6 @@ export class DemandeIndComponent implements OnInit {
                 });
                 return;
             }
-            if (!this.fichierBulletinSalaire || !this.fichierAttestationService) {
-                this.messageService.add({
-                    severity: 'error',
-                    summary: 'Pièces manquantes',
-                    detail: 'Le bulletin de salaire et l’attestation de service sont obligatoires pour un crédit fonctionnaire',
-                    life: 6000
-                });
-                return;
-            }
         }
 
         // Crédit fonctionnaire : pas de garanties classiques (la garantie est la domiciliation du salaire)
