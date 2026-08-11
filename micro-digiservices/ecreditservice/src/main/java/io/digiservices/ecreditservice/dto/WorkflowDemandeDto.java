@@ -24,6 +24,7 @@ public class WorkflowDemandeDto {
     private Long pos;
     private BigDecimal montantDemande;
     private String objectCredit;
+    private String natureClient;
     private String validationState;
     private String statutDemande;
     private String codUsuarios;

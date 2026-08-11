@@ -1,4 +1,8 @@
 import { AnalyseChargesFonctionnaire, DemandeIndividuel, TAUX_QUOTITE_FONCTIONNAIRE } from '@/interface/demande-individuel.interface';
+import { registerLocaleData } from '@angular/common';
+import localeFr from '@angular/common/locales/fr';
+
+registerLocaleData(localeFr, 'fr-FR');
 import { DemandeCredit } from '@/interface/demande.credit';
 import { PointVente } from '@/interface/point.vente';
 import { IResponse } from '@/interface/response';

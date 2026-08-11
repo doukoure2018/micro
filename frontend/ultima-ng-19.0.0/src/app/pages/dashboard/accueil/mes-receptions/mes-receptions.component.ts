@@ -33,6 +33,7 @@ import { TooltipModule } from 'primeng/tooltip';
                     <tr>
                         <th>Membre</th>
                         <th>Téléphone</th>
+                        <th>Nature</th>
                         <th>Montant</th>
                         <th>Objet</th>
                         <th>Statut</th>
@@ -45,6 +46,7 @@ import { TooltipModule } from 'primeng/tooltip';
                     <tr>
                         <td>{{ d.prenom }} {{ d.nom }}<br /><span class="text-xs text-gray-500">{{ d.numeroMembre }}</span></td>
                         <td>{{ d.telephone }}</td>
+                        <td><p-tag [value]="labelNature(d.natureClient)" [severity]="severiteNature(d.natureClient)"></p-tag></td>
                         <td>{{ d.montantDemande | currency: 'GNF ' : 'symbol' : '1.0-0' }}</td>
                         <td>{{ d.objectCredit }}</td>
                         <td><p-tag [value]="labelEtat(d.validationState)" [severity]="severiteEtat(d.validationState)"></p-tag></td>
@@ -78,7 +80,7 @@ import { TooltipModule } from 'primeng/tooltip';
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
                     <tr>
-                        <td colspan="8" class="text-center py-6 text-gray-500">Aucune demande réceptionnée en cours.</td>
+                        <td colspan="9" class="text-center py-6 text-gray-500">Aucune demande réceptionnée en cours.</td>
                     </tr>
                 </ng-template>
             </p-table>
@@ -147,5 +149,20 @@ export class MesReceptionsComponent implements OnInit {
             default:
                 return 'secondary';
         }
+    }
+
+    labelNature(natureClient?: string): string {
+        if (!natureClient) return 'Particulier';
+        if (natureClient.includes('PME')) return 'PME/PMI';
+        if (natureClient.includes('Professionnel')) return 'Professionnel';
+        if (natureClient.includes('Fonctionnaire')) return 'Fonctionnaire';
+        return 'Particulier';
+    }
+
+    severiteNature(natureClient?: string): 'info' | 'warn' | 'success' | 'secondary' {
+        if (natureClient?.includes('Fonctionnaire')) return 'warn';
+        if (natureClient?.includes('PME')) return 'info';
+        if (natureClient?.includes('Professionnel')) return 'success';
+        return 'secondary';
     }
 }
