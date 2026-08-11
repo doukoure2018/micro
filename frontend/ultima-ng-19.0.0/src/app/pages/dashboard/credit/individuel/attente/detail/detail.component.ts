@@ -1,4 +1,4 @@
-import { AnalyseChargesFonctionnaire, DemandeIndividuel, TAUX_QUOTITE_FONCTIONNAIRE } from '@/interface/demande-individuel.interface';
+import { AnalyseChargesFonctionnaire, DemandeIndividuel, PieceJointeDemande, quotiteCessibleFonctionnaire } from '@/interface/demande-individuel.interface';
 import { registerLocaleData } from '@angular/common';
 import localeFr from '@angular/common/locales/fr';
 
@@ -124,6 +124,7 @@ export class DetailComponent {
         showWorkflowRejetDA: boolean;
         showWorkflowRejetDR: boolean;
         analyseChargesFonctionnaire?: AnalyseChargesFonctionnaire | null;
+        piecesFonctionnaire?: PieceJointeDemande[];
     }>({
         loading: false,
         message: undefined,
@@ -187,6 +188,18 @@ export class DetailComponent {
         { label: 'Documents incomplets', value: 'DOCUMENTS_INCOMPLETS' },
         { label: 'Demande complete', value: 'DEMANDE_COMPLETE' }
     ];
+
+    /** Sections à revoir pour le crédit fonctionnaire : ni bilan/flux ni garanties. */
+    workflowSectionsOptionsFonctionnaire = [
+        { label: 'Collecte des donnees', value: 'COLLECTE' },
+        { label: 'Analyse charges & quotite', value: 'ANALYSE_CHARGES' },
+        { label: 'Documents incomplets', value: 'DOCUMENTS_INCOMPLETS' },
+        { label: 'Demande complete', value: 'DEMANDE_COMPLETE' }
+    ];
+
+    getWorkflowSectionsOptions(): { label: string; value: string }[] {
+        return this.isFonctionnaireNature() ? this.workflowSectionsOptionsFonctionnaire : this.workflowSectionsOptions;
+    }
 
     // Options sections pour rejet
     sectionsBilanOptions = [
@@ -1417,6 +1430,27 @@ export class DetailComponent {
         return this.state().demandeIndividuel?.natureClient === 'Demande de credit Pour Fonctionnaire';
     }
 
+    /** Libellés des 12 postes de charges, dans l'ordre de la grille de saisie de l'agent. */
+    readonly postesChargesFonctionnaire: { key: keyof AnalyseChargesFonctionnaire; libelle: string }[] = [
+        { key: 'chargeLoyer', libelle: 'Loyer' },
+        { key: 'chargeTransport', libelle: 'Transport' },
+        { key: 'chargeNourriture', libelle: 'Nourriture' },
+        { key: 'chargeVignette', libelle: 'Vignette' },
+        { key: 'chargeAssurance', libelle: 'Assurance' },
+        { key: 'chargeElectricite', libelle: 'Électricité' },
+        { key: 'chargeEau', libelle: 'Eau' },
+        { key: 'chargeAssuranceMaladie', libelle: 'Assurance maladie' },
+        { key: 'chargeScolarite', libelle: 'Scolarité' },
+        { key: 'chargeCasSociaux', libelle: 'Cas sociaux' },
+        { key: 'chargeAbonnementImage', libelle: 'Abonnement image (TV)' },
+        { key: 'chargeServiceSalubrite', libelle: 'Service salubrité' }
+    ];
+
+    montantChargeFonctionnaire(key: keyof AnalyseChargesFonctionnaire): number {
+        const analyse = this.state().analyseChargesFonctionnaire;
+        return analyse ? Number(analyse[key]) || 0 : 0;
+    }
+
     private loadAnalyseChargesFonctionnaire(demandeId: number): void {
         this.userService
             .getAnalyseChargesFonctionnaire$(demandeId)
@@ -1425,6 +1459,32 @@ export class DetailComponent {
                 next: (response) => this.state.update((s) => ({ ...s, analyseChargesFonctionnaire: response.data?.analyseCharges || null })),
                 error: () => this.state.update((s) => ({ ...s, analyseChargesFonctionnaire: null }))
             });
+        this.userService
+            .getPiecesDemande$(demandeId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => this.state.update((s) => ({ ...s, piecesFonctionnaire: response.data?.pieces || [] })),
+                error: () => this.state.update((s) => ({ ...s, piecesFonctionnaire: [] }))
+            });
+    }
+
+    libelleTypePieceFonctionnaire(type?: string): string {
+        switch (type) {
+            case 'BULLETIN_SALAIRE':
+                return 'Bulletin de salaire';
+            case 'ATTESTATION_SERVICE':
+                return 'Attestation de service';
+            case 'AUTRE':
+                return 'Autre pièce';
+            default:
+                return type || 'Pièce';
+        }
+    }
+
+    /** Échappe le texte libre injecté dans le HTML imprimable (avis, service, matricule...). */
+    private escapeHtml(value?: string | null): string {
+        if (!value) return '';
+        return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
     /** Section imprimable du dossier fonctionnaire : emploi, salaire, quotité et grille des charges. */
@@ -1434,7 +1494,8 @@ export class DetailComponent {
         if (!this.isFonctionnaireNature() || !fct) return '';
 
         const fmt = (montant?: number | null) => (montant != null ? Number(montant).toLocaleString('fr-FR') + ' GNF' : 'N/A');
-        const quotite = fct.quotiteCessible != null ? fct.quotiteCessible : Math.round((fct.salaireNetMensuel || 0) * TAUX_QUOTITE_FONCTIONNAIRE);
+        const esc = (texte?: string | null) => this.escapeHtml(texte) || 'N/A';
+        const quotite = fct.quotiteCessible != null ? fct.quotiteCessible : quotiteCessibleFonctionnaire(fct.salaireNetMensuel);
         const analyse = this.state().analyseChargesFonctionnaire;
 
         const lignesCharges: [string, number | undefined][] = analyse
@@ -1461,15 +1522,15 @@ export class DetailComponent {
                     <table class="info-table">
                         <tr>
                             <td class="label">Service employeur:</td>
-                            <td class="value">${fct.serviceEmployeur || 'N/A'}</td>
+                            <td class="value">${esc(fct.serviceEmployeur)}</td>
                             <td class="label">Département / Ministère:</td>
-                            <td class="value">${fct.departementMinistere || 'N/A'}</td>
+                            <td class="value">${esc(fct.departementMinistere)}</td>
                         </tr>
                         <tr>
                             <td class="label">Type de contrat:</td>
-                            <td class="value">${fct.typeContrat || 'N/A'}</td>
+                            <td class="value">${esc(fct.typeContrat)}</td>
                             <td class="label">Matricule / Ancienneté:</td>
-                            <td class="value">${fct.matricule || 'N/A'} / ${fct.ancienneteAnnees != null ? fct.ancienneteAnnees + ' an(s)' : 'N/A'}</td>
+                            <td class="value">${esc(fct.matricule)} / ${fct.ancienneteAnnees != null ? fct.ancienneteAnnees + ' an(s)' : 'N/A'}</td>
                         </tr>
                         <tr>
                             <td class="label">Salaire net mensuel:</td>
@@ -1509,9 +1570,9 @@ export class DetailComponent {
                             <td class="label">Verdict:</td>
                             <td class="value"><strong>${analyse.verdict === 'FINANCABLE' ? 'DOSSIER FINANÇABLE' : 'NON FINANÇABLE'}</strong></td>
                             <td class="label">Analysé par:</td>
-                            <td class="value">${analyse.analysePar || 'N/A'}</td>
+                            <td class="value">${esc(analyse.analysePar)}</td>
                         </tr>
-                        ${analyse.avisAgent ? `<tr><td class="label">Avis de l'agent:</td><td class="value" colspan="3">${analyse.avisAgent}</td></tr>` : ''}
+                        ${analyse.avisAgent ? `<tr><td class="label">Avis de l'agent:</td><td class="value" colspan="3">${this.escapeHtml(analyse.avisAgent)}</td></tr>` : ''}
                     </table>
                     `
                             : ''
@@ -2319,7 +2380,7 @@ export class DetailComponent {
     }
 
     getSectionLabel(value: string): string {
-        const all = [...this.sectionsBilanOptions, ...this.sectionsFluxOptions, ...this.workflowSectionsOptions];
+        const all = [...this.sectionsBilanOptions, ...this.sectionsFluxOptions, ...this.workflowSectionsOptions, ...this.workflowSectionsOptionsFonctionnaire];
         return all.find((o) => o.value === value)?.label || value;
     }
 

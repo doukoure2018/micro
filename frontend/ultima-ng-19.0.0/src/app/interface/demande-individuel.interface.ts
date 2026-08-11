@@ -23,6 +23,41 @@ export type NatureClient = 'Demande de credit Pour Professionnels' | 'Demande de
  */
 export const TAUX_QUOTITE_FONCTIONNAIRE = 0.35;
 
+/** Nature client du crédit fonctionnaire (valeur exacte partagée avec le backend). */
+export const NATURE_CREDIT_FONCTIONNAIRE: NatureClient = 'Demande de credit Pour Fonctionnaire';
+
+/**
+ * Quotité cessible affichée/contrôlée côté frontend : 35 % du salaire net, tronquée
+ * au GNF entier (Math.floor sur salaire x 35 / 100, entier-exact en flottant).
+ * Toujours <= au plafond backend (CreditFonctionnaireValidator, 2 décimales HALF_UP),
+ * pour que le formulaire n'autorise jamais une échéance que le backend rejetterait.
+ */
+export function quotiteCessibleFonctionnaire(salaireNetMensuel: number | null | undefined): number {
+    return Math.floor(((salaireNetMensuel || 0) * 35) / 100);
+}
+
+/** Options de type de contrat du formulaire fonctionnaire (saisie et correction). */
+export const TYPE_CONTRAT_OPTIONS_FONCTIONNAIRE: { label: string; value: string }[] = [
+    { label: 'Titulaire', value: 'Titulaire' },
+    { label: 'Contractuel', value: 'Contractuel' },
+    { label: 'Retraité', value: 'Retraite' }
+];
+
+/** Extension fonctionnaire vierge, partagée entre saisie initiale et correction. */
+export function demandeFonctionnaireVide(): DemandeFonctionnaire {
+    return {
+        serviceEmployeur: '',
+        departementMinistere: '',
+        ancienneteAnnees: undefined,
+        typeContrat: '',
+        matricule: '',
+        salaireNetMensuel: 0,
+        autresRevenus: 0,
+        nombreEpouses: 0,
+        domiciliationSalaire: false
+    };
+}
+
 /**
  * Extension fonctionnaire d'une demande individuelle (V120).
  */

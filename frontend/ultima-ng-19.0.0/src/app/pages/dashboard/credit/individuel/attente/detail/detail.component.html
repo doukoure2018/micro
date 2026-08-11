@@ -1044,8 +1044,111 @@
             <div class="p-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
 
+                    <!-- ========== Crédit Fonctionnaire : Analyse Charges & Quotité (saisie AC, lecture seule) ========== -->
+                    <div *ngIf="isFonctionnaireNature()" class="md:col-span-2">
+                        <div class="border-2 rounded-xl p-5"
+                            [ngClass]="state().analyseChargesFonctionnaire?.verdict === 'FINANCABLE' ? 'border-green-300 bg-green-50' :
+                                       state().analyseChargesFonctionnaire ? 'border-red-300 bg-red-50' : 'border-amber-300 bg-amber-50'">
+                            <div class="flex items-center justify-between flex-wrap gap-3 mb-4">
+                                <div class="flex items-center gap-4">
+                                    <i class="pi pi-percentage text-3xl"
+                                        [ngClass]="state().analyseChargesFonctionnaire?.verdict === 'FINANCABLE' ? 'text-green-500' :
+                                                   state().analyseChargesFonctionnaire ? 'text-red-500' : 'text-amber-500'"></i>
+                                    <div>
+                                        <div class="font-bold text-lg">Analyse Charges &amp; Quotit&eacute;</div>
+                                        <div class="font-medium"
+                                            [ngClass]="state().analyseChargesFonctionnaire?.verdict === 'FINANCABLE' ? 'text-green-600' :
+                                                       state().analyseChargesFonctionnaire ? 'text-red-600' : 'text-amber-700'">
+                                            {{ state().analyseChargesFonctionnaire ? 'Saisie par ' + (state().analyseChargesFonctionnaire?.analysePar || "l'agent de crédit") : "Non renseignée par l'agent de crédit" }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <p-tag *ngIf="state().analyseChargesFonctionnaire"
+                                    [value]="state().analyseChargesFonctionnaire?.verdict === 'FINANCABLE' ? 'FINANÇABLE' : 'NON FINANÇABLE'"
+                                    [severity]="state().analyseChargesFonctionnaire?.verdict === 'FINANCABLE' ? 'success' : 'danger'"></p-tag>
+                            </div>
+
+                            <div *ngIf="state().analyseChargesFonctionnaire" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <!-- Revenus & quotité -->
+                                <div class="bg-white border border-gray-200 rounded-lg p-4">
+                                    <div class="font-semibold text-gray-700 mb-3"><i class="pi pi-wallet mr-2"></i>Revenus &amp; Quotit&eacute;</div>
+                                    <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                                        <div class="text-gray-500">Salaire net mensuel retenu</div>
+                                        <div class="text-right font-semibold">{{ state().analyseChargesFonctionnaire?.salaireNetRetenu | number:'1.0-0':'fr-FR' }} GNF</div>
+                                        <div class="text-gray-500">Autres revenus retenus</div>
+                                        <div class="text-right font-semibold">{{ (state().analyseChargesFonctionnaire?.autresRevenusRetenus || 0) | number:'1.0-0':'fr-FR' }} GNF</div>
+                                        <div class="text-gray-500">Quotit&eacute; cessible (35 %)</div>
+                                        <div class="text-right font-semibold text-amber-700">{{ state().analyseChargesFonctionnaire?.quotiteCessible | number:'1.0-0':'fr-FR' }} GNF</div>
+                                        <div class="text-gray-500">&Eacute;ch&eacute;ance du pr&ecirc;t</div>
+                                        <div class="text-right font-semibold"
+                                            [ngClass]="(state().demandeIndividuel?.echeance || 0) > (state().analyseChargesFonctionnaire?.quotiteCessible || 0) ? 'text-red-600' : ''">
+                                            {{ state().demandeIndividuel?.echeance | number:'1.0-0':'fr-FR' }} GNF</div>
+                                        <div class="text-gray-500 font-medium border-t border-gray-200 pt-2">Capacit&eacute; r&eacute;siduelle</div>
+                                        <div class="text-right font-bold border-t border-gray-200 pt-2"
+                                            [ngClass]="(state().analyseChargesFonctionnaire?.capaciteResiduelle ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'">
+                                            {{ state().analyseChargesFonctionnaire?.capaciteResiduelle | number:'1.0-0':'fr-FR' }} GNF</div>
+                                    </div>
+                                </div>
+
+                                <!-- Grille des 12 postes de charges -->
+                                <div class="bg-white border border-gray-200 rounded-lg p-4">
+                                    <div class="font-semibold text-gray-700 mb-3"><i class="pi pi-list mr-2"></i>D&eacute;tail des charges mensuelles (12 postes)</div>
+                                    <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
+                                        <ng-container *ngFor="let poste of postesChargesFonctionnaire">
+                                            <div class="flex justify-between border-b border-gray-100 py-1">
+                                                <span class="text-gray-500">{{ poste.libelle }}</span>
+                                                <span class="font-medium">{{ montantChargeFonctionnaire(poste.key) | number:'1.0-0':'fr-FR' }}</span>
+                                            </div>
+                                        </ng-container>
+                                    </div>
+                                    <div class="flex justify-between mt-3 pt-2 border-t-2 border-gray-300 font-bold text-sm">
+                                        <span>Total des charges</span>
+                                        <span>{{ state().analyseChargesFonctionnaire?.totalCharges | number:'1.0-0':'fr-FR' }} GNF</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Avis de l'agent -->
+                            <div *ngIf="state().analyseChargesFonctionnaire?.avisAgent"
+                                class="mt-4 bg-white border border-gray-200 rounded-lg p-4">
+                                <div class="font-semibold text-gray-700 mb-1"><i class="pi pi-comment mr-2"></i>Avis de l'agent de cr&eacute;dit</div>
+                                <p class="text-gray-600 italic mb-0">&laquo; {{ state().analyseChargesFonctionnaire?.avisAgent }} &raquo;</p>
+                            </div>
+
+                            <!-- Pièces jointes du dossier fonctionnaire -->
+                            <div class="mt-4 bg-white border border-gray-200 rounded-lg p-4">
+                                <div class="font-semibold text-gray-700 mb-2">
+                                    <i class="pi pi-paperclip mr-2"></i>Pi&egrave;ces jointes du dossier
+                                    ({{ state().piecesFonctionnaire?.length || 0 }})
+                                </div>
+                                <div *ngIf="state().piecesFonctionnaire?.length; else aucunePiece" class="space-y-2">
+                                    <div *ngFor="let piece of state().piecesFonctionnaire"
+                                        class="flex items-center justify-between border border-gray-100 rounded-lg px-3 py-2">
+                                        <div class="flex items-center gap-2 text-sm">
+                                            <i class="pi pi-file text-gray-400"></i>
+                                            <span class="font-medium">{{ libelleTypePieceFonctionnaire(piece.typePiece) }}</span>
+                                            <span class="text-gray-400">{{ piece.nomFichier }}</span>
+                                        </div>
+                                        <a *ngIf="piece.urlFichier" [href]="piece.urlFichier" target="_blank" rel="noopener"
+                                            class="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 text-sm font-semibold no-underline">
+                                            <i class="pi pi-eye"></i>Voir
+                                        </a>
+                                    </div>
+                                </div>
+                                <ng-template #aucunePiece>
+                                    <div class="text-gray-500 text-sm"><i class="pi pi-info-circle mr-2"></i>Aucune pi&egrave;ce jointe</div>
+                                </ng-template>
+                            </div>
+
+                            <div *ngIf="!state().analyseChargesFonctionnaire" class="text-center py-4 text-amber-700">
+                                <i class="pi pi-info-circle mr-2"></i>
+                                L'agent de cr&eacute;dit n'a pas encore renseign&eacute; l'analyse charges &amp; quotit&eacute;
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- ========== Bilan d'Activité ========== -->
-                    <div>
+                    <div *ngIf="!isFonctionnaireNature()">
                         <div class="border-2 rounded-xl p-5 flex items-center justify-between"
                             [ngClass]="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'border-green-300 bg-green-50' :
                                        state().analyseStatut === 'BROUILLON' ? 'border-yellow-300 bg-yellow-50' : 'border-gray-300 bg-gray-50'">
@@ -1111,7 +1214,7 @@
                     </div>
 
                     <!-- ========== Flux de Tr&eacute;sorerie ========== -->
-                    <div>
+                    <div *ngIf="!isFonctionnaireNature()">
                         <div class="border-2 rounded-xl p-5 flex items-center justify-between"
                             [ngClass]="state().hasDossierCredit ? 'border-green-300 bg-green-50' : 'border-gray-300 bg-gray-50'">
                             <div class="flex items-center gap-4">
@@ -1292,8 +1395,9 @@
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
         <div *ngIf="state().user?.role === 'DA'
                && state().demandeIndividuel?.validationState === 'APPROVED'
-               && (!isBilanRequired() || state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE')
-               && state().hasDossierCredit"
+               && (isFonctionnaireNature()
+                   ? !!state().analyseChargesFonctionnaire
+                   : (!isBilanRequired() || state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE') && state().hasDossierCredit)"
             class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-green-300 mb-8">
             <div class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-4 flex items-center gap-3">
                 <i class="pi pi-check-square text-xl"></i>
@@ -1306,7 +1410,9 @@
                         <i class="pi pi-info-circle text-green-600 text-xl"></i>
                         <div>
                             <p class="font-semibold text-green-800 m-0">
-                                {{ isBilanRequired()
+                                {{ isFonctionnaireNature()
+                                    ? "L'analyse charges & quotité a été renseignée par l'agent de crédit."
+                                    : isBilanRequired()
                                     ? 'Le bilan et le flux de tresorerie ont ete renseignes.'
                                     : 'Le flux de tresorerie a ete renseigne (bilan non requis pour ce montant).' }}</p>
                             <p class="text-green-700 text-sm m-0 mt-1">Vous pouvez maintenant valider ou rejeter cette
@@ -1367,7 +1473,7 @@
                         Sections a revoir <span class="text-red-500">*</span>
                     </label>
                     <div class="flex flex-col gap-2">
-                        <div *ngFor="let opt of workflowSectionsOptions" class="flex items-center gap-2">
+                        <div *ngFor="let opt of getWorkflowSectionsOptions()" class="flex items-center gap-2">
                             <input type="checkbox" [value]="opt.value" [id]="'wf_' + opt.value"
                                 [checked]="workflowDARejetForm.get('sectionsARevoir')?.value?.includes(opt.value)"
                                 (change)="toggleSection(workflowDARejetForm, opt.value, $event)"
@@ -1403,8 +1509,9 @@
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
         <div *ngIf="state().user?.role === 'DR'
                && state().demandeIndividuel?.validationState === 'VALIDATED_DA'
-               && (!isBilanRequired() || state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE')
-               && state().hasDossierCredit"
+               && (isFonctionnaireNature()
+                   ? !!state().analyseChargesFonctionnaire
+                   : (!isBilanRequired() || state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE') && state().hasDossierCredit)"
             class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-purple-300 mb-8">
             <div class="bg-gradient-to-r from-purple-600 to-violet-600 text-white px-6 py-4 flex items-center gap-3">
                 <i class="pi pi-check-square text-xl"></i>
@@ -1494,7 +1601,7 @@
                         Sections a revoir <span class="text-red-500">*</span>
                     </label>
                     <div class="flex flex-col gap-2">
-                        <div *ngFor="let opt of workflowSectionsOptions" class="flex items-center gap-2">
+                        <div *ngFor="let opt of getWorkflowSectionsOptions()" class="flex items-center gap-2">
                             <input type="checkbox" [value]="opt.value" [id]="'wfdr_' + opt.value"
                                 [checked]="workflowDRRejetForm.get('sectionsARevoir')?.value?.includes(opt.value)"
                                 (change)="toggleSection(workflowDRRejetForm, opt.value, $event)"
