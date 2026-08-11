@@ -571,4 +571,19 @@ export class AttenteComponent implements OnInit {
             return total;
         }, 0);
     }
+
+    labelNature(natureClient?: string): string {
+        if (!natureClient) return 'Particulier';
+        if (natureClient.includes('PME')) return 'PME/PMI';
+        if (natureClient.includes('Professionnel')) return 'Professionnel';
+        if (natureClient.includes('Fonctionnaire')) return 'Fonctionnaire';
+        return 'Particulier';
+    }
+
+    severiteNature(natureClient?: string): 'info' | 'warn' | 'success' | 'secondary' {
+        if (natureClient?.includes('Fonctionnaire')) return 'warn';
+        if (natureClient?.includes('PME')) return 'info';
+        if (natureClient?.includes('Professionnel')) return 'success';
+        return 'secondary';
+    }
 }

@@ -89,6 +89,7 @@ public class DemandeIndQuery {
                statut_credit as "statutCredit",
                rang_credit as "rangCredit",
                tip_credito as "tipCredito",
+               nature_client as "natureClient",
                cod_usuarios as "codUsuarios",
                statut_demande as "statutDemande",
                validation_state as "validationState",
