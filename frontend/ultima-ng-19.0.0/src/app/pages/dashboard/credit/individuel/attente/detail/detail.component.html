@@ -12,7 +12,7 @@
     </div>
 
     <!-- Error Message -->
-    <div *ngIf="state().error" class="container mx-auto px-6 py-4">
+    <div *ngIf="state().error" class="py-4">
         <div class="bg-red-50 border-l-4 border-red-500 rounded-r-lg p-4 shadow-sm">
             <div class="flex items-center gap-3">
                 <i class="pi pi-exclamation-triangle text-red-500 text-xl"></i>
@@ -22,7 +22,7 @@
     </div>
 
     <!-- Main Content -->
-    <div *ngIf="state().demandeIndividuel" class="container mx-auto px-4 py-4 max-w-7xl">
+    <div *ngIf="state().demandeIndividuel" class="py-2">
 
         <!-- Direction Exploitation (MANAGER + service DE) ET Directeur Général : synthèse consolidée en lecture seule -->
         @if (isDE() || isDG()) {
@@ -153,7 +153,8 @@
         <div class="nature-client-card" [ngClass]="{
                 'nature-pme': state().demandeIndividuel?.natureClient?.includes('PME'),
                 'nature-professionnel': state().demandeIndividuel?.natureClient?.includes('Professionnel'),
-                'nature-particulier': !state().demandeIndividuel?.natureClient?.includes('PME') && !state().demandeIndividuel?.natureClient?.includes('Professionnel')
+                'nature-fonctionnaire': isFonctionnaireNature(),
+                'nature-particulier': !state().demandeIndividuel?.natureClient?.includes('PME') && !state().demandeIndividuel?.natureClient?.includes('Professionnel') && !isFonctionnaireNature()
             }">
             <div class="nature-client-header">
                 <div class="flex items-center justify-between">
@@ -162,28 +163,58 @@
                             <i [ngClass]="{
                                     'pi pi-building': state().demandeIndividuel?.natureClient?.includes('PME'),
                                     'pi pi-briefcase': state().demandeIndividuel?.natureClient?.includes('Professionnel'),
-                                    'pi pi-user': !state().demandeIndividuel?.natureClient?.includes('PME') && !state().demandeIndividuel?.natureClient?.includes('Professionnel')
+                                    'pi pi-id-card': isFonctionnaireNature(),
+                                    'pi pi-user': !state().demandeIndividuel?.natureClient?.includes('PME') && !state().demandeIndividuel?.natureClient?.includes('Professionnel') && !isFonctionnaireNature()
                                 }"></i>
                         </div>
                         <div>
                             <p class="nature-label">Nature du Client</p>
                             <h2 class="nature-title">
-                                {{ state().demandeIndividuel?.natureClient?.includes('PME') ? 'Entreprise (PME/PMI)' :
-                                state().demandeIndividuel?.natureClient?.includes('Professionnel') ? 'Professionnel' :
-                                'Particulier' }}
+                                {{ getNatureClientLabel(state().demandeIndividuel?.natureClient) }}
                             </h2>
-                            <!-- Affichage conditionnel pour PME -->
+                            <!-- Sous-titre dynamique selon la nature -->
+                            <!-- PME : sigle + raison sociale -->
                             <p *ngIf="state().demandeIndividuel?.natureClient?.includes('PME') && state().demandeIndividuel?.nomPersonneMorale"
                                 class="nature-subtitle">
                                 <span *ngIf="state().demandeIndividuel?.sigle" class="font-bold">{{
                                     state().demandeIndividuel?.sigle }} - </span>
                                 {{ state().demandeIndividuel?.nomPersonneMorale }}
                             </p>
+                            <!-- Fonctionnaire : service + ministère -->
+                            <p *ngIf="isFonctionnaireNature() && state().demandeIndividuel?.demandeFonctionnaire?.serviceEmployeur"
+                                class="nature-subtitle">
+                                {{ state().demandeIndividuel?.demandeFonctionnaire?.serviceEmployeur }}
+                                <span *ngIf="state().demandeIndividuel?.demandeFonctionnaire?.departementMinistere">
+                                    — {{ state().demandeIndividuel?.demandeFonctionnaire?.departementMinistere }}</span>
+                            </p>
+                            <!-- Particulier : profession + secteur d'activité -->
+                            <p *ngIf="state().demandeIndividuel?.natureClient?.includes('Particulier') && (state().demandeIndividuel?.profession || state().demandeIndividuel?.secteurActivite)"
+                                class="nature-subtitle">
+                                {{ state().demandeIndividuel?.profession }}
+                                <span *ngIf="state().demandeIndividuel?.profession && state().demandeIndividuel?.secteurActivite"> — </span>
+                                {{ state().demandeIndividuel?.secteurActivite }}
+                            </p>
+                            <!-- Professionnel : activité exercée -->
+                            <p *ngIf="state().demandeIndividuel?.natureClient?.includes('Professionnel') && (state().demandeIndividuel?.natureActivite || state().demandeIndividuel?.currentActivite)"
+                                class="nature-subtitle">
+                                {{ state().demandeIndividuel?.natureActivite || state().demandeIndividuel?.currentActivite }}
+                            </p>
                         </div>
                     </div>
                     <div class="nature-category">
+                        @if (isFonctionnaireNature()) {
+                        <p class="category-label">Type de contrat</p>
+                        <p class="category-value">{{ state().demandeIndividuel?.demandeFonctionnaire?.typeContrat || 'Non spécifié' }}</p>
+                        } @else if (state().demandeIndividuel?.natureClient?.includes('Particulier')) {
+                        <p class="category-label">Profession</p>
+                        <p class="category-value">{{ state().demandeIndividuel?.profession || 'Non spécifiée' }}</p>
+                        } @else if (state().demandeIndividuel?.natureClient?.includes('PME')) {
                         <p class="category-label">Catégorie</p>
-                        <p class="category-value">{{ state().demandeIndividuel?.categorie || 'Non spécifiée' }}</p>
+                        <p class="category-value">{{ state().demandeIndividuel?.categorie || state().demandeIndividuel?.titreDirecteur || 'Non spécifiée' }}</p>
+                        } @else {
+                        <p class="category-label">Catégorie</p>
+                        <p class="category-value">{{ state().demandeIndividuel?.categorie || state().demandeIndividuel?.currentActivite || 'Non spécifiée' }}</p>
+                        }
                     </div>
                 </div>
             </div>
@@ -323,9 +354,65 @@
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <!-- SECTION 2 (Fonctionnaire): SITUATION PROFESSIONNELLE                    -->
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <div *ngIf="isFonctionnaireNature()"
+            class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8">
+            <div class="bg-emerald-600 text-white px-6 py-4 flex items-center gap-3">
+                <i class="pi pi-id-card text-xl"></i>
+                <span class="font-bold text-lg uppercase tracking-wide">2. Situation Professionnelle</span>
+            </div>
+            <div class="p-6">
+                <table class="w-full">
+                    <tbody>
+                        <tr class="border-b border-gray-200">
+                            <td class="py-3 px-4 text-gray-600 font-medium w-1/4">Service employeur</td>
+                            <td class="py-3 px-4 font-semibold text-emerald-700">
+                                {{ state().demandeIndividuel?.demandeFonctionnaire?.serviceEmployeur || 'N/A' }}</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium w-1/4">Département / Ministère</td>
+                            <td class="py-3 px-4">
+                                {{ state().demandeIndividuel?.demandeFonctionnaire?.departementMinistere || 'N/A' }}</td>
+                        </tr>
+                        <tr class="border-b border-gray-200">
+                            <td class="py-3 px-4 text-gray-600 font-medium">Type de contrat</td>
+                            <td class="py-3 px-4">
+                                {{ state().demandeIndividuel?.demandeFonctionnaire?.typeContrat || 'N/A' }}</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Matricule / Ancienneté</td>
+                            <td class="py-3 px-4">
+                                {{ state().demandeIndividuel?.demandeFonctionnaire?.matricule || 'N/A' }} /
+                                {{ state().demandeIndividuel?.demandeFonctionnaire?.ancienneteAnnees != null ?
+                                   state().demandeIndividuel?.demandeFonctionnaire?.ancienneteAnnees + ' an(s)' : 'N/A' }}</td>
+                        </tr>
+                        <tr class="border-b border-gray-200">
+                            <td class="py-3 px-4 text-gray-600 font-medium">Salaire net mensuel</td>
+                            <td class="py-3 px-4 font-bold text-emerald-600">
+                                {{ state().demandeIndividuel?.demandeFonctionnaire?.salaireNetMensuel | number:'1.0-0':'fr-FR' }} GNF</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Autres revenus</td>
+                            <td class="py-3 px-4">
+                                {{ (state().demandeIndividuel?.demandeFonctionnaire?.autresRevenus || 0) | number:'1.0-0':'fr-FR' }} GNF</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Quotité cessible (35 %)</td>
+                            <td class="py-3 px-4 font-bold text-amber-600">
+                                {{ state().demandeIndividuel?.demandeFonctionnaire?.quotiteCessible | number:'1.0-0':'fr-FR' }} GNF</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Domiciliation du salaire au CRG</td>
+                            <td class="py-3 px-4">
+                                <p-tag [value]="state().demandeIndividuel?.demandeFonctionnaire?.domiciliationSalaire ? 'OUI — engagement signé' : 'NON'"
+                                    [severity]="state().demandeIndividuel?.demandeFonctionnaire?.domiciliationSalaire ? 'success' : 'danger'"></p-tag>
+                                <span class="ml-3 text-gray-500 text-sm">Nombre d'épouses :
+                                    {{ state().demandeIndividuel?.demandeFonctionnaire?.nombreEpouses || 0 }}</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
         <!-- SECTION 2: ACTIVITÉS - Tableau simple                                  -->
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
-        <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8">
+        <div *ngIf="!isFonctionnaireNature()"
+            class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8">
             <div class="bg-emerald-600 text-white px-6 py-4 flex items-center gap-3">
                 <i class="pi pi-briefcase text-xl"></i>
                 <span class="font-bold text-lg uppercase tracking-wide">2. Activités</span>
@@ -397,9 +484,16 @@
                             <td class="py-3 px-4 font-semibold text-amber-700">{{
                                 state().demandeIndividuel?.objectCredit }}</td>
                         </tr>
-                        <tr>
+                        <tr class="border-b border-gray-200">
                             <td class="py-3 px-4 text-gray-600 font-medium">Détail de l'objet</td>
                             <td class="py-3 px-4" colspan="3">{{ state().demandeIndividuel?.detailObjectCredit }}</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Niveau de validation requis</td>
+                            <td class="py-3 px-4" colspan="3">
+                                <p-tag [value]="niveauFinal() + ' — ' + libelleNiveauFinal()" severity="info"></p-tag>
+                                <span class="text-gray-500 text-sm ml-2">selon l'échelle de délégation (DA ≤ 25M, DR ≤ 50M, DE ≤ 100M, DG au-delà)</span>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
@@ -407,9 +501,10 @@
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
-        <!-- SECTION 4: GARANTIES PROPOSÉES                                         -->
+        <!-- SECTION 4: GARANTIES PROPOSÉES (non applicable au crédit fonctionnaire) -->
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
-        <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8">
+        <div *ngIf="!isFonctionnaireNature()"
+            class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8">
             <div class="bg-indigo-600 text-white px-6 py-4 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <i class="pi pi-shield text-xl"></i>
@@ -538,6 +633,43 @@
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <!-- AFFECTATION DA (circuit accueil) : demande réceptionnée par l'accueil,  -->
+        <!-- en attente d'affectation à un agent de crédit par le DA                 -->
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <div *ngIf="isAffectationDA()" class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-indigo-300 mb-8">
+            <div class="bg-indigo-500 text-white px-6 py-4 flex items-center gap-3">
+                <i class="pi pi-user-plus text-xl"></i>
+                <span class="font-bold text-lg uppercase tracking-wide">Affectation à un agent de crédit</span>
+            </div>
+
+            <div class="p-6">
+                <div class="bg-indigo-50 border-l-4 border-indigo-400 rounded-r-lg p-5 mb-6">
+                    <i class="pi pi-info-circle text-indigo-600 mr-2 text-xl"></i>
+                    <span class="text-base font-medium text-indigo-800">
+                        Cette demande a été réceptionnée par l'agent d'accueil. Sélectionnez l'agent de crédit qui sera
+                        <strong>l'unique responsable</strong> de ce dossier tout au long du processus.
+                    </span>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-4">
+                    <p-dropdown [(ngModel)]="agentAffectation" [ngModelOptions]="{ standalone: true }"
+                        [options]="agentsEligibles" optionLabel="label"
+                        placeholder="-- Choisir l'agent de crédit destinataire --" [filter]="true" filterBy="label"
+                        [style]="{ minWidth: '340px' }" [disabled]="affectationEnCours" appendTo="body">
+                    </p-dropdown>
+                    <button pButton type="button" icon="pi pi-check" label="Affecter la demande"
+                        [loading]="affectationEnCours" [disabled]="!agentAffectation || affectationEnCours"
+                        class="bg-gradient-to-r from-indigo-500 to-indigo-600 font-bold"
+                        (click)="affecterDemande()">
+                    </button>
+                </div>
+                <small *ngIf="!agentsEligibles.length" class="text-orange-500 mt-3 block">
+                    <i class="pi pi-exclamation-triangle mr-1"></i>Aucun agent de crédit éligible dans votre agence
+                </small>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
         <!-- SECTION REJET - DA uniquement                                          -->
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
         <div *ngIf="state().user?.role === 'DA' && state().demandeIndividuel?.validationState !== 'REJECTED'
@@ -611,8 +743,70 @@
 
                 <!-- Grid des 4 analyses -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Crédit Fonctionnaire : Analyse Charges & Quotité (remplace bilan/flux) -->
+                    <div *ngIf="isFonctionnaireNature()"
+                        class="border-2 rounded-xl p-5 transition-all hover:shadow-md overflow-visible"
+                        [ngClass]="state().analyseChargesFonctionnaire?.verdict === 'FINANCABLE' ? 'border-green-300 bg-green-50' :
+                                   state().analyseChargesFonctionnaire ? 'border-red-300 bg-red-50' : 'border-amber-300 bg-amber-50'">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white"
+                                [ngClass]="state().analyseChargesFonctionnaire?.verdict === 'FINANCABLE' ? 'bg-green-500' :
+                                           state().analyseChargesFonctionnaire ? 'bg-red-500' : 'bg-amber-500'">
+                                <i class="pi pi-percentage text-lg"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold text-base text-gray-800">1. Analyse Charges &amp; Quotit&eacute;</div>
+                                <div class="text-sm font-medium"
+                                    [ngClass]="state().analyseChargesFonctionnaire?.verdict === 'FINANCABLE' ? 'text-green-600' :
+                                               state().analyseChargesFonctionnaire ? 'text-red-600' : 'text-amber-700'">
+                                    {{ state().analyseChargesFonctionnaire?.verdict === 'FINANCABLE' ? 'Analysée — dossier finançable' :
+                                       state().analyseChargesFonctionnaire ? 'Analysée — NON finançable en l’état' : 'À renseigner par l’agent de crédit' }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <a [routerLink]="['/dashboards/credit/individuel/detail/analyse-charges-fonctionnaire', state().demandeIndividuel?.demandeIndividuelId]"
+                                class="flex items-center justify-center w-full bg-amber-600 hover:bg-amber-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors no-underline">
+                                <i class="pi pi-calculator mr-2"></i>Ouvrir l'analyse charges &amp; quotit&eacute;
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Crédit Fonctionnaire : Synthèse (DA / DR / DE / DG) -->
+                    <div *ngIf="isFonctionnaireNature() && state().analyseChargesFonctionnaire"
+                        class="border-2 rounded-xl p-5 transition-all overflow-visible border-gray-200 bg-white">
+                        <div class="font-bold text-base text-gray-800 mb-3"><i class="pi pi-chart-bar mr-2"></i>Synth&egrave;se Charges &amp; Quotit&eacute;</div>
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                            <div class="text-gray-500">Salaire net mensuel</div>
+                            <div class="text-right font-semibold">{{ state().analyseChargesFonctionnaire?.salaireNetRetenu | number:'1.0-0':'fr-FR' }} GNF</div>
+                            <div class="text-gray-500">Quotit&eacute; cessible (35 %)</div>
+                            <div class="text-right font-semibold">{{ state().analyseChargesFonctionnaire?.quotiteCessible | number:'1.0-0':'fr-FR' }} GNF</div>
+                            <div class="text-gray-500">&Eacute;ch&eacute;ance du pr&ecirc;t</div>
+                            <div class="text-right font-semibold">{{ state().demandeIndividuel?.echeance | number:'1.0-0':'fr-FR' }} GNF</div>
+                            <div class="text-gray-500">Autres revenus retenus</div>
+                            <div class="text-right">{{ state().analyseChargesFonctionnaire?.autresRevenusRetenus | number:'1.0-0':'fr-FR' }} GNF</div>
+                            <div class="text-gray-500">Total des charges (12 postes)</div>
+                            <div class="text-right">{{ state().analyseChargesFonctionnaire?.totalCharges | number:'1.0-0':'fr-FR' }} GNF</div>
+                            <div class="text-gray-500">Capacit&eacute; r&eacute;siduelle</div>
+                            <div class="text-right font-bold"
+                                [ngClass]="(state().analyseChargesFonctionnaire?.capaciteResiduelle ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'">
+                                {{ state().analyseChargesFonctionnaire?.capaciteResiduelle | number:'1.0-0':'fr-FR' }} GNF
+                            </div>
+                        </div>
+                        <div class="mt-3 pt-3 border-t border-gray-200 flex items-center justify-between">
+                            <span class="text-sm text-gray-500">Analys&eacute; par {{ state().analyseChargesFonctionnaire?.analysePar || 'N/A' }}</span>
+                            <span class="font-bold"
+                                [ngClass]="state().analyseChargesFonctionnaire?.verdict === 'FINANCABLE' ? 'text-green-600' : 'text-red-600'">
+                                {{ state().analyseChargesFonctionnaire?.verdict === 'FINANCABLE' ? 'FINANÇABLE' : 'NON FINANÇABLE' }}
+                            </span>
+                        </div>
+                        <p *ngIf="state().analyseChargesFonctionnaire?.avisAgent" class="text-sm text-gray-600 mt-2 mb-0 italic">
+                            &laquo; {{ state().analyseChargesFonctionnaire?.avisAgent }} &raquo;
+                        </p>
+                    </div>
+
                     <!-- 1. Bilan d'Activité (uniquement si montant >= 50 000 000 GNF) -->
-                    <div *ngIf="isBilanRequired()"
+                    <div *ngIf="isBilanRequired() && !isFonctionnaireNature()"
                         class="border-2 rounded-xl p-5 transition-all hover:shadow-md overflow-visible"
                         [ngClass]="isBilanNeedsCorrection() ? 'border-red-400 bg-red-50' :
                                    state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'border-green-300 bg-green-50' :
@@ -670,8 +864,9 @@
                         </div>
                     </div>
 
-                    <!-- 2. Flux de Trésorerie -->
-                    <div class="border-2 rounded-xl p-5 transition-all hover:shadow-md overflow-visible"
+                    <!-- 2. Flux de Trésorerie (non applicable au crédit fonctionnaire) -->
+                    <div *ngIf="!isFonctionnaireNature()"
+                        class="border-2 rounded-xl p-5 transition-all hover:shadow-md overflow-visible"
                         [ngClass]="isFluxNeedsCorrection() ? 'border-red-400 bg-red-50' :
                                    state().hasDossierCredit ? 'border-green-300 bg-green-50' : 'border-orange-300 bg-orange-50'">
                         <div class="flex items-center gap-3 mb-4">
@@ -856,8 +1051,111 @@
             <div class="p-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
 
+                    <!-- ========== Crédit Fonctionnaire : Analyse Charges & Quotité (saisie AC, lecture seule) ========== -->
+                    <div *ngIf="isFonctionnaireNature()" class="md:col-span-2">
+                        <div class="border-2 rounded-xl p-5"
+                            [ngClass]="state().analyseChargesFonctionnaire?.verdict === 'FINANCABLE' ? 'border-green-300 bg-green-50' :
+                                       state().analyseChargesFonctionnaire ? 'border-red-300 bg-red-50' : 'border-amber-300 bg-amber-50'">
+                            <div class="flex items-center justify-between flex-wrap gap-3 mb-4">
+                                <div class="flex items-center gap-4">
+                                    <i class="pi pi-percentage text-3xl"
+                                        [ngClass]="state().analyseChargesFonctionnaire?.verdict === 'FINANCABLE' ? 'text-green-500' :
+                                                   state().analyseChargesFonctionnaire ? 'text-red-500' : 'text-amber-500'"></i>
+                                    <div>
+                                        <div class="font-bold text-lg">Analyse Charges &amp; Quotit&eacute;</div>
+                                        <div class="font-medium"
+                                            [ngClass]="state().analyseChargesFonctionnaire?.verdict === 'FINANCABLE' ? 'text-green-600' :
+                                                       state().analyseChargesFonctionnaire ? 'text-red-600' : 'text-amber-700'">
+                                            {{ state().analyseChargesFonctionnaire ? 'Saisie par ' + (state().analyseChargesFonctionnaire?.analysePar || "l'agent de crédit") : "Non renseignée par l'agent de crédit" }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <p-tag *ngIf="state().analyseChargesFonctionnaire"
+                                    [value]="state().analyseChargesFonctionnaire?.verdict === 'FINANCABLE' ? 'FINANÇABLE' : 'NON FINANÇABLE'"
+                                    [severity]="state().analyseChargesFonctionnaire?.verdict === 'FINANCABLE' ? 'success' : 'danger'"></p-tag>
+                            </div>
+
+                            <div *ngIf="state().analyseChargesFonctionnaire" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <!-- Revenus & quotité -->
+                                <div class="bg-white border border-gray-200 rounded-lg p-4">
+                                    <div class="font-semibold text-gray-700 mb-3"><i class="pi pi-wallet mr-2"></i>Revenus &amp; Quotit&eacute;</div>
+                                    <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                                        <div class="text-gray-500">Salaire net mensuel retenu</div>
+                                        <div class="text-right font-semibold">{{ state().analyseChargesFonctionnaire?.salaireNetRetenu | number:'1.0-0':'fr-FR' }} GNF</div>
+                                        <div class="text-gray-500">Autres revenus retenus</div>
+                                        <div class="text-right font-semibold">{{ (state().analyseChargesFonctionnaire?.autresRevenusRetenus || 0) | number:'1.0-0':'fr-FR' }} GNF</div>
+                                        <div class="text-gray-500">Quotit&eacute; cessible (35 %)</div>
+                                        <div class="text-right font-semibold text-amber-700">{{ state().analyseChargesFonctionnaire?.quotiteCessible | number:'1.0-0':'fr-FR' }} GNF</div>
+                                        <div class="text-gray-500">&Eacute;ch&eacute;ance du pr&ecirc;t</div>
+                                        <div class="text-right font-semibold"
+                                            [ngClass]="(state().demandeIndividuel?.echeance || 0) > (state().analyseChargesFonctionnaire?.quotiteCessible || 0) ? 'text-red-600' : ''">
+                                            {{ state().demandeIndividuel?.echeance | number:'1.0-0':'fr-FR' }} GNF</div>
+                                        <div class="text-gray-500 font-medium border-t border-gray-200 pt-2">Capacit&eacute; r&eacute;siduelle</div>
+                                        <div class="text-right font-bold border-t border-gray-200 pt-2"
+                                            [ngClass]="(state().analyseChargesFonctionnaire?.capaciteResiduelle ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'">
+                                            {{ state().analyseChargesFonctionnaire?.capaciteResiduelle | number:'1.0-0':'fr-FR' }} GNF</div>
+                                    </div>
+                                </div>
+
+                                <!-- Grille des 12 postes de charges -->
+                                <div class="bg-white border border-gray-200 rounded-lg p-4">
+                                    <div class="font-semibold text-gray-700 mb-3"><i class="pi pi-list mr-2"></i>D&eacute;tail des charges mensuelles (12 postes)</div>
+                                    <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
+                                        <ng-container *ngFor="let poste of postesChargesFonctionnaire">
+                                            <div class="flex justify-between border-b border-gray-100 py-1">
+                                                <span class="text-gray-500">{{ poste.libelle }}</span>
+                                                <span class="font-medium">{{ montantChargeFonctionnaire(poste.key) | number:'1.0-0':'fr-FR' }}</span>
+                                            </div>
+                                        </ng-container>
+                                    </div>
+                                    <div class="flex justify-between mt-3 pt-2 border-t-2 border-gray-300 font-bold text-sm">
+                                        <span>Total des charges</span>
+                                        <span>{{ state().analyseChargesFonctionnaire?.totalCharges | number:'1.0-0':'fr-FR' }} GNF</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Avis de l'agent -->
+                            <div *ngIf="state().analyseChargesFonctionnaire?.avisAgent"
+                                class="mt-4 bg-white border border-gray-200 rounded-lg p-4">
+                                <div class="font-semibold text-gray-700 mb-1"><i class="pi pi-comment mr-2"></i>Avis de l'agent de cr&eacute;dit</div>
+                                <p class="text-gray-600 italic mb-0">&laquo; {{ state().analyseChargesFonctionnaire?.avisAgent }} &raquo;</p>
+                            </div>
+
+                            <!-- Pièces jointes du dossier fonctionnaire -->
+                            <div class="mt-4 bg-white border border-gray-200 rounded-lg p-4">
+                                <div class="font-semibold text-gray-700 mb-2">
+                                    <i class="pi pi-paperclip mr-2"></i>Pi&egrave;ces jointes du dossier
+                                    ({{ state().piecesFonctionnaire?.length || 0 }})
+                                </div>
+                                <div *ngIf="state().piecesFonctionnaire?.length; else aucunePiece" class="space-y-2">
+                                    <div *ngFor="let piece of state().piecesFonctionnaire"
+                                        class="flex items-center justify-between border border-gray-100 rounded-lg px-3 py-2">
+                                        <div class="flex items-center gap-2 text-sm">
+                                            <i class="pi pi-file text-gray-400"></i>
+                                            <span class="font-medium">{{ libelleTypePieceFonctionnaire(piece.typePiece) }}</span>
+                                            <span class="text-gray-400">{{ piece.nomFichier }}</span>
+                                        </div>
+                                        <a *ngIf="piece.urlFichier" [href]="piece.urlFichier" target="_blank" rel="noopener"
+                                            class="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 text-sm font-semibold no-underline">
+                                            <i class="pi pi-eye"></i>Voir
+                                        </a>
+                                    </div>
+                                </div>
+                                <ng-template #aucunePiece>
+                                    <div class="text-gray-500 text-sm"><i class="pi pi-info-circle mr-2"></i>Aucune pi&egrave;ce jointe</div>
+                                </ng-template>
+                            </div>
+
+                            <div *ngIf="!state().analyseChargesFonctionnaire" class="text-center py-4 text-amber-700">
+                                <i class="pi pi-info-circle mr-2"></i>
+                                L'agent de cr&eacute;dit n'a pas encore renseign&eacute; l'analyse charges &amp; quotit&eacute;
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- ========== Bilan d'Activité ========== -->
-                    <div>
+                    <div *ngIf="!isFonctionnaireNature()">
                         <div class="border-2 rounded-xl p-5 flex items-center justify-between"
                             [ngClass]="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'border-green-300 bg-green-50' :
                                        state().analyseStatut === 'BROUILLON' ? 'border-yellow-300 bg-yellow-50' : 'border-gray-300 bg-gray-50'">
@@ -923,7 +1221,7 @@
                     </div>
 
                     <!-- ========== Flux de Tr&eacute;sorerie ========== -->
-                    <div>
+                    <div *ngIf="!isFonctionnaireNature()">
                         <div class="border-2 rounded-xl p-5 flex items-center justify-between"
                             [ngClass]="state().hasDossierCredit ? 'border-green-300 bg-green-50' : 'border-gray-300 bg-gray-50'">
                             <div class="flex items-center gap-4">
@@ -1104,8 +1402,9 @@
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
         <div *ngIf="state().user?.role === 'DA'
                && state().demandeIndividuel?.validationState === 'APPROVED'
-               && (!isBilanRequired() || state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE')
-               && state().hasDossierCredit"
+               && (isFonctionnaireNature()
+                   ? !!state().analyseChargesFonctionnaire
+                   : (!isBilanRequired() || state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE') && state().hasDossierCredit)"
             class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-green-300 mb-8">
             <div class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-4 flex items-center gap-3">
                 <i class="pi pi-check-square text-xl"></i>
@@ -1118,11 +1417,16 @@
                         <i class="pi pi-info-circle text-green-600 text-xl"></i>
                         <div>
                             <p class="font-semibold text-green-800 m-0">
-                                {{ isBilanRequired()
+                                {{ isFonctionnaireNature()
+                                    ? "L'analyse charges & quotité a été renseignée par l'agent de crédit."
+                                    : isBilanRequired()
                                     ? 'Le bilan et le flux de tresorerie ont ete renseignes.'
                                     : 'Le flux de tresorerie a ete renseigne (bilan non requis pour ce montant).' }}</p>
-                            <p class="text-green-700 text-sm m-0 mt-1">Vous pouvez maintenant valider ou rejeter cette
-                                demande pour la transmettre au Delegue Regional.</p>
+                            <p class="text-green-700 text-sm m-0 mt-1">
+                                {{ isValidationFinaleDA()
+                                    ? 'Montant dans votre plafond de délégation (≤ 25 000 000 GNF) : votre validation est FINALE, le crédit sera définitivement approuvé.'
+                                    : 'Montant au-delà de votre plafond (25 000 000 GNF) : après votre validation, la demande sera transmise au ' + libelleNiveauFinal() + ' via le circuit hiérarchique.' }}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -1143,7 +1447,8 @@
                     <button pButton type="button" (click)="confirmerWorkflowValidationDA()"
                         [disabled]="workflowDAForm.invalid || state().loading"
                         class="px-8 py-3 font-bold shadow-lg bg-gradient-to-r from-green-500 to-emerald-600"
-                        icon="pi pi-check-circle" label="VALIDER ET TRANSMETTRE AU DR">
+                        icon="pi pi-check-circle"
+                        [label]="isValidationFinaleDA() ? 'VALIDATION FINALE DU CREDIT' : 'VALIDER ET TRANSMETTRE AU DR'">
                     </button>
                     <button pButton type="button" (click)="ouvrirWorkflowRejetDA()"
                         class="p-button-danger p-button-outlined px-8 py-3 font-bold" icon="pi pi-times-circle"
@@ -1179,7 +1484,7 @@
                         Sections a revoir <span class="text-red-500">*</span>
                     </label>
                     <div class="flex flex-col gap-2">
-                        <div *ngFor="let opt of workflowSectionsOptions" class="flex items-center gap-2">
+                        <div *ngFor="let opt of getWorkflowSectionsOptions()" class="flex items-center gap-2">
                             <input type="checkbox" [value]="opt.value" [id]="'wf_' + opt.value"
                                 [checked]="workflowDARejetForm.get('sectionsARevoir')?.value?.includes(opt.value)"
                                 (change)="toggleSection(workflowDARejetForm, opt.value, $event)"
@@ -1215,8 +1520,9 @@
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
         <div *ngIf="state().user?.role === 'DR'
                && state().demandeIndividuel?.validationState === 'VALIDATED_DA'
-               && (!isBilanRequired() || state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE')
-               && state().hasDossierCredit"
+               && (isFonctionnaireNature()
+                   ? !!state().analyseChargesFonctionnaire
+                   : (!isBilanRequired() || state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE') && state().hasDossierCredit)"
             class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-purple-300 mb-8">
             <div class="bg-gradient-to-r from-purple-600 to-violet-600 text-white px-6 py-4 flex items-center gap-3">
                 <i class="pi pi-check-square text-xl"></i>
@@ -1230,8 +1536,11 @@
                         <div>
                             <p class="font-semibold text-purple-800 m-0">La demande a ete validee par le Directeur
                                 d'Agence.</p>
-                            <p class="text-purple-700 text-sm m-0 mt-1">Vous pouvez maintenant valider ou rejeter cette
-                                demande pour la transmettre a la Direction d'Exploitation.</p>
+                            <p class="text-purple-700 text-sm m-0 mt-1">
+                                {{ isValidationFinaleDR()
+                                    ? 'Montant dans votre plafond de délégation (≤ 50 000 000 GNF) : votre validation est FINALE, le crédit sera définitivement approuvé.'
+                                    : 'Montant au-delà de votre plafond (50 000 000 GNF) : après votre validation, la demande sera transmise à la Direction de l\'Exploitation' + (niveauFinal() === 'DG' ? ' puis au Directeur Général pour visa final.' : ' pour validation finale.') }}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -1270,7 +1579,8 @@
                     <button pButton type="button" (click)="confirmerWorkflowValidationDR()"
                         [disabled]="workflowDRForm.invalid || state().loading"
                         class="px-8 py-3 font-bold shadow-lg bg-gradient-to-r from-purple-500 to-violet-600"
-                        icon="pi pi-check-circle" label="VALIDER ET TRANSMETTRE A LA DE">
+                        icon="pi pi-check-circle"
+                        [label]="isValidationFinaleDR() ? 'VALIDATION FINALE DU CREDIT' : 'VALIDER ET TRANSMETTRE A LA DE'">
                     </button>
                     <button pButton type="button" (click)="ouvrirWorkflowRejetDR()"
                         class="p-button-danger p-button-outlined px-8 py-3 font-bold" icon="pi pi-times-circle"
@@ -1306,7 +1616,7 @@
                         Sections a revoir <span class="text-red-500">*</span>
                     </label>
                     <div class="flex flex-col gap-2">
-                        <div *ngFor="let opt of workflowSectionsOptions" class="flex items-center gap-2">
+                        <div *ngFor="let opt of getWorkflowSectionsOptions()" class="flex items-center gap-2">
                             <input type="checkbox" [value]="opt.value" [id]="'wfdr_' + opt.value"
                                 [checked]="workflowDRRejetForm.get('sectionsARevoir')?.value?.includes(opt.value)"
                                 (change)="toggleSection(workflowDRRejetForm, opt.value, $event)"
@@ -1401,9 +1711,10 @@
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
-        <!-- SECTION AVIS - AGENT DE CRÉDIT (après flux)                            -->
+        <!-- SECTION AVIS - AGENT DE CRÉDIT (après flux, ou après analyse charges    -->
+        <!-- pour le crédit fonctionnaire)                                           -->
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
-        <div *ngIf="state().user?.role === 'AGENT_CREDIT' && state().hasDossierCredit"
+        <div *ngIf="state().user?.role === 'AGENT_CREDIT' && (state().hasDossierCredit || (isFonctionnaireNature() && state().analyseChargesFonctionnaire))"
             class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-teal-200 mb-8 mt-10">
             <div class="bg-teal-500 text-white px-6 py-4 flex items-center justify-between">
                 <div class="flex items-center gap-3">

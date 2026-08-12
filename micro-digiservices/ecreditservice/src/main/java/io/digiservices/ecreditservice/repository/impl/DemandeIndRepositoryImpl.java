@@ -10,6 +10,7 @@ import io.digiservices.ecreditservice.dto.*;
 import io.digiservices.ecreditservice.exception.ApiException;
 import io.digiservices.ecreditservice.query.DemandeIndQuery;
 import io.digiservices.ecreditservice.repository.DemandeIndRepository;
+import io.digiservices.ecreditservice.validation.CreditFonctionnaireValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -639,8 +640,16 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
         PreparedStatement stmt = null;
         ResultSet rs = null;
 
+        boolean isFonctionnaire = CreditFonctionnaireValidator.isFonctionnaire(demandeIndividuel)
+                && demandeIndividuel.getDemandeFonctionnaire() != null;
+
         try {
             connection = jdbcTemplate.getDataSource().getConnection();
+
+            if (isFonctionnaire) {
+                // Demande + extension fonctionnaire dans la même transaction
+                connection.setAutoCommit(false);
+            }
 
             // Récupération des garanties depuis l'objet demande
             List<GarantiePropose> garanties = demandeIndividuel.getGaranties();
@@ -747,6 +756,16 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
                 log.info("Résultat création demande - ID: {}, Success: {}, Message: {}",
                         demandeId, success, message);
 
+                if (isFonctionnaire) {
+                    if (Boolean.TRUE.equals(success) && demandeId != null && demandeId > 0) {
+                        insertDemandeFonctionnaire(connection, demandeId,
+                                demandeIndividuel.getDemandeFonctionnaire());
+                        connection.commit();
+                    } else {
+                        connection.rollback();
+                    }
+                }
+
                 return DemandeResponse.builder()
                         .demandeId(demandeId)
                         .message(message)
@@ -754,15 +773,62 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
                         .build();
             }
 
+            rollbackQuietly(connection);
             return DemandeResponse.error("Aucun résultat retourné par la procédure");
 
         } catch (SQLException e) {
+            rollbackQuietly(connection);
             log.error("Erreur SQL lors de la création de la demande: {}", e.getMessage(), e);
             return DemandeResponse.error("Erreur SQL: " + e.getMessage());
         } finally {
             closeQuietly(rs);
             closeQuietly(stmt);
+            restoreAutoCommitQuietly(connection);
             closeQuietly(connection);
+        }
+    }
+
+    /**
+     * Insère (ou met à jour en correction accueil) l'extension fonctionnaire
+     * sur la même connexion, dans la transaction en cours.
+     */
+    private void insertDemandeFonctionnaire(Connection connection, Long demandeId,
+                                            DemandeFonctionnaire ext) throws SQLException {
+        try (PreparedStatement ps = connection.prepareStatement(
+                DemandeIndQuery.CALL_INSERT_DEMANDE_FONCTIONNAIRE_FUNC)) {
+            ps.setLong(1, demandeId);
+            ps.setString(2, ext.getServiceEmployeur());
+            ps.setString(3, ext.getDepartementMinistere());
+            setIntOrNull(ps, 4, ext.getAncienneteAnnees());
+            ps.setString(5, ext.getTypeContrat());
+            ps.setString(6, ext.getMatricule());
+            ps.setBigDecimal(7, ext.getSalaireNetMensuel());
+            ps.setBigDecimal(8, ext.getAutresRevenus() != null ? ext.getAutresRevenus() : BigDecimal.ZERO);
+            setIntOrZero(ps, 9, ext.getNombreEpouses());
+            ps.setBoolean(10, Boolean.TRUE.equals(ext.getDomiciliationSalaire()));
+            try (ResultSet result = ps.executeQuery()) {
+                result.next();
+            }
+        }
+    }
+
+    private void rollbackQuietly(Connection connection) {
+        try {
+            if (connection != null && !connection.getAutoCommit()) {
+                connection.rollback();
+            }
+        } catch (SQLException e) {
+            log.error("Erreur lors du rollback: {}", e.getMessage());
+        }
+    }
+
+    private void restoreAutoCommitQuietly(Connection connection) {
+        try {
+            if (connection != null && !connection.getAutoCommit()) {
+                connection.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            log.error("Erreur lors de la restauration de l'auto-commit: {}", e.getMessage());
         }
     }
 
@@ -859,7 +925,7 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
     public DemandeIndividuel getDemandeWithGaranties(Long demandeId) {
         try {
             // Utiliser la constante de la classe DemandeIndQuery
-            return jdbcTemplate.queryForObject(
+            DemandeIndividuel demande = jdbcTemplate.queryForObject(
                     DemandeIndQuery.CALL_GET_DEMANDE_WITH_GARANTIES_FUNC,
                     new Object[]{demandeId},
                     (rs, rowNum) -> {
@@ -869,6 +935,8 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
                         return parseDemandeFromJson(demandeJson, garantiesJson);
                     }
             );
+            attachDemandeFonctionnaire(demande);
+            return demande;
         } catch (EmptyResultDataAccessException e) {
             log.error("Demande non trouvée avec l'ID: {}", demandeId);
             throw new ApiException("Demande non trouvée");
@@ -899,6 +967,42 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
             throw new ApiException("Erreur lors de la récupération des demandes");
         }
     }
+    /**
+     * Charge l'extension fonctionnaire (V120) sur une demande de nature Fonctionnaire.
+     */
+    private void attachDemandeFonctionnaire(DemandeIndividuel demande) {
+        if (demande == null || demande.getDemandeIndividuelId() == null
+                || !CreditFonctionnaireValidator.isFonctionnaire(demande)) {
+            return;
+        }
+        demande.setDemandeFonctionnaire(
+                jdbcClient.sql(SELECT_DEMANDE_FONCTIONNAIRE_BY_DEMANDE_ID)
+                        .param("demandeindividuelId", demande.getDemandeIndividuelId())
+                        .query((rs, rowNum) -> mapDemandeFonctionnaire(rs))
+                        .optional()
+                        .orElse(null));
+    }
+
+    private DemandeFonctionnaire mapDemandeFonctionnaire(ResultSet rs) throws SQLException {
+        BigDecimal salaire = rs.getBigDecimal("salaire_net_mensuel");
+        return DemandeFonctionnaire.builder()
+                .demandeFonctionnaireId(rs.getLong("demande_fonctionnaire_id"))
+                .demandeindividuelId(rs.getLong("demandeindividuel_id"))
+                .serviceEmployeur(rs.getString("service_employeur"))
+                .departementMinistere(rs.getString("departement_ministere"))
+                .ancienneteAnnees((Integer) rs.getObject("anciennete_annees"))
+                .typeContrat(rs.getString("type_contrat"))
+                .matricule(rs.getString("matricule"))
+                .salaireNetMensuel(salaire)
+                .autresRevenus(rs.getBigDecimal("autres_revenus"))
+                .nombreEpouses((Integer) rs.getObject("nombre_epouses"))
+                .domiciliationSalaire(rs.getBoolean("domiciliation_salaire"))
+                .quotiteCessible(salaire != null ? CreditFonctionnaireValidator.quotiteCessible(salaire) : null)
+                .createdAt(rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toLocalDateTime() : null)
+                .updatedAt(rs.getTimestamp("updated_at") != null ? rs.getTimestamp("updated_at").toLocalDateTime() : null)
+                .build();
+    }
+
     @Override
     public boolean checkDemandeExists(Long demandeindividuelId) {
         return jdbcClient.sql(CHECK_DEMANDE_EXIST)
@@ -1287,6 +1391,25 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
                             .update();
                 }
                 log.info("Remplacement de {} garanties pour la demande {}", demande.getGaranties().size(), demande.getDemandeIndividuelId());
+            }
+
+            // Mettre a jour l'extension fonctionnaire si la nature est Fonctionnaire (upsert V120)
+            if (CreditFonctionnaireValidator.isFonctionnaire(demande) && demande.getDemandeFonctionnaire() != null) {
+                DemandeFonctionnaire ext = demande.getDemandeFonctionnaire();
+                jdbcClient.sql(DemandeIndQuery.CALL_INSERT_DEMANDE_FONCTIONNAIRE_FUNC)
+                        .param(demande.getDemandeIndividuelId())
+                        .param(ext.getServiceEmployeur())
+                        .param(ext.getDepartementMinistere())
+                        .param(ext.getAncienneteAnnees())
+                        .param(ext.getTypeContrat())
+                        .param(ext.getMatricule())
+                        .param(ext.getSalaireNetMensuel())
+                        .param(ext.getAutresRevenus() != null ? ext.getAutresRevenus() : BigDecimal.ZERO)
+                        .param(ext.getNombreEpouses() != null ? ext.getNombreEpouses() : 0)
+                        .param(Boolean.TRUE.equals(ext.getDomiciliationSalaire()))
+                        .query(Long.class)
+                        .single();
+                log.info("Extension fonctionnaire mise a jour pour la demande {}", demande.getDemandeIndividuelId());
             }
 
             log.info("Demande {} mise a jour avec succes", demande.getDemandeIndividuelId());

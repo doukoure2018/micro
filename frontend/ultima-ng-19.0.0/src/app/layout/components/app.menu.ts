@@ -1,9 +1,11 @@
-import { Component, ElementRef, inject, Input, SimpleChanges, ViewChild } from '@angular/core';
+import { Component, DestroyRef, ElementRef, inject, Input, SimpleChanges, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MenuItem } from 'primeng/api';
 import { AppMenuitem } from './app.menuitem';
 import { IUser } from '@/interface/user';
+import { UserService } from '@/service/user.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
     selector: 'app-menu, [app-menu]',
@@ -19,13 +21,41 @@ import { IUser } from '@/interface/user';
 export class AppMenu {
     @Input() user?: IUser;
     el: ElementRef = inject(ElementRef);
+    private userService = inject(UserService);
+    private destroyRef = inject(DestroyRef);
 
     @ViewChild('menuContainer') menuContainer!: ElementRef;
 
     model: MenuItem[] = [];
 
+    /** Fonction ACCUEIL activee par le DA pour un AGENT_CREDIT (menu accueil en plus). */
+    private fonctionAccueil = false;
+    private fonctionsChargees = false;
+
     ngOnInit() {
         this.initializeMenu();
+        this.chargerFonctions();
+    }
+
+    /** Un AGENT_CREDIT peut cumuler la fonction ACCUEIL : on interroge le backend une fois. */
+    private chargerFonctions() {
+        if (this.user?.role !== 'AGENT_CREDIT' || this.fonctionsChargees) {
+            return;
+        }
+        this.fonctionsChargees = true;
+        this.userService
+            .getMesFonctions$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    const fonctions: string[] = response.data?.fonctions || [];
+                    if (fonctions.includes('ACCUEIL')) {
+                        this.fonctionAccueil = true;
+                        this.initializeMenu();
+                    }
+                },
+                error: () => {}
+            });
     }
 
     private initializeMenu() {
@@ -39,13 +69,41 @@ export class AppMenu {
                         icon: 'pi pi-fw pi-chart-pie',
                         routerLink: ['/dashboards/']
                     },
+                    ...(this.user?.role === 'AGENT_ACCUEIL'
+                        ? [
+                              {
+                                  label: 'Réception demande de crédit',
+                                  icon: 'pi pi-fw pi-inbox',
+                                  routerLink: ['/dashboards/accueil/reception-demande']
+                              },
+                              {
+                                  label: 'Mes demandes réceptionnées',
+                                  icon: 'pi pi-fw pi-list-check',
+                                  routerLink: ['/dashboards/accueil/mes-receptions']
+                              }
+                          ]
+                        : []),
                     ...(this.user?.role === 'AGENT_CREDIT'
                         ? [
                               {
-                                  label: 'Nouvelle demande de crédit',
-                                  icon: 'pi pi-fw pi-file-edit',
-                                  routerLink: ['/dashboards/nouvelle-demande']
+                                  label: 'Demandes affectées par mon DA',
+                                  icon: 'pi pi-fw pi-inbox',
+                                  routerLink: ['/dashboards/agent-credit/demandes-affectees']
                               },
+                              ...(this.fonctionAccueil
+                                  ? [
+                                        {
+                                            label: 'Réception demande de crédit',
+                                            icon: 'pi pi-fw pi-inbox',
+                                            routerLink: ['/dashboards/accueil/reception-demande']
+                                        },
+                                        {
+                                            label: 'Mes demandes réceptionnées',
+                                            icon: 'pi pi-fw pi-list-check',
+                                            routerLink: ['/dashboards/accueil/mes-receptions']
+                                        }
+                                    ]
+                                  : []),
                               //   {
                               //       label: 'Analyse de Credit',
                               //       icon: 'pi pi-fw pi-hourglass',
@@ -184,6 +242,16 @@ export class AppMenu {
                                               label: 'Actualiser décodeur',
                                               icon: 'pi pi-fw pi-sync',
                                               routerLink: ['/dashboards/actualiser-decodeur']
+                                          },
+                                          {
+                                              label: 'Campagnes SMS',
+                                              icon: 'pi pi-fw pi-send',
+                                              routerLink: ['/dashboards/campagnes-sms']
+                                          },
+                                          {
+                                              label: 'Répertoires SMS',
+                                              icon: 'pi pi-fw pi-database',
+                                              routerLink: ['/dashboards/repertoires-sms']
                                           },
                                           {
                                               label: 'Mes avances de salaire',
@@ -369,6 +437,16 @@ export class AppMenu {
                                         : this.user?.role === 'DA'
                                           ? [
                                                 {
+                                                    label: 'Affectations & réorientation',
+                                                    icon: 'pi pi-fw pi-directions',
+                                                    routerLink: ['/dashboards/da/receptions-a-affecter']
+                                                },
+                                                {
+                                                    label: 'Gestion des agents',
+                                                    icon: 'pi pi-fw pi-users',
+                                                    routerLink: ['/dashboards/da/gestion-agents']
+                                                },
+                                                {
                                                     label: 'Mes avances de salaire',
                                                     icon: 'pi pi-fw pi-list',
                                                     routerLink: ['/dashboards/mes-demandes-salaire']
@@ -432,6 +510,7 @@ export class AppMenu {
         // Re-initialize menu whenever user input changes
         if (changes['user']) {
             this.initializeMenu();
+            this.chargerFonctions();
         }
     }
 }

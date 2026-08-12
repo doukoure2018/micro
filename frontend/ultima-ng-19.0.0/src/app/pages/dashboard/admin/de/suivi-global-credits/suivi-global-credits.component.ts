@@ -66,7 +66,7 @@ export class SuiviGlobalCreditsComponent implements OnInit {
         DA: 3,      // validation Directeur d'Agence
         DR: 3,      // validation Delegue Regional
         DE: 3,      // validation Direction de l'Exploitation
-        DG: 5       // visa Direction Generale (credits >= 100M)
+        DG: 5       // visa Direction Generale (credits > 100M)
     };
 
     allDemandes = signal<any[]>([]);
@@ -422,7 +422,7 @@ export class SuiviGlobalCreditsComponent implements OnInit {
             CORRECTION_DE: 'Rejete par DE, en correction',
             RETOUR_AGENT: 'Renvoye a l\'agent (erreur de destination)',
             PENDING_DG: 'Valide par DE, en attente visa DG',
-            VALIDATED_FINAL: 'Credit valide (DE/DG)',
+            VALIDATED_FINAL: 'Credit valide (niveau final atteint)',
             REJETE_DG: 'Rejete par DG, confirmation DE en attente'
         };
         return labels[validationState] || validationState;

@@ -6,8 +6,9 @@
                 <i class="pi pi-search-plus text-primary mr-2"></i>Inspection des crédits
             </h2>
             <p class="text-surface-500 dark:text-surface-300 text-sm">
-                Tous les crédits validés par un Délégué Régional (DR), sur l'ensemble du réseau — regroupés par gros
-                (≥&nbsp;100M) et petit (&lt;&nbsp;100M) crédit.
+                Tous les crédits validés du réseau : validations finales du Directeur d'Agence (≤&nbsp;25M, échelle de
+                délégation) et crédits passés par un Délégué Régional — regroupés par gros (≥&nbsp;100M) et petit
+                (&lt;&nbsp;100M) crédit.
             </p>
         </div>
         <button pButton type="button" icon="pi pi-refresh" label="Réinitialiser" class="p-button-outlined p-button-sm"
@@ -101,7 +102,7 @@
                 <th style="min-width: 11rem" class="text-right">Montant</th>
                 <th style="min-width: 9rem">Objet</th>
                 <th style="min-width: 9rem">État actuel</th>
-                <th style="min-width: 8rem">Validé DR le</th>
+                <th style="min-width: 9rem">Validé (DA/DR) le</th>
                 <th style="min-width: 6rem" class="text-center">Détail</th>
             </tr>
         </ng-template>
@@ -133,7 +134,10 @@
                 <td class="text-right font-semibold whitespace-nowrap">{{ formatMontant(demande.montantDemande) }}</td>
                 <td class="text-sm">{{ demande.objectCredit || '—' }}</td>
                 <td><p-tag [severity]="stateSeverity(demande.validationState)" [value]="stateLabel(demande.validationState)" /></td>
-                <td class="text-sm whitespace-nowrap">{{ formatDate(demande.dateValidationDr) }}</td>
+                <td class="text-sm whitespace-nowrap">
+                    {{ formatDate(demande.dateValidationDr || demande.dateValidationDa) }}
+                    <p-tag *ngIf="!demande.dateValidationDr" severity="warn" value="Finale DA" class="ml-1" />
+                </td>
                 <td class="text-center">
                     <p-button icon="pi pi-eye" severity="info" [rounded]="true" [text]="true" size="small"
                         (onClick)="viewDemandeDetail(demande.demandeIndividuelId)" pTooltip="Voir le détail"
@@ -146,7 +150,7 @@
             <tr>
                 <td colspan="9" class="text-center py-10 text-surface-500">
                     <i class="pi pi-inbox text-4xl mb-3 block"></i>
-                    Aucun crédit validé par un DR pour ce filtre.
+                    Aucun crédit validé pour ce filtre.
                 </td>
             </tr>
         </ng-template>

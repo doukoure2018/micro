@@ -128,6 +128,83 @@
                         </td>
                     </tr>
                     }
+
+                    <!-- Champs spécifiques Fonctionnaire (V120) -->
+                    @if (isFonctionnaire()) {
+                    <tr>
+                        <td class="label-cell highlight-blue">Service employeur *</td>
+                        <td colspan="2">
+                            <input pInputText [(ngModel)]="fonctionnaire.serviceEmployeur" name="fctServiceEmployeur"
+                                class="w-full" [disabled]="state().submitting" required>
+                        </td>
+                        <td class="label-cell highlight-blue">Département / Ministère *</td>
+                        <td colspan="2">
+                            <input pInputText [(ngModel)]="fonctionnaire.departementMinistere"
+                                name="fctDepartementMinistere" class="w-full" [disabled]="state().submitting" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell highlight-blue">Type de contrat *</td>
+                        <td>
+                            <p-dropdown [(ngModel)]="fonctionnaire.typeContrat" name="fctTypeContrat"
+                                [options]="typeContratOptions" optionLabel="label" optionValue="value"
+                                styleClass="w-full" [disabled]="state().submitting" required
+                                placeholder="Selectionner" [appendTo]="'body'">
+                            </p-dropdown>
+                        </td>
+                        <td class="label-cell highlight-blue">Matricule</td>
+                        <td>
+                            <input pInputText [(ngModel)]="fonctionnaire.matricule" name="fctMatricule" class="w-full"
+                                [disabled]="state().submitting">
+                        </td>
+                        <td class="label-cell highlight-blue">Ancienneté</td>
+                        <td>
+                            <p-inputNumber [(ngModel)]="fonctionnaire.ancienneteAnnees" name="fctAncienneteAnnees"
+                                [min]="0" suffix=" an(s)" styleClass="w-full" [disabled]="state().submitting">
+                            </p-inputNumber>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell highlight-yellow">Salaire net mensuel (GNF) *</td>
+                        <td>
+                            <p-inputNumber [(ngModel)]="fonctionnaire.salaireNetMensuel" name="fctSalaireNetMensuel"
+                                [min]="1" mode="currency" currency="GNF" locale="fr-FR" styleClass="w-full"
+                                [disabled]="state().submitting" required>
+                            </p-inputNumber>
+                        </td>
+                        <td class="label-cell">Autres revenus mensuels</td>
+                        <td>
+                            <p-inputNumber [(ngModel)]="fonctionnaire.autresRevenus" name="fctAutresRevenus" [min]="0"
+                                mode="currency" currency="GNF" locale="fr-FR" styleClass="w-full"
+                                [disabled]="state().submitting">
+                            </p-inputNumber>
+                        </td>
+                        <td class="label-cell">Nombre d'épouses</td>
+                        <td>
+                            <p-inputNumber [(ngModel)]="fonctionnaire.nombreEpouses" name="fctNombreEpouses" [min]="0"
+                                styleClass="w-full" [disabled]="state().submitting">
+                            </p-inputNumber>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell highlight-yellow">Quotité cessible (35 %)</td>
+                        <td colspan="2">
+                            <strong>{{ quotiteCessible() | number:'1.0-0':'fr-FR' }} GNF</strong>
+                            <small class="block text-500">Plafond de l'échéance mensuelle</small>
+                        </td>
+                        <td colspan="3">
+                            <div class="flex align-items-center gap-2">
+                                <p-checkbox [(ngModel)]="fonctionnaire.domiciliationSalaire"
+                                    name="fctDomiciliationSalaire" [binary]="true" inputId="corrFctDomiciliation"
+                                    [disabled]="state().submitting">
+                                </p-checkbox>
+                                <label for="corrFctDomiciliation">
+                                    Le membre s'engage à domicilier son salaire au CRG * (obligatoire)
+                                </label>
+                            </div>
+                        </td>
+                    </tr>
+                    }
                 </tbody>
             </table>
         </div>
@@ -299,7 +376,7 @@
                                 [disabled]="state().submitting">
                         </td>
                     </tr>
-                    @if (!isParticulier()) {
+                    @if (!isParticulier() && !isFonctionnaire()) {
                     <tr>
                         <td class="label-cell highlight-yellow">Nature de l'activite ou de l'entreprise</td>
                         <td colspan="5">
@@ -425,16 +502,31 @@
                         <td>
                             <p-dropdown [(ngModel)]="formData.periodiciteRemboursement" name="periodiciteRemboursement"
                                 [options]="periodiciteOptions" optionLabel="label" optionValue="value"
-                                styleClass="w-full" [disabled]="state().submitting" required>
+                                styleClass="w-full" [disabled]="state().submitting || isFonctionnaire()" required>
                             </p-dropdown>
+                            @if (isFonctionnaire()) {
+                            <small class="block text-500">Mensuelle uniquement pour un crédit fonctionnaire</small>
+                            }
                         </td>
                     </tr>
                     <tr>
-                        <td class="label-cell">Echeance</td>
+                        <td class="label-cell">Echeance @if (isFonctionnaire()) {<span>*</span>}</td>
                         <td>
                             <p-inputNumber [(ngModel)]="formData.echeance" name="echeance" mode="currency"
-                                currency="GNF" locale="fr-FR" styleClass="w-full" [disabled]="state().submitting">
+                                currency="GNF" locale="fr-FR" styleClass="w-full" [disabled]="state().submitting"
+                                [required]="isFonctionnaire()">
                             </p-inputNumber>
+                            @if (isFonctionnaire()) {
+                                @if (echeanceDepasseQuotite()) {
+                                <small class="block" style="color: var(--red-500); font-weight: 600;">
+                                    Échéance supérieure à la quotité cessible ({{ quotiteCessible() | number:'1.0-0':'fr-FR' }} GNF) — soumission bloquée
+                                </small>
+                                } @else {
+                                <small class="block text-500">
+                                    Maximum autorisé : {{ quotiteCessible() | number:'1.0-0':'fr-FR' }} GNF (35 % du salaire net)
+                                </small>
+                                }
+                            }
                         </td>
                         <td class="label-cell" colspan="3">Object du credit *</td>
                         <td colspan="2">
@@ -600,7 +692,7 @@
                 <button type="submit" pButton icon="pi pi-check" label="Sauvegarder les corrections"
                     class="p-button-warning"
                     [loading]="state().submitting"
-                    [disabled]="correctionForm.invalid || state().submitting || state().garanties.length === 0">
+                    [disabled]="correctionForm.invalid || state().submitting || (!isFonctionnaire() && state().garanties.length === 0) || echeanceDepasseQuotite() || (isFonctionnaire() && !fonctionnaire.domiciliationSalaire)">
                 </button>
             </div>
         </div>
@@ -608,7 +700,7 @@
             Des champs obligatoires ne sont pas renseignes (verifiez notamment : Delegation, Agence,
             Point de service, Type d'activite / Sous-activite, Type de credit).
         </small>
-        <small *ngIf="state().garanties.length === 0 && !state().submitting" class="p-error block mt-1">
+        <small *ngIf="!isFonctionnaire() && state().garanties.length === 0 && !state().submitting" class="p-error block mt-1">
             Au moins une garantie est requise pour sauvegarder.
         </small>
     </form>

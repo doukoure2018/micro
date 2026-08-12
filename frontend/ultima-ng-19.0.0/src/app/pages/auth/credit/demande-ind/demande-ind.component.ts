@@ -1,19 +1,25 @@
 import { Agence } from '@/interface/agence';
 import { Delegation } from '@/interface/delegation';
-import { DemandeIndividuel, GarantiePropose } from '@/interface/demande-individuel.interface';
+import { DemandeFonctionnaire, DemandeIndividuel, GarantiePropose, NATURE_CREDIT_FONCTIONNAIRE, TYPE_CONTRAT_OPTIONS_FONCTIONNAIRE, demandeFonctionnaireVide, quotiteCessibleFonctionnaire } from '@/interface/demande-individuel.interface';
 import { PointVente } from '@/interface/point.vente';
 import { TypeCreditDto } from '@/interface/typeCredit.model';
 import { Activite, CreditActiviteData, SousActivite, SousSousActivite, TypeCredit } from '@/service/credit-activite.model';
 import { UserService } from '@/service/user.service';
-import { CommonModule } from '@angular/common';
+import { CommonModule, registerLocaleData } from '@angular/common';
+import localeFr from '@angular/common/locales/fr';
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+
+registerLocaleData(localeFr, 'fr-FR');
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { forkJoin, Observable, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { FormsModule, NgForm } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CalendarModule } from 'primeng/calendar';
 import { CardModule } from 'primeng/card';
+import { CheckboxModule } from 'primeng/checkbox';
 import { ChipModule } from 'primeng/chip';
 import { DialogModule } from 'primeng/dialog';
 import { DividerModule } from 'primeng/divider';
@@ -57,7 +63,8 @@ import { ToastModule } from 'primeng/toast';
         DividerModule,
         CardModule,
         PanelModule,
-        ChipModule
+        ChipModule,
+        CheckboxModule
     ],
     templateUrl: './demande-ind.component.html',
     styleUrls: ['./demande-ind.component.scss'],
@@ -214,8 +221,18 @@ export class DemandeIndComponent implements OnInit {
     natureClientOptions = [
         { label: 'Demande crédit Pour Particulier', value: 'Demande credit Pour Particulier' },
         { label: 'Demande de Crédit Pour PME/PMI', value: 'Demande de Credit Pour PME/PMI' },
-        { label: 'Demande de crédit Pour Professionnels', value: 'Demande de credit Pour Professionnels' }
+        { label: 'Demande de crédit Pour Professionnels', value: 'Demande de credit Pour Professionnels' },
+        { label: 'Demande de crédit Pour Fonctionnaire', value: 'Demande de credit Pour Fonctionnaire' }
     ];
+
+    // Extension fonctionnaire (nature « Fonctionnaire ») — hors formData pour ne pas polluer form.value
+    fonctionnaire: DemandeFonctionnaire = this.getInitialFonctionnaire();
+
+    // Pièces du dossier fonctionnaire, uploadées après création de la demande
+    fichierBulletinSalaire: File | null = null;
+    fichierAttestationService: File | null = null;
+
+    typeContratOptions = TYPE_CONTRAT_OPTIONS_FONCTIONNAIRE;
 
     // Options pour les dropdowns d'activités - value doit être number
     activiteOptions: { label: string; value: number; data: Activite }[] = [];
@@ -283,8 +300,13 @@ export class DemandeIndComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
     private creditService = inject(UserService);
     private messageService = inject(MessageService);
+    private activatedRoute = inject(ActivatedRoute);
+
+    /** Mode reception : la demande est saisie par un agent d'accueil puis transmise au DA pour affectation. */
+    isAccueilMode = false;
 
     ngOnInit(): void {
+        this.isAccueilMode = this.activatedRoute.snapshot.data['mode'] === 'accueil';
         this.loadInitialData();
         this.initializeOptions();
     }
@@ -320,11 +342,18 @@ export class DemandeIndComponent implements OnInit {
             this.formData.secteurActivite = '';
         }
 
-        // Reset champs activite cascade si on passe a Particulier
-        if (natureClient === 'Demande credit Pour Particulier') {
+        // Reset champs activite cascade si on passe a Particulier ou Fonctionnaire
+        if (natureClient === 'Demande credit Pour Particulier' || natureClient === 'Demande de credit Pour Fonctionnaire') {
             this.formData.natureActivite = '';
             this.formData.categorie = '';
             this.resetActiviteSelections();
+        }
+
+        // Fonctionnaire : periodicite obligatoirement mensuelle ; sinon reset de l'extension
+        if (natureClient === 'Demande de credit Pour Fonctionnaire') {
+            this.formData.periodiciteRemboursement = 'Mensuelle';
+        } else {
+            this.fonctionnaire = this.getInitialFonctionnaire();
         }
 
         this.formData.natureClient = natureClient;
@@ -336,6 +365,67 @@ export class DemandeIndComponent implements OnInit {
 
     isParticulier(): boolean {
         return this.formData.natureClient === 'Demande credit Pour Particulier';
+    }
+
+    isFonctionnaire(): boolean {
+        return this.formData.natureClient === NATURE_CREDIT_FONCTIONNAIRE;
+    }
+
+    /** Quotité cessible = salaire net x 35 % : plafond de l'échéance mensuelle. */
+    quotiteCessible(): number {
+        return quotiteCessibleFonctionnaire(this.fonctionnaire.salaireNetMensuel);
+    }
+
+    /** Vrai si l'échéance saisie dépasse la quotité cessible (blocage de soumission). */
+    echeanceDepasseQuotite(): boolean {
+        return this.isFonctionnaire() && (this.formData.echeance || 0) > this.quotiteCessible();
+    }
+
+    private getInitialFonctionnaire(): DemandeFonctionnaire {
+        return demandeFonctionnaireVide();
+    }
+
+    onPieceSelected(event: Event, type: 'bulletin' | 'attestation'): void {
+        const input = event.target as HTMLInputElement;
+        const file = input.files && input.files.length > 0 ? input.files[0] : null;
+        if (type === 'bulletin') {
+            this.fichierBulletinSalaire = file;
+        } else {
+            this.fichierAttestationService = file;
+        }
+    }
+
+    /**
+     * Upload des pièces du dossier fonctionnaire après création de la demande.
+     * Retourne un observable qui se termine quand tous les envois sont finis :
+     * la navigation doit l'attendre, sinon la destruction du composant annule
+     * les requêtes en cours et les pièces manquent silencieusement au dossier.
+     */
+    private uploadPiecesFonctionnaire(demandeId: number): Observable<unknown> {
+        const uploads: { typePiece: string; file: File }[] = [];
+        if (this.fichierBulletinSalaire) uploads.push({ typePiece: 'BULLETIN_SALAIRE', file: this.fichierBulletinSalaire });
+        if (this.fichierAttestationService) uploads.push({ typePiece: 'ATTESTATION_SERVICE', file: this.fichierAttestationService });
+        this.fichierBulletinSalaire = null;
+        this.fichierAttestationService = null;
+
+        if (uploads.length === 0) {
+            return of(null);
+        }
+        return forkJoin(
+            uploads.map(({ typePiece, file }) =>
+                this.creditService.uploadPieceDemande$(demandeId, typePiece, file).pipe(
+                    catchError(() => {
+                        this.messageService.add({
+                            severity: 'warn',
+                            summary: 'Pièce non jointe',
+                            detail: `Échec de l'envoi de « ${file.name} » — elle pourra être rattachée depuis l'écran d'analyse`,
+                            life: 7000
+                        });
+                        return of(null);
+                    })
+                )
+            )
+        );
     }
 
     // ======================== INITIALISATION ========================
@@ -698,7 +788,48 @@ export class DemandeIndComponent implements OnInit {
             return;
         }
 
-        if (this.state().garanties.length === 0) {
+        if (this.isFonctionnaire()) {
+            const f = this.fonctionnaire;
+            if (!f.serviceEmployeur?.trim() || !f.departementMinistere?.trim() || !f.typeContrat || !f.salaireNetMensuel || f.salaireNetMensuel <= 0) {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Erreur',
+                    detail: 'Service, département/ministère, type de contrat et salaire net sont obligatoires pour un crédit fonctionnaire',
+                    life: 5000
+                });
+                return;
+            }
+            if (!f.domiciliationSalaire) {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Erreur',
+                    detail: 'La domiciliation du salaire au CRG est obligatoire pour un crédit fonctionnaire',
+                    life: 5000
+                });
+                return;
+            }
+            if (!this.formData.echeance || this.formData.echeance <= 0) {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Erreur',
+                    detail: "L'échéance mensuelle est obligatoire pour un crédit fonctionnaire",
+                    life: 5000
+                });
+                return;
+            }
+            if (this.echeanceDepasseQuotite()) {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Quotité dépassée',
+                    detail: `L'échéance (${this.formData.echeance.toLocaleString('fr-FR')} GNF) dépasse la quotité cessible : 35 % du salaire net = ${this.quotiteCessible().toLocaleString('fr-FR')} GNF`,
+                    life: 7000
+                });
+                return;
+            }
+        }
+
+        // Crédit fonctionnaire : pas de garanties classiques (la garantie est la domiciliation du salaire)
+        if (!this.isFonctionnaire() && this.state().garanties.length === 0) {
             this.messageService.add({
                 severity: 'warn',
                 summary: 'Attention',
@@ -723,6 +854,13 @@ export class DemandeIndComponent implements OnInit {
             natureClient: this.formData.natureClient || 'Demande credit Pour Particulier',
             nomPersonneMorale: this.isPME() ? this.formData.nomPersonneMorale : '',
             sigle: this.isPME() ? this.formData.sigle : '',
+            // Extension fonctionnaire : envoyée uniquement pour la nature Fonctionnaire.
+            // Champs non affichés sur le formulaire allégé : échéances mensuelles = durée,
+            // type de crédit 7 (CREDIT FONCTIONNAIRES EPARGNANTS), détail objet = objet du prêt.
+            demandeFonctionnaire: this.isFonctionnaire() ? { ...this.fonctionnaire } : undefined,
+            periodiciteRemboursement: this.isFonctionnaire() ? 'Mensuelle' : this.formData.periodiciteRemboursement!,
+            nombreEcheance: this.isFonctionnaire() ? this.formData.dureeDemande || 1 : this.formData.nombreEcheance!,
+            detailObjectCredit: this.isFonctionnaire() ? this.formData.detailObjectCredit || this.formData.objectCredit || '' : this.formData.detailObjectCredit!,
             sernom: this.formData.sernom || '',
             // Champs activite: vides pour Particulier
             categorie: this.isParticulier() ? '' : this.formData.categorie || '',
@@ -739,14 +877,19 @@ export class DemandeIndComponent implements OnInit {
             prefecture: this.formData.prefecture || '',
             sousPrefecture: this.formData.sousPrefecture || '',
             email: this.formData.email || '',
-            tipCredito: this.formData.tipCredito,
+            // Fonctionnaire : type 7 (CREDIT FONCTIONNAIRES EPARGNANTS) imposé, même si un
+            // autre type avait été choisi avant une bascule de nature (le champ est masqué)
+            tipCredito: this.isFonctionnaire() ? 7 : this.formData.tipCredito,
             descriptionActivite: this.formData.descriptionActivite || '',
-            garanties: this.state().garanties.map((g) => ({
-                ...g,
-                typeGarantie: this.convertTypeGarantie(g.typeGarantie!)
-            })),
+            // Fonctionnaire : aucune garantie classique — on écarte celles saisies avant une bascule de nature
+            garanties: this.isFonctionnaire()
+                ? []
+                : this.state().garanties.map((g) => ({
+                      ...g,
+                      typeGarantie: this.convertTypeGarantie(g.typeGarantie!)
+                  })),
             statutDemande: 'EN_ATTENTE',
-            validationState: 'NOUVEAU',
+            validationState: this.isAccueilMode ? 'EN_ATTENTE_DA' : 'NOUVEAU',
             currentActivite: this.getActiviteLibelle(),
             codUsuarios: ''
         } as DemandeIndividuel;
@@ -759,16 +902,30 @@ export class DemandeIndComponent implements OnInit {
             .subscribe({
                 next: (response) => {
                     console.log('Réponse:', response);
+                    const demandeId = response.data?.demandeId;
+                    const pieces$ = demandeId && this.isFonctionnaire() ? this.uploadPiecesFonctionnaire(+demandeId) : of(null);
+                    if (this.isAccueilMode && demandeId) {
+                        this.creditService
+                            .marquerReception$(+demandeId)
+                            .pipe(takeUntilDestroyed(this.destroyRef))
+                            .subscribe();
+                    }
                     this.messageService.add({
                         severity: 'success',
                         summary: 'Succès',
-                        detail: `Demande créée avec succès. ID: ${response.data?.demandeId || 'N/A'}`,
+                        detail: this.isAccueilMode
+                            ? `Demande réceptionnée et transmise au Directeur d'Agence pour affectation. ID: ${demandeId || 'N/A'}`
+                            : `Demande créée avec succès. ID: ${demandeId || 'N/A'}`,
                         life: 5000
                     });
                     this.state.update((state) => ({ ...state, submitting: false, garanties: [], filteredAgences: [], filteredPointsVente: [] }));
                     form.resetForm();
                     this.resetForm();
-                    setTimeout(() => this.router.navigate(['/']), 2000);
+                    const target = this.isAccueilMode ? ['/dashboards/accueil/mes-receptions'] : ['/'];
+                    // On ne quitte l'écran qu'une fois les pièces jointes envoyées (la navigation détruirait les requêtes)
+                    pieces$.subscribe({
+                        complete: () => setTimeout(() => this.router.navigate(target), 1500)
+                    });
                 },
                 error: (error) => {
                     console.error('Erreur:', error);
@@ -825,6 +982,7 @@ export class DemandeIndComponent implements OnInit {
 
     private resetForm(): void {
         this.formData = this.getInitialFormData();
+        this.fonctionnaire = this.getInitialFonctionnaire();
         this.resetActiviteSelections();
         this.selectedAgence = null;
     }

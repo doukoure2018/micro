@@ -24,6 +24,7 @@ public class WorkflowDemandeDto {
     private Long pos;
     private BigDecimal montantDemande;
     private String objectCredit;
+    private String natureClient;
     private String validationState;
     private String statutDemande;
     private String codUsuarios;
@@ -77,4 +78,18 @@ public class WorkflowDemandeDto {
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss.SSSSSS")
     private LocalDateTime dateRejetDg;
+
+    // Reception par l'accueil (V116)
+    private Long saisiePar;
+    private String saisieParRole;
+    private Long agentCreditAffecte;
+    private String agentAffecteNom;
+    private String affecteParDa;
+    private String motifAnnulationDa;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss.SSSSSS")
+    private LocalDateTime dateAffectationAc;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss.SSSSSS")
+    private LocalDateTime dateAnnulationDa;
 }

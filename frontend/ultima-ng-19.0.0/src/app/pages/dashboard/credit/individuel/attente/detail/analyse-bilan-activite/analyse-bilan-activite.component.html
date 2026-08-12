@@ -3,11 +3,15 @@
 
     <p-toast></p-toast>
 
-    <!-- Bouton créer analyse si pas encore créée -->
+    <!-- Étape 1 : créer l'analyse (préalable à toute saisie) -->
     <div class="mb-4" *ngIf="!state().analyseExiste">
         <div
             class="p-3 bg-yellow-50 border-round border-1 border-yellow-200 flex align-items-center justify-content-between">
-            <span><i class="pi pi-info-circle mr-2"></i>Aucune analyse financière n'existe pour cette demande.</span>
+            <span>
+                <span class="font-bold mr-2 text-yellow-900">Étape 1 —</span>
+                <i class="pi pi-info-circle mr-2"></i>Aucune analyse financière n'existe pour cette demande.
+                Commencez par créer l'analyse.
+            </span>
             <button pButton label="Créer l'analyse" icon="pi pi-plus" class="p-button-success"
                 (click)="createOrUpdateAnalyse()" [loading]="loading()"></button>
         </div>
@@ -39,12 +43,21 @@
                     </div>
                 </ng-template>
 
-                <!-- Bouton creer collecte -->
+                <!-- Etape 2 : creer la collecte — disponible seulement une fois l'analyse creee -->
                 <div class="mb-4" *ngIf="!collecteSaved()">
-                    <div
+                    <div *ngIf="!state().analyseExiste"
+                        class="p-3 surface-100 border-round border-1 surface-border flex align-items-center">
+                        <i class="pi pi-lock mr-2 text-500"></i>
+                        <span class="text-600">Créez d'abord l'analyse financière (Étape 1, bouton en haut de page)
+                            avant de créer la collecte.</span>
+                    </div>
+                    <div *ngIf="state().analyseExiste"
                         class="p-3 bg-yellow-50 border-round border-1 border-yellow-200 flex align-items-center justify-content-between">
-                        <span><i class="pi pi-info-circle mr-2"></i>Aucune collecte n'existe pour cette demande.</span>
-                        <button pButton label="Creer la Collecte" icon="pi pi-plus" class="p-button-success"
+                        <span>
+                            <span class="font-bold mr-2 text-yellow-900">Étape 2 —</span>
+                            <i class="pi pi-info-circle mr-2"></i>Aucune collecte n'existe pour cette demande.
+                        </span>
+                        <button pButton label="Créer la Collecte" icon="pi pi-plus" class="p-button-success"
                             (click)="createCollecte()" [loading]="savingCollecte()"></button>
                     </div>
                 </div>

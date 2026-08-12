@@ -20,7 +20,8 @@ public class DemandeIndValidator {
     private static final Set<String> VALID_NATURE_CLIENT = Set.of(
             "Demande de credit Pour Professionnels",
             "Demande de Credit Pour PME/PMI",
-            "Demande credit Pour Particulier"
+            "Demande credit Pour Particulier",
+            CreditFonctionnaireValidator.NATURE_FONCTIONNAIRE
     );
 
     /**
@@ -62,6 +63,9 @@ public class DemandeIndValidator {
                 );
             }
         }
+
+        // Validation spécifique Fonctionnaire (quotité, domiciliation, périodicité mensuelle)
+        CreditFonctionnaireValidator.validateDemande(demande);
     }
 
     /**
@@ -158,7 +162,10 @@ public class DemandeIndValidator {
      */
     public static void validateAll(DemandeIndividuel demande) {
         validateNatureClient(demande);
-        validateGaranties(demande.getGaranties());
+        // Garanties non requises pour un crédit fonctionnaire (garantie = domiciliation du salaire)
+        if (!CreditFonctionnaireValidator.isFonctionnaire(demande)) {
+            validateGaranties(demande.getGaranties());
+        }
         validateNewFields(demande);
     }
 }

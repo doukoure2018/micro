@@ -121,6 +121,103 @@
                         </td>
                     </tr>
                     }
+
+                    <!-- Champs spécifiques Fonctionnaire (V120) -->
+                    @if (isFonctionnaire()) {
+                    <tr>
+                        <td class="label-cell highlight-blue">Service employeur *</td>
+                        <td colspan="2">
+                            <input pInputText [(ngModel)]="fonctionnaire.serviceEmployeur" name="fctServiceEmployeur"
+                                class="w-full" [disabled]="state().submitting" required
+                                placeholder="Ex: Direction Préfectorale de l'Éducation">
+                        </td>
+                        <td class="label-cell highlight-blue">Département / Ministère *</td>
+                        <td colspan="2">
+                            <input pInputText [(ngModel)]="fonctionnaire.departementMinistere"
+                                name="fctDepartementMinistere" class="w-full" [disabled]="state().submitting" required
+                                placeholder="Ex: Ministère de l'Éducation Nationale">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell highlight-blue">Type de contrat *</td>
+                        <td>
+                            <p-dropdown [(ngModel)]="fonctionnaire.typeContrat" name="fctTypeContrat"
+                                [options]="typeContratOptions" optionLabel="label" optionValue="value"
+                                styleClass="w-full" [disabled]="state().submitting" required
+                                placeholder="Sélectionner" [appendTo]="'body'">
+                            </p-dropdown>
+                        </td>
+                        <td class="label-cell highlight-blue">Matricule</td>
+                        <td>
+                            <input pInputText [(ngModel)]="fonctionnaire.matricule" name="fctMatricule" class="w-full"
+                                [disabled]="state().submitting">
+                        </td>
+                        <td class="label-cell highlight-blue">Ancienneté</td>
+                        <td>
+                            <p-inputNumber [(ngModel)]="fonctionnaire.ancienneteAnnees" name="fctAncienneteAnnees"
+                                [min]="0" suffix=" an(s)" styleClass="w-full" [disabled]="state().submitting">
+                            </p-inputNumber>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell highlight-yellow">Salaire net mensuel (GNF) *</td>
+                        <td>
+                            <p-inputNumber [(ngModel)]="fonctionnaire.salaireNetMensuel" name="fctSalaireNetMensuel"
+                                [min]="1" mode="currency" currency="GNF" locale="fr-FR" styleClass="w-full"
+                                [disabled]="state().submitting" required>
+                            </p-inputNumber>
+                        </td>
+                        <td class="label-cell">Autres revenus mensuels</td>
+                        <td>
+                            <p-inputNumber [(ngModel)]="fonctionnaire.autresRevenus" name="fctAutresRevenus" [min]="0"
+                                mode="currency" currency="GNF" locale="fr-FR" styleClass="w-full"
+                                [disabled]="state().submitting">
+                            </p-inputNumber>
+                        </td>
+                        <td class="label-cell">Nombre d'épouses</td>
+                        <td>
+                            <p-inputNumber [(ngModel)]="fonctionnaire.nombreEpouses" name="fctNombreEpouses" [min]="0"
+                                styleClass="w-full" [disabled]="state().submitting">
+                            </p-inputNumber>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell highlight-yellow">Quotité cessible (35 %)</td>
+                        <td colspan="2">
+                            <strong>{{ quotiteCessible() | number:'1.0-0':'fr-FR' }} GNF</strong>
+                            <small class="block text-500">Plafond de l'échéance mensuelle</small>
+                        </td>
+                        <td colspan="3">
+                            <div class="flex align-items-center gap-2">
+                                <p-checkbox [(ngModel)]="fonctionnaire.domiciliationSalaire"
+                                    name="fctDomiciliationSalaire" [binary]="true" inputId="fctDomiciliation"
+                                    [disabled]="state().submitting">
+                                </p-checkbox>
+                                <label for="fctDomiciliation">
+                                    Le membre s'engage à domicilier son salaire au CRG * (obligatoire)
+                                </label>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell highlight-blue">Bulletin de salaire</td>
+                        <td colspan="2">
+                            <input type="file" accept=".pdf,.jpg,.jpeg,.png" [disabled]="state().submitting"
+                                (change)="onPieceSelected($event, 'bulletin')">
+                            @if (fichierBulletinSalaire) {
+                            <small class="block text-500"><i class="pi pi-paperclip mr-1"></i>{{ fichierBulletinSalaire.name }}</small>
+                            }
+                        </td>
+                        <td class="label-cell highlight-blue">Attestation de service</td>
+                        <td colspan="2">
+                            <input type="file" accept=".pdf,.jpg,.jpeg,.png" [disabled]="state().submitting"
+                                (change)="onPieceSelected($event, 'attestation')">
+                            @if (fichierAttestationService) {
+                            <small class="block text-500"><i class="pi pi-paperclip mr-1"></i>{{ fichierAttestationService.name }}</small>
+                            }
+                        </td>
+                    </tr>
+                    }
                 </tbody>
             </table>
         </div>
@@ -152,6 +249,7 @@
                     </tr>
 
                     <!-- Autres nom (surnom) -->
+                    @if (!isFonctionnaire()) {
                     <tr>
                         <td class="label-cell">Autres nom (surnom)</td>
                         <td colspan="5">
@@ -159,29 +257,32 @@
                                 [disabled]="state().submitting">
                         </td>
                     </tr>
+                    }
 
                     <!-- Date d'adhésion, Sexe, Catégories -->
                     <tr>
+                        @if (!isFonctionnaire()) {
                         <td class="label-cell">Date d'adhésion</td>
                         <td>
                             <p-calendar [(ngModel)]="formData.dateAdhesion" name="dateAdhesion" dateFormat="dd/mm/yy"
                                 [showIcon]="true" styleClass="w-full" [disabled]="state().submitting">
                             </p-calendar>
                         </td>
+                        }
                         <td class="label-cell">Sexe *</td>
-                        <td>
+                        <td [attr.colspan]="isFonctionnaire() ? 5 : null">
                             <p-dropdown [(ngModel)]="formData.genre" name="genre" [options]="genreOptions"
                                 optionLabel="label" optionValue="value" styleClass="w-full"
-                                [disabled]="state().submitting" required>
+                                [disabled]="state().submitting" required [appendTo]="'body'">
                             </p-dropdown>
                         </td>
-                        @if (!isParticulier()) {
+                        @if (!isParticulier() && !isFonctionnaire()) {
                         <td class="label-cell">Catégories</td>
                         <td>
                             <input pInputText [(ngModel)]="formData.categorie" name="categorie" class="w-full"
                                 [disabled]="state().submitting">
                         </td>
-                        } @else {
+                        } @else if (isParticulier()) {
                         <td class="label-cell highlight-yellow">Profession *</td>
                         <td>
                             <input pInputText [(ngModel)]="formData.profession" name="profession" class="w-full"
@@ -226,11 +327,13 @@
                                 [showIcon]="true" styleClass="w-full" [disabled]="state().submitting" required>
                             </p-calendar>
                         </td>
+                        @if (!isFonctionnaire()) {
                         <td class="label-cell" colspan="2">Lieu de naissance *</td>
                         <td colspan="2">
                             <input pInputText [(ngModel)]="formData.lieuxNaissance" name="lieuxNaissance" class="w-full"
                                 [disabled]="state().submitting" required>
                         </td>
+                        }
                     </tr>
 
                     <!-- Adresse personnelle -->
@@ -243,6 +346,7 @@
                     </tr>
 
                     <!-- Nombre d'années à cette adresse, Repère -->
+                    @if (!isFonctionnaire()) {
                     <tr>
                         <td class="label-cell">Nombre d'années à cette adresse *</td>
                         <td>
@@ -256,6 +360,19 @@
                                 [disabled]="state().submitting">
                         </td>
                     </tr>
+                    } @else {
+                    <!-- Fonctionnaire : type d'habitation (propriétaire / locataire) -->
+                    <tr>
+                        <td class="label-cell">Type d'habitation *</td>
+                        <td colspan="5">
+                            <p-dropdown [(ngModel)]="formData.typePropriete" name="typePropriete"
+                                [options]="typeProprieteOptions" optionLabel="label" optionValue="value"
+                                [style]="{'width': '250px'}" [disabled]="state().submitting" required
+                                placeholder="Sélectionner" [appendTo]="'body'">
+                            </p-dropdown>
+                        </td>
+                    </tr>
+                    }
 
                     <!-- Téléphone, Email -->
                     <tr>
@@ -264,11 +381,13 @@
                             <input pInputText [(ngModel)]="formData.telephone" name="telephone" class="w-full"
                                 [disabled]="state().submitting" required>
                         </td>
+                        @if (!isFonctionnaire()) {
                         <td class="label-cell" colspan="2">Email</td>
                         <td colspan="2">
                             <input pInputText [(ngModel)]="formData.email" name="email" type="email" class="w-full"
                                 [disabled]="state().submitting" placeholder="exemple@email.com">
                         </td>
+                        }
                     </tr>
 
                     <!-- Situation de famille, Enfants à charge, Autres personnes à charge -->
@@ -295,6 +414,7 @@
                     </tr>
 
                     <!-- Nom du père, Nom de la mère -->
+                    @if (!isFonctionnaire()) {
                     <tr>
                         <td class="label-cell">Nom du père</td>
                         <td colspan="2">
@@ -316,9 +436,10 @@
                                 [disabled]="state().submitting">
                         </td>
                     </tr>
+                    }
 
                     <!-- Nature de l'activité ou de l'entreprise (PME/Professionnels uniquement) -->
-                    @if (!isParticulier()) {
+                    @if (!isParticulier() && !isFonctionnaire()) {
                     <tr>
                         <td class="label-cell highlight-yellow">Nature de l'activité ou de l'entreprise</td>
                         <td colspan="5">
@@ -357,6 +478,7 @@
                     </tr>
                     }
 
+                    @if (!isFonctionnaire()) {
                     <!-- Description de l'activité -->
                     <tr>
                         <td class="label-cell">Description de l'activité</td>
@@ -413,6 +535,7 @@
                                 [disabled]="state().submitting">
                         </td>
                     </tr>
+                    }
                 </tbody>
             </table>
         </div>
@@ -451,12 +574,14 @@
 
                     <!-- Nombre d'échéances, Taux, Périodicité -->
                     <tr>
+                        @if (!isFonctionnaire()) {
                         <td class="label-cell">Nombre d'échéances *</td>
                         <td>
                             <p-inputNumber [(ngModel)]="formData.nombreEcheance" name="nombreEcheance" [min]="1"
                                 styleClass="w-full" [disabled]="state().submitting" required>
                             </p-inputNumber>
                         </td>
+                        }
                         <td class="label-cell">Taux *</td>
                         <td>
                             <p-inputNumber [(ngModel)]="formData.tauxInteret" name="tauxInteret" [min]="0" [max]="100"
@@ -468,27 +593,45 @@
                         <td>
                             <p-dropdown [(ngModel)]="formData.periodiciteRemboursement" name="periodiciteRemboursement"
                                 [options]="periodiciteOptions" optionLabel="label" optionValue="value"
-                                styleClass="w-full" [disabled]="state().submitting" required>
+                                styleClass="w-full" [disabled]="state().submitting || isFonctionnaire()" required>
                             </p-dropdown>
+                            @if (isFonctionnaire()) {
+                            <small class="block text-500">Mensuelle uniquement pour un crédit fonctionnaire</small>
+                            }
                         </td>
                     </tr>
 
                     <!-- Montant à rembourser par échéance, Autres (à préciser) -->
                     <tr>
-                        <td class="label-cell">Echéance</td>
+                        <td class="label-cell">Echéance @if (isFonctionnaire()) {<span>*</span>}</td>
                         <td>
                             <p-inputNumber [(ngModel)]="formData.echeance" name="echeance" mode="currency"
-                                currency="GNF" locale="fr-FR" styleClass="w-full" [disabled]="state().submitting">
+                                currency="GNF" locale="fr-FR" styleClass="w-full" [disabled]="state().submitting"
+                                [required]="isFonctionnaire()">
                             </p-inputNumber>
+                            @if (isFonctionnaire()) {
+                                @if (echeanceDepasseQuotite()) {
+                                <small class="block" style="color: var(--red-500); font-weight: 600;">
+                                    Échéance supérieure à la quotité cessible ({{ quotiteCessible() | number:'1.0-0':'fr-FR' }} GNF) — soumission bloquée
+                                </small>
+                                } @else {
+                                <small class="block text-500">
+                                    Maximum autorisé : {{ quotiteCessible() | number:'1.0-0':'fr-FR' }} GNF (35 % du salaire net)
+                                </small>
+                                }
+                            }
                         </td>
+                        @if (!isFonctionnaire()) {
                         <td class="label-cell" colspan="3">Object du crédit *</td>
                         <td colspan="2">
                             <input pInputText [(ngModel)]="formData.detailObjectCredit" name="detailObjectCredit"
                                 class="w-full" [disabled]="state().submitting" required>
                         </td>
+                        }
                     </tr>
 
                     <!-- Statut du crédit, Rang, Type de crédit -->
+                    @if (!isFonctionnaire()) {
                     <tr>
                         <td class="label-cell">Statut du crédit *</td>
                         <td>
@@ -518,11 +661,13 @@
                             </p-dropdown>
                         </td>
                     </tr>
+                    }
                 </tbody>
             </table>
         </div>
 
-        <!-- SECTION 3: GARANTIES -->
+        <!-- SECTION 3: GARANTIES (non requise pour le crédit fonctionnaire : garantie = domiciliation du salaire) -->
+        @if (!isFonctionnaire()) {
         <div class="form-section">
             <div class="section-header">
                 <span>3. Garanties</span>
@@ -630,6 +775,17 @@
                 </tbody>
             </table>
         </div>
+        }
+
+        <!-- Mode réception accueil : la demande sera affectée par le DA -->
+        @if (isAccueilMode) {
+        <div class="card" style="border-left: 4px solid #6366f1; margin-top: 1rem;">
+            <div class="font-bold mb-2"><i class="pi pi-info-circle" style="color: #6366f1;"></i> Transmission au Directeur d'Agence</div>
+            <p class="text-sm" style="color: #6b7280; margin: 0;">
+                Après soumission, la demande sera transmise au <strong>Directeur d'Agence</strong> qui l'affectera à un agent de crédit.
+            </p>
+        </div>
+        }
 
         <!-- Actions Buttons -->
         <div class="action-buttons">
@@ -642,7 +798,7 @@
                 </button>
                 <button type="submit" pButton icon="pi pi-save" label="Soumettre la demande"
                     [loading]="state().submitting"
-                    [disabled]="demandeForm.invalid || state().submitting || state().garanties.length === 0">
+                    [disabled]="demandeForm.invalid || state().submitting || (!isFonctionnaire() && state().garanties.length === 0) || echeanceDepasseQuotite() || (isFonctionnaire() && !fonctionnaire.domiciliationSalaire)">
                 </button>
             </div>
         </div>

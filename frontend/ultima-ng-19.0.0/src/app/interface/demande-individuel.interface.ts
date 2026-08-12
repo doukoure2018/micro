@@ -15,7 +15,113 @@ export interface GarantiePropose {
 /**
  * Type pour la nature du client
  */
-export type NatureClient = 'Demande de credit Pour Professionnels' | 'Demande de Credit Pour PME/PMI' | 'Demande credit Pour Particulier';
+export type NatureClient = 'Demande de credit Pour Professionnels' | 'Demande de Credit Pour PME/PMI' | 'Demande credit Pour Particulier' | 'Demande de credit Pour Fonctionnaire';
+
+/**
+ * Taux de quotité cessible du crédit fonctionnaire (fixe) :
+ * l'échéance mensuelle ne doit jamais dépasser 35 % du salaire net.
+ */
+export const TAUX_QUOTITE_FONCTIONNAIRE = 0.35;
+
+/** Nature client du crédit fonctionnaire (valeur exacte partagée avec le backend). */
+export const NATURE_CREDIT_FONCTIONNAIRE: NatureClient = 'Demande de credit Pour Fonctionnaire';
+
+/**
+ * Quotité cessible affichée/contrôlée côté frontend : 35 % du salaire net, tronquée
+ * au GNF entier (Math.floor sur salaire x 35 / 100, entier-exact en flottant).
+ * Toujours <= au plafond backend (CreditFonctionnaireValidator, 2 décimales HALF_UP),
+ * pour que le formulaire n'autorise jamais une échéance que le backend rejetterait.
+ */
+export function quotiteCessibleFonctionnaire(salaireNetMensuel: number | null | undefined): number {
+    return Math.floor(((salaireNetMensuel || 0) * 35) / 100);
+}
+
+/** Options de type de contrat du formulaire fonctionnaire (saisie et correction). */
+export const TYPE_CONTRAT_OPTIONS_FONCTIONNAIRE: { label: string; value: string }[] = [
+    { label: 'Titulaire', value: 'Titulaire' },
+    { label: 'Contractuel', value: 'Contractuel' },
+    { label: 'Retraité', value: 'Retraite' }
+];
+
+/** Extension fonctionnaire vierge, partagée entre saisie initiale et correction. */
+export function demandeFonctionnaireVide(): DemandeFonctionnaire {
+    return {
+        serviceEmployeur: '',
+        departementMinistere: '',
+        ancienneteAnnees: undefined,
+        typeContrat: '',
+        matricule: '',
+        salaireNetMensuel: 0,
+        autresRevenus: 0,
+        nombreEpouses: 0,
+        domiciliationSalaire: false
+    };
+}
+
+/**
+ * Extension fonctionnaire d'une demande individuelle (V120).
+ */
+export interface DemandeFonctionnaire {
+    demandeFonctionnaireId?: number;
+    demandeindividuelId?: number;
+    serviceEmployeur: string;
+    departementMinistere: string;
+    ancienneteAnnees?: number;
+    typeContrat: string;
+    matricule?: string;
+    salaireNetMensuel: number;
+    autresRevenus?: number;
+    nombreEpouses?: number;
+    domiciliationSalaire: boolean;
+    quotiteCessible?: number; // calculée côté backend (lecture seule)
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
+}
+
+/**
+ * Analyse charges & quotité du crédit fonctionnaire (V120) — grille saisie par l'AC,
+ * résultats (quotité, capacité, verdict) recalculés côté backend.
+ */
+export interface AnalyseChargesFonctionnaire {
+    analyseChargesId?: number;
+    demandeindividuelId?: number;
+    chargeLoyer: number;
+    chargeTransport: number;
+    chargeNourriture: number;
+    chargeVignette: number;
+    chargeAssurance: number;
+    chargeElectricite: number;
+    chargeEau: number;
+    chargeAssuranceMaladie: number;
+    chargeScolarite: number;
+    chargeCasSociaux: number;
+    chargeAbonnementImage: number;
+    chargeServiceSalubrite: number;
+    salaireNetRetenu?: number;
+    autresRevenusRetenus?: number;
+    totalCharges?: number;
+    quotiteCessible?: number;
+    capaciteResiduelle?: number;
+    verdict?: 'FINANCABLE' | 'NON_FINANCABLE';
+    avisAgent?: string;
+    analysePar?: string;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
+}
+
+/**
+ * Pièce jointe d'une demande (V121). Types crédit fonctionnaire :
+ * BULLETIN_SALAIRE, ATTESTATION_SERVICE, AUTRE.
+ */
+export interface PieceJointeDemande {
+    pieceJointeId?: number;
+    demandeindividuelId?: number;
+    typePiece: 'BULLETIN_SALAIRE' | 'ATTESTATION_SERVICE' | 'AUTRE';
+    nomFichier?: string;
+    urlFichier?: string;
+    ajoutePar?: string;
+    createdAt?: Date | string;
+}
 
 /**
  * Interface principale pour une demande individuelle
@@ -44,6 +150,7 @@ export interface DemandeIndividuel {
     natureClient?: NatureClient;
     nomPersonneMorale?: string;
     sigle?: string; // NOUVEAU V80: Sigle de l'entreprise (pour PME/PMI)
+    demandeFonctionnaire?: DemandeFonctionnaire; // NOUVEAU V120: obligatoire si nature Fonctionnaire
 
     // ==================== INFORMATIONS PERSONNELLES ====================
     typePiece: "Carte nationale d'identite" | "Carte d'identite Biometrique" | "Possession d'état" | "Carte d'identite personnelle" | 'Passeport';
@@ -178,6 +285,12 @@ export const NATURE_CLIENT_OPTIONS = [
         value: 'Demande de credit Pour Professionnels',
         icon: 'pi pi-briefcase',
         description: 'Pour les professionnels et artisans'
+    },
+    {
+        label: 'Fonctionnaire',
+        value: 'Demande de credit Pour Fonctionnaire',
+        icon: 'pi pi-id-card',
+        description: 'Pour les fonctionnaires et salariés (crédit sur salaire)'
     }
 ] as const;
 

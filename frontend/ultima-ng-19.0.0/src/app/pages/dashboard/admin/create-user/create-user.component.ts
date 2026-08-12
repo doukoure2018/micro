@@ -238,17 +238,17 @@ export class CreateUserComponent {
 
     // Check if role requires location fields
     shouldShowLocationFields(roleName: string): boolean {
-        return roleName === 'AGENT_CREDIT' || roleName === 'CAISSE' || roleName === 'AGENT_CORRECTEUR' || roleName === 'DA' || roleName === 'DR' || roleName === 'RA';
+        return roleName === 'AGENT_CREDIT' || roleName === 'AGENT_ACCUEIL' || roleName === 'CAISSE' || roleName === 'AGENT_CORRECTEUR' || roleName === 'DA' || roleName === 'DR' || roleName === 'RA';
     }
 
     // Check if role requires agence field
     shouldShowAgenceField(roleName: string): boolean {
-        return roleName === 'AGENT_CREDIT' || roleName === 'CAISSE' || roleName === 'AGENT_CORRECTEUR' || roleName === 'DA' || roleName === 'RA';
+        return roleName === 'AGENT_CREDIT' || roleName === 'AGENT_ACCUEIL' || roleName === 'CAISSE' || roleName === 'AGENT_CORRECTEUR' || roleName === 'DA' || roleName === 'RA';
     }
 
     // Check if role requires point vente field
     shouldShowPointVenteField(roleName: string): boolean {
-        return roleName === 'AGENT_CREDIT' || roleName === 'CAISSE' || roleName === 'AGENT_CORRECTEUR';
+        return roleName === 'AGENT_CREDIT' || roleName === 'AGENT_ACCUEIL' || roleName === 'CAISSE' || roleName === 'AGENT_CORRECTEUR';
     }
 
     // Load delegations

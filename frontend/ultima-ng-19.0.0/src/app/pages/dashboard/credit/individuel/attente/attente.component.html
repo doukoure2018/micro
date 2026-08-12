@@ -71,7 +71,7 @@
 <!-- Table des demandes -->
 <div class="card">
     <p-table #dt [value]="filteredDemandes()" [paginator]="true" paginatorDropdownAppendTo="body" [rows]="15"
-        [showCurrentPageReport]="true" responsiveLayout="scroll"
+        [showCurrentPageReport]="true" responsiveLayout="scroll" [rowHover]="true"
         currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} entrées"
         [rowsPerPageOptions]="[15, 30, 50]" groupRowsBy="dateGroup" rowGroupMode="subheader" sortField="dateGroup"
         [sortOrder]="-1"
@@ -120,10 +120,13 @@
                 <th pSortableColumn="numeroMembre" style="width:10%">
                     N° Membre <p-sortIcon field="numeroMembre"></p-sortIcon>
                 </th>
+                <th pSortableColumn="natureClient" style="width:9%">
+                    Nature <p-sortIcon field="natureClient"></p-sortIcon>
+                </th>
                 <th pSortableColumn="montantDemande" style="width:12%">
                     Montant <p-sortIcon field="montantDemande"></p-sortIcon>
                 </th>
-                <th pSortableColumn="typeActivite" style="width:13%">
+                <th pSortableColumn="typeActivite" style="width:11%">
                     Activité <p-sortIcon field="typeActivite"></p-sortIcon>
                 </th>
                 <th style="width:8%">
@@ -144,7 +147,7 @@
 
         <ng-template pTemplate="groupheader" let-demande>
             <tr pRowGroupHeader>
-                <td colspan="10">
+                <td colspan="11">
                     <div class="flex align-items-center gap-3 py-2">
                         <i class="pi pi-calendar text-primary"></i>
                         <span class="font-bold text-lg">{{ formatDateGroup(demande.dateGroup) }}</span>
@@ -158,7 +161,9 @@
         </ng-template>
 
         <ng-template pTemplate="body" let-demande>
-            <tr>
+            <!-- Ligne cliquable : ouvre le detail de la demande -->
+            <tr class="cursor-pointer"
+                (click)="viewDetailDemandeAttente(demande.demandeIndividuelId || demande.demandeindividuel_id)">
                 <td>
                     <span class="font-bold text-primary">
                         #{{ demande.demandeIndividuelId || demande.demandeindividuel_id }}
@@ -181,6 +186,9 @@
                 </td>
                 <td>
                     <span class="font-medium">{{ demande.numeroMembre }}</span>
+                </td>
+                <td>
+                    <p-tag [value]="labelNature(demande.natureClient)" [severity]="severiteNature(demande.natureClient)"></p-tag>
                 </td>
                 <td>
                     <div class="flex flex-column gap-1">
@@ -260,13 +268,13 @@
                     <div class="flex gap-2 justify-center">
                         <button pButton icon="pi pi-eye" class="p-button-rounded p-button-text p-button-sm"
                             pTooltip="Voir détails complets"
-                            (click)="viewDetailDemandeAttente(demande.demandeIndividuelId || demande.demandeindividuel_id)">
+                            (click)="$event.stopPropagation(); viewDetailDemandeAttente(demande.demandeIndividuelId || demande.demandeindividuel_id)">
                         </button>
                         @if(demande.garanties && demande.garanties.length > 0) {
                         <button pButton icon="pi pi-shield"
                             class="p-button-rounded p-button-text p-button-sm p-button-success"
                             [pTooltip]="'Voir ' + demande.garanties.length + ' garantie(s)'"
-                            (click)="viewDetailDemandeAttente(demande.demandeIndividuelId || demande.demandeindividuel_id)">
+                            (click)="$event.stopPropagation(); viewDetailDemandeAttente(demande.demandeIndividuelId || demande.demandeindividuel_id)">
                         </button>
                         }
                     </div>
@@ -276,7 +284,7 @@
 
         <ng-template pTemplate="emptymessage">
             <tr>
-                <td colspan="10" class="text-center p-4">
+                <td colspan="11" class="text-center p-4">
                     <div class="flex flex-column align-items-center gap-3">
                         <i class="pi pi-inbox text-5xl text-gray-400"></i>
                         @if(activeFilter() === 'ALL') {
@@ -301,7 +309,7 @@
         @if(state().loading) {
         <ng-template pTemplate="loading">
             <tr>
-                <td colspan="10" class="text-center p-4">
+                <td colspan="11" class="text-center p-4">
                     <p-progressBar mode="indeterminate" [style]="{'height': '6px'}"></p-progressBar>
                     <p class="mt-2">Chargement des demandes...</p>
                 </td>

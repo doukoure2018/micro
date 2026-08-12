@@ -11,6 +11,7 @@ import io.digiservices.ecreditservice.dto.*;
 import io.digiservices.ecreditservice.exception.ApiException;
 import io.digiservices.ecreditservice.exception.ValidationException;
 import io.digiservices.ecreditservice.service.*;
+import io.digiservices.ecreditservice.validation.CreditFonctionnaireValidator;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -54,7 +55,8 @@ public class DemandeIndResource {
     private static final Set<String> VALID_NATURE_CLIENT = Set.of(
             "Demande de credit Pour Professionnels",
             "Demande de Credit Pour PME/PMI",
-            "Demande credit Pour Particulier"
+            "Demande credit Pour Particulier",
+            CreditFonctionnaireValidator.NATURE_FONCTIONNAIRE
     );
 
     /**
@@ -81,8 +83,11 @@ public class DemandeIndResource {
             // Validation de la nature du client
             validateNatureClient(demandeIndividuel);
 
-            // Validation des types de garanties
-            validateGaranties(demandeIndividuel.getGaranties());
+            // Validation des types de garanties (non requises pour un crédit fonctionnaire :
+            // la garantie est la domiciliation du salaire, contrôlée par CreditFonctionnaireValidator)
+            if (!CreditFonctionnaireValidator.isFonctionnaire(demandeIndividuel)) {
+                validateGaranties(demandeIndividuel.getGaranties());
+            }
 
             // Validation des nouveaux champs obligatoires selon la nature du client
             validateNewFields(demandeIndividuel);
@@ -162,6 +167,9 @@ public class DemandeIndResource {
                 );
             }
         }
+
+        // Validation spécifique Fonctionnaire (quotité, domiciliation, périodicité mensuelle)
+        CreditFonctionnaireValidator.validateDemande(demande);
     }
 
     /**
@@ -781,6 +789,9 @@ public class DemandeIndResource {
                 validateGaranties(demandeIndividuel.getGaranties());
             }
 
+            // Re-contrôle bloquant de la quotité pour un crédit fonctionnaire
+            CreditFonctionnaireValidator.validateDemande(demandeIndividuel);
+
             demandeIndService.updateDemandeComplete(demandeIndividuel);
 
             // Retourner la demande mise a jour
@@ -795,6 +806,16 @@ public class DemandeIndResource {
                             .statusCode(OK.value())
                             .build()
             );
+        } catch (ValidationException e) {
+            log.error("Erreur de validation: {}", e.getMessage());
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(Response.builder()
+                            .timeStamp(System.currentTimeMillis())
+                            .message("Erreur de validation: " + e.getMessage())
+                            .status(HttpStatus.BAD_REQUEST)
+                            .statusCode(HttpStatus.BAD_REQUEST.value())
+                            .build());
         } catch (ApiException e) {
             log.error("Erreur: {}", e.getMessage());
             return ResponseEntity

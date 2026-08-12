@@ -1,4 +1,9 @@
-import { DemandeIndividuel } from '@/interface/demande-individuel.interface';
+import { AnalyseChargesFonctionnaire, DemandeIndividuel, PieceJointeDemande, quotiteCessibleFonctionnaire } from '@/interface/demande-individuel.interface';
+import { NiveauValidationFinale, libelleNiveauValidation, niveauValidationFinale } from '@/interface/validation-seuils';
+import { registerLocaleData } from '@angular/common';
+import localeFr from '@angular/common/locales/fr';
+
+registerLocaleData(localeFr, 'fr-FR');
 import { DemandeCredit } from '@/interface/demande.credit';
 import { PointVente } from '@/interface/point.vente';
 import { IResponse } from '@/interface/response';
@@ -119,6 +124,8 @@ export class DetailComponent {
         showModalRejetFlux: boolean;
         showWorkflowRejetDA: boolean;
         showWorkflowRejetDR: boolean;
+        analyseChargesFonctionnaire?: AnalyseChargesFonctionnaire | null;
+        piecesFonctionnaire?: PieceJointeDemande[];
     }>({
         loading: false,
         message: undefined,
@@ -183,6 +190,18 @@ export class DetailComponent {
         { label: 'Demande complete', value: 'DEMANDE_COMPLETE' }
     ];
 
+    /** Sections à revoir pour le crédit fonctionnaire : ni bilan/flux ni garanties. */
+    workflowSectionsOptionsFonctionnaire = [
+        { label: 'Collecte des donnees', value: 'COLLECTE' },
+        { label: 'Analyse charges & quotite', value: 'ANALYSE_CHARGES' },
+        { label: 'Documents incomplets', value: 'DOCUMENTS_INCOMPLETS' },
+        { label: 'Demande complete', value: 'DEMANDE_COMPLETE' }
+    ];
+
+    getWorkflowSectionsOptions(): { label: string; value: string }[] {
+        return this.isFonctionnaireNature() ? this.workflowSectionsOptionsFonctionnaire : this.workflowSectionsOptions;
+    }
+
     // Options sections pour rejet
     sectionsBilanOptions = [
         { label: 'Collecte des données', value: 'COLLECTE' },
@@ -244,6 +263,68 @@ export class DetailComponent {
 
     ngOnInit(): void {
         this.loadDemandeWithGaranties();
+    }
+
+    // ======================== AFFECTATION DA (circuit accueil) ========================
+
+    /** Agents de credit eligibles (agence du DA, sans fonction Accueil) et selection. */
+    agentsEligibles: { label: string; value: number }[] = [];
+    agentAffectation: { label: string; value: number } | null = null;
+    affectationEnCours = false;
+
+    /** La demande a ete receptionnee par l'accueil : le DA doit l'affecter a un agent de credit. */
+    isAffectationDA(): boolean {
+        return this.state().user?.role === 'DA' && this.state().demandeIndividuel?.validationState === 'EN_ATTENTE_DA';
+    }
+
+    private loadAgentsEligibles(): void {
+        this.userService
+            .getAgentsCreditEligibles$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    const agents = (response.data as any)?.agents || [];
+                    this.agentsEligibles = agents.map((a: any) => ({
+                        label: `${a.firstName} ${a.lastName}${a.pointventeLibele ? ' — ' + a.pointventeLibele : ''}${a.fonctionAccueil ? ' (accueil + crédit)' : ''}`,
+                        value: a.userId
+                    }));
+                },
+                error: () => {
+                    this.messageService.add({ severity: 'warn', summary: 'Agents indisponibles', detail: 'Impossible de charger la liste des agents de crédit', life: 5000 });
+                }
+            });
+    }
+
+    /** Le DA affecte la demande receptionnee a l'agent de credit choisi (-> AFFECTEE). */
+    affecterDemande(): void {
+        const demandeId = this.state().demandeIndividuel?.demandeIndividuelId;
+        if (!demandeId || !this.agentAffectation) return;
+
+        this.affectationEnCours = true;
+        this.userService
+            .affecterAC$(+demandeId, this.agentAffectation.value)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Demande affectée',
+                        detail: `Demande affectée à ${this.agentAffectation?.label}`,
+                        life: 4000
+                    });
+                    this.affectationEnCours = false;
+                    setTimeout(() => this.router.navigate(['/dashboards/credit/individuel/attente']), 1500);
+                },
+                error: (error) => {
+                    this.affectationEnCours = false;
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Erreur',
+                        detail: error.error?.message || error.message || "Échec de l'affectation",
+                        life: 6000
+                    });
+                }
+            });
     }
 
     canSubmitForm(): boolean {
@@ -342,6 +423,11 @@ export class DetailComponent {
                             this.loadPointVentes(demandeData.agence);
                         }
 
+                        // Circuit accueil : la demande attend son affectation par le DA
+                        if (responseData.user?.role === 'DA' && demandeData.validationState === 'EN_ATTENTE_DA') {
+                            this.loadAgentsEligibles();
+                        }
+
                         this.loadDocuments(+demandeData.demandeIndividuelId!);
                         this.loadPersonnesCaution(+demandeData.demandeIndividuelId!);
 
@@ -350,6 +436,11 @@ export class DetailComponent {
 
                         // Charger les statuts de validation DA
                         this.loadValidationDA(+demandeData.demandeIndividuelId!);
+
+                        // Crédit fonctionnaire : analyse charges & quotité (affichage + impression)
+                        if (demandeData.natureClient === 'Demande de credit Pour Fonctionnaire') {
+                            this.loadAnalyseChargesFonctionnaire(+demandeData.demandeIndividuelId!);
+                        }
 
                         if (demandeData.pos) {
                             this.loadPointVenteInfo(demandeData.pos);
@@ -1335,10 +1426,167 @@ export class DetailComponent {
     /**
      * Obtenir le libellé de la nature du client
      */
+    /** Nature Fonctionnaire : l'analyse bilan/flux est remplacée par l'analyse charges & quotité. */
+    isFonctionnaireNature(): boolean {
+        return this.state().demandeIndividuel?.natureClient === 'Demande de credit Pour Fonctionnaire';
+    }
+
+    /** Libellés des 12 postes de charges, dans l'ordre de la grille de saisie de l'agent. */
+    readonly postesChargesFonctionnaire: { key: keyof AnalyseChargesFonctionnaire; libelle: string }[] = [
+        { key: 'chargeLoyer', libelle: 'Loyer' },
+        { key: 'chargeTransport', libelle: 'Transport' },
+        { key: 'chargeNourriture', libelle: 'Nourriture' },
+        { key: 'chargeVignette', libelle: 'Vignette' },
+        { key: 'chargeAssurance', libelle: 'Assurance' },
+        { key: 'chargeElectricite', libelle: 'Électricité' },
+        { key: 'chargeEau', libelle: 'Eau' },
+        { key: 'chargeAssuranceMaladie', libelle: 'Assurance maladie' },
+        { key: 'chargeScolarite', libelle: 'Scolarité' },
+        { key: 'chargeCasSociaux', libelle: 'Cas sociaux' },
+        { key: 'chargeAbonnementImage', libelle: 'Abonnement image (TV)' },
+        { key: 'chargeServiceSalubrite', libelle: 'Service salubrité' }
+    ];
+
+    montantChargeFonctionnaire(key: keyof AnalyseChargesFonctionnaire): number {
+        const analyse = this.state().analyseChargesFonctionnaire;
+        return analyse ? Number(analyse[key]) || 0 : 0;
+    }
+
+    private loadAnalyseChargesFonctionnaire(demandeId: number): void {
+        this.userService
+            .getAnalyseChargesFonctionnaire$(demandeId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => this.state.update((s) => ({ ...s, analyseChargesFonctionnaire: response.data?.analyseCharges || null })),
+                error: () => this.state.update((s) => ({ ...s, analyseChargesFonctionnaire: null }))
+            });
+        this.userService
+            .getPiecesDemande$(demandeId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => this.state.update((s) => ({ ...s, piecesFonctionnaire: response.data?.pieces || [] })),
+                error: () => this.state.update((s) => ({ ...s, piecesFonctionnaire: [] }))
+            });
+    }
+
+    libelleTypePieceFonctionnaire(type?: string): string {
+        switch (type) {
+            case 'BULLETIN_SALAIRE':
+                return 'Bulletin de salaire';
+            case 'ATTESTATION_SERVICE':
+                return 'Attestation de service';
+            case 'AUTRE':
+                return 'Autre pièce';
+            default:
+                return type || 'Pièce';
+        }
+    }
+
+    /** Échappe le texte libre injecté dans le HTML imprimable (avis, service, matricule...). */
+    private escapeHtml(value?: string | null): string {
+        if (!value) return '';
+        return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    /** Section imprimable du dossier fonctionnaire : emploi, salaire, quotité et grille des charges. */
+    private genererSectionFonctionnaire(): string {
+        const demande = this.state().demandeIndividuel;
+        const fct = demande?.demandeFonctionnaire;
+        if (!this.isFonctionnaireNature() || !fct) return '';
+
+        const fmt = (montant?: number | null) => (montant != null ? Number(montant).toLocaleString('fr-FR') + ' GNF' : 'N/A');
+        const esc = (texte?: string | null) => this.escapeHtml(texte) || 'N/A';
+        const quotite = fct.quotiteCessible != null ? fct.quotiteCessible : quotiteCessibleFonctionnaire(fct.salaireNetMensuel);
+        const analyse = this.state().analyseChargesFonctionnaire;
+
+        const lignesCharges: [string, number | undefined][] = analyse
+            ? [
+                  ['Loyer', analyse.chargeLoyer],
+                  ['Transport', analyse.chargeTransport],
+                  ['Nourriture', analyse.chargeNourriture],
+                  ['Vignette', analyse.chargeVignette],
+                  ['Assurance', analyse.chargeAssurance],
+                  ['Électricité', analyse.chargeElectricite],
+                  ['Eau', analyse.chargeEau],
+                  ['Assurance maladie', analyse.chargeAssuranceMaladie],
+                  ['Scolarité', analyse.chargeScolarite],
+                  ['Cas sociaux', analyse.chargeCasSociaux],
+                  ['Abonnement image', analyse.chargeAbonnementImage],
+                  ['Service salubrité', analyse.chargeServiceSalubrite]
+              ]
+            : [];
+
+        return `
+                <!-- Section Fonctionnaire -->
+                <div class="section">
+                    <h2>SITUATION PROFESSIONNELLE DU FONCTIONNAIRE</h2>
+                    <table class="info-table">
+                        <tr>
+                            <td class="label">Service employeur:</td>
+                            <td class="value">${esc(fct.serviceEmployeur)}</td>
+                            <td class="label">Département / Ministère:</td>
+                            <td class="value">${esc(fct.departementMinistere)}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Type de contrat:</td>
+                            <td class="value">${esc(fct.typeContrat)}</td>
+                            <td class="label">Matricule / Ancienneté:</td>
+                            <td class="value">${esc(fct.matricule)} / ${fct.ancienneteAnnees != null ? fct.ancienneteAnnees + ' an(s)' : 'N/A'}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Salaire net mensuel:</td>
+                            <td class="value">${fmt(fct.salaireNetMensuel)}</td>
+                            <td class="label">Autres revenus:</td>
+                            <td class="value">${fmt(fct.autresRevenus)}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Quotité cessible (35 %):</td>
+                            <td class="value"><strong>${fmt(quotite)}</strong></td>
+                            <td class="label">Domiciliation du salaire au CRG:</td>
+                            <td class="value">${fct.domiciliationSalaire ? 'OUI (engagement signé)' : 'NON'}</td>
+                        </tr>
+                    </table>
+                    ${
+                        analyse
+                            ? `
+                    <h2 style="margin-top:16px">ANALYSE CHARGES &amp; QUOTITÉ</h2>
+                    <table class="info-table">
+                        ${lignesCharges
+                            .reduce<string[]>((rows, [libelle, montant], index) => {
+                                if (index % 2 === 0) {
+                                    rows.push(`<tr><td class="label">${libelle}:</td><td class="value">${fmt(montant)}</td>`);
+                                } else {
+                                    rows[rows.length - 1] += `<td class="label">${libelle}:</td><td class="value">${fmt(montant)}</td></tr>`;
+                                }
+                                return rows;
+                            }, [])
+                            .join('')}
+                        <tr>
+                            <td class="label">Total des charges:</td>
+                            <td class="value"><strong>${fmt(analyse.totalCharges)}</strong></td>
+                            <td class="label">Capacité résiduelle:</td>
+                            <td class="value"><strong>${fmt(analyse.capaciteResiduelle)}</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="label">Verdict:</td>
+                            <td class="value"><strong>${analyse.verdict === 'FINANCABLE' ? 'DOSSIER FINANÇABLE' : 'NON FINANÇABLE'}</strong></td>
+                            <td class="label">Analysé par:</td>
+                            <td class="value">${esc(analyse.analysePar)}</td>
+                        </tr>
+                        ${analyse.avisAgent ? `<tr><td class="label">Avis de l'agent:</td><td class="value" colspan="3">${this.escapeHtml(analyse.avisAgent)}</td></tr>` : ''}
+                    </table>
+                    `
+                            : ''
+                    }
+                </div>
+        `;
+    }
+
     getNatureClientLabel(natureClient?: string): string {
         if (!natureClient) return 'Particulier';
         if (natureClient.includes('PME')) return 'Entreprise (PME/PMI)';
         if (natureClient.includes('Professionnel')) return 'Professionnel';
+        if (natureClient.includes('Fonctionnaire')) return 'Fonctionnaire';
         return 'Particulier';
     }
 
@@ -1412,6 +1660,8 @@ export class DetailComponent {
                 `
                         : ''
                 }
+
+                ${this.genererSectionFonctionnaire()}
 
                 <!-- Section 1: Informations sur le membre/client -->
                 <div class="section">
@@ -2131,7 +2381,7 @@ export class DetailComponent {
     }
 
     getSectionLabel(value: string): string {
-        const all = [...this.sectionsBilanOptions, ...this.sectionsFluxOptions, ...this.workflowSectionsOptions];
+        const all = [...this.sectionsBilanOptions, ...this.sectionsFluxOptions, ...this.workflowSectionsOptions, ...this.workflowSectionsOptionsFonctionnaire];
         return all.find((o) => o.value === value)?.label || value;
     }
 
@@ -2150,6 +2400,25 @@ export class DetailComponent {
 
     // ==================== WORKFLOW HIERARCHIQUE ====================
 
+    /** Niveau dont la validation est finale pour le montant de la demande (échelle de délégation). */
+    niveauFinal(): NiveauValidationFinale {
+        return niveauValidationFinale(this.state().demandeIndividuel?.montantDemande);
+    }
+
+    libelleNiveauFinal(): string {
+        return libelleNiveauValidation(this.niveauFinal());
+    }
+
+    /** Le DA est le validateur final (montant <= 25 000 000 GNF). */
+    isValidationFinaleDA(): boolean {
+        return this.niveauFinal() === 'DA';
+    }
+
+    /** Le DR est le validateur final (montant <= 50 000 000 GNF). */
+    isValidationFinaleDR(): boolean {
+        return this.niveauFinal() === 'DR';
+    }
+
     getWorkflowSteps(): { label: string; state: string; active: boolean; completed: boolean }[] {
         const vs = this.state().demandeIndividuel?.validationState || '';
         const stateOrder = ['NOUVEAU', 'SELECTION', 'APPROVED', 'VALIDATED_DA', 'VALIDATED_DR', 'VALIDATED_FINAL'];
@@ -2160,15 +2429,22 @@ export class DetailComponent {
         };
         const effectiveState = correctionStates[vs] || vs;
         const currentIdx = stateOrder.indexOf(effectiveState);
+        const niveau = this.niveauFinal();
 
-        return [
+        const steps = [
             { label: 'Demande', state: 'NOUVEAU', active: effectiveState === 'NOUVEAU', completed: currentIdx > 0 },
             { label: 'Selection', state: 'SELECTION', active: effectiveState === 'SELECTION', completed: currentIdx > 1 },
-            { label: 'AC Approuve', state: 'APPROVED', active: effectiveState === 'APPROVED', completed: currentIdx > 2 },
-            { label: 'DA Valide', state: 'VALIDATED_DA', active: effectiveState === 'VALIDATED_DA', completed: currentIdx > 3 },
-            { label: 'DR Valide', state: 'VALIDATED_DR', active: effectiveState === 'VALIDATED_DR', completed: currentIdx > 4 },
-            { label: 'Valide Final', state: 'VALIDATED_FINAL', active: effectiveState === 'VALIDATED_FINAL', completed: false }
+            { label: 'AC Approuve', state: 'APPROVED', active: effectiveState === 'APPROVED', completed: currentIdx > 2 }
         ];
+        // Échelle de délégation : on n'affiche que les maillons traversés pour ce montant
+        if (niveau !== 'DA') {
+            steps.push({ label: 'DA Valide', state: 'VALIDATED_DA', active: effectiveState === 'VALIDATED_DA', completed: currentIdx > 3 });
+        }
+        if (niveau === 'DE' || niveau === 'DG') {
+            steps.push({ label: 'DR Valide', state: 'VALIDATED_DR', active: effectiveState === 'VALIDATED_DR', completed: currentIdx > 4 });
+        }
+        steps.push({ label: `Valide Final (${niveau})`, state: 'VALIDATED_FINAL', active: effectiveState === 'VALIDATED_FINAL', completed: false });
+        return steps;
     }
 
     isInCorrectionState(): boolean {
@@ -2313,7 +2589,12 @@ export class DetailComponent {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => {
-                    this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Demande validee et transmise au DR', life: 3000 });
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Succes',
+                        detail: this.isValidationFinaleDA() ? 'Credit valide definitivement (plafond Directeur d’Agence)' : 'Demande validee et transmise au DR',
+                        life: 4000
+                    });
                     this.workflowDAForm.reset();
                     this.loadDemandeWithGaranties();
                 },
@@ -2368,7 +2649,12 @@ export class DetailComponent {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => {
-                    this.messageService.add({ severity: 'success', summary: 'Succes', detail: "Demande validee et transmise a la Direction d'Exploitation", life: 3000 });
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Succes',
+                        detail: this.isValidationFinaleDR() ? 'Credit valide definitivement (plafond Delegue Regional)' : "Demande validee et transmise a la Direction d'Exploitation",
+                        life: 4000
+                    });
                     this.workflowDRForm.reset();
                     this.loadDemandeWithGaranties();
                 },

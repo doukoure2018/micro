@@ -1,12 +1,15 @@
 import { Agence } from '@/interface/agence';
 import { Delegation } from '@/interface/delegation';
-import { DemandeIndividuel, GarantiePropose } from '@/interface/demande-individuel.interface';
+import { DemandeFonctionnaire, DemandeIndividuel, GarantiePropose, NATURE_CREDIT_FONCTIONNAIRE, TYPE_CONTRAT_OPTIONS_FONCTIONNAIRE, demandeFonctionnaireVide, quotiteCessibleFonctionnaire } from '@/interface/demande-individuel.interface';
 import { PointVente } from '@/interface/point.vente';
 import { TypeCreditDto } from '@/interface/typeCredit.model';
 import { Activite, CreditActiviteData, SousActivite, SousSousActivite, TypeCredit } from '@/service/credit-activite.model';
 import { UserService } from '@/service/user.service';
-import { CommonModule } from '@angular/common';
+import { CommonModule, registerLocaleData } from '@angular/common';
+import localeFr from '@angular/common/locales/fr';
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+
+registerLocaleData(localeFr, 'fr-FR');
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule, NgForm } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -14,6 +17,7 @@ import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CalendarModule } from 'primeng/calendar';
 import { CardModule } from 'primeng/card';
+import { CheckboxModule } from 'primeng/checkbox';
 import { ChipModule } from 'primeng/chip';
 import { DialogModule } from 'primeng/dialog';
 import { DividerModule } from 'primeng/divider';
@@ -53,7 +57,8 @@ import { ToastModule } from 'primeng/toast';
         DividerModule,
         CardModule,
         PanelModule,
-        ChipModule
+        ChipModule,
+        CheckboxModule
     ],
     templateUrl: './correction-demande.component.html',
     styleUrls: ['./correction-demande.component.scss'],
@@ -128,8 +133,14 @@ export class CorrectionDemandeComponent implements OnInit {
     natureClientOptions = [
         { label: 'Demande credit Pour Particulier', value: 'Demande credit Pour Particulier' },
         { label: 'Demande de Credit Pour PME/PMI', value: 'Demande de Credit Pour PME/PMI' },
-        { label: 'Demande de credit Pour Professionnels', value: 'Demande de credit Pour Professionnels' }
+        { label: 'Demande de credit Pour Professionnels', value: 'Demande de credit Pour Professionnels' },
+        { label: 'Demande de credit Pour Fonctionnaire', value: 'Demande de credit Pour Fonctionnaire' }
     ];
+
+    // Extension fonctionnaire (nature « Fonctionnaire ») — hors formData pour ne pas polluer form.value
+    fonctionnaire: DemandeFonctionnaire = this.getInitialFonctionnaire();
+
+    typeContratOptions = TYPE_CONTRAT_OPTIONS_FONCTIONNAIRE;
 
     activiteOptions: { label: string; value: number; data: Activite }[] = [];
     sousActiviteOptions: { label: string; value: number; data: SousActivite }[] = [];
@@ -438,6 +449,9 @@ export class CorrectionDemandeComponent implements OnInit {
             dateAdhesion: null
         };
 
+        // Extension fonctionnaire (nature Fonctionnaire)
+        this.fonctionnaire = demande.demandeFonctionnaire ? { ...demande.demandeFonctionnaire } : this.getInitialFonctionnaire();
+
         // Restore activity cascade selections
         if (this.formData.selectedTypeActivite) {
             this.selectedActivite = CreditActiviteData.getActiviteByCode(this.formData.selectedTypeActivite) || null;
@@ -486,10 +500,15 @@ export class CorrectionDemandeComponent implements OnInit {
             this.formData.profession = '';
             this.formData.secteurActivite = '';
         }
-        if (natureClient === 'Demande credit Pour Particulier') {
+        if (natureClient === 'Demande credit Pour Particulier' || natureClient === 'Demande de credit Pour Fonctionnaire') {
             this.formData.natureActivite = '';
             this.formData.categorie = '';
             this.resetActiviteSelections();
+        }
+        if (natureClient === 'Demande de credit Pour Fonctionnaire') {
+            this.formData.periodiciteRemboursement = 'Mensuelle';
+        } else {
+            this.fonctionnaire = this.getInitialFonctionnaire();
         }
         this.formData.natureClient = natureClient;
     }
@@ -500,6 +519,24 @@ export class CorrectionDemandeComponent implements OnInit {
 
     isParticulier(): boolean {
         return this.formData.natureClient === 'Demande credit Pour Particulier';
+    }
+
+    isFonctionnaire(): boolean {
+        return this.formData.natureClient === NATURE_CREDIT_FONCTIONNAIRE;
+    }
+
+    /** Quotité cessible = salaire net x 35 % : plafond de l'échéance mensuelle. */
+    quotiteCessible(): number {
+        return quotiteCessibleFonctionnaire(this.fonctionnaire.salaireNetMensuel);
+    }
+
+    /** Vrai si l'échéance saisie dépasse la quotité cessible (blocage de soumission). */
+    echeanceDepasseQuotite(): boolean {
+        return this.isFonctionnaire() && (this.formData.echeance || 0) > this.quotiteCessible();
+    }
+
+    private getInitialFonctionnaire(): DemandeFonctionnaire {
+        return demandeFonctionnaireVide();
     }
 
     // ======================== CASCADE: DELEGATION -> AGENCE -> PV ========================
@@ -761,7 +798,39 @@ export class CorrectionDemandeComponent implements OnInit {
             return;
         }
 
-        if (this.state().garanties.length === 0) {
+        if (this.isFonctionnaire()) {
+            const f = this.fonctionnaire;
+            if (!f.serviceEmployeur?.trim() || !f.departementMinistere?.trim() || !f.typeContrat || !f.salaireNetMensuel || f.salaireNetMensuel <= 0) {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Erreur',
+                    detail: 'Service, département/ministère, type de contrat et salaire net sont obligatoires pour un crédit fonctionnaire',
+                    life: 5000
+                });
+                return;
+            }
+            if (!f.domiciliationSalaire) {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Erreur',
+                    detail: 'La domiciliation du salaire au CRG est obligatoire pour un crédit fonctionnaire',
+                    life: 5000
+                });
+                return;
+            }
+            if (!this.formData.echeance || this.formData.echeance <= 0 || this.echeanceDepasseQuotite()) {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Quotité',
+                    detail: `L'échéance est obligatoire et ne doit pas dépasser la quotité cessible (${this.quotiteCessible().toLocaleString('fr-FR')} GNF)`,
+                    life: 7000
+                });
+                return;
+            }
+        }
+
+        // Crédit fonctionnaire : pas de garanties classiques (la garantie est la domiciliation du salaire)
+        if (!this.isFonctionnaire() && this.state().garanties.length === 0) {
             this.messageService.add({
                 severity: 'warn',
                 summary: 'Attention',
@@ -787,6 +856,9 @@ export class CorrectionDemandeComponent implements OnInit {
             natureClient: this.formData.natureClient || 'Demande credit Pour Particulier',
             nomPersonneMorale: this.isPME() ? this.formData.nomPersonneMorale : '',
             sigle: this.isPME() ? this.formData.sigle : '',
+            // Extension fonctionnaire : envoyée uniquement pour la nature Fonctionnaire
+            demandeFonctionnaire: this.isFonctionnaire() ? { ...this.fonctionnaire } : undefined,
+            periodiciteRemboursement: this.isFonctionnaire() ? 'Mensuelle' : this.formData.periodiciteRemboursement!,
             sernom: this.formData.sernom || '',
             categorie: this.isParticulier() ? '' : this.formData.categorie || '',
             natureActivite: this.isParticulier() ? '' : this.formData.natureActivite || '',

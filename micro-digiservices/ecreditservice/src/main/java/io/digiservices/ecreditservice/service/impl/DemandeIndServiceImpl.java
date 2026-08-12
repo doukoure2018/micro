@@ -3,6 +3,7 @@ package io.digiservices.ecreditservice.service.impl;
 import io.digiservices.ecreditservice.dto.*;
 import io.digiservices.ecreditservice.exception.ApiException;
 import io.digiservices.ecreditservice.repository.DemandeIndRepository;
+import io.digiservices.ecreditservice.service.AnalyseChargesFonctionnaireService;
 import io.digiservices.ecreditservice.service.DemandeIndService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +19,7 @@ import java.util.Optional;
 @Slf4j
 public class DemandeIndServiceImpl implements DemandeIndService {
     private final DemandeIndRepository demandeIndRepository;
+    private final AnalyseChargesFonctionnaireService analyseChargesFonctionnaireService;
     @Override
     public void addDemandeInd(DemandeIndividuel demandeIndividuel) {
         demandeIndRepository.addNewDemandeInd(demandeIndividuel);
@@ -35,6 +37,11 @@ public class DemandeIndServiceImpl implements DemandeIndService {
 
     @Override
     public void updateStatutDemandeInd(Long demandeindividuel_id, String statut, String codUsuarios) {
+        // Crédit fonctionnaire : l'approbation AC est bloquée si l'analyse charges
+        // & quotité n'est pas finançable (même règle que le workflow approuver-ac)
+        if ("APPROVED".equals(statut)) {
+            analyseChargesFonctionnaireService.verifierFinancableSiFonctionnaire(demandeindividuel_id);
+        }
         demandeIndRepository.updateStatutDemandeInd(demandeindividuel_id,statut,codUsuarios);
     }
 

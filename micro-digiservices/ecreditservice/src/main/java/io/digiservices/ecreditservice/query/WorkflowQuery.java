@@ -11,6 +11,7 @@ public class WorkflowQuery {
                 cod_usuarios = :codUsuarios
             WHERE demandeindividuel_id = :demandeId
               AND validation_state IN ('SELECTION', 'CORRECTION')
+              AND (agent_credit_affecte IS NULL OR agent_credit_affecte = CAST(:userId AS BIGINT))
             """;
 
     /**
@@ -25,6 +26,7 @@ public class WorkflowQuery {
                    d.delegation, d.agence, d.pos,
                    d.montant_demande AS "montantDemande",
                    d.object_credit AS "objectCredit",
+                   d.nature_client AS "natureClient",
                    d.validation_state AS "validationState",
                    d.statut_demande AS "statutDemande",
                    d.cod_usuarios AS "codUsuarios",
@@ -40,6 +42,7 @@ public class WorkflowQuery {
                   (CAST(:agenceId AS BIGINT) IS NOT NULL AND CAST(:pointventeId AS BIGINT) IS NULL AND d.agence = CAST(:agenceId AS BIGINT)) OR
                   (CAST(:pointventeId AS BIGINT) IS NOT NULL AND d.pos = CAST(:pointventeId AS BIGINT))
               )
+              AND (d.agent_credit_affecte IS NULL OR d.agent_credit_affecte = CAST(:userId AS BIGINT))
             ORDER BY d.createdat DESC
             """;
 
@@ -52,6 +55,7 @@ public class WorkflowQuery {
                    d.delegation, d.agence, d.pos,
                    d.montant_demande AS "montantDemande",
                    d.object_credit AS "objectCredit",
+                   d.nature_client AS "natureClient",
                    d.validation_state AS "validationState",
                    d.statut_demande AS "statutDemande",
                    d.cod_usuarios AS "codUsuarios",
@@ -70,6 +74,7 @@ public class WorkflowQuery {
                    d.delegation, d.agence, d.pos,
                    d.montant_demande AS "montantDemande",
                    d.object_credit AS "objectCredit",
+                   d.nature_client AS "natureClient",
                    d.validation_state AS "validationState",
                    d.statut_demande AS "statutDemande",
                    d.motif_rejet_dr AS "motifRejetDr",
@@ -86,9 +91,22 @@ public class WorkflowQuery {
 
     // ==================== DA ACTIONS ====================
 
+    /*
+     * Echelle de delegation de pouvoirs (decision 2026-08-11) — le circuit s'arrete
+     * au niveau competent pour le montant demande :
+     *   1 a 25 000 000            -> validation finale DA
+     *   25 000 001 a 50 000 000   -> validation finale DR
+     *   50 000 001 a 100 000 000  -> validation finale DE
+     *   100 000 001 et plus       -> visa final DG (PENDING_DG apres le DE)
+     * Chaque UPDATE_VALIDER_X fait un CASE sur montant_demande : etat final si le
+     * montant est dans son plafond, sinon transmission au niveau suivant.
+     */
     public static final String UPDATE_VALIDER_DA = """
             UPDATE demandeindividuel
-            SET validation_state = 'VALIDATED_DA',
+            SET validation_state = CASE
+                                       WHEN COALESCE(montant_demande, 0) <= 25000000 THEN 'VALIDATED_FINAL'
+                                       ELSE 'VALIDATED_DA'
+                                   END,
                 avis_da = :avis,
                 validated_by_da = :validatedBy,
                 date_validation_da = CURRENT_TIMESTAMP,
@@ -120,6 +138,7 @@ public class WorkflowQuery {
                    d.delegation, d.agence, d.pos,
                    d.montant_demande AS "montantDemande",
                    d.object_credit AS "objectCredit",
+                   d.nature_client AS "natureClient",
                    d.validation_state AS "validationState",
                    d.statut_demande AS "statutDemande",
                    d.motif_rejet_da AS "motifRejetDa",
@@ -137,6 +156,7 @@ public class WorkflowQuery {
                   (CAST(:agenceId AS BIGINT) IS NOT NULL AND CAST(:pointventeId AS BIGINT) IS NULL AND d.agence = CAST(:agenceId AS BIGINT)) OR
                   (CAST(:pointventeId AS BIGINT) IS NOT NULL AND d.pos = CAST(:pointventeId AS BIGINT))
               )
+              AND (d.agent_credit_affecte IS NULL OR d.agent_credit_affecte = CAST(:userId AS BIGINT))
             ORDER BY d.createdat DESC
             """;
 
@@ -160,6 +180,7 @@ public class WorkflowQuery {
                    d.delegation, d.agence, d.pos,
                    d.montant_demande AS "montantDemande",
                    d.object_credit AS "objectCredit",
+                   d.nature_client AS "natureClient",
                    d.validation_state AS "validationState",
                    d.statut_demande AS "statutDemande",
                    d.cod_usuarios AS "codUsuarios",
@@ -192,6 +213,7 @@ public class WorkflowQuery {
                    d.delegation, d.agence, d.pos,
                    d.montant_demande AS "montantDemande",
                    d.object_credit AS "objectCredit",
+                   d.nature_client AS "natureClient",
                    d.validation_state AS "validationState",
                    d.statut_demande AS "statutDemande",
                    d.avis_agent_credit AS "avisAgentCredit",
@@ -202,6 +224,7 @@ public class WorkflowQuery {
                   (CAST(:agenceId AS BIGINT) IS NOT NULL AND CAST(:pointventeId AS BIGINT) IS NULL AND d.agence = CAST(:agenceId AS BIGINT)) OR
                   (CAST(:pointventeId AS BIGINT) IS NOT NULL AND d.pos = CAST(:pointventeId AS BIGINT))
               )
+              AND (d.agent_credit_affecte IS NULL OR d.agent_credit_affecte = CAST(:userId AS BIGINT))
             ORDER BY d.createdat DESC
             """;
 
@@ -212,6 +235,7 @@ public class WorkflowQuery {
                    d.delegation, d.agence, d.pos,
                    d.montant_demande AS "montantDemande",
                    d.object_credit AS "objectCredit",
+                   d.nature_client AS "natureClient",
                    d.validation_state AS "validationState",
                    d.statut_demande AS "statutDemande",
                    d.avis_agent_credit AS "avisAgentCredit",
@@ -228,6 +252,7 @@ public class WorkflowQuery {
                   (CAST(:agenceId AS BIGINT) IS NOT NULL AND CAST(:pointventeId AS BIGINT) IS NULL AND d.agence = CAST(:agenceId AS BIGINT)) OR
                   (CAST(:pointventeId AS BIGINT) IS NOT NULL AND d.pos = CAST(:pointventeId AS BIGINT))
               )
+              AND (d.agent_credit_affecte IS NULL OR d.agent_credit_affecte = CAST(:userId AS BIGINT))
             ORDER BY d.createdat DESC
             """;
 
@@ -238,6 +263,7 @@ public class WorkflowQuery {
                    d.delegation, d.agence, d.pos,
                    d.montant_demande AS "montantDemande",
                    d.object_credit AS "objectCredit",
+                   d.nature_client AS "natureClient",
                    d.validation_state AS "validationState",
                    d.statut_demande AS "statutDemande",
                    d.motif_rejet_dr AS "motifRejetDr",
@@ -253,6 +279,7 @@ public class WorkflowQuery {
                   (CAST(:agenceId AS BIGINT) IS NOT NULL AND CAST(:pointventeId AS BIGINT) IS NULL AND d.agence = CAST(:agenceId AS BIGINT)) OR
                   (CAST(:pointventeId AS BIGINT) IS NOT NULL AND d.pos = CAST(:pointventeId AS BIGINT))
               )
+              AND (d.agent_credit_affecte IS NULL OR d.agent_credit_affecte = CAST(:userId AS BIGINT))
             ORDER BY d.createdat DESC
             """;
 
@@ -263,6 +290,7 @@ public class WorkflowQuery {
                    d.delegation, d.agence, d.pos,
                    d.montant_demande AS "montantDemande",
                    d.object_credit AS "objectCredit",
+                   d.nature_client AS "natureClient",
                    d.validation_state AS "validationState",
                    d.statut_demande AS "statutDemande",
                    d.motif_rejet_de AS "motifRejetDe",
@@ -279,6 +307,7 @@ public class WorkflowQuery {
                   (CAST(:agenceId AS BIGINT) IS NOT NULL AND CAST(:pointventeId AS BIGINT) IS NULL AND d.agence = CAST(:agenceId AS BIGINT)) OR
                   (CAST(:pointventeId AS BIGINT) IS NOT NULL AND d.pos = CAST(:pointventeId AS BIGINT))
               )
+              AND (d.agent_credit_affecte IS NULL OR d.agent_credit_affecte = CAST(:userId AS BIGINT))
             ORDER BY d.createdat DESC
             """;
 
@@ -291,6 +320,7 @@ public class WorkflowQuery {
                    d.delegation, d.agence, d.pos,
                    d.montant_demande AS "montantDemande",
                    d.object_credit AS "objectCredit",
+                   d.nature_client AS "natureClient",
                    d.validation_state AS "validationState",
                    d.statut_demande AS "statutDemande",
                    d.avis_agent_credit AS "avisAgentCredit",
@@ -313,6 +343,7 @@ public class WorkflowQuery {
                    d.delegation, d.agence, d.pos,
                    d.montant_demande AS "montantDemande",
                    d.object_credit AS "objectCredit",
+                   d.nature_client AS "natureClient",
                    d.validation_state AS "validationState",
                    d.statut_demande AS "statutDemande",
                    d.motif_rejet_de AS "motifRejetDe",
@@ -332,9 +363,13 @@ public class WorkflowQuery {
 
     // ==================== DR ACTIONS ====================
 
+    // Echelle de delegation : <= 50M le DR est le validateur final, au-dela transmission au DE.
     public static final String UPDATE_VALIDER_DR = """
             UPDATE demandeindividuel
-            SET validation_state = 'VALIDATED_DR',
+            SET validation_state = CASE
+                                       WHEN COALESCE(montant_demande, 0) <= 50000000 THEN 'VALIDATED_FINAL'
+                                       ELSE 'VALIDATED_DR'
+                                   END,
                 avis_dr = :avis,
                 validated_by_dr = :validatedBy,
                 date_validation_dr = CURRENT_TIMESTAMP,
@@ -366,6 +401,7 @@ public class WorkflowQuery {
                    d.delegation, d.agence, d.pos,
                    d.montant_demande AS "montantDemande",
                    d.object_credit AS "objectCredit",
+                   d.nature_client AS "natureClient",
                    d.validation_state AS "validationState",
                    d.statut_demande AS "statutDemande",
                    d.avis_agent_credit AS "avisAgentCredit",
@@ -392,6 +428,7 @@ public class WorkflowQuery {
                    d.delegation, d.agence, d.pos,
                    d.montant_demande AS "montantDemande",
                    d.object_credit AS "objectCredit",
+                   d.nature_client AS "natureClient",
                    d.validation_state AS "validationState",
                    d.statut_demande AS "statutDemande",
                    d.avis_agent_credit AS "avisAgentCredit",
@@ -418,12 +455,12 @@ public class WorkflowQuery {
 
     // ==================== DE ACTIONS ====================
 
-    // Aiguillage montant : les credits >= 100 000 000 partent au DG (PENDING_DG) au lieu
-    // d'etre finalises directement (VALIDATED_FINAL). En dessous du seuil, comportement inchange.
+    // Echelle de delegation : <= 100M le DE est le validateur final, au-dela (100 000 001 et plus)
+    // le dossier part au DG (PENDING_DG) pour visa final.
     public static final String UPDATE_VALIDER_DE = """
             UPDATE demandeindividuel
             SET validation_state = CASE
-                                       WHEN COALESCE(montant_demande, 0) >= 100000000 THEN 'PENDING_DG'
+                                       WHEN COALESCE(montant_demande, 0) > 100000000 THEN 'PENDING_DG'
                                        ELSE 'VALIDATED_FINAL'
                                    END,
                 avis_de = :avis,
@@ -457,6 +494,7 @@ public class WorkflowQuery {
                    d.delegation, d.agence, d.pos,
                    d.montant_demande AS "montantDemande",
                    d.object_credit AS "objectCredit",
+                   d.nature_client AS "natureClient",
                    d.validation_state AS "validationState",
                    d.statut_demande AS "statutDemande",
                    d.cod_usuarios AS "codUsuarios",
@@ -511,6 +549,7 @@ public class WorkflowQuery {
                    d.delegation, d.agence, d.pos,
                    d.montant_demande AS "montantDemande",
                    d.object_credit AS "objectCredit",
+                   d.nature_client AS "natureClient",
                    d.validation_state AS "validationState",
                    d.statut_demande AS "statutDemande",
                    d.cod_usuarios AS "codUsuarios",
@@ -580,6 +619,7 @@ public class WorkflowQuery {
                    d.delegation, d.agence, d.pos,
                    d.montant_demande AS "montantDemande",
                    d.object_credit AS "objectCredit",
+                   d.nature_client AS "natureClient",
                    d.validation_state AS "validationState",
                    d.statut_demande AS "statutDemande",
                    d.cod_usuarios AS "codUsuarios",
@@ -603,7 +643,8 @@ public class WorkflowQuery {
             LEFT JOIN agence ag ON d.agence = ag.id
             LEFT JOIN pointvente pv ON d.pos = pv.id
             WHERE d.date_validation_dr IS NOT NULL
-            ORDER BY d.montant_demande DESC, d.date_validation_dr DESC
+               OR (d.validation_state = 'VALIDATED_FINAL' AND d.date_validation_da IS NOT NULL)
+            ORDER BY d.montant_demande DESC, COALESCE(d.date_validation_dr, d.date_validation_da) DESC
             """;
 
     // ==================== DA - DEMANDES AFFECTEES ====================
@@ -615,6 +656,7 @@ public class WorkflowQuery {
                    d.delegation, d.agence, d.pos,
                    d.montant_demande AS "montantDemande",
                    d.object_credit AS "objectCredit",
+                   d.nature_client AS "natureClient",
                    d.validation_state AS "validationState",
                    d.statut_demande AS "statutDemande",
                    d.cod_usuarios AS "codUsuarios",
@@ -646,6 +688,7 @@ public class WorkflowQuery {
                    d.delegation, d.agence, d.pos,
                    d.montant_demande AS "montantDemande",
                    d.object_credit AS "objectCredit",
+                   d.nature_client AS "natureClient",
                    d.validation_state AS "validationState",
                    d.statut_demande AS "statutDemande",
                    d.avis_agent_credit AS "avisAgentCredit",
@@ -672,6 +715,7 @@ public class WorkflowQuery {
                    d.delegation, d.agence, d.pos,
                    d.montant_demande AS "montantDemande",
                    d.object_credit AS "objectCredit",
+                   d.nature_client AS "natureClient",
                    d.validation_state AS "validationState",
                    d.statut_demande AS "statutDemande",
                    d.avis_de AS "avisDe",
@@ -696,6 +740,7 @@ public class WorkflowQuery {
                    d.delegation, d.agence, d.pos,
                    d.montant_demande AS "montantDemande",
                    d.object_credit AS "objectCredit",
+                   d.nature_client AS "natureClient",
                    d.validation_state AS "validationState",
                    d.statut_demande AS "statutDemande",
                    d.avis_de AS "avisDe",
@@ -747,5 +792,201 @@ public class WorkflowQuery {
                 date_confirmation_rejet_de = CURRENT_TIMESTAMP
             WHERE demandeindividuel_id = :demandeId
               AND validation_state = 'REJETE_DG'
+            """;
+
+    // ==================== ACCUEIL (reception des demandes) ====================
+
+    /**
+     * Marque une demande fraichement creee comme receptionnee par l'agent d'accueil :
+     * traceur de saisie uniquement. L'accueil n'affecte pas ; la demande part en
+     * file EN_ATTENTE_DA et c'est le DA qui choisit l'agent de credit.
+     */
+    public static final String UPDATE_MARQUER_RECEPTION = """
+            UPDATE demandeindividuel
+            SET validation_state = 'EN_ATTENTE_DA',
+                saisie_par = :userId,
+                saisie_par_role = 'AGENT_ACCUEIL',
+                cod_usuarios = :codUsuarios
+            WHERE demandeindividuel_id = :demandeId
+              AND validation_state IN ('NOUVEAU', 'EN_ATTENTE_DA')
+            """;
+
+    /**
+     * Suivi des affectations pour le DA : toutes les demandes de son agence encore en
+     * phase d'instruction (proprietaire = agent_credit_affecte), pour REORIENTATION
+     * si l'agent n'est plus disponible. Inclut les EN_ATTENTE_DA legacy.
+     */
+    public static final String SELECT_A_AFFECTER_DA = """
+            SELECT d.demandeindividuel_id AS "demandeIndividuelId",
+                   d.nom, d.prenom, d.telephone,
+                   d.numero_membre AS "numeroMembre",
+                   d.delegation, d.agence, d.pos,
+                   d.montant_demande AS "montantDemande",
+                   d.object_credit AS "objectCredit",
+                   d.nature_client AS "natureClient",
+                   d.validation_state AS "validationState",
+                   d.statut_demande AS "statutDemande",
+                   d.cod_usuarios AS "codUsuarios",
+                   d.saisie_par AS "saisiePar",
+                   d.saisie_par_role AS "saisieParRole",
+                   d.agent_credit_affecte AS "agentCreditAffecte",
+                   TRIM(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')) AS "agentAffecteNom",
+                   d.affecte_par_da AS "affecteParDa",
+                   d.date_affectation_ac AS "dateAffectationAc",
+                   d.createdat AS "createdAt",
+                   pv.libele AS "pointventeLibele"
+            FROM demandeindividuel d
+            LEFT JOIN users u ON u.user_id = d.agent_credit_affecte
+            LEFT JOIN pointvente pv ON d.pos = pv.id
+            WHERE d.validation_state IN ('EN_ATTENTE_DA', 'AFFECTEE', 'SELECTION', 'CORRECTION', 'CORRECTION_ACCUEIL', 'CORRECTION_DR', 'CORRECTION_DE')
+              AND d.agence = :agenceId
+            ORDER BY CASE d.validation_state WHEN 'EN_ATTENTE_DA' THEN 0 WHEN 'AFFECTEE' THEN 1 ELSE 2 END, d.createdat DESC
+            """;
+
+    /**
+     * Le DA reoriente la demande vers un autre agent de credit (agent indisponible).
+     * L'etat d'instruction est conserve ; seule une demande non encore affectee passe en AFFECTEE.
+     */
+    public static final String UPDATE_AFFECTER_AC = """
+            UPDATE demandeindividuel
+            SET validation_state = CASE WHEN validation_state = 'EN_ATTENTE_DA' THEN 'AFFECTEE' ELSE validation_state END,
+                agent_credit_affecte = :agentUserId,
+                affecte_par_da = :affectePar,
+                date_affectation_ac = CURRENT_TIMESTAMP,
+                motif_annulation_da = NULL,
+                date_annulation_da = NULL
+            WHERE demandeindividuel_id = :demandeId
+              AND validation_state IN ('EN_ATTENTE_DA', 'AFFECTEE', 'SELECTION', 'CORRECTION', 'CORRECTION_DR', 'CORRECTION_DE')
+            """;
+
+    /**
+     * Le DA annule une demande saisie par l'accueil : retour en correction avec motif.
+     * L'agent affecte est conserve : apres correction et rediligence, le dossier lui revient.
+     */
+    public static final String UPDATE_ANNULER_ACCUEIL = """
+            UPDATE demandeindividuel
+            SET validation_state = 'CORRECTION_ACCUEIL',
+                motif_annulation_da = :motif,
+                date_annulation_da = CURRENT_TIMESTAMP
+            WHERE demandeindividuel_id = :demandeId
+              AND validation_state IN ('EN_ATTENTE_DA', 'AFFECTEE')
+            """;
+
+    /** Suivi de l'agent d'accueil : ses saisies encore dans le circuit de reception. */
+    public static final String SELECT_MES_RECEPTIONS = """
+            SELECT d.demandeindividuel_id AS "demandeIndividuelId",
+                   d.nom, d.prenom, d.telephone,
+                   d.numero_membre AS "numeroMembre",
+                   d.delegation, d.agence, d.pos,
+                   d.montant_demande AS "montantDemande",
+                   d.object_credit AS "objectCredit",
+                   d.nature_client AS "natureClient",
+                   d.validation_state AS "validationState",
+                   d.statut_demande AS "statutDemande",
+                   d.motif_annulation_da AS "motifAnnulationDa",
+                   d.date_annulation_da AS "dateAnnulationDa",
+                   TRIM(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')) AS "agentAffecteNom",
+                   d.date_affectation_ac AS "dateAffectationAc",
+                   d.createdat AS "createdAt"
+            FROM demandeindividuel d
+            LEFT JOIN users u ON u.user_id = d.agent_credit_affecte
+            WHERE d.saisie_par = :userId
+              AND d.validation_state IN ('EN_ATTENTE_DA', 'CORRECTION_ACCUEIL', 'AFFECTEE')
+            ORDER BY CASE d.validation_state WHEN 'CORRECTION_ACCUEIL' THEN 0 ELSE 1 END, d.createdat DESC
+            """;
+
+    /** L'accueil rediligente une demande corrigee : retour vers l'agent de credit affecte. */
+    public static final String UPDATE_REDILIGENTER_ACCUEIL = """
+            UPDATE demandeindividuel
+            SET validation_state = CASE WHEN agent_credit_affecte IS NOT NULL THEN 'AFFECTEE' ELSE 'EN_ATTENTE_DA' END,
+                motif_annulation_da = NULL,
+                date_annulation_da = NULL
+            WHERE demandeindividuel_id = :demandeId
+              AND validation_state = 'CORRECTION_ACCUEIL'
+              AND saisie_par = :userId
+            """;
+
+    /** Demandes affectees a l'agent de credit connecte (a prendre en charge). */
+    public static final String SELECT_MES_AFFECTATIONS_AC = """
+            SELECT d.demandeindividuel_id AS "demandeIndividuelId",
+                   d.nom, d.prenom, d.telephone,
+                   d.numero_membre AS "numeroMembre",
+                   d.delegation, d.agence, d.pos,
+                   d.montant_demande AS "montantDemande",
+                   d.object_credit AS "objectCredit",
+                   d.nature_client AS "natureClient",
+                   d.validation_state AS "validationState",
+                   d.statut_demande AS "statutDemande",
+                   d.cod_usuarios AS "codUsuarios",
+                   d.affecte_par_da AS "affecteParDa",
+                   d.date_affectation_ac AS "dateAffectationAc",
+                   d.createdat AS "createdAt"
+            FROM demandeindividuel d
+            WHERE d.agent_credit_affecte = :userId
+              AND d.validation_state = 'AFFECTEE'
+            ORDER BY d.date_affectation_ac DESC NULLS LAST
+            """;
+
+    /** L'AC prend en charge une demande affectee -> SELECTION (circuit existant). */
+    public static final String UPDATE_PRENDRE_EN_CHARGE_AC = """
+            UPDATE demandeindividuel
+            SET validation_state = 'SELECTION'
+            WHERE demandeindividuel_id = :demandeId
+              AND validation_state = 'AFFECTEE'
+              AND agent_credit_affecte = :userId
+            """;
+
+    // ==================== DA - GESTION DES FONCTIONS D'AGENCE ====================
+
+    /** Agents (credit + accueil) de l'agence avec l'etat de leurs fonctions. */
+    public static final String SELECT_AGENTS_AGENCE = """
+            SELECT u.user_id AS "userId",
+                   u.first_name AS "firstName",
+                   u.last_name AS "lastName",
+                   u.email,
+                   u.username,
+                   r.name AS "role",
+                   u.pointvente_id AS "pointventeId",
+                   pv.libele AS "pointventeLibele",
+                   COALESCE(BOOL_OR(af.fonction = 'ACCUEIL' AND af.actif), FALSE) AS "fonctionAccueil",
+                   COALESCE(BOOL_OR(af.fonction = 'CREDIT' AND af.actif), FALSE) AS "fonctionCredit"
+            FROM users u
+            JOIN user_roles ur ON ur.user_id = u.user_id
+            JOIN roles r ON r.role_id = ur.role_id
+            LEFT JOIN pointvente pv ON u.pointvente_id = pv.id
+            LEFT JOIN agent_fonctions af ON af.user_id = u.user_id
+            WHERE r.name IN ('AGENT_CREDIT', 'AGENT_ACCUEIL')
+              AND u.agence_id = :agenceId
+            GROUP BY u.user_id, u.first_name, u.last_name, u.email, u.username, r.name, u.pointvente_id, pv.libele
+            ORDER BY u.last_name, u.first_name
+            """;
+
+    /** Active/desactive une fonction pour un agent (upsert, horodate et nominatif). */
+    public static final String UPSERT_AGENT_FONCTION = """
+            INSERT INTO agent_fonctions (user_id, fonction, actif, affecte_par, date_affectation, date_desaffectation)
+            VALUES (:userId, :fonction, :actif, :affectePar, CURRENT_TIMESTAMP, CASE WHEN :actif THEN NULL ELSE CURRENT_TIMESTAMP END)
+            ON CONFLICT (user_id, fonction) DO UPDATE
+            SET actif = :actif,
+                affecte_par = :affectePar,
+                date_affectation = CASE WHEN :actif THEN CURRENT_TIMESTAMP ELSE agent_fonctions.date_affectation END,
+                date_desaffectation = CASE WHEN :actif THEN NULL ELSE CURRENT_TIMESTAMP END
+            """;
+
+    /** Agence de rattachement d'un utilisateur (controle de perimetre du DA). */
+    public static final String SELECT_AGENCE_OF_USER = """
+            SELECT u.agence_id FROM users u WHERE u.user_id = :userId
+            """;
+
+    /** Fonctions actives de l'utilisateur connecte (pilote l'affichage du menu). */
+    public static final String SELECT_MES_FONCTIONS = """
+            SELECT af.fonction FROM agent_fonctions af
+            WHERE af.user_id = :userId AND af.actif
+            """;
+
+    /** Roles de connexion d'un utilisateur (controle d'eligibilite a l'affectation). */
+    public static final String SELECT_ROLES_OF_USER = """
+            SELECT r.name FROM user_roles ur
+            JOIN roles r ON r.role_id = ur.role_id
+            WHERE ur.user_id = :userId
             """;
 }
