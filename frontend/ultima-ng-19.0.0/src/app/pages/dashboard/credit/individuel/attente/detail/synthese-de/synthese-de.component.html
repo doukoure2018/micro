@@ -551,6 +551,12 @@
         <div class="bg-teal-600 text-white px-6 py-4 flex items-center gap-3">
             <i class="pi pi-wallet text-xl"></i>
             <span class="font-bold text-lg uppercase tracking-wide">5. Synthèse de la trésorerie</span>
+            @if (state().hasDossier && state().tresorerie.length > 0) {
+            <a [routerLink]="['/dashboards/credit/individuel/detail/analyse-flux-tresorerie', demandeId]"
+                class="ml-auto inline-flex items-center gap-2 bg-white text-teal-700 hover:bg-teal-50 px-4 py-2 rounded-lg font-semibold text-sm no-underline transition-colors no-print">
+                <i class="pi pi-eye"></i>Voir le détail complet de la trésorerie
+            </a>
+            }
         </div>
         <div class="p-6 overflow-x-auto">
             @if (state().hasDossier && state().tresorerie.length > 0) {

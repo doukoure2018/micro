@@ -9,7 +9,7 @@ import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject, Input, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { AvatarModule } from 'primeng/avatar';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -45,6 +45,7 @@ interface TresorerieRow {
     standalone: true,
     imports: [
         CommonModule,
+        RouterModule,
         CardModule,
         TableModule,
         TagModule,
