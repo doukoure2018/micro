@@ -58,7 +58,8 @@ public class RegulatoryRepository {
                    pf.PRIMER_NOMBRE, pf.SEGUNDO_NOMBRE, pf.PRIMER_APELLIDO, pf.SEGUNDO_APELLIDO,
                    pf.IND_SEXO, pf.EST_CIVIL, pf.NACIONALIDAD, pf.LUGAR_NACIMIENTO,
                    pf.COD_PROFESION, prof.DES_PROFESION,
-                   pf.COD_ACTIVIDAD, act.DES_ACTIVIDAD, pf.COD_SECTOR
+                   pf.COD_ACTIVIDAD, act.DES_ACTIVIDAD, pf.COD_SECTOR,
+                   pf.NUM_HIJOS, pf.TENENCIA_VIVIENDA, pf.NOM_CONYUGUE
             FROM CL.CL_CLIENTES c
             INNER JOIN CL.CL_PERSONAS_FISICAS pf
                 ON c.COD_EMPRESA = pf.COD_EMPRESA AND c.COD_CLIENTE = pf.COD_CLIENTE
@@ -89,11 +90,13 @@ public class RegulatoryRepository {
             SELECT c.COD_EMPRESA, c.COD_CLIENTE, c.NOM_CLIENTE, c.IND_PERSONA,
                    c.IND_RELACION, c.TEL_PRINCIPAL, c.FEC_INGRESO,
                    c.COD_AGENCIA, ag.DES_AGENCIA,
-                   pj.RAZON_SOCIAL, pj.NOM_COMERCIAL, pj.CLASE_SOCIEDAD,
+                   pj.RAZON_SOCIAL, pj.NOM_COMERCIAL, pj.CLASE_SOCIEDAD, cs.DES_SOCIEDAD,
                    pj.COD_ACTIVIDAD, act.DES_ACTIVIDAD, pj.COD_SECTOR
             FROM CL.CL_CLIENTES c
             INNER JOIN CL.CL_PERSONAS_JURIDICAS pj
                 ON c.COD_EMPRESA = pj.COD_EMPRESA AND c.COD_CLIENTE = pj.COD_CLIENTE
+            LEFT JOIN CL.CL_CLASES_SOCIEDAD cs
+                ON pj.COD_EMPRESA = cs.COD_EMPRESA AND pj.CLASE_SOCIEDAD = cs.CLASE_SOCIEDAD
             LEFT JOIN CL.CL_ACTIVIDAD_ECONOMICA act
                 ON pj.COD_EMPRESA = act.COD_EMPRESA AND pj.COD_ACTIVIDAD = act.COD_ACTIVIDAD
             LEFT JOIN CF.CF_AGENCIAS ag
@@ -122,14 +125,17 @@ public class RegulatoryRepository {
             """;
 
     private static final String SQL_FIND_PIECES = """
-            SELECT id.COD_TIPO_ID, id.NUM_ID, id.FEC_VENCIM
+            SELECT id.COD_TIPO_ID, ti.DES_TIPO_ID, id.NUM_ID, id.FEC_VENCIM
             FROM CL.CL_ID_CLIENTES id
+            LEFT JOIN CL.CL_TIPOS_ID ti
+                ON id.COD_EMPRESA = ti.COD_EMPRESA AND id.COD_TIPO_ID = ti.COD_TIPO_ID
             WHERE id.COD_CLIENTE = :codCliente
             """;
 
     private static final String SQL_FIND_ADRESSES = """
             SELECT dc.TIP_DIRECCION, dc.DET_DIRECCION, dc.COD_PAIS,
-                   dc.COD_PROVINCIA, dc.COD_CANTON, dc.COD_DISTRITO
+                   dc.COD_PROVINCIA, dc.COD_CANTON, dc.COD_DISTRITO,
+                   dc.COD_POSTAL, dc.APDO_POSTAL
             FROM CL.CL_DIR_CLIENTES dc
             WHERE dc.COD_CLIENTE = :codCliente
             """;
@@ -143,14 +149,17 @@ public class RegulatoryRepository {
             """;
 
     private static final String SQL_FIND_PIECES_BULK = """
-            SELECT id.COD_CLIENTE, id.COD_TIPO_ID, id.NUM_ID, id.FEC_VENCIM
+            SELECT id.COD_CLIENTE, id.COD_TIPO_ID, ti.DES_TIPO_ID, id.NUM_ID, id.FEC_VENCIM
             FROM CL.CL_ID_CLIENTES id
+            LEFT JOIN CL.CL_TIPOS_ID ti
+                ON id.COD_EMPRESA = ti.COD_EMPRESA AND id.COD_TIPO_ID = ti.COD_TIPO_ID
             WHERE id.COD_CLIENTE IN (:codClientes)
             """;
 
     private static final String SQL_FIND_ADRESSES_BULK = """
             SELECT dc.COD_CLIENTE, dc.TIP_DIRECCION, dc.DET_DIRECCION, dc.COD_PAIS,
-                   dc.COD_PROVINCIA, dc.COD_CANTON, dc.COD_DISTRITO
+                   dc.COD_PROVINCIA, dc.COD_CANTON, dc.COD_DISTRITO,
+                   dc.COD_POSTAL, dc.APDO_POSTAL
             FROM CL.CL_DIR_CLIENTES dc
             WHERE dc.COD_CLIENTE IN (:codClientes)
             """;
@@ -350,7 +359,8 @@ public class RegulatoryRepository {
             Map<String, List<RegPieceDto>> map = new HashMap<>();
             primary.query(SQL_FIND_PIECES_BULK, p, rs -> {
                 map.computeIfAbsent(str(rs, "COD_CLIENTE"), k -> new ArrayList<>())
-                        .add(new RegPieceDto(str(rs, "COD_TIPO_ID"), str(rs, "NUM_ID"), dt(rs, "FEC_VENCIM")));
+                        .add(new RegPieceDto(str(rs, "COD_TIPO_ID"), str(rs, "DES_TIPO_ID"),
+                                str(rs, "NUM_ID"), dt(rs, "FEC_VENCIM")));
             });
             return map;
         });
@@ -365,7 +375,8 @@ public class RegulatoryRepository {
                 map.computeIfAbsent(str(rs, "COD_CLIENTE"), k -> new ArrayList<>())
                         .add(new RegAdresseDto(str(rs, "TIP_DIRECCION"), str(rs, "DET_DIRECCION"),
                                 str(rs, "COD_PAIS"), str(rs, "COD_PROVINCIA"),
-                                str(rs, "COD_CANTON"), str(rs, "COD_DISTRITO")));
+                                str(rs, "COD_CANTON"), str(rs, "COD_DISTRITO"),
+                                str(rs, "COD_POSTAL"), str(rs, "APDO_POSTAL")));
             });
             return map;
         });
@@ -426,6 +437,9 @@ public class RegulatoryRepository {
         dto.setCodActividad(str(rs, "COD_ACTIVIDAD"));
         dto.setDesActividad(str(rs, "DES_ACTIVIDAD"));
         dto.setCodSector(str(rs, "COD_SECTOR"));
+        dto.setNumHijos(intObj(rs, "NUM_HIJOS"));
+        dto.setTenenciaVivienda(str(rs, "TENENCIA_VIVIENDA"));
+        dto.setNomConyugue(str(rs, "NOM_CONYUGUE"));
         return dto;
     };
 
@@ -443,6 +457,7 @@ public class RegulatoryRepository {
         dto.setRazonSocial(str(rs, "RAZON_SOCIAL"));
         dto.setNomComercial(str(rs, "NOM_COMERCIAL"));
         dto.setClaseSociedad(str(rs, "CLASE_SOCIEDAD"));
+        dto.setDesSociedad(str(rs, "DES_SOCIEDAD"));
         dto.setCodActividad(str(rs, "COD_ACTIVIDAD"));
         dto.setDesActividad(str(rs, "DES_ACTIVIDAD"));
         dto.setCodSector(str(rs, "COD_SECTOR"));
@@ -453,11 +468,12 @@ public class RegulatoryRepository {
             str(rs, "NUM_CUENTA"), str(rs, "COD_MONEDA"), str(rs, "COD_PRODUCTO"), str(rs, "IND_ESTADO"));
 
     private static final RowMapper<RegPieceDto> PIECE_MAPPER = (rs, n) -> new RegPieceDto(
-            str(rs, "COD_TIPO_ID"), str(rs, "NUM_ID"), dt(rs, "FEC_VENCIM"));
+            str(rs, "COD_TIPO_ID"), str(rs, "DES_TIPO_ID"), str(rs, "NUM_ID"), dt(rs, "FEC_VENCIM"));
 
     private static final RowMapper<RegAdresseDto> ADRESSE_MAPPER = (rs, n) -> new RegAdresseDto(
             str(rs, "TIP_DIRECCION"), str(rs, "DET_DIRECCION"), str(rs, "COD_PAIS"),
-            str(rs, "COD_PROVINCIA"), str(rs, "COD_CANTON"), str(rs, "COD_DISTRITO"));
+            str(rs, "COD_PROVINCIA"), str(rs, "COD_CANTON"), str(rs, "COD_DISTRITO"),
+            str(rs, "COD_POSTAL"), str(rs, "APDO_POSTAL"));
 
     private static final RowMapper<RegEngagementDto> ENG_MAPPER = (rs, n) -> {
         RegEngagementDto d = new RegEngagementDto();
@@ -524,5 +540,10 @@ public class RegulatoryRepository {
     private static Long lngObj(ResultSet rs, String col) throws SQLException {
         Object o = rs.getObject(col);
         return (o instanceof Number num) ? num.longValue() : null;
+    }
+
+    private static Integer intObj(ResultSet rs, String col) throws SQLException {
+        Object o = rs.getObject(col);
+        return (o instanceof Number num) ? num.intValue() : null;
     }
 }

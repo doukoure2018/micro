@@ -29,6 +29,7 @@ public class RegPersonneMoraleDto {
     private String razonSocial;
     private String nomComercial;
     private String claseSociedad;
+    private String desSociedad;        // libelle CL_CLASES_SOCIEDAD (base transcodification F.7)
     private String codActividad;
     private String desActividad;
     private String codSector;

@@ -40,6 +40,9 @@ public class RegPersonnePhysiqueDto {
     private String codActividad;
     private String desActividad;
     private String codSector;
+    private Integer numHijos;          // NUM_HIJOS (personnes a charge)
+    private String tenenciaVivienda;   // TENENCIA_VIVIENDA (proprietaire / locataire)
+    private String nomConyugue;        // NOM_CONYUGUE (source du nom marital)
 
     // Sous-listes (renseignees uniquement sur le detail par id)
     private List<RegCompteDto> comptes;

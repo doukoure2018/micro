@@ -2,7 +2,7 @@
 
 **Crédit Rural de Guinée S.A. — Documentation technique d'intégration**
 
-*Version 1.0 — 3 août 2026*
+*Version 1.1 — 12 août 2026 (révisée suite aux retours BCRG sur les API Personne Physique et Personne Morale)*
 
 ---
 
@@ -30,8 +30,23 @@ Les données exposées sont issues directement du système bancaire de productio
 | Méthode | `GET` uniquement (lecture seule) |
 | Authentification | Clé API via en-tête HTTP `X-API-Key` |
 | Pagination | Paramètres `page` (défaut 0) et `size` (défaut 20, **maximum 100**) |
-| Dates | Format ISO 8601 : `AAAA-MM-JJ` |
+| Dates | Modules M1 (PP/PM) : format BCRG `JJMMAAAA` — Modules M2/M4 : ISO 8601 `AAAA-MM-JJ` |
 | Montants | Nombres décimaux, devise indiquée par le champ `codDev` (GNF sauf mention contraire) |
+
+### 2.0 Politique de complétude (révision 1.1)
+
+Conformément aux retours de la BCRG, **tous les champs du modèle de déclaration sont
+désormais présents** dans les réponses des modules M1, selon la règle suivante :
+
+| Cas | Valeur émise |
+|---|---|
+| Information **non portée par le SI du CRG** (aucune source SAF2000) | `"ND"` |
+| Information **sourcée mais vide** pour le client concerné | `null` |
+| Champ **conditionnel non applicable** (« doit rester vide sinon » : `NomMtlClt`, `DateDeces`, `SitBancaire`, `DateDebIB`, `DateFinIB`...) | `null` |
+| Sous-objet facultatif non porté (mandataires, actionnaires, tuteurs, employeurs) | liste vide `[]` |
+
+Les noms de champs suivent désormais **exactement** les classeurs de mapping BCRG
+(`IdInterneClt`, `NomPere`, `DatCreat`, `CleRib`...).
 
 ### 2.1 Authentification
 
@@ -77,30 +92,39 @@ Pour une extraction complète, itérer sur `page` de `0` à `totalPages - 1` tan
 | `GET /personnes-physiques?page=0&size=100` | Liste paginée des personnes physiques |
 | `GET /personnes-physiques/{idClient}` | Détail d'une personne physique par identifiant interne |
 
-**Champs de la réponse :**
+**Champs de la réponse (36 champs, feuille PersonnePhysique du classeur de mapping) :**
 
-| Champ | Type | Description |
-|---|---|---|
-| `idInterneClt` | texte | Identifiant interne du client chez le participant |
-| `natClient` | texte | Nature du client : `0` = client du participant, `1` = tiers |
-| `nin` | texte | Numéro d'identification national — *non porté par le SI actuel, `null` (voir § 5)* |
-| `datCreaPart` | date | Date de création du client chez le participant |
-| `nomNaiClt` | texte | Nom de naissance |
-| `prenomClt` | texte | Prénom(s) |
-| `nomComp` | texte | Nom complet |
-| `sexe` | texte | `M` / `F` |
-| `etatCivil` | texte | `1` = Célibataire, `2` = Marié(e), `3` = Divorcé(e), `4` = Veuf(ve) |
-| `villeNai` | texte | Lieu de naissance |
-| `natClt` | texte | Nationalité |
-| `mobile` | texte | Téléphone principal |
-| `profession` | texte | Profession (libellé) |
-| `secActEcon` / `secActEconLibelle` | texte | Code et libellé du secteur d'activité économique |
-| `sectInst` | texte | Secteur institutionnel — `032` (Particuliers) par défaut |
-| `statutClt` | texte | `0` = Actif (défaut) |
-| `codAgce` / `agenceLibele` | texte | Code et libellé de l'agence de rattachement |
-| `comptesAssocies` | liste | Comptes du client (voir § 3.5) |
-| `pieces` | liste | Pièces d'identité (voir § 3.5) |
-| `adresses` | liste | Adresses (voir § 3.5) |
+| Champ | Valeur servie par le CRG |
+|---|---|
+| `IdInterneClt` | Identifiant interne du client (SAF `COD_CLIENTE`) |
+| `NatDec` | `null` — géré par le middleware BCRG |
+| `NatClient` | `0` = client du participant, `1` = tiers |
+| `NIN` | `ND` — non porté par le SI |
+| `DatCreaPart` | Date de création du client (`JJMMAAAA`) |
+| `NomNaiClt` / `PrenomClt` / `NomComp` | Nom de naissance, prénom(s), nom complet |
+| `NomMtlClt` | Nom marital si sexe `F` et `EtatCivil=2` (nom du conjoint SAF, `ND` si inconnu) ; `null` sinon |
+| `Sexe` | `M` / `F` |
+| `DatNai` | `ND` — non portée par le SI |
+| `EtatCivil` | `1`..`4` (référentiel BCRG) |
+| `NomPere` / `PrenomPere` / `NomNaiMere` / `PrmMre` | `ND` — filiation non portée (valeur par défaut convenue) |
+| `VilleNai` | Lieu de naissance |
+| `PaysNai` | `ND` — non porté |
+| `NatClt` | Nationalité (code SI, transcodification pays à convenir) |
+| `Resident` / `PaysRes` | `1` / `GN` — réseau exclusivement domestique |
+| `Mobile` | Normalisé `+224` + 9 chiffres |
+| `Email` / `CommuneAdress` / `NumSecSoc` | `null` (facultatifs, non portés) |
+| `Adress` | Chaîne d'adresse (1re adresse SAF), `ND` si aucune |
+| `CodePostal` | `COD_POSTAL` SAF (au niveau principal) |
+| `Profession` | Libellé de profession |
+| `SecActEcon` | Lettre NAEMA `A`..`Q` (transcodée) ou `null` |
+| `SectInst` | `032` (Particuliers) |
+| `STutelle` | `0` par défaut |
+| `StatutClt` | `0` = Actif |
+| `DateDeces` / `SitBancaire` / `DateDebIB` / `DateFinIB` | `null` (conditionnels ; situation bancaire réservée aux banques) |
+| `ComptesAssocies` | Comptes du client (voir § 3.5) |
+| `Pieces` | Pièces d'identité (voir § 3.5) |
+| `DonneeComplementaire` | NbPersCharge, RevMensMoy (`ND`), DepMensMoy (`ND`), PropLoc (voir § 3.5) |
+| `TuteurCurateur` / `Employeurs` / `DonneesAdditionelles` | Listes vides (non portés par le SI) |
 
 ### 3.2 Module M1 — Personnes morales
 
@@ -109,23 +133,30 @@ Pour une extraction complète, itérer sur `page` de `0` à `totalPages - 1` tan
 | `GET /personnes-morales?page=0&size=100` | Liste paginée des personnes morales |
 | `GET /personnes-morales/{idClient}` | Détail d'une personne morale par identifiant interne |
 
-**Champs de la réponse :**
+**Champs de la réponse (28 champs, feuille PersonneMorale du classeur de mapping) :**
 
-| Champ | Type | Description |
-|---|---|---|
-| `idInterneClt` | texte | Identifiant interne du client |
-| `natClient` | texte | `0` = client, `1` = tiers |
-| `denomSocial` | texte | Dénomination sociale |
-| `sigle` | texte | Sigle / nom commercial |
-| `formeJuridique` | texte | Forme juridique (code SI en attendant l'alignement sur le référentiel BCRG, voir § 5) |
-| `datCreaPart` | date | Date de création du client chez le participant |
-| `mobile` | texte | Téléphone principal |
-| `actEcon` / `actEconLibelle` | texte | Code et libellé de l'activité économique |
-| `rccm` | texte | RCCM — *non porté par le SI actuel, `null` (voir § 5)* |
-| `nif` | texte | NIF — *non porté par le SI actuel, `null` (voir § 5)* |
-| `sectInst` | texte | Secteur institutionnel — *en cours d'arbitrage, `null`* |
-| `codAgce` / `agenceLibele` | texte | Code et libellé de l'agence |
-| `comptesAssocies`, `pieces`, `adresses` | listes | Voir § 3.5 |
+| Champ | Valeur servie par le CRG |
+|---|---|
+| `IdInterneClt` | Identifiant interne du client (SAF `COD_CLIENTE`) |
+| `NatDec` | `null` — géré par le middleware BCRG |
+| `NatClient` | `0` = client, `1` = tiers |
+| `DenomSocial` / `Sigle` | Dénomination sociale / nom commercial |
+| `DatCreat` | `ND` — date de création juridique non portée par le SI |
+| `Statut` | `01` = En activité (défaut ; la radiation n'est pas portée par le SI) |
+| `DatCreaPart` | Date de création du client (`JJMMAAAA`) |
+| `FormeJuridique` | Code du référentiel BCRG **F.7** (transcodé depuis le libellé SAF ; repli `28`) |
+| `PaysSiegeSocial` / `Resident` | `GN` / `1` |
+| `VilleSiegeSocial` | `ND` — seuls des codes sans libellé sont portés |
+| `Mobile` | Normalisé `+224` + 9 chiffres |
+| `Email` / `SiteWeb` / `CommuneAdresse` / `NumSecSoc` | `null` (facultatifs, non portés) |
+| `Adress` | Chaîne d'adresse (1re adresse SAF), `ND` si aucune |
+| `CodePostal` | `COD_POSTAL` SAF (au niveau principal) |
+| `RCCM` / `NIF` / `NIFP` / `NumAgrement` | `ND` — non portés par le SI (régime transitoire à convenir, voir § 5) |
+| `ActEcon` | Lettre NAEMA `A`..`Q` (transcodée) ou `null` |
+| `SectInst` | Référentiel **F.5** : `040` (ISBL) si association, sinon `022` (Autres SNF) |
+| `SitBancaire` / `DateDebIB` / `DateFinIB` | `null` (réservés aux participants de type banque) |
+| `ComptesAssocies` | Comptes du client — **sans `TypCpt`** (retiré à la demande de la BCRG, voir § 3.5) |
+| `Mandataires` / `MandatairesComptes` / `Actionnaires` / `DonneesAdditionelles` | Listes vides (non portés par le SI) |
 
 ### 3.3 Module M2 — Engagements
 
@@ -182,35 +213,38 @@ Le paramètre **`periode` est obligatoire** au format `AAAA-MM` (ex. `2026-06` p
 
 ### 3.5 Sous-objets communs (M1)
 
-**Compte associé (`comptesAssocies[]`)**
+**Compte associé (`ComptesAssocies[]`)**
 
 | Champ | Description |
 |---|---|
-| `idInterneClt` | Identifiant du client titulaire |
-| `codAgce` | Agence du client |
-| `numCpt` | Numéro de compte |
-| `typCpt` | Type de compte — *mapping vers référentiel BCRG en cours, `null`* |
-| `statCpt` | Statut du compte — *mapping en cours, `null`* |
+| `IdInterneClt` | Identifiant du client titulaire |
+| `CodAgce` | Agence du client |
+| `NumCpt` | Numéro de compte SAF (14 positions — la règle de réduction à 10 positions est en attente d'arbitrage BCRG, voir § 5) |
+| `CleRib` | `ND` — le CRG n'est pas un participant de type banque |
+| `TypCpt` | **Personnes physiques uniquement** : `01` = Compte individuel (défaut). Retiré des comptes PM |
+| `StatCpt` | Référentiel BCRG : `00` Actif, `01` Bloqué, `02` Clôturé, `03` Succession, `04` Suspendu |
 
-**Pièce d'identité (`pieces[]`)**
-
-| Champ | Description |
-|---|---|
-| `idInterneClt` | Identifiant du client |
-| `typPiece` | Type de pièce (code SI en attendant l'alignement référentiel BCRG) |
-| `numPiece` | Numéro de la pièce |
-| `finValPiece` | Date de fin de validité |
-
-**Adresse (`adresses[]`)**
+**Pièce d'identité (`Pieces[]`)**
 
 | Champ | Description |
 |---|---|
-| `typAdr` | Type d'adresse |
-| `adresse` | Adresse détaillée |
-| `pays` | Code pays |
-| `region` | Code région/province |
-| `ville` | Code ville |
-| `codPost` | Code postal / district |
+| `IdInterneClt` | Identifiant du client |
+| `TypPiece` | Référentiel BCRG `01`..`09` (transcodé depuis le libellé SAF `CL_TIPOS_ID`) |
+| `NumPiece` | Numéro de la pièce (tel que saisi dans le SI) |
+| `DatEmiPiece` / `LieuEmiPiece` / `PaysEmiPiece` | `ND` — non portés par le SI |
+| `FinValPiece` | Date de fin de validité (`JJMMAAAA`) |
+
+**Données complémentaires PP (`DonneeComplementaire`)**
+
+| Champ | Description |
+|---|---|
+| `NbPersCharge` | Nombre de personnes à charge (SAF `NUM_HIJOS`) |
+| `RevMensMoy` / `DepMensMoy` | `ND` — non portés par le SI |
+| `PropLoc` | Statut d'occupation du logement (code SAF `TENENCIA_VIVIENDA`, transcodification à convenir) |
+
+> L'objet `adresses[]` de la version 1.0 est supprimé : conformément au retour BCRG,
+> l'adresse est désormais la chaîne `Adress` au niveau principal, accompagnée de
+> `CommuneAdress`/`CommuneAdresse` et `CodePostal`.
 
 ---
 
@@ -233,18 +267,27 @@ Format des erreurs (hors 401) :
 
 ---
 
-## 5. Champs en cours de consolidation
+## 5. Champs non portés par le SI et points d'arbitrage
 
-Certains champs du modèle de déclaration BCRG ne sont pas portés par le système d'information actuel du CRG. Ils sont exposés à `null` dans l'attente d'un arbitrage métier ou d'une source complémentaire :
+Depuis la version 1.1, la règle de complétude convenue est appliquée : les champs
+sans source dans le SI du CRG sont émis avec la valeur **`ND`** (et non plus omis),
+les champs sourcés mais vides sont émis à `null` (voir § 2.0).
 
-- **Personnes physiques** : `nin` (numéro d'identification national), filiation (nom/prénom du père, nom de naissance de la mère), date de naissance ;
-- **Personnes morales** : `rccm`, `nif`, `sectInst` (secteur institutionnel), numéro d'agrément, date de création juridique ;
-- **Engagements** : garanties et consolidations ;
-- **Encours** : indicateurs IFRS (`pd`, `lgd`, `ccf`, `ifrsStage`) ;
-- **Comptes** : type et statut de compte au format référentiel BCRG ;
-- **Nomenclatures** : la forme juridique et le type de pièce sont transmis avec les codes du SI source ; leur transcodification vers les référentiels BCRG sera finalisée dès réception des tables de correspondance officielles.
+**Champs émis à `ND` (aucune source SAF2000)** :
 
-Le CRG reste à la disposition de la BCRG pour convenir de la règle de complétude attendue (valeur « ND », enrichissement progressif, etc.).
+- **Personnes physiques** : `NIN`, `DatNai`, `PaysNai`, filiation (`NomPere`, `PrenomPere`, `NomNaiMere`, `PrmMre`), date/lieu/pays d'émission des pièces, `RevMensMoy`/`DepMensMoy` ;
+- **Personnes morales** : `DatCreat`, `VilleSiegeSocial`, `RCCM`, `NIF`, `NIFP`, `NumAgrement` ;
+- **Comptes** : `CleRib` (le CRG n'est pas un participant de type banque) ;
+- **Encours** : indicateurs IFRS (`pd`, `lgd`, `ccf`, `ifrsStage`) restent à `null` ;
+- **Engagements** : garanties et consolidations (différés).
+
+**Points soumis à l'arbitrage de la BCRG** :
+
+1. **`NumCpt` sur 10 positions** : les numéros de compte SAF comptent 14 positions ; la règle d'extraction/réduction attendue reste à préciser (en attendant, le numéro complet est transmis) ;
+2. **`ND` dans les champs typés** (dates, codes de référentiels) : confirmer que le middleware l'accepte, ou préciser la valeur attendue ;
+3. **`RCCM`/`NIF` obligatoires PM** : confirmer la tolérance de `ND` en régime transitoire ;
+4. **Transcodifications** : les tables de correspondance appliquées (formes juridiques F.7, secteurs NAEMA, types de pièce, statuts de compte) sont établies par mots-clés sur les libellés SAF — le CRG transmettra ses tables pour validation, et intégrera les tables officielles dès réception ;
+5. **`SitBancaire`/`DateDebIB`/`DateFinIB`** : réservés aux banques selon le modèle — émis à `null` par le CRG (IMF).
 
 ---
 

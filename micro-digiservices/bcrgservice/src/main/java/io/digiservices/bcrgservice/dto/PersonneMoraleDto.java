@@ -1,39 +1,54 @@
 package io.digiservices.bcrgservice.dto;
 
-import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
 import java.util.List;
 
 /**
- * Personne morale au format de declaration BCRG (module M1).
+ * Personne morale au format de déclaration BCRG (module M1) — contrat COMPLET :
+ * les 28 champs de la feuille PersonneMorale du classeur MAPPING_PERSONNES_MORALE
+ * sont toujours présents dans le JSON (retour BCRG d'août 2026).
  *
- * <p>Noms de champs alignes sur le fichier MAPPING_PERSONNES_MORALE. Les champs non
- * disponibles dans SAF (RCCM, NIF, NumAgrement, dateCreation...) sont exposes null
- * en attendant l'arbitrage metier.</p>
+ * <p>Même politique de complétude que la personne physique (ND / null / conditionnel).
+ * Le TypCpt est retiré des comptes associés PM (demande explicite BCRG).</p>
  */
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 public class PersonneMoraleDto {
-    private String idInterneClt;   // COD_CLIENTE
-    private String natClient;      // IND_RELACION
-    private String denomSocial;    // RAZON_SOCIAL
-    private String sigle;          // NOM_COMERCIAL
-    private String formeJuridique; // CLASE_SOCIEDAD (mappe)
-    private LocalDate datCreaPart; // FEC_INGRESO
-    private String mobile;         // TEL_PRINCIPAL
-    private String actEcon;        // COD_ACTIVIDAD (+ libelle)
-    private String actEconLibelle;
-    private String rccm;           // non dispo SAF (a consolider)
-    private String nif;            // non dispo SAF (a consolider)
-    private String sectInst;       // secteur institutionnel (a arbitrer)
-    private String codAgce;        // COD_AGENCIA
-    private String agenceLibele;   // DES_AGENCIA
+    @JsonProperty("IdInterneClt")     private String idInterneClt;     // COD_CLIENTE
+    @JsonProperty("NatDec")           private String natDec;           // géré par le middleware BCRG (null)
+    @JsonProperty("NatClient")        private String natClient;        // IND_RELACION
+    @JsonProperty("DenomSocial")      private String denomSocial;      // RAZON_SOCIAL
+    @JsonProperty("Sigle")            private String sigle;            // NOM_COMERCIAL
+    @JsonProperty("DatCreat")         private String datCreat;         // non porté par le SI → ND
+    @JsonProperty("Statut")           private String statut;           // '01' en activité (défaut)
+    @JsonProperty("DatCreaPart")      private String datCreaPart;      // FEC_INGRESO (JJMMAAAA)
+    @JsonProperty("FormeJuridique")   private String formeJuridique;   // référentiel F.7 (transcodé)
+    @JsonProperty("PaysSiegeSocial")  private String paysSiegeSocial;  // 'GN'
+    @JsonProperty("VilleSiegeSocial") private String villeSiegeSocial; // non porté (codes sans libellé) → ND
+    @JsonProperty("Mobile")           private String mobile;           // TEL_PRINCIPAL normalisé
+    @JsonProperty("Email")            private String email;            // facultatif → null (consigne BCRG)
+    @JsonProperty("SiteWeb")          private String siteWeb;          // facultatif → null (consigne BCRG)
+    @JsonProperty("Adress")           private String adress;           // DET_DIRECCION (1re adresse), obligatoire
+    @JsonProperty("CommuneAdresse")   private String communeAdresse;   // facultatif → null
+    @JsonProperty("CodePostal")       private String codePostal;       // COD_POSTAL (1re adresse)
+    @JsonProperty("Resident")         private String resident;         // '1'
+    @JsonProperty("RCCM")             private String rccm;             // non porté → ND (obligatoire BCRG)
+    @JsonProperty("NIF")              private String nif;              // non porté → ND (obligatoire BCRG)
+    @JsonProperty("NIFP")             private String nifp;             // non porté → ND
+    @JsonProperty("NumAgrement")      private String numAgrement;      // non porté → ND
+    @JsonProperty("NumSecSoc")        private String numSecSoc;        // facultatif → null
+    @JsonProperty("ActEcon")          private String actEcon;          // NAEMA A..Q (transcodé) ou null
+    @JsonProperty("SectInst")         private String sectInst;         // F.5 : '040' ISBL si association, sinon '022'
+    @JsonProperty("SitBancaire")      private String sitBancaire;      // réservé aux banques → null
+    @JsonProperty("DateDebIB")        private String dateDebIB;        // conditionnel → null
+    @JsonProperty("DateFinIB")        private String dateFinIB;        // conditionnel → null
 
-    private List<CompteAssocieDto> comptesAssocies;
-    private List<PieceDto> pieces;
-    private List<AdresseDto> adresses;
+    @JsonProperty("ComptesAssocies")      private List<CompteAssocieMoraleDto> comptesAssocies;
+    @JsonProperty("Mandataires")          private List<MandataireDto> mandataires;
+    @JsonProperty("MandatairesComptes")   private List<MandataireCompteDto> mandatairesComptes;
+    @JsonProperty("Actionnaires")         private List<ActionnaireDto> actionnaires;
+    @JsonProperty("DonneesAdditionelles") private List<DonneeAdditionnelleDto> donneesAdditionelles;
 }

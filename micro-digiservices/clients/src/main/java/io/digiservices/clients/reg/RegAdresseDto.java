@@ -17,4 +17,6 @@ public class RegAdresseDto {
     private String codProvincia;
     private String codCanton;
     private String codDistrito;
+    private String codPostal;   // COD_POSTAL
+    private String apdoPostal;  // APDO_POSTAL (boite postale)
 }
