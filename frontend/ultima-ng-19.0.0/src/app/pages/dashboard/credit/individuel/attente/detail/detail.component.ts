@@ -1,4 +1,4 @@
-import { AnalyseChargesFonctionnaire, DemandeIndividuel, PieceJointeDemande, quotiteCessibleFonctionnaire } from '@/interface/demande-individuel.interface';
+import { AnalyseChargesFonctionnaire, DemandeFonctionnaire, DemandeIndividuel, PieceJointeDemande, TYPE_CONTRAT_OPTIONS_FONCTIONNAIRE, demandeFonctionnaireVide, quotiteCessibleFonctionnaire } from '@/interface/demande-individuel.interface';
 import { NiveauValidationFinale, libelleNiveauValidation, niveauValidationFinale } from '@/interface/validation-seuils';
 import { registerLocaleData } from '@angular/common';
 import localeFr from '@angular/common/locales/fr';
@@ -126,6 +126,8 @@ export class DetailComponent {
         showWorkflowRejetDR: boolean;
         analyseChargesFonctionnaire?: AnalyseChargesFonctionnaire | null;
         piecesFonctionnaire?: PieceJointeDemande[];
+        showTransformationFonctionnaire?: boolean;
+        transformationEnCours?: boolean;
     }>({
         loading: false,
         message: undefined,
@@ -1429,6 +1431,62 @@ export class DetailComponent {
     /** Nature Fonctionnaire : l'analyse bilan/flux est remplacée par l'analyse charges & quotité. */
     isFonctionnaireNature(): boolean {
         return this.state().demandeIndividuel?.natureClient === 'Demande de credit Pour Fonctionnaire';
+    }
+
+    // ==================== TRANSFORMATION EN CREDIT FONCTIONNAIRE ====================
+    // Requalification des crédits accordés à des fonctionnaires AVANT l'intégration
+    // du crédit fonctionnaire dans l'application (nature Particulier à l'époque).
+
+    typeContratOptionsFonctionnaire = TYPE_CONTRAT_OPTIONS_FONCTIONNAIRE;
+    transformationFonctionnaire: DemandeFonctionnaire = demandeFonctionnaireVide();
+
+    peutTransformerEnFonctionnaire(): boolean {
+        const role = this.state().user?.role;
+        return !this.isFonctionnaireNature() && !!this.state().demandeIndividuel
+            && (role === 'AGENT_CREDIT' || role === 'DA' || role === 'SUPER_ADMIN');
+    }
+
+    ouvrirTransformationFonctionnaire(): void {
+        this.transformationFonctionnaire = demandeFonctionnaireVide();
+        this.state.update(this.mergeState({ showTransformationFonctionnaire: true }));
+    }
+
+    confirmerTransformationFonctionnaire(): void {
+        const demandeId = this.state().demandeIndividuel?.demandeIndividuelId;
+        if (!demandeId) return;
+        const ext = this.transformationFonctionnaire;
+        if (!ext.serviceEmployeur?.trim() || !ext.departementMinistere?.trim() || !ext.typeContrat) {
+            this.messageService.add({ severity: 'warn', summary: 'Champs obligatoires', detail: 'Service employeur, département/ministère et type de contrat sont obligatoires', life: 5000 });
+            return;
+        }
+        if (!ext.salaireNetMensuel || ext.salaireNetMensuel <= 0) {
+            this.messageService.add({ severity: 'warn', summary: 'Salaire requis', detail: 'Le salaire net mensuel doit être supérieur à 0', life: 5000 });
+            return;
+        }
+        if (!ext.domiciliationSalaire) {
+            this.messageService.add({ severity: 'warn', summary: 'Domiciliation requise', detail: 'La domiciliation du salaire au CRG est obligatoire pour un crédit fonctionnaire', life: 6000 });
+            return;
+        }
+        this.state.update(this.mergeState({ transformationEnCours: true }));
+        this.userService
+            .transformerEnFonctionnaire$(+demandeId, ext)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Transformation effectuée',
+                        detail: 'La demande est désormais un crédit fonctionnaire (quotité 35 %, analyse charges)',
+                        life: 6000
+                    });
+                    this.state.update(this.mergeState({ showTransformationFonctionnaire: false, transformationEnCours: false }));
+                    this.loadDemandeWithGaranties();
+                },
+                error: (err: any) => {
+                    this.state.update(this.mergeState({ transformationEnCours: false }));
+                    this.messageService.add({ severity: 'error', summary: 'Transformation refusée', detail: err || 'Échec de la transformation', life: 8000 });
+                }
+            });
     }
 
     /** Libellés des 12 postes de charges, dans l'ordre de la grille de saisie de l'agent. */

@@ -201,6 +201,7 @@
                             </p>
                         </div>
                     </div>
+                    <div class="flex flex-col items-end gap-2">
                     <div class="nature-category">
                         @if (isFonctionnaireNature()) {
                         <p class="category-label">Type de contrat</p>
@@ -215,6 +216,14 @@
                         <p class="category-label">Catégorie</p>
                         <p class="category-value">{{ state().demandeIndividuel?.categorie || state().demandeIndividuel?.currentActivite || 'Non spécifiée' }}</p>
                         }
+                    </div>
+                    <!-- Requalification d'un crédit accordé à un fonctionnaire avant l'intégration -->
+                    <button *ngIf="peutTransformerEnFonctionnaire()" pButton type="button"
+                        class="p-button-sm p-button-outlined"
+                        style="background-color: rgba(255,255,255,0.9); color: #b45309; border-color: #f59e0b; font-weight: 600;"
+                        icon="pi pi-id-card" label="Transformer en crédit fonctionnaire"
+                        (click)="ouvrirTransformationFonctionnaire()">
+                    </button>
                     </div>
                 </div>
             </div>
@@ -2059,5 +2068,75 @@
                     class="p-button-secondary p-button-outlined" (click)="closePreviewDialog()"></button>
             </div>
         </div>
+    </p-dialog>
+
+    <!-- Modal : transformation d'un crédit existant en crédit fonctionnaire -->
+    <p-dialog header="Transformer en crédit fonctionnaire" [visible]="state().showTransformationFonctionnaire || false"
+        [modal]="true" [style]="{ width: '640px' }" [closable]="!state().transformationEnCours"
+        (onHide)="state.update(mergeState({showTransformationFonctionnaire: false}))">
+        <div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+            <i class="pi pi-info-circle mr-2"></i>
+            Ce crédit a été accordé avant l'intégration du crédit fonctionnaire. Renseignez la situation
+            professionnelle : la demande sera requalifiée (nature Fonctionnaire, type de crédit 7) et
+            bénéficiera des écrans dédiés (quotité 35 %, analyse charges). Cette action est réservée
+            aux dossiers de fonctionnaires réels.
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Service employeur <span class="text-red-500">*</span></label>
+                <input pInputText type="text" class="w-full" [(ngModel)]="transformationFonctionnaire.serviceEmployeur"
+                    placeholder="Ex : Direction Préfectorale de la Santé" />
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Département / Ministère <span class="text-red-500">*</span></label>
+                <input pInputText type="text" class="w-full" [(ngModel)]="transformationFonctionnaire.departementMinistere"
+                    placeholder="Ex : Ministère de la Santé" />
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Type de contrat <span class="text-red-500">*</span></label>
+                <p-dropdown [options]="typeContratOptionsFonctionnaire" [(ngModel)]="transformationFonctionnaire.typeContrat"
+                    placeholder="Sélectionner" styleClass="w-full" appendTo="body"></p-dropdown>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Matricule</label>
+                <input pInputText type="text" class="w-full" [(ngModel)]="transformationFonctionnaire.matricule" />
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Ancienneté (années)</label>
+                <input pInputText type="number" min="0" class="w-full" [(ngModel)]="transformationFonctionnaire.ancienneteAnnees" />
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Nombre d'épouses</label>
+                <input pInputText type="number" min="0" class="w-full" [(ngModel)]="transformationFonctionnaire.nombreEpouses" />
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Salaire net mensuel (GNF) <span class="text-red-500">*</span></label>
+                <input pInputText type="number" min="1" class="w-full" [(ngModel)]="transformationFonctionnaire.salaireNetMensuel" />
+                <small *ngIf="(transformationFonctionnaire.salaireNetMensuel || 0) > 0" class="text-gray-500">
+                    Quotité cessible (35 %) : {{ (transformationFonctionnaire.salaireNetMensuel || 0) * 0.35 | number:'1.0-0':'fr-FR' }} GNF
+                </small>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Autres revenus (GNF)</label>
+                <input pInputText type="number" min="0" class="w-full" [(ngModel)]="transformationFonctionnaire.autresRevenus" />
+            </div>
+        </div>
+        <div class="mt-4 flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg p-3">
+            <input type="checkbox" id="domiciliationTransformation" class="w-4 h-4"
+                [(ngModel)]="transformationFonctionnaire.domiciliationSalaire" />
+            <label for="domiciliationTransformation" class="text-sm cursor-pointer">
+                Le salaire est domicilié au CRG <span class="text-red-500">*</span> (obligatoire pour un crédit fonctionnaire)
+            </label>
+        </div>
+        <ng-template #footer>
+            <div class="flex justify-end gap-3">
+                <button pButton type="button" label="Annuler" icon="pi pi-times"
+                    class="p-button-secondary p-button-outlined" [disabled]="state().transformationEnCours"
+                    (click)="state.update(mergeState({showTransformationFonctionnaire: false}))"></button>
+                <button pButton type="button" label="Confirmer la transformation" icon="pi pi-check"
+                    class="p-button-warning" [loading]="state().transformationEnCours || false"
+                    (click)="confirmerTransformationFonctionnaire()"></button>
+            </div>
+        </ng-template>
     </p-dialog>
 </div>

@@ -16,6 +16,9 @@ public interface DemandeIndService {
 
     void updateStatutDemandeInd(Long demandeindividuel_id, String statut, String codUsuarios);
 
+    /** Requalifie un crédit existant (mis en place avant l'intégration) en crédit fonctionnaire. */
+    void transformerEnFonctionnaire(Long demandeindividuelId, DemandeFonctionnaire extension);
+
     void rejetDemandeInd(Long demandeindividuel_id);
 
     DemandeIndividuel getDetailDemandeIndividuel(Long demandeIndividuelId);
