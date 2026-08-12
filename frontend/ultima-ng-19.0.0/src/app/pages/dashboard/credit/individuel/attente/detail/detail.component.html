@@ -2076,10 +2076,12 @@
         (onHide)="state.update(mergeState({showTransformationFonctionnaire: false}))">
         <div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
             <i class="pi pi-info-circle mr-2"></i>
-            Ce crédit a été accordé avant l'intégration du crédit fonctionnaire. Renseignez la situation
-            professionnelle : la demande sera requalifiée (nature Fonctionnaire, type de crédit 7) et
-            bénéficiera des écrans dédiés (quotité 35 %, analyse charges). Cette action est réservée
-            aux dossiers de fonctionnaires réels.
+            Cette demande concerne un fonctionnaire mais a été saisie avant l'intégration du crédit
+            fonctionnaire. Renseignez la situation professionnelle : la demande sera requalifiée
+            (nature Fonctionnaire, type de crédit 7, périodicité mensuelle) puis
+            <strong>renvoyée à l'agent de crédit pour reprendre tout le processus</strong> —
+            analyse charges &amp; quotité 35 %, approbation, validations hiérarchiques.
+            Les avis et validations déjà donnés seront effacés.
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

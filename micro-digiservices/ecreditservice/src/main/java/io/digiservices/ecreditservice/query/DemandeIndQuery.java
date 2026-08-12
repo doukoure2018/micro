@@ -443,12 +443,33 @@ public class DemandeIndQuery {
     /**
      * Transformation d'un crédit existant (mis en place avant l'intégration du crédit
      * fonctionnaire) : requalification de la nature + type de crédit 7 (FONCTIONNAIRES
-     * EPARGNANTS). L'extension est posée via fn_inserer_demande_fonctionnaire (upsert).
+     * EPARGNANTS), périodicité mensuelle, et RETOUR À L'AGENT DE CRÉDIT pour reprise
+     * complète du processus — le dossier repart en SELECTION et toutes les validations
+     * hiérarchiques (avis, visas, rejets) sont effacées.
+     * Exception : un dossier encore en phase accueil/affectation (NOUVEAU, EN_ATTENTE_DA,
+     * AFFECTEE, CORRECTION_ACCUEIL, RETOUR_AGENT) garde son état — il n'a pas encore
+     * d'agent en instruction. L'extension est posée via fn_inserer_demande_fonctionnaire.
      */
     public static final String UPDATE_TRANSFORMER_NATURE_FONCTIONNAIRE = """
             UPDATE demandeindividuel
             SET nature_client = 'Demande de credit Pour Fonctionnaire',
-                tip_credito = 7
+                tip_credito = 7,
+                periodicite_remboursement = 'Mensuelle',
+                statut_demande = CASE
+                    WHEN validation_state IN ('NOUVEAU', 'EN_ATTENTE_DA', 'AFFECTEE', 'CORRECTION_ACCUEIL', 'RETOUR_AGENT')
+                        THEN statut_demande ELSE 'EN_ATTENTE' END,
+                validation_state = CASE
+                    WHEN validation_state IN ('NOUVEAU', 'EN_ATTENTE_DA', 'AFFECTEE', 'CORRECTION_ACCUEIL', 'RETOUR_AGENT')
+                        THEN validation_state ELSE 'SELECTION' END,
+                avis_agent_credit = NULL,
+                avis_da = NULL, avis_dr = NULL, avis_de = NULL, avis_dg = NULL,
+                motif_rejet_da = NULL, motif_rejet_dr = NULL, motif_rejet_de = NULL, motif_rejet_dg = NULL,
+                sections_a_revoir_da = NULL, sections_a_revoir_dr = NULL, sections_a_revoir_de = NULL,
+                instructions_ac = NULL, instructions_da = NULL, instructions_dr = NULL, instructions_de = NULL,
+                validated_by_da = NULL, validated_by_dr = NULL, validated_by_de = NULL, validated_by_dg = NULL,
+                date_validation_da = NULL, date_validation_dr = NULL, date_validation_de = NULL, date_validation_dg = NULL,
+                confirmed_by_de = NULL,
+                renvoi_agent_motif = NULL, renvoi_agent_by = NULL
             WHERE demandeindividuel_id = :demandeindividuelId
             """;
 

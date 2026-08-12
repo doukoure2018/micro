@@ -1440,10 +1440,13 @@ export class DetailComponent {
     typeContratOptionsFonctionnaire = TYPE_CONTRAT_OPTIONS_FONCTIONNAIRE;
     transformationFonctionnaire: DemandeFonctionnaire = demandeFonctionnaireVide();
 
+    /** AC, DA, DR, DE (MANAGER service DE) et SUPER_ADMIN peuvent requalifier depuis leur environnement. */
     peutTransformerEnFonctionnaire(): boolean {
-        const role = this.state().user?.role;
+        const user = this.state().user;
+        const role = user?.role;
+        const estDE = role === 'MANAGER' && (user?.service || '').toUpperCase() === 'DE';
         return !this.isFonctionnaireNature() && !!this.state().demandeIndividuel
-            && (role === 'AGENT_CREDIT' || role === 'DA' || role === 'SUPER_ADMIN');
+            && (role === 'AGENT_CREDIT' || role === 'DA' || role === 'DR' || role === 'SUPER_ADMIN' || estDE);
     }
 
     ouvrirTransformationFonctionnaire(): void {
@@ -1476,8 +1479,8 @@ export class DetailComponent {
                     this.messageService.add({
                         severity: 'success',
                         summary: 'Transformation effectuée',
-                        detail: 'La demande est désormais un crédit fonctionnaire (quotité 35 %, analyse charges)',
-                        life: 6000
+                        detail: "Crédit fonctionnaire : la demande retourne à l'agent de crédit (instruction) pour reprendre tout le processus — analyse charges & quotité, approbation, validations",
+                        life: 8000
                     });
                     this.state.update(this.mergeState({ showTransformationFonctionnaire: false, transformationEnCours: false }));
                     this.loadDemandeWithGaranties();
