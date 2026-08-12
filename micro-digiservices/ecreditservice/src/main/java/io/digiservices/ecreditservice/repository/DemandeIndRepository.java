@@ -16,6 +16,12 @@ public interface DemandeIndRepository {
 
     void updateStatutDemandeInd(Long demandeindividuel_id, String statut, String codUsuarios);
 
+    /** Nature client actuelle d'une demande, null si demande inconnue. */
+    String getNatureClient(Long demandeindividuelId);
+
+    /** Requalifie la demande en crédit fonctionnaire (nature + type 7) et pose l'extension. */
+    void transformerEnFonctionnaire(Long demandeindividuelId, DemandeFonctionnaire extension);
+
     DemandeIndividuel getDetailDemandeIndividuel(Long demandeIndividuelId);
 
     List<DemandeIndividuel> getListDemandeCreditByDate(Long pointventeId);

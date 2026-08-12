@@ -433,6 +433,27 @@ public class DemandeIndResource {
         return created(getUri()).body(getResponse(request, emptyMap(), "Mise à jour effectué avec Success", OK));
     }
 
+    /**
+     * Transformation d'un crédit existant (mis en place avant l'intégration du crédit
+     * fonctionnaire) en crédit fonctionnaire : requalification nature + type 7 et pose
+     * de l'extension emploi/salaire. Réservé AGENT_CREDIT, DA et SUPER_ADMIN.
+     */
+    @PutMapping("/demande/{demandeindividuel_id}/transformer-fonctionnaire")
+    public ResponseEntity<Response> transformerEnFonctionnaire(@NotNull Authentication authentication,
+                                                               @PathVariable(name = "demandeindividuel_id") Long demandeindividuelId,
+                                                               @RequestBody DemandeFonctionnaire extension,
+                                                               HttpServletRequest request) {
+        User user = userClient.getUserByUuid(authentication.getName());
+        if (user == null || !Set.of("AGENT_CREDIT", "DA", "SUPER_ADMIN").contains(user.getRole())) {
+            throw new ApiException("Transformation réservée à l'agent de crédit, au directeur d'agence ou à l'administrateur");
+        }
+        demandeIndService.transformerEnFonctionnaire(demandeindividuelId, extension);
+        log.info("Demande {} transformée en crédit fonctionnaire par {} {}", demandeindividuelId,
+                user.getFirstName(), user.getLastName());
+        return created(getUri()).body(getResponse(request, emptyMap(),
+                "Demande transformée en crédit fonctionnaire", OK));
+    }
+
     @GetMapping("/existNumeroMembre/{numeroMembre}")
     public ResponseEntity<Response> listeDemandeCreditSelection(@NotNull Authentication authentication,
                                                                 @PathVariable(name = "numeroMembre") String numeroMembre,

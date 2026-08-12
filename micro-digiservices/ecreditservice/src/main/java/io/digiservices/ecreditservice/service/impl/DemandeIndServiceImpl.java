@@ -3,8 +3,10 @@ package io.digiservices.ecreditservice.service.impl;
 import io.digiservices.ecreditservice.dto.*;
 import io.digiservices.ecreditservice.exception.ApiException;
 import io.digiservices.ecreditservice.repository.DemandeIndRepository;
+import io.digiservices.ecreditservice.exception.ValidationException;
 import io.digiservices.ecreditservice.service.AnalyseChargesFonctionnaireService;
 import io.digiservices.ecreditservice.service.DemandeIndService;
+import io.digiservices.ecreditservice.validation.CreditFonctionnaireValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -43,6 +45,27 @@ public class DemandeIndServiceImpl implements DemandeIndService {
             analyseChargesFonctionnaireService.verifierFinancableSiFonctionnaire(demandeindividuel_id);
         }
         demandeIndRepository.updateStatutDemandeInd(demandeindividuel_id,statut,codUsuarios);
+    }
+
+    /**
+     * Transformation d'un crédit existant en crédit fonctionnaire : requalification de
+     * la nature + type 7 et pose de l'extension (emploi, salaire, domiciliation).
+     * Les verrous de circuit (périodicité, quotité vs échéance, analyse charges) ne sont
+     * PAS réappliqués : le crédit est déjà mis en place, il s'agit d'une requalification.
+     */
+    @Override
+    @Transactional
+    public void transformerEnFonctionnaire(Long demandeindividuelId, DemandeFonctionnaire extension) {
+        String nature = demandeIndRepository.getNatureClient(demandeindividuelId);
+        if (nature == null) {
+            throw new ApiException("Demande non trouvée");
+        }
+        if (CreditFonctionnaireValidator.NATURE_FONCTIONNAIRE.equals(nature)) {
+            throw new ValidationException("Cette demande est déjà un crédit fonctionnaire");
+        }
+        CreditFonctionnaireValidator.validateExtension(extension);
+        demandeIndRepository.transformerEnFonctionnaire(demandeindividuelId, extension);
+        log.info("Demande {} transformée en crédit fonctionnaire (ancienne nature : {})", demandeindividuelId, nature);
     }
 
     @Override

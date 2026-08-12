@@ -788,6 +788,35 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
         }
     }
 
+    @Override
+    public String getNatureClient(Long demandeindividuelId) {
+        return jdbcClient.sql(DemandeIndQuery.SELECT_NATURE_CLIENT_BY_ID)
+                .param("demandeindividuelId", demandeindividuelId)
+                .query(String.class)
+                .optional()
+                .orElse(null);
+    }
+
+    @Override
+    public void transformerEnFonctionnaire(Long demandeindividuelId, DemandeFonctionnaire ext) {
+        jdbcClient.sql(DemandeIndQuery.UPDATE_TRANSFORMER_NATURE_FONCTIONNAIRE)
+                .param("demandeindividuelId", demandeindividuelId)
+                .update();
+        jdbcClient.sql(DemandeIndQuery.CALL_UPSERT_DEMANDE_FONCTIONNAIRE_NAMED)
+                .param("demandeindividuelId", demandeindividuelId)
+                .param("serviceEmployeur", ext.getServiceEmployeur())
+                .param("departementMinistere", ext.getDepartementMinistere())
+                .param("ancienneteAnnees", ext.getAncienneteAnnees())
+                .param("typeContrat", ext.getTypeContrat())
+                .param("matricule", ext.getMatricule())
+                .param("salaireNetMensuel", ext.getSalaireNetMensuel())
+                .param("autresRevenus", ext.getAutresRevenus() != null ? ext.getAutresRevenus() : BigDecimal.ZERO)
+                .param("nombreEpouses", ext.getNombreEpouses() != null ? ext.getNombreEpouses() : 0)
+                .param("domiciliationSalaire", Boolean.TRUE.equals(ext.getDomiciliationSalaire()))
+                .query(Long.class)
+                .single();
+    }
+
     /**
      * Insère (ou met à jour en correction accueil) l'extension fonctionnaire
      * sur la même connexion, dans la transaction en cours.

@@ -436,6 +436,29 @@ public class DemandeIndQuery {
     public static final String SELECT_DEMANDE_FONCTIONNAIRE_BY_DEMANDE_ID =
             "SELECT * FROM demande_fonctionnaire WHERE demandeindividuel_id = :demandeindividuelId";
 
+    /** Nature actuelle d'une demande (contrôle avant transformation en fonctionnaire). */
+    public static final String SELECT_NATURE_CLIENT_BY_ID =
+            "SELECT nature_client FROM demandeindividuel WHERE demandeindividuel_id = :demandeindividuelId";
+
+    /**
+     * Transformation d'un crédit existant (mis en place avant l'intégration du crédit
+     * fonctionnaire) : requalification de la nature + type de crédit 7 (FONCTIONNAIRES
+     * EPARGNANTS). L'extension est posée via fn_inserer_demande_fonctionnaire (upsert).
+     */
+    public static final String UPDATE_TRANSFORMER_NATURE_FONCTIONNAIRE = """
+            UPDATE demandeindividuel
+            SET nature_client = 'Demande de credit Pour Fonctionnaire',
+                tip_credito = 7
+            WHERE demandeindividuel_id = :demandeindividuelId
+            """;
+
+    /** Upsert de l'extension fonctionnaire via la fonction V120 (mêmes règles que la saisie). */
+    public static final String CALL_UPSERT_DEMANDE_FONCTIONNAIRE_NAMED = """
+            SELECT fn_inserer_demande_fonctionnaire(
+                :demandeindividuelId, :serviceEmployeur, :departementMinistere, :ancienneteAnnees,
+                :typeContrat, :matricule, :salaireNetMensuel, :autresRevenus, :nombreEpouses, :domiciliationSalaire)
+            """;
+
     /**
      * Requête pour récupérer une demande avec ses garanties
      */

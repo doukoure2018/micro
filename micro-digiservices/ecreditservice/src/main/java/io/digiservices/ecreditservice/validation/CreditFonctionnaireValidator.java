@@ -47,12 +47,13 @@ public final class CreditFonctionnaireValidator {
      * Les charges ne sont pas encore connues à ce stade : la capacité résiduelle
      * est contrôlée à l'analyse par l'agent de crédit.
      */
-    public static void validateDemande(DemandeIndividuel demande) {
-        if (!isFonctionnaire(demande)) {
-            return;
-        }
-
-        DemandeFonctionnaire ext = demande.getDemandeFonctionnaire();
+    /**
+     * Validation de la seule extension fonctionnaire (emploi, salaire, domiciliation).
+     * Utilisée aussi pour la TRANSFORMATION d'un crédit existant en crédit fonctionnaire :
+     * les règles de circuit (périodicité mensuelle, quotité vs échéance) ne sont pas
+     * réappliquées à un crédit déjà mis en place.
+     */
+    public static void validateExtension(DemandeFonctionnaire ext) {
         if (ext == null) {
             throw new ValidationException(
                     "Les informations fonctionnaire (service, salaire, contrat...) sont obligatoires pour cette nature de demande");
@@ -76,6 +77,15 @@ public final class CreditFonctionnaireValidator {
             throw new ValidationException(
                     "La domiciliation du salaire au CRG est obligatoire pour un crédit fonctionnaire");
         }
+    }
+
+    public static void validateDemande(DemandeIndividuel demande) {
+        if (!isFonctionnaire(demande)) {
+            return;
+        }
+
+        DemandeFonctionnaire ext = demande.getDemandeFonctionnaire();
+        validateExtension(ext);
         if (!PERIODICITE_MENSUELLE.equalsIgnoreCase(demande.getPeriodiciteRemboursement())) {
             throw new ValidationException(
                     "La périodicité de remboursement d'un crédit fonctionnaire est obligatoirement mensuelle");
