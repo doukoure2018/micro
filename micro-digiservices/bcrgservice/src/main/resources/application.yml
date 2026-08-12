@@ -5,6 +5,15 @@ spring:
     active: default
   main:
     allow-bean-definition-overriding: true
+  # Suivi des donnees traitees par la BCRG (bcrg_donnee_traitee, migration V122).
+  # En docker/prod, surcharge par SPRING_DATASOURCE_URL/USERNAME/PASSWORD.
+  datasource:
+    url: jdbc:postgresql://localhost:5432/localdb
+    username: user2711
+    password: admin2711
+    hikari:
+      maximum-pool-size: 5
+      connection-test-query: SELECT 1
   jackson:
     serialization:
       write-dates-as-timestamps: false

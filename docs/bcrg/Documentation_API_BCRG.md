@@ -2,7 +2,7 @@
 
 **Crédit Rural de Guinée S.A. — Documentation technique d'intégration**
 
-*Version 1.1 — 12 août 2026 (révisée suite aux retours BCRG sur les API Personne Physique et Personne Morale)*
+*Version 1.2 — 12 août 2026 (v1.1 : contrat complet suite aux retours PP/PM ; v1.2 : extraction incrémentale + API de notification des données traitées)*
 
 ---
 
@@ -27,7 +27,7 @@ Les données exposées sont issues directement du système bancaire de productio
 | URL de base | `https://digi-creditrural-io.com/bcrg` |
 | Protocole | HTTPS uniquement (TLS) |
 | Format d'échange | JSON (UTF-8) |
-| Méthode | `GET` uniquement (lecture seule) |
+| Méthodes | `GET` (extraction, lecture seule) et `POST`/`DELETE` sur `/bcrg/traitements` (notification des données traitées, voir § 3.6) |
 | Authentification | Clé API via en-tête HTTP `X-API-Key` |
 | Pagination | Paramètres `page` (défaut 0) et `size` (défaut 20, **maximum 100**) |
 | Dates | Modules M1 (PP/PM) : format BCRG `JJMMAAAA` — Modules M2/M4 : ISO 8601 `AAAA-MM-JJ` |
@@ -80,6 +80,22 @@ Toutes les listes renvoient une enveloppe de pagination :
 ```
 
 Pour une extraction complète, itérer sur `page` de `0` à `totalPages - 1` tant que `hasNext` est vrai.
+
+### 2.3 Extraction incrémentale (v1.2)
+
+Les modules **M1 (PP/PM) et M2 (engagements)** ne renvoient plus, par défaut, que les
+**données non encore traitées** par la plateforme BCRG :
+
+- après intégration d'un lot, la plateforme **notifie les références traitées** via
+  `POST /bcrg/traitements` (§ 3.6) ; ces références disparaissent des extractions suivantes ;
+- paramètre `statut` sur `/personnes-physiques`, `/personnes-morales`, `/engagements` :
+  `restantes` (défaut) ou `toutes` (extraction complète, comportement historique) ;
+- **usage recommandé** : requêter `page=0`, intégrer, notifier les références traitées,
+  puis requêter à nouveau `page=0` — jusqu'à ce que la liste soit vide ;
+- en mode `restantes`, `totalElements` est une **estimation** (total SAF − références
+  notifiées) ; `hasNext` reflète le parcours réel ;
+- le module **M4 (encours)** reste une photo complète de la période d'arrêté (la
+  notion de « déjà traité » ne s'y applique pas).
 
 ---
 
@@ -246,6 +262,43 @@ Le paramètre **`periode` est obligatoire** au format `AAAA-MM` (ex. `2026-06` p
 > l'adresse est désormais la chaîne `Adress` au niveau principal, accompagnée de
 > `CommuneAdress`/`CommuneAdresse` et `CodePostal`.
 
+### 3.6 Notification des données traitées (v1.2)
+
+| Requête | Description |
+|---|---|
+| `POST /bcrg/traitements` | Notifie un lot de références intégrées par la plateforme BCRG (idempotent) |
+| `GET /bcrg/traitements/{module}` | État du suivi : nombre de références traitées, dernière notification |
+| `DELETE /bcrg/traitements/{module}/{reference}` | Retire une référence du suivi — elle réapparaît dans l'extraction `restantes` (retraitement) |
+
+**Corps du POST :**
+
+```json
+{
+  "module": "PERSONNE_PHYSIQUE",
+  "references": ["10200007832", "10200007833"],
+  "dateTraitement": "2026-08-12T10:30:00"
+}
+```
+
+- `module` : `PERSONNE_PHYSIQUE`, `PERSONNE_MORALE` ou `ENGAGEMENT` ;
+- `references` : 1 à **1000** identifiants par appel — `IdInterneClt` pour les modules M1,
+  `RefIntEng` pour les engagements ;
+- `dateTraitement` : facultatif (horodatage du traitement côté BCRG).
+
+**Réponse :**
+
+```json
+{
+  "module": "PERSONNE_PHYSIQUE",
+  "referencesRecues": 2,
+  "referencesNouvelles": 2,
+  "referencesDejaConnues": 0,
+  "totalTraitees": 1250
+}
+```
+
+L'appel est **idempotent** : renvoyer une référence déjà notifiée ne crée pas de doublon.
+
 ---
 
 ## 4. Codes de réponse et erreurs
@@ -305,6 +358,18 @@ curl -H "X-API-Key: $CLE" \
 # Encours à l'arrêté de juin 2026
 curl -H "X-API-Key: $CLE" \
   "https://digi-creditrural-io.com/bcrg/encours?periode=2026-06&page=0&size=100"
+
+# Cycle incrémental : extraire les restantes, puis notifier les références traitées
+curl -H "X-API-Key: $CLE" \
+  "https://digi-creditrural-io.com/bcrg/personnes-physiques?page=0&size=100&statut=restantes"
+
+curl -X POST -H "X-API-Key: $CLE" -H "Content-Type: application/json" \
+  -d '{"module":"PERSONNE_PHYSIQUE","references":["10200007832","10200007833"]}' \
+  "https://digi-creditrural-io.com/bcrg/traitements"
+
+# Extraction complète (comportement historique)
+curl -H "X-API-Key: $CLE" \
+  "https://digi-creditrural-io.com/bcrg/personnes-physiques?page=0&size=100&statut=toutes"
 ```
 
 Une **collection Postman** prête à l'emploi (`BCRG.postman_collection.json`) est jointe à la présente documentation : renseigner la variable `apiKey` puis exécuter les requêtes.

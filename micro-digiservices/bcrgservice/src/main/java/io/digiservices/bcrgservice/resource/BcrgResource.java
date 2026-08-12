@@ -18,7 +18,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * API publique de declaration reglementaire exposee a la plateforme BCRG.
- * Protegee par cle API ({@code X-API-Key}). Module M1 : Personnes Physiques et Morales.
+ * Protegee par cle API ({@code X-API-Key}). Modules M1 (PP/PM), M2 (engagements), M4 (encours).
+ *
+ * <p>Extraction incrementale : par defaut (statut=restantes) les modules M1/M2 ne
+ * renvoient que les donnees non encore notifiees comme traitees par la BCRG
+ * (cf. {@link TraitementResource}). L'encours (M4) reste une photo complete d'arrete.</p>
  */
 @RestController
 @RequestMapping("/bcrg")
@@ -33,9 +37,10 @@ public class BcrgResource {
     @GetMapping("/personnes-physiques")
     public ResponseEntity<PageDto<PersonnePhysiqueDto>> getPersonnesPhysiques(
             @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "size", defaultValue = "20") int size) {
+            @RequestParam(name = "size", defaultValue = "20") int size,
+            @RequestParam(name = "statut", defaultValue = "restantes") String statut) {
         validatePagination(page, size);
-        return ResponseEntity.ok(bcrgService.getPersonnesPhysiques(page, size));
+        return ResponseEntity.ok(bcrgService.getPersonnesPhysiques(page, size, toutes(statut)));
     }
 
     @GetMapping("/personnes-physiques/{idClient}")
@@ -46,9 +51,10 @@ public class BcrgResource {
     @GetMapping("/personnes-morales")
     public ResponseEntity<PageDto<PersonneMoraleDto>> getPersonnesMorales(
             @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "size", defaultValue = "20") int size) {
+            @RequestParam(name = "size", defaultValue = "20") int size,
+            @RequestParam(name = "statut", defaultValue = "restantes") String statut) {
         validatePagination(page, size);
-        return ResponseEntity.ok(bcrgService.getPersonnesMorales(page, size));
+        return ResponseEntity.ok(bcrgService.getPersonnesMorales(page, size, toutes(statut)));
     }
 
     @GetMapping("/personnes-morales/{idClient}")
@@ -59,9 +65,10 @@ public class BcrgResource {
     @GetMapping("/engagements")
     public ResponseEntity<PageDto<EngagementDto>> getEngagements(
             @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "size", defaultValue = "20") int size) {
+            @RequestParam(name = "size", defaultValue = "20") int size,
+            @RequestParam(name = "statut", defaultValue = "restantes") String statut) {
         validatePagination(page, size);
-        return ResponseEntity.ok(bcrgService.getEngagements(page, size));
+        return ResponseEntity.ok(bcrgService.getEngagements(page, size, toutes(statut)));
     }
 
     @GetMapping("/engagements/{refEng}")
@@ -76,6 +83,18 @@ public class BcrgResource {
             @RequestParam(name = "size", defaultValue = "20") int size) {
         validatePagination(page, size);
         return ResponseEntity.ok(bcrgService.getEncours(periode, page, size));
+    }
+
+    /**
+     * statut=restantes (defaut) : seules les donnees non encore notifiees traitees
+     * (POST /bcrg/traitements) sont renvoyees ; statut=toutes : extraction complete.
+     */
+    private boolean toutes(String statut) {
+        return switch (statut == null ? "" : statut.trim().toLowerCase()) {
+            case "toutes" -> true;
+            case "", "restantes" -> false;
+            default -> throw new BadRequestException("Le parametre 'statut' doit valoir 'restantes' ou 'toutes'");
+        };
     }
 
     private void validatePagination(int page, int size) {

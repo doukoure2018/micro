@@ -82,6 +82,15 @@ public class RegulatoryRepository {
 
     private static final String SQL_FIND_PP_BY_ID = PP_SELECT + " AND c.COD_CLIENTE = :codCliente";
 
+    // Lot keyset (extraction filtree "restantes" cote bcrgservice) : base sans sous-listes
+    private static final String SQL_FIND_PP_LOT = PP_SELECT + """
+             AND c.COD_CLIENTE > :afterId
+            ORDER BY c.COD_CLIENTE
+            OFFSET 0 ROWS FETCH NEXT :limit ROWS ONLY
+            """;
+
+    private static final String SQL_FIND_PP_BY_IDS = PP_SELECT + " AND c.COD_CLIENTE IN (:ids) ORDER BY c.COD_CLIENTE";
+
     // ============================================================
     //  Personnes morales (CL_CLIENTES + CL_PERSONAS_JURIDICAS)
     // ============================================================
@@ -113,6 +122,14 @@ public class RegulatoryRepository {
             """;
 
     private static final String SQL_FIND_PM_BY_ID = PM_SELECT + " AND c.COD_CLIENTE = :codCliente";
+
+    private static final String SQL_FIND_PM_LOT = PM_SELECT + """
+             AND c.COD_CLIENTE > :afterId
+            ORDER BY c.COD_CLIENTE
+            OFFSET 0 ROWS FETCH NEXT :limit ROWS ONLY
+            """;
+
+    private static final String SQL_FIND_PM_BY_IDS = PM_SELECT + " AND c.COD_CLIENTE IN (:ids) ORDER BY c.COD_CLIENTE";
 
     // ============================================================
     //  Sous-listes (comptes, pieces) par client
@@ -188,6 +205,12 @@ public class RegulatoryRepository {
 
     private static final String SQL_FIND_ENG_BY_ID = ENG_SELECT + " WHERE cr.NUM_CREDITO = :numCredito";
 
+    private static final String SQL_FIND_ENG_LOT = ENG_SELECT + """
+            WHERE cr.NUM_CREDITO > :afterId
+            ORDER BY cr.NUM_CREDITO
+            OFFSET 0 ROWS FETCH NEXT :limit ROWS ONLY
+            """;
+
     // ============================================================
     //  Encours d'engagements (PR_CREDITOS + PR_PLAN_PAGOS) a une periode
     // ============================================================
@@ -246,6 +269,37 @@ public class RegulatoryRepository {
         return content;
     }
 
+    /** Lot keyset (base sans sous-listes) pour l'extraction filtree "restantes". */
+    public List<RegPersonnePhysiqueDto> findPersonnesPhysiquesLot(String afterId, int limit) {
+        MapSqlParameterSource p = new MapSqlParameterSource()
+                .addValue("afterId", afterId == null ? "" : afterId)
+                .addValue("limit", limit);
+        return execute("findPersonnesPhysiquesLot", () -> primary.query(SQL_FIND_PP_LOT, p, PP_MAPPER));
+    }
+
+    /** Detail enrichi (comptes, pieces, adresses) d'un ensemble de clients PP. */
+    public List<RegPersonnePhysiqueDto> findPersonnesPhysiquesByIds(List<String> ids) {
+        if (ids == null || ids.isEmpty()) return List.of();
+        MapSqlParameterSource p = new MapSqlParameterSource("ids", ids);
+        List<RegPersonnePhysiqueDto> content =
+                execute("findPersonnesPhysiquesByIds", () -> primary.query(SQL_FIND_PP_BY_IDS, p, PP_MAPPER));
+        enrichirPP(content);
+        return content;
+    }
+
+    private void enrichirPP(List<RegPersonnePhysiqueDto> content) {
+        List<String> ids = content.stream().map(RegPersonnePhysiqueDto::getCodCliente).toList();
+        if (ids.isEmpty()) return;
+        Map<String, List<RegCompteDto>> comptes = findComptesByClients(ids);
+        Map<String, List<RegPieceDto>> pieces = findPiecesByClients(ids);
+        Map<String, List<RegAdresseDto>> adresses = findAdressesByClients(ids);
+        content.forEach(d -> {
+            d.setComptes(comptes.getOrDefault(d.getCodCliente(), List.of()));
+            d.setPieces(pieces.getOrDefault(d.getCodCliente(), List.of()));
+            d.setAdresses(adresses.getOrDefault(d.getCodCliente(), List.of()));
+        });
+    }
+
     public RegPersonnePhysiqueDto findPersonnePhysiqueById(String codCliente) {
         MapSqlParameterSource p = new MapSqlParameterSource("codCliente", codCliente);
         RegPersonnePhysiqueDto dto = execute("findPersonnePhysiqueById",
@@ -279,6 +333,34 @@ public class RegulatoryRepository {
         return content;
     }
 
+    /** Lot keyset (base sans sous-listes) pour l'extraction filtree "restantes". */
+    public List<RegPersonneMoraleDto> findPersonnesMoralesLot(String afterId, int limit) {
+        MapSqlParameterSource p = new MapSqlParameterSource()
+                .addValue("afterId", afterId == null ? "" : afterId)
+                .addValue("limit", limit);
+        return execute("findPersonnesMoralesLot", () -> primary.query(SQL_FIND_PM_LOT, p, PM_MAPPER));
+    }
+
+    /** Detail enrichi (comptes, pieces, adresses) d'un ensemble de clients PM. */
+    public List<RegPersonneMoraleDto> findPersonnesMoralesByIds(List<String> ids) {
+        if (ids == null || ids.isEmpty()) return List.of();
+        MapSqlParameterSource p = new MapSqlParameterSource("ids", ids);
+        List<RegPersonneMoraleDto> content =
+                execute("findPersonnesMoralesByIds", () -> primary.query(SQL_FIND_PM_BY_IDS, p, PM_MAPPER));
+        List<String> foundIds = content.stream().map(RegPersonneMoraleDto::getCodCliente).toList();
+        if (!foundIds.isEmpty()) {
+            Map<String, List<RegCompteDto>> comptes = findComptesByClients(foundIds);
+            Map<String, List<RegPieceDto>> pieces = findPiecesByClients(foundIds);
+            Map<String, List<RegAdresseDto>> adresses = findAdressesByClients(foundIds);
+            content.forEach(d -> {
+                d.setComptes(comptes.getOrDefault(d.getCodCliente(), List.of()));
+                d.setPieces(pieces.getOrDefault(d.getCodCliente(), List.of()));
+                d.setAdresses(adresses.getOrDefault(d.getCodCliente(), List.of()));
+            });
+        }
+        return content;
+    }
+
     public RegPersonneMoraleDto findPersonneMoraleById(String codCliente) {
         MapSqlParameterSource p = new MapSqlParameterSource("codCliente", codCliente);
         RegPersonneMoraleDto dto = execute("findPersonneMoraleById",
@@ -301,6 +383,14 @@ public class RegulatoryRepository {
     public List<RegEngagementDto> findEngagements(int offset, int size) {
         MapSqlParameterSource p = new MapSqlParameterSource().addValue("offset", offset).addValue("size", size);
         return execute("findEngagements", () -> primary.query(SQL_FIND_ENG, p, ENG_MAPPER));
+    }
+
+    /** Lot keyset pour l'extraction filtree "restantes". */
+    public List<RegEngagementDto> findEngagementsLot(Long afterId, int limit) {
+        MapSqlParameterSource p = new MapSqlParameterSource()
+                .addValue("afterId", afterId == null ? 0L : afterId)
+                .addValue("limit", limit);
+        return execute("findEngagementsLot", () -> primary.query(SQL_FIND_ENG_LOT, p, ENG_MAPPER));
     }
 
     public RegEngagementDto findEngagementById(Long numCredito) {

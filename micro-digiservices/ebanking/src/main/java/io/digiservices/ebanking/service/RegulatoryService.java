@@ -16,6 +16,17 @@ public interface RegulatoryService {
 
     RegPersonnePhysiqueDto getPersonnePhysiqueById(String codCliente);
 
+    // Extraction filtree "restantes" (bcrgservice) : lots keyset + details par ids
+    java.util.List<RegPersonnePhysiqueDto> getPersonnesPhysiquesLot(String afterId, int limit);
+
+    java.util.List<RegPersonnePhysiqueDto> getPersonnesPhysiquesByIds(java.util.List<String> ids);
+
+    java.util.List<RegPersonneMoraleDto> getPersonnesMoralesLot(String afterId, int limit);
+
+    java.util.List<RegPersonneMoraleDto> getPersonnesMoralesByIds(java.util.List<String> ids);
+
+    java.util.List<RegEngagementDto> getEngagementsLot(Long afterId, int limit);
+
     PageDto<RegPersonneMoraleDto> getPersonnesMorales(int page, int size);
 
     RegPersonneMoraleDto getPersonneMoraleById(String codCliente);

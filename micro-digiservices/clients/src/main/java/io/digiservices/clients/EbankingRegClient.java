@@ -50,4 +50,29 @@ public interface EbankingRegClient {
             @RequestParam(value = "periode") String periode,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size);
+
+    // ==================== Lots keyset + details par ids (extraction filtree "restantes") ====================
+
+    @GetMapping("/ebanking/reg/personnes-physiques/lot")
+    java.util.List<RegPersonnePhysiqueDto> getPersonnesPhysiquesLot(
+            @RequestParam(value = "afterId", defaultValue = "") String afterId,
+            @RequestParam(value = "limit", defaultValue = "500") int limit);
+
+    @GetMapping("/ebanking/reg/personnes-physiques/par-ids")
+    java.util.List<RegPersonnePhysiqueDto> getPersonnesPhysiquesByIds(
+            @RequestParam(value = "ids") java.util.List<String> ids);
+
+    @GetMapping("/ebanking/reg/personnes-morales/lot")
+    java.util.List<RegPersonneMoraleDto> getPersonnesMoralesLot(
+            @RequestParam(value = "afterId", defaultValue = "") String afterId,
+            @RequestParam(value = "limit", defaultValue = "500") int limit);
+
+    @GetMapping("/ebanking/reg/personnes-morales/par-ids")
+    java.util.List<RegPersonneMoraleDto> getPersonnesMoralesByIds(
+            @RequestParam(value = "ids") java.util.List<String> ids);
+
+    @GetMapping("/ebanking/reg/engagements/lot")
+    java.util.List<RegEngagementDto> getEngagementsLot(
+            @RequestParam(value = "afterId", defaultValue = "0") Long afterId,
+            @RequestParam(value = "limit", defaultValue = "500") int limit);
 }

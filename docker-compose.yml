@@ -370,12 +370,18 @@ services:
       BCRG_PUBLIC_API_KEY: ${BCRG_PUBLIC_API_KEY:-}
       # Cle INTERNE : doit valoir la MEME cle que BCRG_INTERNAL_API_KEY cote ebanking
       EBANKING_REG_API_KEY: ${BCRG_INTERNAL_API_KEY:-}
+      # Suivi des donnees traitees par la BCRG (table bcrg_donnee_traitee)
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgresdb:5432/localdb"
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       JAVA_TOOL_OPTIONS: "-Xms256m -Xmx512m"
     volumes:
       - ./logs/bcrgservice:/var/log/bcrgservice
     networks:
       - spring
     depends_on:
+      postgresdb:
+        condition: service_healthy
       discoveryserver:
         condition: service_started
       authorizationserver:
