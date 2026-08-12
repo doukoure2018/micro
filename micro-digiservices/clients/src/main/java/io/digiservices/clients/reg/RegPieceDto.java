@@ -15,6 +15,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class RegPieceDto {
     private String codTipoId;
+    private String desTipoId; // libelle CL_TIPOS_ID (base de la transcodification BCRG 01..09)
     private String numId;
     private LocalDate fecVencim;
 }
