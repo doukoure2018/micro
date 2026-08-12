@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "BCRG - Declaration reglementaire (CRG)",
-    "description": "API de declaration BCRG exposee par bcrgservice. Auth par header X-API-Key (BCRG_PUBLIC_API_KEY). Base: https://digi-creditrural-io.com/bcrg",
+    "description": "API de declaration BCRG exposee par bcrgservice (v1.2). Auth par header X-API-Key (BCRG_PUBLIC_API_KEY). Base: https://digi-creditrural-io.com/bcrg. Extraction incrementale : statut=restantes (defaut) exclut les references notifiees via POST /traitements ; statut=toutes = extraction complete. Cycle recommande : extraire page=0 -> integrer -> notifier -> recommencer.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -9,7 +9,8 @@
     { "key": "apiKey", "value": "" },
     { "key": "idClient", "value": "" },
     { "key": "refEng", "value": "" },
-    { "key": "periode", "value": "2026-06" }
+    { "key": "periode", "value": "2026-06" },
+    { "key": "module", "value": "PERSONNE_PHYSIQUE" }
   ],
   "auth": {
     "type": "apikey",
@@ -21,16 +22,33 @@
   },
   "item": [
     {
-      "name": "M1 - Personnes Physiques (liste)",
+      "name": "M1 - Personnes Physiques (restantes, defaut)",
       "request": {
         "method": "GET",
         "url": {
-          "raw": "{{baseUrl}}/personnes-physiques?page=0&size=10",
+          "raw": "{{baseUrl}}/personnes-physiques?page=0&size=10&statut=restantes",
           "host": ["{{baseUrl}}"],
           "path": ["personnes-physiques"],
           "query": [
             { "key": "page", "value": "0" },
-            { "key": "size", "value": "10" }
+            { "key": "size", "value": "10" },
+            { "key": "statut", "value": "restantes", "description": "restantes (defaut) | toutes" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "M1 - Personnes Physiques (extraction complete)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/personnes-physiques?page=0&size=10&statut=toutes",
+          "host": ["{{baseUrl}}"],
+          "path": ["personnes-physiques"],
+          "query": [
+            { "key": "page", "value": "0" },
+            { "key": "size", "value": "10" },
+            { "key": "statut", "value": "toutes" }
           ]
         }
       }
@@ -47,16 +65,17 @@
       }
     },
     {
-      "name": "M1 - Personnes Morales (liste)",
+      "name": "M1 - Personnes Morales (restantes, defaut)",
       "request": {
         "method": "GET",
         "url": {
-          "raw": "{{baseUrl}}/personnes-morales?page=0&size=10",
+          "raw": "{{baseUrl}}/personnes-morales?page=0&size=10&statut=restantes",
           "host": ["{{baseUrl}}"],
           "path": ["personnes-morales"],
           "query": [
             { "key": "page", "value": "0" },
-            { "key": "size", "value": "10" }
+            { "key": "size", "value": "10" },
+            { "key": "statut", "value": "restantes", "description": "restantes (defaut) | toutes" }
           ]
         }
       }
@@ -73,16 +92,17 @@
       }
     },
     {
-      "name": "M2 - Engagements (liste)",
+      "name": "M2 - Engagements (restantes, defaut)",
       "request": {
         "method": "GET",
         "url": {
-          "raw": "{{baseUrl}}/engagements?page=0&size=10",
+          "raw": "{{baseUrl}}/engagements?page=0&size=10&statut=restantes",
           "host": ["{{baseUrl}}"],
           "path": ["engagements"],
           "query": [
             { "key": "page", "value": "0" },
-            { "key": "size", "value": "10" }
+            { "key": "size", "value": "10" },
+            { "key": "statut", "value": "restantes", "description": "restantes (defaut) | toutes" }
           ]
         }
       }
@@ -99,7 +119,7 @@
       }
     },
     {
-      "name": "M4 - Encours (periode AAAA-MM)",
+      "name": "M4 - Encours (periode AAAA-MM, photo complete)",
       "request": {
         "method": "GET",
         "url": {
@@ -112,6 +132,48 @@
             { "key": "size", "value": "10" }
           ]
         }
+      }
+    },
+    {
+      "name": "Traitements - Notifier les donnees traitees (POST)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"module\": \"{{module}}\",\n  \"references\": [\"10200007832\", \"10200007833\"],\n  \"dateTraitement\": \"2026-08-12T10:30:00\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/traitements",
+          "host": ["{{baseUrl}}"],
+          "path": ["traitements"]
+        },
+        "description": "module: PERSONNE_PHYSIQUE | PERSONNE_MORALE | ENGAGEMENT. references: 1 a 1000 identifiants (IdInterneClt ou RefIntEng). Idempotent : une reference deja notifiee ne cree pas de doublon."
+      }
+    },
+    {
+      "name": "Traitements - Etat du suivi d'un module",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/traitements/{{module}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["traitements", "{{module}}"]
+        }
+      }
+    },
+    {
+      "name": "Traitements - Retirer une reference (retraitement)",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "{{baseUrl}}/traitements/{{module}}/{{idClient}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["traitements", "{{module}}", "{{idClient}}"]
+        },
+        "description": "La reference retiree reapparait dans l'extraction statut=restantes."
       }
     },
     {

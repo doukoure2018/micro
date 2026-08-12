@@ -40,6 +40,31 @@ public class RegulatoryServiceImpl implements RegulatoryService {
     }
 
     @Override
+    public List<RegPersonnePhysiqueDto> getPersonnesPhysiquesLot(String afterId, int limit) {
+        return repository.findPersonnesPhysiquesLot(afterId, limit);
+    }
+
+    @Override
+    public List<RegPersonnePhysiqueDto> getPersonnesPhysiquesByIds(List<String> ids) {
+        return repository.findPersonnesPhysiquesByIds(ids);
+    }
+
+    @Override
+    public List<RegPersonneMoraleDto> getPersonnesMoralesLot(String afterId, int limit) {
+        return repository.findPersonnesMoralesLot(afterId, limit);
+    }
+
+    @Override
+    public List<RegPersonneMoraleDto> getPersonnesMoralesByIds(List<String> ids) {
+        return repository.findPersonnesMoralesByIds(ids);
+    }
+
+    @Override
+    public List<RegEngagementDto> getEngagementsLot(Long afterId, int limit) {
+        return repository.findEngagementsLot(afterId, limit);
+    }
+
+    @Override
     public PageDto<RegPersonneMoraleDto> getPersonnesMorales(int page, int size) {
         long total = repository.countPersonnesMorales();
         List<RegPersonneMoraleDto> content = repository.findPersonnesMorales(page * size, size);

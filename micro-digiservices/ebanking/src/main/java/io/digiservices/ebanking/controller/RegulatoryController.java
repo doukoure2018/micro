@@ -50,6 +50,58 @@ public class RegulatoryController {
         return ResponseEntity.ok(regulatoryService.getPersonnePhysiqueById(codCliente));
     }
 
+    // ==================== LOTS KEYSET + DETAILS PAR IDS (extraction filtree bcrgservice) ====================
+
+    @GetMapping("/personnes-physiques/lot")
+    public ResponseEntity<java.util.List<RegPersonnePhysiqueDto>> getPersonnesPhysiquesLot(
+            @RequestParam(name = "afterId", defaultValue = "") String afterId,
+            @RequestParam(name = "limit", defaultValue = "500") int limit) {
+        validateLimit(limit);
+        return ResponseEntity.ok(regulatoryService.getPersonnesPhysiquesLot(afterId, limit));
+    }
+
+    @GetMapping("/personnes-physiques/par-ids")
+    public ResponseEntity<java.util.List<RegPersonnePhysiqueDto>> getPersonnesPhysiquesByIds(
+            @RequestParam(name = "ids") java.util.List<String> ids) {
+        validateIds(ids);
+        return ResponseEntity.ok(regulatoryService.getPersonnesPhysiquesByIds(ids));
+    }
+
+    @GetMapping("/personnes-morales/lot")
+    public ResponseEntity<java.util.List<RegPersonneMoraleDto>> getPersonnesMoralesLot(
+            @RequestParam(name = "afterId", defaultValue = "") String afterId,
+            @RequestParam(name = "limit", defaultValue = "500") int limit) {
+        validateLimit(limit);
+        return ResponseEntity.ok(regulatoryService.getPersonnesMoralesLot(afterId, limit));
+    }
+
+    @GetMapping("/personnes-morales/par-ids")
+    public ResponseEntity<java.util.List<RegPersonneMoraleDto>> getPersonnesMoralesByIds(
+            @RequestParam(name = "ids") java.util.List<String> ids) {
+        validateIds(ids);
+        return ResponseEntity.ok(regulatoryService.getPersonnesMoralesByIds(ids));
+    }
+
+    @GetMapping("/engagements/lot")
+    public ResponseEntity<java.util.List<RegEngagementDto>> getEngagementsLot(
+            @RequestParam(name = "afterId", defaultValue = "0") Long afterId,
+            @RequestParam(name = "limit", defaultValue = "500") int limit) {
+        validateLimit(limit);
+        return ResponseEntity.ok(regulatoryService.getEngagementsLot(afterId, limit));
+    }
+
+    private void validateLimit(int limit) {
+        if (limit < 1 || limit > 1000) {
+            throw new BlogAPIException(HttpStatus.BAD_REQUEST, "Le parametre 'limit' doit etre compris entre 1 et 1000");
+        }
+    }
+
+    private void validateIds(java.util.List<String> ids) {
+        if (ids == null || ids.isEmpty() || ids.size() > 200) {
+            throw new BlogAPIException(HttpStatus.BAD_REQUEST, "Le parametre 'ids' doit contenir entre 1 et 200 identifiants");
+        }
+    }
+
     @GetMapping("/personnes-morales")
     public ResponseEntity<PageDto<RegPersonneMoraleDto>> getPersonnesMorales(
             @RequestParam(name = "page", defaultValue = "0") int page,
