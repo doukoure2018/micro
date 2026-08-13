@@ -128,6 +128,7 @@ export class DetailComponent {
         piecesFonctionnaire?: PieceJointeDemande[];
         showTransformationFonctionnaire?: boolean;
         transformationEnCours?: boolean;
+        histoSaf?: { credits: any[]; evaluation?: any } | null;
     }>({
         loading: false,
         message: undefined,
@@ -442,6 +443,11 @@ export class DetailComponent {
                         // Crédit fonctionnaire : analyse charges & quotité (affichage + impression)
                         if (demandeData.natureClient === 'Demande de credit Pour Fonctionnaire') {
                             this.loadAnalyseChargesFonctionnaire(+demandeData.demandeIndividuelId!);
+                        }
+
+                        // Historique crédit SAF du membre (consultatif, dégradation gracieuse)
+                        if (demandeData.numeroMembre) {
+                            this.loadHistoriqueSaf(demandeData.numeroMembre);
                         }
 
                         if (demandeData.pos) {
@@ -1511,6 +1517,39 @@ export class DetailComponent {
     montantChargeFonctionnaire(key: keyof AnalyseChargesFonctionnaire): number {
         const analyse = this.state().analyseChargesFonctionnaire;
         return analyse ? Number(analyse[key]) || 0 : 0;
+    }
+
+    /**
+     * Historique crédit SAF du membre : visible dès l'instruction (AC/DA) et non plus
+     * seulement en synthèse DE/DG. Dégradation gracieuse si le VPN/SAF est indisponible.
+     */
+    private loadHistoriqueSaf(numeroMembre: string): void {
+        this.userService
+            .getHistoCreditsSaf$(numeroMembre)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    const histo = (response.data as any)?.histoCredits;
+                    this.state.update((s) => ({
+                        ...s,
+                        histoSaf: histo ? { credits: histo.creditos || [], evaluation: histo.evaluationRisque } : null
+                    }));
+                },
+                error: () => this.state.update((s) => ({ ...s, histoSaf: null }))
+            });
+    }
+
+    getEtatCreditSaf(indEstado?: string): string {
+        switch ((indEstado || '').toUpperCase()) {
+            case 'A': return 'Actif';
+            case 'D': return 'Décaissé';
+            case 'C': return 'Clôturé';
+            case 'T': return 'Terminé';
+            case 'V': return 'Échu';
+            case 'J': return 'Judiciaire';
+            case 'X': return 'Annulé';
+            default: return indEstado || 'N/A';
+        }
     }
 
     private loadAnalyseChargesFonctionnaire(demandeId: number): void {

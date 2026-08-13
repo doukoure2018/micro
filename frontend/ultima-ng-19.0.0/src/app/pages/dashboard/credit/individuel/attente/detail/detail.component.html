@@ -363,6 +363,70 @@
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <!-- HISTORIQUE CREDIT SAF DU MEMBRE (renouvellement / comportement passé)  -->
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <div *ngIf="state().histoSaf && state().histoSaf!.credits.length > 0"
+            class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8">
+            <div class="bg-slate-700 text-white px-6 py-4 flex items-center gap-3 flex-wrap">
+                <i class="pi pi-history text-xl"></i>
+                <span class="font-bold text-lg uppercase tracking-wide">Historique crédit du membre (SAF)</span>
+                <span class="ml-auto flex items-center gap-3 text-sm">
+                    <span>{{ state().histoSaf!.credits.length }} crédit(s)</span>
+                    <p-tag *ngIf="state().histoSaf!.evaluation"
+                        [value]="'Score ' + state().histoSaf!.evaluation.scoreConfiance + '/100 — ' + state().histoSaf!.evaluation.niveauRisque"
+                        [severity]="state().histoSaf!.evaluation.scoreConfiance >= 70 ? 'success' :
+                                    state().histoSaf!.evaluation.scoreConfiance >= 40 ? 'warn' : 'danger'"></p-tag>
+                </span>
+            </div>
+            <div class="p-6 overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-gray-50 border-b-2 border-gray-200 text-right">
+                            <th class="py-2 px-3 text-gray-600 font-semibold text-left">N° crédit</th>
+                            <th class="py-2 px-3 text-gray-600 font-semibold">Montant accordé</th>
+                            <th class="py-2 px-3 text-gray-600 font-semibold">Solde restant</th>
+                            <th class="py-2 px-3 text-gray-600 font-semibold text-left">Ouverture</th>
+                            <th class="py-2 px-3 text-gray-600 font-semibold text-left">État</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let credit of state().histoSaf!.credits" class="border-b border-gray-100 text-right">
+                            <td class="py-2 px-3 text-left font-semibold text-gray-700">{{ credit.numCredito }}</td>
+                            <td class="py-2 px-3">{{ credit.monCredito | number:'1.0-0':'fr-FR' }} GNF</td>
+                            <td class="py-2 px-3" [ngClass]="credit.monSaldo > 0 ? 'text-red-600 font-semibold' : 'text-emerald-700'">
+                                {{ credit.monSaldo | number:'1.0-0':'fr-FR' }} GNF
+                            </td>
+                            <td class="py-2 px-3 text-left">{{ credit.fecApertura | date:'dd/MM/yyyy' }}</td>
+                            <td class="py-2 px-3 text-left">
+                                <p-tag [value]="getEtatCreditSaf(credit.indEstado)"
+                                    [severity]="credit.monSaldo > 0 ? 'warn' : 'success'"></p-tag>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div *ngIf="state().histoSaf!.evaluation" class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div class="bg-gray-50 rounded-lg p-3 text-center">
+                        <div class="text-gray-500">Échéances respectées</div>
+                        <div class="font-bold text-emerald-700">{{ state().histoSaf!.evaluation.echeancesRespectees }} / {{ state().histoSaf!.evaluation.echeancesAnalysees }}</div>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-3 text-center">
+                        <div class="text-gray-500">Échéances en retard</div>
+                        <div class="font-bold" [ngClass]="(state().histoSaf!.evaluation.echeancesEnRetard || 0) > 0 ? 'text-red-600' : 'text-emerald-700'">
+                            {{ state().histoSaf!.evaluation.echeancesEnRetard || 0 }}</div>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-3 text-center">
+                        <div class="text-gray-500">Retard moyen</div>
+                        <div class="font-bold">{{ state().histoSaf!.evaluation.retardMoyenJours || 0 }} jour(s)</div>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-3 text-center">
+                        <div class="text-gray-500">Comportement</div>
+                        <div class="font-bold">{{ state().histoSaf!.evaluation.historiqueRemboursement }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
         <!-- SECTION 2 (Fonctionnaire): SITUATION PROFESSIONNELLE                    -->
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
         <div *ngIf="isFonctionnaireNature()"

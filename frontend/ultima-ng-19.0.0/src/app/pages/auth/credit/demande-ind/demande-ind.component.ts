@@ -320,6 +320,7 @@ export class DemandeIndComponent implements OnInit {
     verifierDemandeEnCours(): void {
         const numero = (this.formData.numeroMembre || '').trim();
         this.demandeEnCours = null;
+        this.histoSaf = null;
         if (!/^\d{11}$/.test(numero)) return;
         this.creditService
             .getDemandeEnCours$(numero)
@@ -339,6 +340,92 @@ export class DemandeIndComponent implements OnInit {
                 },
                 error: () => {
                     // Contrôle indicatif : en cas d'échec réseau, le backend bloquera de toute façon à la soumission
+                }
+            });
+        this.analyserHistoriqueSaf(numero);
+        this.preremplirDepuisDerniereDemande(numero);
+    }
+
+    /**
+     * Historique SAF du membre (consultatif, dégradation gracieuse si VPN/SAF indisponible) :
+     * - crédit encore non soldé -> avertissement non bloquant ;
+     * - crédits antérieurs soldés -> la demande passe automatiquement en Renouvellement
+     *   avec le rang calculé (nb crédits soldés + 1).
+     */
+    histoSaf: { creditActif: any | null; nbCreditsSoldes: number } | null = null;
+
+    private analyserHistoriqueSaf(numeroMembre: string): void {
+        this.creditService
+            .getHistoCreditsSaf$(numeroMembre)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    const credits: any[] = (response.data as any)?.histoCredits?.creditos || [];
+                    const actif = credits.find((c) => Number(c.monSaldo) > 0) || null;
+                    const nbSoldes = credits.filter((c) => Number(c.monSaldo) <= 0).length;
+                    this.histoSaf = { creditActif: actif, nbCreditsSoldes: nbSoldes };
+
+                    if (actif) {
+                        this.messageService.add({
+                            severity: 'warn',
+                            summary: 'Crédit SAF non soldé',
+                            detail: `Ce membre a un crédit en cours dans SAF (n° ${actif.numCredito}, solde restant ${Number(actif.monSaldo).toLocaleString('fr-FR')} GNF). Vérifiez avant de poursuivre.`,
+                            life: 9000
+                        });
+                    } else if (nbSoldes > 0) {
+                        this.formData.statutCredit = 'Renouvellement';
+                        this.formData.rangCredit = nbSoldes + 1;
+                        this.messageService.add({
+                            severity: 'info',
+                            summary: 'Client connu — renouvellement',
+                            detail: `${nbSoldes} crédit(s) antérieur(s) soldé(s) : la demande est marquée Renouvellement (rang ${nbSoldes + 1}).`,
+                            life: 6000
+                        });
+                    }
+                },
+                error: () => {
+                    // SAF/VPN indisponible : contrôle simplement absent, la saisie continue normalement
+                }
+            });
+    }
+
+    /** Pré-remplit l'identité depuis la dernière demande connue du membre (champs vides uniquement). */
+    private preremplirDepuisDerniereDemande(numeroMembre: string): void {
+        this.creditService
+            .getLastDemandeInd$(numeroMembre)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    const derniere = (response.data as any)?.demandeIndividuel;
+                    if (!derniere) return;
+                    const champs = ['nom', 'prenom', 'sernom', 'telephone', 'email', 'lieuxNaissance', 'genre',
+                        'situationMatrimoniale', 'nombrePersonneEnCharge', 'nombrePersonneScolarise',
+                        'nomPere', 'nomMere', 'nomConjoint', 'prefecture', 'sousPrefecture',
+                        'typePiece', 'numId', 'profession', 'secteurActivite'] as const;
+                    let rempli = false;
+                    for (const champ of champs) {
+                        const actuel = (this.formData as any)[champ];
+                        const valeur = (derniere as any)[champ];
+                        if ((actuel === '' || actuel === null || actuel === undefined) && valeur !== null && valeur !== undefined && valeur !== '') {
+                            (this.formData as any)[champ] = valeur;
+                            rempli = true;
+                        }
+                    }
+                    if (!this.formData.dateNaissance && derniere.dateNaissance) {
+                        this.formData.dateNaissance = new Date(derniere.dateNaissance);
+                        rempli = true;
+                    }
+                    if (rempli) {
+                        this.messageService.add({
+                            severity: 'info',
+                            summary: 'Identité pré-remplie',
+                            detail: 'Les informations du membre ont été reprises de sa dernière demande — vérifiez et complétez.',
+                            life: 5000
+                        });
+                    }
+                },
+                error: () => {
+                    // Pas de demande antérieure : rien à pré-remplir
                 }
             });
     }
