@@ -789,6 +789,25 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
     }
 
     @Override
+    public java.util.Optional<DemandeIndividuel> findDemandeEnCours(String numeroMembre) {
+        return jdbcClient.sql(DemandeIndQuery.SELECT_DEMANDE_EN_COURS_BY_MEMBRE)
+                .param("numeroMembre", numeroMembre)
+                .query((rs, rowNum) -> {
+                    DemandeIndividuel d = new DemandeIndividuel();
+                    d.setDemandeIndividuelId(rs.getLong("demandeindividuel_id"));
+                    d.setNom(rs.getString("nom"));
+                    d.setPrenom(rs.getString("prenom"));
+                    d.setMontantDemande(rs.getBigDecimal("montant_demande"));
+                    d.setValidationState(rs.getString("validation_state"));
+                    d.setStatutDemande(rs.getString("statut_demande"));
+                    d.setCreatedAt(rs.getTimestamp("createdat") != null
+                            ? rs.getTimestamp("createdat").toLocalDateTime() : null);
+                    return d;
+                })
+                .optional();
+    }
+
+    @Override
     public String getNatureClient(Long demandeindividuelId) {
         return jdbcClient.sql(DemandeIndQuery.SELECT_NATURE_CLIENT_BY_ID)
                 .param("demandeindividuelId", demandeindividuelId)

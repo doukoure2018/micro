@@ -69,11 +69,18 @@
                         <input pInputText [(ngModel)]="formData.numeroMembre" name="numeroMembreHeader" class="w-full"
                             #numeroMembreRef="ngModel" [disabled]="state().submitting" required
                             pattern="^\d{11}$" maxlength="11" minlength="11" inputmode="numeric"
-                            (keypress)="onlyDigits($event)">
+                            (keypress)="onlyDigits($event)" (blur)="verifierDemandeEnCours()"
+                            (ngModelChange)="demandeEnCours = null">
                         <small *ngIf="numeroMembreRef.invalid && (numeroMembreRef.dirty || numeroMembreRef.touched)"
                             class="text-red-500 block mt-1">
                             <span *ngIf="numeroMembreRef.errors?.['required']">Le N° Membre est obligatoire.</span>
                             <span *ngIf="!numeroMembreRef.errors?.['required']">Le N° Membre doit contenir exactement 11 chiffres.</span>
+                        </small>
+                        <small *ngIf="demandeEnCours" class="text-red-600 font-semibold block mt-1">
+                            <i class="pi pi-exclamation-triangle mr-1"></i>
+                            Demande déjà en cours pour ce membre (n° {{ demandeEnCours.demandeIndividuelId }},
+                            {{ demandeEnCours.prenom }} {{ demandeEnCours.nom }}, état {{ demandeEnCours.validationState }}) —
+                            nouvelle saisie impossible.
                         </small>
                     </td>
                     <td class="label-cell">N° de la demande</td>

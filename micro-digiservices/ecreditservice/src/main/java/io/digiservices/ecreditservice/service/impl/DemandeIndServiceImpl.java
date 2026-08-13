@@ -24,6 +24,21 @@ public class DemandeIndServiceImpl implements DemandeIndService {
     private final AnalyseChargesFonctionnaireService analyseChargesFonctionnaireService;
     @Override
     public void addDemandeInd(DemandeIndividuel demandeIndividuel) {
+        // Anti-doublon : un membre ne peut pas avoir deux demandes en cours simultanément
+        // (ni rejetée, ni définitivement validée = en cours). Le DA peut rejeter la
+        // demande existante pour permettre une nouvelle saisie.
+        String numeroMembre = demandeIndividuel.getNumeroMembre();
+        if (numeroMembre != null && !numeroMembre.isBlank()) {
+            demandeIndRepository.findDemandeEnCours(numeroMembre.trim()).ifPresent(existante -> {
+                throw new ValidationException(String.format(
+                        "Doublon refusé : le membre %s a déjà une demande de crédit en cours (n° %d, %s %s, montant %s, état %s, créée le %s). "
+                                + "Faites aboutir ou rejeter cette demande avant d'en créer une nouvelle.",
+                        numeroMembre, existante.getDemandeIndividuelId(),
+                        existante.getPrenom(), existante.getNom(),
+                        existante.getMontantDemande(), existante.getValidationState(),
+                        existante.getCreatedAt() != null ? existante.getCreatedAt().toLocalDate() : "N/A"));
+            });
+        }
         demandeIndRepository.addNewDemandeInd(demandeIndividuel);
     }
 
@@ -45,6 +60,11 @@ public class DemandeIndServiceImpl implements DemandeIndService {
             analyseChargesFonctionnaireService.verifierFinancableSiFonctionnaire(demandeindividuel_id);
         }
         demandeIndRepository.updateStatutDemandeInd(demandeindividuel_id,statut,codUsuarios);
+    }
+
+    @Override
+    public Optional<DemandeIndividuel> getDemandeEnCours(String numeroMembre) {
+        return demandeIndRepository.findDemandeEnCours(numeroMembre);
     }
 
     /**

@@ -436,6 +436,22 @@ public class DemandeIndQuery {
     public static final String SELECT_DEMANDE_FONCTIONNAIRE_BY_DEMANDE_ID =
             "SELECT * FROM demande_fonctionnaire WHERE demandeindividuel_id = :demandeindividuelId";
 
+    /**
+     * Anti-doublon : demande encore EN COURS pour un membre — ni rejetée
+     * (statut_demande 'REJET'/'REJECTED'), ni définitivement validée (VALIDATED_FINAL).
+     * Utilisée pour BLOQUER la création d'une nouvelle demande et pour alerter à la saisie.
+     */
+    public static final String SELECT_DEMANDE_EN_COURS_BY_MEMBRE = """
+            SELECT demandeindividuel_id, nom, prenom, montant_demande,
+                   validation_state, statut_demande, createdat
+            FROM demandeindividuel
+            WHERE numero_membre = :numeroMembre
+              AND COALESCE(statut_demande, '') NOT IN ('REJET', 'REJECTED')
+              AND COALESCE(validation_state, '') <> 'VALIDATED_FINAL'
+            ORDER BY createdat DESC
+            LIMIT 1
+            """;
+
     /** Nature actuelle d'une demande (contrôle avant transformation en fonctionnaire). */
     public static final String SELECT_NATURE_CLIENT_BY_ID =
             "SELECT nature_client FROM demandeindividuel WHERE demandeindividuel_id = :demandeindividuelId";

@@ -458,6 +458,28 @@ public class DemandeIndResource {
                 "Demande transformée en crédit fonctionnaire et renvoyée à l'agent de crédit", OK));
     }
 
+    /**
+     * Anti-doublon : signale la demande encore en cours d'un membre (ni rejetée,
+     * ni définitivement validée). Utilisé par le formulaire à la saisie du N° membre.
+     */
+    @GetMapping("/demande-en-cours/{numeroMembre}")
+    public ResponseEntity<Response> demandeEnCours(@NotNull Authentication authentication,
+                                                   @PathVariable(name = "numeroMembre") String numeroMembre,
+                                                   HttpServletRequest request) {
+        var enCours = demandeIndService.getDemandeEnCours(numeroMembre);
+        Map<String, Object> data = new HashMap<>();
+        data.put("enCours", enCours.isPresent());
+        enCours.ifPresent(d -> {
+            data.put("demandeIndividuelId", d.getDemandeIndividuelId());
+            data.put("nom", d.getNom());
+            data.put("prenom", d.getPrenom());
+            data.put("montantDemande", d.getMontantDemande());
+            data.put("validationState", d.getValidationState());
+            data.put("createdAt", d.getCreatedAt());
+        });
+        return created(getUri()).body(getResponse(request, data, "Contrôle demande en cours effectué", OK));
+    }
+
     @GetMapping("/existNumeroMembre/{numeroMembre}")
     public ResponseEntity<Response> listeDemandeCreditSelection(@NotNull Authentication authentication,
                                                                 @PathVariable(name = "numeroMembre") String numeroMembre,

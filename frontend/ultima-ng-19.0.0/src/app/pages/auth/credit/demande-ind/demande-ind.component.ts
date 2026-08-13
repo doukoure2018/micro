@@ -312,6 +312,38 @@ export class DemandeIndComponent implements OnInit {
     }
 
     /**
+     * Anti-doublon : demande encore en cours pour le N° membre saisi (renseigné
+     * dès que le numéro fait 11 chiffres ; bloque la soumission si présent).
+     */
+    demandeEnCours: { demandeIndividuelId?: number; prenom?: string; nom?: string; montantDemande?: number; validationState?: string; createdAt?: string } | null = null;
+
+    verifierDemandeEnCours(): void {
+        const numero = (this.formData.numeroMembre || '').trim();
+        this.demandeEnCours = null;
+        if (!/^\d{11}$/.test(numero)) return;
+        this.creditService
+            .getDemandeEnCours$(numero)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    const data = response.data as any;
+                    if (data?.enCours) {
+                        this.demandeEnCours = data;
+                        this.messageService.add({
+                            severity: 'warn',
+                            summary: 'Demande déjà en cours',
+                            detail: `Ce membre a déjà une demande en cours (n° ${data.demandeIndividuelId}, état ${data.validationState}). Une nouvelle saisie sera refusée.`,
+                            life: 8000
+                        });
+                    }
+                },
+                error: () => {
+                    // Contrôle indicatif : en cas d'échec réseau, le backend bloquera de toute façon à la soumission
+                }
+            });
+    }
+
+    /**
      * Empeche la saisie de tout caractere non numerique dans le N° Membre.
      * Le N° Membre doit etre un entier de 11 chiffres.
      */
@@ -774,6 +806,17 @@ export class DemandeIndComponent implements OnInit {
                 summary: 'Erreur',
                 detail: 'Veuillez remplir correctement tous les champs obligatoires',
                 life: 5000
+            });
+            return;
+        }
+
+        // Anti-doublon : le backend refusera de toute façon, mais on évite une saisie perdue
+        if (this.demandeEnCours) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Demande déjà en cours',
+                detail: `Le membre ${this.formData.numeroMembre} a déjà une demande en cours (n° ${this.demandeEnCours.demandeIndividuelId}, état ${this.demandeEnCours.validationState}). Faites-la aboutir ou rejeter avant d'en créer une nouvelle.`,
+                life: 9000
             });
             return;
         }
