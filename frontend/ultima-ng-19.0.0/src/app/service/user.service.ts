@@ -1611,6 +1611,10 @@ export class UserService {
     getPiecesDemande$ = (demandeId: number) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/fonctionnaire/pieces/${demandeId}`).pipe(catchError(this.handleError));
 
+    /** Anti-doublon : demande encore en cours d'un membre (ni rejetée ni validée définitivement). */
+    getDemandeEnCours$ = (numeroMembre: string) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/demande-en-cours/${numeroMembre}`).pipe(catchError(this.handleError));
+
     /** Transformation d'un crédit existant (avant intégration) en crédit fonctionnaire. */
     transformerEnFonctionnaire$ = (demandeId: number, extension: any) =>
         <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/demande/${demandeId}/transformer-fonctionnaire`, extension).pipe(catchError(this.handleError));

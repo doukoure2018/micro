@@ -19,6 +19,9 @@ public interface DemandeIndRepository {
     /** Nature client actuelle d'une demande, null si demande inconnue. */
     String getNatureClient(Long demandeindividuelId);
 
+    /** Demande encore en cours (ni rejetée ni validée définitivement) pour ce membre. */
+    Optional<DemandeIndividuel> findDemandeEnCours(String numeroMembre);
+
     /** Requalifie la demande en crédit fonctionnaire (nature + type 7) et pose l'extension. */
     void transformerEnFonctionnaire(Long demandeindividuelId, DemandeFonctionnaire extension);
 

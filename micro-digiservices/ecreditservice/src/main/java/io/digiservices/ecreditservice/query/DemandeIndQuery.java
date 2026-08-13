@@ -436,6 +436,22 @@ public class DemandeIndQuery {
     public static final String SELECT_DEMANDE_FONCTIONNAIRE_BY_DEMANDE_ID =
             "SELECT * FROM demande_fonctionnaire WHERE demandeindividuel_id = :demandeindividuelId";
 
+    /**
+     * Anti-doublon : demande encore EN COURS pour un membre — ni rejetée
+     * (statut_demande 'REJET'/'REJECTED'), ni définitivement validée (VALIDATED_FINAL).
+     * Utilisée pour BLOQUER la création d'une nouvelle demande et pour alerter à la saisie.
+     */
+    public static final String SELECT_DEMANDE_EN_COURS_BY_MEMBRE = """
+            SELECT demandeindividuel_id, nom, prenom, montant_demande,
+                   validation_state, statut_demande, createdat
+            FROM demandeindividuel
+            WHERE numero_membre = :numeroMembre
+              AND COALESCE(statut_demande, '') NOT IN ('REJET', 'REJECTED')
+              AND COALESCE(validation_state, '') <> 'VALIDATED_FINAL'
+            ORDER BY createdat DESC
+            LIMIT 1
+            """;
+
     /** Nature actuelle d'une demande (contrôle avant transformation en fonctionnaire). */
     public static final String SELECT_NATURE_CLIENT_BY_ID =
             "SELECT nature_client FROM demandeindividuel WHERE demandeindividuel_id = :demandeindividuelId";
@@ -443,12 +459,33 @@ public class DemandeIndQuery {
     /**
      * Transformation d'un crédit existant (mis en place avant l'intégration du crédit
      * fonctionnaire) : requalification de la nature + type de crédit 7 (FONCTIONNAIRES
-     * EPARGNANTS). L'extension est posée via fn_inserer_demande_fonctionnaire (upsert).
+     * EPARGNANTS), périodicité mensuelle, et RETOUR À L'AGENT DE CRÉDIT pour reprise
+     * complète du processus — le dossier repart en SELECTION et toutes les validations
+     * hiérarchiques (avis, visas, rejets) sont effacées.
+     * Exception : un dossier encore en phase accueil/affectation (NOUVEAU, EN_ATTENTE_DA,
+     * AFFECTEE, CORRECTION_ACCUEIL, RETOUR_AGENT) garde son état — il n'a pas encore
+     * d'agent en instruction. L'extension est posée via fn_inserer_demande_fonctionnaire.
      */
     public static final String UPDATE_TRANSFORMER_NATURE_FONCTIONNAIRE = """
             UPDATE demandeindividuel
             SET nature_client = 'Demande de credit Pour Fonctionnaire',
-                tip_credito = 7
+                tip_credito = 7,
+                periodicite_remboursement = 'Mensuelle',
+                statut_demande = CASE
+                    WHEN validation_state IN ('NOUVEAU', 'EN_ATTENTE_DA', 'AFFECTEE', 'CORRECTION_ACCUEIL', 'RETOUR_AGENT')
+                        THEN statut_demande ELSE 'EN_ATTENTE' END,
+                validation_state = CASE
+                    WHEN validation_state IN ('NOUVEAU', 'EN_ATTENTE_DA', 'AFFECTEE', 'CORRECTION_ACCUEIL', 'RETOUR_AGENT')
+                        THEN validation_state ELSE 'SELECTION' END,
+                avis_agent_credit = NULL,
+                avis_da = NULL, avis_dr = NULL, avis_de = NULL, avis_dg = NULL,
+                motif_rejet_da = NULL, motif_rejet_dr = NULL, motif_rejet_de = NULL, motif_rejet_dg = NULL,
+                sections_a_revoir_da = NULL, sections_a_revoir_dr = NULL, sections_a_revoir_de = NULL,
+                instructions_ac = NULL, instructions_da = NULL, instructions_dr = NULL, instructions_de = NULL,
+                validated_by_da = NULL, validated_by_dr = NULL, validated_by_de = NULL, validated_by_dg = NULL,
+                date_validation_da = NULL, date_validation_dr = NULL, date_validation_de = NULL, date_validation_dg = NULL,
+                confirmed_by_de = NULL,
+                renvoi_agent_motif = NULL, renvoi_agent_by = NULL
             WHERE demandeindividuel_id = :demandeindividuelId
             """;
 

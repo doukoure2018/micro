@@ -19,6 +19,9 @@ public interface DemandeIndService {
     /** Requalifie un crédit existant (mis en place avant l'intégration) en crédit fonctionnaire. */
     void transformerEnFonctionnaire(Long demandeindividuelId, DemandeFonctionnaire extension);
 
+    /** Demande encore en cours pour ce membre (anti-doublon), vide sinon. */
+    Optional<DemandeIndividuel> getDemandeEnCours(String numeroMembre);
+
     void rejetDemandeInd(Long demandeindividuel_id);
 
     DemandeIndividuel getDetailDemandeIndividuel(Long demandeIndividuelId);

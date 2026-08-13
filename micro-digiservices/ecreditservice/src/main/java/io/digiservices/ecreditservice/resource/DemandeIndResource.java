@@ -435,8 +435,9 @@ public class DemandeIndResource {
 
     /**
      * Transformation d'un crédit existant (mis en place avant l'intégration du crédit
-     * fonctionnaire) en crédit fonctionnaire : requalification nature + type 7 et pose
-     * de l'extension emploi/salaire. Réservé AGENT_CREDIT, DA et SUPER_ADMIN.
+     * fonctionnaire) en crédit fonctionnaire, depuis l'environnement de chaque acteur :
+     * AGENT_CREDIT, DA, DR, DE (MANAGER service DE) et SUPER_ADMIN. Après transformation,
+     * le dossier retourne à l'agent de crédit (SELECTION) pour reprise complète du processus.
      */
     @PutMapping("/demande/{demandeindividuel_id}/transformer-fonctionnaire")
     public ResponseEntity<Response> transformerEnFonctionnaire(@NotNull Authentication authentication,
@@ -444,14 +445,39 @@ public class DemandeIndResource {
                                                                @RequestBody DemandeFonctionnaire extension,
                                                                HttpServletRequest request) {
         User user = userClient.getUserByUuid(authentication.getName());
-        if (user == null || !Set.of("AGENT_CREDIT", "DA", "SUPER_ADMIN").contains(user.getRole())) {
-            throw new ApiException("Transformation réservée à l'agent de crédit, au directeur d'agence ou à l'administrateur");
+        boolean autorise = user != null
+                && (Set.of("AGENT_CREDIT", "DA", "DR", "SUPER_ADMIN").contains(user.getRole())
+                    || ("MANAGER".equals(user.getRole()) && "DE".equalsIgnoreCase(user.getService())));
+        if (!autorise) {
+            throw new ApiException("Transformation réservée à l'agent de crédit, au DA, au DR, à la DE ou à l'administrateur");
         }
         demandeIndService.transformerEnFonctionnaire(demandeindividuelId, extension);
-        log.info("Demande {} transformée en crédit fonctionnaire par {} {}", demandeindividuelId,
-                user.getFirstName(), user.getLastName());
+        log.info("Demande {} transformée en crédit fonctionnaire par {} {} ({}) — retour à l'agent de crédit",
+                demandeindividuelId, user.getFirstName(), user.getLastName(), user.getRole());
         return created(getUri()).body(getResponse(request, emptyMap(),
-                "Demande transformée en crédit fonctionnaire", OK));
+                "Demande transformée en crédit fonctionnaire et renvoyée à l'agent de crédit", OK));
+    }
+
+    /**
+     * Anti-doublon : signale la demande encore en cours d'un membre (ni rejetée,
+     * ni définitivement validée). Utilisé par le formulaire à la saisie du N° membre.
+     */
+    @GetMapping("/demande-en-cours/{numeroMembre}")
+    public ResponseEntity<Response> demandeEnCours(@NotNull Authentication authentication,
+                                                   @PathVariable(name = "numeroMembre") String numeroMembre,
+                                                   HttpServletRequest request) {
+        var enCours = demandeIndService.getDemandeEnCours(numeroMembre);
+        Map<String, Object> data = new HashMap<>();
+        data.put("enCours", enCours.isPresent());
+        enCours.ifPresent(d -> {
+            data.put("demandeIndividuelId", d.getDemandeIndividuelId());
+            data.put("nom", d.getNom());
+            data.put("prenom", d.getPrenom());
+            data.put("montantDemande", d.getMontantDemande());
+            data.put("validationState", d.getValidationState());
+            data.put("createdAt", d.getCreatedAt());
+        });
+        return created(getUri()).body(getResponse(request, data, "Contrôle demande en cours effectué", OK));
     }
 
     @GetMapping("/existNumeroMembre/{numeroMembre}")
