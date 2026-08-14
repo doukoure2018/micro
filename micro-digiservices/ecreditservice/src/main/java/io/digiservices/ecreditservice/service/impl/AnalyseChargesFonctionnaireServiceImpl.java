@@ -25,13 +25,15 @@ public class AnalyseChargesFonctionnaireServiceImpl implements AnalyseChargesFon
     public static final String VERDICT_NON_FINANCABLE = "NON_FINANCABLE";
 
     /**
-     * États où l'AC instruit le dossier : seuls moments où l'analyse peut être (ré)écrite.
-     * NOUVEAU = demande créée directement par l'AC (hors circuit accueil) ;
-     * SELECTION = prise en charge après affectation ; CORRECTION = retour DA ;
-     * RETOUR_AGENT = renvoi pour erreur de destination (dossier chez l'agent).
-     * Après l'approbation AC (APPROVED et au-delà), l'analyse est figée au dossier.
+     * États où l'analyse est FIGÉE au dossier : dès l'approbation AC (APPROVED) et sur
+     * toute la chaîne de validation hiérarchique. Logique inversée volontairement :
+     * tout autre état (NOUVEAU, SELECTION, CORRECTION, RETOUR_AGENT, états accueil,
+     * états hérités d'avant l'intégration...) correspond à un dossier en instruction
+     * et l'analyse y reste modifiable.
      */
-    private static final Set<String> ETATS_MODIFIABLES = Set.of("NOUVEAU", "SELECTION", "CORRECTION", "RETOUR_AGENT");
+    private static final Set<String> ETATS_FIGES = Set.of(
+            "APPROVED", "VALIDATED_DA", "VALIDATED_DR", "VALIDATED_FINAL",
+            "PENDING_DG", "REJETE_DG", "CORRECTION_DR", "CORRECTION_DE");
 
     private final AnalyseChargesFonctionnaireRepository repository;
 
@@ -50,9 +52,10 @@ public class AnalyseChargesFonctionnaireServiceImpl implements AnalyseChargesFon
         if (!CreditFonctionnaireValidator.NATURE_FONCTIONNAIRE.equals(ctx.natureClient())) {
             throw new ValidationException("L'analyse des charges est réservée aux demandes de nature Fonctionnaire");
         }
-        if (!ETATS_MODIFIABLES.contains(ctx.validationState())) {
-            throw new ValidationException(
-                    "L'analyse des charges ne peut plus être modifiée : le dossier n'est plus en instruction par l'agent de crédit");
+        if (ctx.validationState() != null && ETATS_FIGES.contains(ctx.validationState())) {
+            throw new ValidationException(String.format(
+                    "L'analyse des charges ne peut plus être modifiée : le dossier est en état %s (déjà approuvé ou en validation hiérarchique)",
+                    ctx.validationState()));
         }
         if (ctx.salaireNetMensuel() == null || ctx.salaireNetMensuel().compareTo(BigDecimal.ZERO) <= 0) {
             throw new ValidationException("Le salaire net de la demande fonctionnaire est manquant : corrigez la demande avant l'analyse");
