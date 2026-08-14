@@ -24,8 +24,14 @@ public class AnalyseChargesFonctionnaireServiceImpl implements AnalyseChargesFon
     public static final String VERDICT_FINANCABLE = "FINANCABLE";
     public static final String VERDICT_NON_FINANCABLE = "NON_FINANCABLE";
 
-    /** États où l'AC instruit le dossier : seuls moments où l'analyse peut être (ré)écrite. */
-    private static final Set<String> ETATS_MODIFIABLES = Set.of("SELECTION", "CORRECTION");
+    /**
+     * États où l'AC instruit le dossier : seuls moments où l'analyse peut être (ré)écrite.
+     * NOUVEAU = demande créée directement par l'AC (hors circuit accueil) ;
+     * SELECTION = prise en charge après affectation ; CORRECTION = retour DA ;
+     * RETOUR_AGENT = renvoi pour erreur de destination (dossier chez l'agent).
+     * Après l'approbation AC (APPROVED et au-delà), l'analyse est figée au dossier.
+     */
+    private static final Set<String> ETATS_MODIFIABLES = Set.of("NOUVEAU", "SELECTION", "CORRECTION", "RETOUR_AGENT");
 
     private final AnalyseChargesFonctionnaireRepository repository;
 
