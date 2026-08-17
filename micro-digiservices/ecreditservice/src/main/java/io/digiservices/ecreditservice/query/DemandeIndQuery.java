@@ -459,9 +459,12 @@ public class DemandeIndQuery {
     /**
      * Transformation d'un crédit existant (mis en place avant l'intégration du crédit
      * fonctionnaire) : requalification de la nature + type de crédit 7 (FONCTIONNAIRES
-     * EPARGNANTS), périodicité mensuelle, et RETOUR À L'AGENT DE CRÉDIT pour reprise
-     * complète du processus — le dossier repart en SELECTION et toutes les validations
-     * hiérarchiques (avis, visas, rejets) sont effacées.
+     * EPARGNANTS), périodicité mensuelle, et RETOUR À L'AGENT DE CRÉDIT en mode
+     * CORRECTION COMPLÈTE : l'échéance saisie avant transformation dépasse souvent la
+     * quotité cessible (35 % du salaire) — l'agent doit pouvoir MODIFIER LA DEMANDE
+     * (échéance, montant, durée) via l'écran de correction, qui bloque la resoumission
+     * tant que l'échéance dépasse la quotité, puis refaire l'analyse charges.
+     * Toutes les validations hiérarchiques antérieures sont effacées.
      * Exception : un dossier encore en phase accueil/affectation (NOUVEAU, EN_ATTENTE_DA,
      * AFFECTEE, CORRECTION_ACCUEIL, RETOUR_AGENT) garde son état — il n'a pas encore
      * d'agent en instruction. L'extension est posée via fn_inserer_demande_fonctionnaire.
@@ -474,14 +477,24 @@ public class DemandeIndQuery {
                 statut_demande = CASE
                     WHEN validation_state IN ('NOUVEAU', 'EN_ATTENTE_DA', 'AFFECTEE', 'CORRECTION_ACCUEIL', 'RETOUR_AGENT')
                         THEN statut_demande ELSE 'EN_ATTENTE' END,
+                motif_rejet_da = CASE
+                    WHEN validation_state IN ('NOUVEAU', 'EN_ATTENTE_DA', 'AFFECTEE', 'CORRECTION_ACCUEIL', 'RETOUR_AGENT')
+                        THEN NULL ELSE 'Transformation en crédit fonctionnaire' END,
+                sections_a_revoir_da = CASE
+                    WHEN validation_state IN ('NOUVEAU', 'EN_ATTENTE_DA', 'AFFECTEE', 'CORRECTION_ACCUEIL', 'RETOUR_AGENT')
+                        THEN NULL ELSE 'DEMANDE_COMPLETE,ANALYSE_CHARGES' END,
+                instructions_ac = CASE
+                    WHEN validation_state IN ('NOUVEAU', 'EN_ATTENTE_DA', 'AFFECTEE', 'CORRECTION_ACCUEIL', 'RETOUR_AGENT')
+                        THEN NULL
+                        ELSE 'Ajuster l''échéance pour respecter la quotité cessible (35 % du salaire net) puis compléter l''analyse charges & quotité avant de soumettre à nouveau' END,
                 validation_state = CASE
                     WHEN validation_state IN ('NOUVEAU', 'EN_ATTENTE_DA', 'AFFECTEE', 'CORRECTION_ACCUEIL', 'RETOUR_AGENT')
-                        THEN validation_state ELSE 'SELECTION' END,
+                        THEN validation_state ELSE 'CORRECTION' END,
                 avis_agent_credit = NULL,
                 avis_da = NULL, avis_dr = NULL, avis_de = NULL, avis_dg = NULL,
-                motif_rejet_da = NULL, motif_rejet_dr = NULL, motif_rejet_de = NULL, motif_rejet_dg = NULL,
-                sections_a_revoir_da = NULL, sections_a_revoir_dr = NULL, sections_a_revoir_de = NULL,
-                instructions_ac = NULL, instructions_da = NULL, instructions_dr = NULL, instructions_de = NULL,
+                motif_rejet_dr = NULL, motif_rejet_de = NULL, motif_rejet_dg = NULL,
+                sections_a_revoir_dr = NULL, sections_a_revoir_de = NULL,
+                instructions_da = NULL, instructions_dr = NULL, instructions_de = NULL,
                 validated_by_da = NULL, validated_by_dr = NULL, validated_by_de = NULL, validated_by_dg = NULL,
                 date_validation_da = NULL, date_validation_dr = NULL, date_validation_de = NULL, date_validation_dg = NULL,
                 confirmed_by_de = NULL,
