@@ -32,6 +32,7 @@ public class TraitementResource {
     private static final int MAX_REFERENCES_PAR_APPEL = 1000;
 
     private final TraitementRepository traitementRepository;
+    private final io.digiservices.bcrgservice.service.BcrgService bcrgService;
 
     /** Notification d'un lot de références traitées ; idempotent (upsert). */
     @PostMapping
@@ -49,7 +50,12 @@ public class TraitementResource {
             throw new BadRequestException("La liste 'references' doit contenir entre 1 et " + MAX_REFERENCES_PAR_APPEL + " elements");
         }
 
-        int nouvelles = traitementRepository.enregistrer(module, List.copyOf(references), notification.getDateTraitement());
+        // PP V2 : empreinte du contenu déclaré, base de /personnes-physiques/modifiees
+        Map<String, String> empreintes = "PERSONNE_PHYSIQUE".equals(module)
+                ? bcrgService.calculerEmpreintesPersonnesPhysiques(List.copyOf(references))
+                : Map.of();
+        int nouvelles = traitementRepository.enregistrer(module, List.copyOf(references),
+                notification.getDateTraitement(), empreintes);
         Map<String, Object> stats = traitementRepository.stats(module);
         log.info("[BCRG] Notification traitement module={} recues={} nouvelles={}", module, references.size(), nouvelles);
         return ResponseEntity.ok(Map.of(

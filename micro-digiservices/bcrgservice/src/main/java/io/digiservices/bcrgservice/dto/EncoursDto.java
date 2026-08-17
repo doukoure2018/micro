@@ -1,39 +1,49 @@
 package io.digiservices.bcrgservice.dto;
 
-import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 
 /**
- * Encours d'engagement au format de declaration BCRG (module M4), a une periode d'arrete.
+ * Encours d'engagement au format de déclaration BCRG (module M4) — contrat v1.3,
+ * aligné sur le retour BCRG « RETOUR-API-ENCOURS » : champs calculés à la date
+ * d'arrêté depuis le plan de remboursement SAF2000, montants en GNF.
  *
- * <p>Champs alignes sur le fichier MAPPING_ENCOURS_ENGAGEMENTS. Les indicateurs de
- * risque IFRS (PD, LGD, CCF, IFRSStage) ne sont pas produits par SAF et restent null
- * en attendant leur calcul / source.</p>
+ * <p>Tous les crédits du CRG relèvent de la catégorie d'engagement 01 (amortissables) :
+ * les champs conditionnés « catégorie 01 » sont systématiquement servis. Provisions,
+ * pertes et créances rattachées (comptabilité, hors module crédit SAF) sont émises à 0
+ * en régime transitoire documenté. Un encours n'est jamais émis pour un engagement
+ * clôturé (règle BCRG).</p>
  */
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 public class EncoursDto {
-    private String refIntEng;       // NUM_CREDITO
-    private String beneficiaireId;  // COD_CLIENTE
-    private String beneficiaireNom; // NOM_CLIENTE
-    private String codDev;          // COD_MONEDA
-    private String codAgce;         // COD_AGENCIA
-    private BigDecimal mntEng;      // MON_CREDITO (montant initial)
-    private BigDecimal mntCRDU;     // MON_SALDO (capital restant du)
-    private BigDecimal mntCapImp;   // capital impaye
-    private Long nbrEchPay;         // echeances payees
-    private Long nbrEchImp;         // echeances impayees
-    private Long nbrEchRest;        // echeances restantes
-    private String qualiCre;        // qualite du credit (traduit depuis IND_ESTADO)
-    private LocalDate datFin;       // FEC_VENCIMIENTO
-    // Indicateurs IFRS non disponibles dans SAF (a calculer/sourcer) :
-    private BigDecimal pd;
-    private BigDecimal lgd;
-    private BigDecimal ccf;
-    private String ifrsStage;
+    @JsonProperty("RefIntEng")  private String refIntEng;      // NUM_CREDITO
+    @JsonProperty("CodDev")     private String codDev;         // 'GNF'
+    @JsonProperty("DatEch")     private String datEch;         // dernière tombée d'échéance (JJMMAAAA)
+    @JsonProperty("MntDerEch")  private BigDecimal mntDerEch;  // montant de cette échéance
+    @JsonProperty("MonPai")     private BigDecimal monPai;     // dernier paiement (0 si aucun)
+    @JsonProperty("DatPai")     private String datPai;         // date du dernier paiement (JJMMAAAA)
+    @JsonProperty("MntHBil")    private BigDecimal mntHBil;    // hors bilan = montant non décaissé
+    @JsonProperty("MntRemAnt")  private String mntRemAnt;      // facultatif, non porté → null
+    @JsonProperty("MntCRDU")    private BigDecimal mntCRDU;    // capital restant dû (MON_SALDO)
+    @JsonProperty("MntCreRat")  private BigDecimal mntCreRat;  // créances rattachées → 0 (transitoire)
+    @JsonProperty("MntUtilise") private BigDecimal mntUtilise; // montant décaissé
+    @JsonProperty("MntAgi")     private String mntAgi;         // catégorie 02 uniquement → null
+    @JsonProperty("MntCapImp")  private BigDecimal mntCapImp;  // capital impayé (0 si aucun)
+    @JsonProperty("MntTotImp")  private BigDecimal mntTotImp;  // capital + intérêts impayés
+    @JsonProperty("DatDefaill") private String datDefaill;     // plus ancienne échéance impayée (JJMMAAAA)
+    @JsonProperty("MntPro")     private BigDecimal mntPro;     // provisions → 0 (transitoire)
+    @JsonProperty("MntPerte")   private BigDecimal mntPerte;   // pertes/radiations → 0 (transitoire)
+    @JsonProperty("NbrEchPay")  private Long nbrEchPay;
+    @JsonProperty("NbrEchImp")  private Long nbrEchImp;
+    @JsonProperty("NbrEchRest") private Long nbrEchRest;
+    @JsonProperty("QualiCre")   private String qualiCre;       // dérivée des jours de retard (référentiel IMF en attente)
+    @JsonProperty("PD")         private String pd;             // non produit → null
+    @JsonProperty("LGD")        private String lgd;            // facultatif → null
+    @JsonProperty("CCF")        private String ccf;            // facultatif → null
+    @JsonProperty("IFRSStage")  private String ifrsStage;      // facultatif → null
+    @JsonProperty("DatEvent")   private String datEvent;       // date de session (JJMMAAAA)
 }

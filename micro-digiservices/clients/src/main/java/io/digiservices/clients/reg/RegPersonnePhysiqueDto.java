@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -43,6 +44,12 @@ public class RegPersonnePhysiqueDto {
     private Integer numHijos;          // NUM_HIJOS (personnes a charge)
     private String tenenciaVivienda;   // TENENCIA_VIVIENDA (proprietaire / locataire)
     private String nomConyugue;        // NOM_CONYUGUE (source du nom marital)
+    // CL_DATOS_ASOCIADO (fiche associe 1-1) :
+    private LocalDate fechNacimiento;  // FECH_NACIMIENTO (DatNai)
+    private BigDecimal salario;        // SALARIO (RevMensMoy)
+    private Integer cantDependientes;  // CANT_DEPENDIENTES (NbPersCharge, repli NUM_HIJOS)
+    private String lugarTrabajo;       // LUGAR_TRABAJO (employeur)
+    private String puesto;             // PUESTO (fonction occupee)
 
     // Sous-listes (renseignees uniquement sur le detail par id)
     private List<RegCompteDto> comptes;

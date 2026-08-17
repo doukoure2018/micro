@@ -2,7 +2,7 @@
 
 **Crédit Rural de Guinée S.A. — Documentation technique d'intégration**
 
-*Version 1.2 — 12 août 2026 (v1.1 : contrat complet suite aux retours PP/PM ; v1.2 : extraction incrémentale + API de notification des données traitées)*
+*Version 1.4 — 17 août 2026 (v1.1 contrat complet PP/PM · v1.2 extraction incrémentale + notifications · v1.3 refonte Engagements/Encours · v1.4 retours PP V2 : état civil réel, référentiel pays, NIN, API par liste d'identifiants et API des personnes modifiées)*
 
 ---
 
@@ -30,7 +30,7 @@ Les données exposées sont issues directement du système bancaire de productio
 | Méthodes | `GET` (extraction, lecture seule) et `POST`/`DELETE` sur `/bcrg/traitements` (notification des données traitées, voir § 3.6) |
 | Authentification | Clé API via en-tête HTTP `X-API-Key` |
 | Pagination | Paramètres `page` (défaut 0) et `size` (défaut 20, **maximum 100**) |
-| Dates | Modules M1 (PP/PM) : format BCRG `JJMMAAAA` — Modules M2/M4 : ISO 8601 `AAAA-MM-JJ` |
+| Dates | Format BCRG `JJMMAAAA` sur tous les modules (M1, M2, M4) ; taux et pourcentages au format `NN.NN` |
 | Montants | Nombres décimaux, devise indiquée par le champ `codDev` (GNF sauf mention contraire) |
 
 ### 2.0 Politique de complétude (révision 1.1)
@@ -115,17 +115,17 @@ Les modules **M1 (PP/PM) et M2 (engagements)** ne renvoient plus, par défaut, q
 | `IdInterneClt` | Identifiant interne du client (SAF `COD_CLIENTE`) |
 | `NatDec` | `null` — géré par le middleware BCRG |
 | `NatClient` | `0` = client du participant, `1` = tiers |
-| `NIN` | `ND` — non porté par le SI |
+| `NIN` | Numéro de la CIN biométrique (16 chiffres) si le client en possède une (type `02`), `null` sinon — convention validée en réunion du 16/08 |
 | `DatCreaPart` | Date de création du client (`JJMMAAAA`) |
 | `NomNaiClt` / `PrenomClt` / `NomComp` | Nom de naissance, prénom(s), nom complet |
 | `NomMtlClt` | Nom marital si sexe `F` et `EtatCivil=2` (nom du conjoint SAF, `ND` si inconnu) ; `null` sinon |
 | `Sexe` | `M` / `F` |
-| `DatNai` | `ND` — non portée par le SI |
+| `DatNai` | Date de naissance réelle (`JJMMAAAA`, fiche associé SAF), `ND` si non renseignée |
 | `EtatCivil` | `1`..`4` (référentiel BCRG) |
 | `NomPere` / `PrenomPere` / `NomNaiMere` / `PrmMre` | `ND` — filiation non portée (valeur par défaut convenue) |
 | `VilleNai` | Lieu de naissance |
-| `PaysNai` | `ND` — non porté |
-| `NatClt` | Nationalité (code SI, transcodification pays à convenir) |
+| `PaysNai` | Dérivé de la nationalité (référentiel pays, repli `GN`) — approximation documentée |
+| `NatClt` | Référentiel `pays_nationalites` (ex. `GN`), dérivé de la nationalité SAF |
 | `Resident` / `PaysRes` | `1` / `GN` — réseau exclusivement domestique |
 | `Mobile` | Normalisé `+224` + 9 chiffres |
 | `Email` / `CommuneAdress` / `NumSecSoc` | `null` (facultatifs, non portés) |
@@ -139,8 +139,16 @@ Les modules **M1 (PP/PM) et M2 (engagements)** ne renvoient plus, par défaut, q
 | `DateDeces` / `SitBancaire` / `DateDebIB` / `DateFinIB` | `null` (conditionnels ; situation bancaire réservée aux banques) |
 | `ComptesAssocies` | Comptes du client (voir § 3.5) |
 | `Pieces` | Pièces d'identité (voir § 3.5) |
-| `DonneeComplementaire` | NbPersCharge, RevMensMoy (`ND`), DepMensMoy (`ND`), PropLoc (voir § 3.5) |
-| `TuteurCurateur` / `Employeurs` / `DonneesAdditionelles` | Listes vides (non portés par le SI) |
+| `DonneeComplementaire` | NbPersCharge (personnes à charge, repli enfants), RevMensMoy (salaire de la fiche associé), DepMensMoy (`ND`), PropLoc au référentiel `P`/`L`/`A` |
+| `TuteurCurateur` / `DonneesAdditionelles` | Listes vides (non portés par le SI) |
+| `Employeurs` | Renseigné depuis la fiche associé (lieu de travail) quand disponible, liste vide sinon |
+
+### 3.1 bis — Nouvelles API Personnes Physiques (v1.4)
+
+| Requête | Description |
+|---|---|
+| `GET /personnes-physiques/par-ids?ids=id1,id2,...` | Personnes physiques à partir d'une liste d'identifiants internes (1 à **200** par appel) |
+| `GET /personnes-physiques/modifiees?page=0&size=100` | Personnes **modifiées depuis leur déclaration** : à chaque notification (`POST /traitements`, module `PERSONNE_PHYSIQUE`), une empreinte du contenu déclaré est stockée ; cet endpoint compare l'empreinte actuelle à celle stockée et ne renvoie que les écarts. Après réintégration, notifier à nouveau les références pour rafraîchir l'empreinte. Parcours complet des références déclarées : extraction recommandée hors heures d'affluence |
 
 ### 3.2 Module M1 — Personnes morales
 
@@ -174,58 +182,77 @@ Les modules **M1 (PP/PM) et M2 (engagements)** ne renvoient plus, par défaut, q
 | `ComptesAssocies` | Comptes du client — **sans `TypCpt`** (retiré à la demande de la BCRG, voir § 3.5) |
 | `Mandataires` / `MandatairesComptes` / `Actionnaires` / `DonneesAdditionelles` | Listes vides (non portés par le SI) |
 
-### 3.3 Module M2 — Engagements
+### 3.3 Module M2 — Engagements (contrat v1.3)
 
 | Requête | Description |
 |---|---|
-| `GET /engagements?page=0&size=100` | Liste paginée des engagements (tous statuts) |
+| `GET /engagements?page=0&size=100&statut=restantes` | Liste paginée des engagements (extraction incrémentale, § 2.3) |
 | `GET /engagements/{refEng}` | Détail d'un engagement par référence interne |
 
-**Champs de la réponse :**
+**Champs de la réponse (retour BCRG pris en compte : `beneficiaireId/Nom`, `codActivite`, `solde` et `statut` supprimés ; l'état du contrat est porté par `Cloture`/`MotifCloture`/`DatClo`) :**
 
-| Champ | Type | Description |
-|---|---|---|
-| `refIntEng` | texte | Référence interne de l'engagement |
-| `beneficiaireId` / `beneficiaireNom` | texte | Identifiant interne et nom du bénéficiaire (joignable aux modules M1) |
-| `typEng` | texte | Type d'engagement (code SI) |
-| `mntEng` | décimal | Montant accordé |
-| `solde` | décimal | Solde actuel |
-| `codDev` | texte | Devise |
-| `txIntEng` | décimal | Taux d'intérêt |
-| `mntEch` | décimal | Montant d'échéance |
-| `nbrEch` | entier | Nombre d'échéances |
-| `datAccord` | date | Date d'accord (ouverture) |
-| `dateMEP` | date | Date de mise en place (premier déboursement) |
-| `datFin` | date | Date de fin (échéance finale) |
-| `statut` | texte | Actif, Décaissé, Clôturé, Terminé, Échu, Judiciaire, Annulé |
-| `codAgce` | texte | Code agence |
-| `codActivite` | texte | Code activité économique financée |
+| Champ | Valeur servie par le CRG |
+|---|---|
+| `RefIntEng` | Référence interne (n° de crédit SAF) |
+| `TypEve` | `01` — engagement accordé (les demandes d'engagement ne sont pas encore déclarées) |
+| `LigneParent` / `RefIntLigne` | `01` (pas de lignes mère/fils au CRG) / `null` |
+| `RefDemandeEng` / `DatDem` | `null` (facultatifs) |
+| `TypModif` / `EstDout` | `01` — aucune modification / `null` |
+| `Cloture` | `0` en cours, `1` clôturé (dérivé de l'état SAF et du solde) |
+| `MotifCloture` | Si clôturé : `01` totalement remboursé (`06` autre si annulé) |
+| `DatClo` | Date de solde SAF (`JJMMAAAA`), `ND` si clôturé sans date |
+| `DatAccord` / `DateMEP` / `DatFin` / `DatPremEch` | `JJMMAAAA` — accord, mise en place, fin prévue, première échéance du plan |
+| `TypEng` | Code SI transitoire — **en attente du référentiel F.9** (voir § 5) |
+| `MntEng` / `MntEch` / `NbrEch` | Montant accordé, montant d'échéance, nombre d'échéances |
+| `MntInt` | Total des intérêts prévus (somme du plan de remboursement) |
+| `CodDev` | `GNF` |
+| `PeriodRemb` | `ND` — **en attente du référentiel des périodicités** |
+| `TxIntEng` / `TypTxInt` | Taux au format `NN.NN` / `00` (taux fixe, politique CRG) |
+| `TxComm` / `IndRef` / `Sprd` | `null` (pas de commission ; taux fixe) |
+| `TxEffGlob` | `ND` — TEG non calculé par le SI |
+| `MoyRemb` | `01` débit de compte (convention CRG, à confirmer) |
+| `TypAmo` / `TypDiffAmo` / `UnitDur` / `PerDiffAmo` | `05` échéance constante (`04` in fine si échéance unique) / `A` aucun différé / `null` / `null` |
+| `MntFrais` / `MntComm` | `0` (convention) |
+| `CodAgce` | Code agence SI — table transmise pour intégration au référentiel |
+| `EstRachatCreance` / `ParCont` / `ValNom` / `ValCess` | `02` non / `null` / `null` / `null` |
+| `DatEvent` | Date de session (`JJMMAAAA`) |
+| `Beneficiaires` | **Obligatoire** : `{RefIntEng, IdIntBen, PourBenef}` — titulaire unique, `IdIntBen` = identifiant M1, `PourBenef` = `100.00` |
+| `Garanties` | Liste vide (non portées par SAF — facultatif) |
+| `Consolidations` | Liste vide (`TypModif` = `01`) |
 
-### 3.4 Module M4 — Encours d'engagements
+### 3.4 Module M4 — Encours d'engagements (contrat v1.3)
 
 | Requête | Description |
 |---|---|
-| `GET /encours?periode=AAAA-MM&page=0&size=100` | Encours (soldes > 0) à la période d'arrêté indiquée |
+| `GET /encours?periode=AAAA-MM&page=0&size=100` | Encours à la période d'arrêté indiquée |
 
-Le paramètre **`periode` est obligatoire** au format `AAAA-MM` (ex. `2026-06` pour l'arrêté de fin juin 2026). Les compteurs d'échéances (payées / impayées / restantes) et le capital impayé sont calculés par rapport à la fin de la période.
+Le paramètre **`periode` est obligatoire** au format `AAAA-MM`. Conformément au retour BCRG :
+un encours n'est **jamais émis pour un engagement clôturé** ; sont couverts les crédits à
+capital restant dû > 0 **ou** à montant non entièrement décaissé (hors bilan). Tous les
+calculs (échéances, impayés, dernier paiement) sont arrêtés à la fin de la période.
+`beneficiaireId/Nom`, `codAgce`, `mntEng` et `datFin` sont supprimés du contrat.
 
-**Champs de la réponse :**
+**Champs de la réponse (catégorie d'engagement `01` pour tous les crédits CRG) :**
 
-| Champ | Type | Description |
-|---|---|---|
-| `refIntEng` | texte | Référence interne de l'engagement |
-| `beneficiaireId` / `beneficiaireNom` | texte | Bénéficiaire |
-| `codDev` | texte | Devise |
-| `codAgce` | texte | Code agence |
-| `mntEng` | décimal | Montant initial de l'engagement |
-| `mntCRDU` | décimal | Capital restant dû |
-| `mntCapImp` | décimal | Capital impayé (échéances échues non réglées à la période) |
-| `nbrEchPay` | entier | Nombre d'échéances payées |
-| `nbrEchImp` | entier | Nombre d'échéances impayées |
-| `nbrEchRest` | entier | Nombre d'échéances restantes |
-| `qualiCre` | texte | Qualité du crédit (même nomenclature que `statut` M2) |
-| `datFin` | date | Date de fin de l'engagement |
-| `pd`, `lgd`, `ccf`, `ifrsStage` | — | Indicateurs IFRS — *non produits par le SI actuel, `null` (voir § 5)* |
+| Champ | Valeur servie par le CRG |
+|---|---|
+| `RefIntEng` | Référence interne (n° de crédit SAF) |
+| `CodDev` | `GNF` |
+| `DatEch` / `MntDerEch` | Dernière tombée d'échéance ≤ arrêté (`JJMMAAAA`) et son montant |
+| `MonPai` / `DatPai` | Dernier paiement réalisé (`0`/`null` si aucun) — approximation : échéance soldée la plus récente |
+| `MntHBil` | Hors bilan = montant de l'engagement non décaissé |
+| `MntUtilise` | Montant décaissé |
+| `MntCRDU` | Capital restant dû |
+| `MntCapImp` | Capital impayé (`0` si aucun) |
+| `MntTotImp` | Total des impayés = capital + intérêts des échéances échues non réglées |
+| `DatDefaill` | Plus ancienne échéance impayée (`JJMMAAAA`), renseignée si `MntTotImp > 0` |
+| `MntRemAnt` | `null` (facultatif, non porté) |
+| `MntCreRat` / `MntPro` / `MntPerte` | `0` — régime transitoire (données comptables hors module crédit, voir § 5) |
+| `MntAgi` | `null` (réservé à la catégorie `02`) |
+| `NbrEchPay` / `NbrEchImp` / `NbrEchRest` | Compteurs d'échéances à l'arrêté |
+| `QualiCre` | Codes transitoires dérivés du retard : `01` saine, `02` < 90 j, `03` 90-180 j, `04` > 180 j — **en attente du référentiel de classification IMF** |
+| `PD` / `LGD` / `CCF` / `IFRSStage` | `null` (non produits / facultatifs) |
+| `DatEvent` | Date de session (`JJMMAAAA`) |
 
 ### 3.5 Sous-objets communs (M1)
 
@@ -236,7 +263,7 @@ Le paramètre **`periode` est obligatoire** au format `AAAA-MM` (ex. `2026-06` p
 | `IdInterneClt` | Identifiant du client titulaire |
 | `CodAgce` | Agence du client |
 | `NumCpt` | Numéro de compte SAF (14 positions — la règle de réduction à 10 positions est en attente d'arbitrage BCRG, voir § 5) |
-| `CleRib` | `ND` — le CRG n'est pas un participant de type banque |
+| `CleRib` | `null` (consigne PP V2 du 16/08) |
 | `TypCpt` | **Personnes physiques uniquement** : `01` = Compte individuel (défaut). Retiré des comptes PM |
 | `StatCpt` | Référentiel BCRG : `00` Actif, `01` Bloqué, `02` Clôturé, `03` Succession, `04` Suspendu |
 
@@ -333,6 +360,20 @@ les champs sourcés mais vides sont émis à `null` (voir § 2.0).
 - **Comptes** : `CleRib` (le CRG n'est pas un participant de type banque) ;
 - **Encours** : indicateurs IFRS (`pd`, `lgd`, `ccf`, `ifrsStage`) restent à `null` ;
 - **Engagements** : garanties et consolidations (différés).
+
+**Référentiels attendus de la BCRG pour finaliser la v1.3 (M2/M4)** :
+
+- **F.9 — types, natures et catégories d'engagements** (indispensable pour `TypEng`) ;
+- **périodicités des engagements** (`PeriodRemb`) ;
+- **agences** (`CodAgce`) — la table des agences du CRG est transmise pour intégration ;
+- **classification des créances applicable aux IMF** (`QualiCre`) — en attendant, codes
+  transitoires dérivés des jours de retard (§ 3.4).
+
+**Conventions transitoires v1.3 à valider par la BCRG** : `MoyRemb = 01` (débit de
+compte), `TypAmo = 05` (échéance constante), `TypDiffAmo = A`, `MntCreRat`/`MntPro`/
+`MntPerte` à `0` (données comptables hors module crédit SAF), `MonPai` approximé par
+l'échéance soldée la plus récente (les paiements partiels ne sont pas tracés
+unitairement dans le plan SAF).
 
 **Points soumis à l'arbitrage de la BCRG** :
 

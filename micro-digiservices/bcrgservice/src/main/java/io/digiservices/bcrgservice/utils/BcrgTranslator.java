@@ -3,6 +3,8 @@ package io.digiservices.bcrgservice.utils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.Normalizer;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -41,6 +43,8 @@ public class BcrgTranslator {
     public static final String TYPE_COMPTE_INDIVIDUEL = "01";
     /** Code pays de la République de Guinée dans le référentiel BCRG. */
     public static final String PAYS_GUINEE = "GN";
+    /** Devise de déclaration : tous les montants sont déclarés en GNF. */
+    public static final String DEVISE_GNF = "GNF";
     /** Resident='1' : le réseau CRG est exclusivement domestique. */
     public static final String RESIDENT_OUI = "1";
 
@@ -199,6 +203,63 @@ public class BcrgTranslator {
             case "X" -> "Annule";
             default -> indEstado.trim();
         };
+    }
+
+    // ==================== v1.4 — PP V2 ====================
+
+    /**
+     * Code pays du référentiel pays_nationalites dérivé de la nationalité SAF.
+     * Convention PP V2 : un code alpha-2 est repris tel quel ; toute autre valeur
+     * (libellé, code interne, vide) est ramenée à 'GN' — la clientèle du CRG est
+     * quasi exclusivement guinéenne (approximation documentée, validée avec la BCRG).
+     */
+    public String paysDepuisNationalite(String nacionalidad) {
+        String v = sansAccents(nacionalidad);
+        if (!StringUtils.hasText(v)) return PAYS_GUINEE;
+        if (v.contains("GUIN")) return PAYS_GUINEE;
+        if (v.matches("[A-Z]{2}")) return v;
+        return PAYS_GUINEE;
+    }
+
+    /** TENENCIA_VIVIENDA SAF -> PropLoc BCRG (P propriétaire, L locataire, A autre). */
+    public String translatePropLoc(String tenenciaVivienda) {
+        String v = sansAccents(tenenciaVivienda);
+        if (!StringUtils.hasText(v)) return null;
+        if (v.startsWith("P") || v.contains("PROPRI")) return "P";
+        if (v.startsWith("L") || v.startsWith("A") && v.contains("ALQUIL") || v.contains("LOCAT")) return "L";
+        return "A";
+    }
+
+    // ==================== v1.3 — modules M2 (engagements) / M4 (encours) ====================
+
+    /** Taux/pourcentage au format BCRG NN.NN (séparateur '.', 2 décimales) ; null reste null. */
+    public String formatTaux(BigDecimal taux) {
+        if (taux == null) return null;
+        return taux.setScale(2, RoundingMode.HALF_UP).toPlainString();
+    }
+
+    /** États SAF marquant un engagement clôturé (C=Clôturé, T=Terminé, X=Annulé). */
+    public boolean estCreditCloture(String indEstado, BigDecimal monSaldo) {
+        String etat = indEstado == null ? "" : indEstado.trim().toUpperCase();
+        if (etat.equals("C") || etat.equals("T") || etat.equals("X")) return true;
+        return monSaldo != null && monSaldo.signum() == 0;
+    }
+
+    /** Motif de clôture BCRG : X (annulé) → '06' Autre, sinon '01' Totalement remboursé. */
+    public String motifCloture(String indEstado) {
+        return "X".equalsIgnoreCase(indEstado == null ? "" : indEstado.trim()) ? "06" : "01";
+    }
+
+    /**
+     * Qualité de la créance dérivée des jours de retard — codes TRANSITOIRES en
+     * attente du référentiel BCRG de classification des engagements des IMF :
+     * 01 saine, 02 retard < 90 j, 03 douteuse (90-180 j), 04 compromise (> 180 j).
+     */
+    public String qualiCreDepuisRetard(Long joursRetard) {
+        if (joursRetard == null || joursRetard <= 0) return "01";
+        if (joursRetard < 90) return "02";
+        if (joursRetard <= 180) return "03";
+        return "04";
     }
 
     /** Majuscules sans accents pour la comparaison par mots-clés. */

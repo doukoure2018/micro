@@ -36,4 +36,8 @@ public class RegEngagementDto {
     private LocalDate fecApertura;         // date d'accord
     private LocalDate fecPrimerDesembolso; // date de mise en place (1er decaissement)
     private LocalDate fecVencimiento;      // date de fin
+    private BigDecimal monDesembolsado;    // montant decaisse (MntUtilise / hors-bilan)
+    private LocalDate fecCancelacionCredito; // date de solde du credit (DatClo)
+    private LocalDate fecPremiereEcheance; // premiere echeance du plan (DatPremEch)
+    private BigDecimal mntInteretsTotal;   // somme des interets prevus du plan (MntInt)
 }

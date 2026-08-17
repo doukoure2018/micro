@@ -22,15 +22,22 @@ import java.util.Set;
 public class TraitementRepository {
 
     private static final String UPSERT = """
-            INSERT INTO bcrg_donnee_traitee (module, reference, date_traitement)
-            VALUES (:module, :reference, :dateTraitement)
+            INSERT INTO bcrg_donnee_traitee (module, reference, date_traitement, empreinte)
+            VALUES (:module, :reference, :dateTraitement, :empreinte)
             ON CONFLICT (module, reference)
                 DO UPDATE SET date_traitement = COALESCE(EXCLUDED.date_traitement, bcrg_donnee_traitee.date_traitement),
+                              empreinte = COALESCE(EXCLUDED.empreinte, bcrg_donnee_traitee.empreinte),
                               notifie_le = CURRENT_TIMESTAMP
             """;
 
     private static final String SELECT_REFS = """
             SELECT reference FROM bcrg_donnee_traitee WHERE module = :module
+            """;
+
+    private static final String SELECT_REFS_EMPREINTES = """
+            SELECT reference, empreinte FROM bcrg_donnee_traitee
+            WHERE module = :module AND empreinte IS NOT NULL
+            ORDER BY reference
             """;
 
     private static final String COUNT_MODULE = """
@@ -44,9 +51,13 @@ public class TraitementRepository {
 
     private final JdbcClient jdbcClient;
 
-    /** Enregistre les références notifiées ; retourne le nombre de références nouvelles. */
+    /**
+     * Enregistre les références notifiées (avec l'empreinte du contenu déclaré quand
+     * elle a pu être calculée) ; retourne le nombre de références nouvelles.
+     */
     @Transactional
-    public int enregistrer(String module, List<String> references, LocalDateTime dateTraitement) {
+    public int enregistrer(String module, List<String> references, LocalDateTime dateTraitement,
+                           Map<String, String> empreintes) {
         Set<String> existantes = findReferences(module);
         int nouvelles = 0;
         for (String reference : references) {
@@ -55,9 +66,20 @@ public class TraitementRepository {
                     .param("module", module)
                     .param("reference", reference)
                     .param("dateTraitement", dateTraitement)
+                    .param("empreinte", empreintes != null ? empreintes.get(reference) : null)
                     .update();
         }
         return nouvelles;
+    }
+
+    /** Références notifiées d'un module avec leur empreinte (base de la détection des modifications). */
+    public Map<String, String> findReferencesAvecEmpreinte(String module) {
+        Map<String, String> map = new java.util.LinkedHashMap<>();
+        jdbcClient.sql(SELECT_REFS_EMPREINTES)
+                .param("module", module)
+                .query((rs, n) -> map.put(rs.getString("reference"), rs.getString("empreinte")))
+                .list();
+        return map;
     }
 
     /** Ensemble des références traitées d'un module (chargé en mémoire pour le filtrage). */

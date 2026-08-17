@@ -43,6 +43,28 @@ public class BcrgResource {
         return ResponseEntity.ok(bcrgService.getPersonnesPhysiques(page, size, toutes(statut)));
     }
 
+    /** PP V2 : personnes physiques à partir d'une liste d'identifiants internes (1 à 200). */
+    @GetMapping("/personnes-physiques/par-ids")
+    public ResponseEntity<java.util.List<PersonnePhysiqueDto>> getPersonnesPhysiquesParIds(
+            @RequestParam(name = "ids") java.util.List<String> ids) {
+        if (ids == null || ids.isEmpty() || ids.size() > 200) {
+            throw new BadRequestException("Le parametre 'ids' doit contenir entre 1 et 200 identifiants");
+        }
+        return ResponseEntity.ok(bcrgService.getPersonnesPhysiquesParIds(ids));
+    }
+
+    /**
+     * PP V2 : personnes modifiées depuis leur déclaration à la BCRG — comparaison de
+     * l'empreinte actuelle avec celle stockée lors de la notification POST /traitements.
+     */
+    @GetMapping("/personnes-physiques/modifiees")
+    public ResponseEntity<PageDto<PersonnePhysiqueDto>> getPersonnesPhysiquesModifiees(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size) {
+        validatePagination(page, size);
+        return ResponseEntity.ok(bcrgService.getPersonnesPhysiquesModifiees(page, size));
+    }
+
     @GetMapping("/personnes-physiques/{idClient}")
     public ResponseEntity<PersonnePhysiqueDto> getPersonnePhysique(@PathVariable("idClient") String idClient) {
         return ResponseEntity.ok(bcrgService.getPersonnePhysique(idClient));
