@@ -185,12 +185,21 @@ public class RegulatoryRepository {
     //  Engagements (PR_CREDITOS)
     // ============================================================
 
+    // v1.3 : montant decaisse, date de solde et derivations du plan de paiement
+    // (premiere echeance, total des interets prevus) pour le contrat M2 BCRG.
     private static final String ENG_SELECT = """
             SELECT cr.COD_EMPRESA, cr.COD_AGENCIA, cr.NUM_CREDITO, cr.COD_CLIENTE,
                    c.NOM_CLIENTE, c.IND_PERSONA,
                    cr.TIP_CREDITO, cr.COD_MONEDA, cr.MON_CREDITO, cr.MON_SALDO, cr.MON_CUOTA,
                    cr.CANT_CUOTAS, cr.TASA_INTERES, cr.IND_ESTADO, cr.COD_ACTIVIDAD,
-                   cr.FEC_CALIFICACION, cr.FEC_APERTURA, cr.FEC_PRIMER_DESEMBOLSO, cr.FEC_VENCIMIENTO
+                   cr.FEC_CALIFICACION, cr.FEC_APERTURA, cr.FEC_PRIMER_DESEMBOLSO, cr.FEC_VENCIMIENTO,
+                   cr.MON_DESEMBOLSADO, cr.FEC_CANCELACION,
+                   (SELECT MIN(pp.FEC_CUOTA) FROM PR.PR_PLAN_PAGOS pp
+                     WHERE pp.COD_EMPRESA = cr.COD_EMPRESA AND pp.COD_AGENCIA = cr.COD_AGENCIA
+                       AND pp.NUM_CREDITO = cr.NUM_CREDITO AND pp.NUM_CUOTA <> 0) AS FEC_PREM_ECH,
+                   (SELECT SUM(pp.MON_INT) FROM PR.PR_PLAN_PAGOS pp
+                     WHERE pp.COD_EMPRESA = cr.COD_EMPRESA AND pp.COD_AGENCIA = cr.COD_AGENCIA
+                       AND pp.NUM_CREDITO = cr.NUM_CREDITO AND pp.NUM_CUOTA <> 0) AS MNT_INT_TOTAL
             FROM PR.PR_CREDITOS cr
             INNER JOIN CL.CL_CLIENTES c
                 ON cr.COD_EMPRESA = c.COD_EMPRESA AND cr.COD_CLIENTE = c.COD_CLIENTE
@@ -215,6 +224,28 @@ public class RegulatoryRepository {
     //  Encours d'engagements (PR_CREDITOS + PR_PLAN_PAGOS) a une periode
     // ============================================================
 
+    // v1.3 : derivations d'arrete supplementaires pour le contrat M4 BCRG
+    private static final String ENCOURS_AGG_V13 =
+            "       (SELECT MAX(pp.FEC_CUOTA) FROM PR.PR_PLAN_PAGOS pp WHERE pp.COD_EMPRESA = cr.COD_EMPRESA\n" +
+            "          AND pp.COD_AGENCIA = cr.COD_AGENCIA AND pp.NUM_CREDITO = cr.NUM_CREDITO\n" +
+            "          AND pp.NUM_CUOTA <> 0 AND pp.FEC_CUOTA < :periodEnd) AS DAT_DERN_ECH,\n" +
+            "       (SELECT TOP 1 pp.MON_CUOTA FROM PR.PR_PLAN_PAGOS pp WHERE pp.COD_EMPRESA = cr.COD_EMPRESA\n" +
+            "          AND pp.COD_AGENCIA = cr.COD_AGENCIA AND pp.NUM_CREDITO = cr.NUM_CREDITO\n" +
+            "          AND pp.NUM_CUOTA <> 0 AND pp.FEC_CUOTA < :periodEnd ORDER BY pp.FEC_CUOTA DESC) AS MNT_DERN_ECH,\n" +
+            "       (SELECT MAX(pp.FEC_CANCELACION) FROM PR.PR_PLAN_PAGOS pp WHERE pp.COD_EMPRESA = cr.COD_EMPRESA\n" +
+            "          AND pp.COD_AGENCIA = cr.COD_AGENCIA AND pp.NUM_CREDITO = cr.NUM_CREDITO\n" +
+            "          AND pp.NUM_CUOTA <> 0 AND pp.FEC_CANCELACION IS NOT NULL AND pp.FEC_CANCELACION < :periodEnd) AS DAT_DERN_PAI,\n" +
+            "       (SELECT TOP 1 pp.MON_CUOTA FROM PR.PR_PLAN_PAGOS pp WHERE pp.COD_EMPRESA = cr.COD_EMPRESA\n" +
+            "          AND pp.COD_AGENCIA = cr.COD_AGENCIA AND pp.NUM_CREDITO = cr.NUM_CREDITO\n" +
+            "          AND pp.NUM_CUOTA <> 0 AND pp.FEC_CANCELACION IS NOT NULL AND pp.FEC_CANCELACION < :periodEnd\n" +
+            "          ORDER BY pp.FEC_CANCELACION DESC) AS MNT_DERN_PAI,\n" +
+            "       (SELECT SUM(pp.SAL_INT) FROM PR.PR_PLAN_PAGOS pp WHERE pp.COD_EMPRESA = cr.COD_EMPRESA\n" +
+            "          AND pp.COD_AGENCIA = cr.COD_AGENCIA AND pp.NUM_CREDITO = cr.NUM_CREDITO\n" +
+            "          AND pp.NUM_CUOTA <> 0 AND pp.FEC_CANCELACION IS NULL AND pp.FEC_CUOTA < :periodEnd) AS MNT_INT_IMP,\n" +
+            "       (SELECT MIN(pp.FEC_CUOTA) FROM PR.PR_PLAN_PAGOS pp WHERE pp.COD_EMPRESA = cr.COD_EMPRESA\n" +
+            "          AND pp.COD_AGENCIA = cr.COD_AGENCIA AND pp.NUM_CREDITO = cr.NUM_CREDITO\n" +
+            "          AND pp.NUM_CUOTA <> 0 AND pp.FEC_CANCELACION IS NULL AND pp.FEC_CUOTA < :periodEnd) AS DAT_PREM_IMP,\n";
+
     private static final String PP_AGG =
             "       (SELECT COUNT(*) FROM PR.PR_PLAN_PAGOS pp WHERE pp.COD_EMPRESA = cr.COD_EMPRESA\n" +
             "          AND pp.COD_AGENCIA = cr.COD_AGENCIA AND pp.NUM_CREDITO = cr.NUM_CREDITO\n" +
@@ -229,17 +260,25 @@ public class RegulatoryRepository {
             "          AND pp.COD_AGENCIA = cr.COD_AGENCIA AND pp.NUM_CREDITO = cr.NUM_CREDITO\n" +
             "          AND pp.NUM_CUOTA <> 0 AND pp.FEC_CANCELACION IS NULL AND pp.FEC_CUOTA < :periodEnd) AS MNT_CAP_IMP\n";
 
+    // v1.3 : un encours ne peut pas porter sur un engagement cloture (regle BCRG) ;
+    // il couvre les credits a solde > 0 OU a montant non entierement decaisse (hors bilan).
+    private static final String ENCOURS_WHERE = """
+            WHERE cr.IND_ESTADO NOT IN ('C', 'T', 'X')
+              AND (cr.MON_SALDO > 0 OR COALESCE(cr.MON_CREDITO, 0) > COALESCE(cr.MON_DESEMBOLSADO, 0))
+            """;
+
     private static final String SQL_COUNT_ENCOURS =
-            "SELECT COUNT(*) FROM PR.PR_CREDITOS cr WHERE cr.MON_SALDO > 0";
+            "SELECT COUNT(*) FROM PR.PR_CREDITOS cr " + ENCOURS_WHERE;
 
     private static final String SQL_FIND_ENCOURS = """
             SELECT cr.COD_AGENCIA, cr.NUM_CREDITO, cr.COD_CLIENTE, c.NOM_CLIENTE, cr.COD_MONEDA,
                    cr.MON_CREDITO, cr.MON_SALDO, cr.MON_CUOTA, cr.CANT_CUOTAS, cr.IND_ESTADO, cr.FEC_VENCIMIENTO,
-            """ + PP_AGG + """
+                   cr.MON_DESEMBOLSADO,
+            """ + ENCOURS_AGG_V13 + PP_AGG + """
             FROM PR.PR_CREDITOS cr
             INNER JOIN CL.CL_CLIENTES c
                 ON cr.COD_EMPRESA = c.COD_EMPRESA AND cr.COD_CLIENTE = c.COD_CLIENTE
-            WHERE cr.MON_SALDO > 0
+            """ + ENCOURS_WHERE + """
             ORDER BY cr.NUM_CREDITO
             OFFSET :offset ROWS FETCH NEXT :size ROWS ONLY
             """;
@@ -586,6 +625,10 @@ public class RegulatoryRepository {
         d.setFecApertura(dt(rs, "FEC_APERTURA"));
         d.setFecPrimerDesembolso(dt(rs, "FEC_PRIMER_DESEMBOLSO"));
         d.setFecVencimiento(dt(rs, "FEC_VENCIMIENTO"));
+        d.setMonDesembolsado(dec(rs, "MON_DESEMBOLSADO"));
+        d.setFecCancelacionCredito(dt(rs, "FEC_CANCELACION"));
+        d.setFecPremiereEcheance(dt(rs, "FEC_PREM_ECH"));
+        d.setMntInteretsTotal(dec(rs, "MNT_INT_TOTAL"));
         return d;
     };
 
@@ -606,6 +649,13 @@ public class RegulatoryRepository {
         d.setNbEchImpayees(lng(rs, "NB_IMPAYEES"));
         d.setNbEchRestantes(lng(rs, "NB_RESTANTES"));
         d.setMntCapImpaye(dec(rs, "MNT_CAP_IMP"));
+        d.setMonDesembolsado(dec(rs, "MON_DESEMBOLSADO"));
+        d.setDatDerniereEcheance(dt(rs, "DAT_DERN_ECH"));
+        d.setMntDerniereEcheance(dec(rs, "MNT_DERN_ECH"));
+        d.setDatDernierPaiement(dt(rs, "DAT_DERN_PAI"));
+        d.setMntDernierPaiement(dec(rs, "MNT_DERN_PAI"));
+        d.setMntInteretsImpayes(dec(rs, "MNT_INT_IMP"));
+        d.setFecPlusAncienneImpayee(dt(rs, "DAT_PREM_IMP"));
         return d;
     };
 

@@ -143,7 +143,17 @@ public class BcrgServiceImpl implements BcrgService {
 
     @Override
     public PageDto<EncoursDto> getEncours(String periode, int page, int size) {
-        return mapper.toPage(ebankingRegClient.getEncours(periode, page, size), mapper::toEncours);
+        java.time.LocalDate arrete = parseArrete(periode);
+        return mapper.toPage(ebankingRegClient.getEncours(periode, page, size), s -> mapper.toEncours(s, arrete));
+    }
+
+    /** Dernier jour du mois d'arrêté (AAAA-MM) ; null si le format est invalide (ebanking répondra 400). */
+    private static java.time.LocalDate parseArrete(String periode) {
+        try {
+            return java.time.YearMonth.parse(periode).atEndOfMonth();
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     // ==================== Parcours filtre ====================

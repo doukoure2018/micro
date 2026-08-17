@@ -32,4 +32,11 @@ public class RegEncoursDto {
     private Long nbEchImpayees;        // NbrEchImp
     private Long nbEchRestantes;       // NbrEchRest
     private BigDecimal mntCapImpaye;   // MntCapImp
+    private BigDecimal monDesembolsado;        // montant decaisse (MntUtilise, MntHBil)
+    private LocalDate datDerniereEcheance;     // derniere tombee d'echeance <= arrete (DatEch)
+    private BigDecimal mntDerniereEcheance;    // montant de cette echeance (MntDerEch)
+    private LocalDate datDernierPaiement;      // dernier paiement <= arrete (DatPai)
+    private BigDecimal mntDernierPaiement;     // montant du dernier paiement (MonPai, approx = echeance soldee)
+    private BigDecimal mntInteretsImpayes;     // interets echus impayes (composante de MntTotImp)
+    private LocalDate fecPlusAncienneImpayee;  // plus ancienne echeance impayee (DatDefaill, retard)
 }
