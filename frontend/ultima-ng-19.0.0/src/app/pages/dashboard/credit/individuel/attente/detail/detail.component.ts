@@ -1485,8 +1485,8 @@ export class DetailComponent {
                     this.messageService.add({
                         severity: 'success',
                         summary: 'Transformation effectuée',
-                        detail: "Crédit fonctionnaire : la demande retourne à l'agent de crédit (instruction) pour reprendre tout le processus — analyse charges & quotité, approbation, validations",
-                        life: 8000
+                        detail: "Crédit fonctionnaire : la demande retourne à l'agent de crédit en correction complète — il peut modifier la demande (échéance ≤ quotité 35 %), compléter l'analyse charges puis reprendre le processus d'approbation",
+                        life: 9000
                     });
                     this.state.update(this.mergeState({ showTransformationFonctionnaire: false, transformationEnCours: false }));
                     this.loadDemandeWithGaranties();
