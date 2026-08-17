@@ -4,6 +4,7 @@ import io.digiservices.bcrgservice.dto.BeneficiaireEngagementDto;
 import io.digiservices.bcrgservice.dto.CompteAssocieDto;
 import io.digiservices.bcrgservice.dto.CompteAssocieMoraleDto;
 import io.digiservices.bcrgservice.dto.DonneeComplementaireDto;
+import io.digiservices.bcrgservice.dto.EmployeurDto;
 import io.digiservices.bcrgservice.dto.EncoursDto;
 import io.digiservices.bcrgservice.dto.EngagementDto;
 import io.digiservices.bcrgservice.dto.PageDto;
@@ -45,12 +46,17 @@ public class BcrgMapper {
     public PersonnePhysiqueDto toPersonnePhysique(RegPersonnePhysiqueDto s) {
         if (s == null) return null;
         RegAdresseDto adresse = premiereAdresse(s.getAdresses());
+        List<PieceDto> pieces = toPieces(s.getCodCliente(), s.getPieces());
 
         PersonnePhysiqueDto d = new PersonnePhysiqueDto();
         d.setIdInterneClt(s.getCodCliente());
         d.setNatDec(null); // géré par le middleware BCRG
         d.setNatClient(translator.translateNatClient(s.getIndRelacion()));
-        d.setNin(ND); // NIN non porté par le SI
+        // PP V2 : NIN = numéro de la CIN biométrique (type 02, 16 chiffres) quand elle existe
+        d.setNin(pieces.stream()
+                .filter(p -> "02".equals(p.getTypPiece()) && StringUtils.hasText(p.getNumPiece()))
+                .map(PieceDto::getNumPiece)
+                .findFirst().orElse(null));
         d.setDatCreaPart(translator.formatDate(s.getFecIngreso()));
         d.setNomNaiClt(join(s.getPrimerApellido(), s.getSegundoApellido()));
         String sexe = translator.translateSexe(s.getIndSexo());
@@ -62,15 +68,18 @@ public class BcrgMapper {
         d.setPrenomClt(join(s.getPrimerNombre(), s.getSegundoNombre()));
         d.setNomComp(s.getNomCliente());
         d.setSexe(sexe);
-        d.setDatNai(ND); // date de naissance non portée par le SI
+        // PP V2 : date de naissance depuis la fiche associé (CL_DATOS_ASOCIADO)
+        d.setDatNai(s.getFechNacimiento() != null ? translator.formatDate(s.getFechNacimiento()) : ND);
         d.setEtatCivil(etatCivil);
         d.setNomPere(ND);    // filiation non portée : ND exigé par la BCRG
         d.setPrenomPere(ND);
         d.setNomNaiMere(ND);
         d.setPrmMre(ND);
         d.setVilleNai(blankToNull(s.getLugarNacimiento()));
-        d.setPaysNai(ND); // pays de naissance non porté
-        d.setNatClt(blankToNull(s.getNacionalidad()));
+        // PP V2 : pays de naissance dérivé de la nationalité (convention documentée)
+        d.setPaysNai(translator.paysDepuisNationalite(s.getNacionalidad()));
+        // PP V2 : nationalité au référentiel pays_nationalites
+        d.setNatClt(translator.paysDepuisNationalite(s.getNacionalidad()));
         d.setResident(BcrgTranslator.RESIDENT_OUI);
         d.setPaysRes(BcrgTranslator.PAYS_GUINEE);
         d.setMobile(translator.normaliserMobile(s.getTelPrincipal()));
@@ -91,11 +100,19 @@ public class BcrgMapper {
         d.setDateFinIB(null);
 
         d.setComptesAssocies(toComptes(s.getCodCliente(), s.getCodAgencia(), s.getComptes()));
-        d.setPieces(toPieces(s.getCodCliente(), s.getPieces()));
+        d.setPieces(pieces);
+        // PP V2 : revenu = SALARIO ; personnes à charge = CANT_DEPENDIENTES (repli NUM_HIJOS) ;
+        // PropLoc au référentiel P/L/A
         d.setDonneeComplementaire(new DonneeComplementaireDto(
-                s.getNumHijos(), ND, ND, blankToNull(s.getTenenciaVivienda())));
+                s.getCantDependientes() != null ? s.getCantDependientes() : s.getNumHijos(),
+                s.getSalario() != null ? s.getSalario().toPlainString() : ND,
+                ND,
+                translator.translatePropLoc(s.getTenenciaVivienda())));
         d.setTuteurCurateur(List.of());
-        d.setEmployeurs(List.of());
+        // PP V2 : employeur partiel depuis la fiche associé (LUGAR_TRABAJO)
+        d.setEmployeurs(StringUtils.hasText(s.getLugarTrabajo())
+                ? List.of(new EmployeurDto(s.getCodCliente(), ND, s.getLugarTrabajo().trim(), ND, ND, ND, ND, ND))
+                : List.of());
         d.setDonneesAdditionelles(List.of());
         return d;
     }
@@ -260,8 +277,9 @@ public class BcrgMapper {
     private List<CompteAssocieDto> toComptes(String idClt, String codAgce, List<RegCompteDto> comptes) {
         if (comptes == null) return List.of();
         // NumCpt : numéro SAF exposé tel quel (règle 10 positions en attente d'arbitrage BCRG)
+        // CleRib : null (consigne PP V2 du 16/08, remplace ND)
         return comptes.stream().map(c -> new CompteAssocieDto(
-                idClt, codAgce, c.getNumCuenta(), ND,
+                idClt, codAgce, c.getNumCuenta(), null,
                 BcrgTranslator.TYPE_COMPTE_INDIVIDUEL,
                 translator.translateStatutCompte(c.getIndEstado()))).toList();
     }
@@ -269,7 +287,7 @@ public class BcrgMapper {
     private List<CompteAssocieMoraleDto> toComptesMorale(String idClt, String codAgce, List<RegCompteDto> comptes) {
         if (comptes == null) return List.of();
         return comptes.stream().map(c -> new CompteAssocieMoraleDto(
-                idClt, codAgce, c.getNumCuenta(), ND,
+                idClt, codAgce, c.getNumCuenta(), null,
                 translator.translateStatutCompte(c.getIndEstado()))).toList();
     }
 

@@ -2,7 +2,7 @@
 
 **Crédit Rural de Guinée S.A. — Documentation technique d'intégration**
 
-*Version 1.3 — 17 août 2026 (v1.1 : contrat complet PP/PM ; v1.2 : extraction incrémentale + notification des traitements ; v1.3 : refonte des modules Engagements et Encours suite aux retours BCRG)*
+*Version 1.4 — 17 août 2026 (v1.1 contrat complet PP/PM · v1.2 extraction incrémentale + notifications · v1.3 refonte Engagements/Encours · v1.4 retours PP V2 : état civil réel, référentiel pays, NIN, API par liste d'identifiants et API des personnes modifiées)*
 
 ---
 
@@ -115,17 +115,17 @@ Les modules **M1 (PP/PM) et M2 (engagements)** ne renvoient plus, par défaut, q
 | `IdInterneClt` | Identifiant interne du client (SAF `COD_CLIENTE`) |
 | `NatDec` | `null` — géré par le middleware BCRG |
 | `NatClient` | `0` = client du participant, `1` = tiers |
-| `NIN` | `ND` — non porté par le SI |
+| `NIN` | Numéro de la CIN biométrique (16 chiffres) si le client en possède une (type `02`), `null` sinon — convention validée en réunion du 16/08 |
 | `DatCreaPart` | Date de création du client (`JJMMAAAA`) |
 | `NomNaiClt` / `PrenomClt` / `NomComp` | Nom de naissance, prénom(s), nom complet |
 | `NomMtlClt` | Nom marital si sexe `F` et `EtatCivil=2` (nom du conjoint SAF, `ND` si inconnu) ; `null` sinon |
 | `Sexe` | `M` / `F` |
-| `DatNai` | `ND` — non portée par le SI |
+| `DatNai` | Date de naissance réelle (`JJMMAAAA`, fiche associé SAF), `ND` si non renseignée |
 | `EtatCivil` | `1`..`4` (référentiel BCRG) |
 | `NomPere` / `PrenomPere` / `NomNaiMere` / `PrmMre` | `ND` — filiation non portée (valeur par défaut convenue) |
 | `VilleNai` | Lieu de naissance |
-| `PaysNai` | `ND` — non porté |
-| `NatClt` | Nationalité (code SI, transcodification pays à convenir) |
+| `PaysNai` | Dérivé de la nationalité (référentiel pays, repli `GN`) — approximation documentée |
+| `NatClt` | Référentiel `pays_nationalites` (ex. `GN`), dérivé de la nationalité SAF |
 | `Resident` / `PaysRes` | `1` / `GN` — réseau exclusivement domestique |
 | `Mobile` | Normalisé `+224` + 9 chiffres |
 | `Email` / `CommuneAdress` / `NumSecSoc` | `null` (facultatifs, non portés) |
@@ -139,8 +139,16 @@ Les modules **M1 (PP/PM) et M2 (engagements)** ne renvoient plus, par défaut, q
 | `DateDeces` / `SitBancaire` / `DateDebIB` / `DateFinIB` | `null` (conditionnels ; situation bancaire réservée aux banques) |
 | `ComptesAssocies` | Comptes du client (voir § 3.5) |
 | `Pieces` | Pièces d'identité (voir § 3.5) |
-| `DonneeComplementaire` | NbPersCharge, RevMensMoy (`ND`), DepMensMoy (`ND`), PropLoc (voir § 3.5) |
-| `TuteurCurateur` / `Employeurs` / `DonneesAdditionelles` | Listes vides (non portés par le SI) |
+| `DonneeComplementaire` | NbPersCharge (personnes à charge, repli enfants), RevMensMoy (salaire de la fiche associé), DepMensMoy (`ND`), PropLoc au référentiel `P`/`L`/`A` |
+| `TuteurCurateur` / `DonneesAdditionelles` | Listes vides (non portés par le SI) |
+| `Employeurs` | Renseigné depuis la fiche associé (lieu de travail) quand disponible, liste vide sinon |
+
+### 3.1 bis — Nouvelles API Personnes Physiques (v1.4)
+
+| Requête | Description |
+|---|---|
+| `GET /personnes-physiques/par-ids?ids=id1,id2,...` | Personnes physiques à partir d'une liste d'identifiants internes (1 à **200** par appel) |
+| `GET /personnes-physiques/modifiees?page=0&size=100` | Personnes **modifiées depuis leur déclaration** : à chaque notification (`POST /traitements`, module `PERSONNE_PHYSIQUE`), une empreinte du contenu déclaré est stockée ; cet endpoint compare l'empreinte actuelle à celle stockée et ne renvoie que les écarts. Après réintégration, notifier à nouveau les références pour rafraîchir l'empreinte. Parcours complet des références déclarées : extraction recommandée hors heures d'affluence |
 
 ### 3.2 Module M1 — Personnes morales
 
@@ -255,7 +263,7 @@ calculs (échéances, impayés, dernier paiement) sont arrêtés à la fin de la
 | `IdInterneClt` | Identifiant du client titulaire |
 | `CodAgce` | Agence du client |
 | `NumCpt` | Numéro de compte SAF (14 positions — la règle de réduction à 10 positions est en attente d'arbitrage BCRG, voir § 5) |
-| `CleRib` | `ND` — le CRG n'est pas un participant de type banque |
+| `CleRib` | `null` (consigne PP V2 du 16/08) |
 | `TypCpt` | **Personnes physiques uniquement** : `01` = Compte individuel (défaut). Retiré des comptes PM |
 | `StatCpt` | Référentiel BCRG : `00` Actif, `01` Bloqué, `02` Clôturé, `03` Succession, `04` Suspendu |
 

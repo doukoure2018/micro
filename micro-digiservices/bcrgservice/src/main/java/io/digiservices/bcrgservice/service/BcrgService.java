@@ -12,6 +12,15 @@ public interface BcrgService {
 
     PersonnePhysiqueDto getPersonnePhysique(String idClient);
 
+    /** PP V2 : personnes physiques à partir d'une liste d'identifiants internes. */
+    java.util.List<PersonnePhysiqueDto> getPersonnesPhysiquesParIds(java.util.List<String> ids);
+
+    /** PP V2 : personnes modifiées depuis leur déclaration à la BCRG (comparaison d'empreintes). */
+    PageDto<PersonnePhysiqueDto> getPersonnesPhysiquesModifiees(int page, int size);
+
+    /** Empreintes SHA-256 du contenu déclaré (stockées à la notification ; vide si SAF indisponible). */
+    java.util.Map<String, String> calculerEmpreintesPersonnesPhysiques(java.util.List<String> references);
+
     PageDto<PersonneMoraleDto> getPersonnesMorales(int page, int size, boolean toutes);
 
     PersonneMoraleDto getPersonneMorale(String idClient);

@@ -1,23 +1,50 @@
 {
   "info": {
     "name": "BCRG - Declaration reglementaire (CRG)",
-    "description": "API de declaration BCRG exposee par bcrgservice (v1.2). Auth par header X-API-Key (BCRG_PUBLIC_API_KEY). Base: https://digi-creditrural-io.com/bcrg. Extraction incrementale : statut=restantes (defaut) exclut les references notifiees via POST /traitements ; statut=toutes = extraction complete. Cycle recommande : extraire page=0 -> integrer -> notifier -> recommencer.",
+    "description": "API de declaration BCRG exposee par bcrgservice (v1.4). Auth par header X-API-Key (BCRG_PUBLIC_API_KEY). Base: https://digi-creditrural-io.com/bcrg. Extraction incrementale : statut=restantes (defaut) exclut les references notifiees via POST /traitements ; statut=toutes = extraction complete. Cycle recommande : extraire page=0 -> integrer -> notifier -> recommencer.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "https://digi-creditrural-io.com/bcrg" },
-    { "key": "apiKey", "value": "" },
-    { "key": "idClient", "value": "" },
-    { "key": "refEng", "value": "" },
-    { "key": "periode", "value": "2026-06" },
-    { "key": "module", "value": "PERSONNE_PHYSIQUE" }
+    {
+      "key": "baseUrl",
+      "value": "https://digi-creditrural-io.com/bcrg"
+    },
+    {
+      "key": "apiKey",
+      "value": ""
+    },
+    {
+      "key": "idClient",
+      "value": ""
+    },
+    {
+      "key": "refEng",
+      "value": ""
+    },
+    {
+      "key": "periode",
+      "value": "2026-06"
+    },
+    {
+      "key": "module",
+      "value": "PERSONNE_PHYSIQUE"
+    }
   ],
   "auth": {
     "type": "apikey",
     "apikey": [
-      { "key": "key", "value": "X-API-Key" },
-      { "key": "value", "value": "{{apiKey}}" },
-      { "key": "in", "value": "header" }
+      {
+        "key": "key",
+        "value": "X-API-Key"
+      },
+      {
+        "key": "value",
+        "value": "{{apiKey}}"
+      },
+      {
+        "key": "in",
+        "value": "header"
+      }
     ]
   },
   "item": [
@@ -27,12 +54,26 @@
         "method": "GET",
         "url": {
           "raw": "{{baseUrl}}/personnes-physiques?page=0&size=10&statut=restantes",
-          "host": ["{{baseUrl}}"],
-          "path": ["personnes-physiques"],
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "personnes-physiques"
+          ],
           "query": [
-            { "key": "page", "value": "0" },
-            { "key": "size", "value": "10" },
-            { "key": "statut", "value": "restantes", "description": "restantes (defaut) | toutes" }
+            {
+              "key": "page",
+              "value": "0"
+            },
+            {
+              "key": "size",
+              "value": "10"
+            },
+            {
+              "key": "statut",
+              "value": "restantes",
+              "description": "restantes (defaut) | toutes"
+            }
           ]
         }
       }
@@ -43,12 +84,25 @@
         "method": "GET",
         "url": {
           "raw": "{{baseUrl}}/personnes-physiques?page=0&size=10&statut=toutes",
-          "host": ["{{baseUrl}}"],
-          "path": ["personnes-physiques"],
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "personnes-physiques"
+          ],
           "query": [
-            { "key": "page", "value": "0" },
-            { "key": "size", "value": "10" },
-            { "key": "statut", "value": "toutes" }
+            {
+              "key": "page",
+              "value": "0"
+            },
+            {
+              "key": "size",
+              "value": "10"
+            },
+            {
+              "key": "statut",
+              "value": "toutes"
+            }
           ]
         }
       }
@@ -59,9 +113,64 @@
         "method": "GET",
         "url": {
           "raw": "{{baseUrl}}/personnes-physiques/{{idClient}}",
-          "host": ["{{baseUrl}}"],
-          "path": ["personnes-physiques", "{{idClient}}"]
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "personnes-physiques",
+            "{{idClient}}"
+          ]
         }
+      }
+    },
+    {
+      "name": "M1 - Personnes Physiques par liste d'ids (v1.4)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/personnes-physiques/par-ids?ids={{idClient}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "personnes-physiques",
+            "par-ids"
+          ],
+          "query": [
+            {
+              "key": "ids",
+              "value": "{{idClient}}",
+              "description": "1 a 200 identifiants internes, separes par des virgules"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "M1 - Personnes Physiques modifiees depuis declaration (v1.4)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/personnes-physiques/modifiees?page=0&size=100",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "personnes-physiques",
+            "modifiees"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "0"
+            },
+            {
+              "key": "size",
+              "value": "100"
+            }
+          ]
+        },
+        "description": "Compare l'empreinte actuelle a celle stockee lors de la notification POST /traitements (module PERSONNE_PHYSIQUE). Apres reintegration, notifier a nouveau les references pour rafraichir l'empreinte."
       }
     },
     {
@@ -70,12 +179,26 @@
         "method": "GET",
         "url": {
           "raw": "{{baseUrl}}/personnes-morales?page=0&size=10&statut=restantes",
-          "host": ["{{baseUrl}}"],
-          "path": ["personnes-morales"],
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "personnes-morales"
+          ],
           "query": [
-            { "key": "page", "value": "0" },
-            { "key": "size", "value": "10" },
-            { "key": "statut", "value": "restantes", "description": "restantes (defaut) | toutes" }
+            {
+              "key": "page",
+              "value": "0"
+            },
+            {
+              "key": "size",
+              "value": "10"
+            },
+            {
+              "key": "statut",
+              "value": "restantes",
+              "description": "restantes (defaut) | toutes"
+            }
           ]
         }
       }
@@ -86,8 +209,13 @@
         "method": "GET",
         "url": {
           "raw": "{{baseUrl}}/personnes-morales/{{idClient}}",
-          "host": ["{{baseUrl}}"],
-          "path": ["personnes-morales", "{{idClient}}"]
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "personnes-morales",
+            "{{idClient}}"
+          ]
         }
       }
     },
@@ -97,12 +225,26 @@
         "method": "GET",
         "url": {
           "raw": "{{baseUrl}}/engagements?page=0&size=10&statut=restantes",
-          "host": ["{{baseUrl}}"],
-          "path": ["engagements"],
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "engagements"
+          ],
           "query": [
-            { "key": "page", "value": "0" },
-            { "key": "size", "value": "10" },
-            { "key": "statut", "value": "restantes", "description": "restantes (defaut) | toutes" }
+            {
+              "key": "page",
+              "value": "0"
+            },
+            {
+              "key": "size",
+              "value": "10"
+            },
+            {
+              "key": "statut",
+              "value": "restantes",
+              "description": "restantes (defaut) | toutes"
+            }
           ]
         }
       }
@@ -113,8 +255,13 @@
         "method": "GET",
         "url": {
           "raw": "{{baseUrl}}/engagements/{{refEng}}",
-          "host": ["{{baseUrl}}"],
-          "path": ["engagements", "{{refEng}}"]
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "engagements",
+            "{{refEng}}"
+          ]
         }
       }
     },
@@ -124,12 +271,25 @@
         "method": "GET",
         "url": {
           "raw": "{{baseUrl}}/encours?periode={{periode}}&page=0&size=10",
-          "host": ["{{baseUrl}}"],
-          "path": ["encours"],
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "encours"
+          ],
           "query": [
-            { "key": "periode", "value": "{{periode}}" },
-            { "key": "page", "value": "0" },
-            { "key": "size", "value": "10" }
+            {
+              "key": "periode",
+              "value": "{{periode}}"
+            },
+            {
+              "key": "page",
+              "value": "0"
+            },
+            {
+              "key": "size",
+              "value": "10"
+            }
           ]
         }
       }
@@ -139,7 +299,10 @@
       "request": {
         "method": "POST",
         "header": [
-          { "key": "Content-Type", "value": "application/json" }
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
         ],
         "body": {
           "mode": "raw",
@@ -147,8 +310,12 @@
         },
         "url": {
           "raw": "{{baseUrl}}/traitements",
-          "host": ["{{baseUrl}}"],
-          "path": ["traitements"]
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "traitements"
+          ]
         },
         "description": "module: PERSONNE_PHYSIQUE | PERSONNE_MORALE | ENGAGEMENT. references: 1 a 1000 identifiants (IdInterneClt ou RefIntEng). Idempotent : une reference deja notifiee ne cree pas de doublon."
       }
@@ -159,8 +326,13 @@
         "method": "GET",
         "url": {
           "raw": "{{baseUrl}}/traitements/{{module}}",
-          "host": ["{{baseUrl}}"],
-          "path": ["traitements", "{{module}}"]
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "traitements",
+            "{{module}}"
+          ]
         }
       }
     },
@@ -170,8 +342,14 @@
         "method": "DELETE",
         "url": {
           "raw": "{{baseUrl}}/traitements/{{module}}/{{idClient}}",
-          "host": ["{{baseUrl}}"],
-          "path": ["traitements", "{{module}}", "{{idClient}}"]
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "traitements",
+            "{{module}}",
+            "{{idClient}}"
+          ]
         },
         "description": "La reference retiree reapparait dans l'extraction statut=restantes."
       }
@@ -180,12 +358,23 @@
       "name": "Test securite - sans cle (attendu 401)",
       "request": {
         "method": "GET",
-        "auth": { "type": "noauth" },
+        "auth": {
+          "type": "noauth"
+        },
         "url": {
           "raw": "{{baseUrl}}/personnes-physiques?size=1",
-          "host": ["{{baseUrl}}"],
-          "path": ["personnes-physiques"],
-          "query": [ { "key": "size", "value": "1" } ]
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "personnes-physiques"
+          ],
+          "query": [
+            {
+              "key": "size",
+              "value": "1"
+            }
+          ]
         }
       }
     }

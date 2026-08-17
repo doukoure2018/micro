@@ -45,6 +45,7 @@ public class BcrgServiceImpl implements BcrgService {
     private final EbankingRegClient ebankingRegClient;
     private final BcrgMapper mapper;
     private final TraitementRepository traitementRepository;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     // ==================== Personnes physiques ====================
 
@@ -68,6 +69,88 @@ public class BcrgServiceImpl implements BcrgService {
     @Override
     public PersonnePhysiqueDto getPersonnePhysique(String idClient) {
         return mapper.toPersonnePhysique(ebankingRegClient.getPersonnePhysiqueById(idClient));
+    }
+
+    // ==================== PP V2 : par liste d'ids + personnes modifiées ====================
+
+    /** Taille des lots d'identifiants passés à ebanking (limite du endpoint par-ids). */
+    private static final int TAILLE_LOT_IDS = 200;
+
+    @Override
+    public List<PersonnePhysiqueDto> getPersonnesPhysiquesParIds(List<String> ids) {
+        List<PersonnePhysiqueDto> resultat = new ArrayList<>();
+        for (int i = 0; i < ids.size(); i += TAILLE_LOT_IDS) {
+            List<String> lot = ids.subList(i, Math.min(i + TAILLE_LOT_IDS, ids.size()));
+            ebankingRegClient.getPersonnesPhysiquesByIds(lot)
+                    .forEach(s -> resultat.add(mapper.toPersonnePhysique(s)));
+        }
+        return resultat;
+    }
+
+    /**
+     * Personnes modifiées depuis leur déclaration : compare l'empreinte SHA-256 actuelle
+     * (contenu SAF mappé au contrat BCRG) à celle stockée lors de la notification
+     * POST /bcrg/traitements. SAF n'ayant aucune date de modification, l'empreinte est
+     * le seul détecteur fiable. Parcours complet des références notifiées : extraction
+     * recommandée hors heures d'affluence.
+     */
+    @Override
+    public PageDto<PersonnePhysiqueDto> getPersonnesPhysiquesModifiees(int page, int size) {
+        java.util.Map<String, String> empreintes = traitementRepository.findReferencesAvecEmpreinte(MODULE_PP);
+        List<PersonnePhysiqueDto> modifiees = new ArrayList<>();
+        List<String> refs = new ArrayList<>(empreintes.keySet());
+        for (int i = 0; i < refs.size(); i += TAILLE_LOT_IDS) {
+            List<String> lot = refs.subList(i, Math.min(i + TAILLE_LOT_IDS, refs.size()));
+            for (var brut : ebankingRegClient.getPersonnesPhysiquesByIds(lot)) {
+                PersonnePhysiqueDto dto = mapper.toPersonnePhysique(brut);
+                String actuelle = empreinte(dto);
+                if (actuelle != null && !actuelle.equals(empreintes.get(dto.getIdInterneClt()))) {
+                    modifiees.add(dto);
+                }
+            }
+        }
+        int from = Math.min(page * size, modifiees.size());
+        int to = Math.min(from + size, modifiees.size());
+        List<PersonnePhysiqueDto> content = modifiees.subList(from, to);
+        int totalPages = (int) Math.ceil((double) modifiees.size() / size);
+        return new PageDto<>(content, page, size, modifiees.size(), totalPages,
+                to < modifiees.size(), page > 0);
+    }
+
+    @Override
+    public java.util.Map<String, String> calculerEmpreintesPersonnesPhysiques(List<String> references) {
+        java.util.Map<String, String> resultat = new java.util.HashMap<>();
+        try {
+            for (int i = 0; i < references.size(); i += TAILLE_LOT_IDS) {
+                List<String> lot = references.subList(i, Math.min(i + TAILLE_LOT_IDS, references.size()));
+                for (var brut : ebankingRegClient.getPersonnesPhysiquesByIds(lot)) {
+                    PersonnePhysiqueDto dto = mapper.toPersonnePhysique(brut);
+                    String empreinte = empreinte(dto);
+                    if (dto.getIdInterneClt() != null && empreinte != null) {
+                        resultat.put(dto.getIdInterneClt(), empreinte);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // SAF indisponible : la notification aboutit sans empreintes (références alors
+            // exclues de la détection des modifications, documenté)
+            log.warn("Empreintes PP non calculées (SAF indisponible ?) : {}", e.getMessage());
+        }
+        return resultat;
+    }
+
+    /** SHA-256 (hex) du JSON canonique du contrat déclaré ; null si sérialisation impossible. */
+    private String empreinte(PersonnePhysiqueDto dto) {
+        try {
+            byte[] json = objectMapper.writeValueAsBytes(dto);
+            byte[] digest = java.security.MessageDigest.getInstance("SHA-256").digest(json);
+            StringBuilder sb = new StringBuilder(digest.length * 2);
+            for (byte b : digest) sb.append(String.format("%02x", b));
+            return sb.toString();
+        } catch (Exception e) {
+            log.warn("Empreinte non calculable pour {} : {}", dto.getIdInterneClt(), e.getMessage());
+            return null;
+        }
     }
 
     // ==================== Personnes morales ====================

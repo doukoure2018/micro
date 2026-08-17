@@ -205,6 +205,31 @@ public class BcrgTranslator {
         };
     }
 
+    // ==================== v1.4 — PP V2 ====================
+
+    /**
+     * Code pays du référentiel pays_nationalites dérivé de la nationalité SAF.
+     * Convention PP V2 : un code alpha-2 est repris tel quel ; toute autre valeur
+     * (libellé, code interne, vide) est ramenée à 'GN' — la clientèle du CRG est
+     * quasi exclusivement guinéenne (approximation documentée, validée avec la BCRG).
+     */
+    public String paysDepuisNationalite(String nacionalidad) {
+        String v = sansAccents(nacionalidad);
+        if (!StringUtils.hasText(v)) return PAYS_GUINEE;
+        if (v.contains("GUIN")) return PAYS_GUINEE;
+        if (v.matches("[A-Z]{2}")) return v;
+        return PAYS_GUINEE;
+    }
+
+    /** TENENCIA_VIVIENDA SAF -> PropLoc BCRG (P propriétaire, L locataire, A autre). */
+    public String translatePropLoc(String tenenciaVivienda) {
+        String v = sansAccents(tenenciaVivienda);
+        if (!StringUtils.hasText(v)) return null;
+        if (v.startsWith("P") || v.contains("PROPRI")) return "P";
+        if (v.startsWith("L") || v.startsWith("A") && v.contains("ALQUIL") || v.contains("LOCAT")) return "L";
+        return "A";
+    }
+
     // ==================== v1.3 — modules M2 (engagements) / M4 (encours) ====================
 
     /** Taux/pourcentage au format BCRG NN.NN (séparateur '.', 2 décimales) ; null reste null. */

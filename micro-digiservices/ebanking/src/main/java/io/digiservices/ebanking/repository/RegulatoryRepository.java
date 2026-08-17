@@ -59,10 +59,14 @@ public class RegulatoryRepository {
                    pf.IND_SEXO, pf.EST_CIVIL, pf.NACIONALIDAD, pf.LUGAR_NACIMIENTO,
                    pf.COD_PROFESION, prof.DES_PROFESION,
                    pf.COD_ACTIVIDAD, act.DES_ACTIVIDAD, pf.COD_SECTOR,
-                   pf.NUM_HIJOS, pf.TENENCIA_VIVIENDA, pf.NOM_CONYUGUE
+                   pf.NUM_HIJOS, pf.TENENCIA_VIVIENDA, pf.NOM_CONYUGUE,
+                   da.FECH_NACIMIENTO, da.SALARIO, da.CANT_DEPENDIENTES,
+                   da.LUGAR_TRABAJO, da.PUESTO
             FROM CL.CL_CLIENTES c
             INNER JOIN CL.CL_PERSONAS_FISICAS pf
                 ON c.COD_EMPRESA = pf.COD_EMPRESA AND c.COD_CLIENTE = pf.COD_CLIENTE
+            LEFT JOIN CL.CL_DATOS_ASOCIADO da
+                ON c.COD_EMPRESA = da.COD_EMPRESA AND c.COD_CLIENTE = da.COD_CLIENTE
             LEFT JOIN CL.CL_CAT_PROFESIONES prof
                 ON pf.COD_EMPRESA = prof.COD_EMPRESA AND pf.COD_PROFESION = prof.COD_PROFESION
             LEFT JOIN CL.CL_ACTIVIDAD_ECONOMICA act
@@ -569,6 +573,11 @@ public class RegulatoryRepository {
         dto.setNumHijos(intObj(rs, "NUM_HIJOS"));
         dto.setTenenciaVivienda(str(rs, "TENENCIA_VIVIENDA"));
         dto.setNomConyugue(str(rs, "NOM_CONYUGUE"));
+        dto.setFechNacimiento(dt(rs, "FECH_NACIMIENTO"));
+        dto.setSalario(dec(rs, "SALARIO"));
+        dto.setCantDependientes(intObj(rs, "CANT_DEPENDIENTES"));
+        dto.setLugarTrabajo(str(rs, "LUGAR_TRABAJO"));
+        dto.setPuesto(str(rs, "PUESTO"));
         return dto;
     };
 
