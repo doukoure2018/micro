@@ -260,7 +260,8 @@ public class UserQuery {
                 u.address,
                 u.is_authorized,
                 u.matricule
-                FROM users u JOIN user_roles ur ON ur.user_id = u.user_id JOIN roles r ON r.role_id = ur.role_id LIMIT 500
+                FROM users u JOIN user_roles ur ON ur.user_id = u.user_id JOIN roles r ON r.role_id = ur.role_id
+                ORDER BY u.created_at ASC NULLS LAST, u.user_id ASC
               """;
     public static final String SELECT_TICKET_ASSIGNEE_QUERY=
             """
