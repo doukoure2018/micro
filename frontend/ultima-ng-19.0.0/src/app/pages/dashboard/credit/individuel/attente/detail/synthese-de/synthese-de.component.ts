@@ -32,6 +32,7 @@ interface TresorerieRow {
     totalEncaissements: number;
     totalDecaissements: number;
     excedentDeficit: number;
+    echeancePrevue: number; // Intérêts à verser + Remboursement capital de la période
     soldeFin: number;
 }
 
@@ -215,6 +216,19 @@ export class SyntheseDeComponent implements OnInit {
             });
     }
 
+    /** Échéance prévue de la période = Intérêts à verser + Remboursement capital (lignes de décaissement). */
+    private calculerEcheancePrevue(prevision: any): number {
+        const lignes: any[] = prevision?.lignesDecaissement || [];
+        return lignes
+            .filter((l) => {
+                const categorie = (l.categorie || '').toUpperCase();
+                const libelle = (l.libelle || '').toLowerCase();
+                return categorie === 'INTERETS' || categorie === 'CAPITAL'
+                    || libelle.includes('intérêts à verser') || libelle.includes('remboursement capital');
+            })
+            .reduce((total, l) => total + (Number(l.montant) || 0), 0);
+    }
+
     private loadTresorerie(dossierId: number): void {
         this.userService
             .getPrevisionsTresorerie$(dossierId)
@@ -231,6 +245,7 @@ export class SyntheseDeComponent implements OnInit {
                             totalEncaissements: p.totalEncaissements || 0,
                             totalDecaissements: p.totalDecaissements || 0,
                             excedentDeficit: p.excedentDeficit || 0,
+                            echeancePrevue: this.calculerEcheancePrevue(p),
                             soldeFin: p.soldeFin || 0
                         }));
                     this.state.update((s) => ({ ...s, tresorerie: rows }));
