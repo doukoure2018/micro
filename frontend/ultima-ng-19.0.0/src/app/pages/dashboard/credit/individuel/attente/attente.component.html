@@ -40,7 +40,7 @@
         [class.surface-ground]="activeFilter() === 'AFFECTATION'" (click)="activeFilter.set('AFFECTATION')">
         <div class="flex justify-between items-center">
             <div>
-                <span class="block text-500 font-medium mb-1">Affectation</span>
+                <span class="block text-500 font-medium mb-1">En cours d'approbation</span>
                 <div class="text-900 font-bold text-xl">{{ countAffectation() }}</div>
             </div>
             <div class="flex items-center justify-center border-round"
@@ -86,7 +86,7 @@
 
                     @if(activeFilter() !== 'ALL') {
                     <p-tag [value]="activeFilter() === 'EN_ATTENTE' ? 'En Attente' :
-                                    activeFilter() === 'AFFECTATION' ? 'Affectation' : 'Rejetées'" [severity]="activeFilter() === 'EN_ATTENTE' ? 'info' :
+                                    activeFilter() === 'AFFECTATION' ? 'En cours d\'approbation' : 'Rejetées'" [severity]="activeFilter() === 'EN_ATTENTE' ? 'info' :
                                        activeFilter() === 'AFFECTATION' ? 'warn' : 'danger'">
                     </p-tag>
                     <button pButton icon="pi pi-filter-slash" label="Toutes" class="p-button-text p-button-sm"
@@ -294,8 +294,8 @@
                         <h3 class="text-xl font-semibold text-gray-600">Aucune demande en attente</h3>
                         <p class="text-gray-500">Aucune nouvelle demande à traiter</p>
                         } @else if(activeFilter() === 'AFFECTATION') {
-                        <h3 class="text-xl font-semibold text-gray-600">Aucune demande en affectation</h3>
-                        <p class="text-gray-500">Aucune demande en cours de sélection</p>
+                        <h3 class="text-xl font-semibold text-gray-600">Aucune demande en cours d'approbation</h3>
+                        <p class="text-gray-500">Aucune demande prise en charge en attente de soumission</p>
                         } @else {
                         <h3 class="text-xl font-semibold text-gray-600">Aucune demande rejetée</h3>
                         <p class="text-gray-500">Aucune demande rejetée pour le moment</p>

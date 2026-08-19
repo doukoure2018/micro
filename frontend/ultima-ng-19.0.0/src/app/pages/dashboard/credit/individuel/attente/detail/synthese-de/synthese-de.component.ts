@@ -1,4 +1,5 @@
 import { DemandeIndividuel } from '@/interface/demande-individuel.interface';
+import { CreditActiviteData } from '@/service/credit-activite.model';
 import { CreditosClienteResponseDTO } from '@/interface/CreditosClienteResponseDTO';
 import { Personnecaution } from '@/interface/personnecaution';
 import { IResponse } from '@/interface/response';
@@ -394,6 +395,22 @@ export class SyntheseDeComponent implements OnInit {
     }
     isLoadingDetail(numCuenta: string): boolean {
         return !!this.loadingDetail[numCuenta];
+    }
+
+    /** Filière saisie à la demande : Activité → Sous-activité → Sous-sous-activité (codes résolus en libellés). */
+    filiereActivite(): string {
+        const d = this.state().demande;
+        const codeA = Number(d?.typeActivite);
+        if (!codeA) return '';
+        const codeSA = Number(d?.sousActivite);
+        const codeSSA = Number(d?.sousSousActivite);
+        const parts: string[] = [CreditActiviteData.getActiviteByCode(codeA)?.libelle || String(codeA)];
+        if (codeSA) parts.push(CreditActiviteData.getSousActiviteByCode(codeA, codeSA)?.libelle || String(codeSA));
+        if (codeSA && codeSSA) {
+            const ssa = CreditActiviteData.getSousSousActivites(codeA, codeSA).find((s) => s.code === codeSSA);
+            parts.push(ssa?.libelle || String(codeSSA));
+        }
+        return parts.join(' → ');
     }
 
     /** Message à afficher quand une section SAF n'a pas (encore) de données. */
