@@ -15,6 +15,24 @@ public class WorkflowQuery {
             """;
 
     /**
+     * Resoumission par l'agent apres correction demandee par le DR ou le DE : le dossier
+     * retourne dans la file du niveau qui l'a rejete (CORRECTION_DR -> VALIDATED_DA revu
+     * par le DR, CORRECTION_DE -> VALIDATED_DR revu par le DE). L'etat est fixe
+     * explicitement, SANS l'echelle de delegation (sinon un dossier <= 25M resoumis
+     * partirait en VALIDATED_FINAL sans revalidation) et SANS toucher aux avis/signatures
+     * des niveaux DA/DR. Les motifs de rejet restent visibles jusqu'a la revalidation.
+     */
+    public static final String UPDATE_RESOUMETTRE_CORRECTION = """
+            UPDATE demandeindividuel
+            SET validation_state = CASE validation_state
+                                       WHEN 'CORRECTION_DR' THEN 'VALIDATED_DA'
+                                       WHEN 'CORRECTION_DE' THEN 'VALIDATED_DR'
+                                   END
+            WHERE demandeindividuel_id = :demandeId
+              AND validation_state IN ('CORRECTION_DR', 'CORRECTION_DE')
+            """;
+
+    /**
      * Demandes RENSEIGNEES mais NON APPROUVEES par l'agent : l'analyse financiere a ete
      * soumise (bilan/tresorerie/cautions saisis) mais la demande est restee en SELECTION
      * faute d'un clic sur "Approuver". A afficher en rappel sur le tableau de bord de l'agent.

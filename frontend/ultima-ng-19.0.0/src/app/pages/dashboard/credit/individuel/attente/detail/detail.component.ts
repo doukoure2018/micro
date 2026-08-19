@@ -2701,11 +2701,13 @@ export class DetailComponent {
 
         let call$;
         if (vs === 'CORRECTION') {
+            // Rejet DA : la resoumission vaut approbation AC -> retour dans la file du DA
             call$ = this.userService.approuverAC$(+demandeId, avis);
-        } else if (vs === 'CORRECTION_DR') {
-            call$ = this.userService.validerDA$(+demandeId, avis);
-        } else if (vs === 'CORRECTION_DE') {
-            call$ = this.userService.validerDR$(+demandeId, avis);
+        } else if (vs === 'CORRECTION_DR' || vs === 'CORRECTION_DE') {
+            // Rejet DR/DE : retour direct dans la file du niveau qui a rejeté, sans
+            // usurper valider-da/valider-dr (l'échelle enverrait un dossier <= 25M
+            // en VALIDATED_FINAL sans revalidation)
+            call$ = this.userService.resoumettreCorrection$(+demandeId);
         } else {
             return;
         }

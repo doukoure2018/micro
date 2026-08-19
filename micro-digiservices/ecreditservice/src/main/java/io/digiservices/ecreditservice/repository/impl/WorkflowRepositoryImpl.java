@@ -38,6 +38,18 @@ public class WorkflowRepositoryImpl implements WorkflowRepository {
         }
     }
 
+    @Override
+    public int resoumettreCorrection(Long demandeId) {
+        try {
+            return jdbcClient.sql(UPDATE_RESOUMETTRE_CORRECTION)
+                    .param("demandeId", demandeId)
+                    .update();
+        } catch (Exception e) {
+            log.error("Erreur lors de la resoumission apres correction: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la resoumission: " + e.getMessage());
+        }
+    }
+
     // ==================== DA LISTS ====================
 
     @Override
