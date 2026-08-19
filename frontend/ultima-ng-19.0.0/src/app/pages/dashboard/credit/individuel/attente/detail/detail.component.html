@@ -1824,6 +1824,31 @@
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <!-- BLOCAGE FONCTIONNAIRE - Analyse charges obligatoire avant avis/soumission -->
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <div *ngIf="state().user?.role === 'AGENT_CREDIT' && isFonctionnaireNature() && !state().analyseChargesFonctionnaire"
+            class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-amber-300 mb-8 mt-10">
+            <div class="bg-amber-500 text-white px-6 py-4 flex items-center gap-3">
+                <i class="pi pi-lock text-xl"></i>
+                <span class="font-bold text-lg uppercase tracking-wide">Analyse Charges &amp; Quotité requise</span>
+            </div>
+            <div class="p-6">
+                <p class="text-gray-700 m-0 mb-4">
+                    Pour un crédit fonctionnaire, vous devez d'abord <strong>enregistrer l'analyse des charges &amp;
+                        quotité</strong> (grille des 12 postes, autres revenus, pièces du dossier).
+                    La saisie de votre avis et l'approbation de la demande seront débloquées une fois l'analyse
+                    enregistrée. Tant que la demande n'est pas soumise, elle reste dans votre profil avec le statut
+                    « En cours d'approbation ».
+                </p>
+                <a [routerLink]="['/dashboards/credit/individuel/detail/analyse-charges-fonctionnaire', state().demandeIndividuel?.demandeIndividuelId]"
+                    class="no-underline">
+                    <button pButton type="button" icon="pi pi-percentage"
+                        label="Renseigner l'analyse charges & quotité" class="p-button-warning"></button>
+                </a>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
         <!-- SECTION AVIS - AGENT DE CRÉDIT (après flux, ou après analyse charges    -->
         <!-- pour le crédit fonctionnaire)                                           -->
         <!-- ═══════════════════════════════════════════════════════════════════════ -->

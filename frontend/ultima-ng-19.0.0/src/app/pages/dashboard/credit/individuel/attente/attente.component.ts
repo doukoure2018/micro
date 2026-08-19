@@ -355,7 +355,7 @@ export class AttenteComponent implements OnInit {
         if (statutDemande === 'EN_ATTENTE' && validationState === 'NOUVEAU') {
             return 'NOUVELLE DEMANDE';
         } else if (statutDemande === 'EN_ATTENTE' && validationState === 'SELECTION') {
-            return 'AFFECTATION';
+            return "EN COURS D'APPROBATION";
         } else if (statutDemande === 'EN_ATTENTE' && validationState === 'APPROVED') {
             return 'APPROUVÉE';
         }
@@ -366,7 +366,7 @@ export class AttenteComponent implements OnInit {
         if (statutDemande === 'EN_ATTENTE' && validationState === 'NOUVEAU') {
             return 'EN ATTENTE POUR LA SELECTION';
         } else if (statutDemande === 'EN_ATTENTE' && validationState === 'SELECTION') {
-            return 'EN ATTENTE POUR LA VALIDATION';
+            return "DEMANDE EN COURS D'APPROBATION PAR L'AGENT";
         } else if (statutDemande === 'EN_ATTENTE' && validationState === 'APPROVED') {
             return "DEMANDE APPROUVÉE PAR L'AGENT";
         }

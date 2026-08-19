@@ -11,8 +11,6 @@ import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 
 registerLocaleData(localeFr, 'fr-FR');
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { forkJoin, Observable, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
 import { FormsModule, NgForm } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -229,8 +227,6 @@ export class DemandeIndComponent implements OnInit {
     fonctionnaire: DemandeFonctionnaire = this.getInitialFonctionnaire();
 
     // Pièces du dossier fonctionnaire, uploadées après création de la demande
-    fichierBulletinSalaire: File | null = null;
-    fichierAttestationService: File | null = null;
 
     typeContratOptions = TYPE_CONTRAT_OPTIONS_FONCTIONNAIRE;
 
@@ -502,49 +498,6 @@ export class DemandeIndComponent implements OnInit {
 
     private getInitialFonctionnaire(): DemandeFonctionnaire {
         return demandeFonctionnaireVide();
-    }
-
-    onPieceSelected(event: Event, type: 'bulletin' | 'attestation'): void {
-        const input = event.target as HTMLInputElement;
-        const file = input.files && input.files.length > 0 ? input.files[0] : null;
-        if (type === 'bulletin') {
-            this.fichierBulletinSalaire = file;
-        } else {
-            this.fichierAttestationService = file;
-        }
-    }
-
-    /**
-     * Upload des pièces du dossier fonctionnaire après création de la demande.
-     * Retourne un observable qui se termine quand tous les envois sont finis :
-     * la navigation doit l'attendre, sinon la destruction du composant annule
-     * les requêtes en cours et les pièces manquent silencieusement au dossier.
-     */
-    private uploadPiecesFonctionnaire(demandeId: number): Observable<unknown> {
-        const uploads: { typePiece: string; file: File }[] = [];
-        if (this.fichierBulletinSalaire) uploads.push({ typePiece: 'BULLETIN_SALAIRE', file: this.fichierBulletinSalaire });
-        if (this.fichierAttestationService) uploads.push({ typePiece: 'ATTESTATION_SERVICE', file: this.fichierAttestationService });
-        this.fichierBulletinSalaire = null;
-        this.fichierAttestationService = null;
-
-        if (uploads.length === 0) {
-            return of(null);
-        }
-        return forkJoin(
-            uploads.map(({ typePiece, file }) =>
-                this.creditService.uploadPieceDemande$(demandeId, typePiece, file).pipe(
-                    catchError(() => {
-                        this.messageService.add({
-                            severity: 'warn',
-                            summary: 'Pièce non jointe',
-                            detail: `Échec de l'envoi de « ${file.name} » — elle pourra être rattachée depuis l'écran d'analyse`,
-                            life: 7000
-                        });
-                        return of(null);
-                    })
-                )
-            )
-        );
     }
 
     // ======================== INITIALISATION ========================
@@ -1033,7 +986,6 @@ export class DemandeIndComponent implements OnInit {
                 next: (response) => {
                     console.log('Réponse:', response);
                     const demandeId = response.data?.demandeId;
-                    const pieces$ = demandeId && this.isFonctionnaire() ? this.uploadPiecesFonctionnaire(+demandeId) : of(null);
                     if (this.isAccueilMode && demandeId) {
                         this.creditService
                             .marquerReception$(+demandeId)
@@ -1052,10 +1004,7 @@ export class DemandeIndComponent implements OnInit {
                     form.resetForm();
                     this.resetForm();
                     const target = this.isAccueilMode ? ['/dashboards/accueil/mes-receptions'] : ['/'];
-                    // On ne quitte l'écran qu'une fois les pièces jointes envoyées (la navigation détruirait les requêtes)
-                    pieces$.subscribe({
-                        complete: () => setTimeout(() => this.router.navigate(target), 1500)
-                    });
+                    setTimeout(() => this.router.navigate(target), 1500);
                 },
                 error: (error) => {
                     console.error('Erreur:', error);
