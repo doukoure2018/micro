@@ -232,6 +232,8 @@
         <div class="font-semibold">{{ selected.prenom }} {{ selected.nom }}</div>
         <div class="text-primary font-bold">{{ formatMontantGNF(selected.montantDemande) }}</div>
         <div class="text-gray-600 text-sm">{{ selected.objectCredit }}</div>
+        <div *ngIf="selected.descriptionActivite" class="text-gray-600 text-sm mt-1">
+            <strong>Activité :</strong> {{ selected.descriptionActivite }}</div>
     </div>
     <label class="block text-sm font-semibold mb-2">Avis / suggestion du DG <span class="text-red-500">*</span></label>
     <textarea [(ngModel)]="avis" rows="4" class="w-full p-2 border-round border-1 surface-border"
@@ -254,6 +256,8 @@
         <div class="font-semibold">{{ selected.prenom }} {{ selected.nom }}</div>
         <div class="text-red-700 font-bold">{{ formatMontantGNF(selected.montantDemande) }}</div>
         <div class="text-gray-600 text-sm">{{ selected.objectCredit }}</div>
+        <div *ngIf="selected.descriptionActivite" class="text-gray-600 text-sm mt-1">
+            <strong>Activité :</strong> {{ selected.descriptionActivite }}</div>
     </div>
     <label class="block text-sm font-semibold mb-2">Remarques / motif du rejet <span class="text-red-500">*</span></label>
     <textarea [(ngModel)]="motifRejet" rows="4" class="w-full p-2 border-round border-1 surface-border"
