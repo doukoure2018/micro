@@ -13,6 +13,7 @@ import { DropdownModule } from 'primeng/dropdown';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
+import { TooltipModule } from 'primeng/tooltip';
 
 registerLocaleData(localeFr, 'fr-FR');
 
@@ -24,7 +25,7 @@ registerLocaleData(localeFr, 'fr-FR');
 @Component({
     selector: 'app-analyse-charges-fonctionnaire',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule, ButtonModule, DropdownModule, InputNumberModule, TagModule, ToastModule],
+    imports: [CommonModule, FormsModule, RouterModule, ButtonModule, DropdownModule, InputNumberModule, TagModule, ToastModule, TooltipModule],
     templateUrl: './analyse-charges-fonctionnaire.component.html',
     providers: [MessageService]
 })
