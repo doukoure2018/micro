@@ -784,30 +784,6 @@
                 correction — elle vous reviendra après rediligence.</span>
         </div>
 
-        <div *ngIf="state().user?.role === 'DA' && !isDemandeOrigineAccueil()
-               && state().demandeIndividuel?.validationState !== 'REJECTED'
-               && !state().hasDemandeCredit && !state().hasDossierCredit"
-            class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-red-200 mb-8">
-            <div class="bg-red-500 text-white px-6 py-4 flex items-center gap-3">
-                <i class="pi pi-ban text-xl"></i>
-                <span class="font-bold text-lg uppercase tracking-wide">Action de Rejet - Directeur d'Agence</span>
-            </div>
-            <div class="p-6">
-                <div class="bg-yellow-50 border-l-4 border-yellow-400 rounded-r-lg p-5 mb-6">
-                    <i class="pi pi-exclamation-triangle text-yellow-600 mr-2 text-lg"></i>
-                    <span class="font-medium">Le rejet d'une demande est une action définitive.</span>
-                </div>
-                <div class="flex justify-center gap-5">
-                    <button pButton type="button" (click)="rejectDemande()" [disabled]="state().loading"
-                        class="bg-red-600 hover:bg-red-700" icon="pi pi-times-circle" label="REJETER">
-                    </button>
-                    <button pButton type="button" (click)="openInNewTab('/dashboards/credit/analyse-credit')"
-                        class="bg-blue-600 hover:bg-blue-700" icon="pi pi-chart-line" label="ANALYSER ANCIEN CRÉDIT">
-                    </button>
-                </div>
-            </div>
-        </div>
-
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
         <!-- SECTION ANALYSE - AGENT DE CRÉDIT                                      -->
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
