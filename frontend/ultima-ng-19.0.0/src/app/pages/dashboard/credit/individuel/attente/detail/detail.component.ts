@@ -128,6 +128,7 @@ export class DetailComponent {
         piecesFonctionnaire?: PieceJointeDemande[];
         showTransformationFonctionnaire?: boolean;
         transformationEnCours?: boolean;
+        showRenvoiAccueil?: boolean;
         histoSaf?: { credits: any[]; evaluation?: any } | null;
     }>({
         loading: false,
@@ -1296,6 +1297,55 @@ export class DetailComponent {
                 });
             }
         });
+    }
+
+    // ==================== RENVOI A L'ACCUEIL (demande saisie par l'accueil) ====================
+    // Le rejet DA d'une demande d'accueil n'est pas définitif : retour à l'agent
+    // d'accueil pour correction, avec motif OBLIGATOIRE (flux annuler-accueil).
+
+    motifRenvoiAccueil = '';
+
+    /** Demande issue du circuit accueil : encore en réception/affectation/correction accueil. */
+    isDemandeOrigineAccueil(): boolean {
+        const vs = this.state().demandeIndividuel?.validationState || '';
+        return ['EN_ATTENTE_DA', 'AFFECTEE', 'CORRECTION_ACCUEIL'].includes(vs);
+    }
+
+    /** Le renvoi n'est possible que tant que la demande n'est pas déjà chez l'accueil. */
+    peutRenvoyerAccueil(): boolean {
+        const vs = this.state().demandeIndividuel?.validationState || '';
+        return ['EN_ATTENTE_DA', 'AFFECTEE'].includes(vs);
+    }
+
+    ouvrirRenvoiAccueil(): void {
+        this.motifRenvoiAccueil = '';
+        this.state.update(this.mergeState({ showRenvoiAccueil: true }));
+    }
+
+    confirmerRenvoiAccueil(): void {
+        const demandeId = this.state().demandeIndividuel?.demandeIndividuelId;
+        const motif = this.motifRenvoiAccueil.trim();
+        if (!demandeId || motif.length < 10) return;
+        this.state.update((s) => ({ ...s, loading: true }));
+        this.userService
+            .annulerAccueil$(+demandeId, motif)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.state.update(this.mergeState({ loading: false, showRenvoiAccueil: false }));
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Demande renvoyée',
+                        detail: "La demande retourne à l'agent d'accueil pour correction, avec votre motif",
+                        life: 5000
+                    });
+                    this.loadDemandeWithGaranties();
+                },
+                error: (err: any) => {
+                    this.state.update((s) => ({ ...s, loading: false }));
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || 'Échec du renvoi', life: 6000 });
+                }
+            });
     }
 
     /**
