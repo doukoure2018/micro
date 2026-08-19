@@ -336,7 +336,10 @@
                         </tr>
                         <tr class="border-b border-gray-200">
                             <td class="py-3 px-4 text-gray-600 font-medium">Adresse & Contact</td>
-                            <td class="py-3 px-4" colspan="3">{{ state().demandeIndividuel?.addresseDomicileContact }}
+                            <td class="py-3 px-4">{{ state().demandeIndividuel?.addresseDomicileContact }}</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Téléphone</td>
+                            <td class="py-3 px-4 font-semibold text-blue-700">
+                                <i class="pi pi-phone mr-1"></i>{{ state().demandeIndividuel?.telephone || 'N/A' }}
                             </td>
                         </tr>
                         <tr class="border-b border-gray-200">

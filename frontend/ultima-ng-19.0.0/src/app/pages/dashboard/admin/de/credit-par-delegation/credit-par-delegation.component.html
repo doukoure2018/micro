@@ -64,6 +64,7 @@
                                 <div class="flex flex-column gap-1">
                                     <span class="font-semibold">{{ demande.prenom }} {{ demande.nom }}</span>
                                     <small class="text-500">{{ demande.numeroMembre }}</small>
+                                    <small *ngIf="demande.telephone" class="text-blue-600"><i class="pi pi-phone mr-1"></i>{{ demande.telephone }}</small>
                                 </div>
                             </td>
                             <td><p-chip [label]="demande.delegationLibele || 'N/A'" styleClass="text-xs bg-purple-50 text-purple-700"></p-chip></td>
@@ -111,6 +112,8 @@
     <div *ngIf="selectedDemande" class="mb-4 p-3 bg-green-50 border-round">
         <p class="font-semibold m-0">{{ selectedDemande.prenom }} {{ selectedDemande.nom }}</p>
         <p class="text-600 m-0">{{ formatMontantGNF(selectedDemande.montantDemande) }} - {{ selectedDemande.objectCredit }}</p>
+        <p *ngIf="selectedDemande.telephone" class="text-blue-600 m-0 mt-1 text-sm">
+            <i class="pi pi-phone mr-1"></i>{{ selectedDemande.telephone }}</p>
         <p *ngIf="selectedDemande.descriptionActivite" class="text-600 m-0 mt-1 text-sm">
             <strong>Activité :</strong> {{ selectedDemande.descriptionActivite }}</p>
     </div>
