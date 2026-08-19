@@ -11,6 +11,8 @@ public interface WorkflowService {
     // AC
     void approuverAC(Long demandeId, String avis, String codUsuarios, Long userId);
 
+    void resoumettreCorrection(Long demandeId);
+
     // DA
     List<WorkflowDemandeDto> getAValiderDA(Long agenceId);
     List<WorkflowDemandeDto> getEnCorrectionDRForDA(Long agenceId);

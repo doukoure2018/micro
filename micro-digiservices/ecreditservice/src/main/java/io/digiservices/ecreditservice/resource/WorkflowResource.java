@@ -43,6 +43,17 @@ public class WorkflowResource {
                         "Demande approuvée avec succès", OK));
     }
 
+    /** Resoumission par l'agent d'un dossier corrigé après rejet DR/DE (retour au niveau qui a rejeté). */
+    @PutMapping("/{demandeId}/resoumettre-correction")
+    public ResponseEntity<Response> resoumettreCorrection(
+            @PathVariable Long demandeId,
+            HttpServletRequest httpRequest) {
+        workflowService.resoumettreCorrection(demandeId);
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("message", "Corrections resoumises"),
+                        "Corrections resoumises avec succès", OK));
+    }
+
     // ==================== DA LISTS ====================
 
     @GetMapping("/a-valider-da")

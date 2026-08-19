@@ -1539,6 +1539,8 @@ export class UserService {
 
     approuverAC$ = (demandeId: number, avis: string) => <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/approuver-ac`, { avis }).pipe(catchError(this.handleError));
 
+    resoumettreCorrection$ = (demandeId: number) => <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/resoumettre-correction`, {}).pipe(catchError(this.handleError));
+
     // DA
     getAValiderDA$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/a-valider-da`).pipe(catchError(this.handleError));
 

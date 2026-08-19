@@ -873,9 +873,12 @@ export class CorrectionDemandeComponent implements OnInit {
             prefecture: this.formData.prefecture || '',
             sousPrefecture: this.formData.sousPrefecture || '',
             email: this.formData.email || '',
-            tipCredito: this.formData.tipCredito,
+            tipCredito: this.isFonctionnaire() ? 7 : this.formData.tipCredito,
+            nombreEcheance: this.isFonctionnaire() ? this.formData.dureeDemande || 1 : this.formData.nombreEcheance!,
+            detailObjectCredit: this.isFonctionnaire() ? this.formData.detailObjectCredit || this.formData.objectCredit || '' : this.formData.detailObjectCredit!,
             descriptionActivite: this.getDescriptionActiviteComplete() || form.value.descriptionActivite,
-            garanties: this.state().garanties.map((g) => ({
+            // Crédit fonctionnaire : pas de garanties classiques (garantie = domiciliation du salaire)
+            garanties: this.isFonctionnaire() ? [] : this.state().garanties.map((g) => ({
                 ...g,
                 typeGarantie: this.convertTypeGarantie(g.typeGarantie!)
             })),

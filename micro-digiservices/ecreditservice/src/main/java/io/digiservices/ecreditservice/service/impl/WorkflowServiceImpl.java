@@ -36,6 +36,23 @@ public class WorkflowServiceImpl implements WorkflowService {
         }
     }
 
+    /**
+     * Resoumission par l'agent d'un dossier corrigé après rejet DR/DE : retour dans la
+     * file du niveau qui a rejeté, sans échelle de délégation ni écrasement des
+     * avis/signatures DA/DR (contrairement à un appel valider-da/valider-dr).
+     */
+    @Override
+    @Transactional
+    public void resoumettreCorrection(Long demandeId) {
+        log.info("Resoumission après correction DR/DE pour demande {}", demandeId);
+        // Crédit fonctionnaire : la quotité doit rester finançable après la correction
+        analyseChargesFonctionnaireService.verifierFinancableSiFonctionnaire(demandeId);
+        int rows = workflowRepository.resoumettreCorrection(demandeId);
+        if (rows == 0) {
+            throw new ApiException("Demande non trouvée ou état invalide pour la resoumission (attendu : CORRECTION_DR ou CORRECTION_DE)");
+        }
+    }
+
     // ==================== DA ====================
 
     @Override
