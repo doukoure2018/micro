@@ -744,8 +744,40 @@
 
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
         <!-- SECTION REJET - DA uniquement                                          -->
+        <!-- Demande issue de l'accueil : le rejet = renvoi à l'agent d'accueil     -->
+        <!-- pour correction, avec MOTIF OBLIGATOIRE (pas de rejet définitif).      -->
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
-        <div *ngIf="state().user?.role === 'DA' && state().demandeIndividuel?.validationState !== 'REJECTED'
+        <div *ngIf="state().user?.role === 'DA' && peutRenvoyerAccueil()"
+            class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-orange-200 mb-8">
+            <div class="bg-orange-500 text-white px-6 py-4 flex items-center gap-3">
+                <i class="pi pi-undo text-xl"></i>
+                <span class="font-bold text-lg uppercase tracking-wide">Renvoi à l'Accueil - Directeur d'Agence</span>
+            </div>
+            <div class="p-6">
+                <div class="bg-orange-50 border-l-4 border-orange-400 rounded-r-lg p-5 mb-6">
+                    <i class="pi pi-info-circle text-orange-600 mr-2 text-lg"></i>
+                    <span class="font-medium">Cette demande a été saisie par l'agent d'accueil. En la rejetant, elle lui
+                        retournera pour correction, avec votre motif — celui-ci est obligatoire.</span>
+                </div>
+                <div class="flex justify-center gap-5">
+                    <button pButton type="button" (click)="ouvrirRenvoiAccueil()" [disabled]="state().loading"
+                        class="bg-orange-600 hover:bg-orange-700" icon="pi pi-undo"
+                        label="RENVOYER À L'ACCUEIL POUR CORRECTION">
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Demande déjà renvoyée : en correction chez l'agent d'accueil -->
+        <div *ngIf="state().user?.role === 'DA' && state().demandeIndividuel?.validationState === 'CORRECTION_ACCUEIL'"
+            class="bg-orange-50 border-2 border-orange-300 rounded-xl p-5 mb-8 flex items-center gap-3">
+            <i class="pi pi-undo text-orange-600 text-xl"></i>
+            <span class="font-medium text-orange-800">Cette demande a déjà été renvoyée à l'agent d'accueil pour
+                correction — elle vous reviendra après rediligence.</span>
+        </div>
+
+        <div *ngIf="state().user?.role === 'DA' && !isDemandeOrigineAccueil()
+               && state().demandeIndividuel?.validationState !== 'REJECTED'
                && !state().hasDemandeCredit && !state().hasDossierCredit"
             class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-red-200 mb-8">
             <div class="bg-red-500 text-white px-6 py-4 flex items-center gap-3">
@@ -2132,6 +2164,36 @@
                     class="p-button-secondary p-button-outlined" (click)="closePreviewDialog()"></button>
             </div>
         </div>
+    </p-dialog>
+
+    <!-- Modal : renvoi d'une demande d'accueil pour correction (motif obligatoire) -->
+    <p-dialog header="Renvoyer à l'agent d'accueil" [visible]="state().showRenvoiAccueil || false" [modal]="true"
+        [style]="{ width: '560px' }" [closable]="!state().loading"
+        (onHide)="state.update(mergeState({showRenvoiAccueil: false}))">
+        <div class="mb-4 p-3 bg-orange-50 border-round">
+            <p class="font-semibold m-0">{{ state().demandeIndividuel?.prenom }} {{ state().demandeIndividuel?.nom }}</p>
+            <p class="text-600 m-0">{{ state().demandeIndividuel?.montantDemande | currency:'GNF ':'symbol':'1.0-0' }}
+                - {{ state().demandeIndividuel?.objectCredit }}</p>
+        </div>
+        <p class="text-sm text-gray-600">La demande retournera à l'agent d'accueil qui l'a saisie, avec votre motif,
+            pour correction puis nouvelle transmission.</p>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">
+            Motif du renvoi <span class="text-red-500">*</span>
+        </label>
+        <textarea pTextarea [(ngModel)]="motifRenvoiAccueil" rows="3" class="w-full"
+            placeholder="Ex. informations du membre incomplètes, pièce illisible..." [autoResize]="true"></textarea>
+        <small *ngIf="motifRenvoiAccueil.trim().length > 0 && motifRenvoiAccueil.trim().length < 10"
+            class="text-red-500">Le motif doit contenir au moins 10 caractères.</small>
+        <ng-template #footer>
+            <div class="flex justify-end gap-3">
+                <button pButton type="button" label="Annuler" icon="pi pi-times"
+                    class="p-button-secondary p-button-outlined" [disabled]="state().loading"
+                    (click)="state.update(mergeState({showRenvoiAccueil: false}))"></button>
+                <button pButton type="button" label="Confirmer le renvoi" icon="pi pi-undo" class="p-button-warning"
+                    [disabled]="motifRenvoiAccueil.trim().length < 10 || state().loading"
+                    (click)="confirmerRenvoiAccueil()"></button>
+            </div>
+        </ng-template>
     </p-dialog>
 
     <!-- Modal : transformation d'un crédit existant en crédit fonctionnaire -->
