@@ -504,6 +504,11 @@
                             <td class="py-3 px-4 font-bold text-emerald-600">{{
                                 state().demandeIndividuel?.nombreAnneeActivite }} ans</td>
                         </tr>
+                        <tr *ngIf="filiereActivite()" class="border-b border-gray-200">
+                            <td class="py-3 px-4 text-gray-600 font-medium">Filière d'activité</td>
+                            <td class="py-3 px-4 font-semibold text-emerald-700" colspan="3">
+                                <i class="pi pi-sitemap mr-1"></i>{{ filiereActivite() }}</td>
+                        </tr>
                         <tr class="border-b border-gray-200">
                             <td class="py-3 px-4 text-gray-600 font-medium">Description</td>
                             <td class="py-3 px-4" colspan="3">{{ state().demandeIndividuel?.descriptionActivite }}</td>

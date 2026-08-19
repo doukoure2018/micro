@@ -1,5 +1,6 @@
 import { AnalyseChargesFonctionnaire, DemandeFonctionnaire, DemandeIndividuel, PieceJointeDemande, TYPE_CONTRAT_OPTIONS_FONCTIONNAIRE, demandeFonctionnaireVide, quotiteCessibleFonctionnaire } from '@/interface/demande-individuel.interface';
 import { NiveauValidationFinale, libelleNiveauValidation, niveauValidationFinale } from '@/interface/validation-seuils';
+import { CreditActiviteData } from '@/service/credit-activite.model';
 import { registerLocaleData } from '@angular/common';
 import localeFr from '@angular/common/locales/fr';
 
@@ -1487,6 +1488,22 @@ export class DetailComponent {
     /** Nature Fonctionnaire : l'analyse bilan/flux est remplacée par l'analyse charges & quotité. */
     isFonctionnaireNature(): boolean {
         return this.state().demandeIndividuel?.natureClient === 'Demande de credit Pour Fonctionnaire';
+    }
+
+    /** Filière saisie à la demande : Activité → Sous-activité → Sous-sous-activité (codes résolus en libellés). */
+    filiereActivite(): string {
+        const d = this.state().demandeIndividuel;
+        const codeA = Number(d?.typeActivite);
+        if (!codeA) return '';
+        const codeSA = Number(d?.sousActivite);
+        const codeSSA = Number(d?.sousSousActivite);
+        const parts: string[] = [CreditActiviteData.getActiviteByCode(codeA)?.libelle || String(codeA)];
+        if (codeSA) parts.push(CreditActiviteData.getSousActiviteByCode(codeA, codeSA)?.libelle || String(codeSA));
+        if (codeSA && codeSSA) {
+            const ssa = CreditActiviteData.getSousSousActivites(codeA, codeSA).find((s) => s.code === codeSSA);
+            parts.push(ssa?.libelle || String(codeSSA));
+        }
+        return parts.join(' → ');
     }
 
     // ==================== TRANSFORMATION EN CREDIT FONCTIONNAIRE ====================
