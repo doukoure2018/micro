@@ -18,10 +18,11 @@ import { ProgressSpinner } from 'primeng/progressspinner';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
+import { TooltipModule } from 'primeng/tooltip';
 
 @Component({
     selector: 'app-credit-selection',
-    imports: [CommonModule, FluidModule, InputTextModule, ButtonModule, TextareaModule, TableModule, DividerModule, MessageModule, IconFieldModule, InputIconModule, TagModule, CurrencyPipe, ProgressSpinner, AccordionModule, RouterLink],
+    imports: [CommonModule, FluidModule, InputTextModule, ButtonModule, TextareaModule, TableModule, DividerModule, MessageModule, IconFieldModule, InputIconModule, TagModule, CurrencyPipe, ProgressSpinner, AccordionModule, RouterLink, TooltipModule],
     templateUrl: './credit-selection.component.html',
     providers: [MessageService]
 })
@@ -34,6 +35,7 @@ export class CreditSelectionComponent {
         error: string | any;
         statusOptions: { label: string; value: string }[];
         dateKeys: string[];
+        currentUserId?: number;
     }>({
         loading: false,
         message: undefined,
@@ -49,7 +51,29 @@ export class CreditSelectionComponent {
     private messageService = inject(MessageService);
 
     ngOnInit(): void {
+        this.loadCurrentUser();
         this.loadDemandeSelection();
+    }
+
+    private loadCurrentUser(): void {
+        this.userService
+            .getInstanceUser$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    const user = (response.data as any)?.user;
+                    if (user?.userId) {
+                        this.state.update((s) => ({ ...s, currentUserId: Number(user.userId) }));
+                    }
+                },
+                error: () => {}
+            });
+    }
+
+    /** Verrou d'affectation : la demande appartient à un autre agent de crédit. */
+    estVerrouillee(demande: DemandeIndividuel): boolean {
+        const userId = this.state().currentUserId;
+        return !!demande.agentCreditAffecte && !!userId && Number(demande.agentCreditAffecte) !== userId;
     }
 
     private loadDemandeSelection(): void {
