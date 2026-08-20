@@ -230,6 +230,46 @@ public class BcrgTranslator {
         return "A";
     }
 
+    // ==================== v1.5 — PM V2 ====================
+    // Même procédé que le NIN des personnes physiques (PP V2) : les identifiants légaux
+    // d'une personne morale (RCCM, NIF, agrément) sont enregistrés au SAF comme pièces
+    // d'identité du client (CL_ID_CLIENTES / CL_TIPOS_ID) ; détection par mots-clés du
+    // libellé, à caler sur les valeurs réelles de CL_TIPOS_ID.
+
+    /** Pièce PM portant le numéro RCCM (registre du commerce et du crédit mobilier). */
+    public boolean estPieceRccm(String codTipoId, String desTipoId) {
+        String lib = libellePiece(codTipoId, desTipoId);
+        if (lib == null) return false;
+        return lib.contains("RCCM") || lib.contains("MERCANTIL")
+                || (lib.contains("REGISTRE") && lib.contains("COMMERCE"))
+                || (lib.contains("REGISTRO") && lib.contains("COMERCIO"));
+    }
+
+    /** Pièce PM portant le NIF (numéro d'immatriculation fiscale) — exclut le NIFP. */
+    public boolean estPieceNif(String codTipoId, String desTipoId) {
+        String lib = libellePiece(codTipoId, desTipoId);
+        if (lib == null || lib.contains("NIFP")) return false;
+        return lib.contains("NIF") || lib.contains("FISCAL") || lib.contains("RUC")
+                || lib.contains("NIT") || lib.contains("CONTRIBUYENTE");
+    }
+
+    /** Pièce PM portant le NIFP (numéro d'immatriculation fiscale permanent). */
+    public boolean estPieceNifp(String codTipoId, String desTipoId) {
+        String lib = libellePiece(codTipoId, desTipoId);
+        return lib != null && lib.contains("NIFP");
+    }
+
+    /** Pièce PM portant le numéro d'agrément. */
+    public boolean estPieceAgrement(String codTipoId, String desTipoId) {
+        String lib = libellePiece(codTipoId, desTipoId);
+        return lib != null && (lib.contains("AGREMENT") || lib.contains("LICEN"));
+    }
+
+    private static String libellePiece(String codTipoId, String desTipoId) {
+        String lib = sansAccents(StringUtils.hasText(desTipoId) ? desTipoId : codTipoId);
+        return StringUtils.hasText(lib) ? lib : null;
+    }
+
     // ==================== v1.3 — modules M2 (engagements) / M4 (encours) ====================
 
     /** Taux/pourcentage au format BCRG NN.NN (séparateur '.', 2 décimales) ; null reste null. */

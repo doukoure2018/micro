@@ -133,19 +133,28 @@ public class BcrgMapper {
         d.setDatCreaPart(translator.formatDate(s.getFecIngreso()));
         d.setFormeJuridique(formeJuridique);
         d.setPaysSiegeSocial(BcrgTranslator.PAYS_GUINEE);
-        d.setVilleSiegeSocial(ND); // seuls des codes sans libellé sont portés par le SI
+        // PM V2 : ville du siège = libellé de la province SAF (référentiel PA_PROVINCIAS,
+        // renseignée pour ~100 % des PM) ; ND si l'adresse ou le libellé manque
+        d.setVilleSiegeSocial(adresse != null && StringUtils.hasText(adresse.getDesProvincia())
+                ? adresse.getDesProvincia().trim() : ND);
         d.setMobile(translator.normaliserMobile(s.getTelPrincipal()));
         d.setEmail(null);
         d.setSiteWeb(null);
         d.setAdress(adresse != null && StringUtils.hasText(adresse.getDetDireccion())
                 ? adresse.getDetDireccion().trim() : ND);
-        d.setCommuneAdresse(null);
+        // PM V2 : commune depuis le référentiel PA_DISTRITOS (repli canton) ; facultatif → null
+        d.setCommuneAdresse(adresse == null ? null
+                : StringUtils.hasText(adresse.getDesDistrito()) ? adresse.getDesDistrito().trim()
+                : StringUtils.hasText(adresse.getDesCanton()) ? adresse.getDesCanton().trim()
+                : null);
         d.setCodePostal(adresse != null ? blankToNull(adresse.getCodPostal()) : null);
         d.setResident(BcrgTranslator.RESIDENT_OUI);
-        d.setRccm(ND);        // non portés par le SI : ND en régime transitoire
-        d.setNif(ND);
-        d.setNifp(ND);
-        d.setNumAgrement(ND);
+        // PM V2 : RCCM / NIF / NIFP / agrément recherchés dans les pièces SAF du client
+        // (même procédé que le NIN des PP) ; ND en repli si aucune pièce ne correspond
+        d.setRccm(coalesceND(numeroPiece(s.getPieces(), translator::estPieceRccm)));
+        d.setNif(coalesceND(numeroPiece(s.getPieces(), translator::estPieceNif)));
+        d.setNifp(coalesceND(numeroPiece(s.getPieces(), translator::estPieceNifp)));
+        d.setNumAgrement(coalesceND(numeroPiece(s.getPieces(), translator::estPieceAgrement)));
         d.setNumSecSoc(null);
         d.setActEcon(translator.translateSecteurNaema(s.getDesActividad()));
         d.setSectInst(translator.sectInstPersonneMorale(formeJuridique));
@@ -303,6 +312,21 @@ public class BcrgMapper {
 
     private static RegAdresseDto premiereAdresse(List<RegAdresseDto> adresses) {
         return (adresses == null || adresses.isEmpty()) ? null : adresses.get(0);
+    }
+
+    /** Numéro de la première pièce SAF correspondant au type recherché (PM V2). */
+    private static String numeroPiece(List<RegPieceDto> pieces,
+                                      java.util.function.BiPredicate<String, String> type) {
+        if (pieces == null) return null;
+        return pieces.stream()
+                .filter(p -> type.test(p.getCodTipoId(), p.getDesTipoId()))
+                .map(p -> blankToNull(p.getNumId()))
+                .filter(java.util.Objects::nonNull)
+                .findFirst().orElse(null);
+    }
+
+    private static String coalesceND(String valeur) {
+        return valeur != null ? valeur : ND;
     }
 
     private static String blankToNull(String s) {

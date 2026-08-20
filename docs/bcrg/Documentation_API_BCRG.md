@@ -2,7 +2,7 @@
 
 **Crédit Rural de Guinée S.A. — Documentation technique d'intégration**
 
-*Version 1.4 — 17 août 2026 (v1.1 contrat complet PP/PM · v1.2 extraction incrémentale + notifications · v1.3 refonte Engagements/Encours · v1.4 retours PP V2 : état civil réel, référentiel pays, NIN, API par liste d'identifiants et API des personnes modifiées)*
+*Version 1.5 — 20 août 2026 (v1.1 contrat complet PP/PM · v1.2 extraction incrémentale + notifications · v1.3 refonte Engagements/Encours · v1.4 retours PP V2 : état civil réel, référentiel pays, NIN, API par liste d'identifiants et API des personnes modifiées · v1.5 PM V2 : VilleSiegeSocial et CommuneAdresse depuis les référentiels géographiques SAF, RCCM depuis les pièces du client moral)*
 
 ---
 
@@ -356,7 +356,7 @@ les champs sourcés mais vides sont émis à `null` (voir § 2.0).
 **Champs émis à `ND` (aucune source SAF2000)** :
 
 - **Personnes physiques** : `NIN`, `DatNai`, `PaysNai`, filiation (`NomPere`, `PrenomPere`, `NomNaiMere`, `PrmMre`), date/lieu/pays d'émission des pièces, `RevMensMoy`/`DepMensMoy` ;
-- **Personnes morales** : `DatCreat`, `VilleSiegeSocial`, `RCCM`, `NIF`, `NIFP`, `NumAgrement` ;
+- **Personnes morales** : `DatCreat`, `NIF`, `NIFP`, `NumAgrement` (la table `CL_PERSONAS_JURIDICAS` ne porte ni date de constitution ni identifiant fiscal). Depuis la **v1.5 (PM V2)** : `VilleSiegeSocial` = libellé de la préfecture du siège (référentiel `PA_PROVINCIAS`, renseignée pour la quasi-totalité des PM), `CommuneAdresse` = libellé du district (repli canton), et `RCCM` repris de la pièce SAF « NUMERO DU RCCM » quand elle existe (`ND` sinon — la collecte du RCCM/NIF reste un chantier du CRG) ;
 - **Comptes** : `CleRib` (le CRG n'est pas un participant de type banque) ;
 - **Encours** : indicateurs IFRS (`pd`, `lgd`, `ccf`, `ifrsStage`) restent à `null` ;
 - **Engagements** : garanties et consolidations (différés).
