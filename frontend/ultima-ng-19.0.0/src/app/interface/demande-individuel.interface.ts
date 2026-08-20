@@ -205,6 +205,9 @@ export interface DemandeIndividuel {
     statutDemande: string;
     validationState: string;
     statutSelection?: string;
+    /** Verrou d'affectation : agent de crédit propriétaire du dossier (+ nom affichable) */
+    agentCreditAffecte?: number;
+    agentAffecteNom?: string;
     createdAt?: Date | string;
 
     // ==================== GARANTIES ====================

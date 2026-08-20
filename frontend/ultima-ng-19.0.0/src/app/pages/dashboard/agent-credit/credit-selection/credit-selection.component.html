@@ -50,6 +50,7 @@
                                 <th>Montant</th>
                                 <th>Activité</th>
                                 <th>Statut</th>
+                                <th>Affectée à</th>
                                 <th>Heure</th>
                                 <th>Actions</th>
                             </tr>
@@ -67,9 +68,24 @@
                                         [severity]="getStatusSeverity(demande.statutDemande, demande.validationState)">
                                     </p-tag>
                                 </td>
+                                <td>
+                                    @if (demande.agentAffecteNom) {
+                                    <span class="font-medium"
+                                        [class.text-green-700]="!estVerrouillee(demande)"
+                                        [class.text-orange-600]="estVerrouillee(demande)">
+                                        <i class="pi pi-user mr-1"></i>{{ demande.agentAffecteNom }}
+                                    </span>
+                                    } @else {
+                                    <span class="text-gray-400">Non affectée</span>
+                                    }
+                                </td>
                                 <td>{{ demande.createdAt | date: 'short' }}</td>
                                 <td>
-                                    @if(demande.statutDemande === 'EN_ATTENTE' && demande.validationState ===
+                                    @if (estVerrouillee(demande)) {
+                                    <p-tag icon="pi pi-lock" severity="danger"
+                                        [value]="'Réservée à ' + (demande.agentAffecteNom || 'un autre agent')"
+                                        pTooltip="Vous n'êtes pas autorisé à accéder à cette demande"></p-tag>
+                                    } @else if(demande.statutDemande === 'EN_ATTENTE' && demande.validationState ===
                                     'APPROVED') {
                                     <span class="text-muted">En cours de validation</span>
                                     <p-button
@@ -88,7 +104,7 @@
 
                         <ng-template pTemplate="emptymessage">
                             <tr>
-                                <td colspan="7" class="text-center">
+                                <td colspan="9" class="text-center">
                                     Aucune demande trouvée pour cette date
                                 </td>
                             </tr>

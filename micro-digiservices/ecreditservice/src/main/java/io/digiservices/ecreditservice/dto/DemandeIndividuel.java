@@ -97,6 +97,9 @@ public class DemandeIndividuel {
     private String validationState;
     private String currentActivite;
     private String statutSelection;
+    // Verrou d'affectation : agent de crédit propriétaire du dossier (+ nom pour l'affichage)
+    private Long agentCreditAffecte;
+    private String agentAffecteNom;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss.SSSSSS")
     private LocalDateTime createdAt;

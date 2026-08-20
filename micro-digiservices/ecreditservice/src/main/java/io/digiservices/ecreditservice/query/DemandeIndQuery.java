@@ -158,8 +158,12 @@ public class DemandeIndQuery {
                                            validation_state as "validationState",
                                            current_activite as "currentActivite",
                                            statut_selection as "statutSelection",
+                                           agent_credit_affecte as "agentCreditAffecte",
+                                           (SELECT NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), '')
+                                              FROM users u
+                                             WHERE u.user_id = demandeindividuel.agent_credit_affecte) as "agentAffecteNom",
                                            createdAt as "createdAt"
-                            		  
+
                             		   FROM demandeindividuel WHERE pos = :pointventeId
                             		   AND statut_demande='EN_ATTENTE'
                             		   AND validation_state IN ('SELECTION','APPROVED') ORDER BY DATE(createdAt) DESC
@@ -631,6 +635,15 @@ public class DemandeIndQuery {
                                FROM demandeIndividuel WHERE demandeindividuel_id = :demandeIndividuelId
                     """;
 
+
+    /** Agent de crédit affecté à la demande (verrou d'accès + affichage du nom). */
+    public static final String SELECT_AGENT_AFFECTE_BY_DEMANDE = """
+            SELECT d.agent_credit_affecte AS "agentCreditAffecte",
+                   NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), '') AS "agentAffecteNom"
+            FROM demandeindividuel d
+            LEFT JOIN users u ON u.user_id = d.agent_credit_affecte
+            WHERE d.demandeindividuel_id = :demandeId
+            """;
 
    public static final String CHECK_DEMANDE_EXIST =
            """

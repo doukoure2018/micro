@@ -401,6 +401,23 @@ export class DetailComponent {
                         }
 
                         const responseData = response.data as any;
+
+                        // Verrou d'affectation : un agent de crédit ne peut pas ouvrir le
+                        // dossier pris en charge par un autre agent
+                        const currentUser = responseData.user;
+                        if (currentUser?.role === 'AGENT_CREDIT' && demandeData.agentCreditAffecte
+                                && Number(demandeData.agentCreditAffecte) !== Number(currentUser.userId)) {
+                            this.state.update((s) => ({ ...s, loading: false }));
+                            this.messageService.add({
+                                severity: 'error',
+                                summary: 'Accès refusé',
+                                detail: `Ce dossier est réservé à ${demandeData.agentAffecteNom || 'un autre agent de crédit'}`,
+                                life: 6000
+                            });
+                            this.router.navigate(['/dashboards/agent-credit/list-selection-ind']);
+                            return;
+                        }
+
                         this.state.update((s) => ({
                             ...s,
                             demandeIndividuel: demandeData,

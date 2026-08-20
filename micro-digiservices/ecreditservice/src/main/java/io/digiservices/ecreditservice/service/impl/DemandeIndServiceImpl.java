@@ -235,7 +235,10 @@ public class DemandeIndServiceImpl implements DemandeIndService {
     }
     @Override
     public DemandeIndividuel getDemandeWithGaranties(Long demandeId) {
-        return demandeIndRepository.getDemandeWithGaranties(demandeId);
+        DemandeIndividuel demande = demandeIndRepository.getDemandeWithGaranties(demandeId);
+        // Verrou d'affectation : le front a besoin de l'agent propriétaire (id + nom)
+        demandeIndRepository.completerAgentAffecte(demande);
+        return demande;
     }
 
     @Override

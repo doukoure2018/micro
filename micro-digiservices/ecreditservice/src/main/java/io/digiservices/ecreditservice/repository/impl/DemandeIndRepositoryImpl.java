@@ -969,6 +969,24 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
 
 
 
+    /** Complète l'agent de crédit affecté (id + nom) — la fonction pg du détail ne le porte pas. */
+    @Override
+    public void completerAgentAffecte(DemandeIndividuel demande) {
+        if (demande == null || demande.getDemandeIndividuelId() == null) return;
+        try {
+            jdbcClient.sql(DemandeIndQuery.SELECT_AGENT_AFFECTE_BY_DEMANDE)
+                    .param("demandeId", demande.getDemandeIndividuelId())
+                    .query((rs, n) -> {
+                        long agent = rs.getLong("agentCreditAffecte");
+                        demande.setAgentCreditAffecte(rs.wasNull() ? null : agent);
+                        demande.setAgentAffecteNom(rs.getString("agentAffecteNom"));
+                        return 1;
+                    }).optional();
+        } catch (Exception e) {
+            log.warn("Agent affecté non résolu pour la demande {}: {}", demande.getDemandeIndividuelId(), e.getMessage());
+        }
+    }
+
     @Override
     public DemandeIndividuel getDemandeWithGaranties(Long demandeId) {
         try {
