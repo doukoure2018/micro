@@ -133,13 +133,20 @@ public class BcrgMapper {
         d.setDatCreaPart(translator.formatDate(s.getFecIngreso()));
         d.setFormeJuridique(formeJuridique);
         d.setPaysSiegeSocial(BcrgTranslator.PAYS_GUINEE);
-        d.setVilleSiegeSocial(ND); // seuls des codes sans libellé sont portés par le SI
+        // PM V2 : ville du siège = libellé de la province SAF (référentiel PA_PROVINCIAS,
+        // renseignée pour ~100 % des PM) ; ND si l'adresse ou le libellé manque
+        d.setVilleSiegeSocial(adresse != null && StringUtils.hasText(adresse.getDesProvincia())
+                ? adresse.getDesProvincia().trim() : ND);
         d.setMobile(translator.normaliserMobile(s.getTelPrincipal()));
         d.setEmail(null);
         d.setSiteWeb(null);
         d.setAdress(adresse != null && StringUtils.hasText(adresse.getDetDireccion())
                 ? adresse.getDetDireccion().trim() : ND);
-        d.setCommuneAdresse(null);
+        // PM V2 : commune depuis le référentiel PA_DISTRITOS (repli canton) ; facultatif → null
+        d.setCommuneAdresse(adresse == null ? null
+                : StringUtils.hasText(adresse.getDesDistrito()) ? adresse.getDesDistrito().trim()
+                : StringUtils.hasText(adresse.getDesCanton()) ? adresse.getDesCanton().trim()
+                : null);
         d.setCodePostal(adresse != null ? blankToNull(adresse.getCodPostal()) : null);
         d.setResident(BcrgTranslator.RESIDENT_OUI);
         // PM V2 : RCCM / NIF / NIFP / agrément recherchés dans les pièces SAF du client

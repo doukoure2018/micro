@@ -19,4 +19,8 @@ public class RegAdresseDto {
     private String codDistrito;
     private String codPostal;   // COD_POSTAL
     private String apdoPostal;  // APDO_POSTAL (boite postale)
+    // PM V2 : libellés des référentiels géographiques PA.PA_* (ville du siège social)
+    private String desProvincia; // PA_PROVINCIAS.DES_PROVINCIA (préfecture, ex. CONAKRY)
+    private String desCanton;    // PA_CANTONES.DES_CANTON
+    private String desDistrito;  // PA_DISTRITOS.DES_DISTRITO
 }

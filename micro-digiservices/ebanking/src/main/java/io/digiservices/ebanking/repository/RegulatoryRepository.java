@@ -153,11 +153,26 @@ public class RegulatoryRepository {
             WHERE id.COD_CLIENTE = :codCliente
             """;
 
+    // PM V2 : jointure des referentiels geographiques PA.PA_* pour les libelles
+    // (VilleSiegeSocial / CommuneAdresse) — les codes seuls etaient inexploitables
+    private static final String ADRESSE_GEO_JOINS = """
+            LEFT JOIN PA.PA_PROVINCIAS pr
+                ON pr.COD_PAIS = dc.COD_PAIS AND pr.COD_PROVINCIA = dc.COD_PROVINCIA
+            LEFT JOIN PA.PA_CANTONES ca
+                ON ca.COD_PAIS = dc.COD_PAIS AND ca.COD_PROVINCIA = dc.COD_PROVINCIA
+                AND ca.COD_CANTON = dc.COD_CANTON
+            LEFT JOIN PA.PA_DISTRITOS di
+                ON di.COD_PAIS = dc.COD_PAIS AND di.COD_PROVINCIA = dc.COD_PROVINCIA
+                AND di.COD_CANTON = dc.COD_CANTON AND di.COD_DISTRITO = dc.COD_DISTRITO
+            """;
+
     private static final String SQL_FIND_ADRESSES = """
             SELECT dc.TIP_DIRECCION, dc.DET_DIRECCION, dc.COD_PAIS,
                    dc.COD_PROVINCIA, dc.COD_CANTON, dc.COD_DISTRITO,
-                   dc.COD_POSTAL, dc.APDO_POSTAL
+                   dc.COD_POSTAL, dc.APDO_POSTAL,
+                   pr.DES_PROVINCIA, ca.DES_CANTON, di.DES_DISTRITO
             FROM CL.CL_DIR_CLIENTES dc
+            """ + ADRESSE_GEO_JOINS + """
             WHERE dc.COD_CLIENTE = :codCliente
             """;
 
@@ -180,8 +195,10 @@ public class RegulatoryRepository {
     private static final String SQL_FIND_ADRESSES_BULK = """
             SELECT dc.COD_CLIENTE, dc.TIP_DIRECCION, dc.DET_DIRECCION, dc.COD_PAIS,
                    dc.COD_PROVINCIA, dc.COD_CANTON, dc.COD_DISTRITO,
-                   dc.COD_POSTAL, dc.APDO_POSTAL
+                   dc.COD_POSTAL, dc.APDO_POSTAL,
+                   pr.DES_PROVINCIA, ca.DES_CANTON, di.DES_DISTRITO
             FROM CL.CL_DIR_CLIENTES dc
+            """ + ADRESSE_GEO_JOINS + """
             WHERE dc.COD_CLIENTE IN (:codClientes)
             """;
 
@@ -509,7 +526,8 @@ public class RegulatoryRepository {
                         .add(new RegAdresseDto(str(rs, "TIP_DIRECCION"), str(rs, "DET_DIRECCION"),
                                 str(rs, "COD_PAIS"), str(rs, "COD_PROVINCIA"),
                                 str(rs, "COD_CANTON"), str(rs, "COD_DISTRITO"),
-                                str(rs, "COD_POSTAL"), str(rs, "APDO_POSTAL")));
+                                str(rs, "COD_POSTAL"), str(rs, "APDO_POSTAL"),
+                                str(rs, "DES_PROVINCIA"), str(rs, "DES_CANTON"), str(rs, "DES_DISTRITO")));
             });
             return map;
         });
@@ -611,7 +629,8 @@ public class RegulatoryRepository {
     private static final RowMapper<RegAdresseDto> ADRESSE_MAPPER = (rs, n) -> new RegAdresseDto(
             str(rs, "TIP_DIRECCION"), str(rs, "DET_DIRECCION"), str(rs, "COD_PAIS"),
             str(rs, "COD_PROVINCIA"), str(rs, "COD_CANTON"), str(rs, "COD_DISTRITO"),
-            str(rs, "COD_POSTAL"), str(rs, "APDO_POSTAL"));
+            str(rs, "COD_POSTAL"), str(rs, "APDO_POSTAL"),
+            str(rs, "DES_PROVINCIA"), str(rs, "DES_CANTON"), str(rs, "DES_DISTRITO"));
 
     private static final RowMapper<RegEngagementDto> ENG_MAPPER = (rs, n) -> {
         RegEngagementDto d = new RegEngagementDto();
