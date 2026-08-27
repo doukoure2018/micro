@@ -275,10 +275,12 @@ export class ReceptionsAAffecterComponent implements OnInit {
         if (natureClient.includes('PME')) return 'PME/PMI';
         if (natureClient.includes('Professionnel')) return 'Professionnel';
         if (natureClient.includes('Fonctionnaire')) return 'Fonctionnaire';
+        if (natureClient.includes('Groupe')) return 'Groupe Solidaire';
         return 'Particulier';
     }
 
     severiteNature(natureClient?: string): 'info' | 'warn' | 'success' | 'secondary' {
+        if (natureClient?.includes('Groupe')) return 'success';
         if (natureClient?.includes('Fonctionnaire')) return 'warn';
         if (natureClient?.includes('PME')) return 'info';
         if (natureClient?.includes('Professionnel')) return 'success';

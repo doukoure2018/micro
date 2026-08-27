@@ -101,6 +101,10 @@ public class DemandeIndividuel {
     private Long agentCreditAffecte;
     private String agentAffecteNom;
 
+    // Extension groupe solidaire (nature Groupe Solidaire) + membres
+    private DemandeGroupe demandeGroupe;
+    private java.util.List<MembreGroupe> membresGroupe;
+
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss.SSSSSS")
     private LocalDateTime createdAt;
 

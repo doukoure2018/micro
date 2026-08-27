@@ -642,12 +642,14 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
 
         boolean isFonctionnaire = CreditFonctionnaireValidator.isFonctionnaire(demandeIndividuel)
                 && demandeIndividuel.getDemandeFonctionnaire() != null;
+        boolean isGroupe = io.digiservices.ecreditservice.validation.CreditGroupeValidator.isGroupe(demandeIndividuel)
+                && demandeIndividuel.getDemandeGroupe() != null;
 
         try {
             connection = jdbcTemplate.getDataSource().getConnection();
 
-            if (isFonctionnaire) {
-                // Demande + extension fonctionnaire dans la même transaction
+            if (isFonctionnaire || isGroupe) {
+                // Demande + extension (fonctionnaire ou groupe) dans la même transaction
                 connection.setAutoCommit(false);
             }
 
@@ -756,10 +758,15 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
                 log.info("Résultat création demande - ID: {}, Success: {}, Message: {}",
                         demandeId, success, message);
 
-                if (isFonctionnaire) {
+                if (isFonctionnaire || isGroupe) {
                     if (Boolean.TRUE.equals(success) && demandeId != null && demandeId > 0) {
-                        insertDemandeFonctionnaire(connection, demandeId,
-                                demandeIndividuel.getDemandeFonctionnaire());
+                        if (isFonctionnaire) {
+                            insertDemandeFonctionnaire(connection, demandeId,
+                                    demandeIndividuel.getDemandeFonctionnaire());
+                        }
+                        if (isGroupe) {
+                            insertDemandeGroupe(connection, demandeId, demandeIndividuel);
+                        }
                         connection.commit();
                     } else {
                         connection.rollback();
@@ -834,6 +841,57 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
                 .param("domiciliationSalaire", Boolean.TRUE.equals(ext.getDomiciliationSalaire()))
                 .query(Long.class)
                 .single();
+    }
+
+    /**
+     * Insère l'extension groupe solidaire + les membres sur la même connexion,
+     * dans la transaction de la demande. Le numéro de demande incrémental
+     * (GRP-AAAA-NNNNN) est tiré de la séquence dédiée.
+     */
+    private void insertDemandeGroupe(Connection connection, Long demandeId,
+                                     DemandeIndividuel demande) throws SQLException {
+        io.digiservices.ecreditservice.dto.DemandeGroupe groupe = demande.getDemandeGroupe();
+
+        String numeroDemande;
+        try (PreparedStatement ps = connection.prepareStatement(DemandeIndQuery.NEXT_NUMERO_DEMANDE_GROUPE_SQL);
+             ResultSet seq = ps.executeQuery()) {
+            seq.next();
+            numeroDemande = seq.getString(1);
+        }
+
+        try (PreparedStatement ps = connection.prepareStatement(DemandeIndQuery.INSERT_DEMANDE_GROUPE_SQL)) {
+            ps.setLong(1, demandeId);
+            ps.setString(2, groupe.getTypeGroupe());
+            ps.setString(3, groupe.getNomGroupe());
+            if (groupe.getDateAdhesion() != null) {
+                ps.setDate(4, Date.valueOf(groupe.getDateAdhesion()));
+            } else {
+                ps.setNull(4, Types.DATE);
+            }
+            ps.setString(5, groupe.getDistrictQuartier());
+            ps.setString(6, groupe.getSecteur());
+            ps.setString(7, groupe.getMandataire1());
+            ps.setString(8, groupe.getContactMandataire1());
+            ps.setString(9, groupe.getMandataire2());
+            ps.setString(10, groupe.getContactMandataire2());
+            ps.setInt(11, groupe.getNombreMembres());
+            ps.setString(12, numeroDemande);
+            ps.executeUpdate();
+        }
+
+        try (PreparedStatement ps = connection.prepareStatement(DemandeIndQuery.INSERT_MEMBRE_GROUPE_SQL)) {
+            for (io.digiservices.ecreditservice.dto.MembreGroupe membre : demande.getMembresGroupe()) {
+                ps.setLong(1, demandeId);
+                ps.setString(2, membre.getNumeroMembre());
+                ps.setString(3, membre.getNomPrenom());
+                ps.setBigDecimal(4, membre.getMontantPercevoir());
+                ps.setBigDecimal(5, membre.getMontantSollicite());
+                ps.setBigDecimal(6, membre.getMontantBasePe());
+                ps.setBigDecimal(7, membre.getVersementMensuelPe());
+                ps.addBatch();
+            }
+            ps.executeBatch();
+        }
     }
 
     /**
@@ -968,6 +1026,28 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
     }
 
 
+
+    /** Complète l'extension groupe + les membres pour une demande de nature Groupe Solidaire. */
+    @Override
+    public void completerGroupe(DemandeIndividuel demande) {
+        if (demande == null || demande.getDemandeIndividuelId() == null
+                || !io.digiservices.ecreditservice.validation.CreditGroupeValidator.isGroupe(demande)) {
+            return;
+        }
+        try {
+            demande.setDemandeGroupe(jdbcClient.sql(DemandeIndQuery.SELECT_DEMANDE_GROUPE_BY_DEMANDE)
+                    .param("demandeId", demande.getDemandeIndividuelId())
+                    .query(io.digiservices.ecreditservice.dto.DemandeGroupe.class)
+                    .optional().orElse(null));
+            demande.setMembresGroupe(jdbcClient.sql(DemandeIndQuery.SELECT_MEMBRES_GROUPE_BY_DEMANDE)
+                    .param("demandeId", demande.getDemandeIndividuelId())
+                    .query(io.digiservices.ecreditservice.dto.MembreGroupe.class)
+                    .list());
+        } catch (Exception e) {
+            log.warn("Extension groupe non chargée pour la demande {}: {}",
+                    demande.getDemandeIndividuelId(), e.getMessage());
+        }
+    }
 
     /** Complète l'agent de crédit affecté (id + nom) — la fonction pg du détail ne le porte pas. */
     @Override

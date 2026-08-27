@@ -485,6 +485,96 @@
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <!-- SECTION GROUPE SOLIDAIRE : identification + membres (nature Groupe)     -->
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <div *ngIf="isGroupeNature() && state().demandeIndividuel?.demandeGroupe"
+            class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8">
+            <div class="bg-indigo-600 text-white px-6 py-4 flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-3">
+                    <i class="pi pi-users text-xl"></i>
+                    <span class="font-bold text-lg uppercase tracking-wide">Identification du Groupe</span>
+                </div>
+                <p-tag severity="info" [value]="state().demandeIndividuel?.demandeGroupe?.numeroDemande || ''"></p-tag>
+            </div>
+            <div class="p-6">
+                <table class="w-full">
+                    <tbody>
+                        <tr class="border-b border-gray-200">
+                            <td class="py-3 px-4 text-gray-600 font-medium w-1/4">Type de groupe</td>
+                            <td class="py-3 px-4 font-semibold text-indigo-700">{{ libelleTypeGroupe() }}</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium w-1/4">Nom du groupe</td>
+                            <td class="py-3 px-4 font-semibold">{{ state().demandeIndividuel?.demandeGroupe?.nomGroupe }}</td>
+                        </tr>
+                        <tr class="border-b border-gray-200">
+                            <td class="py-3 px-4 text-gray-600 font-medium">Date d'adhésion</td>
+                            <td class="py-3 px-4">{{ (state().demandeIndividuel?.demandeGroupe?.dateAdhesion | date:'dd/MM/yyyy') || 'N/A' }}</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium">District / Secteur</td>
+                            <td class="py-3 px-4">{{ state().demandeIndividuel?.demandeGroupe?.districtQuartier || 'N/A' }}
+                                / {{ state().demandeIndividuel?.demandeGroupe?.secteur || 'N/A' }}</td>
+                        </tr>
+                        <tr class="border-b border-gray-200">
+                            <td class="py-3 px-4 text-gray-600 font-medium">Mandataire 1</td>
+                            <td class="py-3 px-4 font-semibold">{{ state().demandeIndividuel?.demandeGroupe?.mandataire1 }}
+                                <span class="text-blue-700 ml-2"><i class="pi pi-phone mr-1"></i>{{ state().demandeIndividuel?.demandeGroupe?.contactMandataire1 }}</span>
+                            </td>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Mandataire 2</td>
+                            <td class="py-3 px-4">{{ state().demandeIndividuel?.demandeGroupe?.mandataire2 || 'N/A' }}
+                                <span *ngIf="state().demandeIndividuel?.demandeGroupe?.contactMandataire2"
+                                    class="text-blue-700 ml-2"><i class="pi pi-phone mr-1"></i>{{ state().demandeIndividuel?.demandeGroupe?.contactMandataire2 }}</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Nombre de membres</td>
+                            <td class="py-3 px-4 font-bold text-indigo-700">{{ state().demandeIndividuel?.demandeGroupe?.nombreMembres }}</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium">Filière d'activité</td>
+                            <td class="py-3 px-4">{{ filiereActivite() || 'N/A' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div *ngIf="(state().demandeIndividuel?.membresGroupe?.length || 0) > 0" class="mt-6">
+                    <h4 class="font-bold text-gray-700 mb-3"><i class="pi pi-id-card mr-2"></i>Membres du groupe</h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="bg-gray-100 text-left">
+                                    <th class="p-3 font-semibold">N° Membre</th>
+                                    <th class="p-3 font-semibold">Nom et Prénom</th>
+                                    <th class="p-3 font-semibold text-right">Montant à percevoir</th>
+                                    <th *ngIf="state().demandeIndividuel?.demandeGroupe?.typeGroupe === 'CFE'"
+                                        class="p-3 font-semibold text-right">Montant sollicité</th>
+                                    <th *ngIf="state().demandeIndividuel?.demandeGroupe?.typeGroupe === 'CFE'"
+                                        class="p-3 font-semibold text-right">Base PE</th>
+                                    <th *ngIf="state().demandeIndividuel?.demandeGroupe?.typeGroupe === 'CFE'"
+                                        class="p-3 font-semibold text-right">Versement PE</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let membre of state().demandeIndividuel?.membresGroupe"
+                                    class="border-b border-gray-100">
+                                    <td class="p-3">{{ membre.numeroMembre }}</td>
+                                    <td class="p-3 font-medium">{{ membre.nomPrenom }}</td>
+                                    <td class="p-3 text-right font-semibold">{{ membre.montantPercevoir | number:'1.0-0':'fr-FR' }} GNF</td>
+                                    <td *ngIf="state().demandeIndividuel?.demandeGroupe?.typeGroupe === 'CFE'"
+                                        class="p-3 text-right">{{ (membre.montantSollicite | number:'1.0-0':'fr-FR') || 'N/A' }}</td>
+                                    <td *ngIf="state().demandeIndividuel?.demandeGroupe?.typeGroupe === 'CFE'"
+                                        class="p-3 text-right">{{ (membre.montantBasePe | number:'1.0-0':'fr-FR') || 'N/A' }}</td>
+                                    <td *ngIf="state().demandeIndividuel?.demandeGroupe?.typeGroupe === 'CFE'"
+                                        class="p-3 text-right">{{ (membre.versementMensuelPe | number:'1.0-0':'fr-FR') || 'N/A' }}</td>
+                                </tr>
+                                <tr class="font-bold text-indigo-700">
+                                    <td class="p-3" colspan="2">TOTAL</td>
+                                    <td class="p-3 text-right">{{ totalPartsMembres() | number:'1.0-0':'fr-FR' }} GNF</td>
+                                    <td *ngIf="state().demandeIndividuel?.demandeGroupe?.typeGroupe === 'CFE'" colspan="3"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
         <!-- SECTION 2: ACTIVITÉS - Tableau simple                                  -->
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
         <div *ngIf="!isFonctionnaireNature()"

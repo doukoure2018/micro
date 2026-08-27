@@ -238,6 +238,8 @@ public class DemandeIndServiceImpl implements DemandeIndService {
         DemandeIndividuel demande = demandeIndRepository.getDemandeWithGaranties(demandeId);
         // Verrou d'affectation : le front a besoin de l'agent propriétaire (id + nom)
         demandeIndRepository.completerAgentAffecte(demande);
+        // Nature Groupe Solidaire : extension + membres
+        demandeIndRepository.completerGroupe(demande);
         return demande;
     }
 

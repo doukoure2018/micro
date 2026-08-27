@@ -15,7 +15,81 @@ export interface GarantiePropose {
 /**
  * Type pour la nature du client
  */
-export type NatureClient = 'Demande de credit Pour Professionnels' | 'Demande de Credit Pour PME/PMI' | 'Demande credit Pour Particulier' | 'Demande de credit Pour Fonctionnaire';
+export type NatureClient = 'Demande de credit Pour Professionnels' | 'Demande de Credit Pour PME/PMI' | 'Demande credit Pour Particulier' | 'Demande de credit Pour Fonctionnaire' | 'Demande de credit Pour Groupe Solidaire';
+
+/** Nature client du crédit groupe solidaire (valeur exacte partagée avec le backend). */
+export const NATURE_CREDIT_GROUPE: NatureClient = 'Demande de credit Pour Groupe Solidaire';
+
+/**
+ * Types de groupe solidaire : le type pilote le type de crédit SAF (tip_credito)
+ * et le taux proposé par défaut (modifiable à la saisie — décision du 2026-08-27).
+ */
+export interface TypeGroupe {
+    code: string;
+    libelle: string;
+    tipCredito: number;
+    tauxDefaut: number;
+}
+
+export const TYPES_GROUPE_OPTIONS: TypeGroupe[] = [
+    { code: 'CAS', libelle: 'CAS — Crédit Agricole Solidaire', tipCredito: 2, tauxDefaut: 3 },
+    { code: 'CAS_R', libelle: 'CAS-R — Crédit Agricole Solidaire Rente', tipCredito: 10, tauxDefaut: 3 },
+    { code: 'CCS', libelle: 'CCS — Crédit Commercial Solidaire', tipCredito: 3, tauxDefaut: 3 },
+    { code: 'CRS', libelle: 'CRS — Crédit Rural Solidaire', tipCredito: 1, tauxDefaut: 3 },
+    { code: 'CFE', libelle: 'CFE — Crédit Fonctionnaire Épargne', tipCredito: 7, tauxDefaut: 3 },
+    { code: 'MCK', libelle: 'MCK — Micro-Crédit Kiosque', tipCredito: 33, tauxDefaut: 3 },
+    { code: 'ACM', libelle: 'ACM — Association Caution Mutuelle', tipCredito: 4, tauxDefaut: 3 }
+];
+
+/** Extension groupe solidaire d'une demande individuelle (V124). */
+export interface DemandeGroupe {
+    demandeGroupeId?: number;
+    demandeindividuelId?: number;
+    typeGroupe: string;
+    nomGroupe: string;
+    dateAdhesion?: Date | string | null;
+    districtQuartier?: string;
+    secteur?: string;
+    mandataire1: string;
+    contactMandataire1: string;
+    mandataire2?: string;
+    contactMandataire2?: string;
+    nombreMembres: number;
+    numeroDemande?: string;
+}
+
+/** Membre d'une demande groupe. Champs PE réservés au type CFE. */
+export interface MembreGroupe {
+    membreGroupeId?: number;
+    demandeindividuelId?: number;
+    numeroMembre: string;
+    nomPrenom: string;
+    montantPercevoir: number;
+    montantSollicite?: number;
+    montantBasePe?: number;
+    versementMensuelPe?: number;
+    /** État de la vérification asynchrone au SAF (front uniquement) */
+    verification?: 'en_cours' | 'trouve' | 'introuvable';
+}
+
+export function demandeGroupeVide(): DemandeGroupe {
+    return {
+        typeGroupe: '',
+        nomGroupe: '',
+        dateAdhesion: null,
+        districtQuartier: '',
+        secteur: '',
+        mandataire1: '',
+        contactMandataire1: '',
+        mandataire2: '',
+        contactMandataire2: '',
+        nombreMembres: 0
+    };
+}
+
+export function membreGroupeVide(): MembreGroupe {
+    return { numeroMembre: '', nomPrenom: '', montantPercevoir: 0 };
+}
 
 /**
  * Taux de quotité cessible du crédit fonctionnaire (fixe) :
@@ -151,6 +225,8 @@ export interface DemandeIndividuel {
     nomPersonneMorale?: string;
     sigle?: string; // NOUVEAU V80: Sigle de l'entreprise (pour PME/PMI)
     demandeFonctionnaire?: DemandeFonctionnaire; // NOUVEAU V120: obligatoire si nature Fonctionnaire
+    demandeGroupe?: DemandeGroupe; // V124: obligatoire si nature Groupe Solidaire
+    membresGroupe?: MembreGroupe[]; // V124: membres du groupe (somme des parts = montant demandé)
 
     // ==================== INFORMATIONS PERSONNELLES ====================
     typePiece: "Carte nationale d'identite" | "Carte d'identite Biometrique" | "Possession d'état" | "Carte d'identite personnelle" | 'Passeport';

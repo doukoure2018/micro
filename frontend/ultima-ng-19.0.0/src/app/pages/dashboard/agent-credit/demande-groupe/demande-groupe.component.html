@@ -1,0 +1,477 @@
+<div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <p-toast position="top-right"></p-toast>
+
+    @if (state().loading) {
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl">
+            <p-progressSpinner strokeWidth="4" [style]="{ width: '48px', height: '48px' }"></p-progressSpinner>
+            <p class="text-center mt-4 text-gray-700 font-medium">Chargement...</p>
+        </div>
+    </div>
+    }
+
+    <form #demandeGroupeForm="ngForm" (ngSubmit)="creerDemande(demandeGroupeForm)" class="py-2">
+
+        <!-- ═══════════════ BANDEAU ═══════════════ -->
+        <div class="rounded-xl shadow-md overflow-hidden border-2 mb-8" style="border-color: #6366f1;">
+            <div class="text-white px-6 py-5" style="background: linear-gradient(to right, #6366f1, #4f46e5);">
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center justify-center rounded-full"
+                        style="width:3rem;height:3rem;background:rgba(255,255,255,0.25)">
+                        <i class="pi pi-users text-2xl"></i>
+                    </div>
+                    <div>
+                        <p class="m-0 text-sm uppercase tracking-wide opacity-90">Groupe Solidaire</p>
+                        <h2 class="m-0 font-bold text-xl">Demande de Crédit Groupe</h2>
+                        <p class="m-0 mt-1 text-sm opacity-90">
+                            Formulaire uniforme CAS · CAS-R · CCS · CRS · CFE · MCK · ACM — le numéro de demande
+                            (GRP-{{ today | date:'yyyy' }}-NNNNN) est attribué à l'enregistrement.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════ EN-TÊTE : LOCALISATION ═══════════════ -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8">
+            <div class="bg-gray-600 text-white px-6 py-4 flex items-center gap-3">
+                <i class="pi pi-map-marker text-xl"></i>
+                <span class="font-bold text-lg uppercase tracking-wide">Localisation de la demande</span>
+            </div>
+            <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Délégation *</label>
+                    <p-dropdown [(ngModel)]="pret.delegation" name="delegation" [options]="state().allDelegations"
+                        optionLabel="libele" dataKey="id" [filter]="true" styleClass="w-full" required
+                        [disabled]="state().submitting" (onChange)="onDelegationChange($event)"
+                        placeholder="Sélectionner" [appendTo]="'body'"></p-dropdown>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Agence *</label>
+                    <p-dropdown [(ngModel)]="pret.agence" name="agence" [options]="state().filteredAgences"
+                        optionLabel="libele" dataKey="id" [filter]="true" styleClass="w-full" required
+                        [disabled]="state().submitting || !state().filteredAgences.length"
+                        (onChange)="onAgenceChange($event)" placeholder="Sélectionner" [appendTo]="'body'"></p-dropdown>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Point de service *</label>
+                    <p-dropdown [(ngModel)]="pret.pos" name="pos" [options]="state().filteredPointsVente"
+                        optionLabel="libele" dataKey="id" [filter]="true" styleClass="w-full" required
+                        [disabled]="state().submitting || !state().filteredPointsVente.length"
+                        placeholder="Sélectionner" [appendTo]="'body'"></p-dropdown>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">N° membre du groupe *</label>
+                    <input pInputText [(ngModel)]="pret.numeroMembreGroupe" name="numeroMembreGroupe" class="w-full"
+                        [disabled]="state().submitting" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Date de la demande</label>
+                    <input pInputText [value]="today | date:'dd/MM/yyyy'" class="w-full" [disabled]="true">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">N° de la demande</label>
+                    <input pInputText value="Attribué à l'enregistrement" class="w-full" [disabled]="true">
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════ SECTION 1 : IDENTIFICATION DU GROUPE ═══════════════ -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8">
+            <div class="bg-indigo-600 text-white px-6 py-4 flex items-center gap-3">
+                <i class="pi pi-users text-xl"></i>
+                <span class="font-bold text-lg uppercase tracking-wide">1. Identification du Groupe</span>
+            </div>
+            <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Type de groupe *</label>
+                    <p-dropdown [(ngModel)]="groupe.typeGroupe" name="typeGroupe" [options]="typesGroupe"
+                        optionLabel="libelle" optionValue="code" styleClass="w-full" required
+                        [disabled]="state().submitting" (onChange)="onTypeGroupeChange()"
+                        placeholder="Sélectionner" [appendTo]="'body'"></p-dropdown>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Nom du groupe *</label>
+                    <input pInputText [(ngModel)]="groupe.nomGroupe" name="nomGroupe" class="w-full"
+                        [disabled]="state().submitting" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Date d'adhésion</label>
+                    <p-calendar [(ngModel)]="groupe.dateAdhesion" name="dateAdhesion" dateFormat="dd/mm/yy"
+                        [showIcon]="true" styleClass="w-full" [disabled]="state().submitting" [appendTo]="'body'"></p-calendar>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">District / Quartier</label>
+                    <input pInputText [(ngModel)]="groupe.districtQuartier" name="districtQuartier" class="w-full"
+                        [disabled]="state().submitting">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Secteur</label>
+                    <input pInputText [(ngModel)]="groupe.secteur" name="secteur" class="w-full"
+                        [disabled]="state().submitting">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Mandataire 1 *</label>
+                    <input pInputText [(ngModel)]="groupe.mandataire1" name="mandataire1" class="w-full"
+                        [disabled]="state().submitting" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Contact mandataire 1 *</label>
+                    <input pInputText [(ngModel)]="groupe.contactMandataire1" name="contactMandataire1" class="w-full"
+                        [disabled]="state().submitting" required>
+                </div>
+                <div></div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Mandataire 2</label>
+                    <input pInputText [(ngModel)]="groupe.mandataire2" name="mandataire2" class="w-full"
+                        [disabled]="state().submitting">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Contact mandataire 2</label>
+                    <input pInputText [(ngModel)]="groupe.contactMandataire2" name="contactMandataire2" class="w-full"
+                        [disabled]="state().submitting">
+                </div>
+                <div></div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Secteur d'activité *</label>
+                    <p-dropdown [(ngModel)]="pret.selectedTypeActivite" name="typeActivite" [options]="activiteOptions"
+                        [filter]="true" styleClass="w-full" required [disabled]="state().submitting"
+                        (onChange)="onActiviteChange($event)" placeholder="Sélectionner" [appendTo]="'body'"></p-dropdown>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Sous-secteur *</label>
+                    <p-dropdown [(ngModel)]="pret.selectedSousActivite" name="sousActivite" [options]="sousActiviteOptions"
+                        [filter]="true" styleClass="w-full" required
+                        [disabled]="state().submitting || !sousActiviteOptions.length"
+                        (onChange)="onSousActiviteChange($event)" placeholder="Sélectionner" [appendTo]="'body'"></p-dropdown>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Sous-sous-secteur</label>
+                    <p-dropdown [(ngModel)]="pret.selectedSousSousActivite" name="sousSousActivite"
+                        [options]="sousSousActiviteOptions" [filter]="true" styleClass="w-full"
+                        [disabled]="state().submitting || !sousSousActiviteOptions.length"
+                        placeholder="Sélectionner" [appendTo]="'body'"></p-dropdown>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Années d'expérience *</label>
+                    <p-inputNumber [(ngModel)]="pret.nombreAnneeActivite" name="nombreAnneeActivite" [min]="0"
+                        suffix=" an(s)" styleClass="w-full" [disabled]="state().submitting" required></p-inputNumber>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════ SECTION 2 : CARACTÉRISTIQUES DU PRÊT ═══════════════ -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8">
+            <div class="bg-blue-600 text-white px-6 py-4 flex items-center gap-3">
+                <i class="pi pi-wallet text-xl"></i>
+                <span class="font-bold text-lg uppercase tracking-wide">2. Caractéristiques du Prêt</span>
+            </div>
+            <div class="p-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Objet du prêt *</label>
+                    <p-dropdown [(ngModel)]="pret.objectCredit" name="objectCredit" [options]="objectCreditOptions"
+                        optionLabel="label" optionValue="value" styleClass="w-full" required
+                        [disabled]="state().submitting" [appendTo]="'body'"></p-dropdown>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Montant demandé (GNF) *</label>
+                    <p-inputNumber [(ngModel)]="pret.montantDemande" name="montantDemande" [min]="1" mode="currency"
+                        currency="GNF" locale="fr-FR" styleClass="w-full" [disabled]="state().submitting" required></p-inputNumber>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Durée (mois) *</label>
+                    <p-inputNumber [(ngModel)]="pret.dureeDemande" name="dureeDemande" [min]="1" suffix=" mois"
+                        styleClass="w-full" [disabled]="state().submitting" required></p-inputNumber>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Nombre d'échéances *</label>
+                    <p-inputNumber [(ngModel)]="pret.nombreEcheance" name="nombreEcheance" [min]="1"
+                        styleClass="w-full" [disabled]="state().submitting" required></p-inputNumber>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Taux (%) *</label>
+                    <p-inputNumber [(ngModel)]="pret.tauxInteret" name="tauxInteret" [min]="0" [max]="100" suffix=" %"
+                        [minFractionDigits]="2" styleClass="w-full" [disabled]="state().submitting" required></p-inputNumber>
+                    @if (typeGroupeSelectionne()) {
+                    <small class="text-gray-500">Taux proposé pour {{ groupe.typeGroupe }} : {{ typeGroupeSelectionne()?.tauxDefaut }} % (modifiable)</small>
+                    }
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Périodicité *</label>
+                    <p-dropdown [(ngModel)]="pret.periodiciteRemboursement" name="periodiciteRemboursement"
+                        [options]="periodiciteOptions" optionLabel="label" optionValue="value" styleClass="w-full"
+                        required [disabled]="state().submitting" [appendTo]="'body'"></p-dropdown>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        Montant à rembourser par échéance @if (!isAgricole()) {<span>*</span>}
+                    </label>
+                    @if (isAgricole()) {
+                    <input pInputText [value]="(echeancier().length ? (echeancier()[0].montant | number:'1.0-0':'fr-FR') + ' GNF' : 'Calculé automatiquement')"
+                        class="w-full" [disabled]="true">
+                    <small class="text-gray-500">Calculé : capital constant + intérêt par échéance</small>
+                    } @else {
+                    <p-inputNumber [(ngModel)]="pret.echeance" name="echeance" [min]="0" mode="currency" currency="GNF"
+                        locale="fr-FR" styleClass="w-full" [disabled]="state().submitting" required></p-inputNumber>
+                    }
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Autre (à préciser)</label>
+                    <input pInputText [(ngModel)]="pret.autreAPreciser" name="autreAPreciser" class="w-full"
+                        [disabled]="state().submitting">
+                </div>
+                <div class="md:col-span-4">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Détail de l'objet du crédit</label>
+                    <textarea pTextarea [(ngModel)]="pret.detailObjectCredit" name="detailObjectCredit" rows="2"
+                        class="w-full" [disabled]="state().submitting"></textarea>
+                </div>
+            </div>
+
+            <!-- Échéancier CAS / CAS-R en direct -->
+            @if (isAgricole() && echeancier().length > 0) {
+            <div class="px-6 pb-6">
+                <div class="border-2 border-amber-300 bg-amber-50 rounded-xl p-4">
+                    <div class="font-bold text-amber-800 mb-3">
+                        <i class="pi pi-calendar mr-2"></i>Échéancier prévisionnel ({{ groupe.typeGroupe }})
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="text-left text-gray-600">
+                                    <th class="py-2 pr-4">Échéance</th>
+                                    <th class="py-2 pr-4 text-right">Capital</th>
+                                    <th class="py-2 pr-4 text-right">Intérêt</th>
+                                    <th class="py-2 text-right">Montant à payer</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (e of echeancier(); track e.numero) {
+                                <tr class="border-t border-amber-200">
+                                    <td class="py-2 pr-4">Échéance {{ e.numero }}</td>
+                                    <td class="py-2 pr-4 text-right">{{ e.capital | number:'1.0-0':'fr-FR' }}</td>
+                                    <td class="py-2 pr-4 text-right">{{ e.interet | number:'1.0-0':'fr-FR' }}</td>
+                                    <td class="py-2 text-right font-semibold">{{ e.montant | number:'1.0-0':'fr-FR' }}</td>
+                                </tr>
+                                }
+                                <tr class="border-t-2 border-amber-300 font-bold text-amber-800">
+                                    <td class="py-2 pr-4">Total</td>
+                                    <td class="py-2 pr-4 text-right">{{ pret.montantDemande | number:'1.0-0':'fr-FR' }}</td>
+                                    <td class="py-2 pr-4 text-right">{{ (totalEcheances() - (pret.montantDemande || 0)) | number:'1.0-0':'fr-FR' }}</td>
+                                    <td class="py-2 text-right">{{ totalEcheances() | number:'1.0-0':'fr-FR' }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            }
+        </div>
+
+        <!-- ═══════════════ SECTION 3 : MEMBRES DU GROUPE ═══════════════ -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8">
+            <div class="bg-emerald-600 text-white px-6 py-4 flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-3">
+                    <i class="pi pi-id-card text-xl"></i>
+                    <span class="font-bold text-lg uppercase tracking-wide">3. Membres du Groupe ({{ membres.length }})</span>
+                </div>
+                <button pButton type="button" icon="pi pi-plus" label="Ajouter un membre"
+                    class="p-button-sm p-button-success" (click)="ajouterMembre()" [disabled]="state().submitting"></button>
+            </div>
+            <div class="p-6">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="bg-gray-100 text-left">
+                                <th class="p-3 font-semibold">N° Membre *</th>
+                                <th class="p-3 font-semibold">Nom et Prénom *</th>
+                                <th class="p-3 font-semibold">Montant à percevoir (GNF) *</th>
+                                @if (isCfe()) {
+                                <th class="p-3 font-semibold">Montant sollicité</th>
+                                <th class="p-3 font-semibold">Montant de base (PE)</th>
+                                <th class="p-3 font-semibold">Versement mensuel PE</th>
+                                }
+                                <th class="p-3 font-semibold text-center" style="width:4rem"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (membre of membres; track $index) {
+                            <tr class="border-b border-gray-100">
+                                <td class="p-2">
+                                    <input pInputText [(ngModel)]="membre.numeroMembre" [name]="'mNum' + $index"
+                                        class="w-full" style="min-width:9rem" [disabled]="state().submitting" required
+                                        (ngModelChange)="onNumeroMembreChange(membre)">
+                                    @if (membre.verification === 'en_cours') {
+                                    <small class="text-gray-400"><i class="pi pi-spinner pi-spin mr-1"></i>Vérification...</small>
+                                    } @else if (membre.verification === 'trouve') {
+                                    <small class="text-green-600"><i class="pi pi-check-circle mr-1"></i>Membre reconnu</small>
+                                    } @else if (membre.verification === 'introuvable') {
+                                    <small class="text-orange-500"><i class="pi pi-question-circle mr-1"></i>Non trouvé — vérifiez le numéro</small>
+                                    }
+                                </td>
+                                <td class="p-2">
+                                    <input pInputText [(ngModel)]="membre.nomPrenom" [name]="'mNom' + $index"
+                                        class="w-full" style="min-width:12rem" [disabled]="state().submitting" required>
+                                </td>
+                                <td class="p-2">
+                                    <p-inputNumber [(ngModel)]="membre.montantPercevoir" [name]="'mMontant' + $index"
+                                        [min]="1" mode="currency" currency="GNF" locale="fr-FR" styleClass="w-full"
+                                        [disabled]="state().submitting" required></p-inputNumber>
+                                </td>
+                                @if (isCfe()) {
+                                <td class="p-2">
+                                    <p-inputNumber [(ngModel)]="membre.montantSollicite" [name]="'mSol' + $index"
+                                        [min]="0" mode="currency" currency="GNF" locale="fr-FR" styleClass="w-full"
+                                        [disabled]="state().submitting"></p-inputNumber>
+                                </td>
+                                <td class="p-2">
+                                    <p-inputNumber [(ngModel)]="membre.montantBasePe" [name]="'mBase' + $index"
+                                        [min]="0" mode="currency" currency="GNF" locale="fr-FR" styleClass="w-full"
+                                        [disabled]="state().submitting"></p-inputNumber>
+                                </td>
+                                <td class="p-2">
+                                    <p-inputNumber [(ngModel)]="membre.versementMensuelPe" [name]="'mVers' + $index"
+                                        [min]="0" mode="currency" currency="GNF" locale="fr-FR" styleClass="w-full"
+                                        [disabled]="state().submitting"></p-inputNumber>
+                                </td>
+                                }
+                                <td class="p-2 text-center">
+                                    <button pButton type="button" icon="pi pi-trash"
+                                        class="p-button-text p-button-danger p-button-sm"
+                                        [disabled]="state().submitting || membres.length === 1"
+                                        (click)="supprimerMembre($index)"></button>
+                                </td>
+                            </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="flex items-center justify-between flex-wrap gap-3 mt-4 pt-4 border-t border-gray-200">
+                    <p-tag [severity]="partsEgalesMontant() ? 'success' : 'danger'"
+                        [value]="partsEgalesMontant()
+                            ? 'Total des parts = montant demandé ✓'
+                            : 'Total des parts : ' + (totalParts() | number:'1.0-0':'fr-FR') + ' GNF — doit être égal au montant demandé (' + (pret.montantDemande | number:'1.0-0':'fr-FR') + ' GNF)'"></p-tag>
+                    <div class="text-right">
+                        <span class="text-sm text-gray-600 mr-2">Total à percevoir :</span>
+                        <span class="text-xl font-bold" [class.text-green-700]="partsEgalesMontant()"
+                            [class.text-red-600]="!partsEgalesMontant()">{{ totalParts() | number:'1.0-0':'fr-FR' }} GNF</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════ SECTION 4 : GARANTIES ═══════════════ -->
+        @if (!isCfe()) {
+        <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8">
+            <div class="bg-purple-600 text-white px-6 py-4 flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-3">
+                    <i class="pi pi-shield text-xl"></i>
+                    <span class="font-bold text-lg uppercase tracking-wide">4. Garanties</span>
+                </div>
+                <button pButton type="button" icon="pi pi-plus" label="Ajouter" class="p-button-sm p-button-success"
+                    (click)="showAddGarantieDialog()" [disabled]="state().submitting"></button>
+            </div>
+            <div class="p-6">
+                @if (state().garanties.length > 0) {
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="bg-gray-100 text-left">
+                                <th class="p-3 font-semibold">Type</th>
+                                <th class="p-3 font-semibold">Description</th>
+                                <th class="p-3 font-semibold text-right">Valeur</th>
+                                <th class="p-3 font-semibold text-right">Valeur retenue (75 %)</th>
+                                <th class="p-3 font-semibold text-center" style="width:6rem">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (garantie of state().garanties; track $index) {
+                            <tr class="border-b border-gray-100">
+                                <td class="p-3">{{ garantie.typeGarantie }}</td>
+                                <td class="p-3">{{ garantie.descriptionGarantie }}</td>
+                                <td class="p-3 text-right">{{ garantie.valeurGarantie | number:'1.0-0':'fr-FR' }}</td>
+                                <td class="p-3 text-right">{{ garantie.valeurEmprunte | number:'1.0-0':'fr-FR' }}</td>
+                                <td class="p-3 text-center">
+                                    <button pButton type="button" icon="pi pi-pencil"
+                                        class="p-button-text p-button-warning p-button-sm"
+                                        (click)="editGarantie($index)" [disabled]="state().submitting"></button>
+                                    <button pButton type="button" icon="pi pi-trash"
+                                        class="p-button-text p-button-danger p-button-sm"
+                                        (click)="deleteGarantie($index)" [disabled]="state().submitting"></button>
+                                </td>
+                            </tr>
+                            }
+                            <tr class="font-bold">
+                                <td class="p-3" colspan="2">TOTAL</td>
+                                <td class="p-3 text-right">{{ totalGaranties() | number:'1.0-0':'fr-FR' }}</td>
+                                <td class="p-3 text-right">{{ (totalGaranties() * 0.75) | number:'1.0-0':'fr-FR' }}</td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                } @else {
+                <div class="bg-orange-50 border-l-4 border-orange-400 rounded-r-lg p-4">
+                    <i class="pi pi-exclamation-triangle text-orange-600 mr-2"></i>
+                    <span class="text-orange-800">Au moins une garantie est requise (mêmes critères que le crédit commercial particulier).</span>
+                </div>
+                }
+            </div>
+        </div>
+        } @else {
+        <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-5 mb-8 flex items-center gap-3">
+            <i class="pi pi-info-circle text-blue-600 text-xl"></i>
+            <span class="text-blue-800">Type CFE : pas de garanties classiques — la garantie est la domiciliation des salaires et le Plan Épargne des membres.</span>
+        </div>
+        }
+
+        <!-- ═══════════════ ACTIONS ═══════════════ -->
+        <div class="bg-white rounded-xl shadow-md border border-gray-200 p-5 mb-8">
+            <div class="flex items-center justify-between flex-wrap gap-3">
+                <p class="text-sm text-gray-500 m-0 max-w-xl">
+                    La demande suit le circuit de validation standard (agent de crédit → DA → DR → DE → DG selon le
+                    montant). L'analyse spécifique au type de groupe s'effectue après la prise en charge.
+                </p>
+                <button pButton type="submit" icon="pi pi-send" label="Enregistrer la demande groupe"
+                    [loading]="state().submitting"
+                    [disabled]="demandeGroupeForm.invalid || state().submitting || !peutSoumettre()"></button>
+            </div>
+            @if (!partsEgalesMontant() && totalParts() > 0) {
+            <small class="text-red-500 block mt-2">La somme des montants à percevoir des membres doit être égale au montant demandé.</small>
+            }
+        </div>
+    </form>
+
+    <!-- Dialog Garantie -->
+    <p-dialog [(visible)]="state().showGarantieDialog"
+        [header]="state().editingGarantieIndex !== undefined ? 'Modifier la garantie' : 'Ajouter une garantie'"
+        [modal]="true" [style]="{ width: '500px' }">
+        <div class="flex flex-col gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Type de garantie *</label>
+                <p-dropdown [(ngModel)]="state().currentGarantie.typeGarantie" [options]="typeGarantieOptions"
+                    optionLabel="label" optionValue="value" placeholder="Sélectionner" styleClass="w-full"
+                    appendTo="body"></p-dropdown>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Description *</label>
+                <textarea pTextarea [(ngModel)]="state().currentGarantie.descriptionGarantie" rows="3" class="w-full"
+                    placeholder="Décrivez précisément la garantie"></textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Valeur de la garantie (GNF) *</label>
+                <p-inputNumber [(ngModel)]="state().currentGarantie.valeurGarantie" mode="currency" currency="GNF"
+                    locale="fr-FR" [min]="1" styleClass="w-full"></p-inputNumber>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3 flex justify-between">
+                <span>Valeur retenue (75 %) :</span>
+                <strong>{{ (state().currentGarantie.valeurGarantie * 0.75) | number:'1.0-0':'fr-FR' }} GNF</strong>
+            </div>
+        </div>
+        <ng-template pTemplate="footer">
+            <button pButton type="button" icon="pi pi-times" label="Annuler" class="p-button-text"
+                (click)="cancelGarantie()"></button>
+            <button pButton type="button" icon="pi pi-check" label="Valider" (click)="saveGarantie()"
+                [disabled]="!state().currentGarantie.typeGarantie || !state().currentGarantie.descriptionGarantie || state().currentGarantie.valeurGarantie <= 0"></button>
+        </ng-template>
+    </p-dialog>
+</div>

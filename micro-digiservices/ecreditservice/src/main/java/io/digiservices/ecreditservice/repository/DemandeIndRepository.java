@@ -79,6 +79,8 @@ public interface DemandeIndRepository {
 
     void completerAgentAffecte(DemandeIndividuel demande);
 
+    void completerGroupe(DemandeIndividuel demande);
+
     List<DemandeIndividuel> getAllDemandesWithGaranties(Long agenceId, Long pointVenteId);
 
     boolean checkDemandeExists(Long demandeindividuelId);

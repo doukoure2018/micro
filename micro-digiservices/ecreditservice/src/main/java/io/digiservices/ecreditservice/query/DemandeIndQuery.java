@@ -636,6 +636,61 @@ public class DemandeIndQuery {
                     """;
 
 
+    // ==================== CREDIT GROUPE SOLIDAIRE (V124) ====================
+
+    /** Insertion de l'extension groupe (PreparedStatement positionnel, transaction de la demande). */
+    public static final String INSERT_DEMANDE_GROUPE_SQL = """
+            INSERT INTO demande_groupe (demandeindividuel_id, type_groupe, nom_groupe, date_adhesion,
+                district_quartier, secteur, mandataire1, contact_mandataire1, mandataire2,
+                contact_mandataire2, nombre_membres, numero_demande)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """;
+
+    /** Insertion d'un membre du groupe (PreparedStatement positionnel, batch). */
+    public static final String INSERT_MEMBRE_GROUPE_SQL = """
+            INSERT INTO membre_groupe (demandeindividuel_id, numero_membre, nom_prenom,
+                montant_percevoir, montant_sollicite, montant_base_pe, versement_mensuel_pe)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """;
+
+    /** Numéro de demande groupe incrémental : GRP-AAAA-NNNNN. */
+    public static final String NEXT_NUMERO_DEMANDE_GROUPE_SQL = """
+            SELECT 'GRP-' || TO_CHAR(CURRENT_DATE, 'YYYY') || '-'
+                   || LPAD(nextval('numero_demande_groupe_seq')::text, 5, '0')
+            """;
+
+    public static final String SELECT_DEMANDE_GROUPE_BY_DEMANDE = """
+            SELECT demande_groupe_id      AS "demandeGroupeId",
+                   demandeindividuel_id   AS "demandeindividuelId",
+                   type_groupe            AS "typeGroupe",
+                   nom_groupe             AS "nomGroupe",
+                   date_adhesion          AS "dateAdhesion",
+                   district_quartier      AS "districtQuartier",
+                   secteur,
+                   mandataire1,
+                   contact_mandataire1    AS "contactMandataire1",
+                   mandataire2,
+                   contact_mandataire2    AS "contactMandataire2",
+                   nombre_membres         AS "nombreMembres",
+                   numero_demande         AS "numeroDemande"
+            FROM demande_groupe
+            WHERE demandeindividuel_id = :demandeId
+            """;
+
+    public static final String SELECT_MEMBRES_GROUPE_BY_DEMANDE = """
+            SELECT membre_groupe_id       AS "membreGroupeId",
+                   demandeindividuel_id   AS "demandeindividuelId",
+                   numero_membre          AS "numeroMembre",
+                   nom_prenom             AS "nomPrenom",
+                   montant_percevoir      AS "montantPercevoir",
+                   montant_sollicite      AS "montantSollicite",
+                   montant_base_pe        AS "montantBasePe",
+                   versement_mensuel_pe   AS "versementMensuelPe"
+            FROM membre_groupe
+            WHERE demandeindividuel_id = :demandeId
+            ORDER BY membre_groupe_id
+            """;
+
     /** Agent de crédit affecté à la demande (verrou d'accès + affichage du nom). */
     public static final String SELECT_AGENT_AFFECTE_BY_DEMANDE = """
             SELECT d.agent_credit_affecte AS "agentCreditAffecte",

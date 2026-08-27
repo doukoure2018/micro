@@ -145,6 +145,12 @@ export default [
         loadComponent: () => import('./agent-credit/process-big-credit/process-big-credit.component').then((c) => c.ProcessBigCreditComponent)
     },
     {
+        path: 'agent-credit/demande-groupe',
+        canActivate: [AgentCreditGuard],
+        data: { breadcrumb: 'Nouvelle demande de crédit groupe' },
+        loadComponent: () => import('./agent-credit/demande-groupe/demande-groupe.component').then((c) => c.DemandeGroupeComponent)
+    },
+    {
         path: 'agent-credit/list-selection-ind',
         data: { breadcrumb: 'Liste des demandes de Credit Pour la selection' },
         loadComponent: () => import('./agent-credit/credit-selection/credit-selection.component').then((c) => c.CreditSelectionComponent)

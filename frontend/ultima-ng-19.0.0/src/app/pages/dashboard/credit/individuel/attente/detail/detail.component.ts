@@ -1,4 +1,4 @@
-import { AnalyseChargesFonctionnaire, DemandeFonctionnaire, DemandeIndividuel, PieceJointeDemande, TYPE_CONTRAT_OPTIONS_FONCTIONNAIRE, demandeFonctionnaireVide, quotiteCessibleFonctionnaire } from '@/interface/demande-individuel.interface';
+import { AnalyseChargesFonctionnaire, DemandeFonctionnaire, DemandeIndividuel, NATURE_CREDIT_GROUPE, PieceJointeDemande, TYPES_GROUPE_OPTIONS, TYPE_CONTRAT_OPTIONS_FONCTIONNAIRE, demandeFonctionnaireVide, quotiteCessibleFonctionnaire } from '@/interface/demande-individuel.interface';
 import { NiveauValidationFinale, libelleNiveauValidation, niveauValidationFinale } from '@/interface/validation-seuils';
 import { CreditActiviteData } from '@/service/credit-activite.model';
 import { registerLocaleData } from '@angular/common';
@@ -1507,6 +1507,20 @@ export class DetailComponent {
         return this.state().demandeIndividuel?.natureClient === 'Demande de credit Pour Fonctionnaire';
     }
 
+    /** Nature Groupe Solidaire (V124) : identification du groupe + membres sur le détail. */
+    isGroupeNature(): boolean {
+        return this.state().demandeIndividuel?.natureClient === NATURE_CREDIT_GROUPE;
+    }
+
+    libelleTypeGroupe(): string {
+        const code = this.state().demandeIndividuel?.demandeGroupe?.typeGroupe;
+        return TYPES_GROUPE_OPTIONS.find((t) => t.code === code)?.libelle || code || 'N/A';
+    }
+
+    totalPartsMembres(): number {
+        return (this.state().demandeIndividuel?.membresGroupe || []).reduce((total, m) => total + (Number(m.montantPercevoir) || 0), 0);
+    }
+
     /** Filière saisie à la demande : Activité → Sous-activité → Sous-sous-activité (codes résolus en libellés). */
     filiereActivite(): string {
         const d = this.state().demandeIndividuel;
@@ -1771,6 +1785,7 @@ export class DetailComponent {
         if (natureClient.includes('PME')) return 'Entreprise (PME/PMI)';
         if (natureClient.includes('Professionnel')) return 'Professionnel';
         if (natureClient.includes('Fonctionnaire')) return 'Fonctionnaire';
+        if (natureClient.includes('Groupe')) return 'Groupe Solidaire';
         return 'Particulier';
     }
 

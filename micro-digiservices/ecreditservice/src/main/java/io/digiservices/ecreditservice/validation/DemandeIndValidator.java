@@ -66,6 +66,9 @@ public class DemandeIndValidator {
 
         // Validation spécifique Fonctionnaire (quotité, domiciliation, périodicité mensuelle)
         CreditFonctionnaireValidator.validateDemande(demande);
+
+        // Validation spécifique Groupe Solidaire (type, mandataires, somme des parts membres)
+        CreditGroupeValidator.validateDemande(demande);
     }
 
     /**
