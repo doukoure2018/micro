@@ -76,6 +76,14 @@ public class AnalyseServiceImpl implements AnalyseService {
                  if (!demandeExists) {
                      throw new IllegalArgumentException("Demande avec ID " + dto.getDemandeindividuelId() + " n'existe pas");
                  }
+
+                 // Idempotent : un seul dossier par demande (evite les doublons sur double-clic / appels concurrents)
+                 DossierCreditDto existant = analyseRepository.getDossierByDemandeIndividuelId(dto.getDemandeindividuelId());
+                 if (existant != null) {
+                     log.info("Dossier {} deja existant pour la demande {}, aucun nouveau dossier cree",
+                             existant.getId(), dto.getDemandeindividuelId());
+                     return existant;
+                 }
             }
 
             // Définir les valeurs par défaut
