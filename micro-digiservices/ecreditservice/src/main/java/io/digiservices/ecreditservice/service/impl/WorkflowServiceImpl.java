@@ -21,6 +21,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
     private final WorkflowRepository workflowRepository;
     private final AnalyseChargesFonctionnaireService analyseChargesFonctionnaireService;
+    private final io.digiservices.ecreditservice.service.AnalyseCreditAgricoleService analyseCreditAgricoleService;
 
     // ==================== AC ====================
 
@@ -30,6 +31,7 @@ public class WorkflowServiceImpl implements WorkflowService {
         log.info("Approbation AC par {} pour demande {}", codUsuarios, demandeId);
         // Crédit fonctionnaire : blocage si l'analyse charges & quotité n'est pas finançable
         analyseChargesFonctionnaireService.verifierFinancableSiFonctionnaire(demandeId);
+        analyseCreditAgricoleService.verifierFinancableSiGroupeAgricole(demandeId);
         int rows = workflowRepository.approuverAC(demandeId, avis, codUsuarios, userId);
         if (rows == 0) {
             throw new ApiException("Demande non trouvée, état invalide ou dossier affecté à un autre agent");
@@ -47,6 +49,7 @@ public class WorkflowServiceImpl implements WorkflowService {
         log.info("Resoumission après correction DR/DE pour demande {}", demandeId);
         // Crédit fonctionnaire : la quotité doit rester finançable après la correction
         analyseChargesFonctionnaireService.verifierFinancableSiFonctionnaire(demandeId);
+        analyseCreditAgricoleService.verifierFinancableSiGroupeAgricole(demandeId);
         int rows = workflowRepository.resoumettreCorrection(demandeId);
         if (rows == 0) {
             throw new ApiException("Demande non trouvée ou état invalide pour la resoumission (attendu : CORRECTION_DR ou CORRECTION_DE)");
@@ -71,6 +74,7 @@ public class WorkflowServiceImpl implements WorkflowService {
         log.info("Validation DA par {} pour demande {}", validatedBy, demandeId);
         // Crédit fonctionnaire : re-contrôle de la quotité à la validation DA
         analyseChargesFonctionnaireService.verifierFinancableSiFonctionnaire(demandeId);
+        analyseCreditAgricoleService.verifierFinancableSiGroupeAgricole(demandeId);
         int rows = workflowRepository.validerDA(demandeId, avis, validatedBy);
         if (rows == 0) {
             throw new ApiException("Demande non trouvée ou état invalide pour la validation DA");

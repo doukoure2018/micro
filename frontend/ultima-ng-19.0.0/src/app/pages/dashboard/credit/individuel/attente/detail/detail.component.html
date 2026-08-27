@@ -984,8 +984,65 @@
                         </p>
                     </div>
 
+                    <!-- Groupe agricole (CAS / CAS-R) : Analyse charges / produits / marge -->
+                    <div *ngIf="isGroupeAgricole()"
+                        class="border-2 rounded-xl p-5 transition-all hover:shadow-md overflow-visible"
+                        [ngClass]="state().analyseCreditAgricole?.verdict === 'FINANCABLE' ? 'border-green-300 bg-green-50' :
+                                   state().analyseCreditAgricole ? 'border-red-300 bg-red-50' : 'border-lime-300 bg-lime-50'">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white"
+                                [ngClass]="state().analyseCreditAgricole?.verdict === 'FINANCABLE' ? 'bg-green-500' :
+                                           state().analyseCreditAgricole ? 'bg-red-500' : 'bg-lime-600'">
+                                <i class="pi text-lg"
+                                    [ngClass]="state().analyseCreditAgricole?.verdict === 'FINANCABLE' ? 'pi-check' :
+                                               state().analyseCreditAgricole ? 'pi-times' : 'pi-chart-line'"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold text-base text-gray-800">1. Analyse Agricole</div>
+                                <div class="text-sm font-medium"
+                                    [ngClass]="state().analyseCreditAgricole?.verdict === 'FINANCABLE' ? 'text-green-600' :
+                                               state().analyseCreditAgricole ? 'text-red-600' : 'text-lime-700'">
+                                    {{ state().analyseCreditAgricole?.verdict === 'FINANCABLE' ? 'Analysée — dossier finançable' :
+                                       state().analyseCreditAgricole ? 'Analysée — NON finançable en l’état' : 'À renseigner par l’agent de crédit' }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <a [routerLink]="['/dashboards/credit/individuel/detail/analyse-credit-agricole', state().demandeIndividuel?.demandeIndividuelId]"
+                                class="flex items-center justify-center w-full bg-lime-700 hover:bg-lime-800 text-white py-3 px-4 rounded-lg font-semibold transition-colors no-underline">
+                                <i class="pi pi-calculator mr-2"></i>Ouvrir l'analyse agricole
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Groupe agricole : Synthèse (marge vs échéances) -->
+                    <div *ngIf="isGroupeAgricole() && state().analyseCreditAgricole"
+                        class="border-2 rounded-xl p-5 transition-all overflow-visible border-gray-200 bg-white">
+                        <div class="font-bold text-base text-gray-800 mb-3"><i class="pi pi-chart-bar mr-2"></i>Synth&egrave;se Analyse Agricole</div>
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                            <div class="text-gray-500">Total des produits</div>
+                            <div class="text-right font-semibold">{{ state().analyseCreditAgricole?.totalProduits | number:'1.0-0':'fr-FR' }} GNF</div>
+                            <div class="text-gray-500">Total des charges (12 postes)</div>
+                            <div class="text-right font-semibold">{{ state().analyseCreditAgricole?.totalCharges | number:'1.0-0':'fr-FR' }} GNF</div>
+                            <div class="text-gray-500">Marge nette</div>
+                            <div class="text-right font-bold"
+                                [ngClass]="(state().analyseCreditAgricole?.margeNette ?? 0) > (state().analyseCreditAgricole?.totalEcheances ?? 0) ? 'text-green-600' : 'text-red-600'">
+                                {{ state().analyseCreditAgricole?.margeNette | number:'1.0-0':'fr-FR' }} GNF
+                            </div>
+                            <div class="text-gray-500">Total des &eacute;ch&eacute;ances (capital + int&eacute;r&ecirc;ts)</div>
+                            <div class="text-right font-semibold">{{ state().analyseCreditAgricole?.totalEcheances | number:'1.0-0':'fr-FR' }} GNF</div>
+                        </div>
+                        <div class="mt-3 pt-3 border-t border-gray-200 flex items-center justify-between">
+                            <span class="text-sm text-gray-500">Analys&eacute; par {{ state().analyseCreditAgricole?.analysePar || 'N/A' }}</span>
+                            <span class="font-bold"
+                                [ngClass]="state().analyseCreditAgricole?.verdict === 'FINANCABLE' ? 'text-green-600' : 'text-red-600'">
+                                {{ state().analyseCreditAgricole?.verdict === 'FINANCABLE' ? 'FINANÇABLE' : 'NON FINANÇABLE' }}
+                            </span>
+                        </div>
+                    </div>
+
                     <!-- 1. Bilan d'Activité (uniquement si montant >= 50 000 000 GNF) -->
-                    <div *ngIf="isBilanRequired() && !isFonctionnaireNature()"
+                    <div *ngIf="isBilanRequired() && !isFonctionnaireNature() && !isGroupeAgricole()"
                         class="border-2 rounded-xl p-5 transition-all hover:shadow-md overflow-visible"
                         [ngClass]="isBilanNeedsCorrection() ? 'border-red-400 bg-red-50' :
                                    state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'border-green-300 bg-green-50' :
@@ -1043,8 +1100,8 @@
                         </div>
                     </div>
 
-                    <!-- 2. Flux de Trésorerie (non applicable au crédit fonctionnaire) -->
-                    <div *ngIf="!isFonctionnaireNature()"
+                    <!-- 2. Flux de Trésorerie (non applicable au crédit fonctionnaire / groupe agricole) -->
+                    <div *ngIf="!isFonctionnaireNature() && !isGroupeAgricole()"
                         class="border-2 rounded-xl p-5 transition-all hover:shadow-md overflow-visible"
                         [ngClass]="isFluxNeedsCorrection() ? 'border-red-400 bg-red-50' :
                                    state().hasDossierCredit ? 'border-green-300 bg-green-50' : 'border-orange-300 bg-orange-50'">
@@ -1333,8 +1390,58 @@
                         </div>
                     </div>
 
+                    <!-- ========== Groupe agricole : analyse en lecture seule (DA/DR/DE/DG) ========== -->
+                    <div *ngIf="isGroupeAgricole()" class="md:col-span-2">
+                        <div class="border-2 rounded-xl p-5"
+                            [ngClass]="state().analyseCreditAgricole?.verdict === 'FINANCABLE' ? 'border-green-300 bg-green-50' :
+                                       state().analyseCreditAgricole ? 'border-red-300 bg-red-50' : 'border-lime-300 bg-lime-50'">
+                            <div class="flex items-center justify-between flex-wrap gap-3 mb-4">
+                                <div class="flex items-center gap-4">
+                                    <i class="pi pi-chart-line text-3xl"
+                                        [ngClass]="state().analyseCreditAgricole?.verdict === 'FINANCABLE' ? 'text-green-500' :
+                                                   state().analyseCreditAgricole ? 'text-red-500' : 'text-lime-600'"></i>
+                                    <div>
+                                        <div class="font-bold text-lg">Analyse Agricole ({{ state().demandeIndividuel?.demandeGroupe?.typeGroupe }})</div>
+                                        <div class="text-sm text-gray-500">Charges de campagne, produits escomptés et marge nette</div>
+                                    </div>
+                                </div>
+                                <span *ngIf="state().analyseCreditAgricole" class="font-bold text-lg"
+                                    [ngClass]="state().analyseCreditAgricole?.verdict === 'FINANCABLE' ? 'text-green-600' : 'text-red-600'">
+                                    {{ state().analyseCreditAgricole?.verdict === 'FINANCABLE' ? 'FINANÇABLE' : 'NON FINANÇABLE' }}
+                                </span>
+                            </div>
+                            <div *ngIf="state().analyseCreditAgricole" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div class="bg-white rounded-lg p-3 border border-gray-200">
+                                    <div class="text-xs text-gray-500">Total produits</div>
+                                    <div class="font-bold">{{ state().analyseCreditAgricole?.totalProduits | number:'1.0-0':'fr-FR' }} GNF</div>
+                                </div>
+                                <div class="bg-white rounded-lg p-3 border border-gray-200">
+                                    <div class="text-xs text-gray-500">Total charges</div>
+                                    <div class="font-bold">{{ state().analyseCreditAgricole?.totalCharges | number:'1.0-0':'fr-FR' }} GNF</div>
+                                </div>
+                                <div class="bg-white rounded-lg p-3 border border-gray-200">
+                                    <div class="text-xs text-gray-500">Marge nette</div>
+                                    <div class="font-bold"
+                                        [ngClass]="(state().analyseCreditAgricole?.margeNette ?? 0) > (state().analyseCreditAgricole?.totalEcheances ?? 0) ? 'text-green-600' : 'text-red-600'">
+                                        {{ state().analyseCreditAgricole?.margeNette | number:'1.0-0':'fr-FR' }} GNF</div>
+                                </div>
+                                <div class="bg-white rounded-lg p-3 border border-gray-200">
+                                    <div class="text-xs text-gray-500">Total échéances</div>
+                                    <div class="font-bold">{{ state().analyseCreditAgricole?.totalEcheances | number:'1.0-0':'fr-FR' }} GNF</div>
+                                </div>
+                            </div>
+                            <div *ngIf="state().analyseCreditAgricole" class="text-sm text-gray-500 mt-3">
+                                Analysé par {{ state().analyseCreditAgricole?.analysePar || 'N/A' }}
+                            </div>
+                            <div *ngIf="!state().analyseCreditAgricole" class="text-lime-800">
+                                <i class="pi pi-info-circle mr-2"></i>
+                                L'agent de crédit n'a pas encore renseigné l'analyse agricole
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- ========== Bilan d'Activité ========== -->
-                    <div *ngIf="!isFonctionnaireNature()">
+                    <div *ngIf="!isFonctionnaireNature() && !isGroupeAgricole()">
                         <div class="border-2 rounded-xl p-5 flex items-center justify-between"
                             [ngClass]="state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE' ? 'border-green-300 bg-green-50' :
                                        state().analyseStatut === 'BROUILLON' ? 'border-yellow-300 bg-yellow-50' : 'border-gray-300 bg-gray-50'">
@@ -1400,7 +1507,7 @@
                     </div>
 
                     <!-- ========== Flux de Tr&eacute;sorerie ========== -->
-                    <div *ngIf="!isFonctionnaireNature()">
+                    <div *ngIf="!isFonctionnaireNature() && !isGroupeAgricole()">
                         <div class="border-2 rounded-xl p-5 flex items-center justify-between"
                             [ngClass]="state().hasDossierCredit ? 'border-green-300 bg-green-50' : 'border-gray-300 bg-gray-50'">
                             <div class="flex items-center gap-4">
@@ -1583,6 +1690,8 @@
                && state().demandeIndividuel?.validationState === 'APPROVED'
                && (isFonctionnaireNature()
                    ? !!state().analyseChargesFonctionnaire
+                   : isGroupeAgricole()
+                   ? !!state().analyseCreditAgricole
                    : (!isBilanRequired() || state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE') && state().hasDossierCredit)"
             class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-green-300 mb-8">
             <div class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-4 flex items-center gap-3">
@@ -1598,6 +1707,8 @@
                             <p class="font-semibold text-green-800 m-0">
                                 {{ isFonctionnaireNature()
                                     ? "L'analyse charges & quotité a été renseignée par l'agent de crédit."
+                                    : isGroupeAgricole()
+                                    ? "L'analyse agricole (charges, produits, marge nette) a été renseignée par l'agent de crédit."
                                     : isBilanRequired()
                                     ? 'Le bilan et le flux de tresorerie ont ete renseignes.'
                                     : 'Le flux de tresorerie a ete renseigne (bilan non requis pour ce montant).' }}</p>
@@ -1701,6 +1812,8 @@
                && state().demandeIndividuel?.validationState === 'VALIDATED_DA'
                && (isFonctionnaireNature()
                    ? !!state().analyseChargesFonctionnaire
+                   : isGroupeAgricole()
+                   ? !!state().analyseCreditAgricole
                    : (!isBilanRequired() || state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE') && state().hasDossierCredit)"
             class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-purple-300 mb-8">
             <div class="bg-gradient-to-r from-purple-600 to-violet-600 text-white px-6 py-4 flex items-center gap-3">
@@ -1915,10 +2028,34 @@
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <!-- BLOCAGE GROUPE AGRICOLE - Analyse agricole obligatoire avant avis       -->
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <div *ngIf="state().user?.role === 'AGENT_CREDIT' && isGroupeAgricole() && !state().analyseCreditAgricole"
+            class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-lime-400 mb-8 mt-10">
+            <div class="bg-lime-700 text-white px-6 py-4 flex items-center gap-3">
+                <i class="pi pi-lock text-xl"></i>
+                <span class="font-bold text-lg uppercase tracking-wide">Analyse Agricole requise</span>
+            </div>
+            <div class="p-6">
+                <p class="text-gray-700 m-0 mb-4">
+                    Pour un crédit agricole solidaire ({{ state().demandeIndividuel?.demandeGroupe?.typeGroupe }}),
+                    vous devez d'abord <strong>enregistrer l'analyse agricole</strong> : les 12 postes de charges de
+                    la campagne, les produits escomptés et la marge nette. La saisie de votre avis et l'approbation
+                    seront débloquées une fois le dossier finançable (marge nette &gt; total des échéances).
+                </p>
+                <a [routerLink]="['/dashboards/credit/individuel/detail/analyse-credit-agricole', state().demandeIndividuel?.demandeIndividuelId]"
+                    class="no-underline">
+                    <button pButton type="button" icon="pi pi-chart-line"
+                        label="Renseigner l'analyse agricole" class="p-button-success"></button>
+                </a>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
         <!-- SECTION AVIS - AGENT DE CRÉDIT (après flux, ou après analyse charges    -->
         <!-- pour le crédit fonctionnaire)                                           -->
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
-        <div *ngIf="state().user?.role === 'AGENT_CREDIT' && (state().hasDossierCredit || (isFonctionnaireNature() && state().analyseChargesFonctionnaire))"
+        <div *ngIf="state().user?.role === 'AGENT_CREDIT' && (state().hasDossierCredit || (isFonctionnaireNature() && state().analyseChargesFonctionnaire) || (isGroupeAgricole() && state().analyseCreditAgricole))"
             class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-teal-200 mb-8 mt-10">
             <div class="bg-teal-500 text-white px-6 py-4 flex items-center justify-between">
                 <div class="flex items-center gap-3">

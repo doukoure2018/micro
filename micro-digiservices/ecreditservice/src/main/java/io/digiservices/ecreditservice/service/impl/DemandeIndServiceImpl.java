@@ -22,6 +22,7 @@ import java.util.Optional;
 public class DemandeIndServiceImpl implements DemandeIndService {
     private final DemandeIndRepository demandeIndRepository;
     private final AnalyseChargesFonctionnaireService analyseChargesFonctionnaireService;
+    private final io.digiservices.ecreditservice.service.AnalyseCreditAgricoleService analyseCreditAgricoleService;
     @Override
     public void addDemandeInd(DemandeIndividuel demandeIndividuel) {
         // Anti-doublon : un membre ne peut pas avoir deux demandes en cours simultanément
@@ -58,6 +59,7 @@ public class DemandeIndServiceImpl implements DemandeIndService {
         // & quotité n'est pas finançable (même règle que le workflow approuver-ac)
         if ("APPROVED".equals(statut)) {
             analyseChargesFonctionnaireService.verifierFinancableSiFonctionnaire(demandeindividuel_id);
+            analyseCreditAgricoleService.verifierFinancableSiGroupeAgricole(demandeindividuel_id);
         }
         demandeIndRepository.updateStatutDemandeInd(demandeindividuel_id,statut,codUsuarios);
     }

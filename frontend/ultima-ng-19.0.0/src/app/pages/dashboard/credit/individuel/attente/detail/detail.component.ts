@@ -1,4 +1,4 @@
-import { AnalyseChargesFonctionnaire, DemandeFonctionnaire, DemandeIndividuel, NATURE_CREDIT_GROUPE, PieceJointeDemande, TYPES_GROUPE_OPTIONS, TYPE_CONTRAT_OPTIONS_FONCTIONNAIRE, demandeFonctionnaireVide, quotiteCessibleFonctionnaire } from '@/interface/demande-individuel.interface';
+import { AnalyseChargesFonctionnaire, AnalyseCreditAgricole, DemandeFonctionnaire, DemandeIndividuel, NATURE_CREDIT_GROUPE, PieceJointeDemande, TYPES_GROUPE_OPTIONS, TYPE_CONTRAT_OPTIONS_FONCTIONNAIRE, demandeFonctionnaireVide, quotiteCessibleFonctionnaire } from '@/interface/demande-individuel.interface';
 import { NiveauValidationFinale, libelleNiveauValidation, niveauValidationFinale } from '@/interface/validation-seuils';
 import { CreditActiviteData } from '@/service/credit-activite.model';
 import { registerLocaleData } from '@angular/common';
@@ -126,6 +126,7 @@ export class DetailComponent {
         showWorkflowRejetDA: boolean;
         showWorkflowRejetDR: boolean;
         analyseChargesFonctionnaire?: AnalyseChargesFonctionnaire | null;
+        analyseCreditAgricole?: AnalyseCreditAgricole | null;
         piecesFonctionnaire?: PieceJointeDemande[];
         showTransformationFonctionnaire?: boolean;
         transformationEnCours?: boolean;
@@ -462,6 +463,12 @@ export class DetailComponent {
                         // Crédit fonctionnaire : analyse charges & quotité (affichage + impression)
                         if (demandeData.natureClient === 'Demande de credit Pour Fonctionnaire') {
                             this.loadAnalyseChargesFonctionnaire(+demandeData.demandeIndividuelId!);
+                        }
+
+                        // Groupe agricole (CAS / CAS-R) : analyse charges/produits/marge
+                        if (demandeData.natureClient === 'Demande de credit Pour Groupe Solidaire'
+                                && ['CAS', 'CAS_R'].includes(demandeData.demandeGroupe?.typeGroupe || '')) {
+                            this.loadAnalyseCreditAgricole(+demandeData.demandeIndividuelId!);
                         }
 
                         // Historique crédit SAF du membre (consultatif, dégradation gracieuse)
@@ -1519,6 +1526,22 @@ export class DetailComponent {
 
     totalPartsMembres(): number {
         return (this.state().demandeIndividuel?.membresGroupe || []).reduce((total, m) => total + (Number(m.montantPercevoir) || 0), 0);
+    }
+
+    /** Groupe agricole (CAS / CAS-R) : le bilan/flux est remplacé par l'analyse agricole. */
+    isGroupeAgricole(): boolean {
+        return this.isGroupeNature()
+            && ['CAS', 'CAS_R'].includes(this.state().demandeIndividuel?.demandeGroupe?.typeGroupe || '');
+    }
+
+    private loadAnalyseCreditAgricole(demandeId: number): void {
+        this.userService
+            .getAnalyseAgricole$(demandeId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => this.state.update((s) => ({ ...s, analyseCreditAgricole: (response.data as any)?.analyseAgricole || null })),
+                error: () => this.state.update((s) => ({ ...s, analyseCreditAgricole: null }))
+            });
     }
 
     /** Filière saisie à la demande : Activité → Sous-activité → Sous-sous-activité (codes résolus en libellés). */

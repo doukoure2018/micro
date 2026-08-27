@@ -91,6 +91,57 @@ export function membreGroupeVide(): MembreGroupe {
     return { numeroMembre: '', nomPrenom: '', montantPercevoir: 0 };
 }
 
+/** Types de groupe soumis à l'analyse agricole (V125). */
+export const TYPES_GROUPE_AGRICOLES = ['CAS', 'CAS_R'];
+
+/** Analyse du crédit agricole solidaire (groupes CAS / CAS-R, V125). */
+export interface AnalyseCreditAgricole {
+    analyseAgricoleId?: number;
+    demandeindividuelId?: number;
+    fraisLabour: number;
+    fraisCloture: number;
+    achatIntrant: number;
+    achatPhytosanitaire: number;
+    achatOutillage: number;
+    fraisEntretien: number;
+    fraisSemis: number;
+    fraisRecolte: number;
+    transport: number;
+    stockage: number;
+    fraisConservation: number;
+    chargesFamiliales: number;
+    quantiteRecolte: number;
+    prixVenteUnitaire: number;
+    autresProduits: number;
+    // Calculés côté backend (lecture seule)
+    totalCharges?: number;
+    totalProduits?: number;
+    totalEcheances?: number;
+    margeNette?: number;
+    verdict?: 'FINANCABLE' | 'NON_FINANCABLE' | string;
+    analysePar?: string;
+}
+
+export function analyseCreditAgricoleVide(): AnalyseCreditAgricole {
+    return {
+        fraisLabour: 0,
+        fraisCloture: 0,
+        achatIntrant: 0,
+        achatPhytosanitaire: 0,
+        achatOutillage: 0,
+        fraisEntretien: 0,
+        fraisSemis: 0,
+        fraisRecolte: 0,
+        transport: 0,
+        stockage: 0,
+        fraisConservation: 0,
+        chargesFamiliales: 0,
+        quantiteRecolte: 0,
+        prixVenteUnitaire: 0,
+        autresProduits: 0
+    };
+}
+
 /**
  * Taux de quotité cessible du crédit fonctionnaire (fixe) :
  * l'échéance mensuelle ne doit jamais dépasser 35 % du salaire net.

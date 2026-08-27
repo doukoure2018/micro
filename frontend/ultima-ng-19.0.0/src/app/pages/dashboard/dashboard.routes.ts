@@ -145,6 +145,11 @@ export default [
         loadComponent: () => import('./agent-credit/process-big-credit/process-big-credit.component').then((c) => c.ProcessBigCreditComponent)
     },
     {
+        path: 'credit/individuel/detail/analyse-credit-agricole/:demandeindividuelId',
+        data: { breadcrumb: 'Analyse Crédit Agricole Solidaire' },
+        loadComponent: () => import('./credit/individuel/attente/detail/analyse-credit-agricole/analyse-credit-agricole.component').then((c) => c.AnalyseCreditAgricoleComponent)
+    },
+    {
         path: 'agent-credit/demande-groupe',
         canActivate: [AgentCreditGuard],
         data: { breadcrumb: 'Nouvelle demande de crédit groupe' },
