@@ -3,6 +3,7 @@ package io.digiservices.bcrgservice.resource;
 import io.digiservices.bcrgservice.dto.EncoursDto;
 import io.digiservices.bcrgservice.dto.EngagementDto;
 import io.digiservices.bcrgservice.dto.PageDto;
+import io.digiservices.bcrgservice.dto.ParIdsRequete;
 import io.digiservices.bcrgservice.dto.PersonneMoraleDto;
 import io.digiservices.bcrgservice.dto.PersonnePhysiqueDto;
 import io.digiservices.bcrgservice.exception.BadRequestException;
@@ -12,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -47,10 +50,39 @@ public class BcrgResource {
     @GetMapping("/personnes-physiques/par-ids")
     public ResponseEntity<java.util.List<PersonnePhysiqueDto>> getPersonnesPhysiquesParIds(
             @RequestParam(name = "ids") java.util.List<String> ids) {
+        return ResponseEntity.ok(bcrgService.getPersonnesPhysiquesParIds(validerIds(ids)));
+    }
+
+    /** v1.7 (demande BCRG) : identifiants dans le corps de la requête — {"ids": [...]}. */
+    @PostMapping("/personnes-physiques/par-ids")
+    public ResponseEntity<java.util.List<PersonnePhysiqueDto>> postPersonnesPhysiquesParIds(
+            @RequestBody ParIdsRequete requete) {
+        return ResponseEntity.ok(bcrgService.getPersonnesPhysiquesParIds(validerIds(idsDe(requete))));
+    }
+
+    /** v1.7 (demande BCRG) : personnes morales à partir d'une liste d'identifiants internes. */
+    @GetMapping("/personnes-morales/par-ids")
+    public ResponseEntity<java.util.List<PersonneMoraleDto>> getPersonnesMoralesParIds(
+            @RequestParam(name = "ids") java.util.List<String> ids) {
+        return ResponseEntity.ok(bcrgService.getPersonnesMoralesParIds(validerIds(ids)));
+    }
+
+    /** v1.7 (demande BCRG) : identifiants dans le corps de la requête — {"ids": [...]}. */
+    @PostMapping("/personnes-morales/par-ids")
+    public ResponseEntity<java.util.List<PersonneMoraleDto>> postPersonnesMoralesParIds(
+            @RequestBody ParIdsRequete requete) {
+        return ResponseEntity.ok(bcrgService.getPersonnesMoralesParIds(validerIds(idsDe(requete))));
+    }
+
+    private static java.util.List<String> idsDe(ParIdsRequete requete) {
+        return requete == null ? null : requete.getIds();
+    }
+
+    private static java.util.List<String> validerIds(java.util.List<String> ids) {
         if (ids == null || ids.isEmpty() || ids.size() > 200) {
-            throw new BadRequestException("Le parametre 'ids' doit contenir entre 1 et 200 identifiants");
+            throw new BadRequestException("La liste 'ids' doit contenir entre 1 et 200 identifiants");
         }
-        return ResponseEntity.ok(bcrgService.getPersonnesPhysiquesParIds(ids));
+        return ids;
     }
 
     /**
