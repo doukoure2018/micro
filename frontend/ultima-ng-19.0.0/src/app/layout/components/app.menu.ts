@@ -74,7 +74,13 @@ export class AppMenu {
                               {
                                   label: 'Réception demande de crédit',
                                   icon: 'pi pi-fw pi-inbox',
-                                  routerLink: ['/dashboards/accueil/reception-demande']
+                                  items: [
+                                      {
+                                          label: 'Particulier',
+                                          icon: 'pi pi-fw pi-user',
+                                          routerLink: ['/dashboards/accueil/reception-demande']
+                                      }
+                                  ]
                               },
                               {
                                   label: 'Mes demandes réceptionnées',
@@ -90,13 +96,28 @@ export class AppMenu {
                                   icon: 'pi pi-fw pi-inbox',
                                   routerLink: ['/dashboards/agent-credit/demandes-affectees']
                               },
+                              {
+                                  label: 'Réception demande de crédit',
+                                  icon: 'pi pi-fw pi-inbox',
+                                  items: [
+                                      ...(this.fonctionAccueil
+                                          ? [
+                                                {
+                                                    label: 'Particulier',
+                                                    icon: 'pi pi-fw pi-user',
+                                                    routerLink: ['/dashboards/accueil/reception-demande']
+                                                }
+                                            ]
+                                          : []),
+                                      {
+                                          label: 'Groupe',
+                                          icon: 'pi pi-fw pi-users',
+                                          routerLink: ['/dashboards/agent-credit/demande-groupe']
+                                      }
+                                  ]
+                              },
                               ...(this.fonctionAccueil
                                   ? [
-                                        {
-                                            label: 'Réception demande de crédit',
-                                            icon: 'pi pi-fw pi-inbox',
-                                            routerLink: ['/dashboards/accueil/reception-demande']
-                                        },
                                         {
                                             label: 'Mes demandes réceptionnées',
                                             icon: 'pi pi-fw pi-list-check',
