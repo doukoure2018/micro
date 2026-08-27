@@ -145,6 +145,23 @@ export default [
         loadComponent: () => import('./agent-credit/process-big-credit/process-big-credit.component').then((c) => c.ProcessBigCreditComponent)
     },
     {
+        path: 'credit/individuel/detail/analyse-credit-agricole/:demandeindividuelId',
+        data: { breadcrumb: 'Analyse Crédit Agricole Solidaire' },
+        loadComponent: () => import('./credit/individuel/attente/detail/analyse-credit-agricole/analyse-credit-agricole.component').then((c) => c.AnalyseCreditAgricoleComponent)
+    },
+    {
+        path: 'agent-credit/demande-groupe',
+        canActivate: [AgentCreditGuard],
+        data: { breadcrumb: 'Nouvelle demande de crédit groupe' },
+        loadComponent: () => import('./agent-credit/demande-groupe/demande-groupe.component').then((c) => c.DemandeGroupeComponent)
+    },
+    {
+        path: 'agent-credit/demande-groupe/:demandeId',
+        canActivate: [AgentCreditGuard],
+        data: { breadcrumb: 'Correction demande de crédit groupe' },
+        loadComponent: () => import('./agent-credit/demande-groupe/demande-groupe.component').then((c) => c.DemandeGroupeComponent)
+    },
+    {
         path: 'agent-credit/list-selection-ind',
         data: { breadcrumb: 'Liste des demandes de Credit Pour la selection' },
         loadComponent: () => import('./agent-credit/credit-selection/credit-selection.component').then((c) => c.CreditSelectionComponent)

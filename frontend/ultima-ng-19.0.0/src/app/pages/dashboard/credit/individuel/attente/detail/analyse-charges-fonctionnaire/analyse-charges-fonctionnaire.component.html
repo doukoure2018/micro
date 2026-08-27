@@ -9,7 +9,7 @@
             <p class="text-center mt-4 text-gray-700 font-medium">Chargement en cours...</p>
         </div>
     </div>
-    } @else if (!state().demande?.demandeFonctionnaire) {
+    } @else if (!estCompatible()) {
     <div class="py-2">
         <div class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-red-300 mb-8">
             <div class="bg-red-500 text-white px-6 py-4 flex items-center gap-3">
@@ -17,7 +17,7 @@
                 <span class="font-bold text-lg uppercase tracking-wide">Demande incompatible</span>
             </div>
             <div class="p-6 text-gray-700">
-                Cette demande n'a pas d'informations fonctionnaire (nature de la demande incorrecte ou données manquantes).
+                Cette demande n'est ni un crédit fonctionnaire ni un groupe CFE (nature incorrecte ou données manquantes).
                 <div class="mt-4">
                     <button pButton type="button" icon="pi pi-arrow-left" label="Retour au détail" class="p-button-secondary"
                         (click)="retourDetail()"></button>
@@ -45,6 +45,9 @@
                         <p class="text-sm text-gray-500 m-0">
                             {{ state().demande?.prenom }} {{ state().demande?.nom }} •
                             Membre {{ state().demande?.numeroMembre }}
+                            @if (estGroupeCfe()) {
+                            • Groupe CFE ({{ state().demande?.demandeGroupe?.nombreMembres }} membres)
+                            }
                             @if (state().demande?.demandeFonctionnaire?.serviceEmployeur) {
                             • {{ state().demande?.demandeFonctionnaire?.serviceEmployeur }}
                             ({{ state().demande?.demandeFonctionnaire?.departementMinistere }})
@@ -55,7 +58,7 @@
 
                 <!-- Center: Status Tags -->
                 <div class="flex items-center gap-2">
-                    <p-tag value="Crédit Fonctionnaire" severity="warn" [rounded]="true"></p-tag>
+                    <p-tag [value]="estGroupeCfe() ? 'Groupe CFE' : 'Crédit Fonctionnaire'" severity="warn" [rounded]="true"></p-tag>
                     <p-tag [value]="financable() ? 'FINANÇABLE' : 'NON FINANÇABLE'"
                         [severity]="financable() ? 'success' : 'danger'" [rounded]="true"></p-tag>
                 </div>
@@ -102,9 +105,9 @@
             <div class="p-6">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="border-2 border-blue-200 bg-blue-50 rounded-xl p-4">
-                        <div class="text-sm text-gray-600">Salaire net mensuel</div>
+                        <div class="text-sm text-gray-600">{{ estGroupeCfe() ? 'Cumul des salaires nets des membres' : 'Salaire net mensuel' }}</div>
                         <div class="text-xl font-bold text-gray-800">{{ salaireNet() | number:'1.0-0':'fr-FR' }} GNF</div>
-                        <div class="text-xs text-gray-500 mt-1">Repris de la demande — non modifiable à l'analyse</div>
+                        <div class="text-xs text-gray-500 mt-1">{{ estGroupeCfe() ? 'Somme des salaires saisis au tableau des membres' : "Repris de la demande — non modifiable à l'analyse" }}</div>
                     </div>
                     <div class="border-2 border-amber-300 bg-amber-50 rounded-xl p-4">
                         <div class="text-sm text-gray-600">Quotité cessible (35 %)</div>
@@ -133,7 +136,7 @@
             <div class="bg-emerald-600 text-white px-6 py-4 flex items-center justify-between flex-wrap gap-2">
                 <div class="flex items-center gap-3">
                     <i class="pi pi-list text-xl"></i>
-                    <span class="font-bold text-lg uppercase tracking-wide">2. Charges Mensuelles du Ménage</span>
+                    <span class="font-bold text-lg uppercase tracking-wide">2. Charges Mensuelles {{ estGroupeCfe() ? "du Groupe" : "du Ménage" }}</span>
                 </div>
                 <span class="text-base">Total : <strong class="text-yellow-300 text-lg">{{ totalCharges() | number:'1.0-0':'fr-FR' }} GNF</strong></span>
             </div>

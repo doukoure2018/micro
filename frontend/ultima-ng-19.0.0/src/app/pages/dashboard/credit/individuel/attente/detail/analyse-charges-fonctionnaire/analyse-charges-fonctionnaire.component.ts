@@ -100,7 +100,20 @@ export class AnalyseChargesFonctionnaireComponent implements OnInit {
 
     // ==================== CALCULS EN DIRECT (mêmes formules que le backend) ====================
 
+    /** Groupe CFE : même écran, sur le cumul des salaires nets des membres. */
+    estGroupeCfe(): boolean {
+        return this.state().demande?.natureClient === 'Demande de credit Pour Groupe Solidaire'
+            && this.state().demande?.demandeGroupe?.typeGroupe === 'CFE';
+    }
+
+    estCompatible(): boolean {
+        return !!this.state().demande?.demandeFonctionnaire || this.estGroupeCfe();
+    }
+
     salaireNet(): number {
+        if (this.estGroupeCfe()) {
+            return (this.state().demande?.membresGroupe || []).reduce((total, m) => total + (Number(m.salaireNetMensuel) || 0), 0);
+        }
         return this.state().demande?.demandeFonctionnaire?.salaireNetMensuel || 0;
     }
 

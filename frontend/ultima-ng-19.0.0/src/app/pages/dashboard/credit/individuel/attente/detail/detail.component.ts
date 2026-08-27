@@ -1,4 +1,4 @@
-import { AnalyseChargesFonctionnaire, DemandeFonctionnaire, DemandeIndividuel, PieceJointeDemande, TYPE_CONTRAT_OPTIONS_FONCTIONNAIRE, demandeFonctionnaireVide, quotiteCessibleFonctionnaire } from '@/interface/demande-individuel.interface';
+import { AnalyseChargesFonctionnaire, AnalyseCreditAgricole, DemandeFonctionnaire, DemandeIndividuel, NATURE_CREDIT_GROUPE, PieceJointeDemande, TYPES_GROUPE_OPTIONS, TYPE_CONTRAT_OPTIONS_FONCTIONNAIRE, demandeFonctionnaireVide, quotiteCessibleFonctionnaire } from '@/interface/demande-individuel.interface';
 import { NiveauValidationFinale, libelleNiveauValidation, niveauValidationFinale } from '@/interface/validation-seuils';
 import { CreditActiviteData } from '@/service/credit-activite.model';
 import { registerLocaleData } from '@angular/common';
@@ -126,6 +126,7 @@ export class DetailComponent {
         showWorkflowRejetDA: boolean;
         showWorkflowRejetDR: boolean;
         analyseChargesFonctionnaire?: AnalyseChargesFonctionnaire | null;
+        analyseCreditAgricole?: AnalyseCreditAgricole | null;
         piecesFonctionnaire?: PieceJointeDemande[];
         showTransformationFonctionnaire?: boolean;
         transformationEnCours?: boolean;
@@ -204,7 +205,7 @@ export class DetailComponent {
     ];
 
     getWorkflowSectionsOptions(): { label: string; value: string }[] {
-        return this.isFonctionnaireNature() ? this.workflowSectionsOptionsFonctionnaire : this.workflowSectionsOptions;
+        return this.necessiteAnalyseCharges() ? this.workflowSectionsOptionsFonctionnaire : this.workflowSectionsOptions;
     }
 
     // Options sections pour rejet
@@ -461,6 +462,18 @@ export class DetailComponent {
 
                         // Crédit fonctionnaire : analyse charges & quotité (affichage + impression)
                         if (demandeData.natureClient === 'Demande de credit Pour Fonctionnaire') {
+                            this.loadAnalyseChargesFonctionnaire(+demandeData.demandeIndividuelId!);
+                        }
+
+                        // Groupe agricole (CAS / CAS-R) : analyse charges/produits/marge
+                        if (demandeData.natureClient === 'Demande de credit Pour Groupe Solidaire'
+                                && ['CAS', 'CAS_R'].includes(demandeData.demandeGroupe?.typeGroupe || '')) {
+                            this.loadAnalyseCreditAgricole(+demandeData.demandeIndividuelId!);
+                        }
+
+                        // Groupe CFE : même analyse charges & quotité que le fonctionnaire (cumul des salaires)
+                        if (demandeData.natureClient === 'Demande de credit Pour Groupe Solidaire'
+                                && demandeData.demandeGroupe?.typeGroupe === 'CFE') {
                             this.loadAnalyseChargesFonctionnaire(+demandeData.demandeIndividuelId!);
                         }
 
@@ -1507,6 +1520,46 @@ export class DetailComponent {
         return this.state().demandeIndividuel?.natureClient === 'Demande de credit Pour Fonctionnaire';
     }
 
+    /** Nature Groupe Solidaire (V124) : identification du groupe + membres sur le détail. */
+    isGroupeNature(): boolean {
+        return this.state().demandeIndividuel?.natureClient === NATURE_CREDIT_GROUPE;
+    }
+
+    libelleTypeGroupe(): string {
+        const code = this.state().demandeIndividuel?.demandeGroupe?.typeGroupe;
+        return TYPES_GROUPE_OPTIONS.find((t) => t.code === code)?.libelle || code || 'N/A';
+    }
+
+    totalPartsMembres(): number {
+        return (this.state().demandeIndividuel?.membresGroupe || []).reduce((total, m) => total + (Number(m.montantPercevoir) || 0), 0);
+    }
+
+    /** Groupe CFE : même analyse charges & quotité que le fonctionnaire, sur le cumul des salaires des membres. */
+    isGroupeCfe(): boolean {
+        return this.isGroupeNature() && this.state().demandeIndividuel?.demandeGroupe?.typeGroupe === 'CFE';
+    }
+
+    /** Natures/types dont l'instruction passe par l'analyse charges & quotité. */
+    necessiteAnalyseCharges(): boolean {
+        return this.isFonctionnaireNature() || this.isGroupeCfe();
+    }
+
+    /** Groupe agricole (CAS / CAS-R) : le bilan/flux est remplacé par l'analyse agricole. */
+    isGroupeAgricole(): boolean {
+        return this.isGroupeNature()
+            && ['CAS', 'CAS_R'].includes(this.state().demandeIndividuel?.demandeGroupe?.typeGroupe || '');
+    }
+
+    private loadAnalyseCreditAgricole(demandeId: number): void {
+        this.userService
+            .getAnalyseAgricole$(demandeId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => this.state.update((s) => ({ ...s, analyseCreditAgricole: (response.data as any)?.analyseAgricole || null })),
+                error: () => this.state.update((s) => ({ ...s, analyseCreditAgricole: null }))
+            });
+    }
+
     /** Filière saisie à la demande : Activité → Sous-activité → Sous-sous-activité (codes résolus en libellés). */
     filiereActivite(): string {
         const d = this.state().demandeIndividuel;
@@ -1672,6 +1725,93 @@ export class DetailComponent {
         return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
+    /** Section imprimable du dossier groupe : identification, mandataires, membres et analyse. */
+    private genererSectionGroupe(): string {
+        const demande = this.state().demandeIndividuel;
+        const groupe = demande?.demandeGroupe;
+        if (!this.isGroupeNature() || !groupe) return '';
+
+        const fmt = (montant?: number | null) => (montant != null ? Number(montant).toLocaleString('fr-FR') + ' GNF' : 'N/A');
+        const esc = (texte?: string | null) => this.escapeHtml(texte) || 'N/A';
+
+        const lignesMembres = (demande?.membresGroupe || [])
+            .map((m) => `<tr>
+                    <td>${esc(m.numeroMembre)}</td>
+                    <td>${esc(m.nomPrenom)}</td>
+                    <td style="text-align:right">${fmt(m.montantPercevoir)}</td>
+                    ${this.isGroupeCfe() ? `<td style="text-align:right">${fmt(m.salaireNetMensuel)}</td>
+                    <td style="text-align:right">${fmt(m.versementMensuelPe)}</td>` : ''}
+                </tr>`)
+            .join('');
+
+        const agricole = this.state().analyseCreditAgricole;
+        const charges = this.state().analyseChargesFonctionnaire;
+        let analyseHtml = '';
+        if (this.isGroupeAgricole() && agricole) {
+            analyseHtml = `
+                <h3>ANALYSE AGRICOLE</h3>
+                <table class="info-table">
+                    <tr><td class="label">Total produits:</td><td class="value">${fmt(agricole.totalProduits)}</td>
+                        <td class="label">Total charges:</td><td class="value">${fmt(agricole.totalCharges)}</td></tr>
+                    <tr><td class="label">Marge nette:</td><td class="value">${fmt(agricole.margeNette)}</td>
+                        <td class="label">Total échéances:</td><td class="value">${fmt(agricole.totalEcheances)}</td></tr>
+                    <tr><td class="label">Verdict:</td><td class="value"><strong>${agricole.verdict === 'FINANCABLE' ? 'FINANÇABLE' : 'NON FINANÇABLE'}</strong></td>
+                        <td class="label">Analysé par:</td><td class="value">${esc(agricole.analysePar)}</td></tr>
+                </table>`;
+        } else if (this.isGroupeCfe() && charges) {
+            analyseHtml = `
+                <h3>ANALYSE CHARGES &amp; QUOTITÉ DU GROUPE</h3>
+                <table class="info-table">
+                    <tr><td class="label">Cumul salaires retenus:</td><td class="value">${fmt(charges.salaireNetRetenu)}</td>
+                        <td class="label">Quotité cessible (35 %):</td><td class="value">${fmt(charges.quotiteCessible)}</td></tr>
+                    <tr><td class="label">Total charges:</td><td class="value">${fmt(charges.totalCharges)}</td>
+                        <td class="label">Capacité résiduelle:</td><td class="value">${fmt(charges.capaciteResiduelle)}</td></tr>
+                    <tr><td class="label">Verdict:</td><td class="value"><strong>${charges.verdict === 'FINANCABLE' ? 'FINANÇABLE' : 'NON FINANÇABLE'}</strong></td>
+                        <td class="label">Analysé par:</td><td class="value">${esc(charges.analysePar)}</td></tr>
+                </table>`;
+        }
+
+        return `
+                <!-- Section Groupe Solidaire -->
+                <div class="section">
+                    <h2>IDENTIFICATION DU GROUPE SOLIDAIRE</h2>
+                    <table class="info-table">
+                        <tr>
+                            <td class="label">Type de groupe:</td><td class="value">${esc(this.libelleTypeGroupe())}</td>
+                            <td class="label">N° demande:</td><td class="value">${esc(groupe.numeroDemande)}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Nom du groupe:</td><td class="value">${esc(groupe.nomGroupe)}</td>
+                            <td class="label">Nombre de membres:</td><td class="value">${groupe.nombreMembres ?? 'N/A'}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Mandataire 1:</td><td class="value">${esc(groupe.mandataire1)} (${esc(groupe.contactMandataire1)})</td>
+                            <td class="label">Mandataire 2:</td><td class="value">${esc(groupe.mandataire2)} ${groupe.contactMandataire2 ? '(' + esc(groupe.contactMandataire2) + ')' : ''}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">District / Quartier:</td><td class="value">${esc(groupe.districtQuartier)}</td>
+                            <td class="label">Secteur:</td><td class="value">${esc(groupe.secteur)}</td>
+                        </tr>
+                    </table>
+                    <h3>MEMBRES DU GROUPE</h3>
+                    <table class="info-table">
+                        <tr>
+                            <th style="text-align:left">N° Membre</th>
+                            <th style="text-align:left">Nom et Prénom</th>
+                            <th style="text-align:right">Montant à percevoir</th>
+                            ${this.isGroupeCfe() ? '<th style="text-align:right">Salaire net</th><th style="text-align:right">Versement PE</th>' : ''}
+                        </tr>
+                        ${lignesMembres}
+                        <tr>
+                            <td colspan="2"><strong>TOTAL</strong></td>
+                            <td style="text-align:right"><strong>${fmt(this.totalPartsMembres())}</strong></td>
+                            ${this.isGroupeCfe() ? '<td colspan="2"></td>' : ''}
+                        </tr>
+                    </table>
+                    ${analyseHtml}
+                </div>`;
+    }
+
     /** Section imprimable du dossier fonctionnaire : emploi, salaire, quotité et grille des charges. */
     private genererSectionFonctionnaire(): string {
         const demande = this.state().demandeIndividuel;
@@ -1771,6 +1911,7 @@ export class DetailComponent {
         if (natureClient.includes('PME')) return 'Entreprise (PME/PMI)';
         if (natureClient.includes('Professionnel')) return 'Professionnel';
         if (natureClient.includes('Fonctionnaire')) return 'Fonctionnaire';
+        if (natureClient.includes('Groupe')) return 'Groupe Solidaire';
         return 'Particulier';
     }
 
@@ -1846,6 +1987,7 @@ export class DetailComponent {
                 }
 
                 ${this.genererSectionFonctionnaire()}
+                ${this.genererSectionGroupe()}
 
                 <!-- Section 1: Informations sur le membre/client -->
                 <div class="section">

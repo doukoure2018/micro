@@ -37,6 +37,17 @@ public class AnalyseChargesFonctionnaireServiceImpl implements AnalyseChargesFon
 
     private final AnalyseChargesFonctionnaireRepository repository;
 
+    /** Groupe CFE : même analyse charges & quotité, sur le CUMUL des salaires nets des membres (V126). */
+    private static boolean estCfeGroupe(ContexteFonctionnaire ctx) {
+        return io.digiservices.ecreditservice.validation.CreditGroupeValidator.NATURE_GROUPE.equals(ctx.natureClient())
+                && "CFE".equals(ctx.typeGroupe());
+    }
+
+    /** Base de revenu : salaire de la demande (fonctionnaire) ou cumul des salaires des membres (CFE groupe). */
+    private static BigDecimal salaireBase(ContexteFonctionnaire ctx) {
+        return estCfeGroupe(ctx) ? ctx.salairesGroupe() : ctx.salaireNetMensuel();
+    }
+
     @Override
     public Optional<AnalyseChargesFonctionnaireDto> getByDemandeId(Long demandeId) {
         return repository.findByDemandeId(demandeId);
@@ -49,20 +60,24 @@ public class AnalyseChargesFonctionnaireServiceImpl implements AnalyseChargesFon
         if (ctx == null) {
             throw new ApiException("Demande non trouvée");
         }
-        if (!CreditFonctionnaireValidator.NATURE_FONCTIONNAIRE.equals(ctx.natureClient())) {
-            throw new ValidationException("L'analyse des charges est réservée aux demandes de nature Fonctionnaire");
+        if (!CreditFonctionnaireValidator.NATURE_FONCTIONNAIRE.equals(ctx.natureClient()) && !estCfeGroupe(ctx)) {
+            throw new ValidationException("L'analyse des charges est réservée aux demandes de nature Fonctionnaire ou aux groupes CFE");
         }
         if (ctx.validationState() != null && ETATS_FIGES.contains(ctx.validationState())) {
             throw new ValidationException(String.format(
                     "L'analyse des charges ne peut plus être modifiée : le dossier est en état %s (déjà approuvé ou en validation hiérarchique)",
                     ctx.validationState()));
         }
-        if (ctx.salaireNetMensuel() == null || ctx.salaireNetMensuel().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new ValidationException("Le salaire net de la demande fonctionnaire est manquant : corrigez la demande avant l'analyse");
+        BigDecimal salaireBase = salaireBase(ctx);
+        if (salaireBase == null || salaireBase.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ValidationException(estCfeGroupe(ctx)
+                    ? "Les salaires nets des membres du groupe CFE sont manquants : corrigez la demande avant l'analyse"
+                    : "Le salaire net de la demande fonctionnaire est manquant : corrigez la demande avant l'analyse");
         }
 
-        // Salaire retenu = celui de la demande ; autres revenus retenus = saisie AC, sinon ceux déclarés
-        BigDecimal salaire = ctx.salaireNetMensuel();
+        // Salaire retenu = demande (fonctionnaire) ou cumul des membres (CFE groupe) ;
+        // autres revenus retenus = saisie AC, sinon ceux déclarés
+        BigDecimal salaire = salaireBase;
         BigDecimal autresRevenus = dto.getAutresRevenusRetenus() != null
                 ? dto.getAutresRevenusRetenus()
                 : (ctx.autresRevenus() != null ? ctx.autresRevenus() : BigDecimal.ZERO);
@@ -91,11 +106,14 @@ public class AnalyseChargesFonctionnaireServiceImpl implements AnalyseChargesFon
     @Override
     public void verifierFinancableSiFonctionnaire(Long demandeId) {
         ContexteFonctionnaire ctx = repository.getContexte(demandeId);
-        if (ctx == null || !CreditFonctionnaireValidator.NATURE_FONCTIONNAIRE.equals(ctx.natureClient())) {
+        if (ctx == null
+                || (!CreditFonctionnaireValidator.NATURE_FONCTIONNAIRE.equals(ctx.natureClient()) && !estCfeGroupe(ctx))) {
             return;
         }
 
-        if (!Boolean.TRUE.equals(ctx.domiciliationSalaire())) {
+        // Domiciliation : engagement individuel de la demande fonctionnaire ; pour un groupe
+        // CFE la garantie est le Plan Épargne des membres (pas de case dédiée au formulaire)
+        if (!estCfeGroupe(ctx) && !Boolean.TRUE.equals(ctx.domiciliationSalaire())) {
             throw new ValidationException(
                     "La domiciliation du salaire au CRG est obligatoire pour un crédit fonctionnaire");
         }
@@ -109,9 +127,11 @@ public class AnalyseChargesFonctionnaireServiceImpl implements AnalyseChargesFon
                         "L'analyse des charges & quotité doit être complétée avant de soumettre un crédit fonctionnaire"));
 
         // Recalcul complet (aucune confiance aux valeurs stockées ou au front)
-        BigDecimal salaire = ctx.salaireNetMensuel();
+        BigDecimal salaire = salaireBase(ctx);
         if (salaire == null || salaire.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new ValidationException("Le salaire net de la demande fonctionnaire est manquant");
+            throw new ValidationException(estCfeGroupe(ctx)
+                    ? "Les salaires nets des membres du groupe CFE sont manquants"
+                    : "Le salaire net de la demande fonctionnaire est manquant");
         }
         BigDecimal autresRevenus = analyse.getAutresRevenusRetenus() != null
                 ? analyse.getAutresRevenusRetenus() : BigDecimal.ZERO;

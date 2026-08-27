@@ -84,6 +84,12 @@
                         pTooltip="Rafraîchir les données" (click)="refreshData()">
                     </button>
 
+                    <button pButton icon="pi pi-users" label="Nouvelle demande groupe"
+                        class="p-button-sm" style="background-color:#4f46e5;border-color:#4f46e5"
+                        pTooltip="Demande de crédit pour groupe solidaire"
+                        (click)="nouvelleDemandeGroupe()">
+                    </button>
+
                     @if(activeFilter() !== 'ALL') {
                     <p-tag [value]="activeFilter() === 'EN_ATTENTE' ? 'En Attente' :
                                     activeFilter() === 'AFFECTATION' ? 'En cours d\'approbation' : 'Rejetées'" [severity]="activeFilter() === 'EN_ATTENTE' ? 'info' :

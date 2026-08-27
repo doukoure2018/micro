@@ -1,0 +1,247 @@
+<div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <p-toast position="top-right"></p-toast>
+
+    @if (state().loading) {
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl">
+            <i class="pi pi-spinner pi-spin text-3xl text-blue-600 block text-center"></i>
+            <p class="text-center mt-4 text-gray-700 font-medium">Chargement en cours...</p>
+        </div>
+    </div>
+    } @else if (!estAgricole()) {
+    <div class="py-2">
+        <div class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-red-300 mb-8">
+            <div class="bg-red-500 text-white px-6 py-4 flex items-center gap-3">
+                <i class="pi pi-exclamation-triangle text-xl"></i>
+                <span class="font-bold text-lg uppercase tracking-wide">Demande incompatible</span>
+            </div>
+            <div class="p-6 text-gray-700">
+                Cette demande n'est pas un crédit de groupe agricole solidaire (CAS / CAS-R).
+                <div class="mt-4">
+                    <button pButton type="button" icon="pi pi-arrow-left" label="Retour au détail" class="p-button-secondary"
+                        (click)="retourDetail()"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    } @else {
+    <div class="py-2">
+
+        <!-- HEADER STICKY -->
+        <div class="sticky top-0 z-40 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg mb-4 p-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-4">
+                    <button pButton type="button" (click)="retourDetail()" icon="pi pi-arrow-left"
+                        class="p-button-text p-button-rounded p-button-secondary" pTooltip="Retour au détail"></button>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-800 flex items-center gap-2 m-0">
+                            <i class="pi pi-chart-line text-lime-700"></i>
+                            Analyse Agricole — Dossier N° {{ demandeIndividuelId }}
+                        </h1>
+                        <p class="text-sm text-gray-500 m-0">
+                            {{ state().demande?.demandeGroupe?.nomGroupe }} •
+                            {{ state().demande?.demandeGroupe?.typeGroupe }} •
+                            {{ state().demande?.demandeGroupe?.nombreMembres }} membre(s)
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <p-tag [value]="state().demande?.demandeGroupe?.typeGroupe === 'CAS_R' ? 'CAS - Rente' : 'Crédit Agricole Solidaire'"
+                        severity="success" [rounded]="true"></p-tag>
+                    <p-tag [value]="financable() ? 'FINANÇABLE' : 'NON FINANÇABLE'"
+                        [severity]="financable() ? 'success' : 'danger'" [rounded]="true"></p-tag>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button pButton type="button" (click)="enregistrer()" icon="pi pi-save" [loading]="state().saving"
+                        class="p-button-sm p-button-rounded" pTooltip="Enregistrer l'analyse"></button>
+                    <button pButton type="button" (click)="retourDetail()" icon="pi pi-file-edit"
+                        class="p-button-sm p-button-secondary p-button-rounded" pTooltip="Détail de la demande"></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- BANDEAU -->
+        <div class="rounded-xl shadow-md overflow-hidden border-2 mb-8" style="border-color: #65a30d;">
+            <div class="text-white px-6 py-5" style="background: linear-gradient(to right, #65a30d, #4d7c0f);">
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center justify-center rounded-full"
+                        style="width:3rem;height:3rem;background:rgba(255,255,255,0.25)">
+                        <i class="pi pi-chart-line text-2xl"></i>
+                    </div>
+                    <div>
+                        <p class="m-0 text-sm uppercase tracking-wide opacity-90">Crédit Agricole Solidaire</p>
+                        <h2 class="m-0 font-bold text-xl">Analyse Charges, Produits &amp; Marge Nette</h2>
+                        <p class="m-0 mt-1 text-sm opacity-90">
+                            Le dossier est finançable si la marge nette (produits − charges) dépasse le total des
+                            échéances (capital + intérêts).
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 1 : SYNTHÈSE -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8">
+            <div class="bg-blue-600 text-white px-6 py-4 flex items-center gap-3">
+                <i class="pi pi-wallet text-xl"></i>
+                <span class="font-bold text-lg uppercase tracking-wide">1. Synthèse Financière</span>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="border-2 border-blue-200 bg-blue-50 rounded-xl p-4">
+                        <div class="text-sm text-gray-600">Montant du crédit</div>
+                        <div class="text-xl font-bold text-gray-800">{{ montantCredit() | number:'1.0-0':'fr-FR' }} GNF</div>
+                        <div class="text-xs text-gray-500 mt-1">{{ nombreEcheances() }} échéance(s) · taux {{ tauxInteret() }} %</div>
+                    </div>
+                    <div class="border-2 border-amber-300 bg-amber-50 rounded-xl p-4">
+                        <div class="text-sm text-gray-600">Total des échéances</div>
+                        <div class="text-xl font-bold text-amber-700">{{ totalEcheances() | number:'1.0-0':'fr-FR' }} GNF</div>
+                        <div class="text-xs text-gray-500 mt-1">Capital + intérêts (repris de la demande)</div>
+                    </div>
+                    <div class="border-2 border-emerald-300 bg-emerald-50 rounded-xl p-4">
+                        <div class="text-sm text-gray-600">Total produits − charges</div>
+                        <div class="text-xl font-bold" [ngClass]="margeNette() >= 0 ? 'text-emerald-700' : 'text-red-700'">
+                            {{ margeNette() | number:'1.0-0':'fr-FR' }} GNF
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1">Marge nette de la campagne</div>
+                    </div>
+                    <div class="border-2 rounded-xl p-4"
+                        [ngClass]="financable() ? 'border-green-300 bg-green-50' : 'border-red-300 bg-red-50'">
+                        <div class="text-sm text-gray-600">Verdict</div>
+                        <div class="text-xl font-bold" [ngClass]="financable() ? 'text-green-700' : 'text-red-700'">
+                            {{ financable() ? 'FINANÇABLE' : 'NON FINANÇABLE' }}
+                        </div>
+                        <div class="text-xs mt-1" [class.text-red-600]="!financable()" [class.text-gray-500]="financable()">
+                            Marge nette {{ financable() ? '>' : '≤' }} total des échéances
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Échéancier -->
+                @if (echeancier().length > 0) {
+                <div class="mt-6 overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="bg-gray-100 text-left">
+                                <th class="p-3 font-semibold">Échéance</th>
+                                <th class="p-3 font-semibold text-right">Capital</th>
+                                <th class="p-3 font-semibold text-right">Intérêt</th>
+                                <th class="p-3 font-semibold text-right">Montant à payer</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (e of echeancier(); track e.numero) {
+                            <tr class="border-b border-gray-100">
+                                <td class="p-3">Échéance {{ e.numero }}</td>
+                                <td class="p-3 text-right">{{ e.capital | number:'1.0-0':'fr-FR' }}</td>
+                                <td class="p-3 text-right">{{ e.interet | number:'1.0-0':'fr-FR' }}</td>
+                                <td class="p-3 text-right font-semibold">{{ e.montant | number:'1.0-0':'fr-FR' }}</td>
+                            </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                }
+            </div>
+        </div>
+
+        <!-- SECTION 2 : CHARGES DE LA CAMPAGNE -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8">
+            <div class="bg-emerald-600 text-white px-6 py-4 flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-3">
+                    <i class="pi pi-list text-xl"></i>
+                    <span class="font-bold text-lg uppercase tracking-wide">2. Charges de la Campagne</span>
+                </div>
+                <span class="text-base">Total : <strong class="text-yellow-300 text-lg">{{ totalCharges() | number:'1.0-0':'fr-FR' }} GNF</strong></span>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-5">
+                    @for (poste of postes; track poste.key) {
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">{{ poste.libelle }}</label>
+                        <p-inputNumber [(ngModel)]="analyse[poste.key]" [name]="poste.key" [min]="0" mode="currency"
+                            currency="GNF" locale="fr-FR" styleClass="w-full" [disabled]="state().saving">
+                        </p-inputNumber>
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 3 : PRODUITS DE LA CAMPAGNE -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8">
+            <div class="bg-teal-600 text-white px-6 py-4 flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-3">
+                    <i class="pi pi-shopping-cart text-xl"></i>
+                    <span class="font-bold text-lg uppercase tracking-wide">3. Produits de la Campagne</span>
+                </div>
+                <span class="text-base">Total : <strong class="text-yellow-300 text-lg">{{ totalProduits() | number:'1.0-0':'fr-FR' }} GNF</strong></span>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Quantité de récolte escomptée</label>
+                        <p-inputNumber [(ngModel)]="analyse.quantiteRecolte" name="quantiteRecolte" [min]="0"
+                            styleClass="w-full" [disabled]="state().saving"></p-inputNumber>
+                        <small class="text-gray-500">En unité de vente (sacs, tonnes, kg...)</small>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Prix de vente unitaire (GNF)</label>
+                        <p-inputNumber [(ngModel)]="analyse.prixVenteUnitaire" name="prixVenteUnitaire" [min]="0"
+                            mode="currency" currency="GNF" locale="fr-FR" styleClass="w-full" [disabled]="state().saving"></p-inputNumber>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Autres produits (GNF)</label>
+                        <p-inputNumber [(ngModel)]="analyse.autresProduits" name="autresProduits" [min]="0"
+                            mode="currency" currency="GNF" locale="fr-FR" styleClass="w-full" [disabled]="state().saving"></p-inputNumber>
+                    </div>
+                </div>
+                <div class="flex justify-end mt-5 pt-4 border-t border-gray-200">
+                    <div class="text-right bg-teal-50 border border-teal-200 rounded-xl px-5 py-3">
+                        <div class="text-sm text-gray-600">Récolte × prix + autres produits</div>
+                        <div class="text-2xl font-bold text-teal-700">{{ totalProduits() | number:'1.0-0':'fr-FR' }} GNF</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VERDICT -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden border-2 mb-8"
+            [ngClass]="financable() ? 'border-green-400' : 'border-red-400'">
+            <div class="text-white px-6 py-4 flex items-center gap-3"
+                [ngClass]="financable() ? 'bg-green-600' : 'bg-red-500'">
+                <i class="pi text-xl" [ngClass]="financable() ? 'pi-check-circle' : 'pi-times-circle'"></i>
+                <span class="font-bold text-lg uppercase tracking-wide">
+                    {{ financable() ? 'Dossier finançable' : 'Dossier non finançable en l’état' }}
+                </span>
+            </div>
+            <div class="p-6 text-gray-700">
+                Marge nette : <strong>{{ margeNette() | number:'1.0-0':'fr-FR' }} GNF</strong>
+                {{ financable() ? '>' : '≤' }}
+                Total des échéances : <strong>{{ totalEcheances() | number:'1.0-0':'fr-FR' }} GNF</strong>.
+                @if (!financable()) {
+                Augmentez les produits escomptés, réduisez les charges, ou revoyez le montant/la durée du prêt.
+                }
+            </div>
+        </div>
+
+        <!-- ACTIONS -->
+        <div class="bg-white rounded-xl shadow-md border border-gray-200 p-5 mb-8">
+            <div class="flex items-center justify-between flex-wrap gap-3">
+                <p class="text-sm text-gray-500 m-0 max-w-xl">
+                    Enregistrez l'analyse puis retournez au détail : vous y donnerez votre avis (section
+                    « Mon Avis sur le Dossier ») et approuverez la demande pour la transmettre au DA.
+                    L'approbation est bloquée tant que le dossier n'est pas finançable.
+                </p>
+                <div class="flex gap-2">
+                    <button pButton type="button" icon="pi pi-save" label="Enregistrer l'analyse" [loading]="state().saving"
+                        (click)="enregistrer()"></button>
+                    <button pButton type="button" icon="pi pi-arrow-right" label="Donner mon avis et approuver"
+                        class="p-button-success" [disabled]="state().saving || !analyse.analyseAgricoleId"
+                        (click)="retourDetail()"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    }
+</div>
