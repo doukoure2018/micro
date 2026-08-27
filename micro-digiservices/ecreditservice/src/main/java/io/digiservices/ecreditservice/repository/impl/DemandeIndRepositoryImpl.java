@@ -888,6 +888,7 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
                 ps.setBigDecimal(5, membre.getMontantSollicite());
                 ps.setBigDecimal(6, membre.getMontantBasePe());
                 ps.setBigDecimal(7, membre.getVersementMensuelPe());
+                ps.setBigDecimal(8, membre.getSalaireNetMensuel());
                 ps.addBatch();
             }
             ps.executeBatch();

@@ -200,7 +200,10 @@
                     <label class="block text-sm font-semibold text-gray-700 mb-2">Périodicité *</label>
                     <p-dropdown [(ngModel)]="pret.periodiciteRemboursement" name="periodiciteRemboursement"
                         [options]="periodiciteOptions" optionLabel="label" optionValue="value" styleClass="w-full"
-                        required [disabled]="state().submitting" [appendTo]="'body'"></p-dropdown>
+                        required [disabled]="state().submitting || isCfe()" [appendTo]="'body'"></p-dropdown>
+                    @if (isCfe()) {
+                    <small class="text-gray-500">Mensuelle uniquement pour un groupe CFE</small>
+                    }
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">
@@ -286,6 +289,7 @@
                                 <th class="p-3 font-semibold">Nom et Prénom *</th>
                                 <th class="p-3 font-semibold">Montant à percevoir (GNF) *</th>
                                 @if (isCfe()) {
+                                <th class="p-3 font-semibold">Salaire net mensuel *</th>
                                 <th class="p-3 font-semibold">Montant sollicité</th>
                                 <th class="p-3 font-semibold">Montant de base (PE)</th>
                                 <th class="p-3 font-semibold">Versement mensuel PE</th>
@@ -319,6 +323,11 @@
                                 </td>
                                 @if (isCfe()) {
                                 <td class="p-2">
+                                    <p-inputNumber [(ngModel)]="membre.salaireNetMensuel" [name]="'mSal' + $index"
+                                        [min]="1" mode="currency" currency="GNF" locale="fr-FR" styleClass="w-full"
+                                        [disabled]="state().submitting" required></p-inputNumber>
+                                </td>
+                                <td class="p-2">
                                     <p-inputNumber [(ngModel)]="membre.montantSollicite" [name]="'mSol' + $index"
                                         [min]="0" mode="currency" currency="GNF" locale="fr-FR" styleClass="w-full"
                                         [disabled]="state().submitting"></p-inputNumber>
@@ -351,6 +360,13 @@
                             ? 'Total des parts = montant demandé ✓'
                             : 'Total des parts : ' + (totalParts() | number:'1.0-0':'fr-FR') + ' GNF — doit être égal au montant demandé (' + (pret.montantDemande | number:'1.0-0':'fr-FR') + ' GNF)'"></p-tag>
                     <div class="text-right">
+                        @if (isCfe()) {
+                        <div class="text-sm text-gray-600">Cumul des salaires nets :
+                            <strong class="text-blue-700">{{ totalSalairesCfe() | number:'1.0-0':'fr-FR' }} GNF</strong>
+                            — quotité cessible du groupe (35 %) :
+                            <strong class="text-amber-700">{{ (totalSalairesCfe() * 0.35) | number:'1.0-0':'fr-FR' }} GNF</strong>
+                        </div>
+                        }
                         <span class="text-sm text-gray-600 mr-2">Total à percevoir :</span>
                         <span class="text-xl font-bold" [class.text-green-700]="partsEgalesMontant()"
                             [class.text-red-600]="!partsEgalesMontant()">{{ totalParts() | number:'1.0-0':'fr-FR' }} GNF</span>

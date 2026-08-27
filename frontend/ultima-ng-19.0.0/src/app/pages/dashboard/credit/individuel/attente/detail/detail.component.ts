@@ -205,7 +205,7 @@ export class DetailComponent {
     ];
 
     getWorkflowSectionsOptions(): { label: string; value: string }[] {
-        return this.isFonctionnaireNature() ? this.workflowSectionsOptionsFonctionnaire : this.workflowSectionsOptions;
+        return this.necessiteAnalyseCharges() ? this.workflowSectionsOptionsFonctionnaire : this.workflowSectionsOptions;
     }
 
     // Options sections pour rejet
@@ -469,6 +469,12 @@ export class DetailComponent {
                         if (demandeData.natureClient === 'Demande de credit Pour Groupe Solidaire'
                                 && ['CAS', 'CAS_R'].includes(demandeData.demandeGroupe?.typeGroupe || '')) {
                             this.loadAnalyseCreditAgricole(+demandeData.demandeIndividuelId!);
+                        }
+
+                        // Groupe CFE : même analyse charges & quotité que le fonctionnaire (cumul des salaires)
+                        if (demandeData.natureClient === 'Demande de credit Pour Groupe Solidaire'
+                                && demandeData.demandeGroupe?.typeGroupe === 'CFE') {
+                            this.loadAnalyseChargesFonctionnaire(+demandeData.demandeIndividuelId!);
                         }
 
                         // Historique crédit SAF du membre (consultatif, dégradation gracieuse)
@@ -1526,6 +1532,16 @@ export class DetailComponent {
 
     totalPartsMembres(): number {
         return (this.state().demandeIndividuel?.membresGroupe || []).reduce((total, m) => total + (Number(m.montantPercevoir) || 0), 0);
+    }
+
+    /** Groupe CFE : même analyse charges & quotité que le fonctionnaire, sur le cumul des salaires des membres. */
+    isGroupeCfe(): boolean {
+        return this.isGroupeNature() && this.state().demandeIndividuel?.demandeGroupe?.typeGroupe === 'CFE';
+    }
+
+    /** Natures/types dont l'instruction passe par l'analyse charges & quotité. */
+    necessiteAnalyseCharges(): boolean {
+        return this.isFonctionnaireNature() || this.isGroupeCfe();
     }
 
     /** Groupe agricole (CAS / CAS-R) : le bilan/flux est remplacé par l'analyse agricole. */

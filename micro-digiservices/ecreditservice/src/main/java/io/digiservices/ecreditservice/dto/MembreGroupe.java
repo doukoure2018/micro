@@ -27,4 +27,5 @@ public class MembreGroupe {
     private BigDecimal montantSollicite;
     private BigDecimal montantBasePe;
     private BigDecimal versementMensuelPe;
+    private BigDecimal salaireNetMensuel; // CFE : base de la quotité cumulée du groupe
 }

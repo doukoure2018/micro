@@ -219,6 +219,15 @@ export class DemandeGroupeComponent implements OnInit {
         if (type) {
             this.pret.tauxInteret = type.tauxDefaut; // pré-rempli mais modifiable
         }
+        if (this.isCfe()) {
+            // Même règle que le fonctionnaire individuel : mensuelle uniquement
+            this.pret.periodiciteRemboursement = 'Mensuelle';
+        }
+    }
+
+    /** CFE : cumul des salaires nets des membres = base de la quotité cessible du groupe (35 %). */
+    totalSalairesCfe(): number {
+        return this.membres.reduce((total, m) => total + (m.salaireNetMensuel || 0), 0);
     }
 
     // ==================== MEMBRES ====================

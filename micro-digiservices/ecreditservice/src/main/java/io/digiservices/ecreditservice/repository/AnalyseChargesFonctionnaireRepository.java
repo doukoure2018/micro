@@ -22,6 +22,8 @@ public interface AnalyseChargesFonctionnaireRepository {
             String periodiciteRemboursement,
             BigDecimal salaireNetMensuel,
             BigDecimal autresRevenus,
-            Boolean domiciliationSalaire) {
+            Boolean domiciliationSalaire,
+            String typeGroupe,
+            BigDecimal salairesGroupe) {
     }
 }

@@ -649,8 +649,9 @@ public class DemandeIndQuery {
     /** Insertion d'un membre du groupe (PreparedStatement positionnel, batch). */
     public static final String INSERT_MEMBRE_GROUPE_SQL = """
             INSERT INTO membre_groupe (demandeindividuel_id, numero_membre, nom_prenom,
-                montant_percevoir, montant_sollicite, montant_base_pe, versement_mensuel_pe)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+                montant_percevoir, montant_sollicite, montant_base_pe, versement_mensuel_pe,
+                salaire_net_mensuel)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """;
 
     /** Numéro de demande groupe incrémental : GRP-AAAA-NNNNN. */
@@ -685,7 +686,8 @@ public class DemandeIndQuery {
                    montant_percevoir      AS "montantPercevoir",
                    montant_sollicite      AS "montantSollicite",
                    montant_base_pe        AS "montantBasePe",
-                   versement_mensuel_pe   AS "versementMensuelPe"
+                   versement_mensuel_pe   AS "versementMensuelPe",
+                   salaire_net_mensuel    AS "salaireNetMensuel"
             FROM membre_groupe
             WHERE demandeindividuel_id = :demandeId
             ORDER BY membre_groupe_id

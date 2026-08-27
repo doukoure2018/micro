@@ -68,6 +68,8 @@ export interface MembreGroupe {
     montantSollicite?: number;
     montantBasePe?: number;
     versementMensuelPe?: number;
+    /** CFE : base de la quotité cumulée du groupe (V126) */
+    salaireNetMensuel?: number;
     /** État de la vérification asynchrone au SAF (front uniquement) */
     verification?: 'en_cours' | 'trouve' | 'introuvable';
 }

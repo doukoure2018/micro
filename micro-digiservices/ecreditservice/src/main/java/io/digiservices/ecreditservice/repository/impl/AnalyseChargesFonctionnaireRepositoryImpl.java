@@ -81,7 +81,9 @@ public class AnalyseChargesFonctionnaireRepositoryImpl implements AnalyseCharges
                             rs.getString("periodicite_remboursement"),
                             rs.getBigDecimal("salaire_net_mensuel"),
                             rs.getBigDecimal("autres_revenus"),
-                            rs.getObject("domiciliation_salaire") == null ? null : rs.getBoolean("domiciliation_salaire")))
+                            rs.getObject("domiciliation_salaire") == null ? null : rs.getBoolean("domiciliation_salaire"),
+                            rs.getString("type_groupe"),
+                            rs.getBigDecimal("salaires_groupe")))
                     .optional()
                     .orElse(null);
         } catch (EmptyResultDataAccessException e) {

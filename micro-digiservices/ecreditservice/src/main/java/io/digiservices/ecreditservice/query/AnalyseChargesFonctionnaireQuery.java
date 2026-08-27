@@ -13,9 +13,14 @@ public class AnalyseChargesFonctionnaireQuery {
                d.periodicite_remboursement,
                df.salaire_net_mensuel,
                df.autres_revenus,
-               df.domiciliation_salaire
+               df.domiciliation_salaire,
+               g.type_groupe,
+               (SELECT SUM(m.salaire_net_mensuel)
+                  FROM membre_groupe m
+                 WHERE m.demandeindividuel_id = d.demandeindividuel_id) AS salaires_groupe
         FROM demandeindividuel d
         LEFT JOIN demande_fonctionnaire df ON df.demandeindividuel_id = d.demandeindividuel_id
+        LEFT JOIN demande_groupe g ON g.demandeindividuel_id = d.demandeindividuel_id
         WHERE d.demandeindividuel_id = :demandeId
         """;
 
