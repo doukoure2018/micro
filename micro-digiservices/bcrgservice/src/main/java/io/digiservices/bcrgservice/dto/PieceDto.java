@@ -7,7 +7,8 @@ import lombok.NoArgsConstructor;
 
 /**
  * Pièce d'identité (feuille Piece du classeur PP) : TypPiece transcodé au
- * référentiel BCRG 01..09 ; date/lieu/pays d'émission non portés par le SI → ND.
+ * référentiel BCRG 01..09 ; émission non portée par le SI — v1.6 : date et pays
+ * (champs typés) → null, lieu (texte libre) → ND.
  */
 @Data
 @NoArgsConstructor
@@ -16,8 +17,8 @@ public class PieceDto {
     @JsonProperty("IdInterneClt") private String idInterneClt;
     @JsonProperty("TypPiece")     private String typPiece;     // 01..09
     @JsonProperty("NumPiece")     private String numPiece;
-    @JsonProperty("DatEmiPiece")  private String datEmiPiece;  // non porté → ND
-    @JsonProperty("LieuEmiPiece") private String lieuEmiPiece; // non porté → ND
-    @JsonProperty("PaysEmiPiece") private String paysEmiPiece; // non porté → ND
+    @JsonProperty("DatEmiPiece")  private String datEmiPiece;  // non porté → null (champ date)
+    @JsonProperty("LieuEmiPiece") private String lieuEmiPiece; // non porté → ND (texte libre)
+    @JsonProperty("PaysEmiPiece") private String paysEmiPiece; // non porté → null (référentiel pays)
     @JsonProperty("FinValPiece")  private String finValPiece;  // FEC_VENCIM (JJMMAAAA)
 }

@@ -82,12 +82,14 @@ public class RegulatoryController {
         return ResponseEntity.ok(regulatoryService.getPersonnesMoralesByIds(ids));
     }
 
+    // v1.6 : curseur keyset composite (agence, numero) — NUM_CREDITO seul n'est pas unique
     @GetMapping("/engagements/lot")
     public ResponseEntity<java.util.List<RegEngagementDto>> getEngagementsLot(
+            @RequestParam(name = "afterAgence", defaultValue = "") String afterAgence,
             @RequestParam(name = "afterId", defaultValue = "0") Long afterId,
             @RequestParam(name = "limit", defaultValue = "500") int limit) {
         validateLimit(limit);
-        return ResponseEntity.ok(regulatoryService.getEngagementsLot(afterId, limit));
+        return ResponseEntity.ok(regulatoryService.getEngagementsLot(afterAgence, afterId, limit));
     }
 
     private void validateLimit(int limit) {
@@ -127,10 +129,13 @@ public class RegulatoryController {
         return ResponseEntity.ok(regulatoryService.getEngagements(page, size));
     }
 
-    @GetMapping("/engagements/{numCredito}")
-    public ResponseEntity<RegEngagementDto> getEngagementById(@PathVariable("numCredito") Long numCredito) {
-        log.info("[REG] GET /engagements/{}", numCredito);
-        return ResponseEntity.ok(regulatoryService.getEngagementById(numCredito));
+    // v1.6 : detail par cle composite (agence, numero)
+    @GetMapping("/engagements/{codAgencia}/{numCredito}")
+    public ResponseEntity<RegEngagementDto> getEngagementById(
+            @PathVariable("codAgencia") String codAgencia,
+            @PathVariable("numCredito") Long numCredito) {
+        log.info("[REG] GET /engagements/{}/{}", codAgencia, numCredito);
+        return ResponseEntity.ok(regulatoryService.getEngagementById(codAgencia, numCredito));
     }
 
     @GetMapping("/encours")

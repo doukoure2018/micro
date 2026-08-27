@@ -40,4 +40,5 @@ public class RegEngagementDto {
     private LocalDate fecCancelacionCredito; // date de solde du credit (DatClo)
     private LocalDate fecPremiereEcheance; // premiere echeance du plan (DatPremEch)
     private BigDecimal mntInteretsTotal;   // somme des interets prevus du plan (MntInt)
+    private Integer joursEntreEcheances;   // ecart moyen en jours entre echeances (PeriodRemb, v1.6)
 }

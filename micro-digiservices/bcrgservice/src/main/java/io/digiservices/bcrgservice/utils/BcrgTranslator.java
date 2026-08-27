@@ -1,5 +1,6 @@
 package io.digiservices.bcrgservice.utils;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -19,6 +20,7 @@ import java.time.format.DateTimeFormatter;
  * face à des codes internes inconnus, avec une valeur de repli documentée par table.</p>
  */
 @Component
+@Slf4j
 public class BcrgTranslator {
 
     /**
@@ -27,6 +29,11 @@ public class BcrgTranslator {
      * Règle (retour BCRG + décision 2026-08-12) : champ sans source SI → "ND" ;
      * champ sourcé mais vide pour ce client → null ; champ conditionnel non
      * applicable (« doit rester vide sinon ») → null.
+     *
+     * <p><b>Restriction v1.6 (retours de validation du 2026-08-20)</b> : la plateforme
+     * contrôle la syntaxe AVANT l'obligation — "ND" dans un champ typé (date, numérique,
+     * taux, téléphone, référentiel) déclenche SYN001/SYN003/SYN004. ND est donc réservé
+     * aux champs TEXTE LIBRE ; un champ typé sans valeur reste null.</p>
      */
     public static final String ND = "ND";
 
@@ -56,9 +63,23 @@ public class BcrgTranslator {
     }
 
     /**
+     * Référence interne d'engagement déclarée à la BCRG, IDENTIQUE entre M2
+     * (engagement + bénéficiaire) et M4 (encours) : {@code <codAgence>-<numCredito>}.
+     * NUM_CREDITO seul n'est pas unique — la clé SAF de PR_CREDITOS est
+     * (COD_EMPRESA, COD_AGENCIA, NUM_CREDITO) — cause des rejets LOG008 du 2026-08-20
+     * (encours référencés hors de la plage des engagements déclarés).
+     */
+    public static String refIntEng(String codAgencia, Long numCredito) {
+        if (numCredito == null) return null;
+        String agence = codAgencia == null ? "" : codAgencia.trim();
+        return agence + "-" + numCredito;
+    }
+
+    /**
      * Normalisation du téléphone au format BCRG : '+224' ou '00224' suivi de 9 chiffres.
-     * Un numéro local nu (9 chiffres) est préfixé '+224' ; un numéro déjà international
-     * ou inexploitable est renvoyé nettoyé (espaces/tirets retirés).
+     * Un numéro local nu (9 chiffres) est préfixé '+224'.
+     * v1.6 : un numéro qui reste non conforme après nettoyage (8 chiffres historiques,
+     * format étranger) est renvoyé null — le transmettre déclenchait SYN003 sur Mobile.
      */
     public String normaliserMobile(String tel) {
         if (!StringUtils.hasText(tel)) return null;
@@ -66,8 +87,7 @@ public class BcrgTranslator {
         if (digits.matches("\\+224\\d{9}") || digits.matches("00224\\d{9}")) return digits;
         if (digits.matches("224\\d{9}")) return "+" + digits;
         if (digits.matches("\\d{9}")) return "+224" + digits;
-        // 8 chiffres historiques ou format etranger : renvoye nettoye (controle BCRG cote plateforme)
-        return digits;
+        return null;
     }
 
     /** IND_SEXO SAF -> Sexe BCRG (M/F). */
@@ -157,6 +177,22 @@ public class BcrgTranslator {
         if (lib.contains("EXTRATERRITORIAL") || lib.contains("AMBASSADE")) return "Q";
         if (lib.contains("SERVICE") || lib.contains("COLLECTIF") || lib.contains("PERSONNEL")) return "O";
         return null;
+    }
+
+    /**
+     * Secteur d'activité d'une personne morale : OBLIGATOIRE côté BCRG (272 rejets
+     * OBL002 sur SecActEcon le 2026-08-20). Repli TRANSITOIRE 'O' (services collectifs,
+     * sociaux et personnels — la clientèle PM du CRG est dominée par les associations
+     * et groupements) quand l'activité SAF est absente ou non transcodable ; les
+     * libellés non reconnus sont journalisés pour enrichir la table de mots-clés.
+     */
+    public String secteurNaemaPersonneMorale(String desActividad) {
+        String code = translateSecteurNaema(desActividad);
+        if (code != null) return code;
+        if (StringUtils.hasText(desActividad)) {
+            log.info("[BCRG] Activite PM non transcodee en NAEMA (repli 'O') : {}", desActividad.trim());
+        }
+        return "O";
     }
 
     /**
@@ -288,6 +324,25 @@ public class BcrgTranslator {
     /** Motif de clôture BCRG : X (annulé) → '06' Autre, sinon '01' Totalement remboursé. */
     public String motifCloture(String indEstado) {
         return "X".equalsIgnoreCase(indEstado == null ? "" : indEstado.trim()) ? "06" : "01";
+    }
+
+    /**
+     * Périodicité de remboursement dérivée du plan de paiement SAF : écart moyen en
+     * jours entre échéances ((MAX - MIN) / (nb - 1) sur PR_PLAN_PAGOS). Codes
+     * TRANSITOIRES en attente du référentiel BCRG des périodicités (même approche
+     * que QualiCre) : 01 hebdomadaire, 02 quinzaine, 03 mensuel, 04 trimestriel,
+     * 05 semestriel, 06 annuel, 07 échéance unique (in fine). Indéterminable → null
+     * (jamais "ND" : PeriodRemb est contrôlé au référentiel, 300 rejets SYN002).
+     */
+    public String translatePeriodicite(Integer joursEntreEcheances, Long cantCuotas) {
+        if (cantCuotas != null && cantCuotas == 1L) return "07";
+        if (joursEntreEcheances == null || joursEntreEcheances <= 0) return null;
+        if (joursEntreEcheances <= 9) return "01";
+        if (joursEntreEcheances <= 20) return "02";
+        if (joursEntreEcheances <= 45) return "03";
+        if (joursEntreEcheances <= 135) return "04";
+        if (joursEntreEcheances <= 270) return "05";
+        return "06";
     }
 
     /**

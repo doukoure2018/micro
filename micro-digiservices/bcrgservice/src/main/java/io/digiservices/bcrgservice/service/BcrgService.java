@@ -27,7 +27,13 @@ public interface BcrgService {
 
     PageDto<EngagementDto> getEngagements(int page, int size, boolean toutes);
 
-    EngagementDto getEngagement(Long refEng);
+    /** v1.6 : référence composite {@code <codAgence>-<numCredito>} (cf. BcrgTranslator.refIntEng). */
+    EngagementDto getEngagement(String refEng);
 
-    PageDto<EncoursDto> getEncours(String periode, int page, int size);
+    /**
+     * v1.6 : filtreDeclares (défaut) limite la photo aux engagements déjà notifiés
+     * traités (module ENGAGEMENT) — un encours sur un engagement inconnu du SIC
+     * est rejeté LOG008 par la plateforme.
+     */
+    PageDto<EncoursDto> getEncours(String periode, int page, int size, boolean filtreDeclares);
 }

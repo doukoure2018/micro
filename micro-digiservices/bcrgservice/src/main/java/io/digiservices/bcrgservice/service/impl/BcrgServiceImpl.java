@@ -8,6 +8,7 @@ import io.digiservices.bcrgservice.dto.PersonnePhysiqueDto;
 import io.digiservices.bcrgservice.repository.TraitementRepository;
 import io.digiservices.bcrgservice.service.BcrgService;
 import io.digiservices.bcrgservice.utils.BcrgMapper;
+import io.digiservices.bcrgservice.utils.BcrgTranslator;
 import io.digiservices.clients.EbankingRegClient;
 import io.digiservices.clients.reg.RegEngagementDto;
 import io.digiservices.clients.reg.RegPersonneMoraleDto;
@@ -179,25 +180,41 @@ public class BcrgServiceImpl implements BcrgService {
 
     // ==================== Engagements ====================
 
+    /**
+     * v1.6 — circuit ordonné PP/PM → Engagements → Encours (rejets du 2026-08-20 :
+     * 300 bénéficiaires inconnus du SIC) : par défaut (statut=restantes), un engagement
+     * n'est servi que si son bénéficiaire a déjà été notifié traité (module PP ou PM).
+     * statut=toutes reste l'extraction complète, sans aucun filtre (audit).
+     */
     @Override
     public PageDto<EngagementDto> getEngagements(int page, int size, boolean toutes) {
-        Set<String> traitees = toutes ? Set.of() : traitementRepository.findReferences(MODULE_ENG);
-        if (traitees.isEmpty()) {
+        if (toutes) {
             return mapper.toPage(ebankingRegClient.getEngagements(page, size), mapper::toEngagement);
         }
+        Set<String> traitees = traitementRepository.findReferences(MODULE_ENG);
+        Set<String> beneficiairesDeclares = new java.util.HashSet<>(traitementRepository.findReferences(MODULE_PP));
+        beneficiairesDeclares.addAll(traitementRepository.findReferences(MODULE_PM));
+        if (beneficiairesDeclares.isEmpty()) {
+            log.warn("Aucune personne PP/PM notifiee traitee : aucun engagement eligible "
+                    + "(declarer et notifier les personnes d'abord, ou utiliser statut=toutes)");
+            return new PageDto<>(List.of(), page, size, 0, 0, false, page > 0);
+        }
         long totalSaf = ebankingRegClient.getEngagements(0, 1).getTotalElements();
-        // Les lots engagements sont complets (pas de sous-listes) : on retient les DTO directement
+        // Les lots engagements sont complets (pas de sous-listes) : on retient les DTO directement.
+        // Curseur keyset composite (agence, numero) : NUM_CREDITO seul n'est pas unique.
         int aSauter = page * size;
         List<RegEngagementDto> retenus = new ArrayList<>();
-        Long cursor = 0L;
+        String cursorAgence = "";
+        Long cursorId = 0L;
         boolean hasNext = false;
         boolean fluxEpuise = false;
         while (!fluxEpuise) {
-            List<RegEngagementDto> lot = ebankingRegClient.getEngagementsLot(cursor, TAILLE_LOT);
+            List<RegEngagementDto> lot = ebankingRegClient.getEngagementsLot(cursorAgence, cursorId, TAILLE_LOT);
             if (lot.isEmpty()) break;
             for (RegEngagementDto dto : lot) {
-                String ref = dto.getNumCredito() != null ? String.valueOf(dto.getNumCredito()) : "";
-                if (traitees.contains(ref)) continue;
+                String ref = BcrgTranslator.refIntEng(dto.getCodAgencia(), dto.getNumCredito());
+                if (ref == null || traitees.contains(ref)) continue;
+                if (!beneficiairesDeclares.contains(dto.getCodCliente())) continue;
                 if (aSauter > 0) {
                     aSauter--;
                     continue;
@@ -210,7 +227,9 @@ public class BcrgServiceImpl implements BcrgService {
                     break;
                 }
             }
-            cursor = lot.get(lot.size() - 1).getNumCredito();
+            RegEngagementDto dernier = lot.get(lot.size() - 1);
+            cursorAgence = dernier.getCodAgencia() == null ? "" : dernier.getCodAgencia();
+            cursorId = dernier.getNumCredito();
             if (lot.size() < TAILLE_LOT) break;
         }
         List<EngagementDto> content = retenus.stream().map(mapper::toEngagement).toList();
@@ -218,16 +237,54 @@ public class BcrgServiceImpl implements BcrgService {
     }
 
     @Override
-    public EngagementDto getEngagement(Long refEng) {
-        return mapper.toEngagement(ebankingRegClient.getEngagementById(refEng));
+    public EngagementDto getEngagement(String refEng) {
+        RefComposite ref = RefComposite.parse(refEng);
+        return mapper.toEngagement(ebankingRegClient.getEngagementById(ref.codAgence(), ref.numCredito()));
     }
 
-    // ==================== Encours (photo mensuelle, toujours complete) ====================
+    /** Référence composite v1.6 {@code <codAgence>-<numCredito>} (cf. BcrgTranslator.refIntEng). */
+    private record RefComposite(String codAgence, Long numCredito) {
+        static RefComposite parse(String refEng) {
+            int sep = refEng == null ? -1 : refEng.lastIndexOf('-');
+            if (sep > 0 && sep < refEng.length() - 1) {
+                try {
+                    return new RefComposite(refEng.substring(0, sep), Long.valueOf(refEng.substring(sep + 1)));
+                } catch (NumberFormatException ignored) {
+                    // format invalide : traite ci-dessous
+                }
+            }
+            throw new io.digiservices.bcrgservice.exception.BadRequestException(
+                    "Reference d'engagement invalide (format attendu <codAgence>-<numero>) : " + refEng);
+        }
+    }
 
+    // ==================== Encours (photo mensuelle d'arrete) ====================
+
+    /**
+     * v1.6 : par défaut la photo est limitée aux engagements déjà notifiés traités
+     * (un encours sur un engagement inconnu du SIC est rejeté LOG008). La page peut
+     * donc contenir moins de {@code size} éléments : se fier à {@code hasNext} pour
+     * poursuivre le parcours. {@code filtre=aucun} restitue la photo complète (audit).
+     */
     @Override
-    public PageDto<EncoursDto> getEncours(String periode, int page, int size) {
+    public PageDto<EncoursDto> getEncours(String periode, int page, int size, boolean filtreDeclares) {
         java.time.LocalDate arrete = parseArrete(periode);
-        return mapper.toPage(ebankingRegClient.getEncours(periode, page, size), s -> mapper.toEncours(s, arrete));
+        var src = ebankingRegClient.getEncours(periode, page, size);
+        if (!filtreDeclares) {
+            return mapper.toPage(src, s -> mapper.toEncours(s, arrete));
+        }
+        Set<String> engagementsDeclares = traitementRepository.findReferences(MODULE_ENG);
+        if (engagementsDeclares.isEmpty()) {
+            log.warn("Aucun engagement notifie traite : encours vide "
+                    + "(declarer et notifier les engagements d'abord, ou utiliser filtre=aucun)");
+        }
+        List<EncoursDto> content = (src.getContent() == null ? List.<io.digiservices.clients.reg.RegEncoursDto>of()
+                : src.getContent()).stream()
+                .filter(s -> engagementsDeclares.contains(BcrgTranslator.refIntEng(s.getCodAgencia(), s.getNumCredito())))
+                .map(s -> mapper.toEncours(s, arrete))
+                .toList();
+        return new PageDto<>(content, src.getPage(), src.getSize(), src.getTotalElements(),
+                src.getTotalPages(), src.isHasNext(), src.isHasPrevious());
     }
 
     /** Dernier jour du mois d'arrêté (AAAA-MM) ; null si le format est invalide (ebanking répondra 400). */

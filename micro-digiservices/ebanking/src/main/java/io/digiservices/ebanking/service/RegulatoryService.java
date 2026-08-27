@@ -25,7 +25,7 @@ public interface RegulatoryService {
 
     java.util.List<RegPersonneMoraleDto> getPersonnesMoralesByIds(java.util.List<String> ids);
 
-    java.util.List<RegEngagementDto> getEngagementsLot(Long afterId, int limit);
+    java.util.List<RegEngagementDto> getEngagementsLot(String afterAgence, Long afterId, int limit);
 
     PageDto<RegPersonneMoraleDto> getPersonnesMorales(int page, int size);
 
@@ -33,7 +33,7 @@ public interface RegulatoryService {
 
     PageDto<RegEngagementDto> getEngagements(int page, int size);
 
-    RegEngagementDto getEngagementById(Long numCredito);
+    RegEngagementDto getEngagementById(String codAgencia, Long numCredito);
 
     PageDto<RegEncoursDto> getEncours(String periode, int page, int size);
 }

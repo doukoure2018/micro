@@ -42,8 +42,9 @@ public interface EbankingRegClient {
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size);
 
-    @GetMapping("/ebanking/reg/engagements/{numCredito}")
-    RegEngagementDto getEngagementById(@PathVariable("numCredito") Long numCredito);
+    @GetMapping("/ebanking/reg/engagements/{codAgencia}/{numCredito}")
+    RegEngagementDto getEngagementById(@PathVariable("codAgencia") String codAgencia,
+                                       @PathVariable("numCredito") Long numCredito);
 
     @GetMapping("/ebanking/reg/encours")
     PageDto<RegEncoursDto> getEncours(
@@ -73,6 +74,7 @@ public interface EbankingRegClient {
 
     @GetMapping("/ebanking/reg/engagements/lot")
     java.util.List<RegEngagementDto> getEngagementsLot(
+            @RequestParam(value = "afterAgence", defaultValue = "") String afterAgence,
             @RequestParam(value = "afterId", defaultValue = "0") Long afterId,
             @RequestParam(value = "limit", defaultValue = "500") int limit);
 }

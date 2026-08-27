@@ -51,9 +51,16 @@ public class RegulatoryRepository {
     //  Personnes physiques (CL_CLIENTES + CL_PERSONAS_FISICAS)
     // ============================================================
 
+    // v1.6 : Mobile obligatoire cote BCRG -> repli sur les telephones secondaires SAF
+    private static final String TEL_COALESCE =
+            "COALESCE(NULLIF(LTRIM(RTRIM(c.TEL_PRINCIPAL)), ''), " +
+            "NULLIF(LTRIM(RTRIM(c.TEL_SECUNDARIO)), ''), " +
+            "NULLIF(LTRIM(RTRIM(c.TEL_OTRO)), '')) AS TEL_PRINCIPAL";
+
     private static final String PP_SELECT = """
             SELECT c.COD_EMPRESA, c.COD_CLIENTE, c.NOM_CLIENTE, c.IND_PERSONA,
-                   c.IND_RELACION, c.TEL_PRINCIPAL, c.FEC_INGRESO,
+                   c.IND_RELACION, """ + TEL_COALESCE + """
+            , c.FEC_INGRESO,
                    c.COD_AGENCIA, ag.DES_AGENCIA,
                    pf.PRIMER_NOMBRE, pf.SEGUNDO_NOMBRE, pf.PRIMER_APELLIDO, pf.SEGUNDO_APELLIDO,
                    pf.IND_SEXO, pf.EST_CIVIL, pf.NACIONALIDAD, pf.LUGAR_NACIMIENTO,
@@ -101,7 +108,8 @@ public class RegulatoryRepository {
 
     private static final String PM_SELECT = """
             SELECT c.COD_EMPRESA, c.COD_CLIENTE, c.NOM_CLIENTE, c.IND_PERSONA,
-                   c.IND_RELACION, c.TEL_PRINCIPAL, c.FEC_INGRESO,
+                   c.IND_RELACION, """ + TEL_COALESCE + """
+            , c.FEC_INGRESO,
                    c.COD_AGENCIA, ag.DES_AGENCIA,
                    pj.RAZON_SOCIAL, pj.NOM_COMERCIAL, pj.CLASE_SOCIEDAD, cs.DES_SOCIEDAD,
                    pj.COD_ACTIVIDAD, act.DES_ACTIVIDAD, pj.COD_SECTOR
@@ -208,6 +216,9 @@ public class RegulatoryRepository {
 
     // v1.3 : montant decaisse, date de solde et derivations du plan de paiement
     // (premiere echeance, total des interets prevus) pour le contrat M2 BCRG.
+    // v1.6 : ecart moyen entre echeances (PeriodRemb) ; les credits jamais decaisses
+    // (FEC_PRIMER_DESEMBOLSO null, pas de date de mise en place) sont exclus de M2 —
+    // 22 rejets dateMEP le 2026-08-20 ; un engagement non mis en place n'est pas declarable.
     private static final String ENG_SELECT = """
             SELECT cr.COD_EMPRESA, cr.COD_AGENCIA, cr.NUM_CREDITO, cr.COD_CLIENTE,
                    c.NOM_CLIENTE, c.IND_PERSONA,
@@ -220,24 +231,34 @@ public class RegulatoryRepository {
                        AND pp.NUM_CREDITO = cr.NUM_CREDITO AND pp.NUM_CUOTA <> 0) AS FEC_PREM_ECH,
                    (SELECT SUM(pp.MON_INT) FROM PR.PR_PLAN_PAGOS pp
                      WHERE pp.COD_EMPRESA = cr.COD_EMPRESA AND pp.COD_AGENCIA = cr.COD_AGENCIA
-                       AND pp.NUM_CREDITO = cr.NUM_CREDITO AND pp.NUM_CUOTA <> 0) AS MNT_INT_TOTAL
+                       AND pp.NUM_CREDITO = cr.NUM_CREDITO AND pp.NUM_CUOTA <> 0) AS MNT_INT_TOTAL,
+                   (SELECT DATEDIFF(day, MIN(pp.FEC_CUOTA), MAX(pp.FEC_CUOTA)) / NULLIF(COUNT(*) - 1, 0)
+                     FROM PR.PR_PLAN_PAGOS pp
+                     WHERE pp.COD_EMPRESA = cr.COD_EMPRESA AND pp.COD_AGENCIA = cr.COD_AGENCIA
+                       AND pp.NUM_CREDITO = cr.NUM_CREDITO AND pp.NUM_CUOTA <> 0) AS JOURS_ENTRE_ECH
             FROM PR.PR_CREDITOS cr
             INNER JOIN CL.CL_CLIENTES c
                 ON cr.COD_EMPRESA = c.COD_EMPRESA AND cr.COD_CLIENTE = c.COD_CLIENTE
+            WHERE cr.FEC_PRIMER_DESEMBOLSO IS NOT NULL
             """;
 
-    private static final String SQL_COUNT_ENG = "SELECT COUNT(*) FROM PR.PR_CREDITOS cr";
+    private static final String SQL_COUNT_ENG =
+            "SELECT COUNT(*) FROM PR.PR_CREDITOS cr WHERE cr.FEC_PRIMER_DESEMBOLSO IS NOT NULL";
 
     private static final String SQL_FIND_ENG = ENG_SELECT + """
             ORDER BY cr.FEC_APERTURA DESC, cr.NUM_CREDITO DESC
             OFFSET :offset ROWS FETCH NEXT :size ROWS ONLY
             """;
 
-    private static final String SQL_FIND_ENG_BY_ID = ENG_SELECT + " WHERE cr.NUM_CREDITO = :numCredito";
+    // v1.6 : la cle SAF d'un credit est (COD_EMPRESA, COD_AGENCIA, NUM_CREDITO) —
+    // NUM_CREDITO seul n'est pas unique inter-agences ; detail et keyset composites.
+    private static final String SQL_FIND_ENG_BY_ID = ENG_SELECT +
+            " AND cr.COD_AGENCIA = :codAgencia AND cr.NUM_CREDITO = :numCredito";
 
     private static final String SQL_FIND_ENG_LOT = ENG_SELECT + """
-            WHERE cr.NUM_CREDITO > :afterId
-            ORDER BY cr.NUM_CREDITO
+             AND (cr.COD_AGENCIA > :afterAgence
+                  OR (cr.COD_AGENCIA = :afterAgence AND cr.NUM_CREDITO > :afterId))
+            ORDER BY cr.COD_AGENCIA, cr.NUM_CREDITO
             OFFSET 0 ROWS FETCH NEXT :limit ROWS ONLY
             """;
 
@@ -445,16 +466,19 @@ public class RegulatoryRepository {
         return execute("findEngagements", () -> primary.query(SQL_FIND_ENG, p, ENG_MAPPER));
     }
 
-    /** Lot keyset pour l'extraction filtree "restantes". */
-    public List<RegEngagementDto> findEngagementsLot(Long afterId, int limit) {
+    /** Lot keyset pour l'extraction filtree "restantes" — curseur composite (agence, numero). */
+    public List<RegEngagementDto> findEngagementsLot(String afterAgence, Long afterId, int limit) {
         MapSqlParameterSource p = new MapSqlParameterSource()
+                .addValue("afterAgence", afterAgence == null ? "" : afterAgence)
                 .addValue("afterId", afterId == null ? 0L : afterId)
                 .addValue("limit", limit);
         return execute("findEngagementsLot", () -> primary.query(SQL_FIND_ENG_LOT, p, ENG_MAPPER));
     }
 
-    public RegEngagementDto findEngagementById(Long numCredito) {
-        MapSqlParameterSource p = new MapSqlParameterSource("numCredito", numCredito);
+    public RegEngagementDto findEngagementById(String codAgencia, Long numCredito) {
+        MapSqlParameterSource p = new MapSqlParameterSource()
+                .addValue("codAgencia", codAgencia)
+                .addValue("numCredito", numCredito);
         return execute("findEngagementById", () -> first(primary.query(SQL_FIND_ENG_BY_ID, p, ENG_MAPPER)));
     }
 
@@ -657,6 +681,7 @@ public class RegulatoryRepository {
         d.setFecCancelacionCredito(dt(rs, "FEC_CANCELACION"));
         d.setFecPremiereEcheance(dt(rs, "FEC_PREM_ECH"));
         d.setMntInteretsTotal(dec(rs, "MNT_INT_TOTAL"));
+        d.setJoursEntreEcheances(intObj(rs, "JOURS_ENTRE_ECH"));
         return d;
     };
 

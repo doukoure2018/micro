@@ -1,0 +1,917 @@
+CHAMP;CODE;DESIGNATION;LIBELLE;REFINTENG;TYPE;VALEURACTUEL
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540631;Erreur;558
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540753;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540631;Erreur;3
+dateMEP;OBL002;;Champ obligatoire manquant;540631;Erreur;
+dateMEP;SYN003;Ce champ doit etre composé de chiffre sur 8 positions;Syntaxe spécifique non respectée;540631;Erreur;
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540631;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540623;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540625;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540623;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540622;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540617;Erreur;29
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540617;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540753;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540617;Erreur;324
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540620;Erreur;558
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540625;Erreur;33
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540622;Erreur;66
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540620;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540603;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540618;Erreur;424
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540603;Erreur;10
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540603;Erreur;323
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540595;Erreur;33
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540595;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540618;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540595;Erreur;803
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540620;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540597;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540594;Erreur;10
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540597;Erreur;803
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540597;Erreur;33
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540625;Erreur;801
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540590;Erreur;10
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540590;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540590;Erreur;323
+dateMEP;SYN004;Format attendu pour les dates est JJMMAAAA;Date invalide;540631;Erreur;
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540593;Erreur;56
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540622;Erreur;803
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540589;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540593;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540593;Erreur;910
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540594;Erreur;323
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540618;Erreur;10
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540594;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540623;Erreur;529
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540587;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540591;Erreur;56
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540591;Erreur;201
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540589;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540580;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540589;Erreur;420
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540580;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540587;Erreur;420
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540587;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540580;Erreur;420
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540588;Erreur;803
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540883;Erreur;558
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540591;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540884;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540884;Erreur;558
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540885;Erreur;64
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540588;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540884;Erreur;58
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540822;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540885;Erreur;558
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540588;Erreur;58
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540880;Erreur;6
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540822;Erreur;6
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540885;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540880;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540883;Erreur;58
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540881;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540881;Erreur;920
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540882;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540882;Erreur;920
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540883;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540822;Erreur;920
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540879;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540879;Erreur;920
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540834;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540834;Erreur;920
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540830;Erreur;58
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540830;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540830;Erreur;920
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540881;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540816;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540816;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540811;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540882;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540687;Erreur;58
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540687;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540811;Erreur;920
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540816;Erreur;920
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540834;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540688;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540688;Erreur;58
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540686;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540686;Erreur;523
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540687;Erreur;523
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540879;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540880;Erreur;920
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540684;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540688;Erreur;523
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540685;Erreur;523
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540686;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540684;Erreur;58
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540811;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540683;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540683;Erreur;58
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540681;Erreur;523
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540684;Erreur;523
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540681;Erreur;58
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540682;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540878;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540681;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540685;Erreur;58
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540683;Erreur;523
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540682;Erreur;31
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540682;Erreur;523
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540876;Erreur;56
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540685;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540876;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540875;Erreur;10
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540875;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540877;Erreur;426
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540874;Erreur;10
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540874;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540874;Erreur;424
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540878;Erreur;426
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540873;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540878;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540872;Erreur;58
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540877;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540871;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540875;Erreur;424
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540876;Erreur;321
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540873;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540868;Erreur;715
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540872;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540877;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540869;Erreur;10
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540871;Erreur;715
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540870;Erreur;56
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540870;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540870;Erreur;321
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540868;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540869;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540871;Erreur;ND
+dateMEP;SYN003;Ce champ doit etre composé de chiffre sur 8 positions;Syntaxe spécifique non respectée;540867;Erreur;
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540873;Erreur;426
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540867;Erreur;28
+dateMEP;OBL002;;Champ obligatoire manquant;540867;Erreur;
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540869;Erreur;424
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540867;Erreur;321
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540865;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540865;Erreur;424
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540864;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540868;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540864;Erreur;321
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540863;Erreur;715
+dateMEP;SYN003;Ce champ doit etre composé de chiffre sur 8 positions;Syntaxe spécifique non respectée;540866;Erreur;
+dateMEP;SYN004;Format attendu pour les dates est JJMMAAAA;Date invalide;540867;Erreur;
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540865;Erreur;10
+dateMEP;SYN004;Format attendu pour les dates est JJMMAAAA;Date invalide;540866;Erreur;
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540866;Erreur;2
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540866;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540864;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540862;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540863;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540862;Erreur;321
+dateMEP;OBL002;;Champ obligatoire manquant;540866;Erreur;
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540862;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540860;Erreur;422
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540861;Erreur;10
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540861;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540866;Erreur;705
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540867;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540860;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540860;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540853;Erreur;66
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540847;Erreur;66
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540863;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540861;Erreur;424
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540853;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540853;Erreur;701
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540858;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540858;Erreur;321
+dateMEP;OBL002;;Champ obligatoire manquant;540859;Erreur;
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540847;Erreur;701
+dateMEP;SYN003;Ce champ doit etre composé de chiffre sur 8 positions;Syntaxe spécifique non respectée;540859;Erreur;
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540858;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540857;Erreur;66
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540847;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540857;Erreur;701
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540856;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540856;Erreur;424
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540859;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540859;Erreur;715
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540855;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540856;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540855;Erreur;321
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540851;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540851;Erreur;322
+dateMEP;OBL002;;Champ obligatoire manquant;540854;Erreur;
+dateMEP;SYN004;Format attendu pour les dates est JJMMAAAA;Date invalide;540854;Erreur;
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540855;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540859;Erreur;ND
+dateMEP;SYN004;Format attendu pour les dates est JJMMAAAA;Date invalide;540859;Erreur;
+dateMEP;SYN003;Ce champ doit etre composé de chiffre sur 8 positions;Syntaxe spécifique non respectée;540854;Erreur;
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540857;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540854;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540851;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540850;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540850;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540850;Erreur;321
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540852;Erreur;958
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540846;Erreur;33
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540846;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540852;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540846;Erreur;803
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540849;Erreur;66
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540849;Erreur;701
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540848;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540848;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540848;Erreur;604
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540842;Erreur;33
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540842;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540842;Erreur;803
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540838;Erreur;33
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540838;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540838;Erreur;803
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540845;Erreur;58
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540845;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540845;Erreur;802
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540839;Erreur;58
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540839;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540839;Erreur;802
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540844;Erreur;6
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540852;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540854;Erreur;58
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540843;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540843;Erreur;321
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540841;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540844;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540841;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540841;Erreur;424
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540840;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540840;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540840;Erreur;604
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540810;Erreur;58
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540849;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540843;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540835;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540835;Erreur;56
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540810;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540854;Erreur;802
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540810;Erreur;513
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540836;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540805;Erreur;58
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540828;Erreur;33
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540844;Erreur;958
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540805;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540836;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540828;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540835;Erreur;704
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540823;Erreur;64
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540832;Erreur;704
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540805;Erreur;513
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540828;Erreur;704
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540837;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540832;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540833;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540823;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540832;Erreur;33
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540833;Erreur;424
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540827;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540827;Erreur;803
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540831;Erreur;58
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540831;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540837;Erreur;958
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540831;Erreur;702
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540827;Erreur;58
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540821;Erreur;66
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540821;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540826;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540837;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540826;Erreur;58
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540836;Erreur;612
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540829;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540829;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540829;Erreur;424
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540773;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540773;Erreur;612
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540773;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540762;Erreur;62
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540826;Erreur;962
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540825;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540833;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540762;Erreur;426
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540821;Erreur;803
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540825;Erreur;705
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540823;Erreur;704
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540820;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540819;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540818;Erreur;10
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540820;Erreur;64
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540818;Erreur;424
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540824;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540807;Erreur;64
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540807;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540825;Erreur;39
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540819;Erreur;8
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540817;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540824;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540817;Erreur;803
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540815;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540815;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540815;Erreur;321
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540817;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540814;Erreur;29
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540814;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540814;Erreur;324
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540813;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540824;Erreur;552
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540818;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540806;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540806;Erreur;604
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540812;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540813;Erreur;529
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540806;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540809;Erreur;ND
+dateMEP;OBL002;;Champ obligatoire manquant;540808;Erreur;
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540809;Erreur;552
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540813;Erreur;6
+dateMEP;SYN003;Ce champ doit etre composé de chiffre sur 8 positions;Syntaxe spécifique non respectée;540808;Erreur;
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540762;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540808;Erreur;3
+dateMEP;SYN004;Format attendu pour les dates est JJMMAAAA;Date invalide;540808;Erreur;
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540807;Erreur;803
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540808;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540812;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540803;Erreur;803
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540804;Erreur;803
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540802;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540804;Erreur;58
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540800;Erreur;58
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540803;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540802;Erreur;552
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540800;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540809;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540800;Erreur;513
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540798;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540798;Erreur;513
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540801;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540801;Erreur;424
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540788;Erreur;58
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540798;Erreur;58
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540788;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540788;Erreur;415
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540803;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540785;Erreur;10
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540804;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540785;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540785;Erreur;415
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540779;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540779;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540776;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540802;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540776;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540776;Erreur;415
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540775;Erreur;415
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540775;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540758;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540758;Erreur;612
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540769;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540779;Erreur;415
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540769;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540769;Erreur;415
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540767;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540767;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540799;Erreur;56
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540799;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540801;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540797;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540799;Erreur;235
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540797;Erreur;705
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540796;Erreur;56
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540808;Erreur;801
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540796;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540796;Erreur;803
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540765;Erreur;415
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540765;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540775;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540761;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540761;Erreur;415
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540758;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540756;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540761;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540767;Erreur;415
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540756;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540797;Erreur;6
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540756;Erreur;415
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540794;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540765;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540689;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540794;Erreur;66
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540795;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540793;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540795;Erreur;56
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540793;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540792;Erreur;64
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540792;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540791;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540791;Erreur;552
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540795;Erreur;235
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540763;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540794;Erreur;701
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540791;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540790;Erreur;28
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540790;Erreur;342
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540789;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540789;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540689;Erreur;415
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540772;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540790;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540766;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540766;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540789;Erreur;355
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540757;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540757;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540786;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540763;Erreur;10
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540786;Erreur;919
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540772;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540783;Erreur;58
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540783;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540689;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540786;Erreur;56
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540624;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540782;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540782;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540782;Erreur;552
+dateMEP;OBL002;;Champ obligatoire manquant;540784;Erreur;
+dateMEP;SYN003;Ce champ doit etre composé de chiffre sur 8 positions;Syntaxe spécifique non respectée;540784;Erreur;
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540787;Erreur;ND
+dateMEP;SYN004;Format attendu pour les dates est JJMMAAAA;Date invalide;540784;Erreur;
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540784;Erreur;33
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540763;Erreur;355
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540784;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540760;Erreur;6
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540760;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540781;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540781;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540781;Erreur;355
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540407;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540407;Erreur;612
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540749;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540760;Erreur;612
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540787;Erreur;355
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540624;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540407;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540749;Erreur;ND
+dateMEP;SYN003;Ce champ doit etre composé de chiffre sur 8 positions;Syntaxe spécifique non respectée;540780;Erreur;
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540780;Erreur;33
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540745;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540787;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540743;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540743;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540750;Erreur;3
+dateMEP;SYN004;Format attendu pour les dates est JJMMAAAA;Date invalide;540780;Erreur;
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540739;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540735;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540734;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540735;Erreur;ND
+dateMEP;OBL002;;Champ obligatoire manquant;540780;Erreur;
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540732;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540730;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540728;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540745;Erreur;ND
+dateMEP;OBL002;;Champ obligatoire manquant;540778;Erreur;
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540750;Erreur;ND
+dateMEP;SYN003;Ce champ doit etre composé de chiffre sur 8 positions;Syntaxe spécifique non respectée;540778;Erreur;
+dateMEP;SYN004;Format attendu pour les dates est JJMMAAAA;Date invalide;540778;Erreur;
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540734;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540778;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540778;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540778;Erreur;415
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540780;Erreur;ND
+dateMEP;OBL002;;Champ obligatoire manquant;540777;Erreur;
+dateMEP;SYN004;Format attendu pour les dates est JJMMAAAA;Date invalide;540777;Erreur;
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540732;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540777;Erreur;33
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540777;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540774;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540771;Erreur;57
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540771;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540754;Erreur;31
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540754;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540754;Erreur;801
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540730;Erreur;ND
+dateMEP;OBL002;;Champ obligatoire manquant;540770;Erreur;
+dateMEP;SYN003;Ce champ doit etre composé de chiffre sur 8 positions;Syntaxe spécifique non respectée;540777;Erreur;
+dateMEP;SYN004;Format attendu pour les dates est JJMMAAAA;Date invalide;540770;Erreur;
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540728;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540770;Erreur;33
+dateMEP;OBL002;;Champ obligatoire manquant;540768;Erreur;
+dateMEP;SYN003;Ce champ doit etre composé de chiffre sur 8 positions;Syntaxe spécifique non respectée;540768;Erreur;
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540768;Erreur;33
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540739;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540497;Erreur;10
+dateMEP;SYN004;Format attendu pour les dates est JJMMAAAA;Date invalide;540768;Erreur;
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540770;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540764;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540764;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540755;Erreur;8
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540752;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540752;Erreur;420
+dateMEP;OBL002;;Champ obligatoire manquant;540759;Erreur;
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540755;Erreur;ND
+dateMEP;SYN003;Ce champ doit etre composé de chiffre sur 8 positions;Syntaxe spécifique non respectée;540759;Erreur;
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540497;Erreur;423
+dateMEP;SYN004;Format attendu pour les dates est JJMMAAAA;Date invalide;540759;Erreur;
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540774;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540759;Erreur;33
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540768;Erreur;ND
+dateMEP;SYN003;Ce champ doit etre composé de chiffre sur 8 positions;Syntaxe spécifique non respectée;540770;Erreur;
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540752;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540497;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540724;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540724;Erreur;419
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540727;Erreur;33
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540759;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540727;Erreur;419
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540722;Erreur;419
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540751;Erreur;58
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540721;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540724;Erreur;33
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540721;Erreur;33
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540722;Erreur;33
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540722;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540731;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540751;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540727;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540718;Erreur;419
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540719;Erreur;33
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540719;Erreur;419
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540707;Erreur;419
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540718;Erreur;33
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540707;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540704;Erreur;33
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540704;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540704;Erreur;419
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540702;Erreur;33
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540702;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540702;Erreur;419
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540731;Erreur;33
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540701;Erreur;33
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540701;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540747;Erreur;58
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540747;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540699;Erreur;33
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540699;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540699;Erreur;419
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540718;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540696;Erreur;419
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540696;Erreur;33
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540694;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540719;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540691;Erreur;33
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540721;Erreur;419
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540691;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540691;Erreur;419
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540694;Erreur;419
+dateMEP;SYN003;Ce champ doit etre composé de chiffre sur 8 positions;Syntaxe spécifique non respectée;540748;Erreur;
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540748;Erreur;3
+dateMEP;OBL002;;Champ obligatoire manquant;540748;Erreur;
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540748;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540696;Erreur;ND
+dateMEP;OBL002;;Champ obligatoire manquant;540746;Erreur;
+dateMEP;SYN003;Ce champ doit etre composé de chiffre sur 8 positions;Syntaxe spécifique non respectée;540746;Erreur;
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540694;Erreur;33
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540744;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540707;Erreur;33
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540741;Erreur;10
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540746;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540741;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540746;Erreur;33
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540575;Erreur;423
+dateMEP;OBL002;;Champ obligatoire manquant;540742;Erreur;
+dateMEP;SYN003;Ce champ doit etre composé de chiffre sur 8 positions;Syntaxe spécifique non respectée;540742;Erreur;
+dateMEP;SYN004;Format attendu pour les dates est JJMMAAAA;Date invalide;540746;Erreur;
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540741;Erreur;715
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540744;Erreur;ND
+dateMEP;SYN004;Format attendu pour les dates est JJMMAAAA;Date invalide;540742;Erreur;
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540742;Erreur;33
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540575;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540575;Erreur;10
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540733;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540729;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540742;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540725;Erreur;702
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540733;Erreur;10
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540701;Erreur;419
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540725;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540733;Erreur;323
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540726;Erreur;ND
+dateMEP;SYN004;Format attendu pour les dates est JJMMAAAA;Date invalide;540748;Erreur;
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540726;Erreur;715
+dateMEP;SYN004;Format attendu pour les dates est JJMMAAAA;Date invalide;540723;Erreur;
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540725;Erreur;56
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540729;Erreur;33
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540723;Erreur;ND
+dateMEP;SYN003;Ce champ doit etre composé de chiffre sur 8 positions;Syntaxe spécifique non respectée;540723;Erreur;
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540680;Erreur;954
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540680;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540680;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540729;Erreur;419
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540679;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540720;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540720;Erreur;419
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540717;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540717;Erreur;33
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540720;Erreur;33
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540716;Erreur;419
+dateMEP;OBL002;;Champ obligatoire manquant;540723;Erreur;
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540716;Erreur;33
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540717;Erreur;419
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540679;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540715;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540726;Erreur;10
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540715;Erreur;811
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540723;Erreur;33
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540679;Erreur;954
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540712;Erreur;811
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540712;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540710;Erreur;66
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540710;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540716;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540714;Erreur;66
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540710;Erreur;811
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540708;Erreur;66
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540708;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540714;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540708;Erreur;811
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540705;Erreur;66
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540705;Erreur;811
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540713;Erreur;33
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540713;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540711;Erreur;419
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540711;Erreur;33
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540705;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540715;Erreur;66
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540713;Erreur;419
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540709;Erreur;33
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540709;Erreur;419
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540712;Erreur;66
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540706;Erreur;419
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540706;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540703;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540711;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540698;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540700;Erreur;419
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540703;Erreur;33
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540698;Erreur;811
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540714;Erreur;811
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540700;Erreur;33
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540697;Erreur;66
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540697;Erreur;811
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540709;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540697;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540695;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540695;Erreur;811
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540695;Erreur;66
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540693;Erreur;811
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540692;Erreur;66
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540693;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540690;Erreur;66
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540698;Erreur;66
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540690;Erreur;811
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540692;Erreur;811
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540692;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540703;Erreur;419
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540528;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540528;Erreur;66
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540528;Erreur;701
+dateMEP;SYN004;Format attendu pour les dates est JJMMAAAA;Date invalide;540526;Erreur;
+dateMEP;OBL002;;Champ obligatoire manquant;540526;Erreur;
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540526;Erreur;811
+dateMEP;SYN003;Ce champ doit etre composé de chiffre sur 8 positions;Syntaxe spécifique non respectée;540526;Erreur;
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540700;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540690;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540706;Erreur;33
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540678;Erreur;420
+dateMEP;OBL002;;Champ obligatoire manquant;540677;Erreur;
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540678;Erreur;ND
+dateMEP;SYN004;Format attendu pour les dates est JJMMAAAA;Date invalide;540677;Erreur;
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540526;Erreur;ND
+dateMEP;SYN003;Ce champ doit etre composé de chiffre sur 8 positions;Syntaxe spécifique non respectée;540677;Erreur;
+dateMEP;SYN003;Ce champ doit etre composé de chiffre sur 8 positions;Syntaxe spécifique non respectée;540676;Erreur;
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540677;Erreur;954
+dateMEP;OBL002;;Champ obligatoire manquant;540676;Erreur;
+dateMEP;SYN004;Format attendu pour les dates est JJMMAAAA;Date invalide;540676;Erreur;
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540676;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540676;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540676;Erreur;954
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540673;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540675;Erreur;424
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540673;Erreur;709
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540672;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540673;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540672;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540675;Erreur;10
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540674;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540672;Erreur;420
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540674;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540674;Erreur;420
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540669;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540669;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540693;Erreur;66
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540662;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540669;Erreur;420
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540659;Erreur;10
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540675;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540662;Erreur;323
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540662;Erreur;10
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540666;Erreur;10
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540677;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540666;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540671;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540671;Erreur;10
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540671;Erreur;323
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540664;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540663;Erreur;10
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540678;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540666;Erreur;323
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540663;Erreur;323
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540664;Erreur;323
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540660;Erreur;10
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540664;Erreur;10
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540526;Erreur;66
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540660;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540670;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540670;Erreur;709
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540657;Erreur;58
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540670;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540667;Erreur;419
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540667;Erreur;66
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540668;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540668;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540657;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540660;Erreur;323
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540665;Erreur;803
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540668;Erreur;420
+dateMEP;OBL002;;Champ obligatoire manquant;540661;Erreur;
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540659;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540663;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540665;Erreur;66
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540661;Erreur;8
+dateMEP;SYN004;Format attendu pour les dates est JJMMAAAA;Date invalide;540661;Erreur;
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540677;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540658;Erreur;701
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540667;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540656;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540658;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540665;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540656;Erreur;330
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540656;Erreur;31
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540655;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540655;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540654;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540654;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540653;Erreur;323
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540653;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540659;Erreur;323
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540652;Erreur;10
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540652;Erreur;323
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540652;Erreur;ND
+dateMEP;SYN003;Ce champ doit etre composé de chiffre sur 8 positions;Syntaxe spécifique non respectée;540661;Erreur;
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540649;Erreur;10
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540661;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540651;Erreur;10
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540649;Erreur;323
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540658;Erreur;66
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540650;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540648;Erreur;28
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540648;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540645;Erreur;10
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540650;Erreur;803
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540645;Erreur;323
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540648;Erreur;801
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540638;Erreur;10
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540651;Erreur;323
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540638;Erreur;323
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540638;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540647;Erreur;534
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540646;Erreur;10
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540647;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540647;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540646;Erreur;424
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540653;Erreur;10
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540628;Erreur;420
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540621;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540628;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540621;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540646;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540651;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540621;Erreur;420
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540611;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540611;Erreur;420
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540579;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540611;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540604;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540604;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540604;Erreur;420
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540628;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540642;Erreur;323
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540579;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540641;Erreur;10
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540642;Erreur;10
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540641;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540649;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540634;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540634;Erreur;323
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540634;Erreur;10
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540579;Erreur;420
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540641;Erreur;323
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540619;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540626;Erreur;10
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540632;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540626;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540632;Erreur;10
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540619;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540644;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540644;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540643;Erreur;201
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540643;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540643;Erreur;57
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540632;Erreur;323
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540644;Erreur;801
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540642;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540626;Erreur;323
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540640;Erreur;529
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540639;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540627;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540640;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540645;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540639;Erreur;8
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540636;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540639;Erreur;713
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540627;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540629;Erreur;604
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540650;Erreur;58
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540630;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540629;Erreur;8
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540616;Erreur;10
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540616;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540636;Erreur;58
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540616;Erreur;323
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540607;Erreur;10
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540607;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540607;Erreur;323
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540608;Erreur;10
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540608;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540640;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540608;Erreur;323
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540633;Erreur;3
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540600;Erreur;10
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540600;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540600;Erreur;323
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540615;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540613;Erreur;8
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540613;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540613;Erreur;558
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540629;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540614;Erreur;10
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540633;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540633;Erreur;529
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540612;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540614;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540610;Erreur;201
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540615;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540612;Erreur;803
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540612;Erreur;66
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540630;Erreur;529
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540630;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540610;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540605;Erreur;424
+dateMEP;OBL002;;Champ obligatoire manquant;540606;Erreur;
+dateMEP;SYN003;Ce champ doit etre composé de chiffre sur 8 positions;Syntaxe spécifique non respectée;540606;Erreur;
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540605;Erreur;58
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540609;Erreur;424
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540609;Erreur;10
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540614;Erreur;424
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540606;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540605;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540606;Erreur;57
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540610;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540606;Erreur;201
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540602;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540601;Erreur;56
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540599;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540596;Erreur;31
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540598;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540598;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540602;Erreur;3
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540609;Erreur;ND
+dateMEP;SYN004;Format attendu pour les dates est JJMMAAAA;Date invalide;540606;Erreur;
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540598;Erreur;916
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540599;Erreur;3
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540599;Erreur;201
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540601;Erreur;ND
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540596;Erreur;ND
+typEng;SYN002;Ce champ peut prendre les valeurs du referentiel type engagements;Donnée inexistante dans le référentiel;540592;Erreur;33
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540592;Erreur;803
+periodRemb;SYN002;Ce champ peut prendre les valeurs du referentiel periodicite des engagements;Donnée inexistante dans le référentiel;540592;Erreur;ND
+codAgce;SYN002;Ce champ peut prendre les valeurs du referentiel agences;Donnée inexistante dans le référentiel;540596;Erreur;513

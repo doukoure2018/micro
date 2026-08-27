@@ -60,8 +60,8 @@ public class RegulatoryServiceImpl implements RegulatoryService {
     }
 
     @Override
-    public List<RegEngagementDto> getEngagementsLot(Long afterId, int limit) {
-        return repository.findEngagementsLot(afterId, limit);
+    public List<RegEngagementDto> getEngagementsLot(String afterAgence, Long afterId, int limit) {
+        return repository.findEngagementsLot(afterAgence, afterId, limit);
     }
 
     @Override
@@ -88,10 +88,11 @@ public class RegulatoryServiceImpl implements RegulatoryService {
     }
 
     @Override
-    public RegEngagementDto getEngagementById(Long numCredito) {
-        RegEngagementDto dto = repository.findEngagementById(numCredito);
+    public RegEngagementDto getEngagementById(String codAgencia, Long numCredito) {
+        RegEngagementDto dto = repository.findEngagementById(codAgencia, numCredito);
         if (dto == null) {
-            throw new BlogAPIException(HttpStatus.NOT_FOUND, "Engagement introuvable : " + numCredito);
+            throw new BlogAPIException(HttpStatus.NOT_FOUND,
+                    "Engagement introuvable : " + codAgencia + "-" + numCredito);
         }
         return dto;
     }

@@ -1,0 +1,1445 @@
+CHAMP;CODE;DESIGNATION;IDINTERNECLT;LIBELLE;TYPE;VALEURACTUEL
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007282;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200007282;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200007282;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007282;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007282;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200007281;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007281;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200007281;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007279;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007279;Date invalide;Erreur;ND
+mobile;OBL002;;10200007279;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200007279;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007281;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007279;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007277;Date invalide;Erreur;ND
+mobile;OBL002;;10200007277;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200007277;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007272;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007281;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200007272;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200007272;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007272;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007272;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007268;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007268;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007267;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007267;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200007267;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200007267;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007267;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200007268;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007265;Format incorrect;Erreur;ND
+mobile;OBL002;;10200007265;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007265;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200007264;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007265;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200007264;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200007268;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007264;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200007265;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007257;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007257;Date invalide;Erreur;ND
+mobile;OBL002;;10200007257;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200007257;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007268;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200007253;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007253;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007253;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007264;Date invalide;Erreur;ND
+mobile;OBL002;;10200007253;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007131;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007131;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007277;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200007131;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200007131;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007277;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007111;Date invalide;Erreur;ND
+mobile;OBL002;;10200007111;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200007111;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007264;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007111;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007110;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007110;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007109;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007109;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007257;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200007109;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200007109;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007109;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200007110;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007108;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007108;Format incorrect;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007110;Format incorrect;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007253;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007107;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007108;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007107;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200007110;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200007107;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007111;Format incorrect;Erreur;ND
+mobile;OBL002;;10200007107;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007107;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007100;Date invalide;Erreur;ND
+mobile;OBL002;;10200007100;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200007100;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007100;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007100;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007131;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200007099;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200007099;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007099;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200007108;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007048;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007048;Format incorrect;Erreur;ND
+mobile;OBL002;;10200007048;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200007048;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007048;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007047;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007047;Format incorrect;Erreur;ND
+mobile;OBL002;;10200007047;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200007047;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007047;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200007108;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007043;Date invalide;Erreur;ND
+mobile;OBL002;;10200007043;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007043;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200007043;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007067;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200007067;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007043;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007042;Format incorrect;Erreur;ND
+mobile;OBL002;;10200007042;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007042;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200007067;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200007041;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007041;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200007041;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007099;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007067;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007041;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007039;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007099;Date invalide;Erreur;ND
+mobile;OBL002;;10200007039;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007039;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007067;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200007039;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007037;Date invalide;Erreur;ND
+mobile;OBL002;;10200007037;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200007037;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007037;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007037;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007041;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007026;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007026;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200007042;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007023;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007023;Format incorrect;Erreur;ND
+mobile;OBL002;;10200007023;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007026;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007042;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007023;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200007023;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007015;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007015;Format incorrect;Erreur;ND
+mobile;OBL002;;10200007015;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200007015;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007015;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007011;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007011;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200007008;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007008;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200007008;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007039;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007008;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007001;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200007026;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007001;Format incorrect;Erreur;ND
+mobile;OBL002;;10200007026;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200006231;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200007001;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200006231;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200006231;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200006215;Date invalide;Erreur;ND
+mobile;OBL002;;10200006215;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200007011;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200006215;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007008;Date invalide;Erreur;ND
+mobile;OBL002;;10200007001;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200007011;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007011;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200006215;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200006182;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200006182;Format incorrect;Erreur;ND
+mobile;OBL002;;10200006182;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200006168;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200006168;Format incorrect;Erreur;ND
+mobile;OBL002;;10200006168;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200006215;Format incorrect;Erreur;ND
+mobile;OBL002;;10200006151;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200006151;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200006151;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200006182;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200006149;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200006149;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200006151;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200006182;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200006149;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200006122;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200006122;Format incorrect;Erreur;ND
+mobile;OBL002;;10200006149;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200006122;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200006151;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200006122;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200006122;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200006149;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200006168;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200006104;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007001;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200006098;Format incorrect;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200006104;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200006168;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200006104;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200006098;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200006091;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200006091;Format incorrect;Erreur;ND
+mobile;OBL002;;10200006091;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200006098;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200006091;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200006089;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200006083;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200006083;Format incorrect;Erreur;ND
+mobile;OBL002;;10200006083;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200006098;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200006083;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200006083;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200006082;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200006098;Date invalide;Erreur;ND
+mobile;OBL002;;10200006082;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200006082;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200006078;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200006078;Format incorrect;Erreur;ND
+mobile;OBL002;;10200006078;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200006104;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200006082;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200006078;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200006068;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200006078;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200006104;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200006068;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200006068;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200006067;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200006089;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200006067;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200006067;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200006067;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200006067;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200006051;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200006051;Format incorrect;Erreur;ND
+mobile;OBL002;;10200006051;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200006051;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200006051;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200006048;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200006091;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200006082;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200006048;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200006048;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200006048;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200006038;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200006038;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200006038;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200006030;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200006030;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200006030;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200006068;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200006038;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200006029;Date invalide;Erreur;ND
+mobile;OBL002;;10200006029;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200006029;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200006029;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200006068;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200005484;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200006030;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200006038;Format incorrect;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200005484;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005484;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005480;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200005480;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005484;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200006030;Date invalide;Erreur;ND
+mobile;OBL002;;10200005480;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200005480;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005480;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200005478;Format incorrect;Erreur;ND
+mobile;OBL002;;10200005478;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200005478;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200005476;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200006029;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200005476;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200005476;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200005460;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200005460;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200005460;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200006048;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005476;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005460;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005460;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200005443;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005478;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200005443;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200005443;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005443;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005478;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005439;Date invalide;Erreur;ND
+mobile;OBL002;;10200005439;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200005439;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005438;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200005438;Format incorrect;Erreur;ND
+mobile;OBL002;;10200005438;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200005438;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005438;Syntaxe spécifique non respectée;Erreur;ND
+sigle;SYN001;La longueur ne doit pas depasser 50 caracteres;10200005434;Format incorrect;Erreur;ASSOCIATION DES PARENTS D'ELEVES ET AMIS DE L'ECOLE
+secActEcon;OBL002;;10200005484;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005439;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200005434;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200005434;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200005439;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005434;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005432;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200005432;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005443;Date invalide;Erreur;ND
+mobile;OBL002;;10200005432;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200005432;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005432;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200005429;Format incorrect;Erreur;ND
+mobile;OBL002;;10200005429;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200005434;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200005429;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005429;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005421;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200005421;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005420;Date invalide;Erreur;ND
+mobile;OBL002;;10200005420;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200005420;Champ obligatoire manquant;Erreur;
+sigle;SYN001;La longueur ne doit pas depasser 50 caracteres;10200005443;Format incorrect;Erreur;ASSOCIATION DES PARENTS D'ELEVES DE BENTOURAYAH VILLAGE/MANE
+secActEcon;OBL002;;10200005421;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005420;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005429;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200005409;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005476;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005421;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200005351;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005434;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005351;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005409;Date invalide;Erreur;ND
+mobile;OBL002;;10200005351;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200005351;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200005278;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005278;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005278;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200005254;Format incorrect;Erreur;ND
+mobile;OBL002;;10200005421;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005409;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005247;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005247;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005245;Date invalide;Erreur;ND
+mobile;OBL002;;10200005247;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200005245;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005245;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005254;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005230;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200005247;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200005230;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200005254;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200005227;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200005254;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200005227;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200005218;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005230;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005351;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005227;Syntaxe spécifique non respectée;Erreur;ND
+sigle;SYN001;La longueur ne doit pas depasser 50 caracteres;10200005132;Format incorrect;Erreur;ASSOCIATION DES JEUNES POUR LE BIEN ETRE DE LA GUINEE
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005132;Date invalide;Erreur;ND
+mobile;OBL002;;10200005132;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200005132;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005132;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005254;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200005247;Format incorrect;Erreur;ND
+sigle;SYN001;La longueur ne doit pas depasser 50 caracteres;10200005096;Format incorrect;Erreur;ASSOCIATION DES JEUNES RESSORTISSANTS RESIDENTS ET AMIS DE
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005096;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005218;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200005096;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200005096;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200005218;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005064;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200005064;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200005064;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005064;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005218;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005049;Date invalide;Erreur;ND
+mobile;OBL002;;10200005049;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200005049;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005227;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005049;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005024;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200005024;Format incorrect;Erreur;ND
+mobile;OBL002;;10200005024;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005024;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005018;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200005018;Format incorrect;Erreur;ND
+mobile;OBL002;;10200005018;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200005018;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005096;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005018;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005005;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200005024;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005002;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200005005;Format incorrect;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200005002;Format incorrect;Erreur;ND
+mobile;OBL002;;10200005002;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200005002;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005002;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005001;Date invalide;Erreur;ND
+mobile;OBL002;;10200005001;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200005001;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200004084;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200004083;Date invalide;Erreur;ND
+mobile;OBL002;;10200004084;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200005064;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200004083;Format incorrect;Erreur;ND
+mobile;OBL002;;10200004083;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200004083;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200005096;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200004084;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200004079;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200004079;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200004079;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200004078;Date invalide;Erreur;ND
+mobile;OBL002;;10200004079;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200004083;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200005049;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200004075;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200005001;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200004078;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005001;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200004075;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200004075;Format incorrect;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200004079;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200004074;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200004074;Format incorrect;Erreur;ND
+mobile;OBL002;;10200004074;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200004074;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200004078;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200004078;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200004074;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200004070;Format incorrect;Erreur;ND
+mobile;OBL002;;10200004075;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200004070;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200004070;Date invalide;Erreur;ND
+mobile;OBL002;;10200004061;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200004061;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005005;Date invalide;Erreur;ND
+mobile;OBL002;;10200004070;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200004061;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200004054;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200004054;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200004036;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200004061;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200004036;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200004031;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200004030;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200004030;Format incorrect;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200004078;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200004054;Date invalide;Erreur;ND
+mobile;OBL002;;10200004030;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200004036;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200004030;Champ obligatoire manquant;Erreur;
+sigle;SYN001;La longueur ne doit pas depasser 50 caracteres;10200004026;Format incorrect;Erreur;ASSOCIATION POUR LE DEVELOPEMENT INTEGRE DE COYAH ADICO
+secActEcon;OBL002;;10200004061;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200004026;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200004031;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200004015;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200004030;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200004015;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003993;Date invalide;Erreur;ND
+mobile;OBL002;;10200003993;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200004026;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200003993;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200003991;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003991;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200003991;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003993;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200004015;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003991;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200004031;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003845;Date invalide;Erreur;ND
+mobile;OBL002;;10200003845;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003845;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200003845;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003845;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003822;Date invalide;Erreur;ND
+mobile;OBL002;;10200003822;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003822;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200003822;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200004015;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003819;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003822;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003819;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200004031;Date invalide;Erreur;ND
+mobile;OBL002;;10200003819;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200003799;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003799;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003798;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003798;Format incorrect;Erreur;ND
+mobile;OBL002;;10200003798;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003819;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003799;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200003798;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200003796;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003796;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003796;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200006107;Date invalide;Erreur;ND
+mobile;OBL002;;10200003796;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003799;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003796;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200006107;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200006107;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200003799;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200003819;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200003793;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200003793;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200004026;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003787;Date invalide;Erreur;ND
+mobile;OBL002;;10200003787;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200006107;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003787;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003784;Date invalide;Erreur;ND
+mobile;OBL002;;10200003784;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003793;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200003784;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003798;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003781;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200003781;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200006107;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003784;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003755;Date invalide;Erreur;ND
+mobile;OBL002;;10200003755;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200003755;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003755;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003755;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003787;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003688;Date invalide;Erreur;ND
+mobile;OBL002;;10200003781;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003781;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003688;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003688;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003793;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200003787;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200003688;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003632;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200003688;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200003632;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003784;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003632;Date invalide;Erreur;ND
+mobile;OBL002;;10200003625;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200003632;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003625;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003625;Date invalide;Erreur;ND
+mobile;OBL002;;10200003541;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003632;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003602;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003541;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200003541;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003541;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003418;Date invalide;Erreur;ND
+mobile;OBL002;;10200003602;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003418;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200003625;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200003602;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003392;Date invalide;Erreur;ND
+mobile;OBL002;;10200003392;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003541;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200003418;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003392;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003388;Date invalide;Erreur;ND
+mobile;OBL002;;10200003418;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200003388;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003625;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003388;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200003386;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003386;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003365;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200003386;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200003365;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003355;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003418;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003386;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003355;Date invalide;Erreur;ND
+mobile;OBL002;;10200003354;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003602;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200003354;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200003355;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003354;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003386;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003354;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003355;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003339;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003339;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003365;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003336;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003336;Format incorrect;Erreur;ND
+mobile;OBL002;;10200003355;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200003336;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200003339;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200003336;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003354;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003336;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200003339;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200003335;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003335;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003325;Date invalide;Erreur;ND
+mobile;OBL002;;10200003325;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003324;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003339;Format incorrect;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003325;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003335;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003324;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200003324;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003320;Format incorrect;Erreur;ND
+mobile;OBL002;;10200003320;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200003320;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003324;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003320;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003325;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200003324;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003297;Date invalide;Erreur;ND
+mobile;OBL002;;10200003297;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003293;Date invalide;Erreur;ND
+mobile;OBL002;;10200003335;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003297;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003293;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003297;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003335;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003320;Date invalide;Erreur;ND
+mobile;OBL002;;10200003293;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003282;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200003282;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003282;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003280;Date invalide;Erreur;ND
+mobile;OBL002;;10200003282;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200003280;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003282;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003279;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003283;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003279;Format incorrect;Erreur;ND
+mobile;OBL002;;10200003279;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200003283;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200003279;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003279;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200003220;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003220;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003220;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003220;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003216;Date invalide;Erreur;ND
+mobile;OBL002;;10200003216;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003216;Format incorrect;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003293;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003216;Syntaxe spécifique non respectée;Erreur;ND
+sigle;SYN001;La longueur ne doit pas depasser 50 caracteres;10200003191;Format incorrect;Erreur;GROUPEMENT ASSOCIATIO ARTISANAL DES MACONS ET PLOMBIERS
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003191;Date invalide;Erreur;ND
+sigle;SYN001;La longueur ne doit pas depasser 50 caracteres;10200003178;Format incorrect;Erreur;GROUPEMENT ARTISANAL DES PRODUCTEURS ETCOMMERCENTS DE SEL
+mobile;OBL002;;10200003178;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200003191;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003283;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200003216;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200003127;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003127;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003178;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200003100;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003178;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003127;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003283;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003042;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003100;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200003042;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003042;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003191;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200003025;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003025;Date invalide;Erreur;ND
+mobile;OBL002;;10200003025;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200003025;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003280;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003100;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002981;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200003042;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002981;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002981;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002977;Date invalide;Erreur;ND
+mobile;OBL002;;10200003042;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200002977;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200002981;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200003025;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200002975;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200002975;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200002981;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200002977;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200002974;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002974;Format incorrect;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002975;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002974;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002977;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002968;Date invalide;Erreur;ND
+mobile;OBL002;;10200002968;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002975;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002975;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200002968;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200002974;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002967;Format incorrect;Erreur;ND
+mobile;OBL002;;10200002967;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002977;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200002967;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002965;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002968;Format incorrect;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002965;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002965;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002974;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002957;Date invalide;Erreur;ND
+mobile;OBL002;;10200002957;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002957;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002967;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002945;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200002965;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002945;Format incorrect;Erreur;ND
+mobile;OBL002;;10200002945;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002967;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002938;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002938;Format incorrect;Erreur;ND
+mobile;OBL002;;10200002965;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200002938;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200002957;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200002938;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002923;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002945;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002968;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002923;Format incorrect;Erreur;ND
+mobile;OBL002;;10200002923;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002923;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002957;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200002922;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200002922;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002922;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002922;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002918;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200002923;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002918;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200002918;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002918;Date invalide;Erreur;ND
+mobile;OBL002;;10200002916;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200002916;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200002918;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002916;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200002945;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002916;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002938;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002903;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002899;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002903;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002916;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002899;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200002899;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002891;Format incorrect;Erreur;ND
+mobile;OBL002;;10200002899;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200002891;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200002891;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002891;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200002903;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002887;Date invalide;Erreur;ND
+mobile;OBL002;;10200002887;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200002887;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002887;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002899;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002887;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002880;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002880;Format incorrect;Erreur;ND
+mobile;OBL002;;10200002880;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200002880;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002880;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002857;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002857;Format incorrect;Erreur;ND
+mobile;OBL002;;10200002857;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002857;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200002903;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002844;Date invalide;Erreur;ND
+mobile;OBL002;;10200002844;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200002844;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002844;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002891;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002825;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200002825;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200002825;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200002857;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200002824;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002824;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200002824;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002825;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002824;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002822;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200002822;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002822;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002922;Date invalide;Erreur;ND
+mobile;OBL002;;10200002822;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002822;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002793;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002793;Format incorrect;Erreur;ND
+mobile;OBL002;;10200002793;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200002793;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002844;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002704;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002793;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002704;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002824;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002652;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002825;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200002652;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002652;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002652;Format incorrect;Erreur;ND
+sigle;SYN001;La longueur ne doit pas depasser 50 caracteres;10200002625;Format incorrect;Erreur;ASSOCIATION DES NOTABLES RESIDENTS DE FILIKHOUNYI COYAH
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002625;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002704;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200002625;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002625;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002614;Date invalide;Erreur;ND
+mobile;OBL002;;10200002625;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200002652;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200002704;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200002614;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002625;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005352;Date invalide;Erreur;ND
+mobile;OBL002;;10200005352;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200002614;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002549;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002614;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200002549;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005352;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002534;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002549;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200002534;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200002534;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200002704;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200005352;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200005352;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002534;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200002549;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200002532;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002534;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002532;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002614;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002549;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002506;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002506;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200002506;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002506;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002500;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002500;Format incorrect;Erreur;ND
+mobile;OBL002;;10200002500;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200002500;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200002532;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002500;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002495;Date invalide;Erreur;ND
+mobile;OBL002;;10200002506;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200002495;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200002495;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002495;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002495;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002476;Date invalide;Erreur;ND
+mobile;OBL002;;10200002476;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002476;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002476;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002467;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002460;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002460;Format incorrect;Erreur;ND
+mobile;OBL002;;10200002460;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002532;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200002460;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002460;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002467;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002532;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002453;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200002476;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200002453;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200002467;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200002453;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002467;Format incorrect;Erreur;ND
+mobile;OBL002;;10200002451;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200002451;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002437;Date invalide;Erreur;ND
+mobile;OBL002;;10200002437;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002437;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200002437;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002451;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002453;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002434;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002437;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002434;Format incorrect;Erreur;ND
+mobile;OBL002;;10200002434;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002434;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002451;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200002394;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002391;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002394;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002391;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002394;Date invalide;Erreur;ND
+mobile;OBL002;;10200002391;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200002467;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002451;Format incorrect;Erreur;ND
+mobile;OBL002;;10200002394;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002391;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002453;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002389;Date invalide;Erreur;ND
+mobile;OBL002;;10200002389;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200002389;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200002391;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002387;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002387;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002387;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002389;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002358;Date invalide;Erreur;ND
+mobile;SYN003;'00224' suivi de 9 chiffres ou '+224' suivi de 9 chiffres.;10200002358;Syntaxe spécifique non respectée;Erreur;1
+secActEcon;OBL002;;10200002434;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200002358;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200002387;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002394;Format incorrect;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002355;Format incorrect;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002358;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200002355;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200002355;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002355;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200002387;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002355;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002354;Format incorrect;Erreur;ND
+mobile;OBL002;;10200002354;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200002354;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002354;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002354;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002341;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200002341;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002332;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002332;Format incorrect;Erreur;ND
+sigle;SYN001;La longueur ne doit pas depasser 50 caracteres;10200002354;Format incorrect;Erreur;ASSOCIATION DE CAUTION MUTUELLE MOUNAFANYI DE COYAH
+mobile;SYN003;'00224' suivi de 9 chiffres ou '+224' suivi de 9 chiffres.;10200002332;Syntaxe spécifique non respectée;Erreur;1
+secActEcon;OBL002;;10200002332;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002332;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002323;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002389;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200002323;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200002323;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002307;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002307;Format incorrect;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002341;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200002307;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002323;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002307;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200002341;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200002295;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200002295;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200002295;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002323;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200001617;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200001617;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200002295;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002341;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001617;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001604;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001617;Format incorrect;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001604;Format incorrect;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001603;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002358;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200001603;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001603;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001617;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200002295;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001604;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200001603;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200001582;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200001604;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001582;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200001582;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001582;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001570;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001570;Format incorrect;Erreur;ND
+mobile;OBL002;;10200001570;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200001570;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001553;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200001553;Champ obligatoire manquant;Erreur;
+mobile;SYN003;'00224' suivi de 9 chiffres ou '+224' suivi de 9 chiffres.;10200001553;Syntaxe spécifique non respectée;Erreur;1
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001553;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200001604;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001603;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001541;Date invalide;Erreur;ND
+mobile;OBL002;;10200001541;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200001541;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001541;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001541;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001492;Date invalide;Erreur;ND
+mobile;OBL002;;10200001492;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001570;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200001492;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001492;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001553;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001481;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001481;Format incorrect;Erreur;ND
+mobile;OBL002;;10200001481;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200001481;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001492;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001448;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001448;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001481;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200001448;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001448;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001438;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001438;Format incorrect;Erreur;ND
+mobile;OBL002;;10200001438;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200001438;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001438;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200001435;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001435;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200001435;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001435;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001424;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001424;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001419;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001419;Format incorrect;Erreur;ND
+mobile;OBL002;;10200001448;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200001424;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001419;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001411;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001411;Format incorrect;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001435;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001582;Date invalide;Erreur;ND
+mobile;OBL002;;10200001411;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200001411;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001411;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001397;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001397;Format incorrect;Erreur;ND
+mobile;OBL002;;10200001419;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001397;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001376;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200001397;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200001376;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001376;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001375;Date invalide;Erreur;ND
+mobile;OBL002;;10200001397;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200001375;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001376;Date invalide;Erreur;ND
+mobile;OBL002;;10200001376;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001375;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001362;Date invalide;Erreur;ND
+mobile;OBL002;;10200001362;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200001424;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200001375;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001361;Date invalide;Erreur;ND
+mobile;OBL002;;10200001361;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001361;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001361;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001424;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001344;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001344;Format incorrect;Erreur;ND
+mobile;OBL002;;10200001344;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200001344;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001344;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001328;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001375;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200001362;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001328;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001362;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200001328;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200001419;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200001328;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001264;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001264;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001259;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001264;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200001361;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200001259;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001259;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200001264;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001328;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200001264;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200001218;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200001218;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001218;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001218;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001217;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001217;Format incorrect;Erreur;ND
+mobile;OBL002;;10200001217;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200001217;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200001259;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001259;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001212;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001212;Format incorrect;Erreur;ND
+mobile;OBL002;;10200001212;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200001212;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001362;Format incorrect;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001192;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001192;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200001192;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001217;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001212;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001151;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001192;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001151;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001149;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001149;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200001149;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200001192;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001148;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200001151;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200001148;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001148;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001149;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200001149;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001148;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001147;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200001147;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001218;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001147;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001147;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001146;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001134;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001151;Date invalide;Erreur;ND
+mobile;OBL002;;10200001134;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200001134;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001134;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001146;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001134;Format incorrect;Erreur;ND
+mobile;OBL002;;10200001112;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200001112;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200001146;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001112;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001076;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001076;Format incorrect;Erreur;ND
+mobile;OBL002;;10200001146;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200001076;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200001147;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001112;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200001076;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200001069;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001069;Format incorrect;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200001146;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001069;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000980;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000980;Format incorrect;Erreur;ND
+mobile;OBL002;;10200001148;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200001069;Champ obligatoire manquant;Erreur;
+mobile;SYN003;'00224' suivi de 9 chiffres ou '+224' suivi de 9 chiffres.;10200000980;Syntaxe spécifique non respectée;Erreur;1
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200001069;Date invalide;Erreur;ND
+mobile;OBL002;;10200000950;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000950;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001112;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000950;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200000893;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200000950;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000980;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000885;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200000980;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200000885;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000835;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200000893;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200000835;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200000835;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000893;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000885;Format incorrect;Erreur;ND
+mobile;OBL002;;10200000791;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000885;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000893;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000835;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000791;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000791;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200001076;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007251;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007251;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200007251;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000950;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007250;Date invalide;Erreur;ND
+mobile;OBL002;;10200007250;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007250;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007250;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000893;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007241;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007241;Format incorrect;Erreur;ND
+mobile;OBL002;;10200007241;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200007241;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007232;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000835;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007241;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007232;Format incorrect;Erreur;ND
+mobile;OBL002;;10200007232;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200007232;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007232;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200000791;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200007250;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007221;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007221;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000791;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007216;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200007216;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200007251;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007216;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007210;Date invalide;Erreur;ND
+mobile;OBL002;;10200007221;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200007210;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007251;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007206;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200007221;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200007206;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007221;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007205;Date invalide;Erreur;ND
+mobile;OBL002;;10200007216;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007216;Format incorrect;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007210;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007206;Date invalide;Erreur;ND
+mobile;OBL002;;10200007205;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200007205;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007205;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007204;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007204;Format incorrect;Erreur;ND
+mobile;OBL002;;10200007204;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007210;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007204;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200007206;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000777;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000777;Format incorrect;Erreur;ND
+mobile;OBL002;;10200007210;Champ obligatoire manquant;Erreur;
+mobile;SYN003;'00224' suivi de 9 chiffres ou '+224' suivi de 9 chiffres.;10200000777;Syntaxe spécifique non respectée;Erreur;1
+secActEcon;OBL002;;10200000777;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000777;Syntaxe spécifique non respectée;Erreur;ND
+sigle;SYN001;La longueur ne doit pas depasser 50 caracteres;10200000770;Format incorrect;Erreur;UNION DE GROUPEMENT DES PRODUCTEURS DE KONKOURE A DUBREKA
+mobile;OBL002;;10200000770;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200000747;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007205;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200000747;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000747;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000747;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000770;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000711;Format incorrect;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000747;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200000711;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200000711;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200000671;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000711;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007206;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000404;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000770;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200000404;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000404;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000404;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000671;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000671;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000385;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200007204;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000385;Format incorrect;Erreur;ND
+mobile;OBL002;;10200000385;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000378;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000711;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000376;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000378;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000376;Format incorrect;Erreur;ND
+mobile;SYN003;'00224' suivi de 9 chiffres ou '+224' suivi de 9 chiffres.;10200000671;Syntaxe spécifique non respectée;Erreur;1
+secActEcon;OBL002;;10200000385;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000671;Format incorrect;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000363;Format incorrect;Erreur;ND
+mobile;SYN003;'00224' suivi de 9 chiffres ou '+224' suivi de 9 chiffres.;10200000363;Syntaxe spécifique non respectée;Erreur;1
+secActEcon;OBL002;;10200000363;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200000378;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200000376;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000363;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000363;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000341;Format incorrect;Erreur;ND
+mobile;OBL002;;10200000341;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200000341;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000341;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200000216;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200000216;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000216;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000216;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000159;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000159;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000341;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000216;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200000159;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200000404;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200000099;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200000159;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000159;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200000099;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000385;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000062;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000062;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000099;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000062;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007312;Date invalide;Erreur;ND
+mobile;OBL002;;10200000062;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200007312;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200007312;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007312;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000376;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007312;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007311;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007311;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200000062;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200007311;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007310;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000099;Format incorrect;Erreur;ND
+mobile;OBL002;;10200007310;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007310;Format incorrect;Erreur;ND
+sigle;SYN001;La longueur ne doit pas depasser 50 caracteres;10200000099;Format incorrect;Erreur;VOLONTAIRES ASSOCIES POUR L'INSERTION ET LA PROMOTION DES JE
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007310;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200007310;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007309;Date invalide;Erreur;ND
+mobile;OBL002;;10200007309;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007309;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200007311;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200007309;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007309;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200007308;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007308;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200007308;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007308;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007303;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007303;Format incorrect;Erreur;ND
+mobile;OBL002;;10200007303;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000378;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007302;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000099;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007308;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007311;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007302;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200007301;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007301;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200007302;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200007303;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200007300;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200007300;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007300;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007297;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007303;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007297;Format incorrect;Erreur;ND
+mobile;OBL002;;10200007297;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200007297;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007297;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007296;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007296;Format incorrect;Erreur;ND
+mobile;OBL002;;10200007296;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007300;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200007296;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007296;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007295;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007295;Format incorrect;Erreur;ND
+mobile;OBL002;;10200007295;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200007295;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007295;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007293;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007293;Format incorrect;Erreur;ND
+mobile;OBL002;;10200007293;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200007293;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007293;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007292;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007292;Date invalide;Erreur;ND
+mobile;OBL002;;10200007301;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200007292;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200007289;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007292;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007300;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007301;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200007289;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007289;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007289;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007287;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200007287;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007301;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007302;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200007302;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007287;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200007285;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007287;Format incorrect;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007285;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007285;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200007292;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007285;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007284;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007284;Format incorrect;Erreur;ND
+mobile;OBL002;;10200007284;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200007284;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007283;Date invalide;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007284;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200007283;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200007283;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200007289;Date invalide;Erreur;ND
+mobile;OBL002;;10200005158;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200007287;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200005158;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000670;Date invalide;Erreur;ND
+mobile;OBL002;;10200000670;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200005158;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200007283;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200005158;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200000670;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000588;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200007283;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000670;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000588;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200000588;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000548;Format incorrect;Erreur;ND
+mobile;OBL002;;10200000548;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200000588;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200007285;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000546;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000548;Date invalide;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000546;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000588;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200000546;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000546;Syntaxe spécifique non respectée;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000548;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000507;Date invalide;Erreur;ND
+mobile;OBL002;;10200000546;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000670;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200000507;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000507;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200000505;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000505;Date invalide;Erreur;ND
+secActEcon;OBL002;;10200000505;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000505;Syntaxe spécifique non respectée;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000500;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000500;Format incorrect;Erreur;ND
+mobile;OBL002;;10200000500;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000500;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000507;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000456;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200000456;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000505;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000436;Date invalide;Erreur;ND
+mobile;OBL002;;10200000456;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200000548;Champ obligatoire manquant;Erreur;
+secActEcon;OBL002;;10200000436;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000436;Syntaxe spécifique non respectée;Erreur;ND
+mobile;OBL002;;10200000427;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000427;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000427;Format incorrect;Erreur;ND
+mobile;OBL002;;10200000507;Champ obligatoire manquant;Erreur;
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000436;Format incorrect;Erreur;ND
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000427;Syntaxe spécifique non respectée;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000456;Format incorrect;Erreur;ND
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000425;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000425;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200000425;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000425;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200000500;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200000407;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000456;Date invalide;Erreur;ND
+rccm;SYN001;La longueur doit etre comprise entre 15 et 25 caractères, longueur actuelle : 2;10200000407;Format incorrect;Erreur;ND
+secActEcon;OBL002;;10200000407;Champ obligatoire manquant;Erreur;
+nifp;SYN003;La valeur saisie doit être de type numérique, de longueur 9, ;10200000407;Syntaxe spécifique non respectée;Erreur;ND
+secActEcon;OBL002;;10200000427;Champ obligatoire manquant;Erreur;
+mobile;OBL002;;10200000425;Champ obligatoire manquant;Erreur;
+datCreat;SYN004;Format attendu pour les dates est JJMMAAAA;10200000407;Date invalide;Erreur;ND

@@ -22,7 +22,7 @@ public class PersonneMoraleDto {
     @JsonProperty("NatClient")        private String natClient;        // IND_RELACION
     @JsonProperty("DenomSocial")      private String denomSocial;      // RAZON_SOCIAL
     @JsonProperty("Sigle")            private String sigle;            // NOM_COMERCIAL
-    @JsonProperty("DatCreat")         private String datCreat;         // non porté par le SI → ND
+    @JsonProperty("DatCreat")         private String datCreat;         // non porté par le SI → null (champ date, v1.6)
     @JsonProperty("Statut")           private String statut;           // '01' en activité (défaut)
     @JsonProperty("DatCreaPart")      private String datCreaPart;      // FEC_INGRESO (JJMMAAAA)
     @JsonProperty("FormeJuridique")   private String formeJuridique;   // référentiel F.7 (transcodé)
@@ -35,12 +35,12 @@ public class PersonneMoraleDto {
     @JsonProperty("CommuneAdresse")   private String communeAdresse;   // PM V2 : DES_DISTRITO (repli DES_CANTON), sinon null
     @JsonProperty("CodePostal")       private String codePostal;       // COD_POSTAL (1re adresse)
     @JsonProperty("Resident")         private String resident;         // '1'
-    @JsonProperty("RCCM")             private String rccm;             // PM V2 : pièce SAF type RCCM, sinon ND (obligatoire BCRG)
-    @JsonProperty("NIF")              private String nif;              // non porté → ND (obligatoire BCRG)
-    @JsonProperty("NIFP")             private String nifp;             // non porté → ND
-    @JsonProperty("NumAgrement")      private String numAgrement;      // non porté → ND
+    @JsonProperty("RCCM")             private String rccm;             // PM V2 : pièce SAF type RCCM, sinon null (v1.6, "ND" rejeté SYN001)
+    @JsonProperty("NIF")              private String nif;              // pièce SAF, sinon null (v1.6)
+    @JsonProperty("NIFP")             private String nifp;             // pièce SAF, sinon null (v1.6, "ND" rejeté SYN003)
+    @JsonProperty("NumAgrement")      private String numAgrement;      // pièce SAF, sinon null (v1.6)
     @JsonProperty("NumSecSoc")        private String numSecSoc;        // facultatif → null
-    @JsonProperty("ActEcon")          private String actEcon;          // NAEMA A..Q (transcodé) ou null
+    @JsonProperty("ActEcon")          private String actEcon;          // NAEMA A..Q, repli transitoire 'O' (v1.6, obligatoire)
     @JsonProperty("SectInst")         private String sectInst;         // F.5 : '040' ISBL si association, sinon '022'
     @JsonProperty("SitBancaire")      private String sitBancaire;      // réservé aux banques → null
     @JsonProperty("DateDebIB")        private String dateDebIB;        // conditionnel → null
