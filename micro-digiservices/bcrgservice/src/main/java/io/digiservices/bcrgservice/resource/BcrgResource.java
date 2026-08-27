@@ -93,18 +93,30 @@ public class BcrgResource {
         return ResponseEntity.ok(bcrgService.getEngagements(page, size, toutes(statut)));
     }
 
+    /** v1.6 : la référence d'engagement est composite — {@code <codAgence>-<numCredito>}. */
     @GetMapping("/engagements/{refEng}")
-    public ResponseEntity<EngagementDto> getEngagement(@PathVariable("refEng") Long refEng) {
+    public ResponseEntity<EngagementDto> getEngagement(@PathVariable("refEng") String refEng) {
         return ResponseEntity.ok(bcrgService.getEngagement(refEng));
     }
 
+    /**
+     * v1.6 : filtre=declares (défaut) limite la photo aux engagements déjà notifiés
+     * traités — la page peut contenir moins de size éléments, se fier à hasNext ;
+     * filtre=aucun restitue la photo complète d'arrêté (audit).
+     */
     @GetMapping("/encours")
     public ResponseEntity<PageDto<EncoursDto>> getEncours(
             @RequestParam(name = "periode") String periode,
             @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "size", defaultValue = "20") int size) {
+            @RequestParam(name = "size", defaultValue = "20") int size,
+            @RequestParam(name = "filtre", defaultValue = "declares") String filtre) {
         validatePagination(page, size);
-        return ResponseEntity.ok(bcrgService.getEncours(periode, page, size));
+        boolean filtreDeclares = switch (filtre == null ? "" : filtre.trim().toLowerCase()) {
+            case "", "declares" -> true;
+            case "aucun" -> false;
+            default -> throw new BadRequestException("Le parametre 'filtre' doit valoir 'declares' ou 'aucun'");
+        };
+        return ResponseEntity.ok(bcrgService.getEncours(periode, page, size, filtreDeclares));
     }
 
     /**

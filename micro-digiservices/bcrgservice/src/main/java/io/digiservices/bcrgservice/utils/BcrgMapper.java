@@ -36,6 +36,12 @@ import static io.digiservices.bcrgservice.utils.BcrgTranslator.ND;
  * <p>Applique la politique de complétude du retour BCRG (août 2026) :
  * champ sans source SI → "ND" ; champ sourcé mais vide → null ; champ conditionnel
  * non applicable → null ; sous-objets facultatifs non portés → listes vides.</p>
+ *
+ * <p><b>v1.6 (retours de validation du 2026-08-20)</b> : "ND" est restreint aux champs
+ * texte libre — dans un champ typé (date, numérique, taux, référentiel) la plateforme
+ * le rejette en erreur de syntaxe avant même le contrôle d'obligation ; un champ typé
+ * sans source reste donc null. Les références d'engagement deviennent composites
+ * ({@link BcrgTranslator#refIntEng}) et identiques entre M2 et M4.</p>
  */
 @Component
 @RequiredArgsConstructor
@@ -68,8 +74,9 @@ public class BcrgMapper {
         d.setPrenomClt(join(s.getPrimerNombre(), s.getSegundoNombre()));
         d.setNomComp(s.getNomCliente());
         d.setSexe(sexe);
-        // PP V2 : date de naissance depuis la fiche associé (CL_DATOS_ASOCIADO)
-        d.setDatNai(s.getFechNacimiento() != null ? translator.formatDate(s.getFechNacimiento()) : ND);
+        // PP V2 : date de naissance depuis la fiche associé (CL_DATOS_ASOCIADO) ;
+        // v1.6 : absente → null (champ date, "ND" rejeté en SYN004)
+        d.setDatNai(translator.formatDate(s.getFechNacimiento()));
         d.setEtatCivil(etatCivil);
         d.setNomPere(ND);    // filiation non portée : ND exigé par la BCRG
         d.setPrenomPere(ND);
@@ -102,11 +109,11 @@ public class BcrgMapper {
         d.setComptesAssocies(toComptes(s.getCodCliente(), s.getCodAgencia(), s.getComptes()));
         d.setPieces(pieces);
         // PP V2 : revenu = SALARIO ; personnes à charge = CANT_DEPENDIENTES (repli NUM_HIJOS) ;
-        // PropLoc au référentiel P/L/A
+        // PropLoc au référentiel P/L/A. v1.6 : revenus/dépenses sont des montants → null si absents
         d.setDonneeComplementaire(new DonneeComplementaireDto(
                 s.getCantDependientes() != null ? s.getCantDependientes() : s.getNumHijos(),
-                s.getSalario() != null ? s.getSalario().toPlainString() : ND,
-                ND,
+                s.getSalario() != null ? s.getSalario().toPlainString() : null,
+                null,
                 translator.translatePropLoc(s.getTenenciaVivienda())));
         d.setTuteurCurateur(List.of());
         // PP V2 : employeur partiel depuis la fiche associé (LUGAR_TRABAJO)
@@ -127,8 +134,9 @@ public class BcrgMapper {
         d.setNatDec(null);
         d.setNatClient(translator.translateNatClient(s.getIndRelacion()));
         d.setDenomSocial(StringUtils.hasText(s.getRazonSocial()) ? s.getRazonSocial() : s.getNomCliente());
-        d.setSigle(blankToNull(s.getNomComercial()));
-        d.setDatCreat(ND); // date de création juridique non portée par le SI
+        // v1.6 : Sigle borné à 50 caractères par la plateforme (11 rejets SYN001)
+        d.setSigle(truncate(blankToNull(s.getNomComercial()), 50));
+        d.setDatCreat(null); // date de création juridique non portée par le SI (champ date : jamais "ND")
         d.setStatut(BcrgTranslator.STATUT_PM_EN_ACTIVITE);
         d.setDatCreaPart(translator.formatDate(s.getFecIngreso()));
         d.setFormeJuridique(formeJuridique);
@@ -150,13 +158,16 @@ public class BcrgMapper {
         d.setCodePostal(adresse != null ? blankToNull(adresse.getCodPostal()) : null);
         d.setResident(BcrgTranslator.RESIDENT_OUI);
         // PM V2 : RCCM / NIF / NIFP / agrément recherchés dans les pièces SAF du client
-        // (même procédé que le NIN des PP) ; ND en repli si aucune pièce ne correspond
-        d.setRccm(coalesceND(numeroPiece(s.getPieces(), translator::estPieceRccm)));
-        d.setNif(coalesceND(numeroPiece(s.getPieces(), translator::estPieceNif)));
-        d.setNifp(coalesceND(numeroPiece(s.getPieces(), translator::estPieceNifp)));
-        d.setNumAgrement(coalesceND(numeroPiece(s.getPieces(), translator::estPieceAgrement)));
+        // (même procédé que le NIN des PP). v1.6 : aucune pièce → null — "ND" était rejeté
+        // (rccm SYN001 longueur 15-25, nifp SYN003 numérique 9) ; règle transitoire pour
+        // la donnée manquante à arbitrer avec la BCRG (RCCM porté par 74 PM sur 107k)
+        d.setRccm(numeroPiece(s.getPieces(), translator::estPieceRccm));
+        d.setNif(numeroPiece(s.getPieces(), translator::estPieceNif));
+        d.setNifp(numeroPiece(s.getPieces(), translator::estPieceNifp));
+        d.setNumAgrement(numeroPiece(s.getPieces(), translator::estPieceAgrement));
         d.setNumSecSoc(null);
-        d.setActEcon(translator.translateSecteurNaema(s.getDesActividad()));
+        // v1.6 : SecActEcon obligatoire pour une PM → repli transitoire 'O' (272 rejets OBL002)
+        d.setActEcon(translator.secteurNaemaPersonneMorale(s.getDesActividad()));
         d.setSectInst(translator.sectInstPersonneMorale(formeJuridique));
         d.setSitBancaire(null);
         d.setDateDebIB(null);
@@ -176,7 +187,8 @@ public class BcrgMapper {
      */
     public EngagementDto toEngagement(RegEngagementDto s) {
         if (s == null) return null;
-        String refIntEng = s.getNumCredito() != null ? String.valueOf(s.getNumCredito()) : null;
+        // v1.6 : référence composite agence-numéro, identique à celle de l'encours (M4)
+        String refIntEng = BcrgTranslator.refIntEng(s.getCodAgencia(), s.getNumCredito());
         boolean cloture = translator.estCreditCloture(s.getIndEstado(), s.getMonSaldo());
 
         EngagementDto d = new EngagementDto();
@@ -190,22 +202,21 @@ public class BcrgMapper {
         d.setEstDout(null);
         d.setCloture(cloture ? "1" : "0");
         d.setMotifCloture(cloture ? translator.motifCloture(s.getIndEstado()) : null);
-        d.setDatClo(cloture
-                ? (s.getFecCancelacionCredito() != null ? translator.formatDate(s.getFecCancelacionCredito()) : ND)
-                : null);
+        d.setDatClo(cloture ? translator.formatDate(s.getFecCancelacionCredito()) : null);
         d.setDatAccord(translator.formatDate(s.getFecApertura()));
         d.setDateMEP(translator.formatDate(s.getFecPrimerDesembolso()));
-        d.setTypEng(s.getTipCredito() != null ? String.valueOf(s.getTipCredito()) : ND); // référentiel F.9 en attente
+        d.setTypEng(s.getTipCredito() != null ? String.valueOf(s.getTipCredito()) : null); // référentiel F.9 en attente
         d.setMntEng(s.getMonCredito());
         d.setMntInt(s.getMntInteretsTotal());
         d.setCodDev(BcrgTranslator.DEVISE_GNF);
-        d.setPeriodRemb(ND); // référentiel des périodicités en attente
+        // v1.6 : périodicité dérivée de l'écart moyen entre échéances du plan de paiement
+        d.setPeriodRemb(translator.translatePeriodicite(s.getJoursEntreEcheances(), s.getCantCuotas()));
         d.setTxIntEng(translator.formatTaux(s.getTasaInteres()));
         d.setTypTxInt("00"); // taux fixe (politique CRG)
         d.setTxComm(null);
         d.setIndRef(null);
         d.setSprd(null);
-        d.setTxEffGlob(ND); // TEG non calculé par le SI
+        d.setTxEffGlob(null); // TEG non calculé par le SI (champ taux : jamais "ND")
         d.setMoyRemb("01"); // débit de compte (convention CRG, à confirmer)
         d.setTypAmo(s.getCantCuotas() != null && s.getCantCuotas() == 1L ? "04" : "05"); // in fine / échéance constante
         d.setTypDiffAmo("A");
@@ -213,8 +224,7 @@ public class BcrgMapper {
         d.setPerDiffAmo(null);
         d.setMntEch(s.getMonCuota());
         d.setNbrEch(s.getCantCuotas());
-        d.setDatPremEch(s.getFecPremiereEcheance() != null
-                ? translator.formatDate(s.getFecPremiereEcheance()) : ND);
+        d.setDatPremEch(translator.formatDate(s.getFecPremiereEcheance()));
         d.setDatFin(translator.formatDate(s.getFecVencimiento()));
         d.setMntFrais(BigDecimal.ZERO);
         d.setMntComm(BigDecimal.ZERO);
@@ -244,7 +254,8 @@ public class BcrgMapper {
                 ? ChronoUnit.DAYS.between(s.getFecPlusAncienneImpayee(), arrete) : null;
 
         EncoursDto d = new EncoursDto();
-        d.setRefIntEng(s.getNumCredito() != null ? String.valueOf(s.getNumCredito()) : null);
+        // v1.6 : même référence composite que l'engagement M2 (rejets LOG008 du 2026-08-20)
+        d.setRefIntEng(BcrgTranslator.refIntEng(s.getCodAgencia(), s.getNumCredito()));
         d.setCodDev(BcrgTranslator.DEVISE_GNF);
         d.setDatEch(translator.formatDate(s.getDatDerniereEcheance()));
         d.setMntDerEch(s.getMntDerniereEcheance());
@@ -302,11 +313,13 @@ public class BcrgMapper {
 
     private List<PieceDto> toPieces(String idClt, List<RegPieceDto> pieces) {
         if (pieces == null) return List.of();
+        // Émission non portée par le SI : date (typée) et pays (référentiel) → null,
+        // lieu (texte libre) → ND (v1.6)
         return pieces.stream().map(p -> new PieceDto(
                 idClt,
                 translator.translateTypePiece(p.getCodTipoId(), p.getDesTipoId()),
                 blankToNull(p.getNumId()),
-                ND, ND, ND, // date / lieu / pays d'émission non portés par le SI
+                null, ND, null,
                 translator.formatDate(p.getFecVencim()))).toList();
     }
 
@@ -325,8 +338,10 @@ public class BcrgMapper {
                 .findFirst().orElse(null);
     }
 
-    private static String coalesceND(String valeur) {
-        return valeur != null ? valeur : ND;
+    /** Tronque une valeur à la longueur maximale acceptée par la plateforme (v1.6). */
+    private static String truncate(String valeur, int max) {
+        if (valeur == null || valeur.length() <= max) return valeur;
+        return valeur.substring(0, max).trim();
     }
 
     private static String blankToNull(String s) {

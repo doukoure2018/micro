@@ -8,7 +8,8 @@ import lombok.NoArgsConstructor;
 /**
  * Données complémentaires d'une personne physique (feuille DonneeComplementaire) :
  * NbPersCharge = NUM_HIJOS, PropLoc = TENENCIA_VIVIENDA (code SAF en attendant le
- * référentiel BCRG) ; revenus/dépenses moyens non portés par le SI → ND.
+ * référentiel BCRG) ; revenus/dépenses moyens non portés par le SI → null
+ * (champs montant, jamais "ND" — v1.6).
  */
 @Data
 @NoArgsConstructor

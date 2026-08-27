@@ -2,7 +2,7 @@
 
 **Crédit Rural de Guinée S.A. — Documentation technique d'intégration**
 
-*Version 1.5 — 20 août 2026 (v1.1 contrat complet PP/PM · v1.2 extraction incrémentale + notifications · v1.3 refonte Engagements/Encours · v1.4 retours PP V2 : état civil réel, référentiel pays, NIN, API par liste d'identifiants et API des personnes modifiées · v1.5 PM V2 : VilleSiegeSocial et CommuneAdresse depuis les référentiels géographiques SAF, RCCM depuis les pièces du client moral)*
+*Version 1.6 — 27 août 2026 (v1.1 contrat complet PP/PM · v1.2 extraction incrémentale + notifications · v1.3 refonte Engagements/Encours · v1.4 retours PP V2 : état civil réel, référentiel pays, NIN, API par liste d'identifiants et API des personnes modifiées · v1.5 PM V2 : VilleSiegeSocial et CommuneAdresse depuis les référentiels géographiques SAF, RCCM depuis les pièces du client moral · v1.6 correctifs des retours de validation du 20/08/2026 : ND retiré des champs typés, référence d'engagement composite, périodicité dérivée, circuit ordonné)*
 
 ---
 
@@ -40,7 +40,8 @@ désormais présents** dans les réponses des modules M1, selon la règle suivan
 
 | Cas | Valeur émise |
 |---|---|
-| Information **non portée par le SI du CRG** (aucune source SAF2000) | `"ND"` |
+| Information **non portée par le SI du CRG** (aucune source SAF2000) — champ **texte libre** | `"ND"` |
+| Information non portée par le SI — champ **typé** (date, montant, taux, téléphone, référentiel) | `null` — **révision 1.6** : la validation de la plateforme contrôle la syntaxe avant l'obligation, `"ND"` y déclenchait SYN001/SYN003/SYN004 |
 | Information **sourcée mais vide** pour le client concerné | `null` |
 | Champ **conditionnel non applicable** (« doit rester vide sinon » : `NomMtlClt`, `DateDeces`, `SitBancaire`, `DateDebIB`, `DateFinIB`...) | `null` |
 | Sous-objet facultatif non porté (mandataires, actionnaires, tuteurs, employeurs) | liste vide `[]` |
@@ -96,6 +97,31 @@ Les modules **M1 (PP/PM) et M2 (engagements)** ne renvoient plus, par défaut, q
   notifiées) ; `hasNext` reflète le parcours réel ;
 - le module **M4 (encours)** reste une photo complète de la période d'arrêté (la
   notion de « déjà traité » ne s'y applique pas).
+
+### 2.4 Correctifs v1.6 — retours de validation du 20/08/2026
+
+1. **Référence d'engagement composite** : `RefIntEng = <codAgence>-<numéroCrédit>` (ex.
+   `102-540631`), identique entre M2 (engagement + bénéficiaire) et M4 (encours). Le numéro
+   de crédit seul n'est pas unique entre agences — cause des rejets LOG008 sur l'encours.
+   Le détail se lit désormais `GET /engagements/{codAgence}-{numéro}`.
+2. **Circuit de soumission ordonné** : par défaut, `/engagements` (statut=restantes) ne sert
+   que les engagements dont le **bénéficiaire a été notifié traité** (module PP ou PM), et
+   `/encours` (filtre=declares, défaut) ne couvre que les **engagements notifiés traités** —
+   `filtre=aucun` restitue la photo complète. Ordre : PP/PM → notification → engagements →
+   notification → encours.
+3. **`ND` retiré des champs typés** (§ 2.0) : `DatCreat`, `NIFP`, `RCCM`, `NIF`,
+   `NumAgrement`, `DatNai`, `RevMensMoy`, `TxEffGlob`, `DatClo`, `DatPremEch`,
+   `DatEmiPiece`, `PaysEmiPiece` valent `null` quand la donnée n'existe pas dans le SI.
+4. **`Mobile`** : repli sur les téléphones secondaires SAF ; un numéro non conforme au
+   format `+224XXXXXXXXX` après normalisation n'est plus transmis (`null`).
+5. **`SecActEcon` (PM)** : obligatoire — repli transitoire `O` (services collectifs) quand
+   l'activité SAF est absente ou non transcodable.
+6. **`Sigle`** : tronqué à 50 caractères.
+7. **`PeriodRemb`** : dérivée du plan de paiement (écart moyen entre échéances) — codes
+   transitoires `01` hebdomadaire … `06` annuel, `07` échéance unique, dans l'attente du
+   référentiel BCRG des périodicités.
+8. **Crédits jamais décaissés** (sans date de mise en place) : **exclus du module M2**
+   (22 rejets `dateMEP`) — un engagement non mis en place n'est pas déclarable.
 
 ---
 
@@ -187,29 +213,29 @@ Les modules **M1 (PP/PM) et M2 (engagements)** ne renvoient plus, par défaut, q
 | Requête | Description |
 |---|---|
 | `GET /engagements?page=0&size=100&statut=restantes` | Liste paginée des engagements (extraction incrémentale, § 2.3) |
-| `GET /engagements/{refEng}` | Détail d'un engagement par référence interne |
+| `GET /engagements/{refEng}` | Détail d'un engagement — référence composite `<codAgence>-<numéro>` (v1.6) |
 
 **Champs de la réponse (retour BCRG pris en compte : `beneficiaireId/Nom`, `codActivite`, `solde` et `statut` supprimés ; l'état du contrat est porté par `Cloture`/`MotifCloture`/`DatClo`) :**
 
 | Champ | Valeur servie par le CRG |
 |---|---|
-| `RefIntEng` | Référence interne (n° de crédit SAF) |
+| `RefIntEng` | Référence composite `<codAgence>-<n° de crédit SAF>` (v1.6) |
 | `TypEve` | `01` — engagement accordé (les demandes d'engagement ne sont pas encore déclarées) |
 | `LigneParent` / `RefIntLigne` | `01` (pas de lignes mère/fils au CRG) / `null` |
 | `RefDemandeEng` / `DatDem` | `null` (facultatifs) |
 | `TypModif` / `EstDout` | `01` — aucune modification / `null` |
 | `Cloture` | `0` en cours, `1` clôturé (dérivé de l'état SAF et du solde) |
 | `MotifCloture` | Si clôturé : `01` totalement remboursé (`06` autre si annulé) |
-| `DatClo` | Date de solde SAF (`JJMMAAAA`), `ND` si clôturé sans date |
+| `DatClo` | Date de solde SAF (`JJMMAAAA`), `null` si clôturé sans date (v1.6) |
 | `DatAccord` / `DateMEP` / `DatFin` / `DatPremEch` | `JJMMAAAA` — accord, mise en place, fin prévue, première échéance du plan |
 | `TypEng` | Code SI transitoire — **en attente du référentiel F.9** (voir § 5) |
 | `MntEng` / `MntEch` / `NbrEch` | Montant accordé, montant d'échéance, nombre d'échéances |
 | `MntInt` | Total des intérêts prévus (somme du plan de remboursement) |
 | `CodDev` | `GNF` |
-| `PeriodRemb` | `ND` — **en attente du référentiel des périodicités** |
+| `PeriodRemb` | Dérivée du plan de paiement (v1.6) : codes transitoires `01` hebdo, `02` quinzaine, `03` mensuel, `04` trimestriel, `05` semestriel, `06` annuel, `07` unique — **codes cibles à caler sur le référentiel des périodicités** |
 | `TxIntEng` / `TypTxInt` | Taux au format `NN.NN` / `00` (taux fixe, politique CRG) |
 | `TxComm` / `IndRef` / `Sprd` | `null` (pas de commission ; taux fixe) |
-| `TxEffGlob` | `ND` — TEG non calculé par le SI |
+| `TxEffGlob` | `null` — TEG non calculé par le SI (v1.6) |
 | `MoyRemb` | `01` débit de compte (convention CRG, à confirmer) |
 | `TypAmo` / `TypDiffAmo` / `UnitDur` / `PerDiffAmo` | `05` échéance constante (`04` in fine si échéance unique) / `A` aucun différé / `null` / `null` |
 | `MntFrais` / `MntComm` | `0` (convention) |
@@ -224,7 +250,7 @@ Les modules **M1 (PP/PM) et M2 (engagements)** ne renvoient plus, par défaut, q
 
 | Requête | Description |
 |---|---|
-| `GET /encours?periode=AAAA-MM&page=0&size=100` | Encours à la période d'arrêté indiquée |
+| `GET /encours?periode=AAAA-MM&page=0&size=100&filtre=declares` | Encours à la période d'arrêté indiquée — `filtre=declares` (défaut) : seuls les engagements notifiés traités ; `filtre=aucun` : photo complète. En mode filtré une page peut contenir moins de `size` éléments : se fier à `hasNext` |
 
 Le paramètre **`periode` est obligatoire** au format `AAAA-MM`. Conformément au retour BCRG :
 un encours n'est **jamais émis pour un engagement clôturé** ; sont couverts les crédits à
@@ -236,7 +262,7 @@ calculs (échéances, impayés, dernier paiement) sont arrêtés à la fin de la
 
 | Champ | Valeur servie par le CRG |
 |---|---|
-| `RefIntEng` | Référence interne (n° de crédit SAF) |
+| `RefIntEng` | Référence composite `<codAgence>-<n° de crédit SAF>`, identique au module M2 (v1.6) |
 | `CodDev` | `GNF` |
 | `DatEch` / `MntDerEch` | Dernière tombée d'échéance ≤ arrêté (`JJMMAAAA`) et son montant |
 | `MonPai` / `DatPai` | Dernier paiement réalisé (`0`/`null` si aucun) — approximation : échéance soldée la plus récente |
@@ -356,7 +382,7 @@ les champs sourcés mais vides sont émis à `null` (voir § 2.0).
 **Champs émis à `ND` (aucune source SAF2000)** :
 
 - **Personnes physiques** : `NIN`, `DatNai`, `PaysNai`, filiation (`NomPere`, `PrenomPere`, `NomNaiMere`, `PrmMre`), date/lieu/pays d'émission des pièces, `RevMensMoy`/`DepMensMoy` ;
-- **Personnes morales** : `DatCreat`, `NIF`, `NIFP`, `NumAgrement` (la table `CL_PERSONAS_JURIDICAS` ne porte ni date de constitution ni identifiant fiscal). Depuis la **v1.5 (PM V2)** : `VilleSiegeSocial` = libellé de la préfecture du siège (référentiel `PA_PROVINCIAS`, renseignée pour la quasi-totalité des PM), `CommuneAdresse` = libellé du district (repli canton), et `RCCM` repris de la pièce SAF « NUMERO DU RCCM » quand elle existe (`ND` sinon — la collecte du RCCM/NIF reste un chantier du CRG) ;
+- **Personnes morales** : `DatCreat`, `NIF`, `NIFP`, `NumAgrement` (la table `CL_PERSONAS_JURIDICAS` ne porte ni date de constitution ni identifiant fiscal). Depuis la **v1.5 (PM V2)** : `VilleSiegeSocial` = libellé de la préfecture du siège (référentiel `PA_PROVINCIAS`, renseignée pour la quasi-totalité des PM), `CommuneAdresse` = libellé du district (repli canton), et `RCCM` repris de la pièce SAF « NUMERO DU RCCM » quand elle existe (`null` sinon depuis la v1.6 — la collecte du RCCM/NIF reste un chantier du CRG, et la règle transitoire pour la donnée manquante est à arbitrer avec la BCRG) ;
 - **Comptes** : `CleRib` (le CRG n'est pas un participant de type banque) ;
 - **Encours** : indicateurs IFRS (`pd`, `lgd`, `ccf`, `ifrsStage`) restent à `null` ;
 - **Engagements** : garanties et consolidations (différés).
