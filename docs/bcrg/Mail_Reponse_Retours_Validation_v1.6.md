@@ -1,11 +1,11 @@
-# Mail — Réponse aux rapports d'erreurs de validation du 20/08/2026 (v1.6) + relance référentiels
+# Mail — Réponse aux rapports d'erreurs de validation du 20/08/2026 (v1.6/v1.7) + relance référentiels
 
 > Destinataires : équipe technique plateforme BCRG (Nerhy Group)
-> À envoyer après le déploiement en production de la v1.6 (ajuster le § « disponibilité » sinon)
+> ✅ v1.6 et v1.7 déployées en production le 27/08/2026 — mail prêt à l'envoi
 
 ---
 
-**Objet : CRG — Rapports d'erreurs de validation du 20/08 : correctifs (API v1.6) et demande de référentiels indispensables (types d'engagements, périodicités, agences)**
+**Objet : CRG — Rapports d'erreurs de validation du 20/08 : correctifs (API v1.6), nouvelles API par identifiants (v1.7) et demande de référentiels indispensables (types d'engagements, périodicités, agences)**
 
 Madame, Monsieur,
 
@@ -132,9 +132,28 @@ maximale et les caractères autorisés par votre middleware.
 
 ---
 
+## PARTIE 3 — Nouvelles API « par identifiants » (v1.7)
+
+Conformément à votre demande de ce jour (récupération des personnes morales par liste
+d'identifiants, et passage des identifiants dans le corps de la requête plutôt que dans
+l'URL), les endpoints suivants sont disponibles :
+
+| Requête | Description |
+|---|---|
+| `POST /bcrg/personnes-physiques/par-ids` — corps `{"ids": ["id1", "id2", ...]}` | **Recommandé** : personnes physiques par liste d'identifiants internes (1 à 200 par appel), identifiants dans le payload |
+| `POST /bcrg/personnes-morales/par-ids` — corps `{"ids": ["id1", "id2", ...]}` | **Nouveau** : personnes morales par liste d'identifiants internes (1 à 200 par appel) |
+| `GET /bcrg/personnes-physiques/par-ids?ids=id1,id2,...` | Conservé pour compatibilité |
+| `GET /bcrg/personnes-morales/par-ids?ids=id1,id2,...` | Variante GET du nouvel endpoint |
+
+Les variantes `POST` évitent les limites de longueur d'URL sur les gros lots ; les
+réponses sont identiques à celles des extractions paginées (mêmes contrats M1). Au-delà
+de 200 identifiants, la requête est refusée en `400` — merci de découper vos lots.
+
+---
+
 ## Disponibilité
 
-La version 1.6 est déployée sur `https://digi-creditrural-io.com/bcrg` (documentation
+Les versions 1.6 et 1.7 sont déployées sur `https://digi-creditrural-io.com/bcrg` (documentation
 technique mise à jour transmise sur demande). Les données précédemment soumises et
 rejetées peuvent être re-extraites immédiatement selon le circuit du § 1.4 — les
 références d'engagement ayant changé de format, aucune collision avec les soumissions
