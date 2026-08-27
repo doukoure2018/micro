@@ -2,7 +2,7 @@
 
 **Crédit Rural de Guinée S.A. — Documentation technique d'intégration**
 
-*Version 1.6 — 27 août 2026 (v1.1 contrat complet PP/PM · v1.2 extraction incrémentale + notifications · v1.3 refonte Engagements/Encours · v1.4 retours PP V2 : état civil réel, référentiel pays, NIN, API par liste d'identifiants et API des personnes modifiées · v1.5 PM V2 : VilleSiegeSocial et CommuneAdresse depuis les référentiels géographiques SAF, RCCM depuis les pièces du client moral · v1.6 correctifs des retours de validation du 20/08/2026 : ND retiré des champs typés, référence d'engagement composite, périodicité dérivée, circuit ordonné)*
+*Version 1.7 — 27 août 2026 (v1.1 contrat complet PP/PM · v1.2 extraction incrémentale + notifications · v1.3 refonte Engagements/Encours · v1.4 retours PP V2 : état civil réel, référentiel pays, NIN, API par liste d'identifiants et API des personnes modifiées · v1.5 PM V2 : VilleSiegeSocial et CommuneAdresse depuis les référentiels géographiques SAF, RCCM depuis les pièces du client moral · v1.6 correctifs des retours de validation du 20/08/2026 : ND retiré des champs typés, référence d'engagement composite, périodicité dérivée, circuit ordonné · v1.7 : API personnes morales par ids + variantes POST des /par-ids, ids dans le corps de requête)*
 
 ---
 
@@ -174,6 +174,7 @@ Les modules **M1 (PP/PM) et M2 (engagements)** ne renvoient plus, par défaut, q
 | Requête | Description |
 |---|---|
 | `GET /personnes-physiques/par-ids?ids=id1,id2,...` | Personnes physiques à partir d'une liste d'identifiants internes (1 à **200** par appel) |
+| `POST /personnes-physiques/par-ids` — corps `{"ids": ["id1", "id2"]}` | **v1.7 (recommandé)** : même service, identifiants dans le corps de la requête — évite les limites de longueur d'URL sur les gros lots. Le GET reste disponible |
 | `GET /personnes-physiques/modifiees?page=0&size=100` | Personnes **modifiées depuis leur déclaration** : à chaque notification (`POST /traitements`, module `PERSONNE_PHYSIQUE`), une empreinte du contenu déclaré est stockée ; cet endpoint compare l'empreinte actuelle à celle stockée et ne renvoie que les écarts. Après réintégration, notifier à nouveau les références pour rafraîchir l'empreinte. Parcours complet des références déclarées : extraction recommandée hors heures d'affluence |
 
 ### 3.2 Module M1 — Personnes morales
@@ -182,6 +183,8 @@ Les modules **M1 (PP/PM) et M2 (engagements)** ne renvoient plus, par défaut, q
 |---|---|
 | `GET /personnes-morales?page=0&size=100` | Liste paginée des personnes morales |
 | `GET /personnes-morales/{idClient}` | Détail d'une personne morale par identifiant interne |
+| `GET /personnes-morales/par-ids?ids=id1,id2,...` | **v1.7** : personnes morales à partir d'une liste d'identifiants internes (1 à **200** par appel) |
+| `POST /personnes-morales/par-ids` — corps `{"ids": ["id1", "id2"]}` | **v1.7 (recommandé)** : même service, identifiants dans le corps de la requête |
 
 **Champs de la réponse (28 champs, feuille PersonneMorale du classeur de mapping) :**
 

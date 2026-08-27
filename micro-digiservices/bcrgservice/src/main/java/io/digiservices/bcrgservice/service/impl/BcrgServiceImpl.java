@@ -178,6 +178,18 @@ public class BcrgServiceImpl implements BcrgService {
         return mapper.toPersonneMorale(ebankingRegClient.getPersonneMoraleById(idClient));
     }
 
+    /** v1.7 : même mécanique que les PP par ids (lots de 200 vers ebanking). */
+    @Override
+    public List<PersonneMoraleDto> getPersonnesMoralesParIds(List<String> ids) {
+        List<PersonneMoraleDto> resultat = new ArrayList<>();
+        for (int i = 0; i < ids.size(); i += TAILLE_LOT_IDS) {
+            List<String> lot = ids.subList(i, Math.min(i + TAILLE_LOT_IDS, ids.size()));
+            ebankingRegClient.getPersonnesMoralesByIds(lot)
+                    .forEach(s -> resultat.add(mapper.toPersonneMorale(s)));
+        }
+        return resultat;
+    }
+
     // ==================== Engagements ====================
 
     /**

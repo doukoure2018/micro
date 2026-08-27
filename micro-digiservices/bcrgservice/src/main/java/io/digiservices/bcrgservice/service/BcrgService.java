@@ -25,6 +25,9 @@ public interface BcrgService {
 
     PersonneMoraleDto getPersonneMorale(String idClient);
 
+    /** v1.7 : personnes morales à partir d'une liste d'identifiants internes (demande BCRG). */
+    java.util.List<PersonneMoraleDto> getPersonnesMoralesParIds(java.util.List<String> ids);
+
     PageDto<EngagementDto> getEngagements(int page, int size, boolean toutes);
 
     /** v1.6 : référence composite {@code <codAgence>-<numCredito>} (cf. BcrgTranslator.refIntEng). */
