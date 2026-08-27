@@ -912,7 +912,7 @@
                                     correction de la demande compl&egrave;te</div>
                             </div>
                         </div>
-                        <a [routerLink]="['/dashboards/agent-credit/correction-demande', state().demandeIndividuel?.demandeIndividuelId]"
+                        <a [routerLink]="isGroupeNature() ? ['/dashboards/agent-credit/demande-groupe', state().demandeIndividuel?.demandeIndividuelId] : ['/dashboards/agent-credit/correction-demande', state().demandeIndividuel?.demandeIndividuelId]"
                             style="display: inline-flex !important; align-items: center; background-color: #ea580c; color: white; padding: 10px 20px; border-radius: 8px; font-weight: 600; text-decoration: none; transition: background-color 0.2s;"
                             class="hover:bg-orange-700">
                             <i class="pi pi-pencil mr-2"></i>Corriger la demande compl&egrave;te

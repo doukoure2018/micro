@@ -838,6 +838,8 @@ public class DemandeIndResource {
 
             // Re-contrôle bloquant de la quotité pour un crédit fonctionnaire
             CreditFonctionnaireValidator.validateDemande(demandeIndividuel);
+            // Re-contrôle bloquant du groupe (somme des parts membres = montant)
+            io.digiservices.ecreditservice.validation.CreditGroupeValidator.validateDemande(demandeIndividuel);
 
             demandeIndService.updateDemandeComplete(demandeIndividuel);
 

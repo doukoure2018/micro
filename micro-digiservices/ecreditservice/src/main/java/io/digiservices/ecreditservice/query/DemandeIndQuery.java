@@ -693,6 +693,35 @@ public class DemandeIndQuery {
             ORDER BY membre_groupe_id
             """;
 
+    /** Mise à jour de l'extension groupe en correction (le numéro de demande GRP est conservé). */
+    public static final String UPDATE_DEMANDE_GROUPE = """
+            UPDATE demande_groupe SET
+                type_groupe = :typeGroupe,
+                nom_groupe = :nomGroupe,
+                date_adhesion = :dateAdhesion,
+                district_quartier = :districtQuartier,
+                secteur = :secteur,
+                mandataire1 = :mandataire1,
+                contact_mandataire1 = :contactMandataire1,
+                mandataire2 = :mandataire2,
+                contact_mandataire2 = :contactMandataire2,
+                nombre_membres = :nombreMembres,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE demandeindividuel_id = :demandeId
+            """;
+
+    public static final String DELETE_MEMBRES_GROUPE = """
+            DELETE FROM membre_groupe WHERE demandeindividuel_id = :demandeId
+            """;
+
+    public static final String INSERT_MEMBRE_GROUPE_NAMED = """
+            INSERT INTO membre_groupe (demandeindividuel_id, numero_membre, nom_prenom,
+                montant_percevoir, montant_sollicite, montant_base_pe, versement_mensuel_pe,
+                salaire_net_mensuel)
+            VALUES (:demandeId, :numeroMembre, :nomPrenom, :montantPercevoir,
+                :montantSollicite, :montantBasePe, :versementMensuelPe, :salaireNetMensuel)
+            """;
+
     /** Agent de crédit affecté à la demande (verrou d'accès + affichage du nom). */
     public static final String SELECT_AGENT_AFFECTE_BY_DEMANDE = """
             SELECT d.agent_credit_affecte AS "agentCreditAffecte",

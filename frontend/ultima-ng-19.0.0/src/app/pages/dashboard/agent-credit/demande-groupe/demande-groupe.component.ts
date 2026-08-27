@@ -7,7 +7,7 @@ import localeFr from '@angular/common/locales/fr';
 import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule, NgForm } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CalendarModule } from 'primeng/calendar';
@@ -45,6 +45,7 @@ registerLocaleData(localeFr, 'fr-FR');
 export class DemandeGroupeComponent implements OnInit {
     private readonly userService = inject(UserService);
     private readonly router = inject(Router);
+    private readonly route = inject(ActivatedRoute);
     private readonly destroyRef = inject(DestroyRef);
     private readonly messageService = inject(MessageService);
 
@@ -75,6 +76,10 @@ export class DemandeGroupeComponent implements OnInit {
 
     groupe: DemandeGroupe = demandeGroupeVide();
     membres: MembreGroupe[] = [membreGroupeVide()];
+
+    /** Mode correction : id de la demande rejetée (DA/DR/DE) à modifier et resoumettre. */
+    demandeId: number | null = null;
+    correction: { motif?: string; sections?: string; instructions?: string } = {};
 
     pret = {
         delegation: undefined as any,
@@ -125,7 +130,12 @@ export class DemandeGroupeComponent implements OnInit {
     private verificationMembre$ = new Subject<MembreGroupe>();
 
     ngOnInit(): void {
+        const param = this.route.snapshot.paramMap.get('demandeId');
+        this.demandeId = param ? +param : null;
         this.loadInitialData();
+        if (this.demandeId) {
+            this.chargerDemandeExistante(this.demandeId);
+        }
         this.verificationMembre$
             .pipe(
                 debounceTime(600),
@@ -143,6 +153,65 @@ export class DemandeGroupeComponent implements OnInit {
                     return;
                 }
                 membre.verification = (response.data as any)?.existMembre ? 'trouve' : 'introuvable';
+            });
+    }
+
+    estCorrection(): boolean {
+        return this.demandeId !== null;
+    }
+
+    /** Charge la demande groupe rejetée : extension, membres, garanties et modalités. */
+    private chargerDemandeExistante(demandeId: number): void {
+        this.state.update((s) => ({ ...s, loading: true }));
+        this.userService
+            .getDemandeWithGaranties$(demandeId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    const demande = (response.data as any)?.demandeIndividuel as DemandeIndividuel | undefined;
+                    if (!demande || !demande.demandeGroupe) {
+                        this.messageService.add({ severity: 'error', summary: 'Erreur', detail: "Cette demande n'est pas une demande groupe", life: 6000 });
+                        this.router.navigate(['/dashboards/credit/individuel/attente']);
+                        return;
+                    }
+                    this.groupe = { ...demandeGroupeVide(), ...demande.demandeGroupe,
+                        dateAdhesion: demande.demandeGroupe.dateAdhesion ? new Date(demande.demandeGroupe.dateAdhesion as string) : null };
+                    this.membres = (demande.membresGroupe && demande.membresGroupe.length > 0)
+                        ? demande.membresGroupe.map((m) => ({ ...m })) : [membreGroupeVide()];
+                    this.pret.numeroMembreGroupe = demande.numeroMembre || '';
+                    this.pret.objectCredit = demande.objectCredit || 'Fond de roulement';
+                    this.pret.detailObjectCredit = demande.detailObjectCredit || '';
+                    this.pret.montantDemande = Number(demande.montantDemande) || 0;
+                    this.pret.dureeDemande = Number(demande.dureeDemande) || 6;
+                    this.pret.nombreEcheance = Number(demande.nombreEcheance) || 2;
+                    this.pret.tauxInteret = Number(demande.tauxInteret) || 3;
+                    this.pret.periodiciteRemboursement = demande.periodiciteRemboursement || 'Mensuelle';
+                    this.pret.echeance = Number(demande.echeance) || 0;
+                    this.pret.nombreAnneeActivite = Number(demande.nombreAnneeActivite) || 0;
+                    this.pret.selectedTypeActivite = demande.typeActivite ? Number(demande.typeActivite) : undefined;
+                    if (this.pret.selectedTypeActivite) {
+                        this.sousActiviteOptions = CreditActiviteData.getSousActivitesByActivite(this.pret.selectedTypeActivite).map((sa) => ({ label: sa.libelle, value: sa.code }));
+                        this.pret.selectedSousActivite = demande.sousActivite ? Number(demande.sousActivite) : undefined;
+                        if (this.pret.selectedSousActivite) {
+                            this.sousSousActiviteOptions = CreditActiviteData.getSousSousActivites(this.pret.selectedTypeActivite, this.pret.selectedSousActivite).map((ssa) => ({ label: ssa.libelle, value: ssa.code }));
+                            this.pret.selectedSousSousActivite = demande.sousSousActivite ? Number(demande.sousSousActivite) : undefined;
+                        }
+                    }
+                    this.correction = {
+                        motif: (demande as any).motifRejetDa || (demande as any).motifRejetDr || (demande as any).motifRejetDe,
+                        sections: (demande as any).sectionsARevoirDa || (demande as any).sectionsARevoirDr || (demande as any).sectionsARevoirDe,
+                        instructions: (demande as any).instructionsAc
+                    };
+                    this.state.update((s) => ({
+                        ...s,
+                        loading: false,
+                        garanties: ((demande as any).garanties || []).map((g: any) => ({ ...g }))
+                    }));
+                },
+                error: () => {
+                    this.state.update((s) => ({ ...s, loading: false }));
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Chargement de la demande impossible', life: 6000 });
+                }
             });
     }
 
@@ -400,6 +469,27 @@ export class DemandeGroupeComponent implements OnInit {
         } as unknown as DemandeIndividuel;
 
         this.state.update((s) => ({ ...s, submitting: true }));
+
+        if (this.estCorrection() && this.demandeId) {
+            // Correction : mise à jour de la demande + extension + membres, puis retour au
+            // détail où l'agent resoumet (bouton « Resoumettre les corrections »)
+            this.userService
+                .updateDemandeComplete$(this.demandeId, demandeData)
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe({
+                    next: () => {
+                        this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Corrections sauvegardées — resoumettez la demande depuis le détail', life: 5000 });
+                        this.state.update((s) => ({ ...s, submitting: false }));
+                        setTimeout(() => this.router.navigate(['/dashboards/credit/individuel/attente/detail', this.demandeId]), 1200);
+                    },
+                    error: (error) => {
+                        this.state.update((s) => ({ ...s, submitting: false }));
+                        this.messageService.add({ severity: 'error', summary: 'Erreur', detail: error.message || error || 'Échec de la sauvegarde', life: 8000 });
+                    }
+                });
+            return;
+        }
+
         this.userService
             .addDemandeIndWithGaranties$(demandeData)
             .pipe(takeUntilDestroyed(this.destroyRef))

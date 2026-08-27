@@ -12,6 +12,25 @@
 
     <form #demandeGroupeForm="ngForm" (ngSubmit)="creerDemande(demandeGroupeForm)" class="py-2">
 
+        <!-- Bannière correction (demande rejetée DA/DR/DE) -->
+        @if (estCorrection() && (correction.motif || correction.sections)) {
+        <div class="bg-red-50 border-2 border-red-300 rounded-xl p-5 mb-6">
+            <div class="flex items-center gap-3 font-bold text-red-700 mb-2">
+                <i class="pi pi-exclamation-triangle text-xl"></i>
+                Demande groupe rejetée — correction requise
+            </div>
+            @if (correction.motif) {
+            <div class="text-sm text-red-800"><strong>Motif :</strong> {{ correction.motif }}</div>
+            }
+            @if (correction.sections) {
+            <div class="text-sm text-red-800"><strong>Sections à revoir :</strong> {{ correction.sections }}</div>
+            }
+            @if (correction.instructions) {
+            <div class="text-sm text-red-800"><strong>Instructions :</strong> {{ correction.instructions }}</div>
+            }
+        </div>
+        }
+
         <!-- ═══════════════ BANDEAU ═══════════════ -->
         <div class="rounded-xl shadow-md overflow-hidden border-2 mb-8" style="border-color: #6366f1;">
             <div class="text-white px-6 py-5" style="background: linear-gradient(to right, #6366f1, #4f46e5);">
@@ -22,7 +41,7 @@
                     </div>
                     <div>
                         <p class="m-0 text-sm uppercase tracking-wide opacity-90">Groupe Solidaire</p>
-                        <h2 class="m-0 font-bold text-xl">Demande de Crédit Groupe</h2>
+                        <h2 class="m-0 font-bold text-xl">{{ estCorrection() ? "Correction de la Demande de Crédit Groupe" : "Demande de Crédit Groupe" }}</h2>
                         <p class="m-0 mt-1 text-sm opacity-90">
                             Formulaire uniforme CAS · CAS-R · CCS · CRS · CFE · MCK · ACM — le numéro de demande
                             (GRP-{{ today | date:'yyyy' }}-NNNNN) est attribué à l'enregistrement.
@@ -71,7 +90,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">N° de la demande</label>
-                    <input pInputText value="Attribué à l'enregistrement" class="w-full" [disabled]="true">
+                    <input pInputText [value]="groupe.numeroDemande || 'Attribué à l\'enregistrement'" class="w-full" [disabled]="true">
                 </div>
             </div>
         </div>
@@ -447,7 +466,7 @@
                     La demande suit le circuit de validation standard (agent de crédit → DA → DR → DE → DG selon le
                     montant). L'analyse spécifique au type de groupe s'effectue après la prise en charge.
                 </p>
-                <button pButton type="submit" icon="pi pi-send" label="Enregistrer la demande groupe"
+                <button pButton type="submit" icon="pi pi-send" [label]="estCorrection() ? 'Sauvegarder les corrections' : 'Enregistrer la demande groupe'"
                     [loading]="state().submitting"
                     [disabled]="demandeGroupeForm.invalid || state().submitting || !peutSoumettre()"></button>
             </div>

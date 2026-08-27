@@ -1559,6 +1559,43 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
                 log.info("Extension fonctionnaire mise a jour pour la demande {}", demande.getDemandeIndividuelId());
             }
 
+            // Mettre a jour l'extension groupe + remplacer les membres (nature Groupe Solidaire, V124)
+            if (io.digiservices.ecreditservice.validation.CreditGroupeValidator.isGroupe(demande)
+                    && demande.getDemandeGroupe() != null) {
+                io.digiservices.ecreditservice.dto.DemandeGroupe groupe = demande.getDemandeGroupe();
+                jdbcClient.sql(DemandeIndQuery.UPDATE_DEMANDE_GROUPE)
+                        .param("demandeId", demande.getDemandeIndividuelId())
+                        .param("typeGroupe", groupe.getTypeGroupe())
+                        .param("nomGroupe", groupe.getNomGroupe())
+                        .param("dateAdhesion", groupe.getDateAdhesion())
+                        .param("districtQuartier", groupe.getDistrictQuartier())
+                        .param("secteur", groupe.getSecteur())
+                        .param("mandataire1", groupe.getMandataire1())
+                        .param("contactMandataire1", groupe.getContactMandataire1())
+                        .param("mandataire2", groupe.getMandataire2())
+                        .param("contactMandataire2", groupe.getContactMandataire2())
+                        .param("nombreMembres", groupe.getNombreMembres())
+                        .update();
+                if (demande.getMembresGroupe() != null && !demande.getMembresGroupe().isEmpty()) {
+                    jdbcClient.sql(DemandeIndQuery.DELETE_MEMBRES_GROUPE)
+                            .param("demandeId", demande.getDemandeIndividuelId())
+                            .update();
+                    for (io.digiservices.ecreditservice.dto.MembreGroupe membre : demande.getMembresGroupe()) {
+                        jdbcClient.sql(DemandeIndQuery.INSERT_MEMBRE_GROUPE_NAMED)
+                                .param("demandeId", demande.getDemandeIndividuelId())
+                                .param("numeroMembre", membre.getNumeroMembre())
+                                .param("nomPrenom", membre.getNomPrenom())
+                                .param("montantPercevoir", membre.getMontantPercevoir())
+                                .param("montantSollicite", membre.getMontantSollicite())
+                                .param("montantBasePe", membre.getMontantBasePe())
+                                .param("versementMensuelPe", membre.getVersementMensuelPe())
+                                .param("salaireNetMensuel", membre.getSalaireNetMensuel())
+                                .update();
+                    }
+                }
+                log.info("Extension groupe mise a jour pour la demande {}", demande.getDemandeIndividuelId());
+            }
+
             log.info("Demande {} mise a jour avec succes", demande.getDemandeIndividuelId());
         } catch (ApiException e) {
             throw e;
