@@ -200,9 +200,12 @@ public class AnalyseQuery {
         """;
 
 
+    // En cas de doublon historique (double-clic avant l'ajout du garde-fou), on sert le dossier le plus recent
     public static final String FIND_DOSSIER_BY_DEMANDE_INDIVIDUEL_ID = """
           SELECT * FROM dossiers_credit
              WHERE demandeIndividuel_id = :demandeId
+             ORDER BY date_creation DESC, id DESC
+             LIMIT 1
         """;
 
     public static final String INSERT_AVIS_DEMANDE_INDIVIDUEL =
