@@ -1886,6 +1886,15 @@ export class AnalyseFluxTresorerieComponent {
     checkIfMoisHasData(values: any): boolean {
         if (!values) return false;
 
+        // Mois 0 (P0) : la seule saisie possible est le fonds de roulement (solde début) —
+        // sans ce cas, P0 n'est jamais envoyé à la sauvegarde et le solde disparaît au rechargement
+        if (values.numeroMois === 0) {
+            const solde = values.soldeDebut;
+            if (solde !== null && solde !== undefined && solde !== '' && Number(solde) !== 0) {
+                return true;
+            }
+        }
+
         const fieldsToCheck = [
             'ventes',
             'autresRevenus',
