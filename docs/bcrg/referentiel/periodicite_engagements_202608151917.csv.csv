@@ -1,0 +1,7 @@
+"description";"identifiant";"libelle";"nbre_mois"
+"Aucune Périodicité";"00";"Aucune Périodicité";"0"
+"Echéance Unique";"01";"Echéance Unique";"1"
+"Mensuelle";"02";"Mensuelle";"12"
+"Trimestrielle";"03";"Trimestrielle";"4"
+"Semestrielle";"04";"Semestrielle";"2"
+"Annuelle";"05";"Annuelle";"1"

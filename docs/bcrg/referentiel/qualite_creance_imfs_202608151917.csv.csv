@@ -1,0 +1,5 @@
+"actif";"identifiant";"libelle";"nbre_max_jours";"type_institution"
+"true";"21";"Créances Saines";"0";"02"
+"true";"22";"Créances Impayées";"1 à 360";"02"
+"true";"23";"Créances Restructurées ou rééchelonnées";"0";"02"
+"true";"24";"Autres créances en souffrance";"360 et +";"02"

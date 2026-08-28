@@ -220,9 +220,9 @@ public class RegulatoryRepository {
     // (FEC_PRIMER_DESEMBOLSO null, pas de date de mise en place) sont exclus de M2 —
     // 22 rejets dateMEP le 2026-08-20 ; un engagement non mis en place n'est pas declarable.
     private static final String ENG_SELECT = """
-            SELECT cr.COD_EMPRESA, cr.COD_AGENCIA, cr.NUM_CREDITO, cr.COD_CLIENTE,
+            SELECT cr.COD_EMPRESA, cr.COD_AGENCIA, ag.DES_AGENCIA, cr.NUM_CREDITO, cr.COD_CLIENTE,
                    c.NOM_CLIENTE, c.IND_PERSONA,
-                   cr.TIP_CREDITO, cr.COD_MONEDA, cr.MON_CREDITO, cr.MON_SALDO, cr.MON_CUOTA,
+                   cr.TIP_CREDITO, tc.DES_TIP_CREDITO, cr.COD_MONEDA, cr.MON_CREDITO, cr.MON_SALDO, cr.MON_CUOTA,
                    cr.CANT_CUOTAS, cr.TASA_INTERES, cr.IND_ESTADO, cr.COD_ACTIVIDAD,
                    cr.FEC_CALIFICACION, cr.FEC_APERTURA, cr.FEC_PRIMER_DESEMBOLSO, cr.FEC_VENCIMIENTO,
                    cr.MON_DESEMBOLSADO, cr.FEC_CANCELACION,
@@ -239,6 +239,10 @@ public class RegulatoryRepository {
             FROM PR.PR_CREDITOS cr
             INNER JOIN CL.CL_CLIENTES c
                 ON cr.COD_EMPRESA = c.COD_EMPRESA AND cr.COD_CLIENTE = c.COD_CLIENTE
+            LEFT JOIN PR.PR_TIPO_CREDITO tc
+                ON cr.COD_EMPRESA = tc.COD_EMPRESA AND cr.TIP_CREDITO = tc.TIP_CREDITO
+            LEFT JOIN CF.CF_AGENCIAS ag
+                ON cr.COD_EMPRESA = ag.COD_EMPRESA AND cr.COD_AGENCIA = ag.COD_AGENCIA
             WHERE cr.FEC_PRIMER_DESEMBOLSO IS NOT NULL
             """;
 
@@ -660,11 +664,13 @@ public class RegulatoryRepository {
         RegEngagementDto d = new RegEngagementDto();
         d.setCodEmpresa(str(rs, "COD_EMPRESA"));
         d.setCodAgencia(str(rs, "COD_AGENCIA"));
+        d.setDesAgencia(str(rs, "DES_AGENCIA"));
         d.setNumCredito(lng(rs, "NUM_CREDITO"));
         d.setCodCliente(str(rs, "COD_CLIENTE"));
         d.setNomCliente(str(rs, "NOM_CLIENTE"));
         d.setIndPersona(str(rs, "IND_PERSONA"));
         d.setTipCredito(lngObj(rs, "TIP_CREDITO"));
+        d.setDesTipCredito(str(rs, "DES_TIP_CREDITO"));
         d.setCodMoneda(str(rs, "COD_MONEDA"));
         d.setMonCredito(dec(rs, "MON_CREDITO"));
         d.setMonSaldo(dec(rs, "MON_SALDO"));

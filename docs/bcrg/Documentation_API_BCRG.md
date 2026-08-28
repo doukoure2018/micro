@@ -2,7 +2,7 @@
 
 **Crédit Rural de Guinée S.A. — Documentation technique d'intégration**
 
-*Version 1.7 — 27 août 2026 (v1.1 contrat complet PP/PM · v1.2 extraction incrémentale + notifications · v1.3 refonte Engagements/Encours · v1.4 retours PP V2 : état civil réel, référentiel pays, NIN, API par liste d'identifiants et API des personnes modifiées · v1.5 PM V2 : VilleSiegeSocial et CommuneAdresse depuis les référentiels géographiques SAF, RCCM depuis les pièces du client moral · v1.6 correctifs des retours de validation du 20/08/2026 : ND retiré des champs typés, référence d'engagement composite, périodicité dérivée, circuit ordonné · v1.7 : API personnes morales par ids + variantes POST des /par-ids, ids dans le corps de requête)*
+*Version 1.8 — 28 août 2026 (v1.1 contrat complet PP/PM · v1.2 extraction incrémentale + notifications · v1.3 refonte Engagements/Encours · v1.4 retours PP V2 : état civil réel, référentiel pays, NIN, API par liste d'identifiants et API des personnes modifiées · v1.5 PM V2 : VilleSiegeSocial et CommuneAdresse depuis les référentiels géographiques SAF, RCCM depuis les pièces du client moral · v1.6 correctifs des retours de validation du 20/08/2026 : ND retiré des champs typés, référence d'engagement composite, périodicité dérivée, circuit ordonné · v1.7 : API personnes morales par ids + variantes POST des /par-ids, ids dans le corps de requête · v1.8 : intégration des référentiels officiels BCRG du 27/08 — TypEng F.9, périodicités, agences, QualiCre IMF, secteurs institutionnels)*
 
 ---
 
@@ -123,6 +123,25 @@ Les modules **M1 (PP/PM) et M2 (engagements)** ne renvoient plus, par défaut, q
 8. **Crédits jamais décaissés** (sans date de mise en place) : **exclus du module M2**
    (22 rejets `dateMEP`) — un engagement non mis en place n'est pas déclarable.
 
+### 2.5 Intégration des référentiels officiels (v1.8, référentiels reçus le 27/08)
+
+- **`TypEng`** : transcodé au référentiel **F.9** depuis le libellé du type de crédit de
+  notre SI (011 escompte, 012 habitat, 013 exportation, 014 équipement, 015 consommation,
+  016 trésorerie, 0161 découvert ; repli 017 « autres » — couvre notamment les crédits
+  agricoles/de campagne, sans code dédié au référentiel).
+- **`PeriodRemb`** : codes officiels 00..05 dérivés du plan de paiement (01 échéance unique,
+  02 mensuelle, 03 trimestrielle, 04 semestrielle, 05 annuelle). ⚠️ Le référentiel ne porte
+  ni hebdomadaire ni quinzaine : ces cadences sont rapprochées de la mensuelle (02).
+- **`CodAgce`** : code du **référentiel agences BCRG** (participant GN/101, 182 agences),
+  apparié par libellé d'agence — les codes internes SAF diffèrent des codes BCRG. Agence
+  non appariée → `null` + journalisation (jamais un code hors référentiel).
+- **`QualiCre`** : classification officielle IMF — 21 créances saines, 22 impayées
+  (1-360 j), 24 autres créances en souffrance (> 360 j) ; 23 (restructurées) non dérivable
+  de notre SI.
+- **`SectInst`** : ISBL corrigé `04` (était `040`) ; 032 particuliers et 022 autres SNF confirmés.
+- **`MoyRemb`** : le référentiel des moyens de remboursement transmis est **vide** — code
+  conventionnel `01` maintenu dans l'attente.
+
 ---
 
 ## 3. Endpoints
@@ -231,18 +250,18 @@ Les modules **M1 (PP/PM) et M2 (engagements)** ne renvoient plus, par défaut, q
 | `MotifCloture` | Si clôturé : `01` totalement remboursé (`06` autre si annulé) |
 | `DatClo` | Date de solde SAF (`JJMMAAAA`), `null` si clôturé sans date (v1.6) |
 | `DatAccord` / `DateMEP` / `DatFin` / `DatPremEch` | `JJMMAAAA` — accord, mise en place, fin prévue, première échéance du plan |
-| `TypEng` | Code SI transitoire — **en attente du référentiel F.9** (voir § 5) |
+| `TypEng` | Référentiel **F.9** (v1.8) : 011..017/0161 transcodé du type de crédit SI, repli `017` autres |
 | `MntEng` / `MntEch` / `NbrEch` | Montant accordé, montant d'échéance, nombre d'échéances |
 | `MntInt` | Total des intérêts prévus (somme du plan de remboursement) |
 | `CodDev` | `GNF` |
-| `PeriodRemb` | Dérivée du plan de paiement (v1.6) : codes transitoires `01` hebdo, `02` quinzaine, `03` mensuel, `04` trimestriel, `05` semestriel, `06` annuel, `07` unique — **codes cibles à caler sur le référentiel des périodicités** |
+| `PeriodRemb` | Référentiel officiel (v1.8) : `01` échéance unique, `02` mensuelle (hebdo/quinzaine rapprochées), `03` trimestrielle, `04` semestrielle, `05` annuelle — dérivée du plan de paiement |
 | `TxIntEng` / `TypTxInt` | Taux au format `NN.NN` / `00` (taux fixe, politique CRG) |
 | `TxComm` / `IndRef` / `Sprd` | `null` (pas de commission ; taux fixe) |
 | `TxEffGlob` | `null` — TEG non calculé par le SI (v1.6) |
 | `MoyRemb` | `01` débit de compte (convention CRG, à confirmer) |
 | `TypAmo` / `TypDiffAmo` / `UnitDur` / `PerDiffAmo` | `05` échéance constante (`04` in fine si échéance unique) / `A` aucun différé / `null` / `null` |
 | `MntFrais` / `MntComm` | `0` (convention) |
-| `CodAgce` | Code agence SI — table transmise pour intégration au référentiel |
+| `CodAgce` | Code du référentiel agences BCRG (v1.8, apparié par libellé) ; `null` + journalisation si agence non appariée |
 | `EstRachatCreance` / `ParCont` / `ValNom` / `ValCess` | `02` non / `null` / `null` / `null` |
 | `DatEvent` | Date de session (`JJMMAAAA`) |
 | `Beneficiaires` | **Obligatoire** : `{RefIntEng, IdIntBen, PourBenef}` — titulaire unique, `IdIntBen` = identifiant M1, `PourBenef` = `100.00` |
@@ -279,7 +298,7 @@ calculs (échéances, impayés, dernier paiement) sont arrêtés à la fin de la
 | `MntCreRat` / `MntPro` / `MntPerte` | `0` — régime transitoire (données comptables hors module crédit, voir § 5) |
 | `MntAgi` | `null` (réservé à la catégorie `02`) |
 | `NbrEchPay` / `NbrEchImp` / `NbrEchRest` | Compteurs d'échéances à l'arrêté |
-| `QualiCre` | Codes transitoires dérivés du retard : `01` saine, `02` < 90 j, `03` 90-180 j, `04` > 180 j — **en attente du référentiel de classification IMF** |
+| `QualiCre` | Classification officielle IMF (v1.8) : `21` saine, `22` impayée (1-360 j), `24` en souffrance (> 360 j) — `23` restructurée non dérivable du SI |
 | `PD` / `LGD` / `CCF` / `IFRSStage` | `null` (non produits / facultatifs) |
 | `DatEvent` | Date de session (`JJMMAAAA`) |
 
