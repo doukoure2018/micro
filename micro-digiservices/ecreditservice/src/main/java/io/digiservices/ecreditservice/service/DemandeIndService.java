@@ -10,7 +10,7 @@ public interface DemandeIndService {
 
     void addDemandeInd(DemandeIndividuel demandeIndividuel);
 
-    List<DemandeIndividuel> getListDemandeAttente(Long pointventeId,Long agenceId);
+    List<DemandeIndividuel> getListDemandeAttente(Long pointventeId,Long agenceId,Long userId);
 
     List<DemandeIndividuel> getListDemandeAttenteNotification(Long pointventeId,Long agenceId);
 
@@ -26,7 +26,7 @@ public interface DemandeIndService {
 
     DemandeIndividuel getDetailDemandeIndividuel(Long demandeIndividuelId);
 
-    List<DemandeIndividuel> getListDemandeCreditByDate(Long pointventeId);
+    List<DemandeIndividuel> getListDemandeCreditByDate(Long pointventeId,Long userId);
 
     Boolean existMembre(String numeroMembre);
 
@@ -62,7 +62,7 @@ public interface DemandeIndService {
 
     List<CreditDto> getListCreditByPos(Long pointventeId);
 
-    Integer countNombreCreditAttente(Long pointventeId);
+    Integer countNombreCreditAttente(Long pointventeId,Long userId);
 
     Appreciation getAppreciation(String referenceCredit);
 
@@ -77,7 +77,7 @@ public interface DemandeIndService {
     DemandeResponse addDemandeIndWithGaranties(DemandeIndividuel demandeIndividuel);
     DemandeIndividuel getDemandeWithGaranties(Long demandeId);
 
-    List<DemandeIndividuel> getAllDemandesWithGaranties(Long agenceId, Long pointVenteId);
+    List<DemandeIndividuel> getAllDemandesWithGaranties(Long agenceId, Long pointVenteId, Long userId);
 
     List<DelegationCreditDto> listCreditParDelegation();
 

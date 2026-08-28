@@ -370,15 +370,15 @@ public class DemandeIndResource {
         if ("DA".equals(user.getRole())) {
             // DA gets all demands from their agency
             responseData.put("demandeAttentes",
-                    demandeIndService.getListDemandeAttente(null, user.getAgenceId()));
+                    demandeIndService.getListDemandeAttente(null, user.getAgenceId(), user.getUserId()));
             responseData.put("creditDtos", Collections.emptyList());
             responseData.put("pointVente", null);
         } else {
             // Regular user gets demands from their point de vente
             responseData.put("demandeAttentes",
-                    demandeIndService.getListDemandeAttente(user.getPointventeId(), user.getAgenceId()));
+                    demandeIndService.getListDemandeAttente(user.getPointventeId(), user.getAgenceId(), user.getUserId()));
             responseData.put("nombreDemandeInd",
-                    demandeIndService.countNombreCreditAttente(user.getPointventeId()));
+                    demandeIndService.countNombreCreditAttente(user.getPointventeId(), user.getUserId()));
             responseData.put("creditDtos",
                     demandeIndService.getListCreditByPos(user.getPointventeId()));
             responseData.put("pointVente",
@@ -419,8 +419,9 @@ public class DemandeIndResource {
     @GetMapping("/selection")
     public ResponseEntity<Response> listeDemandeCreditSelection(@NotNull Authentication authentication,
                                                       HttpServletRequest request) {
+        User utilisateur = userClient.getUserByUuid(authentication.getName());
         return created(getUri()).body(getResponse(request,
-                                          Map.of("demandeAttentes",demandeIndService.getListDemandeCreditByDate(userClient.getUserByUuid(authentication.getName()).getPointventeId())), "Liste des demandes en attente", OK));
+                                          Map.of("demandeAttentes",demandeIndService.getListDemandeCreditByDate(utilisateur.getPointventeId(), utilisateur.getUserId())), "Liste des demandes en attente", OK));
     }
 
     @PatchMapping("/update/{statut}/{codUsuarios}/{demandeindividuel_id}")
@@ -761,11 +762,16 @@ public class DemandeIndResource {
      */
     @GetMapping("/all-with-garanties")
     public ResponseEntity<Response> getAllDemandesWithGaranties(
+            @NotNull Authentication authentication,
             @RequestParam(name = "agenceId", required = false) Long agenceId,
             @RequestParam(name = "pointVenteId", required = false) Long pointVenteId)
     {
         try {
-            List<DemandeIndividuel> demandes = demandeIndService.getAllDemandesWithGaranties(agenceId, pointVenteId);
+            // V127 : les dossiers affectes a l'agent connecte restent visibles meme
+            // quand leur point de service differe de celui de l'agent
+            User utilisateur = userClient.getUserByUuid(authentication.getName());
+            List<DemandeIndividuel> demandes = demandeIndService.getAllDemandesWithGaranties(
+                    agenceId, pointVenteId, utilisateur != null ? utilisateur.getUserId() : null);
 
             return ResponseEntity.ok(
                     Response.builder()
