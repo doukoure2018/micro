@@ -48,6 +48,7 @@ import static io.digiservices.bcrgservice.utils.BcrgTranslator.ND;
 public class BcrgMapper {
 
     private final BcrgTranslator translator;
+    private final ReferentielAgencesCrg referentielAgences;
 
     public PersonnePhysiqueDto toPersonnePhysique(RegPersonnePhysiqueDto s) {
         if (s == null) return null;
@@ -205,7 +206,8 @@ public class BcrgMapper {
         d.setDatClo(cloture ? translator.formatDate(s.getFecCancelacionCredito()) : null);
         d.setDatAccord(translator.formatDate(s.getFecApertura()));
         d.setDateMEP(translator.formatDate(s.getFecPrimerDesembolso()));
-        d.setTypEng(s.getTipCredito() != null ? String.valueOf(s.getTipCredito()) : null); // référentiel F.9 en attente
+        // v1.8 : F.9 officiel par mots-clés sur le libellé du type de crédit SAF
+        d.setTypEng(translator.translateTypeEngagement(s.getTipCredito(), s.getDesTipCredito()));
         d.setMntEng(s.getMonCredito());
         d.setMntInt(s.getMntInteretsTotal());
         d.setCodDev(BcrgTranslator.DEVISE_GNF);
@@ -228,7 +230,8 @@ public class BcrgMapper {
         d.setDatFin(translator.formatDate(s.getFecVencimiento()));
         d.setMntFrais(BigDecimal.ZERO);
         d.setMntComm(BigDecimal.ZERO);
-        d.setCodAgce(s.getCodAgencia()); // code SI (référentiel des agences en attente)
+        // v1.8 : code du référentiel agences BCRG, apparié par libellé (codes SAF ≠ codes BCRG)
+        d.setCodAgce(referentielAgences.codeBcrg(s.getCodAgencia(), s.getDesAgencia()));
         d.setEstRachatCreance("02");
         d.setParCont(null);
         d.setValNom(null);

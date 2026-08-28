@@ -41,8 +41,8 @@ public class BcrgTranslator {
     public static final String SECT_INST_PARTICULIERS = "032";
     /** Secteur institutionnel PM par défaut : '022' (Autres sociétés non financières). */
     public static final String SECT_INST_AUTRES_SNF = "022";
-    /** Secteur institutionnel des associations : '040' (ISBL au service des ménages). */
-    public static final String SECT_INST_ISBL = "040";
+    /** Secteur institutionnel des associations : '04' (ISBL) — référentiel BCRG du 27/08 (était '040'). */
+    public static final String SECT_INST_ISBL = "04";
 
     /** Statut PM par défaut : '01' (en activité) — SAF ne porte pas la radiation. */
     public static final String STATUT_PM_EN_ACTIVITE = "01";
@@ -129,7 +129,8 @@ public class BcrgTranslator {
     public String translateFormeJuridique(String claseSociedad, String desSociedad) {
         String libelle = sansAccents(StringUtils.hasText(desSociedad) ? desSociedad : claseSociedad);
         if (!StringUtils.hasText(libelle)) return ND;
-        if (libelle.contains("ASSOCIATION") || libelle.contains("ASOCIACION")) return "33";
+        // ONG assimilée à l'association (33) — le référentiel F.7 du 27/08 n'a pas de code ONG
+        if (libelle.contains("ASSOCIATION") || libelle.contains("ASOCIACION") || libelle.contains("ONG")) return "33";
         if (libelle.contains("COOPERATIVE") || libelle.contains("COOPERATIVA")) return "24";
         if (libelle.contains("GROUPEMENT") && libelle.contains("ECONOMIQUE")) return "13";
         if (libelle.contains("SARLU") || (libelle.contains("RESPONSABILITE") && libelle.contains("UNIPERSONNELLE"))) return "00";
@@ -139,7 +140,7 @@ public class BcrgTranslator {
         if (libelle.contains("COMMANDITE")) return "05";
         if (libelle.contains("INDIVIDUELLE") || libelle.contains("INDIVIDUAL")) return "01";
         if (libelle.contains("ETAT") || libelle.contains("PUBLIC") || libelle.contains("GOUVERNEMENT")) return "39";
-        if (libelle.contains("ONG") || libelle.contains("MUTUELLE")) return "25";
+        if (libelle.contains("MUTUELLE")) return "25";
         if (libelle.contains("SYNDICAT")) return "26";
         return "28"; // Autres societes de droit prive
     }
@@ -327,34 +328,64 @@ public class BcrgTranslator {
     }
 
     /**
-     * Périodicité de remboursement dérivée du plan de paiement SAF : écart moyen en
-     * jours entre échéances ((MAX - MIN) / (nb - 1) sur PR_PLAN_PAGOS). Codes
-     * TRANSITOIRES en attente du référentiel BCRG des périodicités (même approche
-     * que QualiCre) : 01 hebdomadaire, 02 quinzaine, 03 mensuel, 04 trimestriel,
-     * 05 semestriel, 06 annuel, 07 échéance unique (in fine). Indéterminable → null
-     * (jamais "ND" : PeriodRemb est contrôlé au référentiel, 300 rejets SYN002).
+     * Périodicité de remboursement dérivée du plan de paiement SAF (écart moyen en
+     * jours entre échéances), transcodée au RÉFÉRENTIEL OFFICIEL des périodicités
+     * (reçu le 27/08) : 00 aucune, 01 échéance unique, 02 mensuelle, 03 trimestrielle,
+     * 04 semestrielle, 05 annuelle. Le référentiel ne porte ni hebdomadaire ni
+     * quinzaine : ces cadences sont rapprochées de la mensuelle (02), point signalé
+     * à la BCRG. Indéterminable → null (jamais un code hors référentiel).
      */
     public String translatePeriodicite(Integer joursEntreEcheances, Long cantCuotas) {
-        if (cantCuotas != null && cantCuotas == 1L) return "07";
+        if (cantCuotas != null && cantCuotas == 1L) return "01"; // échéance unique
         if (joursEntreEcheances == null || joursEntreEcheances <= 0) return null;
-        if (joursEntreEcheances <= 9) return "01";
-        if (joursEntreEcheances <= 20) return "02";
-        if (joursEntreEcheances <= 45) return "03";
-        if (joursEntreEcheances <= 135) return "04";
-        if (joursEntreEcheances <= 270) return "05";
-        return "06";
+        if (joursEntreEcheances <= 45) return "02";  // mensuelle (hebdo/quinzaine rapprochées)
+        if (joursEntreEcheances <= 135) return "03"; // trimestrielle
+        if (joursEntreEcheances <= 270) return "04"; // semestrielle
+        return "05";                                 // annuelle
     }
 
     /**
-     * Qualité de la créance dérivée des jours de retard — codes TRANSITOIRES en
-     * attente du référentiel BCRG de classification des engagements des IMF :
-     * 01 saine, 02 retard < 90 j, 03 douteuse (90-180 j), 04 compromise (> 180 j).
+     * TypEng au référentiel F.9 (TYPES_NATURES_CATEGORIES_ENGAGEMENTS, reçu le 27/08)
+     * par mots-clés sur le libellé SAF PR_TIPO_CREDITO.DES_TIP_CREDITO :
+     * 011 escompte, 012 habitat, 013 exportation, 014 équipement, 015 consommation,
+     * 016 trésorerie, 0161 découvert, 017 autres. Tous les crédits du CRG relèvent de
+     * la nature 01 (crédits) ; repli documenté : 017 (AUTRES) — couvre notamment les
+     * crédits agricoles/de campagne, sans code dédié au référentiel.
+     */
+    public String translateTypeEngagement(Long tipCredito, String desTipCredito) {
+        String lib = sansAccents(desTipCredito);
+        if (!StringUtils.hasText(lib)) {
+            if (tipCredito != null) {
+                log.info("[BCRG] Type de credit SAF {} sans libelle : TypEng repli '017'", tipCredito);
+            }
+            return "017";
+        }
+        if (lib.contains("DECOUVERT") || lib.contains("AVANCE")) return "0161";
+        if (lib.contains("ESCOMPTE")) return "011";
+        if (lib.contains("HABITAT") || lib.contains("IMMOBILI") || lib.contains("LOGEMENT")
+                || lib.contains("CONSTRUCTION")) return "012";
+        if (lib.contains("EXPORT")) return "013";
+        if (lib.contains("EQUIPEMENT") || lib.contains("EQUIPMENT") || lib.contains("MATERIEL")
+                || lib.contains("MOTO") || lib.contains("VEHICULE")) return "014";
+        if (lib.contains("CONSOMMATION") || lib.contains("PERSONNEL") || lib.contains("SCOLAIRE")
+                || lib.contains("SCOLARITE") || lib.contains("SOCIAL") || lib.contains("FONCTIONNAIRE")
+                || lib.contains("SALARIE")) return "015";
+        if (lib.contains("TRESORERIE") || lib.contains("FONDS DE ROULEMENT") || lib.contains("COMMERC")
+                || lib.contains("STOCKAGE") || lib.contains("NEGOCE")) return "016";
+        log.info("[BCRG] Type de credit SAF {} '{}' non transcode F.9 : repli '017'", tipCredito, desTipCredito);
+        return "017";
+    }
+
+    /**
+     * Qualité de la créance au RÉFÉRENTIEL OFFICIEL de classification IMF
+     * (type_institution 02, reçu le 27/08) : 21 créances saines (0 jour de retard),
+     * 22 créances impayées (1 à 360 jours), 24 autres créances en souffrance (360 et +).
+     * Le code 23 (restructurées/rééchelonnées) n'est pas dérivable de SAF — jamais émis.
      */
     public String qualiCreDepuisRetard(Long joursRetard) {
-        if (joursRetard == null || joursRetard <= 0) return "01";
-        if (joursRetard < 90) return "02";
-        if (joursRetard <= 180) return "03";
-        return "04";
+        if (joursRetard == null || joursRetard <= 0) return "21";
+        if (joursRetard <= 360) return "22";
+        return "24";
     }
 
     /** Majuscules sans accents pour la comparaison par mots-clés. */

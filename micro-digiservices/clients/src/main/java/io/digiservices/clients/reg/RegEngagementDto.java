@@ -17,12 +17,14 @@ import java.time.LocalDate;
 public class RegEngagementDto {
     private String codEmpresa;
     private String codAgencia;
+    private String desAgencia;       // libelle agence SAF (transcodage referentiel agences BCRG, v1.8)
     private Long numCredito;         // reference interne engagement
     private String codCliente;       // beneficiaire
     private String nomCliente;
     private String indPersona;
 
     private Long tipCredito;
+    private String desTipCredito;    // libelle type de credit SAF (transcodage F.9, v1.8)
     private String codMoneda;
     private BigDecimal monCredito;   // montant de l'engagement
     private BigDecimal monSaldo;     // solde
