@@ -58,9 +58,9 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
     }
 
     @Override
-    public List<DemandeIndividuel> getListDemandeAttente(Long pointventeId, Long agenceId) {
+    public List<DemandeIndividuel> getListDemandeAttente(Long pointventeId, Long agenceId, Long userId) {
         try {
-            log.info("Getting demande attente - PointVenteId: {}, AgenceId: {}", pointventeId, agenceId);
+            log.info("Getting demande attente - PointVenteId: {}, AgenceId: {}, UserId: {}", pointventeId, agenceId, userId);
 
             if (pointventeId == null && agenceId == null) {
                 log.warn("Both pointventeId and agenceId are null");
@@ -70,6 +70,7 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
             Map<String, Object> params = new HashMap<>();
             params.put("pointventeId", pointventeId);
             params.put("agenceId", agenceId);
+            params.put("userId", userId);
 
             List<DemandeIndividuel> result = jdbcClient.sql(SELECT_ALL_DEMANDE_ATTENTE)
                     .params(params)
@@ -129,10 +130,13 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
     }
 
     @Override
-    public List<DemandeIndividuel> getListDemandeCreditByDate(Long pointventeId)
+    public List<DemandeIndividuel> getListDemandeCreditByDate(Long pointventeId, Long userId)
     {
         try {
-            return jdbcClient.sql(SELECT_ALL_DEMANDE_ATTENTE_BY_DATE_QUERY).param("pointventeId",pointventeId).query(DemandeIndividuel.class).list();
+            Map<String, Object> params = new HashMap<>();
+            params.put("pointventeId", pointventeId);
+            params.put("userId", userId);
+            return jdbcClient.sql(SELECT_ALL_DEMANDE_ATTENTE_BY_DATE_QUERY).params(params).query(DemandeIndividuel.class).list();
         } catch (EmptyResultDataAccessException exception) {
             log.error(exception.getMessage());
             throw new ApiException("No demandeInd found by email");
@@ -528,10 +532,13 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
     }
 
     @Override
-    public Integer countNombreCreditAttente(Long pointventeId) {
+    public Integer countNombreCreditAttente(Long pointventeId, Long userId) {
         try {
+            Map<String, Object> countParams = new HashMap<>();
+            countParams.put("pointventeId", pointventeId);
+            countParams.put("userId", userId);
             return jdbcClient.sql(COUNT_NUMBER_OF_DEMANDE_IND_APPROVED)
-                    .param("pointventeId", pointventeId)
+                    .params(countParams)
                     .query(Integer.class).single();
         } catch (EmptyResultDataAccessException exception) {
             throw new ApiException("No Credit found");
@@ -1094,11 +1101,11 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
     }
 
     @Override
-    public List<DemandeIndividuel> getAllDemandesWithGaranties(Long agenceId, Long pointVenteId) {
+    public List<DemandeIndividuel> getAllDemandesWithGaranties(Long agenceId, Long pointVenteId, Long userId) {
         try {
             return jdbcTemplate.query(
                     DemandeIndQuery.CALL_GET_ALL_DEMANDES_WITH_GARANTIES_FUNC,
-                    new Object[]{agenceId, pointVenteId},
+                    new Object[]{agenceId, pointVenteId, userId},
                     (rs, rowNum) -> {
                         String demandeJson = rs.getString("demande_data");
                         String garantiesJson = rs.getString("garanties_data");

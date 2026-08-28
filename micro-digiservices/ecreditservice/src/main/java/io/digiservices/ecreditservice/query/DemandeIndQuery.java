@@ -99,7 +99,8 @@ public class DemandeIndQuery {
            FROM demandeindividuel
            WHERE (
                (CAST(:agenceId AS BIGINT) IS NOT NULL AND CAST(:pointventeId AS BIGINT) IS NULL AND agence = CAST(:agenceId AS BIGINT)) OR
-               (CAST(:pointventeId AS BIGINT) IS NOT NULL AND pos = CAST(:pointventeId AS BIGINT))
+               (CAST(:pointventeId AS BIGINT) IS NOT NULL AND pos = CAST(:pointventeId AS BIGINT)) OR
+               (CAST(:userId AS BIGINT) IS NOT NULL AND agent_credit_affecte = CAST(:userId AS BIGINT))
            )
            AND (statut_demande = 'EN_ATTENTE' OR validation_state = 'APPROVED')
            """;
@@ -164,7 +165,9 @@ public class DemandeIndQuery {
                                              WHERE u.user_id = demandeindividuel.agent_credit_affecte) as "agentAffecteNom",
                                            createdAt as "createdAt"
 
-                            		   FROM demandeindividuel WHERE pos = :pointventeId
+                            		   FROM demandeindividuel
+                            		   WHERE (pos = CAST(:pointventeId AS BIGINT)
+                            		          OR (CAST(:userId AS BIGINT) IS NOT NULL AND agent_credit_affecte = CAST(:userId AS BIGINT)))
                             		   AND statut_demande='EN_ATTENTE'
                             		   AND validation_state IN ('SELECTION','APPROVED') ORDER BY DATE(createdAt) DESC
                     """;
@@ -301,7 +304,7 @@ public class DemandeIndQuery {
 
     public static final String SELECT_ALL_CREDIT_QUERY = "SELECT * FROM credit WHERE pointvente_id = :pointventeId  AND status IN ('ACCEPTED','REJECTED')";
 
-    public static final String COUNT_NUMBER_OF_DEMANDE_IND_APPROVED = "SELECT COUNT(*)  FROM demandeindividuel WHERE pos = :pointventeId AND statut_demande='EN_ATTENTE' AND validation_state IN ('SELECTION','APPROVED')";
+    public static final String COUNT_NUMBER_OF_DEMANDE_IND_APPROVED = "SELECT COUNT(*)  FROM demandeindividuel WHERE (pos = CAST(:pointventeId AS BIGINT) OR (CAST(:userId AS BIGINT) IS NOT NULL AND agent_credit_affecte = CAST(:userId AS BIGINT))) AND statut_demande='EN_ATTENTE' AND validation_state IN ('SELECTION','APPROVED')";
 
     public static final String SELECT_APPRECIATION_BY_REFERENCE_CREDIT = "SELECT * FROM appreciation WHERE reference_credit=:referenceCredit ORDER BY created_at DESC LIMIT 1";
 
@@ -584,8 +587,10 @@ public class DemandeIndQuery {
             """;
 
 
+    // V127 : 3e parametre = user connecte, pour rendre visibles ses dossiers affectes
+    // quel que soit le point de service de la demande
     public static final String CALL_GET_ALL_DEMANDES_WITH_GARANTIES_FUNC =
-            "SELECT * FROM get_all_demandes_with_garanties(?, ?)";
+            "SELECT * FROM get_all_demandes_with_garanties(CAST(? AS BIGINT), CAST(? AS BIGINT), CAST(? AS BIGINT))";
 
 
     public static final String GET_INSTANCE_DEMANDE_INDIVIDUEL_BY_ID_QUERY =

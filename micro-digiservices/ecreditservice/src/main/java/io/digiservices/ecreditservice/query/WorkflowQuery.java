@@ -59,7 +59,8 @@ public class WorkflowQuery {
               AND af.statut IN ('BROUILLON', 'SOUMISE')
               AND (
                   (CAST(:agenceId AS BIGINT) IS NOT NULL AND CAST(:pointventeId AS BIGINT) IS NULL AND d.agence = CAST(:agenceId AS BIGINT)) OR
-                  (CAST(:pointventeId AS BIGINT) IS NOT NULL AND d.pos = CAST(:pointventeId AS BIGINT))
+                  (CAST(:pointventeId AS BIGINT) IS NOT NULL AND d.pos = CAST(:pointventeId AS BIGINT)) OR
+                  d.agent_credit_affecte = CAST(:userId AS BIGINT)
               )
               AND (d.agent_credit_affecte IS NULL OR d.agent_credit_affecte = CAST(:userId AS BIGINT))
             ORDER BY d.createdat DESC
@@ -176,7 +177,8 @@ public class WorkflowQuery {
             WHERE d.validation_state = 'CORRECTION'
               AND (
                   (CAST(:agenceId AS BIGINT) IS NOT NULL AND CAST(:pointventeId AS BIGINT) IS NULL AND d.agence = CAST(:agenceId AS BIGINT)) OR
-                  (CAST(:pointventeId AS BIGINT) IS NOT NULL AND d.pos = CAST(:pointventeId AS BIGINT))
+                  (CAST(:pointventeId AS BIGINT) IS NOT NULL AND d.pos = CAST(:pointventeId AS BIGINT)) OR
+                  d.agent_credit_affecte = CAST(:userId AS BIGINT)
               )
               AND (d.agent_credit_affecte IS NULL OR d.agent_credit_affecte = CAST(:userId AS BIGINT))
             ORDER BY d.createdat DESC
@@ -246,7 +248,8 @@ public class WorkflowQuery {
             WHERE d.validation_state = 'APPROVED'
               AND (
                   (CAST(:agenceId AS BIGINT) IS NOT NULL AND CAST(:pointventeId AS BIGINT) IS NULL AND d.agence = CAST(:agenceId AS BIGINT)) OR
-                  (CAST(:pointventeId AS BIGINT) IS NOT NULL AND d.pos = CAST(:pointventeId AS BIGINT))
+                  (CAST(:pointventeId AS BIGINT) IS NOT NULL AND d.pos = CAST(:pointventeId AS BIGINT)) OR
+                  d.agent_credit_affecte = CAST(:userId AS BIGINT)
               )
               AND (d.agent_credit_affecte IS NULL OR d.agent_credit_affecte = CAST(:userId AS BIGINT))
             ORDER BY d.createdat DESC
@@ -275,7 +278,8 @@ public class WorkflowQuery {
             WHERE d.validation_state IN ('APPROVED', 'VALIDATED_DA', 'VALIDATED_DR', 'VALIDATED_FINAL')
               AND (
                   (CAST(:agenceId AS BIGINT) IS NOT NULL AND CAST(:pointventeId AS BIGINT) IS NULL AND d.agence = CAST(:agenceId AS BIGINT)) OR
-                  (CAST(:pointventeId AS BIGINT) IS NOT NULL AND d.pos = CAST(:pointventeId AS BIGINT))
+                  (CAST(:pointventeId AS BIGINT) IS NOT NULL AND d.pos = CAST(:pointventeId AS BIGINT)) OR
+                  d.agent_credit_affecte = CAST(:userId AS BIGINT)
               )
               AND (d.agent_credit_affecte IS NULL OR d.agent_credit_affecte = CAST(:userId AS BIGINT))
             ORDER BY d.createdat DESC
@@ -303,7 +307,8 @@ public class WorkflowQuery {
             WHERE d.validation_state = 'CORRECTION_DR'
               AND (
                   (CAST(:agenceId AS BIGINT) IS NOT NULL AND CAST(:pointventeId AS BIGINT) IS NULL AND d.agence = CAST(:agenceId AS BIGINT)) OR
-                  (CAST(:pointventeId AS BIGINT) IS NOT NULL AND d.pos = CAST(:pointventeId AS BIGINT))
+                  (CAST(:pointventeId AS BIGINT) IS NOT NULL AND d.pos = CAST(:pointventeId AS BIGINT)) OR
+                  d.agent_credit_affecte = CAST(:userId AS BIGINT)
               )
               AND (d.agent_credit_affecte IS NULL OR d.agent_credit_affecte = CAST(:userId AS BIGINT))
             ORDER BY d.createdat DESC
@@ -332,7 +337,8 @@ public class WorkflowQuery {
             WHERE d.validation_state = 'CORRECTION_DE'
               AND (
                   (CAST(:agenceId AS BIGINT) IS NOT NULL AND CAST(:pointventeId AS BIGINT) IS NULL AND d.agence = CAST(:agenceId AS BIGINT)) OR
-                  (CAST(:pointventeId AS BIGINT) IS NOT NULL AND d.pos = CAST(:pointventeId AS BIGINT))
+                  (CAST(:pointventeId AS BIGINT) IS NOT NULL AND d.pos = CAST(:pointventeId AS BIGINT)) OR
+                  d.agent_credit_affecte = CAST(:userId AS BIGINT)
               )
               AND (d.agent_credit_affecte IS NULL OR d.agent_credit_affecte = CAST(:userId AS BIGINT))
             ORDER BY d.createdat DESC

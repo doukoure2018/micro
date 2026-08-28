@@ -44,8 +44,8 @@ public class DemandeIndServiceImpl implements DemandeIndService {
     }
 
     @Override
-    public List<DemandeIndividuel> getListDemandeAttente(Long pointventeId,Long agenceId) {
-        return demandeIndRepository.getListDemandeAttente(pointventeId,agenceId);
+    public List<DemandeIndividuel> getListDemandeAttente(Long pointventeId,Long agenceId,Long userId) {
+        return demandeIndRepository.getListDemandeAttente(pointventeId,agenceId,userId);
     }
 
     @Override
@@ -101,8 +101,8 @@ public class DemandeIndServiceImpl implements DemandeIndService {
     }
 
     @Override
-    public List<DemandeIndividuel> getListDemandeCreditByDate(Long pointventeId) {
-        return demandeIndRepository.getListDemandeCreditByDate(pointventeId);
+    public List<DemandeIndividuel> getListDemandeCreditByDate(Long pointventeId,Long userId) {
+        return demandeIndRepository.getListDemandeCreditByDate(pointventeId,userId);
     }
 
     @Override
@@ -190,8 +190,8 @@ public class DemandeIndServiceImpl implements DemandeIndService {
     }
 
     @Override
-    public Integer countNombreCreditAttente(Long pointventeId) {
-        return demandeIndRepository.countNombreCreditAttente(pointventeId);
+    public Integer countNombreCreditAttente(Long pointventeId,Long userId) {
+        return demandeIndRepository.countNombreCreditAttente(pointventeId,userId);
     }
 
     @Override
@@ -246,10 +246,10 @@ public class DemandeIndServiceImpl implements DemandeIndService {
     }
 
     @Override
-    public List<DemandeIndividuel> getAllDemandesWithGaranties(Long agenceId, Long pointVenteId) {
+    public List<DemandeIndividuel> getAllDemandesWithGaranties(Long agenceId, Long pointVenteId, Long userId) {
         log.info("Récupération des demandes pour agence: {}, point de vente: {}", agenceId, pointVenteId);
 
-        return demandeIndRepository.getAllDemandesWithGaranties(agenceId, pointVenteId);
+        return demandeIndRepository.getAllDemandesWithGaranties(agenceId, pointVenteId, userId);
     }
 
     @Override
