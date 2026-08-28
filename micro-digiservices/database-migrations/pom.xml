@@ -108,7 +108,9 @@
                     </schemas>
                     <table>flyway_schema_history</table>
                     <validateOnMigrate>true</validateOnMigrate>
-                    <outOfOrder>false</outOfOrder>
+                    <!-- true : permet d'appliquer des migrations de numero inferieur au max deja applique
+                         (necessaire car V127 part en hotfix avant les V124-V126 du chantier credit groupe) -->
+                    <outOfOrder>true</outOfOrder>
                     <cleanDisabled>${flyway.cleanDisabled}</cleanDisabled>
                     <baselineOnMigrate>true</baselineOnMigrate>
                 </configuration>
