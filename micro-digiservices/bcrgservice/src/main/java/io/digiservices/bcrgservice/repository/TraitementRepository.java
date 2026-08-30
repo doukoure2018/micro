@@ -34,6 +34,13 @@ public class TraitementRepository {
             SELECT reference FROM bcrg_donnee_traitee WHERE module = :module
             """;
 
+    // v1.9 : identifiant interne CRG par reference notifiee (renvoye a la BCRG
+    // sous la forme <prefixe module><id sur 6 positions>, ex. PP000123)
+    private static final String SELECT_IDS_PAR_REFERENCE = """
+            SELECT reference, bcrg_donnee_traitee_id FROM bcrg_donnee_traitee
+            WHERE module = :module AND reference IN (:references)
+            """;
+
     private static final String SELECT_REFS_EMPREINTES = """
             SELECT reference, empreinte FROM bcrg_donnee_traitee
             WHERE module = :module AND empreinte IS NOT NULL
@@ -70,6 +77,18 @@ public class TraitementRepository {
                     .update();
         }
         return nouvelles;
+    }
+
+    /** Identifiant interne (id de la table) de chaque référence notifiée d'un module (v1.9). */
+    public Map<String, Long> findIdsParReference(String module, List<String> references) {
+        if (references == null || references.isEmpty()) return Map.of();
+        Map<String, Long> map = new java.util.LinkedHashMap<>();
+        jdbcClient.sql(SELECT_IDS_PAR_REFERENCE)
+                .param("module", module)
+                .param("references", references)
+                .query((rs, n) -> map.put(rs.getString("reference"), rs.getLong("bcrg_donnee_traitee_id")))
+                .list();
+        return map;
     }
 
     /** Références notifiées d'un module avec leur empreinte (base de la détection des modifications). */

@@ -2,7 +2,7 @@
 
 **Crédit Rural de Guinée S.A. — Documentation technique d'intégration**
 
-*Version 1.8 — 28 août 2026 (v1.1 contrat complet PP/PM · v1.2 extraction incrémentale + notifications · v1.3 refonte Engagements/Encours · v1.4 retours PP V2 : état civil réel, référentiel pays, NIN, API par liste d'identifiants et API des personnes modifiées · v1.5 PM V2 : VilleSiegeSocial et CommuneAdresse depuis les référentiels géographiques SAF, RCCM depuis les pièces du client moral · v1.6 correctifs des retours de validation du 20/08/2026 : ND retiré des champs typés, référence d'engagement composite, périodicité dérivée, circuit ordonné · v1.7 : API personnes morales par ids + variantes POST des /par-ids, ids dans le corps de requête · v1.8 : intégration des référentiels officiels BCRG du 27/08 — TypEng F.9, périodicités, agences, QualiCre IMF, secteurs institutionnels)*
+*Version 1.9 — 30 août 2026 (v1.1 contrat complet PP/PM · v1.2 extraction incrémentale + notifications · v1.3 refonte Engagements/Encours · v1.4 retours PP V2 : état civil réel, référentiel pays, NIN, API par liste d'identifiants et API des personnes modifiées · v1.5 PM V2 : VilleSiegeSocial et CommuneAdresse depuis les référentiels géographiques SAF, RCCM depuis les pièces du client moral · v1.6 correctifs des retours de validation du 20/08/2026 : ND retiré des champs typés, référence d'engagement composite, périodicité dérivée, circuit ordonné · v1.7 : API personnes morales par ids + variantes POST des /par-ids, ids dans le corps de requête · v1.8 : intégration des référentiels officiels BCRG du 27/08 — TypEng F.9, périodicités, agences, QualiCre IMF, secteurs institutionnels · v1.9 : réponse de POST /traitements enrichie d'une referenceCrg par référence)*
 
 ---
 
@@ -360,7 +360,7 @@ calculs (échéances, impayés, dernier paiement) sont arrêtés à la fin de la
   `RefIntEng` pour les engagements ;
 - `dateTraitement` : facultatif (horodatage du traitement côté BCRG).
 
-**Réponse :**
+**Réponse (enrichie en v1.9 — demande BCRG du 30/08) :**
 
 ```json
 {
@@ -368,11 +368,21 @@ calculs (échéances, impayés, dernier paiement) sont arrêtés à la fin de la
   "referencesRecues": 2,
   "referencesNouvelles": 2,
   "referencesDejaConnues": 0,
-  "totalTraitees": 1250
+  "totalTraitees": 1250,
+  "statutReferences": [
+    { "referenceRecu": "10200007832", "referenceCrg": "PP000001" },
+    { "referenceRecu": "10200007833", "referenceCrg": "PP000002" }
+  ]
 }
 ```
 
-L'appel est **idempotent** : renvoyer une référence déjà notifiée ne crée pas de doublon.
+- `statutReferences` reprend chaque référence **dans l'ordre reçu** ;
+- `referenceCrg` est l'identifiant interne CRG du suivi de la référence : préfixe du
+  module (`PP`, `PM`, `ENG`) + numéro sur 6 positions. Il est **stable dans le temps**
+  pour un couple (module, référence) donné — le même en cas de re-notification.
+
+L'appel est **idempotent** : renvoyer une référence déjà notifiée ne crée pas de doublon
+(elle est comptée dans `referencesDejaConnues` et conserve sa `referenceCrg`).
 
 ---
 
