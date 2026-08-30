@@ -57,13 +57,36 @@ public class TraitementResource {
         int nouvelles = traitementRepository.enregistrer(module, List.copyOf(references),
                 notification.getDateTraitement(), empreintes);
         Map<String, Object> stats = traitementRepository.stats(module);
+        // v1.9 (demande BCRG) : identifiant interne CRG par reference, dans l'ordre recu
+        Map<String, Long> ids = traitementRepository.findIdsParReference(module, List.copyOf(references));
+        List<Map<String, String>> statutReferences = references.stream()
+                .map(r -> Map.of(
+                        "referenceRecu", r,
+                        "referenceCrg", referenceCrg(module, ids.get(r))))
+                .toList();
         log.info("[BCRG] Notification traitement module={} recues={} nouvelles={}", module, references.size(), nouvelles);
         return ResponseEntity.ok(Map.of(
                 "module", module,
                 "referencesRecues", references.size(),
                 "referencesNouvelles", nouvelles,
                 "referencesDejaConnues", references.size() - nouvelles,
-                "totalTraitees", stats.get("totalTraitees")));
+                "totalTraitees", stats.get("totalTraitees"),
+                "statutReferences", statutReferences));
+    }
+
+    /**
+     * Identifiant interne CRG d'une référence notifiée (v1.9, demande BCRG) :
+     * préfixe du module + identifiant de suivi sur 6 positions (ex. PP000123).
+     * Stable dans le temps pour un couple (module, référence) donné.
+     */
+    private static String referenceCrg(String module, Long id) {
+        if (id == null) return "";
+        String prefixe = switch (module) {
+            case "PERSONNE_PHYSIQUE" -> "PP";
+            case "PERSONNE_MORALE" -> "PM";
+            default -> "ENG";
+        };
+        return prefixe + String.format("%06d", id);
     }
 
     /** État du suivi pour un module (contrôle de cohérence côté BCRG). */
