@@ -9,6 +9,7 @@ import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { DropdownModule } from 'primeng/dropdown';
+import { InputTextModule } from 'primeng/inputtext';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
@@ -23,7 +24,7 @@ import { TooltipModule } from 'primeng/tooltip';
 @Component({
     selector: 'app-receptions-a-affecter',
     standalone: true,
-    imports: [CommonModule, FormsModule, TableModule, ButtonModule, TagModule, ToastModule, TooltipModule, DialogModule, DropdownModule, TextareaModule],
+    imports: [CommonModule, FormsModule, TableModule, ButtonModule, TagModule, ToastModule, TooltipModule, DialogModule, DropdownModule, InputTextModule, TextareaModule],
     providers: [MessageService],
     template: `
         <p-toast></p-toast>
@@ -38,7 +39,52 @@ import { TooltipModule } from 'primeng/tooltip';
                 l'accueil avec motif). Cliquez sur une ligne pour voir le détail de la demande.
             </p>
 
-            <p-table [value]="state().demandes" [loading]="state().loading" [paginator]="state().demandes.length > 10" [rows]="10" responsiveLayout="scroll" [rowHover]="true">
+            <!-- Barre de filtres (filtrage immediat cote client) -->
+            <div class="flex flex-wrap gap-3 items-center mb-4">
+                <input
+                    pInputText
+                    type="text"
+                    [(ngModel)]="filtreRecherche"
+                    placeholder="Rechercher (nom, n° membre, téléphone, objet…)"
+                    class="w-72"
+                />
+                <p-dropdown
+                    [options]="statutOptions()"
+                    [(ngModel)]="filtreStatut"
+                    placeholder="Statut"
+                    [showClear]="true"
+                    styleClass="w-48"
+                    appendTo="body"
+                ></p-dropdown>
+                <p-dropdown
+                    [options]="posOptions()"
+                    [(ngModel)]="filtrePos"
+                    placeholder="Point de vente"
+                    [showClear]="true"
+                    [filter]="posOptions().length > 8"
+                    styleClass="w-52"
+                    appendTo="body"
+                ></p-dropdown>
+                <p-dropdown
+                    [options]="natureOptions()"
+                    [(ngModel)]="filtreNature"
+                    placeholder="Nature"
+                    [showClear]="true"
+                    styleClass="w-44"
+                    appendTo="body"
+                ></p-dropdown>
+                <button
+                    *ngIf="filtresActifs()"
+                    pButton
+                    icon="pi pi-filter-slash"
+                    label="Réinitialiser"
+                    class="p-button-text p-button-sm"
+                    (click)="reinitialiserFiltres()"
+                ></button>
+                <span class="text-sm text-gray-500 ml-auto">{{ demandesFiltrees().length }} / {{ state().demandes.length }} demande(s)</span>
+            </div>
+
+            <p-table [value]="demandesFiltrees()" [loading]="state().loading" [paginator]="demandesFiltrees().length > 10" [rows]="10" responsiveLayout="scroll" [rowHover]="true">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Membre</th>
@@ -97,7 +143,9 @@ import { TooltipModule } from 'primeng/tooltip';
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
                     <tr>
-                        <td colspan="9" class="text-center py-6 text-gray-500">Aucune demande en attente d'affectation.</td>
+                        <td colspan="9" class="text-center py-6 text-gray-500">
+                            {{ filtresActifs() && state().demandes.length > 0 ? 'Aucune demande ne correspond aux filtres.' : "Aucune demande en attente d'affectation." }}
+                        </td>
                     </tr>
                 </ng-template>
             </p-table>
@@ -162,6 +210,50 @@ export class ReceptionsAAffecterComponent implements OnInit {
 
     agentSelectionne: { label: string; value: number } | null = null;
     motifAnnulation = '';
+
+    // Filtres de la liste (cote client, appliques a chaque rendu)
+    filtreRecherche = '';
+    filtreStatut: { label: string; value: string } | null = null;
+    filtrePos: { label: string; value: string } | null = null;
+    filtreNature: { label: string; value: string } | null = null;
+
+    demandesFiltrees(): any[] {
+        const recherche = this.filtreRecherche.trim().toLowerCase();
+        return this.state().demandes.filter((d) => {
+            if (this.filtreStatut && d.validationState !== this.filtreStatut.value) return false;
+            if (this.filtrePos && String(d.pointventeLibele || d.pos || '') !== this.filtrePos.value) return false;
+            if (this.filtreNature && this.labelNature(d.natureClient) !== this.filtreNature.value) return false;
+            if (!recherche) return true;
+            const texte = [d.prenom, d.nom, d.numeroMembre, d.telephone, d.objectCredit, d.codUsuarios, d.agentAffecteNom]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase();
+            return texte.includes(recherche);
+        });
+    }
+
+    statutOptions(): { label: string; value: string }[] {
+        return [...new Set(this.state().demandes.map((d) => d.validationState).filter(Boolean))].map((s) => ({ label: this.labelEtat(s), value: s }));
+    }
+
+    posOptions(): { label: string; value: string }[] {
+        return [...new Set(this.state().demandes.map((d) => String(d.pointventeLibele || d.pos || '')).filter(Boolean))].sort().map((p) => ({ label: p, value: p }));
+    }
+
+    natureOptions(): { label: string; value: string }[] {
+        return [...new Set(this.state().demandes.map((d) => this.labelNature(d.natureClient)))].sort().map((n) => ({ label: n, value: n }));
+    }
+
+    filtresActifs(): boolean {
+        return !!(this.filtreRecherche.trim() || this.filtreStatut || this.filtrePos || this.filtreNature);
+    }
+
+    reinitialiserFiltres(): void {
+        this.filtreRecherche = '';
+        this.filtreStatut = null;
+        this.filtrePos = null;
+        this.filtreNature = null;
+    }
 
     ngOnInit(): void {
         this.load();
