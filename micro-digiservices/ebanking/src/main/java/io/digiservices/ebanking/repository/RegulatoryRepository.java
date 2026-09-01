@@ -269,6 +269,14 @@ public class RegulatoryRepository {
             OFFSET 0 ROWS FETCH NEXT :limit ROWS ONLY
             """;
 
+    // v1.11 : engagements d'un lot de beneficiaires (extraction "restantes" inversee :
+    // on part des personnes declarees au lieu de balayer PR_CREDITOS entier — le
+    // parcours complet provoquait des 504 au-dela des pages eligibles)
+    private static final String SQL_FIND_ENG_PAR_BENEFICIAIRES = ENG_SELECT + """
+             AND cr.COD_CLIENTE IN (:codClientes)
+            ORDER BY cr.COD_CLIENTE, cr.COD_AGENCIA, cr.NUM_CREDITO
+            """;
+
     // ============================================================
     //  Encours d'engagements (PR_CREDITOS + PR_PLAN_PAGOS) a une periode
     // ============================================================
@@ -480,6 +488,14 @@ public class RegulatoryRepository {
                 .addValue("afterId", afterId == null ? 0L : afterId)
                 .addValue("limit", limit);
         return execute("findEngagementsLot", () -> primary.query(SQL_FIND_ENG_LOT, p, ENG_MAPPER));
+    }
+
+    /** Engagements d'un lot de clients beneficiaires (v1.11, ordre stable par client). */
+    public List<RegEngagementDto> findEngagementsParBeneficiaires(List<String> codClientes) {
+        if (codClientes == null || codClientes.isEmpty()) return List.of();
+        MapSqlParameterSource p = new MapSqlParameterSource("codClientes", codClientes);
+        return execute("findEngagementsParBeneficiaires",
+                () -> primary.query(SQL_FIND_ENG_PAR_BENEFICIAIRES, p, ENG_MAPPER));
     }
 
     public RegEngagementDto findEngagementById(String codAgencia, Long numCredito) {

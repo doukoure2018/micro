@@ -12,6 +12,7 @@ import io.digiservices.ecreditservice.exception.ApiException;
 import io.digiservices.ecreditservice.exception.ValidationException;
 import io.digiservices.ecreditservice.service.*;
 import io.digiservices.ecreditservice.validation.CreditFonctionnaireValidator;
+import io.digiservices.ecreditservice.validation.CreditGroupeValidator;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -56,7 +57,8 @@ public class DemandeIndResource {
             "Demande de credit Pour Professionnels",
             "Demande de Credit Pour PME/PMI",
             "Demande credit Pour Particulier",
-            CreditFonctionnaireValidator.NATURE_FONCTIONNAIRE
+            CreditFonctionnaireValidator.NATURE_FONCTIONNAIRE,
+            CreditGroupeValidator.NATURE_GROUPE
     );
 
     /**
@@ -83,9 +85,11 @@ public class DemandeIndResource {
             // Validation de la nature du client
             validateNatureClient(demandeIndividuel);
 
-            // Validation des types de garanties (non requises pour un crédit fonctionnaire :
-            // la garantie est la domiciliation du salaire, contrôlée par CreditFonctionnaireValidator)
-            if (!CreditFonctionnaireValidator.isFonctionnaire(demandeIndividuel)) {
+            // Validation des types de garanties (non requises pour un crédit fonctionnaire —
+            // garantie = domiciliation du salaire — ni pour un groupe CFE — garantie = Plan Épargne ;
+            // les autres types de groupe suivent les mêmes critères que le commercial)
+            if (!CreditFonctionnaireValidator.isFonctionnaire(demandeIndividuel)
+                    && !estGroupeCfe(demandeIndividuel)) {
                 validateGaranties(demandeIndividuel.getGaranties());
             }
 
@@ -177,6 +181,13 @@ public class DemandeIndResource {
      * @param garanties Liste des garanties à valider
      * @throws ValidationException Si une garantie a un type invalide
      */
+    /** Groupe solidaire de type CFE : pas de garanties saisies, la garantie est le Plan Épargne. */
+    private static boolean estGroupeCfe(DemandeIndividuel demande) {
+        return CreditGroupeValidator.isGroupe(demande)
+                && demande.getDemandeGroupe() != null
+                && "CFE".equals(demande.getDemandeGroupe().getTypeGroupe());
+    }
+
     private void validateGaranties(List<GarantiePropose> garanties) {
         if (garanties == null || garanties.isEmpty()) {
             throw new ValidationException("Au moins une garantie est obligatoire");

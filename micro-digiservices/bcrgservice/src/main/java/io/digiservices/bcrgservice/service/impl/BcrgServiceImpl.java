@@ -211,22 +211,20 @@ public class BcrgServiceImpl implements BcrgService {
                     + "(declarer et notifier les personnes d'abord, ou utiliser statut=toutes)");
             return new PageDto<>(List.of(), page, size, 0, 0, false, page > 0);
         }
-        long totalSaf = ebankingRegClient.getEngagements(0, 1).getTotalElements();
-        // Les lots engagements sont complets (pas de sous-listes) : on retient les DTO directement.
-        // Curseur keyset composite (agence, numero) : NUM_CREDITO seul n'est pas unique.
+        // v1.11 : extraction INVERSEE — on part des beneficiaires declares et on cherche
+        // leurs credits (requete indexee par client), au lieu de balayer PR_CREDITOS
+        // entier en filtrant. L'ancien parcours devenait un scan complet de la table
+        // au-dela des pages eligibles et depassait le timeout de la passerelle (504).
+        List<String> declaresOrdonnes = new ArrayList<>(beneficiairesDeclares);
+        java.util.Collections.sort(declaresOrdonnes);
         int aSauter = page * size;
         List<RegEngagementDto> retenus = new ArrayList<>();
-        String cursorAgence = "";
-        Long cursorId = 0L;
         boolean hasNext = false;
-        boolean fluxEpuise = false;
-        while (!fluxEpuise) {
-            List<RegEngagementDto> lot = ebankingRegClient.getEngagementsLot(cursorAgence, cursorId, TAILLE_LOT);
-            if (lot.isEmpty()) break;
-            for (RegEngagementDto dto : lot) {
+        for (int i = 0; i < declaresOrdonnes.size() && !hasNext; i += TAILLE_LOT_IDS) {
+            List<String> lotClients = declaresOrdonnes.subList(i, Math.min(i + TAILLE_LOT_IDS, declaresOrdonnes.size()));
+            for (RegEngagementDto dto : ebankingRegClient.getEngagementsParBeneficiaires(lotClients)) {
                 String ref = BcrgTranslator.refIntEng(dto.getCodAgencia(), dto.getNumCredito());
                 if (ref == null || traitees.contains(ref)) continue;
-                if (!beneficiairesDeclares.contains(dto.getCodCliente())) continue;
                 if (aSauter > 0) {
                     aSauter--;
                     continue;
@@ -235,17 +233,14 @@ public class BcrgServiceImpl implements BcrgService {
                     retenus.add(dto);
                 } else {
                     hasNext = true;
-                    fluxEpuise = true;
                     break;
                 }
             }
-            RegEngagementDto dernier = lot.get(lot.size() - 1);
-            cursorAgence = dernier.getCodAgencia() == null ? "" : dernier.getCodAgencia();
-            cursorId = dernier.getNumCredito();
-            if (lot.size() < TAILLE_LOT) break;
         }
         List<EngagementDto> content = retenus.stream().map(mapper::toEngagement).toList();
-        return pageFiltree(content, page, size, totalSaf, traitees.size(), hasNext);
+        long totalEstime = hasNext ? (long) (page + 2) * size : (long) page * size + content.size();
+        int totalPages = (int) Math.ceil((double) Math.max(totalEstime, 1) / size);
+        return new PageDto<>(content, page, size, totalEstime, totalPages, hasNext, page > 0);
     }
 
     @Override

@@ -92,6 +92,14 @@ public class RegulatoryController {
         return ResponseEntity.ok(regulatoryService.getEngagementsLot(afterAgence, afterId, limit));
     }
 
+    // v1.11 : engagements d'un lot de beneficiaires (extraction restantes inversee)
+    @GetMapping("/engagements/par-beneficiaires")
+    public ResponseEntity<java.util.List<RegEngagementDto>> getEngagementsParBeneficiaires(
+            @RequestParam(name = "ids") java.util.List<String> ids) {
+        validateIds(ids);
+        return ResponseEntity.ok(regulatoryService.getEngagementsParBeneficiaires(ids));
+    }
+
     private void validateLimit(int limit) {
         if (limit < 1 || limit > 1000) {
             throw new BlogAPIException(HttpStatus.BAD_REQUEST, "Le parametre 'limit' doit etre compris entre 1 et 1000");

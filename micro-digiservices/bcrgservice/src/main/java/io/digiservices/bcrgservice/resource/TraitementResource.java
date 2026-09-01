@@ -95,6 +95,29 @@ public class TraitementResource {
         return ResponseEntity.ok(traitementRepository.stats(validerModule(module)));
     }
 
+    /**
+     * v1.11 (diagnostic) : indique, pour chaque référence fournie, si elle a déjà été
+     * notifiée traitée sur ce module (et sa referenceCrg le cas échéant). Permet de
+     * vérifier factuellement l'éligibilité d'un bénéficiaire côté CRG et côté BCRG.
+     */
+    @GetMapping("/{module}/verifier")
+    public ResponseEntity<Map<String, Object>> verifier(
+            @PathVariable String module,
+            @RequestParam(name = "references") List<String> references) {
+        String moduleValide = validerModule(module);
+        if (references == null || references.isEmpty() || references.size() > MAX_REFERENCES_PAR_APPEL) {
+            throw new BadRequestException("La liste 'references' doit contenir entre 1 et " + MAX_REFERENCES_PAR_APPEL + " elements");
+        }
+        Map<String, Long> ids = traitementRepository.findIdsParReference(moduleValide, references);
+        List<Map<String, Object>> statuts = references.stream()
+                .map(r -> Map.<String, Object>of(
+                        "reference", r,
+                        "notifieeTraitee", ids.containsKey(r),
+                        "referenceCrg", ids.containsKey(r) ? referenceCrg(moduleValide, ids.get(r)) : ""))
+                .toList();
+        return ResponseEntity.ok(Map.of("module", moduleValide, "references", statuts));
+    }
+
     /** Retire une référence du suivi : la donnée réapparaît dans l'extraction « restantes ». */
     @DeleteMapping("/{module}/{reference}")
     public ResponseEntity<Map<String, Object>> supprimer(

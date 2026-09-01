@@ -65,6 +65,11 @@ public class RegulatoryServiceImpl implements RegulatoryService {
     }
 
     @Override
+    public List<RegEngagementDto> getEngagementsParBeneficiaires(List<String> codClientes) {
+        return repository.findEngagementsParBeneficiaires(codClientes);
+    }
+
+    @Override
     public PageDto<RegPersonneMoraleDto> getPersonnesMorales(int page, int size) {
         long total = repository.countPersonnesMorales();
         List<RegPersonneMoraleDto> content = repository.findPersonnesMorales(page * size, size);

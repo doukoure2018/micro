@@ -72,6 +72,10 @@ public interface EbankingRegClient {
     java.util.List<RegPersonneMoraleDto> getPersonnesMoralesByIds(
             @RequestParam(value = "ids") java.util.List<String> ids);
 
+    @GetMapping("/ebanking/reg/engagements/par-beneficiaires")
+    java.util.List<RegEngagementDto> getEngagementsParBeneficiaires(
+            @RequestParam(value = "ids") java.util.List<String> ids);
+
     @GetMapping("/ebanking/reg/engagements/lot")
     java.util.List<RegEngagementDto> getEngagementsLot(
             @RequestParam(value = "afterAgence", defaultValue = "") String afterAgence,
