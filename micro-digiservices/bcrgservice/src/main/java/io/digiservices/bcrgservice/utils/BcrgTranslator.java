@@ -335,9 +335,13 @@ public class BcrgTranslator {
      * quinzaine : ces cadences sont rapprochées de la mensuelle (02), point signalé
      * à la BCRG. Indéterminable → null (jamais un code hors référentiel).
      */
-    public String translatePeriodicite(Integer joursEntreEcheances, Long cantCuotas) {
+    public String translatePeriodicite(Integer joursEntreEcheances, Long cantCuotas, Integer nbEchPlan) {
         if (cantCuotas != null && cantCuotas == 1L) return "01"; // échéance unique
-        if (joursEntreEcheances == null || joursEntreEcheances <= 0) return null;
+        // v1.10 : crédit sans échéancier dans SAF (ou à une seule échéance planifiée) —
+        // déclaré en échéance unique, cohérent avec le repli DatPremEch = date de fin
+        // (54 rejets OBL002 periodRemb sur les crédits sans plan de paiement)
+        if (nbEchPlan == null || nbEchPlan <= 1) return "01";
+        if (joursEntreEcheances == null || joursEntreEcheances <= 0) return "02"; // repli mensuel (champ obligatoire)
         if (joursEntreEcheances <= 45) return "02";  // mensuelle (hebdo/quinzaine rapprochées)
         if (joursEntreEcheances <= 135) return "03"; // trimestrielle
         if (joursEntreEcheances <= 270) return "04"; // semestrielle

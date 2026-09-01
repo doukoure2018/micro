@@ -211,8 +211,8 @@ public class BcrgMapper {
         d.setMntEng(s.getMonCredito());
         d.setMntInt(s.getMntInteretsTotal());
         d.setCodDev(BcrgTranslator.DEVISE_GNF);
-        // v1.6 : périodicité dérivée de l'écart moyen entre échéances du plan de paiement
-        d.setPeriodRemb(translator.translatePeriodicite(s.getJoursEntreEcheances(), s.getCantCuotas()));
+        // v1.6/v1.10 : périodicité dérivée du plan de paiement ; crédit sans échéancier → échéance unique
+        d.setPeriodRemb(translator.translatePeriodicite(s.getJoursEntreEcheances(), s.getCantCuotas(), s.getNbEchPlan()));
         d.setTxIntEng(translator.formatTaux(s.getTasaInteres()));
         d.setTypTxInt("00"); // taux fixe (politique CRG)
         d.setTxComm(null);
@@ -226,7 +226,19 @@ public class BcrgMapper {
         d.setPerDiffAmo(null);
         d.setMntEch(s.getMonCuota());
         d.setNbrEch(s.getCantCuotas());
-        d.setDatPremEch(translator.formatDate(s.getFecPremiereEcheance()));
+        // v1.10 : DatPremEch obligatoire (108 rejets SYN003/SYN004 sur les crédits sans
+        // échéancier). Repli quand le plan de paiement est vide : la date de fin du crédit
+        // (échéance unique), sinon la date de mise en place. Règle BCRG garantie :
+        // DatPremEch >= DateMEP (une première échéance ne précède jamais le décaissement).
+        LocalDate premiereEcheance = s.getFecPremiereEcheance();
+        if (premiereEcheance == null) {
+            premiereEcheance = s.getFecVencimiento() != null ? s.getFecVencimiento() : s.getFecPrimerDesembolso();
+        }
+        if (premiereEcheance != null && s.getFecPrimerDesembolso() != null
+                && premiereEcheance.isBefore(s.getFecPrimerDesembolso())) {
+            premiereEcheance = s.getFecPrimerDesembolso();
+        }
+        d.setDatPremEch(translator.formatDate(premiereEcheance));
         d.setDatFin(translator.formatDate(s.getFecVencimiento()));
         d.setMntFrais(BigDecimal.ZERO);
         d.setMntComm(BigDecimal.ZERO);
