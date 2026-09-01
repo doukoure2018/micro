@@ -235,7 +235,10 @@ public class RegulatoryRepository {
                    (SELECT DATEDIFF(day, MIN(pp.FEC_CUOTA), MAX(pp.FEC_CUOTA)) / NULLIF(COUNT(*) - 1, 0)
                      FROM PR.PR_PLAN_PAGOS pp
                      WHERE pp.COD_EMPRESA = cr.COD_EMPRESA AND pp.COD_AGENCIA = cr.COD_AGENCIA
-                       AND pp.NUM_CREDITO = cr.NUM_CREDITO AND pp.NUM_CUOTA <> 0) AS JOURS_ENTRE_ECH
+                       AND pp.NUM_CREDITO = cr.NUM_CREDITO AND pp.NUM_CUOTA <> 0) AS JOURS_ENTRE_ECH,
+                   (SELECT COUNT(*) FROM PR.PR_PLAN_PAGOS pp
+                     WHERE pp.COD_EMPRESA = cr.COD_EMPRESA AND pp.COD_AGENCIA = cr.COD_AGENCIA
+                       AND pp.NUM_CREDITO = cr.NUM_CREDITO AND pp.NUM_CUOTA <> 0) AS NB_ECH_PLAN
             FROM PR.PR_CREDITOS cr
             INNER JOIN CL.CL_CLIENTES c
                 ON cr.COD_EMPRESA = c.COD_EMPRESA AND cr.COD_CLIENTE = c.COD_CLIENTE
@@ -688,6 +691,7 @@ public class RegulatoryRepository {
         d.setFecPremiereEcheance(dt(rs, "FEC_PREM_ECH"));
         d.setMntInteretsTotal(dec(rs, "MNT_INT_TOTAL"));
         d.setJoursEntreEcheances(intObj(rs, "JOURS_ENTRE_ECH"));
+        d.setNbEchPlan(intObj(rs, "NB_ECH_PLAN"));
         return d;
     };
 

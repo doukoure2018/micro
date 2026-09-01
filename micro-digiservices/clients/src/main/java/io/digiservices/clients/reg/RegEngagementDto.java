@@ -43,4 +43,5 @@ public class RegEngagementDto {
     private LocalDate fecPremiereEcheance; // premiere echeance du plan (DatPremEch)
     private BigDecimal mntInteretsTotal;   // somme des interets prevus du plan (MntInt)
     private Integer joursEntreEcheances;   // ecart moyen en jours entre echeances (PeriodRemb, v1.6)
+    private Integer nbEchPlan;             // nb d'echeances du plan de paiement (0 = credit sans echeancier, v1.10)
 }
