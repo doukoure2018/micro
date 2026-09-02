@@ -102,20 +102,23 @@ public class DemandeIndResource {
             // EN_ATTENTE_DA -> affectation par le DA -> prise en charge par l'agent.
             // Le circuit est impose ici (cote serveur), quel que soit le payload.
             boolean isGroupe = CreditGroupeValidator.isGroupe(demandeIndividuel);
+            User saisissant = null;
             if (isGroupe) {
+                // Meme securite que le particulier : la saisie d'une demande groupe est
+                // reservee a la fonction accueil (role AGENT_ACCUEIL, ou AGENT_CREDIT
+                // avec fonction ACCUEIL activee par le DA)
+                saisissant = authentication != null ? userClient.getUserByUuid(authentication.getName()) : null;
+                requireFonctionAccueil(saisissant);
                 demandeIndividuel.setValidationState("EN_ATTENTE_DA");
             }
 
             DemandeResponse result = demandeIndService.addDemandeIndWithGaranties(demandeIndividuel);
 
-            if (isGroupe && result.isSuccess() && authentication != null) {
+            if (isGroupe && result.isSuccess() && saisissant != null) {
                 // Trace du saisissant (saisie_par) : indispensable au retour accueil
                 // (annulation DA -> CORRECTION_ACCUEIL -> rediligence par le saisissant)
-                var saisissant = userClient.getUserByUuid(authentication.getName());
-                if (saisissant != null) {
-                    workflowService.marquerReception(result.getDemandeId(), saisissant.getUserId(),
-                            saisissant.getFirstName() + " " + saisissant.getLastName());
-                }
+                workflowService.marquerReception(result.getDemandeId(), saisissant.getUserId(),
+                        saisissant.getFirstName() + " " + saisissant.getLastName());
             }
 
             Map<String, Object> data = Map.of(
@@ -167,6 +170,21 @@ public class DemandeIndResource {
      * @param demande La demande à valider
      * @throws ValidationException Si la nature du client n'est pas valide
      */
+    /** Accueil = role AGENT_ACCUEIL, ou AGENT_CREDIT avec fonction ACCUEIL activee par le DA. */
+    private void requireFonctionAccueil(User user) {
+        if (user == null) {
+            throw new ApiException("Utilisateur non identifie");
+        }
+        if ("AGENT_ACCUEIL".equals(user.getRole())) {
+            return;
+        }
+        if ("AGENT_CREDIT".equals(user.getRole())
+                && workflowService.getMesFonctions(user.getUserId()).contains("ACCUEIL")) {
+            return;
+        }
+        throw new ApiException("La saisie d'une demande groupe est reservee aux agents d'accueil");
+    }
+
     private void validateNatureClient(DemandeIndividuel demande) {
         String natureClient = demande.getNatureClient();
 
