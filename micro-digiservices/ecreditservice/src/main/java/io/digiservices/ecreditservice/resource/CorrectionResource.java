@@ -372,6 +372,18 @@ public class CorrectionResource {
                             "Personne Physique créée avec succès",
                             CREATED));
 
+        } catch (io.digiservices.ecreditservice.exception.ClientDejaExistantException e) {
+            // Cas guidé : 409 + drapeau pour que le frontend propose la bascule
+            // vers l'écran de mise à jour de la fiche pré-remplie
+            log.warn("Création refusée, client existant: {}", e.getCodCliente());
+            return ResponseEntity.status(org.springframework.http.HttpStatus.CONFLICT)
+                    .body(getResponse(request,
+                            Map.of("error", e.getMessage(),
+                                    "codCliente", e.getCodCliente(),
+                                    "dejaExistant", true),
+                            e.getMessage(),
+                            org.springframework.http.HttpStatus.CONFLICT));
+
         } catch (IllegalArgumentException e) {
             log.error("Erreur de validation: {}", e.getMessage());
             return ResponseEntity.badRequest()
