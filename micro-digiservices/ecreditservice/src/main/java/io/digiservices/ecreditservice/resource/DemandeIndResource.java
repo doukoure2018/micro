@@ -48,6 +48,7 @@ public class DemandeIndResource {
     private final DemandeCreditService demandeCreditService;
     private final AnalyseService analyseService;
     private final AnalyseFinanciereService analyseFinanciereService;
+    private final io.digiservices.ecreditservice.service.WorkflowService workflowService;
 
 
     /**
@@ -79,6 +80,7 @@ public class DemandeIndResource {
      */
     @PostMapping("/addDemandeInd")
     public ResponseEntity<Response> addDemandeIndWithGaranties(
+            Authentication authentication,
             @Valid @RequestBody DemandeIndividuel demandeIndividuel) {
 
         try {
@@ -96,7 +98,25 @@ public class DemandeIndResource {
             // Validation des nouveaux champs obligatoires selon la nature du client
             validateNewFields(demandeIndividuel);
 
+            // Une demande GROUPE suit le meme circuit que le particulier : saisie ->
+            // EN_ATTENTE_DA -> affectation par le DA -> prise en charge par l'agent.
+            // Le circuit est impose ici (cote serveur), quel que soit le payload.
+            boolean isGroupe = CreditGroupeValidator.isGroupe(demandeIndividuel);
+            if (isGroupe) {
+                demandeIndividuel.setValidationState("EN_ATTENTE_DA");
+            }
+
             DemandeResponse result = demandeIndService.addDemandeIndWithGaranties(demandeIndividuel);
+
+            if (isGroupe && result.isSuccess() && authentication != null) {
+                // Trace du saisissant (saisie_par) : indispensable au retour accueil
+                // (annulation DA -> CORRECTION_ACCUEIL -> rediligence par le saisissant)
+                var saisissant = userClient.getUserByUuid(authentication.getName());
+                if (saisissant != null) {
+                    workflowService.marquerReception(result.getDemandeId(), saisissant.getUserId(),
+                            saisissant.getFirstName() + " " + saisissant.getLastName());
+                }
+            }
 
             Map<String, Object> data = Map.of(
                     "demandeId", result.getDemandeId(),

@@ -463,7 +463,9 @@ export class DemandeGroupeComponent implements OnInit {
             rangCredit: 1,
             tipCredito: type?.tipCredito,
             statutDemande: 'EN_ATTENTE',
-            validationState: 'SELECTION',
+            // Même circuit que le particulier : réception -> affectation DA -> prise en
+            // charge par l'agent (le backend impose EN_ATTENTE_DA + trace le saisissant)
+            validationState: 'EN_ATTENTE_DA',
             currentActivite: this.pret.selectedTypeActivite ? CreditActiviteData.getActiviteByCode(this.pret.selectedTypeActivite)?.libelle || '' : '',
             demandeGroupe: { ...this.groupe, nombreMembres: this.membres.length },
             membresGroupe: this.membres.map(({ verification, ...membre }) => membre),
@@ -501,7 +503,7 @@ export class DemandeGroupeComponent implements OnInit {
                     this.messageService.add({
                         severity: 'success',
                         summary: 'Succès',
-                        detail: `Demande groupe créée avec succès. ID: ${demandeId || 'N/A'}`,
+                        detail: `Demande groupe créée et transmise au Directeur d'Agence pour affectation. ID: ${demandeId || 'N/A'}`,
                         life: 5000
                     });
                     this.state.update((s) => ({ ...s, submitting: false }));
