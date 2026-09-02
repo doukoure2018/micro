@@ -7,6 +7,8 @@ import { CalendarModule } from 'primeng/calendar';
 import { DropdownModule } from 'primeng/dropdown';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { ToastModule } from 'primeng/toast';
+import { DialogModule } from 'primeng/dialog';
+import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { UserService } from '@/service/user.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -19,7 +21,7 @@ import { TextareaModule } from 'primeng/textarea';
 @Component({
     selector: 'app-add-personne-physique',
     standalone: true,
-    imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, CalendarModule, DropdownModule, InputNumberModule, ToastModule, TextareaModule],
+    imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, CalendarModule, DropdownModule, InputNumberModule, ToastModule, DialogModule, TextareaModule],
     templateUrl: './add-personne-physique.component.html',
     styleUrl: './add-personne-physique.component.scss',
     providers: [MessageService]
@@ -51,6 +53,21 @@ export class AddPersonnePhysiqueComponent implements OnInit {
 
     personneForm!: FormGroup;
     loading = signal(false);
+    /** Code du client refusé à la création car déjà existant (dialogue de bascule). */
+    clientExistant = signal<string | null>(null);
+    private readonly router = inject(Router);
+
+    ouvrirModification(): void {
+        const code = this.clientExistant();
+        this.clientExistant.set(null);
+        if (code) {
+            this.router.navigate(['/dashboards/correction-en-attente/detail', code]);
+        }
+    }
+
+    fermerDialogClientExistant(): void {
+        this.clientExistant.set(null);
+    }
 
     sexeOptions = [
         { label: 'Masculin', value: 'M' },
@@ -416,7 +433,13 @@ export class AddPersonnePhysiqueComponent implements OnInit {
                 },
                 error: (error) => {
                     this.loading.set(false);
-                    const errorMessage = error.error?.message || 'Erreur lors de la création';
+                    const data = error.error?.data;
+                    // Client déjà existant (409) : proposer la bascule vers la mise à jour
+                    if (error.status === 409 && data?.dejaExistant) {
+                        this.clientExistant.set(data.codCliente || this.personneForm.value.codCliente);
+                        return;
+                    }
+                    const errorMessage = data?.error || error.error?.message || 'Erreur lors de la création';
                     this.messageService.add({
                         severity: 'error',
                         summary: 'Erreur',

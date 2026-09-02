@@ -40,8 +40,8 @@ public class CorrectionServiceImpl implements CorrectionService {
 
         if (existing.isPresent()) {
             log.warn("Client déjà existant - Code: {}", personnePhysique.getCodCliente());
-            throw new IllegalArgumentException("Le client avec le code " +
-                    personnePhysique.getCodCliente() + " existe déjà");
+            throw new io.digiservices.ecreditservice.exception.ClientDejaExistantException(
+                    personnePhysique.getCodCliente());
         }
 
         // Définir les valeurs par défaut si nécessaire

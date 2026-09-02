@@ -341,3 +341,14 @@
 
     <p-toast></p-toast>
 </div>
+<!-- Client deja existant : proposition de bascule vers la mise a jour de la fiche -->
+<p-dialog header="Client déjà existant" [visible]="clientExistant() !== null" [modal]="true" [style]="{ width: '440px' }" (onHide)="fermerDialogClientExistant()" [closable]="true">
+    <p class="m-0">
+        Le client <strong>{{ clientExistant() }}</strong> existe déjà — la création est impossible.<br />
+        Utilisez la <strong>mise à jour de la fiche signalétique</strong> pour modifier ses informations.
+    </p>
+    <ng-template pTemplate="footer">
+        <button pButton label="Fermer" icon="pi pi-times" class="p-button-text" (click)="fermerDialogClientExistant()"></button>
+        <button pButton label="Ouvrir la fiche en modification" icon="pi pi-pencil" (click)="ouvrirModification()"></button>
+    </ng-template>
+</p-dialog>
