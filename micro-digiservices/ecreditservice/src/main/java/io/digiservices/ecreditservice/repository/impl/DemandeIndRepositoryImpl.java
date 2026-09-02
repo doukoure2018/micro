@@ -681,7 +681,9 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
             setIntOrNull(stmt, 7, demandeIndividuel.getPos());
 
             // ===== Paramètres 8-9: Pièce d'identité =====
-            stmt.setString(8, demandeIndividuel.getTypePiece());
+            // Champs sous contrainte CHECK : une chaine vide (demande groupe, champs sans
+            // objet) violerait la contrainte alors que NULL passe -> normalisation vide->NULL
+            setStringOrNull(stmt, 8, demandeIndividuel.getTypePiece());
             stmt.setString(9, demandeIndividuel.getNumId());
 
             // ===== Paramètres 10-18: Informations personnelles =====
@@ -691,12 +693,12 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
                 stmt.setNull(10, Types.DATE);
             }
             stmt.setString(11, demandeIndividuel.getLieuxNaissance());
-            stmt.setString(12, demandeIndividuel.getGenre());
-            stmt.setString(13, demandeIndividuel.getSituationMatrimoniale());
+            setStringOrNull(stmt, 12, demandeIndividuel.getGenre());
+            setStringOrNull(stmt, 13, demandeIndividuel.getSituationMatrimoniale());
             setIntOrZero(stmt, 14, demandeIndividuel.getNombrePersonneEnCharge());
             setIntOrZero(stmt, 15, demandeIndividuel.getNombrePersonneScolarise());
             stmt.setString(16, demandeIndividuel.getAddresseDomicileContact());
-            stmt.setString(17, demandeIndividuel.getTypePropriete());
+            setStringOrNull(stmt, 17, demandeIndividuel.getTypePropriete());
             setIntOrZero(stmt, 18, demandeIndividuel.getNombreAnneeHabitation());
 
             // ===== Paramètres 19-26: Activité =====
@@ -946,6 +948,16 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
         }
     }
 
+
+
+    /** Binde une chaine en la normalisant : vide/blanche -> NULL (contraintes CHECK). */
+    private void setStringOrNull(PreparedStatement stmt, int index, String value) throws SQLException {
+        if (value == null || value.trim().isEmpty()) {
+            stmt.setNull(index, Types.VARCHAR);
+        } else {
+            stmt.setString(index, value);
+        }
+    }
 
     private void setIntOrNull(PreparedStatement stmt, int index, Integer value) throws SQLException {
         if (value != null) {
