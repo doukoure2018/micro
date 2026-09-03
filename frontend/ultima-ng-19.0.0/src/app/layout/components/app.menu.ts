@@ -101,6 +101,11 @@ export class AppMenu {
                                   icon: 'pi pi-fw pi-inbox',
                                   routerLink: ['/dashboards/agent-credit/demandes-affectees']
                               },
+                              {
+                                  label: 'Portefeuille crédits SAF',
+                                  icon: 'pi pi-fw pi-wallet',
+                                  routerLink: ['/dashboards/portefeuille-saf']
+                              },
                               ...(this.fonctionAccueil
                                   ? [
                                         {

@@ -28,7 +28,7 @@ import static org.springframework.http.HttpStatus.OK;
  * place dans SAF2000, par agence SAF, avec indicateurs (encours, PAR 30/90, impayes)
  * et echeancier detaille. Donnees servies par ebanking (/ebanking/portefeuille/**).
  *
- * <p>Acces reserve aux niveaux de direction : DA, DR, DG, et MANAGER du service DE.
+ * <p>Acces : agents de credit et niveaux de direction (DA, DR, DG, MANAGER du service DE).
  * Phase 1 : le perimetre (agence SAF) est choisi a l'ecran ; le verrouillage
  * agence digi <-> agence SAF viendra avec la table de correspondance (phase 2).</p>
  */
@@ -38,7 +38,7 @@ import static org.springframework.http.HttpStatus.OK;
 @Slf4j
 public class PortefeuilleResource {
 
-    private static final Set<String> ROLES_AUTORISES = Set.of("DA", "DR", "DG", "SUPER_ADMIN");
+    private static final Set<String> ROLES_AUTORISES = Set.of("AGENT_CREDIT", "DA", "DR", "DG", "SUPER_ADMIN");
 
     private final EbankingPortefeuilleClient portefeuilleClient;
     private final UserClient userClient;
@@ -89,7 +89,7 @@ public class PortefeuilleResource {
                 "Echeancier du credit", OK));
     }
 
-    /** DA, DR, DG, SUPER_ADMIN, ou MANAGER du service DE (meme convention que le circuit). */
+    /** AGENT_CREDIT, DA, DR, DG, SUPER_ADMIN, ou MANAGER du service DE. */
     private void requireNiveauDirection(Authentication authentication) {
         User user = userClient.getUserByUuid(authentication.getName());
         if (user == null) {
@@ -101,6 +101,6 @@ public class PortefeuilleResource {
         if ("MANAGER".equals(user.getRole()) && "DE".equalsIgnoreCase(user.getService())) {
             return;
         }
-        throw new ApiException("Acces reserve aux niveaux de direction (DA, DR, DE, DG)");
+        throw new ApiException("Acces reserve aux agents de credit et niveaux de direction");
     }
 }
