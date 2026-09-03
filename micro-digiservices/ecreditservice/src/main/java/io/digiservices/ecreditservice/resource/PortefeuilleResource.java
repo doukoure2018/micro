@@ -31,7 +31,7 @@ import static org.springframework.http.HttpStatus.OK;
  * SAF2000, avec indicateurs (encours, PAR 30/90, impayes) et echeancier detaille.
  * Donnees servies par ebanking (/ebanking/portefeuille/**).
  *
- * <p><b>Perimetre impose cote serveur (V129, pointvente.cod_agencia_saf)</b> :
+ * <p><b>Perimetre impose cote serveur (pointvente.code = COD_AGENCIA SAF)</b> :
  * AGENT_CREDIT = son point de service ; DA = les PS de son agence ; DR = les PS de sa
  * delegation ; DG, MANAGER du service DE et SUPER_ADMIN = tout le reseau. Chaque
  * endpoint verifie l'appartenance du code agence demande au perimetre.</p>
@@ -138,7 +138,7 @@ public class PortefeuilleResource {
             throw new ApiException("Acces reserve aux agents de credit et niveaux de direction");
         }
         if (codes.isEmpty()) {
-            log.warn("[PORTEFEUILLE] Perimetre vide pour user={} role={} (cod_agencia_saf non renseigne)",
+            log.warn("[PORTEFEUILLE] Perimetre vide pour user={} role={} (pointvente.code non renseigne)",
                     user.getUserId(), role);
             throw new ApiException("Aucun point de service de " + rattachement
                     + " n'est encore relie a SAF — contactez l'administrateur");
