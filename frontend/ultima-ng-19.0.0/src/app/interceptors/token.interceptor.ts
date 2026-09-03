@@ -37,6 +37,11 @@ export const TokenInterceptor: HttpInterceptorFn = (request: HttpRequest<unknown
 function shouldSkipAuthorization(request: HttpRequest<unknown>): boolean {
     // NB: addDemandeInd / newDemandeInd NE doivent PAS etre ici : ces endpoints sont
     // desormais securises (AGENT_CREDIT) cote backend -> le token doit etre joint.
+    // Tout /ecredit/** est securise : jamais de skip (le mot-cle 'agences' de la liste
+    // ci-dessous privait /ecredit/portefeuille/agences de son jeton -> 401).
+    if (request.url.includes('/ecredit/')) {
+        return false;
+    }
     const skipUrls = ['verify', 'login', 'refresh', 'resetpassword', 'oauth2/token', 'search', 'typeCredit', 'agences', 'pointventes'];
     return skipUrls.some((url) => request.url.includes(url));
 }
