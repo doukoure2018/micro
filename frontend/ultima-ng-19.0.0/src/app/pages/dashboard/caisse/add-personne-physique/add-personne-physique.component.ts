@@ -13,6 +13,8 @@ import { MessageService } from 'primeng/api';
 import { UserService } from '@/service/user.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DestroyRef } from '@angular/core';
+import { of } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, filter, map, switchMap } from 'rxjs/operators';
 import { ReferenceData } from '@/interface/reference-data.interface';
 import { FicheSignaletique } from '@/interface/ficheSignaletique';
 import { PersonnePhysique } from '@/interface/personnePhysique';
@@ -129,6 +131,7 @@ export class AddPersonnePhysiqueComponent implements OnInit {
         console.log('userId at init:', this.userId);
 
         this.initializeForm();
+        this.surveillerCodeClientExistant();
 
         // Try to populate if we already have data
         if (this.ficheData) {
@@ -172,6 +175,33 @@ export class AddPersonnePhysiqueComponent implements OnInit {
     }
 
     private isPopulatingFromFiche = false;
+
+    /**
+     * Assainissement : vérifie dès la saisie du code client s'il existe déjà,
+     * pour proposer la bascule vers la mise à jour AVANT que l'agent ne remplisse
+     * toute la fiche (le contrôle à la soumission reste le filet de sécurité).
+     */
+    private surveillerCodeClientExistant(): void {
+        this.personneForm
+            .get('codCliente')
+            ?.valueChanges.pipe(
+                debounceTime(600),
+                distinctUntilChanged(),
+                filter((code: string) => /^\d{9,11}$/.test(code || '')),
+                switchMap((code: string) =>
+                    this.userService.getPersonnePhysique$(code).pipe(
+                        map(() => code),
+                        catchError(() => of(null)) // 404 = code libre, on laisse la création
+                    )
+                ),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe((codeExistant) => {
+                if (codeExistant) {
+                    this.clientExistant.set(codeExistant);
+                }
+            });
+    }
 
     loadCantons(provinceCode: string): void {
         const cantons = ReferenceData.getCantonsByProvince(provinceCode);
