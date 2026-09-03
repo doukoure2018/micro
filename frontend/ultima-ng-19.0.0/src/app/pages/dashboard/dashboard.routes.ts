@@ -86,6 +86,11 @@ export default [
         loadComponent: () => import('./agent-credit/correction-en-attente/update-correction-personne-physique/update-correction-personne-physique.component').then((c) => c.UpdateCorrectionPersonnePhysiqueComponent)
     },
     {
+        path: 'portefeuille-saf',
+        data: { breadcrumb: 'Portefeuille crédits SAF' },
+        loadComponent: () => import('./portefeuille/portefeuille-saf.component').then((c) => c.PortefeuilleSafComponent)
+    },
+    {
         path: 'verification-client',
         data: { breadcrumb: 'Verification Client' },
         loadComponent: () => import('./agent-credit/digital-verification/digital-verification.component').then((c) => c.DigitalVerificationComponent)

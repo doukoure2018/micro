@@ -1589,6 +1589,23 @@ export class UserService {
     rediligenterAccueil$ = (demandeId: number) => <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/rediligenter-accueil`, {}).pipe(catchError(this.handleError));
 
     // DA - reception / affectation
+    // ==================== Portefeuille credits SAF (phase 1) ====================
+
+    getPortefeuilleAgences$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/agences`).pipe(catchError(this.handleError));
+
+    getPortefeuilleCredits$ = (codAgencia: string, statut: string, recherche: string | null, page: number, size: number) =>
+        <Observable<IResponse>>(
+            this.http
+                .get<IResponse>(`${this.server}/ecredit/portefeuille/credits`, { params: { codAgencia, statut, page, size, ...(recherche ? { recherche } : {}) } })
+                .pipe(catchError(this.handleError))
+        );
+
+    getPortefeuilleIndicateurs$ = (codAgencia: string) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/indicateurs`, { params: { codAgencia } }).pipe(catchError(this.handleError));
+
+    getPortefeuilleEcheancier$ = (codAgencia: string, numCredito: number) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/credits/${codAgencia}/${numCredito}/echeancier`).pipe(catchError(this.handleError));
+
     getAAffecterDA$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/a-affecter-da`).pipe(catchError(this.handleError));
 
     affecterAC$ = (demandeId: number, agentUserId: number) =>
