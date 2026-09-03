@@ -288,6 +288,11 @@ export class AppMenu {
                                     : this.user?.service === 'DE'
                                       ? [
                                             {
+                                                label: 'Portefeuille crédits SAF',
+                                                icon: 'pi pi-fw pi-wallet',
+                                                routerLink: ['/dashboards/portefeuille-saf']
+                                            },
+                                            {
                                                 label: 'Situation Stock',
                                                 icon: 'pi pi-fw pi-box',
                                                 routerLink: ['/dashboards/situation-stock']
@@ -404,6 +409,11 @@ export class AppMenu {
                                   : this.user?.role === 'DR'
                                     ? [
                                           {
+                                              label: 'Portefeuille crédits SAF',
+                                              icon: 'pi pi-fw pi-wallet',
+                                              routerLink: ['/dashboards/portefeuille-saf']
+                                          },
+                                          {
                                               label: 'Suivi Societariat',
                                               icon: 'pi pi-fw pi-hourglass',
                                               routerLink: ['/dashboards/suivi-societariat']
@@ -463,6 +473,11 @@ export class AppMenu {
                                         : this.user?.role === 'DA'
                                           ? [
                                                 {
+                                                    label: 'Portefeuille crédits SAF',
+                                                    icon: 'pi pi-fw pi-wallet',
+                                                    routerLink: ['/dashboards/portefeuille-saf']
+                                                },
+                                                {
                                                     label: 'Affectations & réorientation',
                                                     icon: 'pi pi-fw pi-directions',
                                                     routerLink: ['/dashboards/da/receptions-a-affecter']
@@ -500,6 +515,11 @@ export class AppMenu {
                                             ]
                                           : this.user?.role === 'DG'
                                             ? [
+                                                  {
+                                                      label: 'Portefeuille crédits SAF',
+                                                      icon: 'pi pi-fw pi-wallet',
+                                                      routerLink: ['/dashboards/portefeuille-saf']
+                                                  },
                                                   {
                                                       label: 'Crédits à valider (≥100M)',
                                                       icon: 'pi pi-fw pi-crown',
