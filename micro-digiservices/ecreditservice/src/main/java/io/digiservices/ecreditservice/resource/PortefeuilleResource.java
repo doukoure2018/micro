@@ -3,8 +3,10 @@ package io.digiservices.ecreditservice.resource;
 import io.digiservices.clients.EbankingPortefeuilleClient;
 import io.digiservices.clients.UserClient;
 import io.digiservices.clients.domain.User;
+import io.digiservices.clients.portefeuille.AgenceSafDto;
 import io.digiservices.ecreditservice.domain.Response;
 import io.digiservices.ecreditservice.exception.ApiException;
+import io.digiservices.ecreditservice.repository.PortefeuillePerimetreRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -24,13 +27,14 @@ import static io.digiservices.ecreditservice.utils.RequestUtils.getResponse;
 import static org.springframework.http.HttpStatus.OK;
 
 /**
- * Suivi du portefeuille credits SAF (phase 1) : vue lecture seule des credits mis en
- * place dans SAF2000, par agence SAF, avec indicateurs (encours, PAR 30/90, impayes)
- * et echeancier detaille. Donnees servies par ebanking (/ebanking/portefeuille/**).
+ * Suivi du portefeuille credits SAF : vue lecture seule des credits mis en place dans
+ * SAF2000, avec indicateurs (encours, PAR 30/90, impayes) et echeancier detaille.
+ * Donnees servies par ebanking (/ebanking/portefeuille/**).
  *
- * <p>Acces : agents de credit et niveaux de direction (DA, DR, DG, MANAGER du service DE).
- * Phase 1 : le perimetre (agence SAF) est choisi a l'ecran ; le verrouillage
- * agence digi <-> agence SAF viendra avec la table de correspondance (phase 2).</p>
+ * <p><b>Perimetre impose cote serveur (V129, pointvente.cod_agencia_saf)</b> :
+ * AGENT_CREDIT = son point de service ; DA = les PS de son agence ; DR = les PS de sa
+ * delegation ; DG, MANAGER du service DE et SUPER_ADMIN = tout le reseau. Chaque
+ * endpoint verifie l'appartenance du code agence demande au perimetre.</p>
  */
 @RestController
 @RequestMapping("/ecredit/portefeuille")
@@ -38,17 +42,20 @@ import static org.springframework.http.HttpStatus.OK;
 @Slf4j
 public class PortefeuilleResource {
 
-    private static final Set<String> ROLES_AUTORISES = Set.of("AGENT_CREDIT", "DA", "DR", "DG", "SUPER_ADMIN");
-
     private final EbankingPortefeuilleClient portefeuilleClient;
     private final UserClient userClient;
+    private final PortefeuillePerimetreRepository perimetreRepository;
 
     @GetMapping("/agences")
     public ResponseEntity<Response> getAgences(@NotNull Authentication authentication, HttpServletRequest request) {
-        requireNiveauDirection(authentication);
+        Perimetre perimetre = perimetreDe(authentication);
+        List<AgenceSafDto> agences = portefeuilleClient.getAgences();
+        if (!perimetre.toutReseau()) {
+            agences = agences.stream().filter(a -> perimetre.codes().contains(a.getCodAgencia())).toList();
+        }
         return ResponseEntity.ok(getResponse(request,
-                Map.of("agences", portefeuilleClient.getAgences()),
-                "Agences SAF", OK));
+                Map.of("agences", agences),
+                "Agences SAF du perimetre", OK));
     }
 
     @GetMapping("/credits")
@@ -60,7 +67,7 @@ public class PortefeuilleResource {
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "20") int size,
             HttpServletRequest request) {
-        requireNiveauDirection(authentication);
+        verifierAcces(authentication, codAgencia);
         return ResponseEntity.ok(getResponse(request,
                 Map.of("credits", portefeuilleClient.getCredits(codAgencia, statut, recherche, page, size)),
                 "Portefeuille credits SAF", OK));
@@ -71,7 +78,7 @@ public class PortefeuilleResource {
             @NotNull Authentication authentication,
             @RequestParam(name = "codAgencia") String codAgencia,
             HttpServletRequest request) {
-        requireNiveauDirection(authentication);
+        verifierAcces(authentication, codAgencia);
         return ResponseEntity.ok(getResponse(request,
                 Map.of("indicateurs", portefeuilleClient.getIndicateurs(codAgencia)),
                 "Indicateurs du portefeuille", OK));
@@ -83,24 +90,59 @@ public class PortefeuilleResource {
             @PathVariable("codAgencia") String codAgencia,
             @PathVariable("numCredito") Long numCredito,
             HttpServletRequest request) {
-        requireNiveauDirection(authentication);
+        verifierAcces(authentication, codAgencia);
         return ResponseEntity.ok(getResponse(request,
                 Map.of("echeancier", portefeuilleClient.getEcheancier(codAgencia, numCredito)),
                 "Echeancier du credit", OK));
     }
 
-    /** AGENT_CREDIT, DA, DR, DG, SUPER_ADMIN, ou MANAGER du service DE. */
-    private void requireNiveauDirection(Authentication authentication) {
+    // ==================== Perimetre ====================
+
+    private record Perimetre(boolean toutReseau, Set<String> codes) {
+    }
+
+    private void verifierAcces(Authentication authentication, String codAgencia) {
+        Perimetre perimetre = perimetreDe(authentication);
+        if (!perimetre.toutReseau() && !perimetre.codes().contains(codAgencia)) {
+            throw new ApiException("Cette agence SAF est hors de votre perimetre");
+        }
+    }
+
+    /**
+     * Perimetre de l'utilisateur connecte : DG / MANAGER-DE / SUPER_ADMIN = tout le
+     * reseau ; DR = PS de sa delegation ; DA = PS de son agence ; AGENT_CREDIT = son PS.
+     * Un rattachement sans code SAF (colonne V129 non renseignee) est signale clairement.
+     */
+    private Perimetre perimetreDe(Authentication authentication) {
         User user = userClient.getUserByUuid(authentication.getName());
         if (user == null) {
             throw new ApiException("Utilisateur non identifie");
         }
-        if (ROLES_AUTORISES.contains(user.getRole())) {
-            return;
+        String role = user.getRole();
+        if ("DG".equals(role) || "SUPER_ADMIN".equals(role)
+                || ("MANAGER".equals(role) && "DE".equalsIgnoreCase(user.getService()))) {
+            return new Perimetre(true, Set.of());
         }
-        if ("MANAGER".equals(user.getRole()) && "DE".equalsIgnoreCase(user.getService())) {
-            return;
+        Set<String> codes;
+        String rattachement;
+        if ("DR".equals(role)) {
+            codes = perimetreRepository.codesParDelegation(user.getDelegationId());
+            rattachement = "votre delegation";
+        } else if ("DA".equals(role)) {
+            codes = perimetreRepository.codesParAgence(user.getAgenceId());
+            rattachement = "votre agence";
+        } else if ("AGENT_CREDIT".equals(role)) {
+            codes = perimetreRepository.codesParPointVente(user.getPointventeId());
+            rattachement = "votre point de service";
+        } else {
+            throw new ApiException("Acces reserve aux agents de credit et niveaux de direction");
         }
-        throw new ApiException("Acces reserve aux agents de credit et niveaux de direction");
+        if (codes.isEmpty()) {
+            log.warn("[PORTEFEUILLE] Perimetre vide pour user={} role={} (cod_agencia_saf non renseigne)",
+                    user.getUserId(), role);
+            throw new ApiException("Aucun point de service de " + rattachement
+                    + " n'est encore relie a SAF — contactez l'administrateur");
+        }
+        return new Perimetre(false, codes);
     }
 }
