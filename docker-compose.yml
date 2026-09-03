@@ -414,6 +414,12 @@ services:
       SPRING_DATASOURCE_URL: "jdbc:sqlserver://10.220.220.8:1433;databaseName=BDCRG;trustServerCertificate=true;encrypt=true"
       SPRING_DATASOURCE_USERNAME: "DIGI"
       SPRING_DATASOURCE_PASSWORD: "@Digi2711@!"
+      # Tertiary (module agricole/KUMY) : bascule sur BDCRG PROD — le defaut du yml
+      # pointe sur le SAF dev 10.110.15.2, injoignable depuis le changement de VPN
+      # (503 systematiques sur /agriculteurs/** apres 60 s de timeout)
+      SPRING_TERTIARY_DATASOURCE_URL: "jdbc:sqlserver://10.220.220.8:1433;databaseName=BDCRG;trustServerCertificate=true;encrypt=true"
+      SPRING_TERTIARY_DATASOURCE_USERNAME: "DIGI"
+      SPRING_TERTIARY_DATASOURCE_PASSWORD: "@Digi2711@!"
       UI_APP_URL: ${UI_APP_URL}
       BACKEND_APP_URL: ${BACKEND_APP_URL}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://admin:admin2711@discoveryserver:5002/eureka/"
