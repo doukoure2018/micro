@@ -38,12 +38,17 @@ import { TooltipModule } from 'primeng/tooltip';
             </p>
 
             <div class="flex flex-wrap gap-3 items-center mb-4">
+                <!-- Perimetre a une seule agence (agent) : preselection, pas de choix -->
+                <span *ngIf="state().agences.length === 1" class="font-semibold text-lg">
+                    <i class="pi pi-building mr-1"></i>{{ agenceSelectionnee?.desAgencia }}
+                </span>
                 <p-dropdown
+                    *ngIf="state().agences.length !== 1"
                     [options]="state().agences"
                     [(ngModel)]="agenceSelectionnee"
                     optionLabel="desAgencia"
                     placeholder="Choisir une agence SAF"
-                    [filter]="true"
+                    [filter]="state().agences.length > 8"
                     filterBy="desAgencia,codAgencia"
                     styleClass="w-72"
                     appendTo="body"
@@ -200,7 +205,15 @@ export class PortefeuilleSafComponent implements OnInit {
             .getPortefeuilleAgences$()
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
-                next: (r: IResponse) => this.state.update((s) => ({ ...s, agences: (r.data as any)?.agences || [] })),
+                next: (r: IResponse) => {
+                    const agences = (r.data as any)?.agences || [];
+                    this.state.update((s) => ({ ...s, agences }));
+                    // Perimetre a une seule agence (agent de credit) : chargement direct
+                    if (agences.length === 1) {
+                        this.agenceSelectionnee = agences[0];
+                        this.chargerPortefeuille(0);
+                    }
+                },
                 error: (err) => this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || 'Chargement des agences impossible', life: 6000 })
             });
     }
