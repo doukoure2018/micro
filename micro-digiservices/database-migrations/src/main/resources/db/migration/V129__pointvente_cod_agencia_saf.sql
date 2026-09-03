@@ -1,168 +1,199 @@
 -- V129 : perimetre du portefeuille credits SAF — correspondance point de service digi <-> agence SAF.
--- La colonne cod_agencia_saf relie chaque pointvente au COD_AGENCIA de SAF2000 (CF_AGENCIAS).
--- Pre-remplissage des correspondances sures (appariement par libelle, referentiel agences CRG
--- transmis par la BCRG le 27/08). Les PS sans correspondance restent NULL : a completer
--- manuellement (requete de controle en fin de fichier).
+-- Source : liste officielle des points de service du CRG (docs/listps, codes agences SAF reels,
+-- ceux de PR_CREDITOS.COD_AGENCIA). Appariement par libelle, desambiguise et verifie par l'agence
+-- de rattachement. Les PS sans correspondance restent NULL (requete de controle en fin de fichier).
 
 ALTER TABLE pointvente ADD COLUMN IF NOT EXISTS cod_agencia_saf VARCHAR(10);
 
 COMMENT ON COLUMN pointvente.cod_agencia_saf IS
 'COD_AGENCIA SAF2000 du point de service (perimetre du portefeuille credits SAF). NULL = non relie.';
 
-UPDATE pointvente SET cod_agencia_saf = '125' WHERE cod_agencia_saf IS NULL AND libele = 'Albadaria'; -- SAF: ALBADARIAH (inclusion)
-UPDATE pointvente SET cod_agencia_saf = '090' WHERE cod_agencia_saf IS NULL AND libele = 'Balandougouba'; -- SAF: BALANDOUGOUBA (exact)
-UPDATE pointvente SET cod_agencia_saf = '102' WHERE cod_agencia_saf IS NULL AND libele = 'Banankoro'; -- SAF: BANANKORO (exact)
-UPDATE pointvente SET cod_agencia_saf = '097' WHERE cod_agencia_saf IS NULL AND libele = 'Banfelé'; -- SAF: Banfele (exact)
-UPDATE pointvente SET cod_agencia_saf = '020' WHERE cod_agencia_saf IS NULL AND libele = 'Bangouyah'; -- SAF: BANGOUYAH (exact)
-UPDATE pointvente SET cod_agencia_saf = '119' WHERE cod_agencia_saf IS NULL AND libele = 'Banian'; -- SAF: BANIAN (exact)
-UPDATE pointvente SET cod_agencia_saf = '135' WHERE cod_agencia_saf IS NULL AND libele = 'Banko'; -- SAF: BANKO (exact)
-UPDATE pointvente SET cod_agencia_saf = '128' WHERE cod_agencia_saf IS NULL AND libele = 'Bardou'; -- SAF: BARDOU (exact)
-UPDATE pointvente SET cod_agencia_saf = '013' WHERE cod_agencia_saf IS NULL AND libele = 'Benty'; -- SAF: BENTY (exact)
-UPDATE pointvente SET cod_agencia_saf = '142' WHERE cod_agencia_saf IS NULL AND libele = 'Beyla'; -- SAF: BEYLA (exact)
-UPDATE pointvente SET cod_agencia_saf = '152' WHERE cod_agencia_saf IS NULL AND libele = 'Bignamou'; -- SAF: BIGNAMOU (exact)
-UPDATE pointvente SET cod_agencia_saf = '030' WHERE cod_agencia_saf IS NULL AND libele = 'Bintimodia'; -- SAF: BINTIMODIA (exact)
-UPDATE pointvente SET cod_agencia_saf = '025' WHERE cod_agencia_saf IS NULL AND libele = 'Boffa'; -- SAF: BOFFA (exact)
-UPDATE pointvente SET cod_agencia_saf = '031' WHERE cod_agencia_saf IS NULL AND libele = 'Boké'; -- SAF: BOKE (exact)
-UPDATE pointvente SET cod_agencia_saf = '144' WHERE cod_agencia_saf IS NULL AND libele = 'Boola'; -- SAF: BOOLA (exact)
-UPDATE pointvente SET cod_agencia_saf = '153' WHERE cod_agencia_saf IS NULL AND libele = 'Bowé'; -- SAF: BOWE (exact)
-UPDATE pointvente SET cod_agencia_saf = '001' WHERE cod_agencia_saf IS NULL AND libele = 'Coyah'; -- SAF: COYAH (exact)
-UPDATE pointvente SET cod_agencia_saf = '137' WHERE cod_agencia_saf IS NULL AND libele = 'Dabola'; -- SAF: DABOLA (exact)
-UPDATE pointvente SET cod_agencia_saf = '073' WHERE cod_agencia_saf IS NULL AND libele = 'Dalaba'; -- SAF: DALABA (exact)
-UPDATE pointvente SET cod_agencia_saf = '103' WHERE cod_agencia_saf IS NULL AND libele = 'Damaro'; -- SAF: DAMARO (exact)
-UPDATE pointvente SET cod_agencia_saf = '127' WHERE cod_agencia_saf IS NULL AND libele = 'Dandou'; -- SAF: DANDOU (exact)
-UPDATE pointvente SET cod_agencia_saf = '177' WHERE cod_agencia_saf IS NULL AND libele = 'Daro'; -- SAF: DARO (exact)
-UPDATE pointvente SET cod_agencia_saf = '140' WHERE cod_agencia_saf IS NULL AND libele = 'Dialakoro'; -- SAF: DIALAKORO (exact)
-UPDATE pointvente SET cod_agencia_saf = '151' WHERE cod_agencia_saf IS NULL AND libele = 'Diecke'; -- SAF: DIECKE (exact)
-UPDATE pointvente SET cod_agencia_saf = '139' WHERE cod_agencia_saf IS NULL AND libele = 'Dinguiraye'; -- SAF: DINGUIRAYE ET MBONET (inclusion)
-UPDATE pointvente SET cod_agencia_saf = '047' WHERE cod_agencia_saf IS NULL AND libele = 'Diountou'; -- SAF: DIOUNTOU (exact)
-UPDATE pointvente SET cod_agencia_saf = '074' WHERE cod_agencia_saf IS NULL AND libele = 'Ditinn'; -- SAF: DITINN (exact)
-UPDATE pointvente SET cod_agencia_saf = '138' WHERE cod_agencia_saf IS NULL AND libele = 'Dogomet'; -- SAF: DOGOMET (exact)
-UPDATE pointvente SET cod_agencia_saf = '106' WHERE cod_agencia_saf IS NULL AND libele = 'Doko'; -- SAF: DOKO (exact)
-UPDATE pointvente SET cod_agencia_saf = '054' WHERE cod_agencia_saf IS NULL AND libele = 'Donghol Touma'; -- SAF: DONGHOL TOUMA (exact)
-UPDATE pointvente SET cod_agencia_saf = '068' WHERE cod_agencia_saf IS NULL AND libele = 'Dounet'; -- SAF: dounet (exact)
-UPDATE pointvente SET cod_agencia_saf = '026' WHERE cod_agencia_saf IS NULL AND libele = 'Douprou'; -- SAF: DOUPROU (exact)
-UPDATE pointvente SET cod_agencia_saf = '004' WHERE cod_agencia_saf IS NULL AND libele = 'Dubreka'; -- SAF: DUBREKA (exact)
-UPDATE pointvente SET cod_agencia_saf = '007' WHERE cod_agencia_saf IS NULL AND libele = 'Enta'; -- SAF: ENTA (exact)
-UPDATE pointvente SET cod_agencia_saf = '115' WHERE cod_agencia_saf IS NULL AND libele = 'Faranah'; -- SAF: FARANAH (exact)
-UPDATE pointvente SET cod_agencia_saf = '182' WHERE cod_agencia_saf IS NULL AND libele = 'Fassankony'; -- SAF: FASSANKONY (exact)
-UPDATE pointvente SET cod_agencia_saf = '146' WHERE cod_agencia_saf IS NULL AND libele = 'Fouala'; -- SAF: FOUALAH (inclusion)
-UPDATE pointvente SET cod_agencia_saf = '113' WHERE cod_agencia_saf IS NULL AND libele = 'Franwalia	'; -- SAF: FRANWALIAH (inclusion)
-UPDATE pointvente SET cod_agencia_saf = '037' WHERE cod_agencia_saf IS NULL AND libele = 'Fria'; -- SAF: FRIA (exact)
-UPDATE pointvente SET cod_agencia_saf = '155' WHERE cod_agencia_saf IS NULL AND libele = 'Gamaberema'; -- SAF: GAMABEREMA (exact)
-UPDATE pointvente SET cod_agencia_saf = '061' WHERE cod_agencia_saf IS NULL AND libele = 'Gaoual'; -- SAF: GAOUAL (exact)
-UPDATE pointvente SET cod_agencia_saf = '148' WHERE cod_agencia_saf IS NULL AND libele = 'Gbackedou'; -- SAF: GBACKEDOU (exact)
-UPDATE pointvente SET cod_agencia_saf = '147' WHERE cod_agencia_saf IS NULL AND libele = 'Gbessoba'; -- SAF: GBESSOBA (exact)
-UPDATE pointvente SET cod_agencia_saf = '076' WHERE cod_agencia_saf IS NULL AND libele = 'Gongoré'; -- SAF: GONGORE (exact)
-UPDATE pointvente SET cod_agencia_saf = '162' WHERE cod_agencia_saf IS NULL AND libele = 'Gouecke'; -- SAF: Gouécké (exact)
-UPDATE pointvente SET cod_agencia_saf = '168' WHERE cod_agencia_saf IS NULL AND libele = 'Gueckedou'; -- SAF: GUECKEDOU (exact)
-UPDATE pointvente SET cod_agencia_saf = '099' WHERE cod_agencia_saf IS NULL AND libele = 'Kaboukaria'; -- SAF: Kaboukaria (exact)
-UPDATE pointvente SET cod_agencia_saf = '062' WHERE cod_agencia_saf IS NULL AND libele = 'Kakoni'; -- SAF: KAKONI (exact)
-UPDATE pointvente SET cod_agencia_saf = '141' WHERE cod_agencia_saf IS NULL AND libele = 'Kalinko'; -- SAF: KALINKO (exact)
-UPDATE pointvente SET cod_agencia_saf = '005' WHERE cod_agencia_saf IS NULL AND libele = 'Kaloum'; -- SAF: KALOUM (exact)
-UPDATE pointvente SET cod_agencia_saf = '033' WHERE cod_agencia_saf IS NULL AND libele = 'Kamsar'; -- SAF: KAMSAR (exact)
-UPDATE pointvente SET cod_agencia_saf = '060' WHERE cod_agencia_saf IS NULL AND libele = 'Kankalabé'; -- SAF: KANAKALABE (verifie manuellement)
-UPDATE pointvente SET cod_agencia_saf = '077' WHERE cod_agencia_saf IS NULL AND libele = 'Kankan'; -- SAF: KANKAN (exact)
-UPDATE pointvente SET cod_agencia_saf = '086' WHERE cod_agencia_saf IS NULL AND libele = 'Kantoumanina'; -- SAF: KANTOUMANINA (exact)
-UPDATE pointvente SET cod_agencia_saf = '130' WHERE cod_agencia_saf IS NULL AND libele = 'Kassadou'; -- SAF: KASSADOU (exact)
-UPDATE pointvente SET cod_agencia_saf = '101' WHERE cod_agencia_saf IS NULL AND libele = 'Kerouané'; -- SAF: KEROUANE (exact)
-UPDATE pointvente SET cod_agencia_saf = '017' WHERE cod_agencia_saf IS NULL AND libele = 'Kindia'; -- SAF: KINDIA (exact)
-UPDATE pointvente SET cod_agencia_saf = '114' WHERE cod_agencia_saf IS NULL AND libele = 'Kintinia'; -- SAF: KINTINIAN (inclusion)
-UPDATE pointvente SET cod_agencia_saf = '123' WHERE cod_agencia_saf IS NULL AND libele = 'Kissidougou'; -- SAF: KISSIDOUGOU (exact)
-UPDATE pointvente SET cod_agencia_saf = '166' WHERE cod_agencia_saf IS NULL AND libele = 'Kobela'; -- SAF: Kobéla (exact)
-UPDATE pointvente SET cod_agencia_saf = '120' WHERE cod_agencia_saf IS NULL AND libele = 'Kobikoro'; -- SAF: KOBIKORO (exact)
-UPDATE pointvente SET cod_agencia_saf = '059' WHERE cod_agencia_saf IS NULL AND libele = 'Koin'; -- SAF: KOIN (exact)
-UPDATE pointvente SET cod_agencia_saf = '158' WHERE cod_agencia_saf IS NULL AND libele = 'Kokota'; -- SAF: KOKOTA (exact)
-UPDATE pointvente SET cod_agencia_saf = '032' WHERE cod_agencia_saf IS NULL AND libele = 'Kolaboui'; -- SAF: KOLABOUI (exact)
-UPDATE pointvente SET cod_agencia_saf = '027' WHERE cod_agencia_saf IS NULL AND libele = 'Kolia'; -- SAF: KOLIA (exact)
-UPDATE pointvente SET cod_agencia_saf = '100' WHERE cod_agencia_saf IS NULL AND libele = 'Komola'; -- SAF: Komola (exact)
-UPDATE pointvente SET cod_agencia_saf = '058' WHERE cod_agencia_saf IS NULL AND libele = 'Konah'; -- SAF: KONAH (exact)
-UPDATE pointvente SET cod_agencia_saf = '126' WHERE cod_agencia_saf IS NULL AND libele = 'Kondiadou'; -- SAF: KONDIADOU (exact)
-UPDATE pointvente SET cod_agencia_saf = '092' WHERE cod_agencia_saf IS NULL AND libele = 'Kondianakoro'; -- SAF: KONDIANAKORO (exact)
-UPDATE pointvente SET cod_agencia_saf = '180' WHERE cod_agencia_saf IS NULL AND libele = 'Kouankan'; -- SAF: KOUANKAN (exact)
-UPDATE pointvente SET cod_agencia_saf = '057' WHERE cod_agencia_saf IS NULL AND libele = 'Koubia'; -- SAF: KOUBIA (exact)
-UPDATE pointvente SET cod_agencia_saf = '028' WHERE cod_agencia_saf IS NULL AND libele = 'Koukoudé'; -- SAF: KOUKOUDE (exact)
-UPDATE pointvente SET cod_agencia_saf = '163' WHERE cod_agencia_saf IS NULL AND libele = 'Koulé'; -- SAF: Koulé (exact)
-UPDATE pointvente SET cod_agencia_saf = '095' WHERE cod_agencia_saf IS NULL AND libele = 'Koumana'; -- SAF: Koumana (exact)
-UPDATE pointvente SET cod_agencia_saf = '063' WHERE cod_agencia_saf IS NULL AND libele = 'Koumbia'; -- SAF: KOUMBIA (exact)
-UPDATE pointvente SET cod_agencia_saf = '065' WHERE cod_agencia_saf IS NULL AND libele = 'Koundara'; -- SAF: KOUNDARA (exact)
-UPDATE pointvente SET cod_agencia_saf = '091' WHERE cod_agencia_saf IS NULL AND libele = 'Koundian'; -- SAF: KOUNDIAN (exact)
-UPDATE pointvente SET cod_agencia_saf = '170' WHERE cod_agencia_saf IS NULL AND libele = 'Koundou'; -- SAF: KOUNDOU (exact)
-UPDATE pointvente SET cod_agencia_saf = '045' WHERE cod_agencia_saf IS NULL AND libele = 'Kouramangui'; -- SAF: KOURAMANGUI (exact)
-UPDATE pointvente SET cod_agencia_saf = '107' WHERE cod_agencia_saf IS NULL AND libele = 'Kouremale'; -- SAF: KOUREMALE (exact)
-UPDATE pointvente SET cod_agencia_saf = '094' WHERE cod_agencia_saf IS NULL AND libele = 'Kouroussa'; -- SAF: Kouroussa (exact)
-UPDATE pointvente SET cod_agencia_saf = '181' WHERE cod_agencia_saf IS NULL AND libele = 'Koyamah'; -- SAF: KOYAMAH (exact)
-UPDATE pointvente SET cod_agencia_saf = '043' WHERE cod_agencia_saf IS NULL AND libele = 'Labé'; -- SAF: LABE (exact)
-UPDATE pointvente SET cod_agencia_saf = '156' WHERE cod_agencia_saf IS NULL AND libele = 'Lainé'; -- SAF: LAINE (exact)
-UPDATE pointvente SET cod_agencia_saf = '046' WHERE cod_agencia_saf IS NULL AND libele = 'Lelouma'; -- SAF: LELOUMA (exact)
-UPDATE pointvente SET cod_agencia_saf = '070' WHERE cod_agencia_saf IS NULL AND libele = 'Linsan'; -- SAF: linsan (exact)
-UPDATE pointvente SET cod_agencia_saf = '093' WHERE cod_agencia_saf IS NULL AND libele = 'Loila'; -- SAF: LOILA (exact)
-UPDATE pointvente SET cod_agencia_saf = '154' WHERE cod_agencia_saf IS NULL AND libele = 'Lola'; -- SAF: LOLA (exact)
-UPDATE pointvente SET cod_agencia_saf = '174' WHERE cod_agencia_saf IS NULL AND libele = 'Macenta'; -- SAF: MACENTA (exact)
-UPDATE pointvente SET cod_agencia_saf = '009' WHERE cod_agencia_saf IS NULL AND libele = 'Madina'; -- SAF: MADINA (exact)
-UPDATE pointvente SET cod_agencia_saf = '021' WHERE cod_agencia_saf IS NULL AND libele = 'Madina Oula'; -- SAF: MADINA OULA (exact)
-UPDATE pointvente SET cod_agencia_saf = '003' WHERE cod_agencia_saf IS NULL AND libele = 'Maferinyah'; -- SAF: MAFERINYAH (exact)
-UPDATE pointvente SET cod_agencia_saf = '111' WHERE cod_agencia_saf IS NULL AND libele = 'Maleah'; -- SAF: MALEAH (exact)
-UPDATE pointvente SET cod_agencia_saf = '048' WHERE cod_agencia_saf IS NULL AND libele = 'Mali'; -- SAF: MALI (exact)
-UPDATE pointvente SET cod_agencia_saf = '019' WHERE cod_agencia_saf IS NULL AND libele = 'Mambia'; -- SAF: MAMBIA (exact)
-UPDATE pointvente SET cod_agencia_saf = '069' WHERE cod_agencia_saf IS NULL AND libele = 'Mamou'; -- SAF: mamou (exact)
-UPDATE pointvente SET cod_agencia_saf = '082' WHERE cod_agencia_saf IS NULL AND libele = 'Mandiana'; -- SAF: MANDIANA (exact)
-UPDATE pointvente SET cod_agencia_saf = '034' WHERE cod_agencia_saf IS NULL AND libele = 'Mankountan'; -- SAF: MANKOUNTAN (exact)
-UPDATE pointvente SET cod_agencia_saf = '006' WHERE cod_agencia_saf IS NULL AND libele = 'Matoto'; -- SAF: MATOTO (exact)
-UPDATE pointvente SET cod_agencia_saf = '139' WHERE cod_agencia_saf IS NULL AND libele = 'Mbonet'; -- agence SAF combinee 139 'DINGUIRAYE ET MBONET' (partagee avec le PS Dinguiraye) -- SAF: DINGUIRAYE ET MBONET (inclusion)
-UPDATE pointvente SET cod_agencia_saf = '079' WHERE cod_agencia_saf IS NULL AND libele = 'Missamana'; -- SAF: MISSAMANA (exact)
-UPDATE pointvente SET cod_agencia_saf = '022' WHERE cod_agencia_saf IS NULL AND libele = 'Missira'; -- SAF: MISSIRA (exact)
-UPDATE pointvente SET cod_agencia_saf = '143' WHERE cod_agencia_saf IS NULL AND libele = 'Moribadou'; -- SAF: MORIBADOU (exact)
-UPDATE pointvente SET cod_agencia_saf = '078' WHERE cod_agencia_saf IS NULL AND libele = 'Moribayah'; -- SAF: MORIBAYA (inclusion)
-UPDATE pointvente SET cod_agencia_saf = '085' WHERE cod_agencia_saf IS NULL AND libele = 'Morodou'; -- SAF: MORODOU (exact)
-UPDATE pointvente SET cod_agencia_saf = '015' WHERE cod_agencia_saf IS NULL AND libele = 'Moussayah'; -- SAF: MOUSSAYAH (exact)
-UPDATE pointvente SET cod_agencia_saf = '160' WHERE cod_agencia_saf IS NULL AND libele = 'N''Zerekoré 1'; -- SAF: N'Zérékoré 1 (exact)
-UPDATE pointvente SET cod_agencia_saf = '161' WHERE cod_agencia_saf IS NULL AND libele = 'N''Zerekoré 2'; -- SAF: N'Zérékoré 2 (exact)
-UPDATE pointvente SET cod_agencia_saf = '108' WHERE cod_agencia_saf IS NULL AND libele = 'Niandankoro'; -- SAF: NIANDANKÖRÖ (exact)
-UPDATE pointvente SET cod_agencia_saf = '087' WHERE cod_agencia_saf IS NULL AND libele = 'Niantanina	'; -- SAF: NIANTANINA (exact)
-UPDATE pointvente SET cod_agencia_saf = '084' WHERE cod_agencia_saf IS NULL AND libele = 'Ourola'; -- SAF: OUROLA (exact)
-UPDATE pointvente SET cod_agencia_saf = '167' WHERE cod_agencia_saf IS NULL AND libele = 'Palé'; -- SAF: Palé (exact)
-UPDATE pointvente SET cod_agencia_saf = '178' WHERE cod_agencia_saf IS NULL AND libele = 'Panziazou'; -- SAF: PANZIAZOU (exact)
-UPDATE pointvente SET cod_agencia_saf = '150' WHERE cod_agencia_saf IS NULL AND libele = 'Pela'; -- SAF: PELA (exact)
-UPDATE pointvente SET cod_agencia_saf = '052' WHERE cod_agencia_saf IS NULL AND libele = 'Pita'; -- SAF: PITA (exact)
-UPDATE pointvente SET cod_agencia_saf = '050' WHERE cod_agencia_saf IS NULL AND libele = 'Popodara'; -- SAF: POPODARA (exact)
-UPDATE pointvente SET cod_agencia_saf = '075' WHERE cod_agencia_saf IS NULL AND libele = 'Poredaka'; -- SAF: POREDAKA (exact)
-UPDATE pointvente SET cod_agencia_saf = '164' WHERE cod_agencia_saf IS NULL AND libele = 'Samoe'; -- SAF: Samoé (exact)
-UPDATE pointvente SET cod_agencia_saf = '117' WHERE cod_agencia_saf IS NULL AND libele = 'Sandenia'; -- SAF: SANDENIA (exact)
-UPDATE pointvente SET cod_agencia_saf = '124' WHERE cod_agencia_saf IS NULL AND libele = 'Sangardo'; -- SAF: SANGARDO (exact)
-UPDATE pointvente SET cod_agencia_saf = '024' WHERE cod_agencia_saf IS NULL AND libele = 'Sangaredi'; -- SAF: SANGAREDI (exact)
-UPDATE pointvente SET cod_agencia_saf = '098' WHERE cod_agencia_saf IS NULL AND libele = 'Saraya'; -- SAF: Saraya (exact)
-UPDATE pointvente SET cod_agencia_saf = '066' WHERE cod_agencia_saf IS NULL AND libele = 'Sareboido'; -- SAF: SAREBOIDO (exact)
-UPDATE pointvente SET cod_agencia_saf = '179' WHERE cod_agencia_saf IS NULL AND libele = 'Seredou'; -- SAF: SEREDOU (exact)
-UPDATE pointvente SET cod_agencia_saf = '105' WHERE cod_agencia_saf IS NULL AND libele = 'Siguiri'; -- SAF: SIGUIRI (exact)
-UPDATE pointvente SET cod_agencia_saf = '112' WHERE cod_agencia_saf IS NULL AND libele = 'Siguirini'; -- SAF: SIGUIRINI (exact)
-UPDATE pointvente SET cod_agencia_saf = '016' WHERE cod_agencia_saf IS NULL AND libele = 'Sikhourou'; -- SAF: SIKHOUROU (exact)
-UPDATE pointvente SET cod_agencia_saf = '145' WHERE cod_agencia_saf IS NULL AND libele = 'Sinko'; -- SAF: SINKO (exact)
-UPDATE pointvente SET cod_agencia_saf = '041' WHERE cod_agencia_saf IS NULL AND libele = 'Sinta'; -- SAF: SINTA (exact)
-UPDATE pointvente SET cod_agencia_saf = '010' WHERE cod_agencia_saf IS NULL AND libele = 'Sonfonia'; -- SAF: SONFONIA (exact)
-UPDATE pointvente SET cod_agencia_saf = '122' WHERE cod_agencia_saf IS NULL AND libele = 'Songoyah'; -- SAF: SONGOYAH (exact)
-UPDATE pointvente SET cod_agencia_saf = '165' WHERE cod_agencia_saf IS NULL AND libele = 'Soulouta'; -- SAF: Soulouta (exact)
-UPDATE pointvente SET cod_agencia_saf = '008' WHERE cod_agencia_saf IS NULL AND libele = 'Taouyah'; -- SAF: TAOUYAH (exact)
-UPDATE pointvente SET cod_agencia_saf = '039' WHERE cod_agencia_saf IS NULL AND libele = 'Tarihoye'; -- SAF: TARIHOYE (exact)
-UPDATE pointvente SET cod_agencia_saf = '038' WHERE cod_agencia_saf IS NULL AND libele = 'Telimelé'; -- SAF: TELIMELE (exact)
-UPDATE pointvente SET cod_agencia_saf = '172' WHERE cod_agencia_saf IS NULL AND libele = 'Temessadou'; -- SAF: TEMESSADOU (exact)
-UPDATE pointvente SET cod_agencia_saf = '067' WHERE cod_agencia_saf IS NULL AND libele = 'Termessé'; -- SAF: TERMESSE (exact)
-UPDATE pointvente SET cod_agencia_saf = '055' WHERE cod_agencia_saf IS NULL AND libele = 'Timbi Madina'; -- SAF: TIMBI-MADINA (exact)
-UPDATE pointvente SET cod_agencia_saf = '081' WHERE cod_agencia_saf IS NULL AND libele = 'Tintioulen'; -- SAF: TINTIOULEN (exact)
-UPDATE pointvente SET cod_agencia_saf = '118' WHERE cod_agencia_saf IS NULL AND libele = 'Tiro'; -- SAF: TIRO (exact)
-UPDATE pointvente SET cod_agencia_saf = '133' WHERE cod_agencia_saf IS NULL AND libele = 'Tokounou'; -- SAF: TOKOUNOU (exact)
-UPDATE pointvente SET cod_agencia_saf = '064' WHERE cod_agencia_saf IS NULL AND libele = 'Touba'; -- SAF: TOUBA (exact)
-UPDATE pointvente SET cod_agencia_saf = '029' WHERE cod_agencia_saf IS NULL AND libele = 'Tougnifily'; -- SAF: TOUGNIFILY (exact)
-UPDATE pointvente SET cod_agencia_saf = '056' WHERE cod_agencia_saf IS NULL AND libele = 'Tougué'; -- SAF: TOUGUE (exact)
-UPDATE pointvente SET cod_agencia_saf = '157' WHERE cod_agencia_saf IS NULL AND libele = 'Tounkarata'; -- SAF: TOUNKARATA (exact)
-UPDATE pointvente SET cod_agencia_saf = '131' WHERE cod_agencia_saf IS NULL AND libele = 'Yende Milimou'; -- SAF: YENDE (inclusion)
-UPDATE pointvente SET cod_agencia_saf = '132' WHERE cod_agencia_saf IS NULL AND libele = 'Yombiro'; -- SAF: YOMBIRO (exact)
-UPDATE pointvente SET cod_agencia_saf = '149' WHERE cod_agencia_saf IS NULL AND libele = 'Yomou'; -- SAF: YOMOU (exact)
-UPDATE pointvente SET cod_agencia_saf = '036' WHERE cod_agencia_saf IS NULL AND libele = 'koba'; -- SAF: KOBA (exact)
-UPDATE pointvente SET cod_agencia_saf = '035' WHERE cod_agencia_saf IS NULL AND libele = 'tanene'; -- SAF: TANENE (exact)
+UPDATE pointvente SET cod_agencia_saf = '531' WHERE cod_agencia_saf IS NULL AND libele = 'Albadaria'; -- SAF: ALBADARIA
+UPDATE pointvente SET cod_agencia_saf = '559' WHERE cod_agencia_saf IS NULL AND libele = 'Arfamoussayah'; -- SAF: ARFAMOUSSAYAH
+UPDATE pointvente SET cod_agencia_saf = '337' WHERE cod_agencia_saf IS NULL AND libele = 'Balandougouba'; -- SAF: BALANDOUGOUBA
+UPDATE pointvente SET cod_agencia_saf = '714' WHERE cod_agencia_saf IS NULL AND libele = 'Banankoro'; -- SAF: BANANKORO
+UPDATE pointvente SET cod_agencia_saf = '356' WHERE cod_agencia_saf IS NULL AND libele = 'Banfelé'; -- SAF: BANFELE
+UPDATE pointvente SET cod_agencia_saf = '122' WHERE cod_agencia_saf IS NULL AND libele = 'Bangouyah'; -- SAF: BANGOUYAH
+UPDATE pointvente SET cod_agencia_saf = '507' WHERE cod_agencia_saf IS NULL AND libele = 'Banian'; -- SAF: BANIAN
+UPDATE pointvente SET cod_agencia_saf = '553' WHERE cod_agencia_saf IS NULL AND libele = 'Banko'; -- SAF: BANKO
+UPDATE pointvente SET cod_agencia_saf = '527' WHERE cod_agencia_saf IS NULL AND libele = 'Bardou'; -- SAF: BARDOU
+UPDATE pointvente SET cod_agencia_saf = '117' WHERE cod_agencia_saf IS NULL AND libele = 'Benty'; -- SAF: BENTY
+UPDATE pointvente SET cod_agencia_saf = '701' WHERE cod_agencia_saf IS NULL AND libele = 'Beyla'; -- SAF: BEYLA
+UPDATE pointvente SET cod_agencia_saf = '426' WHERE cod_agencia_saf IS NULL AND libele = 'Bignamou'; -- SAF: BIGNAMOU
+UPDATE pointvente SET cod_agencia_saf = '602' WHERE cod_agencia_saf IS NULL AND libele = 'Bintimodia'; -- SAF: BINTIMODIA
+UPDATE pointvente SET cod_agencia_saf = '554' WHERE cod_agencia_saf IS NULL AND libele = 'Bissikrima'; -- SAF: BISSIKRIMA
+UPDATE pointvente SET cod_agencia_saf = '612' WHERE cod_agencia_saf IS NULL AND libele = 'Boffa'; -- SAF: BOFFA
+UPDATE pointvente SET cod_agencia_saf = '604' WHERE cod_agencia_saf IS NULL AND libele = 'Boké'; -- SAF: BOKE
+UPDATE pointvente SET cod_agencia_saf = '702' WHERE cod_agencia_saf IS NULL AND libele = 'Boola'; -- SAF: BOOLA
+UPDATE pointvente SET cod_agencia_saf = '456' WHERE cod_agencia_saf IS NULL AND libele = 'Bowé'; -- SAF: BOWE
+UPDATE pointvente SET cod_agencia_saf = '102' WHERE cod_agencia_saf IS NULL AND libele = 'Coyah'; -- SAF: COYAH
+UPDATE pointvente SET cod_agencia_saf = '551' WHERE cod_agencia_saf IS NULL AND libele = 'Dabola'; -- SAF: DABOLA
+UPDATE pointvente SET cod_agencia_saf = '153' WHERE cod_agencia_saf IS NULL AND libele = 'Dalaba'; -- SAF: DALABA
+UPDATE pointvente SET cod_agencia_saf = '706' WHERE cod_agencia_saf IS NULL AND libele = 'Damaro'; -- SAF: DAMARO
+UPDATE pointvente SET cod_agencia_saf = '530' WHERE cod_agencia_saf IS NULL AND libele = 'Dandou'; -- SAF: DANDOU
+UPDATE pointvente SET cod_agencia_saf = '819' WHERE cod_agencia_saf IS NULL AND libele = 'Daro'; -- SAF: DARO
+UPDATE pointvente SET cod_agencia_saf = '555' WHERE cod_agencia_saf IS NULL AND libele = 'Dialakoro'; -- SAF: DIALAKORO
+UPDATE pointvente SET cod_agencia_saf = '424' WHERE cod_agencia_saf IS NULL AND libele = 'Diecke'; -- SAF: DIECKE
+UPDATE pointvente SET cod_agencia_saf = '558' WHERE cod_agencia_saf IS NULL AND libele = 'Dinguiraye'; -- SAF: DINGUIRAYE
+UPDATE pointvente SET cod_agencia_saf = '922' WHERE cod_agencia_saf IS NULL AND libele = 'Diountou'; -- SAF: DIOUNTOUN
+UPDATE pointvente SET cod_agencia_saf = '151' WHERE cod_agencia_saf IS NULL AND libele = 'Ditinn'; -- SAF: DITINN
+UPDATE pointvente SET cod_agencia_saf = '552' WHERE cod_agencia_saf IS NULL AND libele = 'Dogomet'; -- SAF: DOGOMET
+UPDATE pointvente SET cod_agencia_saf = '353' WHERE cod_agencia_saf IS NULL AND libele = 'Doko'; -- SAF: DOKO
+UPDATE pointvente SET cod_agencia_saf = '918' WHERE cod_agencia_saf IS NULL AND libele = 'Donghol Touma'; -- SAF: DONGHOL TOUMA
+UPDATE pointvente SET cod_agencia_saf = '152' WHERE cod_agencia_saf IS NULL AND libele = 'Dounet'; -- SAF: DOUNET
+UPDATE pointvente SET cod_agencia_saf = '608' WHERE cod_agencia_saf IS NULL AND libele = 'Douprou'; -- SAF: DOUPROU
+UPDATE pointvente SET cod_agencia_saf = '129' WHERE cod_agencia_saf IS NULL AND libele = 'Dubreka'; -- SAF: DUBREKA
+UPDATE pointvente SET cod_agencia_saf = '953' WHERE cod_agencia_saf IS NULL AND libele = 'Enta'; -- SAF: ENTA
+UPDATE pointvente SET cod_agencia_saf = '513' WHERE cod_agencia_saf IS NULL AND libele = 'Faranah'; -- SAF: FARANAH
+UPDATE pointvente SET cod_agencia_saf = '709' WHERE cod_agencia_saf IS NULL AND libele = 'Fouala'; -- SAF: FOUALA
+UPDATE pointvente SET cod_agencia_saf = '358' WHERE cod_agencia_saf IS NULL AND libele = 'Franwalia	'; -- SAF: FRANWALIA
+UPDATE pointvente SET cod_agencia_saf = '960' WHERE cod_agencia_saf IS NULL AND libele = 'Fria'; -- SAF: FRIA
+UPDATE pointvente SET cod_agencia_saf = '413' WHERE cod_agencia_saf IS NULL AND libele = 'Gamaberema'; -- SAF: GAMABEREMA
+UPDATE pointvente SET cod_agencia_saf = '234' WHERE cod_agencia_saf IS NULL AND libele = 'Gaoual'; -- SAF: GAOUAL
+UPDATE pointvente SET cod_agencia_saf = '703' WHERE cod_agencia_saf IS NULL AND libele = 'Gbackedou'; -- SAF: GBACKEDOU
+UPDATE pointvente SET cod_agencia_saf = '708' WHERE cod_agencia_saf IS NULL AND libele = 'Gbessoba'; -- SAF: GBESSOBA
+UPDATE pointvente SET cod_agencia_saf = '162' WHERE cod_agencia_saf IS NULL AND libele = 'Gongoré'; -- SAF: GONGORE
+UPDATE pointvente SET cod_agencia_saf = '401' WHERE cod_agencia_saf IS NULL AND libele = 'Gouecke'; -- SAF: GOUECKE
+UPDATE pointvente SET cod_agencia_saf = '803' WHERE cod_agencia_saf IS NULL AND libele = 'Gueckedou'; -- SAF: GUECKEDOU
+UPDATE pointvente SET cod_agencia_saf = '814' WHERE cod_agencia_saf IS NULL AND libele = 'Guendembou'; -- SAF: GUENDEMBOU
+UPDATE pointvente SET cod_agencia_saf = '536' WHERE cod_agencia_saf IS NULL AND libele = 'Hermakono'; -- SAF: HERMAKONO
+UPDATE pointvente SET cod_agencia_saf = '128' WHERE cod_agencia_saf IS NULL AND libele = 'KM36'; -- SAF: KM36
+UPDATE pointvente SET cod_agencia_saf = '345' WHERE cod_agencia_saf IS NULL AND libele = 'Kaboukaria'; -- SAF: KABOUKARIA
+UPDATE pointvente SET cod_agencia_saf = '213' WHERE cod_agencia_saf IS NULL AND libele = 'Kakoni'; -- SAF: KAKONI
+UPDATE pointvente SET cod_agencia_saf = '556' WHERE cod_agencia_saf IS NULL AND libele = 'Kalinko'; -- SAF: KALINKO
+UPDATE pointvente SET cod_agencia_saf = '951' WHERE cod_agencia_saf IS NULL AND libele = 'Kaloum'; -- SAF: KALOUM
+UPDATE pointvente SET cod_agencia_saf = '601' WHERE cod_agencia_saf IS NULL AND libele = 'Kamsar'; -- SAF: KAMSAR
+UPDATE pointvente SET cod_agencia_saf = '923' WHERE cod_agencia_saf IS NULL AND libele = 'Kankalabé'; -- SAF: KANKALABE
+UPDATE pointvente SET cod_agencia_saf = '322' WHERE cod_agencia_saf IS NULL AND libele = 'Kankan'; -- SAF: KANKAN
+UPDATE pointvente SET cod_agencia_saf = '340' WHERE cod_agencia_saf IS NULL AND libele = 'Kantoumanina'; -- SAF: KANTOUMANINA
+UPDATE pointvente SET cod_agencia_saf = '532' WHERE cod_agencia_saf IS NULL AND libele = 'Kassadou'; -- SAF: KASSADOU
+UPDATE pointvente SET cod_agencia_saf = '705' WHERE cod_agencia_saf IS NULL AND libele = 'Kerouané'; -- SAF: KEROUANE
+UPDATE pointvente SET cod_agencia_saf = '121' WHERE cod_agencia_saf IS NULL AND libele = 'Kindia'; -- SAF: KINDIA
+UPDATE pointvente SET cod_agencia_saf = '323' WHERE cod_agencia_saf IS NULL AND libele = 'Kinieran'; -- SAF: KINIERAN
+UPDATE pointvente SET cod_agencia_saf = '363' WHERE cod_agencia_saf IS NULL AND libele = 'Kiniero'; -- SAF: KINIERO
+UPDATE pointvente SET cod_agencia_saf = '357' WHERE cod_agencia_saf IS NULL AND libele = 'Kintinia'; -- SAF: KINTINIA
+UPDATE pointvente SET cod_agencia_saf = '523' WHERE cod_agencia_saf IS NULL AND libele = 'Kissidougou'; -- SAF: KISSIDOUGOU
+UPDATE pointvente SET cod_agencia_saf = '455' WHERE cod_agencia_saf IS NULL AND libele = 'Kobela'; -- SAF: KOBELA
+UPDATE pointvente SET cod_agencia_saf = '533' WHERE cod_agencia_saf IS NULL AND libele = 'Kobikoro'; -- SAF: KOBIKORO
+UPDATE pointvente SET cod_agencia_saf = '924' WHERE cod_agencia_saf IS NULL AND libele = 'Koin'; -- SAF: KOIN
+UPDATE pointvente SET cod_agencia_saf = '417' WHERE cod_agencia_saf IS NULL AND libele = 'Kokota'; -- SAF: KOKOTA
+UPDATE pointvente SET cod_agencia_saf = '603' WHERE cod_agencia_saf IS NULL AND libele = 'Kolaboui'; -- SAF: KOLABOUI
+UPDATE pointvente SET cod_agencia_saf = '613' WHERE cod_agencia_saf IS NULL AND libele = 'Kolia'; -- SAF: KOLIA_LAMBANDJI
+UPDATE pointvente SET cod_agencia_saf = '715' WHERE cod_agencia_saf IS NULL AND libele = 'Komodou'; -- SAF: KOMODOU
+UPDATE pointvente SET cod_agencia_saf = '346' WHERE cod_agencia_saf IS NULL AND libele = 'Komola'; -- SAF: KOMOLA
+UPDATE pointvente SET cod_agencia_saf = '915' WHERE cod_agencia_saf IS NULL AND libele = 'Konah'; -- SAF: KONAH
+UPDATE pointvente SET cod_agencia_saf = '528' WHERE cod_agencia_saf IS NULL AND libele = 'Kondiadou'; -- SAF: KONDIADOU
+UPDATE pointvente SET cod_agencia_saf = '343' WHERE cod_agencia_saf IS NULL AND libele = 'Kondianakoro'; -- SAF: KONDIANAKORO
+UPDATE pointvente SET cod_agencia_saf = '816' WHERE cod_agencia_saf IS NULL AND libele = 'Kouankan'; -- SAF: KOUANKAN
+UPDATE pointvente SET cod_agencia_saf = '912' WHERE cod_agencia_saf IS NULL AND libele = 'Koubia'; -- SAF: KOUBIA
+UPDATE pointvente SET cod_agencia_saf = '614' WHERE cod_agencia_saf IS NULL AND libele = 'Koukoudé'; -- SAF: KOUKOUDE
+UPDATE pointvente SET cod_agencia_saf = '408' WHERE cod_agencia_saf IS NULL AND libele = 'Koulé'; -- SAF: KOULE
+UPDATE pointvente SET cod_agencia_saf = '355' WHERE cod_agencia_saf IS NULL AND libele = 'Koumana'; -- SAF: KOUMANA
+UPDATE pointvente SET cod_agencia_saf = '235' WHERE cod_agencia_saf IS NULL AND libele = 'Koumbia'; -- SAF: KOUMBIA
+UPDATE pointvente SET cod_agencia_saf = '232' WHERE cod_agencia_saf IS NULL AND libele = 'Koundara'; -- SAF: KOUNDARA
+UPDATE pointvente SET cod_agencia_saf = '811' WHERE cod_agencia_saf IS NULL AND libele = 'Koundou'; -- SAF: KOUNDOU
+UPDATE pointvente SET cod_agencia_saf = '907' WHERE cod_agencia_saf IS NULL AND libele = 'Kouramangui'; -- SAF: KOURAMANGUI
+UPDATE pointvente SET cod_agencia_saf = '362' WHERE cod_agencia_saf IS NULL AND libele = 'Kouremale'; -- SAF: KOUREMALE
+UPDATE pointvente SET cod_agencia_saf = '321' WHERE cod_agencia_saf IS NULL AND libele = 'Kouroussa'; -- SAF: KOUROUSSA
+UPDATE pointvente SET cod_agencia_saf = '808' WHERE cod_agencia_saf IS NULL AND libele = 'Koyamah'; -- SAF: KOYAMAH
+UPDATE pointvente SET cod_agencia_saf = '910' WHERE cod_agencia_saf IS NULL AND libele = 'Labé'; -- SAF: LABE
+UPDATE pointvente SET cod_agencia_saf = '415' WHERE cod_agencia_saf IS NULL AND libele = 'Lainé'; -- SAF: LAINE
+UPDATE pointvente SET cod_agencia_saf = '911' WHERE cod_agencia_saf IS NULL AND libele = 'Lelouma'; -- SAF: LELOUMA
+UPDATE pointvente SET cod_agencia_saf = '160' WHERE cod_agencia_saf IS NULL AND libele = 'Linsan'; -- SAF: LINSAN
+UPDATE pointvente SET cod_agencia_saf = '344' WHERE cod_agencia_saf IS NULL AND libele = 'Loila'; -- SAF: LOILA
+UPDATE pointvente SET cod_agencia_saf = '402' WHERE cod_agencia_saf IS NULL AND libele = 'Lola'; -- SAF: LOLA
+UPDATE pointvente SET cod_agencia_saf = '801' WHERE cod_agencia_saf IS NULL AND libele = 'Macenta'; -- SAF: MACENTA
+UPDATE pointvente SET cod_agencia_saf = '955' WHERE cod_agencia_saf IS NULL AND libele = 'Madina'; -- SAF: MADINA
+UPDATE pointvente SET cod_agencia_saf = '126' WHERE cod_agencia_saf IS NULL AND libele = 'Madina Oula'; -- SAF: MADINA_OULA
+UPDATE pointvente SET cod_agencia_saf = '112' WHERE cod_agencia_saf IS NULL AND libele = 'Maferinyah'; -- SAF: MAFERINYAH
+UPDATE pointvente SET cod_agencia_saf = '354' WHERE cod_agencia_saf IS NULL AND libele = 'Maleah'; -- SAF: MALEAH
+UPDATE pointvente SET cod_agencia_saf = '913' WHERE cod_agencia_saf IS NULL AND libele = 'Mali'; -- SAF: MALI
+UPDATE pointvente SET cod_agencia_saf = '120' WHERE cod_agencia_saf IS NULL AND libele = 'Mambia'; -- SAF: MAMBIA
+UPDATE pointvente SET cod_agencia_saf = '155' WHERE cod_agencia_saf IS NULL AND libele = 'Mamou'; -- SAF: MAMOU
+UPDATE pointvente SET cod_agencia_saf = '324' WHERE cod_agencia_saf IS NULL AND libele = 'Mandiana'; -- SAF: MANDIANA
+UPDATE pointvente SET cod_agencia_saf = '607' WHERE cod_agencia_saf IS NULL AND libele = 'Mankountan'; -- SAF: MANKOUNTAN
+UPDATE pointvente SET cod_agencia_saf = '516' WHERE cod_agencia_saf IS NULL AND libele = 'Marela'; -- SAF: MARELA
+UPDATE pointvente SET cod_agencia_saf = '952' WHERE cod_agencia_saf IS NULL AND libele = 'Matoto'; -- SAF: MATOTO
+UPDATE pointvente SET cod_agencia_saf = '560' WHERE cod_agencia_saf IS NULL AND libele = 'Mbonet'; -- SAF: MBONET
+UPDATE pointvente SET cod_agencia_saf = '333' WHERE cod_agencia_saf IS NULL AND libele = 'Missamana'; -- SAF: MISSAMANA
+UPDATE pointvente SET cod_agencia_saf = '611' WHERE cod_agencia_saf IS NULL AND libele = 'Missira'; -- SAF: MISSIRA
+UPDATE pointvente SET cod_agencia_saf = '713' WHERE cod_agencia_saf IS NULL AND libele = 'Moribadou'; -- SAF: MORIBADOU
+UPDATE pointvente SET cod_agencia_saf = '331' WHERE cod_agencia_saf IS NULL AND libele = 'Moribayah'; -- SAF: MORIBAYA
+UPDATE pointvente SET cod_agencia_saf = '341' WHERE cod_agencia_saf IS NULL AND libele = 'Morodou'; -- SAF: MORODOU
+UPDATE pointvente SET cod_agencia_saf = '115' WHERE cod_agencia_saf IS NULL AND libele = 'Moussayah'; -- SAF: MOUSSAYAH
+UPDATE pointvente SET cod_agencia_saf = '425' WHERE cod_agencia_saf IS NULL AND libele = 'N''Zoo'; -- SAF: N'ZOO
+UPDATE pointvente SET cod_agencia_saf = '336' WHERE cod_agencia_saf IS NULL AND libele = 'Nafagui'; -- SAF: BATE NAFAGUI
+UPDATE pointvente SET cod_agencia_saf = '360' WHERE cod_agencia_saf IS NULL AND libele = 'Niandankoro'; -- SAF: NIANDAN
+UPDATE pointvente SET cod_agencia_saf = '339' WHERE cod_agencia_saf IS NULL AND libele = 'Niantanina	'; -- SAF: NIANTANINA
+UPDATE pointvente SET cod_agencia_saf = '812' WHERE cod_agencia_saf IS NULL AND libele = 'Nongoa'; -- SAF: NONGOA
+UPDATE pointvente SET cod_agencia_saf = '338' WHERE cod_agencia_saf IS NULL AND libele = 'Ourola'; -- SAF: OUROLA
+UPDATE pointvente SET cod_agencia_saf = '161' WHERE cod_agencia_saf IS NULL AND libele = 'Ouré Kaba'; -- SAF: OURE KABA
+UPDATE pointvente SET cod_agencia_saf = '412' WHERE cod_agencia_saf IS NULL AND libele = 'Palé'; -- SAF: PALE
+UPDATE pointvente SET cod_agencia_saf = '818' WHERE cod_agencia_saf IS NULL AND libele = 'Panziazou'; -- SAF: PANZIAZOU
+UPDATE pointvente SET cod_agencia_saf = '524' WHERE cod_agencia_saf IS NULL AND libele = 'Passayah'; -- SAF: PASSAYA
+UPDATE pointvente SET cod_agencia_saf = '423' WHERE cod_agencia_saf IS NULL AND libele = 'Pela'; -- SAF: PELA
+UPDATE pointvente SET cod_agencia_saf = '916' WHERE cod_agencia_saf IS NULL AND libele = 'Pita'; -- SAF: PITA
+UPDATE pointvente SET cod_agencia_saf = '909' WHERE cod_agencia_saf IS NULL AND libele = 'Popodara'; -- SAF: POPODARA
+UPDATE pointvente SET cod_agencia_saf = '154' WHERE cod_agencia_saf IS NULL AND libele = 'Poredaka'; -- SAF: POREDAKA
+UPDATE pointvente SET cod_agencia_saf = '710' WHERE cod_agencia_saf IS NULL AND libele = 'Samana'; -- SAF: SAMANA
+UPDATE pointvente SET cod_agencia_saf = '421' WHERE cod_agencia_saf IS NULL AND libele = 'Samoe'; -- SAF: SAMOE
+UPDATE pointvente SET cod_agencia_saf = '510' WHERE cod_agencia_saf IS NULL AND libele = 'Sandenia'; -- SAF: SANDENIA
+UPDATE pointvente SET cod_agencia_saf = '519' WHERE cod_agencia_saf IS NULL AND libele = 'Sangardo'; -- SAF: SANGARDO
+UPDATE pointvente SET cod_agencia_saf = '605' WHERE cod_agencia_saf IS NULL AND libele = 'Sangaredi'; -- SAF: SANGAREDI
+UPDATE pointvente SET cod_agencia_saf = '163' WHERE cod_agencia_saf IS NULL AND libele = 'Saramoussayah'; -- SAF: SARAMOUSSAYA
+UPDATE pointvente SET cod_agencia_saf = '347' WHERE cod_agencia_saf IS NULL AND libele = 'Saraya'; -- SAF: SARAYA
+UPDATE pointvente SET cod_agencia_saf = '233' WHERE cod_agencia_saf IS NULL AND libele = 'Sareboido'; -- SAF: SAREBOIDO
+UPDATE pointvente SET cod_agencia_saf = '802' WHERE cod_agencia_saf IS NULL AND libele = 'Seredou'; -- SAF: SEREDOU
+UPDATE pointvente SET cod_agencia_saf = '351' WHERE cod_agencia_saf IS NULL AND libele = 'Siguiri'; -- SAF: SIGUIRI
+UPDATE pointvente SET cod_agencia_saf = '361' WHERE cod_agencia_saf IS NULL AND libele = 'Siguirini'; -- SAF: SIGUIRINI
+UPDATE pointvente SET cod_agencia_saf = '118' WHERE cod_agencia_saf IS NULL AND libele = 'Sikhourou'; -- SAF: SIKHOUROU
+UPDATE pointvente SET cod_agencia_saf = '704' WHERE cod_agencia_saf IS NULL AND libele = 'Sinko'; -- SAF: SINKO
+UPDATE pointvente SET cod_agencia_saf = '208' WHERE cod_agencia_saf IS NULL AND libele = 'Sinta'; -- SAF: SINTA
+UPDATE pointvente SET cod_agencia_saf = '956' WHERE cod_agencia_saf IS NULL AND libele = 'Sonfonia'; -- SAF: SONFONIA
+UPDATE pointvente SET cod_agencia_saf = '537' WHERE cod_agencia_saf IS NULL AND libele = 'Songoyah'; -- SAF: SONGOYAH
+UPDATE pointvente SET cod_agencia_saf = '418' WHERE cod_agencia_saf IS NULL AND libele = 'Soulouta'; -- SAF: SOULOUTA
+UPDATE pointvente SET cod_agencia_saf = '954' WHERE cod_agencia_saf IS NULL AND libele = 'Taouyah'; -- SAF: TAOUYAH
+UPDATE pointvente SET cod_agencia_saf = '231' WHERE cod_agencia_saf IS NULL AND libele = 'Tarihoye'; -- SAF: TARIHOYE
+UPDATE pointvente SET cod_agencia_saf = '201' WHERE cod_agencia_saf IS NULL AND libele = 'Telimelé'; -- SAF: TELIMELE
+UPDATE pointvente SET cod_agencia_saf = '810' WHERE cod_agencia_saf IS NULL AND libele = 'Temessadou'; -- SAF: TEMESSADOU
+UPDATE pointvente SET cod_agencia_saf = '236' WHERE cod_agencia_saf IS NULL AND libele = 'Termessé'; -- SAF: TERMESSE
+UPDATE pointvente SET cod_agencia_saf = '919' WHERE cod_agencia_saf IS NULL AND libele = 'Timbi Madina'; -- SAF: TIMBI MADINA
+UPDATE pointvente SET cod_agencia_saf = '917' WHERE cod_agencia_saf IS NULL AND libele = 'Timbi Touni'; -- SAF: TIMBI TOUNI
+UPDATE pointvente SET cod_agencia_saf = '334' WHERE cod_agencia_saf IS NULL AND libele = 'Tintioulen'; -- SAF: TINTIOULEN
+UPDATE pointvente SET cod_agencia_saf = '514' WHERE cod_agencia_saf IS NULL AND libele = 'Tiro'; -- SAF: TIRO
+UPDATE pointvente SET cod_agencia_saf = '535' WHERE cod_agencia_saf IS NULL AND libele = 'Tokounou'; -- SAF: TOKOUNOU
+UPDATE pointvente SET cod_agencia_saf = '237' WHERE cod_agencia_saf IS NULL AND libele = 'Touba'; -- SAF: TOUBA
+UPDATE pointvente SET cod_agencia_saf = '606' WHERE cod_agencia_saf IS NULL AND libele = 'Tougnifily'; -- SAF: TOUGNIFILY
+UPDATE pointvente SET cod_agencia_saf = '914' WHERE cod_agencia_saf IS NULL AND libele = 'Tougué'; -- SAF: TOUGUE
+UPDATE pointvente SET cod_agencia_saf = '416' WHERE cod_agencia_saf IS NULL AND libele = 'Tounkarata'; -- SAF: TOUNKARATA
+UPDATE pointvente SET cod_agencia_saf = '529' WHERE cod_agencia_saf IS NULL AND libele = 'Yombiro'; -- SAF: YOMBIRO
+UPDATE pointvente SET cod_agencia_saf = '422' WHERE cod_agencia_saf IS NULL AND libele = 'Yomou'; -- SAF: YOMOU
+UPDATE pointvente SET cod_agencia_saf = '959' WHERE cod_agencia_saf IS NULL AND libele = 'koba'; -- SAF: KOBA
+UPDATE pointvente SET cod_agencia_saf = '958' WHERE cod_agencia_saf IS NULL AND libele = 'tanene'; -- SAF: TANENE
 
--- Correspondances verifiees manuellement (variantes d'orthographe evidentes)
-UPDATE pointvente SET cod_agencia_saf = '134' WHERE cod_agencia_saf IS NULL AND libele = 'Arfamoussayah'; -- SAF: ARFAMOUSSAYA
-UPDATE pointvente SET cod_agencia_saf = '072' WHERE cod_agencia_saf IS NULL AND libele = 'Saramoussayah'; -- SAF: saramoussaya
+-- Variantes d'orthographe verifiees par concordance d'agence
+UPDATE pointvente SET cod_agencia_saf = '813' WHERE cod_agencia_saf IS NULL AND libele = 'Boffosou'; -- SAF: BOFOSSOU
+UPDATE pointvente SET cod_agencia_saf = '330' WHERE cod_agencia_saf IS NULL AND libele = 'Dalakoro'; -- SAF: DIALAKORO
+UPDATE pointvente SET cod_agencia_saf = '127' WHERE cod_agencia_saf IS NULL AND libele = 'Farmoriaya'; -- SAF: FARMORIYA
+UPDATE pointvente SET cod_agencia_saf = '809' WHERE cod_agencia_saf IS NULL AND libele = 'Fassankony'; -- SAF: FASSANKONI
+UPDATE pointvente SET cod_agencia_saf = '103' WHERE cod_agencia_saf IS NULL AND libele = 'Foracariah'; -- SAF: FORECARIAH
+UPDATE pointvente SET cod_agencia_saf = '534' WHERE cod_agencia_saf IS NULL AND libele = 'Fremessadou'; -- SAF: FERMESSADOU
+UPDATE pointvente SET cod_agencia_saf = '124' WHERE cod_agencia_saf IS NULL AND libele = 'Friguiabé'; -- SAF: FRIGUIAGBE
+UPDATE pointvente SET cod_agencia_saf = '815' WHERE cod_agencia_saf IS NULL AND libele = 'Gbeunikala'; -- SAF: BINIKALA
+UPDATE pointvente SET cod_agencia_saf = '342' WHERE cod_agencia_saf IS NULL AND libele = 'Koundian'; -- SAF: KOUNDJAN
+UPDATE pointvente SET cod_agencia_saf = '220' WHERE cod_agencia_saf IS NULL AND libele = 'Ley Miro'; -- SAF: LEYMIRO
+UPDATE pointvente SET cod_agencia_saf = '419' WHERE cod_agencia_saf IS NULL AND libele = 'N''Zerekoré 1'; -- SAF: NZEREKORE1
+UPDATE pointvente SET cod_agencia_saf = '420' WHERE cod_agencia_saf IS NULL AND libele = 'N''Zerekoré 2'; -- SAF: NZEREKORE II
+UPDATE pointvente SET cod_agencia_saf = '352' WHERE cod_agencia_saf IS NULL AND libele = 'Norasoba'; -- SAF: NORASSOBA
+UPDATE pointvente SET cod_agencia_saf = '359' WHERE cod_agencia_saf IS NULL AND libele = 'Noukounkan'; -- SAF: NOUNKOUNKAN
+UPDATE pointvente SET cod_agencia_saf = '817' WHERE cod_agencia_saf IS NULL AND libele = 'Ouendekenema'; -- SAF: OUENDE KENEMA
+UPDATE pointvente SET cod_agencia_saf = '335' WHERE cod_agencia_saf IS NULL AND libele = 'Sabadoubranama'; -- SAF: SABADOU BRANAMA
+UPDATE pointvente SET cod_agencia_saf = '238' WHERE cod_agencia_saf IS NULL AND libele = 'Sangareah'; -- SAF: SANGAREYAH
+UPDATE pointvente SET cod_agencia_saf = '921' WHERE cod_agencia_saf IS NULL AND libele = 'Sanou'; -- SAF: SANNOU
+UPDATE pointvente SET cod_agencia_saf = '908' WHERE cod_agencia_saf IS NULL AND libele = 'Thianguel Bory'; -- SAF: THIAGUEL BORI
+UPDATE pointvente SET cod_agencia_saf = '609' WHERE cod_agencia_saf IS NULL AND libele = 'Wendoubour'; -- SAF: WENDOU MBOUR
+UPDATE pointvente SET cod_agencia_saf = '920' WHERE cod_agencia_saf IS NULL AND libele = 'Yembering'; -- SAF: YIMBERING
+UPDATE pointvente SET cod_agencia_saf = '526' WHERE cod_agencia_saf IS NULL AND libele = 'Yende Milimou'; -- SAF: YENDE MILLIMOU
 
 -- Controle des PS restes sans correspondance :
 -- SELECT id, libele FROM pointvente WHERE cod_agencia_saf IS NULL ORDER BY libele;
