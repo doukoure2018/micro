@@ -218,7 +218,7 @@ export class PortefeuilleSafComponent implements OnInit {
         { label: '31 – 60 jours', value: '31-60' },
         { label: '61 – 90 jours', value: '61-90' },
         { label: '91 – 120 jours', value: '91-120' },
-        { label: '+ de 120 jours', value: '120+' }
+        { label: '+ de 120 jours', value: 'plus120' }
     ];
     recherche = '';
     statutOptions = [

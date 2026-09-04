@@ -79,7 +79,9 @@ public class PortefeuilleController {
             case "31-60" -> new int[]{31, 60};
             case "61-90" -> new int[]{61, 90};
             case "91-120" -> new int[]{91, 120};
-            case "120+" -> new int[]{121, 0};
+            // "120+" devient "120 " via Feign (le '+' est encode en espace) puis "120" apres trim :
+            // on accepte toutes les formes, la valeur canonique cote frontend est "plus120"
+            case "120+", "+120", "120", "plus120" -> new int[]{121, 0};
             default -> throw new BlogAPIException(HttpStatus.BAD_REQUEST,
                     "Le parametre 'tranche' doit valoir 1-30, 31-60, 61-90, 91-120 ou 120+");
         };

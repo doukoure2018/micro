@@ -138,7 +138,7 @@ public class PortefeuilleResource {
 
             String filtreExport = "retard".equals(statut) ? "retard" : "actifs";
             if (tranche != null && !tranche.isBlank()) {
-                filtreExport += " — tranche " + tranche + " jours";
+                filtreExport += " — tranche " + ("plus120".equals(tranche) ? "+120" : tranche) + " jours";
             }
             byte[] contenu = PortefeuilleExcelUtils.construireClasseur(
                     libelle, codAgencia, filtreExport, recherche, indicateurs, credits);
