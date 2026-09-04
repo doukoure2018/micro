@@ -266,7 +266,7 @@ export class PortefeuilleSafComponent implements OnInit {
         if (!agence) return;
         this.state.update((s) => ({ ...s, loading: true }));
         this.userService
-            .getPortefeuilleIndicateurs$(agence.codAgencia)
+            .getPortefeuilleIndicateurs$(agence.codAgencia, this.statut, this.tranche, this.recherche.trim() || null)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (r: IResponse) => this.state.update((s) => ({ ...s, indicateurs: (r.data as any)?.indicateurs || null })),

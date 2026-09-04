@@ -89,8 +89,15 @@ public class PortefeuilleController {
 
     @GetMapping("/indicateurs")
     public ResponseEntity<PortefeuilleIndicateursDto> getIndicateurs(
-            @RequestParam(name = "codAgencia") String codAgencia) {
-        return ResponseEntity.ok(repository.indicateurs(codAgencia));
+            @RequestParam(name = "codAgencia") String codAgencia,
+            @RequestParam(name = "statut", defaultValue = "actifs") String statut,
+            @RequestParam(name = "tranche", required = false) String tranche,
+            @RequestParam(name = "recherche", required = false) String recherche) {
+        boolean seulementRetard = "retard".equalsIgnoreCase(statut);
+        int[] bornes = bornesTranche(tranche);
+        Integer retardMin = bornes != null ? bornes[0] : null;
+        Integer retardMax = bornes != null && bornes[1] > 0 ? bornes[1] : null;
+        return ResponseEntity.ok(repository.indicateurs(codAgencia, seulementRetard, retardMin, retardMax, recherche));
     }
 
     // ==================== Alertes (phase 3) ====================

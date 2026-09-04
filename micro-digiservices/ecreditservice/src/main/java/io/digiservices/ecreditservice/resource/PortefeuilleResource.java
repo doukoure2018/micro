@@ -82,10 +82,13 @@ public class PortefeuilleResource {
     public ResponseEntity<Response> getIndicateurs(
             @NotNull Authentication authentication,
             @RequestParam(name = "codAgencia") String codAgencia,
+            @RequestParam(name = "statut", defaultValue = "actifs") String statut,
+            @RequestParam(name = "tranche", required = false) String tranche,
+            @RequestParam(name = "recherche", required = false) String recherche,
             HttpServletRequest request) {
         verifierAcces(authentication, codAgencia);
         return ResponseEntity.ok(getResponse(request,
-                Map.of("indicateurs", portefeuilleClient.getIndicateurs(codAgencia)),
+                Map.of("indicateurs", portefeuilleClient.getIndicateurs(codAgencia, statut, tranche, recherche)),
                 "Indicateurs du portefeuille", OK));
     }
 
@@ -119,7 +122,7 @@ public class PortefeuilleResource {
                     .filter(a -> codAgencia.equals(a.getCodAgencia()))
                     .map(AgenceSafDto::getDesAgencia)
                     .findFirst().orElse(codAgencia);
-            var indicateurs = portefeuilleClient.getIndicateurs(codAgencia);
+            var indicateurs = portefeuilleClient.getIndicateurs(codAgencia, statut, tranche, recherche);
 
             // Recuperation complete par pages de 100, bornee a 10 000 lignes
             java.util.List<PortefeuilleCreditDto> credits = new java.util.ArrayList<>();

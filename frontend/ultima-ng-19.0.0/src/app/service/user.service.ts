@@ -1602,8 +1602,14 @@ export class UserService {
                 .pipe(catchError(this.handleError))
         );
 
-    getPortefeuilleIndicateurs$ = (codAgencia: string) =>
-        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/indicateurs`, { params: { codAgencia } }).pipe(catchError(this.handleError));
+    getPortefeuilleIndicateurs$ = (codAgencia: string, statut: string, tranche: string | null, recherche: string | null) =>
+        <Observable<IResponse>>(
+            this.http
+                .get<IResponse>(`${this.server}/ecredit/portefeuille/indicateurs`, {
+                    params: { codAgencia, statut, ...(tranche ? { tranche } : {}), ...(recherche ? { recherche } : {}) }
+                })
+                .pipe(catchError(this.handleError))
+        );
 
     exportPortefeuille$ = (codAgencia: string, statut: string, tranche: string | null, recherche: string | null) =>
         this.http.get(`${this.server}/ecredit/portefeuille/export`, {

@@ -32,7 +32,10 @@ public interface EbankingPortefeuilleClient {
             @RequestParam(value = "size", defaultValue = "20") int size);
 
     @GetMapping("/ebanking/portefeuille/indicateurs")
-    PortefeuilleIndicateursDto getIndicateurs(@RequestParam(value = "codAgencia") String codAgencia);
+    PortefeuilleIndicateursDto getIndicateurs(@RequestParam(value = "codAgencia") String codAgencia,
+                                              @RequestParam(value = "statut", defaultValue = "actifs") String statut,
+                                              @RequestParam(value = "tranche", required = false) String tranche,
+                                              @RequestParam(value = "recherche", required = false) String recherche);
 
     // ==================== Alertes (phase 3) : balayages reseau ====================
 

@@ -124,7 +124,7 @@ public class PortefeuilleRepository {
                    COALESCE(SUM(CASE WHEN t.DAT_PREM_IMP <= :date30 THEN t.MON_SALDO ELSE 0 END), 0) AS ENCOURS_PAR30,
                    COALESCE(SUM(CASE WHEN t.DAT_PREM_IMP <= :date90 THEN t.MON_SALDO ELSE 0 END), 0) AS ENCOURS_PAR90
             FROM ("""
-            + CREDIT_BASE + ") t";
+            + CREDIT_BASE + ") t" + FILTRE_RETARD;
 
     private static final String SQL_ECHEANCIER = """
             SELECT pp.NUM_CUOTA, pp.FEC_CUOTA, pp.MON_CUOTA, pp.MON_INT,
@@ -270,11 +270,14 @@ public class PortefeuilleRepository {
                 java.sql.Types.DATE);
     }
 
-    public PortefeuilleIndicateursDto indicateurs(String codAgencia) {
+    public PortefeuilleIndicateursDto indicateurs(String codAgencia, boolean seulementRetard,
+                                                  Integer retardMin, Integer retardMax, String recherche) {
         LocalDate aujourdhui = LocalDate.now();
-        MapSqlParameterSource p = paramsBase(codAgencia, null)
+        MapSqlParameterSource p = paramsBase(codAgencia, recherche)
+                .addValue("seulementRetard", seulementRetard ? 1 : 0)
                 .addValue("date30", java.sql.Date.valueOf(aujourdhui.minusDays(30)))
                 .addValue("date90", java.sql.Date.valueOf(aujourdhui.minusDays(90)));
+        ajouterBornesRetard(p, retardMin, retardMax);
         return execute("portefeuille.indicateurs", () -> primary.queryForObject(SQL_INDICATEURS, p,
                 (rs, n) -> new PortefeuilleIndicateursDto(
                         rs.getLong("NB"),
