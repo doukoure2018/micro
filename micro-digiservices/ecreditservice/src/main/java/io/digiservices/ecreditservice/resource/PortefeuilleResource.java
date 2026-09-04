@@ -4,6 +4,10 @@ import io.digiservices.clients.EbankingPortefeuilleClient;
 import io.digiservices.clients.UserClient;
 import io.digiservices.clients.domain.User;
 import io.digiservices.clients.portefeuille.AgenceSafDto;
+import io.digiservices.clients.portefeuille.PortefeuilleCreditDto;
+import io.digiservices.ecreditservice.utils.PortefeuilleExcelUtils;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import io.digiservices.ecreditservice.domain.Response;
 import io.digiservices.ecreditservice.exception.ApiException;
 import io.digiservices.ecreditservice.repository.PortefeuillePerimetreRepository;
@@ -95,6 +99,63 @@ public class PortefeuilleResource {
                 Map.of("echeancier", portefeuilleClient.getEcheancier(codAgencia, numCredito)),
                 "Echeancier du credit", OK));
     }
+
+    /**
+     * Export Excel de la selection courante (agence + filtre statut + recherche) :
+     * feuille Synthese (indicateurs) + feuille Credits (toutes les lignes, pas
+     * seulement la page affichee). Meme verification de perimetre que la page.
+     */
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> exporter(
+            @NotNull Authentication authentication,
+            @RequestParam(name = "codAgencia") String codAgencia,
+            @RequestParam(name = "statut", defaultValue = "actifs") String statut,
+            @RequestParam(name = "recherche", required = false) String recherche) {
+        verifierAcces(authentication, codAgencia);
+        try {
+            String libelle = portefeuilleClient.getAgences().stream()
+                    .filter(a -> codAgencia.equals(a.getCodAgencia()))
+                    .map(AgenceSafDto::getDesAgencia)
+                    .findFirst().orElse(codAgencia);
+            var indicateurs = portefeuilleClient.getIndicateurs(codAgencia);
+
+            // Recuperation complete par pages de 100, bornee a 10 000 lignes
+            java.util.List<PortefeuilleCreditDto> credits = new java.util.ArrayList<>();
+            int page = 0;
+            while (credits.size() < EXPORT_MAX_LIGNES) {
+                var lot = portefeuilleClient.getCredits(codAgencia, statut, recherche, page, 100);
+                if (lot.getContent() == null || lot.getContent().isEmpty()) break;
+                credits.addAll(lot.getContent());
+                if (!lot.isHasNext()) break;
+                page++;
+            }
+            if (credits.size() > EXPORT_MAX_LIGNES) {
+                credits = credits.subList(0, EXPORT_MAX_LIGNES);
+                log.warn("[PORTEFEUILLE] Export tronque a {} lignes pour l'agence {}", EXPORT_MAX_LIGNES, codAgencia);
+            }
+
+            byte[] contenu = PortefeuilleExcelUtils.construireClasseur(
+                    libelle, codAgencia, statut, recherche, indicateurs, credits);
+
+            String nomFichier = "portefeuille_"
+                    + libelle.replaceAll("[^A-Za-z0-9]+", "_")
+                    + "_" + java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.BASIC_ISO_DATE)
+                    + ".xlsx";
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType(
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+            headers.setContentDispositionFormData("attachment", nomFichier);
+            headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
+            headers.setContentLength(contenu.length);
+            log.info("[PORTEFEUILLE] Export Excel {} : {} credits, {} octets", nomFichier, credits.size(), contenu.length);
+            return ResponseEntity.ok().headers(headers).body(contenu);
+        } catch (java.io.IOException e) {
+            log.error("[PORTEFEUILLE] Echec de generation Excel : {}", e.getMessage(), e);
+            throw new ApiException("Echec de la generation du fichier Excel");
+        }
+    }
+
+    private static final int EXPORT_MAX_LIGNES = 10000;
 
     // ==================== Perimetre ====================
 
