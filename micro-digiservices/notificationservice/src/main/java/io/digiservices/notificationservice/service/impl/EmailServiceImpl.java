@@ -50,6 +50,23 @@ public class EmailServiceImpl implements EmailService {
 
     @Override
     @Async
+    public void sendPortefeuilleAlerteEmail(String to, String sujet, String corpsHtml) {
+        try {
+            var message = mailSender.createMimeMessage();
+            var helper = new org.springframework.mail.javamail.MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(fromEmail);
+            helper.setTo(to);
+            helper.setSubject(sujet);
+            helper.setText(corpsHtml, true);
+            mailSender.send(message);
+            log.info("Alerte portefeuille envoyee a {} : {}", to, sujet);
+        } catch (Exception e) {
+            log.error("Echec envoi alerte portefeuille a {} : {}", to, e.getMessage());
+        }
+    }
+
+    @Override
+    @Async
     public void sendNewAccountHtmlEmail(String name, String to, String token) {
         try {
             var context = new Context();

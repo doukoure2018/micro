@@ -70,6 +70,31 @@ public class PortefeuilleController {
         return ResponseEntity.ok(repository.indicateurs(codAgencia));
     }
 
+    // ==================== Alertes (phase 3) ====================
+
+    @GetMapping("/echeances-avenir")
+    public ResponseEntity<List<io.digiservices.clients.portefeuille.EcheanceAvenirDto>> getEcheancesAvenir(
+            @RequestParam(name = "joursAvant", defaultValue = "3") int joursAvant) {
+        if (joursAvant < 0 || joursAvant > 30) {
+            throw new BlogAPIException(HttpStatus.BAD_REQUEST, "joursAvant doit etre entre 0 et 30");
+        }
+        return ResponseEntity.ok(repository.findEcheancesAvenir(joursAvant));
+    }
+
+    @GetMapping("/nouveaux-impayes")
+    public ResponseEntity<List<io.digiservices.clients.portefeuille.NouvelImpayeDto>> getNouveauxImpayes(
+            @RequestParam(name = "depuisJours", defaultValue = "1") int depuisJours) {
+        if (depuisJours < 1 || depuisJours > 31) {
+            throw new BlogAPIException(HttpStatus.BAD_REQUEST, "depuisJours doit etre entre 1 et 31");
+        }
+        return ResponseEntity.ok(repository.findNouveauxImpayes(depuisJours));
+    }
+
+    @GetMapping("/indicateurs-reseau")
+    public ResponseEntity<List<io.digiservices.clients.portefeuille.IndicateursAgenceDto>> getIndicateursReseau() {
+        return ResponseEntity.ok(repository.indicateursReseau());
+    }
+
     @GetMapping("/credits/{codAgencia}/{numCredito}/echeancier")
     public ResponseEntity<List<PortefeuilleEcheanceDto>> getEcheancier(
             @PathVariable("codAgencia") String codAgencia,

@@ -33,6 +33,19 @@ public interface EbankingPortefeuilleClient {
     @GetMapping("/ebanking/portefeuille/indicateurs")
     PortefeuilleIndicateursDto getIndicateurs(@RequestParam(value = "codAgencia") String codAgencia);
 
+    // ==================== Alertes (phase 3) : balayages reseau ====================
+
+    @GetMapping("/ebanking/portefeuille/echeances-avenir")
+    List<io.digiservices.clients.portefeuille.EcheanceAvenirDto> getEcheancesAvenir(
+            @RequestParam(value = "joursAvant", defaultValue = "3") int joursAvant);
+
+    @GetMapping("/ebanking/portefeuille/nouveaux-impayes")
+    List<io.digiservices.clients.portefeuille.NouvelImpayeDto> getNouveauxImpayes(
+            @RequestParam(value = "depuisJours", defaultValue = "1") int depuisJours);
+
+    @GetMapping("/ebanking/portefeuille/indicateurs-reseau")
+    List<io.digiservices.clients.portefeuille.IndicateursAgenceDto> getIndicateursReseau();
+
     @GetMapping("/ebanking/portefeuille/credits/{codAgencia}/{numCredito}/echeancier")
     List<PortefeuilleEcheanceDto> getEcheancier(@PathVariable("codAgencia") String codAgencia,
                                                 @PathVariable("numCredito") Long numCredito);

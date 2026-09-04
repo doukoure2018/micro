@@ -128,6 +128,105 @@ public class PortefeuilleRepository {
             ORDER BY pp.NUM_CUOTA
             """;
 
+    // ==================== Alertes (phase 3) : balayages reseau ====================
+
+    // Sous-requete commune : par credit, plus ancienne echeance echue impayee + montants impayes
+    private static final String IMPAYES_PAR_CREDIT = """
+            (SELECT pp.COD_EMPRESA, pp.COD_AGENCIA, pp.NUM_CREDITO,
+                    MIN(pp.FEC_CUOTA) AS PREM_IMP,
+                    SUM(pp.SAL_PRINCIPAL) AS CAP_IMP, SUM(pp.SAL_INT) AS INT_IMP
+             FROM PR.PR_PLAN_PAGOS pp
+             WHERE pp.NUM_CUOTA <> 0 AND pp.FEC_CANCELACION IS NULL AND pp.FEC_CUOTA < :aujourdhui
+             GROUP BY pp.COD_EMPRESA, pp.COD_AGENCIA, pp.NUM_CREDITO) t
+            """;
+
+    private static final String SQL_ECHEANCES_AVENIR = """
+            SELECT cr.COD_AGENCIA, ag.DES_AGENCIA, cr.NUM_CREDITO, cr.COD_CLIENTE,
+                   c.NOM_CLIENTE, pp.FEC_CUOTA, pp.MON_CUOTA
+            FROM PR.PR_PLAN_PAGOS pp
+            INNER JOIN PR.PR_CREDITOS cr
+                ON pp.COD_EMPRESA = cr.COD_EMPRESA AND pp.COD_AGENCIA = cr.COD_AGENCIA
+               AND pp.NUM_CREDITO = cr.NUM_CREDITO
+            INNER JOIN CL.CL_CLIENTES c
+                ON cr.COD_EMPRESA = c.COD_EMPRESA AND cr.COD_CLIENTE = c.COD_CLIENTE
+            LEFT JOIN CF.CF_AGENCIAS ag
+                ON cr.COD_EMPRESA = ag.COD_EMPRESA AND cr.COD_AGENCIA = ag.COD_AGENCIA
+            WHERE pp.NUM_CUOTA <> 0 AND pp.FEC_CANCELACION IS NULL AND pp.FEC_CUOTA = :dateCible
+              AND cr.IND_ESTADO NOT IN ('C', 'T', 'X') AND cr.MON_SALDO > 0
+            ORDER BY cr.COD_AGENCIA, c.NOM_CLIENTE
+            """;
+
+    private static final String SQL_NOUVEAUX_IMPAYES = "SELECT cr.COD_AGENCIA, ag.DES_AGENCIA, " + """
+                   cr.NUM_CREDITO, cr.COD_CLIENTE, c.NOM_CLIENTE, t.PREM_IMP, cr.MON_SALDO,
+                   COALESCE(t.CAP_IMP, 0) + COALESCE(t.INT_IMP, 0) AS MNT_IMP
+            FROM """ + IMPAYES_PAR_CREDIT + """
+            INNER JOIN PR.PR_CREDITOS cr
+                ON t.COD_EMPRESA = cr.COD_EMPRESA AND t.COD_AGENCIA = cr.COD_AGENCIA
+               AND t.NUM_CREDITO = cr.NUM_CREDITO
+            INNER JOIN CL.CL_CLIENTES c
+                ON cr.COD_EMPRESA = c.COD_EMPRESA AND cr.COD_CLIENTE = c.COD_CLIENTE
+            LEFT JOIN CF.CF_AGENCIAS ag
+                ON cr.COD_EMPRESA = ag.COD_EMPRESA AND cr.COD_AGENCIA = ag.COD_AGENCIA
+            WHERE t.PREM_IMP >= :depuis
+              AND cr.IND_ESTADO NOT IN ('C', 'T', 'X') AND cr.MON_SALDO > 0
+            ORDER BY cr.COD_AGENCIA, t.PREM_IMP
+            """;
+
+    private static final String SQL_INDICATEURS_RESEAU = "SELECT cr.COD_AGENCIA, ag.DES_AGENCIA, COUNT(*) AS NB, " + """
+                   COALESCE(SUM(cr.MON_SALDO), 0) AS ENCOURS,
+                   SUM(CASE WHEN t.PREM_IMP IS NOT NULL THEN 1 ELSE 0 END) AS NB_RETARD,
+                   COALESCE(SUM(COALESCE(t.CAP_IMP, 0) + COALESCE(t.INT_IMP, 0)), 0) AS IMPAYE,
+                   COALESCE(SUM(CASE WHEN t.PREM_IMP <= :date30 THEN cr.MON_SALDO ELSE 0 END), 0) AS ENCOURS_PAR30,
+                   COALESCE(SUM(CASE WHEN t.PREM_IMP <= :date90 THEN cr.MON_SALDO ELSE 0 END), 0) AS ENCOURS_PAR90
+            FROM PR.PR_CREDITOS cr
+            LEFT JOIN """ + IMPAYES_PAR_CREDIT + """
+                ON t.COD_EMPRESA = cr.COD_EMPRESA AND t.COD_AGENCIA = cr.COD_AGENCIA
+               AND t.NUM_CREDITO = cr.NUM_CREDITO
+            LEFT JOIN CF.CF_AGENCIAS ag
+                ON cr.COD_EMPRESA = ag.COD_EMPRESA AND cr.COD_AGENCIA = ag.COD_AGENCIA
+            WHERE cr.IND_ESTADO NOT IN ('C', 'T', 'X') AND cr.MON_SALDO > 0
+            GROUP BY cr.COD_AGENCIA, ag.DES_AGENCIA
+            ORDER BY cr.COD_AGENCIA
+            """;
+
+    /** Echeances non payees tombant exactement a J+joursAvant (credits actifs). */
+    public List<io.digiservices.clients.portefeuille.EcheanceAvenirDto> findEcheancesAvenir(int joursAvant) {
+        MapSqlParameterSource p = new MapSqlParameterSource()
+                .addValue("dateCible", java.sql.Date.valueOf(LocalDate.now().plusDays(joursAvant)));
+        return execute("portefeuille.echeancesAvenir", () -> primary.query(SQL_ECHEANCES_AVENIR, p,
+                (rs, n) -> new io.digiservices.clients.portefeuille.EcheanceAvenirDto(
+                        str(rs, "COD_AGENCIA"), str(rs, "DES_AGENCIA"), rs.getLong("NUM_CREDITO"),
+                        str(rs, "COD_CLIENTE"), str(rs, "NOM_CLIENTE"),
+                        dt(rs, "FEC_CUOTA"), rs.getBigDecimal("MON_CUOTA"))));
+    }
+
+    /** Credits dont la premiere echeance impayee est tombee dans les depuisJours derniers jours. */
+    public List<io.digiservices.clients.portefeuille.NouvelImpayeDto> findNouveauxImpayes(int depuisJours) {
+        LocalDate aujourdhui = LocalDate.now();
+        MapSqlParameterSource p = new MapSqlParameterSource()
+                .addValue("aujourdhui", java.sql.Date.valueOf(aujourdhui))
+                .addValue("depuis", java.sql.Date.valueOf(aujourdhui.minusDays(depuisJours)));
+        return execute("portefeuille.nouveauxImpayes", () -> primary.query(SQL_NOUVEAUX_IMPAYES, p,
+                (rs, n) -> new io.digiservices.clients.portefeuille.NouvelImpayeDto(
+                        str(rs, "COD_AGENCIA"), str(rs, "DES_AGENCIA"), rs.getLong("NUM_CREDITO"),
+                        str(rs, "COD_CLIENTE"), str(rs, "NOM_CLIENTE"),
+                        dt(rs, "PREM_IMP"), rs.getBigDecimal("MON_SALDO"), rs.getBigDecimal("MNT_IMP"))));
+    }
+
+    /** Indicateurs de tout le reseau, agreges par agence SAF (une seule requete). */
+    public List<io.digiservices.clients.portefeuille.IndicateursAgenceDto> indicateursReseau() {
+        LocalDate aujourdhui = LocalDate.now();
+        MapSqlParameterSource p = new MapSqlParameterSource()
+                .addValue("aujourdhui", java.sql.Date.valueOf(aujourdhui))
+                .addValue("date30", java.sql.Date.valueOf(aujourdhui.minusDays(30)))
+                .addValue("date90", java.sql.Date.valueOf(aujourdhui.minusDays(90)));
+        return execute("portefeuille.indicateursReseau", () -> primary.query(SQL_INDICATEURS_RESEAU, p,
+                (rs, n) -> new io.digiservices.clients.portefeuille.IndicateursAgenceDto(
+                        str(rs, "COD_AGENCIA"), str(rs, "DES_AGENCIA"), rs.getLong("NB"),
+                        rs.getBigDecimal("ENCOURS"), rs.getLong("NB_RETARD"), rs.getBigDecimal("IMPAYE"),
+                        rs.getBigDecimal("ENCOURS_PAR30"), rs.getBigDecimal("ENCOURS_PAR90"))));
+    }
+
     public List<AgenceSafDto> findAgences() {
         return execute("portefeuille.agences", () -> primary.query(SQL_AGENCES,
                 (rs, n) -> new AgenceSafDto(str(rs, "COD_AGENCIA"), str(rs, "DES_AGENCIA"))));

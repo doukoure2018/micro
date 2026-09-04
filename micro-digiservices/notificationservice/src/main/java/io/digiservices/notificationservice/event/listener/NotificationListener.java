@@ -38,6 +38,15 @@ public class NotificationListener {
                 var data = mapper.convertValue(notification.getPayload().getData(), StockNotificationData.class);
                 emailService.sendStockValidationEmail(data);
             }
+            case PORTEFEUILLE_ALERTE -> {
+                @SuppressWarnings("unchecked")
+                var data = (java.util.Map<String, Object>) mapper.convertValue(
+                        notification.getPayload().getData(), java.util.Map.class);
+                emailService.sendPortefeuilleAlerteEmail(
+                        String.valueOf(data.get("email")),
+                        String.valueOf(data.get("sujet")),
+                        String.valueOf(data.get("corpsHtml")));
+            }
             case STOCK_REJECTED -> {
                 var data = mapper.convertValue(notification.getPayload().getData(), StockNotificationData.class);
                 emailService.sendStockRejectionEmail(data);
