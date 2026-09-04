@@ -342,7 +342,7 @@
     <p-toast></p-toast>
 </div>
 <!-- Client deja existant : proposition de bascule vers la mise a jour de la fiche -->
-<p-dialog header="Client déjà existant" [visible]="clientExistant() !== null" [modal]="true" [style]="{ width: '440px' }" (onHide)="fermerDialogClientExistant()" [closable]="true">
+<p-dialog header="Client déjà existant" [visible]="clientExistant() !== null" (visibleChange)="!$event && fermerDialogClientExistant()" [modal]="true" [style]="{ width: '440px' }" [closable]="true">
     <p class="m-0">
         Le client <strong>{{ clientExistant() }}</strong> existe déjà — la création est impossible.<br />
         Utilisez la <strong>mise à jour de la fiche signalétique</strong> pour modifier ses informations.
