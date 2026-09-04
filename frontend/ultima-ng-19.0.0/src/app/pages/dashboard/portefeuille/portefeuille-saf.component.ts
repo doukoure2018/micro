@@ -152,7 +152,14 @@ import { TooltipModule } from 'primeng/tooltip';
         </div>
 
         <!-- Dialog echeancier -->
-        <p-dialog [header]="'Échéancier — crédit ' + (state().creditSelectionne?.numCredito || '')" [visible]="state().showEcheancier" [modal]="true" [style]="{ width: '760px' }" (onHide)="fermerEcheancier()" [closable]="true">
+        <p-dialog
+            [header]="'Échéancier — crédit ' + (state().creditSelectionne?.numCredito || '')"
+            [visible]="state().showEcheancier"
+            (visibleChange)="!$event && fermerEcheancier()"
+            [modal]="true"
+            [style]="{ width: '760px' }"
+            [closable]="true"
+        >
             <p class="m-0 mb-3 text-sm" *ngIf="state().creditSelectionne as c">
                 <strong>{{ c.nomCliente }}</strong> ({{ c.codCliente }}) — {{ c.monCredito | number: '1.0-0' }} GNF, CRD {{ c.monSaldo | number: '1.0-0' }} GNF
             </p>
@@ -181,6 +188,9 @@ import { TooltipModule } from 'primeng/tooltip';
                     </tr>
                 </ng-template>
             </p-table>
+            <ng-template pTemplate="footer">
+                <button pButton label="Fermer" icon="pi pi-times" class="p-button-text" (click)="fermerEcheancier()"></button>
+            </ng-template>
         </p-dialog>
     `
 })
