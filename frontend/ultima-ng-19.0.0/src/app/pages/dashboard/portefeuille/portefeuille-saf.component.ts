@@ -57,6 +57,16 @@ import { TooltipModule } from 'primeng/tooltip';
                 <p-selectButton [options]="statutOptions" [(ngModel)]="statut" optionLabel="label" optionValue="value" (onChange)="chargerPortefeuille(0)"></p-selectButton>
                 <input pInputText type="text" [(ngModel)]="recherche" placeholder="Client, code, n° crédit…" class="w-64" (keyup.enter)="chargerPortefeuille(0)" />
                 <button pButton icon="pi pi-search" class="p-button-outlined" (click)="chargerPortefeuille(0)" [disabled]="!agenceSelectionnee"></button>
+                <button
+                    pButton
+                    icon="pi pi-file-excel"
+                    label="Exporter Excel"
+                    class="p-button-success p-button-outlined ml-auto"
+                    pTooltip="Exporte toute la sélection courante (agence + filtres), pas seulement la page affichée"
+                    [loading]="exportEnCours()"
+                    [disabled]="!agenceSelectionnee"
+                    (click)="exporterExcel()"
+                ></button>
             </div>
 
             <!-- Indicateurs -->
@@ -258,6 +268,34 @@ export class PortefeuilleSafComponent implements OnInit {
                 error: (err) => {
                     this.state.update((s) => ({ ...s, loadingEcheancier: false }));
                     this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || 'Échéancier indisponible', life: 6000 });
+                }
+            });
+    }
+
+    exportEnCours = signal(false);
+
+    exporterExcel(): void {
+        const agence = this.agenceSelectionnee;
+        if (!agence) return;
+        this.exportEnCours.set(true);
+        this.userService
+            .exportPortefeuille$(agence.codAgencia, this.statut, this.recherche.trim() || null)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (reponse) => {
+                    this.exportEnCours.set(false);
+                    const disposition = reponse.headers.get('Content-Disposition') || '';
+                    const nom = /filename="?([^";]+)"?/.exec(disposition)?.[1] || `portefeuille_${agence.codAgencia}.xlsx`;
+                    const url = URL.createObjectURL(reponse.body as Blob);
+                    const lien = document.createElement('a');
+                    lien.href = url;
+                    lien.download = nom;
+                    lien.click();
+                    URL.revokeObjectURL(url);
+                },
+                error: () => {
+                    this.exportEnCours.set(false);
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: "Échec de l'export Excel — réessayez (base SAF indisponible ?)", life: 6000 });
                 }
             });
     }
