@@ -9,4 +9,7 @@ public interface EmailService {
     void sendStockRejectionEmail(StockNotificationData data);
     void sendNewTicketHtmlEmail(String name, String email, String ticketTitle, String ticketNumber, String priority);
     void sendNewFilesHtmlEmail(String name, String email, String files, String ticketTitle, String ticketNumber, String priority, String date);
+
+    /** Envoi generique HTML (alertes du portefeuille credits SAF). */
+    void sendPortefeuilleAlerteEmail(String to, String sujet, String corpsHtml);
 }

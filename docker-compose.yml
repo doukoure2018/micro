@@ -274,6 +274,8 @@ services:
     ports:
       - "8087:8087"
     environment:
+      # Alertes portefeuille SAF (phase 3) : digests quotidiens + synthese PAR hebdo
+      PORTEFEUILLE_ALERTES_ACTIVES: "true"
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       SPRING_DATASOURCE_URL: "jdbc:postgresql://postgresdb:5432/localdb"
       SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
