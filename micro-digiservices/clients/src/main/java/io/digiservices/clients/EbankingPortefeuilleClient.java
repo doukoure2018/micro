@@ -26,6 +26,7 @@ public interface EbankingPortefeuilleClient {
     PageDto<PortefeuilleCreditDto> getCredits(
             @RequestParam(value = "codAgencia") String codAgencia,
             @RequestParam(value = "statut", defaultValue = "actifs") String statut,
+            @RequestParam(value = "tranche", required = false) String tranche,
             @RequestParam(value = "recherche", required = false) String recherche,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size);

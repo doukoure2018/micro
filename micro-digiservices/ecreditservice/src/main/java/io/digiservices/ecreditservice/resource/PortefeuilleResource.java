@@ -67,13 +67,14 @@ public class PortefeuilleResource {
             @NotNull Authentication authentication,
             @RequestParam(name = "codAgencia") String codAgencia,
             @RequestParam(name = "statut", defaultValue = "actifs") String statut,
+            @RequestParam(name = "tranche", required = false) String tranche,
             @RequestParam(name = "recherche", required = false) String recherche,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "20") int size,
             HttpServletRequest request) {
         verifierAcces(authentication, codAgencia);
         return ResponseEntity.ok(getResponse(request,
-                Map.of("credits", portefeuilleClient.getCredits(codAgencia, statut, recherche, page, size)),
+                Map.of("credits", portefeuilleClient.getCredits(codAgencia, statut, tranche, recherche, page, size)),
                 "Portefeuille credits SAF", OK));
     }
 
@@ -110,6 +111,7 @@ public class PortefeuilleResource {
             @NotNull Authentication authentication,
             @RequestParam(name = "codAgencia") String codAgencia,
             @RequestParam(name = "statut", defaultValue = "actifs") String statut,
+            @RequestParam(name = "tranche", required = false) String tranche,
             @RequestParam(name = "recherche", required = false) String recherche) {
         verifierAcces(authentication, codAgencia);
         try {
@@ -123,7 +125,7 @@ public class PortefeuilleResource {
             java.util.List<PortefeuilleCreditDto> credits = new java.util.ArrayList<>();
             int page = 0;
             while (credits.size() < EXPORT_MAX_LIGNES) {
-                var lot = portefeuilleClient.getCredits(codAgencia, statut, recherche, page, 100);
+                var lot = portefeuilleClient.getCredits(codAgencia, statut, tranche, recherche, page, 100);
                 if (lot.getContent() == null || lot.getContent().isEmpty()) break;
                 credits.addAll(lot.getContent());
                 if (!lot.isHasNext()) break;
@@ -134,8 +136,12 @@ public class PortefeuilleResource {
                 log.warn("[PORTEFEUILLE] Export tronque a {} lignes pour l'agence {}", EXPORT_MAX_LIGNES, codAgencia);
             }
 
+            String filtreExport = "retard".equals(statut) ? "retard" : "actifs";
+            if (tranche != null && !tranche.isBlank()) {
+                filtreExport += " — tranche " + tranche + " jours";
+            }
             byte[] contenu = PortefeuilleExcelUtils.construireClasseur(
-                    libelle, codAgencia, statut, recherche, indicateurs, credits);
+                    libelle, codAgencia, filtreExport, recherche, indicateurs, credits);
 
             String nomFichier = "portefeuille_"
                     + libelle.replaceAll("[^A-Za-z0-9]+", "_")

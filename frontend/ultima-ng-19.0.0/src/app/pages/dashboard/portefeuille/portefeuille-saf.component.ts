@@ -55,6 +55,17 @@ import { TooltipModule } from 'primeng/tooltip';
                     (onChange)="chargerPortefeuille(0)"
                 ></p-dropdown>
                 <p-selectButton [options]="statutOptions" [(ngModel)]="statut" optionLabel="label" optionValue="value" (onChange)="chargerPortefeuille(0)"></p-selectButton>
+                <p-dropdown
+                    [options]="trancheOptions"
+                    [(ngModel)]="tranche"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Tranche de retard"
+                    [showClear]="true"
+                    styleClass="w-48"
+                    appendTo="body"
+                    (onChange)="chargerPortefeuille(0)"
+                ></p-dropdown>
                 <input pInputText type="text" [(ngModel)]="recherche" placeholder="Client, code, n° crédit…" class="w-64" (keyup.enter)="chargerPortefeuille(0)" />
                 <button pButton icon="pi pi-search" class="p-button-outlined" (click)="chargerPortefeuille(0)" [disabled]="!agenceSelectionnee"></button>
                 <button
@@ -201,6 +212,14 @@ export class PortefeuilleSafComponent implements OnInit {
 
     agenceSelectionnee: { codAgencia: string; desAgencia: string } | null = null;
     statut: 'actifs' | 'retard' = 'actifs';
+    tranche: string | null = null;
+    trancheOptions = [
+        { label: '1 – 30 jours', value: '1-30' },
+        { label: '31 – 60 jours', value: '31-60' },
+        { label: '61 – 90 jours', value: '61-90' },
+        { label: '91 – 120 jours', value: '91-120' },
+        { label: '+ de 120 jours', value: '120+' }
+    ];
     recherche = '';
     statutOptions = [
         { label: 'Tous les actifs', value: 'actifs' },
@@ -254,7 +273,7 @@ export class PortefeuilleSafComponent implements OnInit {
                 error: () => {}
             });
         this.userService
-            .getPortefeuilleCredits$(agence.codAgencia, this.statut, this.recherche.trim() || null, page, this.pageSize)
+            .getPortefeuilleCredits$(agence.codAgencia, this.statut, this.tranche, this.recherche.trim() || null, page, this.pageSize)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (r: IResponse) => {
@@ -289,7 +308,7 @@ export class PortefeuilleSafComponent implements OnInit {
         if (!agence) return;
         this.exportEnCours.set(true);
         this.userService
-            .exportPortefeuille$(agence.codAgencia, this.statut, this.recherche.trim() || null)
+            .exportPortefeuille$(agence.codAgencia, this.statut, this.tranche, this.recherche.trim() || null)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (reponse) => {

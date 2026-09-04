@@ -52,7 +52,7 @@ public final class PortefeuilleExcelUtils {
             ct.setCellValue("Portefeuille crédits SAF — " + libelleAgence + " (" + codAgencia + ")");
             ct.setCellStyle(titre);
             ligne(synthese, r++, "Exporté le", LocalDateTime.now().format(FMT_HORODATAGE));
-            ligne(synthese, r++, "Filtre", "retard".equals(statut) ? "Crédits en retard" : "Tous les crédits actifs");
+            ligne(synthese, r++, "Filtre", statut != null && statut.startsWith("retard") ? "Crédits en " + statut : "Tous les crédits actifs" + (statut != null && statut.contains("tranche") ? " — " + statut.substring(statut.indexOf("tranche")) : ""));
             if (recherche != null && !recherche.isBlank()) {
                 ligne(synthese, r++, "Recherche", recherche);
             }

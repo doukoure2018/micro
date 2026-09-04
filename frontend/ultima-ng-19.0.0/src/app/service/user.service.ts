@@ -1593,19 +1593,21 @@ export class UserService {
 
     getPortefeuilleAgences$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/agences`).pipe(catchError(this.handleError));
 
-    getPortefeuilleCredits$ = (codAgencia: string, statut: string, recherche: string | null, page: number, size: number) =>
+    getPortefeuilleCredits$ = (codAgencia: string, statut: string, tranche: string | null, recherche: string | null, page: number, size: number) =>
         <Observable<IResponse>>(
             this.http
-                .get<IResponse>(`${this.server}/ecredit/portefeuille/credits`, { params: { codAgencia, statut, page, size, ...(recherche ? { recherche } : {}) } })
+                .get<IResponse>(`${this.server}/ecredit/portefeuille/credits`, {
+                    params: { codAgencia, statut, page, size, ...(tranche ? { tranche } : {}), ...(recherche ? { recherche } : {}) }
+                })
                 .pipe(catchError(this.handleError))
         );
 
     getPortefeuilleIndicateurs$ = (codAgencia: string) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/indicateurs`, { params: { codAgencia } }).pipe(catchError(this.handleError));
 
-    exportPortefeuille$ = (codAgencia: string, statut: string, recherche: string | null) =>
+    exportPortefeuille$ = (codAgencia: string, statut: string, tranche: string | null, recherche: string | null) =>
         this.http.get(`${this.server}/ecredit/portefeuille/export`, {
-            params: { codAgencia, statut, ...(recherche ? { recherche } : {}) },
+            params: { codAgencia, statut, ...(tranche ? { tranche } : {}), ...(recherche ? { recherche } : {}) },
             responseType: 'blob',
             observe: 'response'
         });

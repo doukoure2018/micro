@@ -45,6 +45,7 @@ public class PortefeuilleController {
     public ResponseEntity<PageDto<PortefeuilleCreditDto>> getCredits(
             @RequestParam(name = "codAgencia") String codAgencia,
             @RequestParam(name = "statut", defaultValue = "actifs") String statut,
+            @RequestParam(name = "tranche", required = false) String tranche,
             @RequestParam(name = "recherche", required = false) String recherche,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "20") int size) {
@@ -58,10 +59,30 @@ public class PortefeuilleController {
             default -> throw new BlogAPIException(HttpStatus.BAD_REQUEST,
                     "Le parametre 'statut' doit valoir 'actifs' ou 'retard'");
         };
-        long total = repository.countCredits(codAgencia, seulementRetard, recherche);
+        int[] bornes = bornesTranche(tranche);
+        Integer retardMin = bornes != null ? bornes[0] : null;
+        Integer retardMax = bornes != null && bornes[1] > 0 ? bornes[1] : null;
+        long total = repository.countCredits(codAgencia, seulementRetard, retardMin, retardMax, recherche);
         List<PortefeuilleCreditDto> content =
-                repository.findCredits(codAgencia, seulementRetard, recherche, page * size, size);
+                repository.findCredits(codAgencia, seulementRetard, retardMin, retardMax, recherche, page * size, size);
         return ResponseEntity.ok(PageDto.of(content, page, size, total));
+    }
+
+    /**
+     * Tranches de retard (PAR) : 1-30, 31-60, 61-90, 91-120, 120+ (jours de retard
+     * de la plus ancienne echeance impayee). null = pas de filtre de tranche.
+     */
+    private static int[] bornesTranche(String tranche) {
+        if (tranche == null || tranche.isBlank()) return null;
+        return switch (tranche.trim()) {
+            case "1-30" -> new int[]{1, 30};
+            case "31-60" -> new int[]{31, 60};
+            case "61-90" -> new int[]{61, 90};
+            case "91-120" -> new int[]{91, 120};
+            case "120+" -> new int[]{121, 0};
+            default -> throw new BlogAPIException(HttpStatus.BAD_REQUEST,
+                    "Le parametre 'tranche' doit valoir 1-30, 31-60, 61-90, 91-120 ou 120+");
+        };
     }
 
     @GetMapping("/indicateurs")
