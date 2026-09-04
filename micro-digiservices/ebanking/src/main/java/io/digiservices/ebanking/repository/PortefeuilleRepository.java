@@ -98,17 +98,24 @@ public class PortefeuilleRepository {
             """;
 
     // Les retards d'abord (plus ancien en tete), puis les credits sains par numero.
+    // Tranche de retard (PAR 30/60/90/120/+120) : bornes traduites en dates sur la
+    // plus ancienne echeance impayee (jours >= min <=> DAT_PREM_IMP <= aujourdhui - min).
+    private static final String FILTRE_RETARD = """
+            WHERE (:seulementRetard = 0 OR t.DAT_PREM_IMP IS NOT NULL)
+              AND (:dateRetardMax IS NULL OR (t.DAT_PREM_IMP IS NOT NULL AND t.DAT_PREM_IMP <= :dateRetardMax))
+              AND (:dateRetardMin IS NULL OR (t.DAT_PREM_IMP IS NOT NULL AND t.DAT_PREM_IMP >= :dateRetardMin))
+            """;
+
     private static final String SQL_FIND_CREDITS = "SELECT * FROM (" + CREDIT_BASE + """
             ) t
-            WHERE (:seulementRetard = 0 OR t.DAT_PREM_IMP IS NOT NULL)
+            """ + FILTRE_RETARD + """
             ORDER BY CASE WHEN t.DAT_PREM_IMP IS NULL THEN 1 ELSE 0 END, t.DAT_PREM_IMP, t.NUM_CREDITO
             OFFSET :offset ROWS FETCH NEXT :size ROWS ONLY
             """;
 
     private static final String SQL_COUNT_CREDITS = "SELECT COUNT(*) FROM (" + CREDIT_BASE + """
             ) t
-            WHERE (:seulementRetard = 0 OR t.DAT_PREM_IMP IS NOT NULL)
-            """;
+            """ + FILTRE_RETARD;
 
     private static final String SQL_INDICATEURS = "SELECT COUNT(*) AS NB, " + """
                    COALESCE(SUM(t.MON_SALDO), 0) AS ENCOURS,
@@ -233,19 +240,34 @@ public class PortefeuilleRepository {
     }
 
     public List<PortefeuilleCreditDto> findCredits(String codAgencia, boolean seulementRetard,
+                                                   Integer retardMin, Integer retardMax,
                                                    String recherche, int offset, int size) {
         MapSqlParameterSource p = paramsBase(codAgencia, recherche)
                 .addValue("seulementRetard", seulementRetard ? 1 : 0)
                 .addValue("offset", offset)
                 .addValue("size", size);
+        ajouterBornesRetard(p, retardMin, retardMax);
         return execute("portefeuille.credits", () -> primary.query(SQL_FIND_CREDITS, p, CREDIT_MAPPER));
     }
 
-    public long countCredits(String codAgencia, boolean seulementRetard, String recherche) {
+    public long countCredits(String codAgencia, boolean seulementRetard,
+                             Integer retardMin, Integer retardMax, String recherche) {
         MapSqlParameterSource p = paramsBase(codAgencia, recherche)
                 .addValue("seulementRetard", seulementRetard ? 1 : 0);
+        ajouterBornesRetard(p, retardMin, retardMax);
         Long total = execute("portefeuille.count", () -> primary.queryForObject(SQL_COUNT_CREDITS, p, Long.class));
         return total != null ? total : 0L;
+    }
+
+    /** jours de retard >= min => DAT_PREM_IMP <= aujourd'hui - min ; <= max => >= aujourd'hui - max. */
+    private static void ajouterBornesRetard(MapSqlParameterSource p, Integer retardMin, Integer retardMax) {
+        LocalDate aujourdhui = LocalDate.now();
+        p.addValue("dateRetardMax",
+                retardMin != null ? java.sql.Date.valueOf(aujourdhui.minusDays(retardMin)) : null,
+                java.sql.Types.DATE);
+        p.addValue("dateRetardMin",
+                retardMax != null ? java.sql.Date.valueOf(aujourdhui.minusDays(retardMax)) : null,
+                java.sql.Types.DATE);
     }
 
     public PortefeuilleIndicateursDto indicateurs(String codAgencia) {
