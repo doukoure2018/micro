@@ -300,10 +300,13 @@ public class BcrgServiceImpl implements BcrgService {
                     .distinct()
                     .toList();
             // Selection par NUM_CREDITO (surensemble si doublon inter-agences) puis
-            // controle du composite agence-credit ; un engagement declare devenu
-            // inextractible (credit solde depuis) est simplement absent de la page.
+            // controle de la reference ; un engagement declare devenu inextractible
+            // (credit solde depuis) est simplement absent de la page. Les notifications
+            // anterieures a la v1.6 portent le numero de credit nu (sans prefixe
+            // d'agence) : les deux formats sont acceptes.
             content = ebankingRegClient.getEncoursParCredits(periode, credits).stream()
-                    .filter(s -> cibles.contains(BcrgTranslator.refIntEng(s.getCodAgencia(), s.getNumCredito())))
+                    .filter(s -> cibles.contains(BcrgTranslator.refIntEng(s.getCodAgencia(), s.getNumCredito()))
+                            || cibles.contains(String.valueOf(s.getNumCredito())))
                     .map(s -> mapper.toEncours(s, arrete))
                     .toList();
         }
