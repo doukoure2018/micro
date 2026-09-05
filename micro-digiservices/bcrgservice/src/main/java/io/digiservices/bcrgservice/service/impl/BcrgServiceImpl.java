@@ -249,7 +249,7 @@ public class BcrgServiceImpl implements BcrgService {
         return mapper.toEngagement(ebankingRegClient.getEngagementById(ref.codAgence(), ref.numCredito()));
     }
 
-    /** Référence composite v1.6 {@code <codAgence>-<numCredito>} (cf. BcrgTranslator.refIntEng). */
+    /** Référence composite v1.6, sans tiret depuis v1.13 {@code <codAgence><numCredito>} (cf. BcrgTranslator.refIntEng). */
     private record RefComposite(String codAgence, Long numCredito) {
         static RefComposite parse(String refEng) {
             int sep = refEng == null ? -1 : refEng.lastIndexOf('-');
