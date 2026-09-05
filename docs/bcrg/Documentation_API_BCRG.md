@@ -2,7 +2,7 @@
 
 **Crédit Rural de Guinée S.A. — Documentation technique d'intégration**
 
-*Version 1.9 — 30 août 2026 (v1.1 contrat complet PP/PM · v1.2 extraction incrémentale + notifications · v1.3 refonte Engagements/Encours · v1.4 retours PP V2 : état civil réel, référentiel pays, NIN, API par liste d'identifiants et API des personnes modifiées · v1.5 PM V2 : VilleSiegeSocial et CommuneAdresse depuis les référentiels géographiques SAF, RCCM depuis les pièces du client moral · v1.6 correctifs des retours de validation du 20/08/2026 : ND retiré des champs typés, référence d'engagement composite, périodicité dérivée, circuit ordonné · v1.7 : API personnes morales par ids + variantes POST des /par-ids, ids dans le corps de requête · v1.8 : intégration des référentiels officiels BCRG du 27/08 — TypEng F.9, périodicités, agences, QualiCre IMF, secteurs institutionnels · v1.9 : réponse de POST /traitements enrichie d'une referenceCrg par référence)*
+*Version 1.12 — 5 septembre 2026 (v1.1 contrat complet PP/PM · v1.2 extraction incrémentale + notifications · v1.3 refonte Engagements/Encours · v1.4 retours PP V2 : état civil réel, référentiel pays, NIN, API par liste d'identifiants et API des personnes modifiées · v1.5 PM V2 : VilleSiegeSocial et CommuneAdresse depuis les référentiels géographiques SAF, RCCM depuis les pièces du client moral · v1.6 correctifs des retours de validation du 20/08/2026 : ND retiré des champs typés, référence d'engagement composite, périodicité dérivée, circuit ordonné · v1.7 : API personnes morales par ids + variantes POST des /par-ids, ids dans le corps de requête · v1.8 : intégration des référentiels officiels BCRG du 27/08 — TypEng F.9, périodicités, agences, QualiCre IMF, secteurs institutionnels · v1.9 : réponse de POST /traitements enrichie d'une referenceCrg par référence · v1.10 : DatPremEch/PeriodRemb garantis pour les crédits sans échéancier, règle DatPremEch ≥ DateMEP · v1.11 : extraction des engagements restants inversée (depuis les bénéficiaires déclarés) + endpoint de diagnostic /traitements/{module}/verifier · v1.12 : /encours en mode filtré paginé directement sur le sous-ensemble déclaré — pages denses, totalElements = nombre d'engagements notifiés traités)*
 
 ---
 
@@ -272,7 +272,17 @@ Les modules **M1 (PP/PM) et M2 (engagements)** ne renvoient plus, par défaut, q
 
 | Requête | Description |
 |---|---|
-| `GET /encours?periode=AAAA-MM&page=0&size=100&filtre=declares` | Encours à la période d'arrêté indiquée — `filtre=declares` (défaut) : seuls les engagements notifiés traités ; `filtre=aucun` : photo complète. En mode filtré une page peut contenir moins de `size` éléments : se fier à `hasNext` |
+| `GET /encours?periode=AAAA-MM&page=0&size=100&filtre=declares` | Encours à la période d'arrêté indiquée — `filtre=declares` (défaut) : seuls les engagements notifiés traités ; `filtre=aucun` : photo complète |
+
+**v1.12 — pagination du mode filtré (`filtre=declares`, défaut).** La pagination porte
+désormais **directement sur le sous-ensemble des engagements notifiés traités** :
+`totalElements` = nombre d'engagements notifiés (et non plus le volume de la photo
+complète), les pages sont denses et leur nombre est réduit d'autant. Exemple : 64
+engagements notifiés → 7 pages de 10, au lieu d'un parcours de 5 248 pages presque toutes
+vides. Une page peut exceptionnellement contenir moins de `size` éléments si un engagement
+notifié est devenu inextractible (crédit soldé depuis) : se fier à `hasNext`. Le paramètre
+`periode` fixe la **date d'arrêté** des calculs (`DatArr`, échéances, impayés) — il ne
+filtre pas les données : toute période `AAAA-MM` est valide.
 
 Le paramètre **`periode` est obligatoire** au format `AAAA-MM`. Conformément au retour BCRG :
 un encours n'est **jamais émis pour un engagement clôturé** ; sont couverts les crédits à

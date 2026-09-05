@@ -110,6 +110,12 @@ public class RegulatoryServiceImpl implements RegulatoryService {
         return PageDto.of(content, page, size, total);
     }
 
+    @Override
+    public List<RegEncoursDto> getEncoursParCredits(String periode, List<Long> credits) {
+        LocalDate periodEnd = parsePeriodEnd(periode);
+        return repository.findEncoursByCredits(periodEnd, credits);
+    }
+
     /** "AAAA-MM" -> premier jour du mois suivant (borne exclusive des echeances de la periode). */
     private LocalDate parsePeriodEnd(String periode) {
         try {

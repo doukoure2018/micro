@@ -327,6 +327,20 @@ public class RegulatoryRepository {
     private static final String SQL_COUNT_ENCOURS =
             "SELECT COUNT(*) FROM PR.PR_CREDITOS cr " + ENCOURS_WHERE;
 
+    // v1.12 : meme projection que SQL_FIND_ENCOURS mais sur une liste de credits cible
+    private static final String SQL_FIND_ENCOURS_PAR_CREDITS = """
+            SELECT cr.COD_AGENCIA, cr.NUM_CREDITO, cr.COD_CLIENTE, c.NOM_CLIENTE, cr.COD_MONEDA,
+                   cr.MON_CREDITO, cr.MON_SALDO, cr.MON_CUOTA, cr.CANT_CUOTAS, cr.IND_ESTADO, cr.FEC_VENCIMIENTO,
+                   cr.MON_DESEMBOLSADO,
+            """ + ENCOURS_AGG_V13 + PP_AGG + """
+            FROM PR.PR_CREDITOS cr
+            INNER JOIN CL.CL_CLIENTES c
+                ON cr.COD_EMPRESA = c.COD_EMPRESA AND cr.COD_CLIENTE = c.COD_CLIENTE
+            """ + ENCOURS_WHERE + """
+              AND cr.NUM_CREDITO IN (:credits)
+            ORDER BY cr.NUM_CREDITO
+            """;
+
     private static final String SQL_FIND_ENCOURS = """
             SELECT cr.COD_AGENCIA, cr.NUM_CREDITO, cr.COD_CLIENTE, c.NOM_CLIENTE, cr.COD_MONEDA,
                    cr.MON_CREDITO, cr.MON_SALDO, cr.MON_CUOTA, cr.CANT_CUOTAS, cr.IND_ESTADO, cr.FEC_VENCIMIENTO,
@@ -518,6 +532,21 @@ public class RegulatoryRepository {
                 .addValue("offset", offset)
                 .addValue("size", size);
         return execute("findEncours", () -> primary.query(SQL_FIND_ENCOURS, p, ENCOURS_MAPPER));
+    }
+
+    /**
+     * v1.12 : encours d'un ensemble cible de credits (pagination sur le sous-ensemble
+     * declare cote bcrgservice). Le filtre composite agence+credit est refait cote
+     * appelant : ici on selectionne par NUM_CREDITO (surensemble en cas de doublon
+     * inter-agences), regles d'eligibilite ENCOURS_WHERE inchangees.
+     */
+    public List<RegEncoursDto> findEncoursByCredits(LocalDate periodEnd, List<Long> credits) {
+        if (credits == null || credits.isEmpty()) return List.of();
+        MapSqlParameterSource p = new MapSqlParameterSource()
+                .addValue("periodEnd", java.sql.Date.valueOf(periodEnd))
+                .addValue("credits", credits);
+        return execute("findEncoursByCredits",
+                () -> primary.query(SQL_FIND_ENCOURS_PAR_CREDITS, p, ENCOURS_MAPPER));
     }
 
     private List<RegAdresseDto> findAdresses(String codCliente) {

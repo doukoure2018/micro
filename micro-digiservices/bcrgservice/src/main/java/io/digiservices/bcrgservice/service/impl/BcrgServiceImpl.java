@@ -276,22 +276,40 @@ public class BcrgServiceImpl implements BcrgService {
     @Override
     public PageDto<EncoursDto> getEncours(String periode, int page, int size, boolean filtreDeclares) {
         java.time.LocalDate arrete = parseArrete(periode);
-        var src = ebankingRegClient.getEncours(periode, page, size);
         if (!filtreDeclares) {
+            var src = ebankingRegClient.getEncours(periode, page, size);
             return mapper.toPage(src, s -> mapper.toEncours(s, arrete));
         }
-        Set<String> engagementsDeclares = traitementRepository.findReferences(MODULE_ENG);
-        if (engagementsDeclares.isEmpty()) {
+        // v1.12 : pagination directement sur le sous-ensemble declare (avant : parcours de la
+        // photo complete puis filtrage de chaque page -> quasi toutes les pages vides).
+        List<String> declares = traitementRepository.findReferences(MODULE_ENG).stream().sorted().toList();
+        if (declares.isEmpty()) {
             log.warn("Aucun engagement notifie traite : encours vide "
                     + "(declarer et notifier les engagements d'abord, ou utiliser filtre=aucun)");
+            return new PageDto<>(List.of(), page, size, 0, 0, false, false);
         }
-        List<EncoursDto> content = (src.getContent() == null ? List.<io.digiservices.clients.reg.RegEncoursDto>of()
-                : src.getContent()).stream()
-                .filter(s -> engagementsDeclares.contains(BcrgTranslator.refIntEng(s.getCodAgencia(), s.getNumCredito())))
-                .map(s -> mapper.toEncours(s, arrete))
-                .toList();
-        return new PageDto<>(content, src.getPage(), src.getSize(), src.getTotalElements(),
-                src.getTotalPages(), src.isHasNext(), src.isHasPrevious());
+        int de = page * size;
+        List<String> refsPage = de >= declares.size()
+                ? List.of()
+                : declares.subList(de, Math.min(de + size, declares.size()));
+        List<EncoursDto> content = List.of();
+        if (!refsPage.isEmpty()) {
+            Set<String> cibles = Set.copyOf(refsPage);
+            List<Long> credits = refsPage.stream()
+                    .map(r -> Long.valueOf(r.substring(r.lastIndexOf('-') + 1)))
+                    .distinct()
+                    .toList();
+            // Selection par NUM_CREDITO (surensemble si doublon inter-agences) puis
+            // controle du composite agence-credit ; un engagement declare devenu
+            // inextractible (credit solde depuis) est simplement absent de la page.
+            content = ebankingRegClient.getEncoursParCredits(periode, credits).stream()
+                    .filter(s -> cibles.contains(BcrgTranslator.refIntEng(s.getCodAgencia(), s.getNumCredito())))
+                    .map(s -> mapper.toEncours(s, arrete))
+                    .toList();
+        }
+        int totalPages = (declares.size() + size - 1) / size;
+        return new PageDto<>(content, page, size, declares.size(), totalPages,
+                de + size < declares.size(), page > 0);
     }
 
     /** Dernier jour du mois d'arrêté (AAAA-MM) ; null si le format est invalide (ebanking répondra 400). */

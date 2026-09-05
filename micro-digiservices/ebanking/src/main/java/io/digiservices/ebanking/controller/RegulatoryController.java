@@ -156,6 +156,19 @@ public class RegulatoryController {
         return ResponseEntity.ok(regulatoryService.getEncours(periode, page, size));
     }
 
+    /** v1.12 : encours d'une liste cible de credits (1 a 100) — pagination "declares" cote bcrgservice. */
+    @GetMapping("/encours/par-credits")
+    public ResponseEntity<java.util.List<RegEncoursDto>> getEncoursParCredits(
+            @RequestParam(name = "periode") String periode,
+            @RequestParam(name = "credits") java.util.List<Long> credits) {
+        if (credits == null || credits.isEmpty() || credits.size() > MAX_PAGE_SIZE) {
+            throw new BlogAPIException(HttpStatus.BAD_REQUEST,
+                    "Le parametre 'credits' doit contenir entre 1 et " + MAX_PAGE_SIZE + " numeros");
+        }
+        log.info("[REG] GET /encours/par-credits periode={} credits={}", periode, credits.size());
+        return ResponseEntity.ok(regulatoryService.getEncoursParCredits(periode, credits));
+    }
+
     private void validatePagination(int page, int size) {
         if (page < 0) {
             throw new BlogAPIException(HttpStatus.BAD_REQUEST, "Le parametre 'page' doit etre >= 0");

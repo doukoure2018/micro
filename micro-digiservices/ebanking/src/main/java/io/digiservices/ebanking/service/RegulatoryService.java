@@ -38,4 +38,7 @@ public interface RegulatoryService {
     RegEngagementDto getEngagementById(String codAgencia, Long numCredito);
 
     PageDto<RegEncoursDto> getEncours(String periode, int page, int size);
+
+    /** v1.12 : encours d'une liste cible de credits (1 a 100), meme photo d'arrete. */
+    java.util.List<RegEncoursDto> getEncoursParCredits(String periode, java.util.List<Long> credits);
 }
