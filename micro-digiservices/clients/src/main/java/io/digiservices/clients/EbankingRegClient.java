@@ -52,6 +52,12 @@ public interface EbankingRegClient {
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size);
 
+    /** v1.12 : encours d'une liste cible de credits (pagination "declares" cote bcrgservice). */
+    @GetMapping("/ebanking/reg/encours/par-credits")
+    java.util.List<RegEncoursDto> getEncoursParCredits(
+            @RequestParam(value = "periode") String periode,
+            @RequestParam(value = "credits") java.util.List<Long> credits);
+
     // ==================== Lots keyset + details par ids (extraction filtree "restantes") ====================
 
     @GetMapping("/ebanking/reg/personnes-physiques/lot")
