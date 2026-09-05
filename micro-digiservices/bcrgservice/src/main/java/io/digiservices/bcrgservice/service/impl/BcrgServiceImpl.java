@@ -296,23 +296,58 @@ public class BcrgServiceImpl implements BcrgService {
         if (!refsPage.isEmpty()) {
             Set<String> cibles = Set.copyOf(refsPage);
             List<Long> credits = refsPage.stream()
-                    .map(r -> Long.valueOf(r.substring(r.lastIndexOf('-') + 1)))
+                    .flatMap(BcrgServiceImpl::candidatsNumCredito)
                     .distinct()
                     .toList();
             // Selection par NUM_CREDITO (surensemble si doublon inter-agences) puis
             // controle de la reference ; un engagement declare devenu inextractible
-            // (credit solde depuis) est simplement absent de la page. Les notifications
-            // anterieures a la v1.6 portent le numero de credit nu (sans prefixe
-            // d'agence) : les deux formats sont acceptes.
-            content = ebankingRegClient.getEncoursParCredits(periode, credits).stream()
-                    .filter(s -> cibles.contains(BcrgTranslator.refIntEng(s.getCodAgencia(), s.getNumCredito()))
-                            || cibles.contains(String.valueOf(s.getNumCredito())))
+            // (credit solde depuis) est simplement absent de la page.
+            content = credits.isEmpty() ? List.of()
+                    : ebankingRegClient.getEncoursParCredits(periode, credits).stream()
+                    .filter(s -> correspond(cibles, s.getCodAgencia(), s.getNumCredito()))
                     .map(s -> mapper.toEncours(s, arrete))
                     .toList();
         }
         int totalPages = (declares.size() + size - 1) / size;
         return new PageDto<>(content, page, size, declares.size(), totalPages,
                 de + size < declares.size(), page > 0);
+    }
+
+    /**
+     * Numeros de credit candidats d'une reference d'engagement notifiee, tous formats
+     * historiques confondus : "102-31480" (composite v1.6+), "10231480" (pre-v1.6 :
+     * agence 3 chiffres + numero concatenes), "31480" (numero nu). Une reference non
+     * numerique est ignoree.
+     */
+    private static java.util.stream.Stream<Long> candidatsNumCredito(String ref) {
+        if (ref == null || ref.isBlank()) return java.util.stream.Stream.empty();
+        String r = ref.trim();
+        List<Long> candidats = new ArrayList<>();
+        if (r.contains("-")) {
+            ajouterSiNumerique(candidats, r.substring(r.lastIndexOf('-') + 1));
+        } else {
+            ajouterSiNumerique(candidats, r);
+            if (r.length() > 3) {
+                ajouterSiNumerique(candidats, r.substring(3));
+            }
+        }
+        return candidats.stream();
+    }
+
+    private static void ajouterSiNumerique(List<Long> liste, String valeur) {
+        try {
+            liste.add(Long.valueOf(valeur));
+        } catch (NumberFormatException ignored) {
+            // reference non numerique : ignoree
+        }
+    }
+
+    /** La reference notifiee correspond-elle a ce credit, quel que soit son format ? */
+    private static boolean correspond(Set<String> cibles, String codAgencia, Long numCredito) {
+        String agence = codAgencia == null ? "" : codAgencia.trim();
+        return cibles.contains(agence + "-" + numCredito)
+                || cibles.contains(String.valueOf(numCredito))
+                || cibles.contains(agence + numCredito);
     }
 
     /** Dernier jour du mois d'arrêté (AAAA-MM) ; null si le format est invalide (ebanking répondra 400). */
