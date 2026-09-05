@@ -28,7 +28,7 @@ rejette (erreur **LOG008**) — il reçoit des chiffres sur un dossier qu'il ne 
 
 ```
 Étape 1 : GET /bcrg/engagements
-          → le partenaire récupère les engagements (réf. ex : 102-540631)
+          → le partenaire récupère les engagements (réf. ex : 102540631)
 
 Étape 2 : il les intègre dans son SIC
 
@@ -68,7 +68,7 @@ Coyah, anciennes références au format concaténé `10231480` = `102` + `31480`
 Ce n'est pas une panne : c'est la photo exacte de la réalité. Le même appel avec
 `filtre=aucun` renvoie des pages pleines (~52 000 crédits), preuve que l'extraction
 fonctionne. **Pour remplir le mode par défaut : notifier des engagements actuels**
-(références composites v1.6+ type `102-540631`) via `POST /bcrg/traitements`.
+(références actuelles type `102540631`) via `POST /bcrg/traitements`.
 
 ## 6. Le rôle de `periode`
 
@@ -84,7 +84,7 @@ Avant : l'API parcourait la photo complète page par page et masquait les crédi
 notifiés → plus de 5 000 pages presque toutes vides. Depuis la v1.12 : elle pagine
 **directement sur la liste des références notifiées** → `totalElements` = nombre de
 notifications, pages denses. Le rapprochement accepte tous les formats historiques de
-référence (composite `102-31480`, concaténé pré-v1.6 `10231480`, numéro nu). Le fond du
+référence (concaténé `10231480`, composite avec tiret `102-31480`, numéro nu). Le fond du
 mécanisme (étapes 1 à 4) n'a pas bougé.
 
 ---

@@ -2,7 +2,7 @@
 
 **Crédit Rural de Guinée S.A. — Documentation technique d'intégration**
 
-*Version 1.12 — 5 septembre 2026 (v1.1 contrat complet PP/PM · v1.2 extraction incrémentale + notifications · v1.3 refonte Engagements/Encours · v1.4 retours PP V2 : état civil réel, référentiel pays, NIN, API par liste d'identifiants et API des personnes modifiées · v1.5 PM V2 : VilleSiegeSocial et CommuneAdresse depuis les référentiels géographiques SAF, RCCM depuis les pièces du client moral · v1.6 correctifs des retours de validation du 20/08/2026 : ND retiré des champs typés, référence d'engagement composite, périodicité dérivée, circuit ordonné · v1.7 : API personnes morales par ids + variantes POST des /par-ids, ids dans le corps de requête · v1.8 : intégration des référentiels officiels BCRG du 27/08 — TypEng F.9, périodicités, agences, QualiCre IMF, secteurs institutionnels · v1.9 : réponse de POST /traitements enrichie d'une referenceCrg par référence · v1.10 : DatPremEch/PeriodRemb garantis pour les crédits sans échéancier, règle DatPremEch ≥ DateMEP · v1.11 : extraction des engagements restants inversée (depuis les bénéficiaires déclarés) + endpoint de diagnostic /traitements/{module}/verifier · v1.12 : /encours en mode filtré paginé directement sur le sous-ensemble déclaré — pages denses, totalElements = nombre d'engagements notifiés traités)*
+*Version 1.13 — 5 septembre 2026 (v1.1 contrat complet PP/PM · v1.2 extraction incrémentale + notifications · v1.3 refonte Engagements/Encours · v1.4 retours PP V2 : état civil réel, référentiel pays, NIN, API par liste d'identifiants et API des personnes modifiées · v1.5 PM V2 : VilleSiegeSocial et CommuneAdresse depuis les référentiels géographiques SAF, RCCM depuis les pièces du client moral · v1.6 correctifs des retours de validation du 20/08/2026 : ND retiré des champs typés, référence d'engagement composite, périodicité dérivée, circuit ordonné · v1.7 : API personnes morales par ids + variantes POST des /par-ids, ids dans le corps de requête · v1.8 : intégration des référentiels officiels BCRG du 27/08 — TypEng F.9, périodicités, agences, QualiCre IMF, secteurs institutionnels · v1.9 : réponse de POST /traitements enrichie d'une referenceCrg par référence · v1.10 : DatPremEch/PeriodRemb garantis pour les crédits sans échéancier, règle DatPremEch ≥ DateMEP · v1.11 : extraction des engagements restants inversée (depuis les bénéficiaires déclarés) + endpoint de diagnostic /traitements/{module}/verifier · v1.12 : /encours en mode filtré paginé directement sur le sous-ensemble déclaré — pages denses, totalElements = nombre d'engagements notifiés traités · v1.13 : RefIntEng sans tiret — concaténation code agence (3 chiffres) + numéro de crédit, ex. 102540631 ; les notifications /traitements aux anciens formats (102540631, numéro nu) restent acceptées)*
 
 ---
 
@@ -101,7 +101,7 @@ Les modules **M1 (PP/PM) et M2 (engagements)** ne renvoient plus, par défaut, q
 ### 2.4 Correctifs v1.6 — retours de validation du 20/08/2026
 
 1. **Référence d'engagement composite** : `RefIntEng = <codAgence>-<numéroCrédit>` (ex.
-   `102-540631`), identique entre M2 (engagement + bénéficiaire) et M4 (encours). Le numéro
+   `102540631`), identique entre M2 (engagement + bénéficiaire) et M4 (encours). Le numéro
    de crédit seul n'est pas unique entre agences — cause des rejets LOG008 sur l'encours.
    Le détail se lit désormais `GET /engagements/{codAgence}-{numéro}`.
 2. **Circuit de soumission ordonné** : par défaut, `/engagements` (statut=restantes) ne sert

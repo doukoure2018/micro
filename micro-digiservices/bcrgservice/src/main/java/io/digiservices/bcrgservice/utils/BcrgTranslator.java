@@ -72,7 +72,9 @@ public class BcrgTranslator {
     public static String refIntEng(String codAgencia, Long numCredito) {
         if (numCredito == null) return null;
         String agence = codAgencia == null ? "" : codAgencia.trim();
-        return agence + "-" + numCredito;
+        // v1.13 (demande partenaire) : concatenation sans tiret — le code agence fait
+        // toujours 3 chiffres, la reference reste donc decomposable et unique.
+        return agence + numCredito;
     }
 
     /**

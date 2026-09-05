@@ -30,7 +30,7 @@ public interface BcrgService {
 
     PageDto<EngagementDto> getEngagements(int page, int size, boolean toutes);
 
-    /** v1.6 : référence composite {@code <codAgence>-<numCredito>} (cf. BcrgTranslator.refIntEng). */
+    /** v1.6, sans tiret depuis v1.13 : référence composite {@code <codAgence><numCredito>} (cf. BcrgTranslator.refIntEng). */
     EngagementDto getEngagement(String refEng);
 
     /**
