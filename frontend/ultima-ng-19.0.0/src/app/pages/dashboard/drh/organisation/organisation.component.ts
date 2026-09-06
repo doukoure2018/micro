@@ -9,7 +9,8 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
-import { MessageService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DrhService, DepartementDrh, MembreDepartement } from '@/service/drh.service';
 
@@ -17,10 +18,11 @@ import { DrhService, DepartementDrh, MembreDepartement } from '@/service/drh.ser
 @Component({
     selector: 'app-drh-organisation',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, CheckboxModule, DialogModule, DropdownModule, InputTextModule, TableModule, TagModule, ToastModule],
-    providers: [MessageService],
+    imports: [CommonModule, FormsModule, ButtonModule, CheckboxModule, ConfirmDialogModule, DialogModule, DropdownModule, InputTextModule, TableModule, TagModule, ToastModule],
+    providers: [MessageService, ConfirmationService],
     template: `
         <p-toast />
+        <p-confirmDialog />
         <div class="grid">
             <div class="col-12 lg:col-5">
                 <div class="card">
@@ -102,7 +104,16 @@ import { DrhService, DepartementDrh, MembreDepartement } from '@/service/drh.ser
                                 [filter]="true" filterBy="nom_complet,username" placeholder="Choisir un agent"
                                 class="w-full" appendTo="body" /></div>
                 <div><label class="block mb-1">Matricule (référence badgeuse / personnel)</label>
-                    <input pInputText [(ngModel)]="affectation.matricule" class="w-full" maxlength="50" /></div>
+                    <input pInputText [(ngModel)]="affectation.matricule" (ngModelChange)="verifierMatricule($event)"
+                           class="w-full" maxlength="50" />
+                    <small *ngIf="matriculeStatut() === 'OK'" class="text-green-600 block mt-1">
+                        <i class="pi pi-check-circle"></i> {{ matriculeNom() }} — matricule reconnu dans le fichier du personnel
+                    </small>
+                    <small *ngIf="matriculeStatut() === 'KO'" class="p-error block mt-1">
+                        <i class="pi pi-times-circle"></i> Matricule introuvable dans le fichier du personnel (salaires)
+                    </small>
+                    <small *ngIf="matriculeStatut() === 'EN_COURS'" class="text-color-secondary block mt-1">Vérification…</small>
+                </div>
                 <div><label class="block mb-1">Fonction</label>
                     <input pInputText [(ngModel)]="affectation.fonction" class="w-full" maxlength="100" /></div>
                 <div class="flex items-center gap-2">
@@ -112,7 +123,7 @@ import { DrhService, DepartementDrh, MembreDepartement } from '@/service/drh.ser
             </div>
             <ng-template pTemplate="footer">
                 <button pButton label="Annuler" class="p-button-text" (click)="affectationVisible = false"></button>
-                <button pButton label="Affecter" [disabled]="!userChoisi" (click)="affecter()"></button>
+                <button pButton label="Affecter" [disabled]="!userChoisi || matriculeStatut() === 'KO' || matriculeStatut() === 'EN_COURS'" (click)="affecter()"></button>
             </ng-template>
         </p-dialog>
     `
@@ -120,6 +131,7 @@ import { DrhService, DepartementDrh, MembreDepartement } from '@/service/drh.ser
 export class OrganisationComponent implements OnInit {
     private drhService = inject(DrhService);
     private messageService = inject(MessageService);
+    private confirmationService = inject(ConfirmationService);
     private destroyRef = inject(DestroyRef);
 
     departements = signal<DepartementDrh[]>([]);
@@ -133,6 +145,34 @@ export class OrganisationComponent implements OnInit {
     affectationVisible = false;
     affectation = { matricule: '', fonction: '', estResponsable: false };
     userChoisi: any = null;
+    /** Statut de la vérification du matricule contre info_personnel. */
+    matriculeStatut = signal<'' | 'EN_COURS' | 'OK' | 'KO'>('');
+    matriculeNom = signal('');
+    private matriculeTimer: any = null;
+
+    verifierMatricule(valeur: string): void {
+        clearTimeout(this.matriculeTimer);
+        this.matriculeNom.set('');
+        if (!valeur || !valeur.trim()) {
+            this.matriculeStatut.set('');
+            return;
+        }
+        this.matriculeStatut.set('EN_COURS');
+        this.matriculeTimer = setTimeout(() => {
+            this.drhService.verifierMatricule$(valeur.trim()).subscribe({
+                next: (r) => {
+                    const perso = (r.data as any)?.personnel;
+                    if (perso?.existe) {
+                        this.matriculeStatut.set('OK');
+                        this.matriculeNom.set(`${perso.prenom} ${perso.nom}`);
+                    } else {
+                        this.matriculeStatut.set('KO');
+                    }
+                },
+                error: () => this.matriculeStatut.set('KO')
+            });
+        }, 500);
+    }
 
     ngOnInit(): void {
         this.chargerDepartements();
@@ -175,6 +215,8 @@ export class OrganisationComponent implements OnInit {
     ouvrirAffectation(): void {
         this.userChoisi = null;
         this.affectation = { matricule: '', fonction: '', estResponsable: false };
+        this.matriculeStatut.set('');
+        this.matriculeNom.set('');
         this.drhService.usersNonAffectes$().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (r) => {
                 this.usersNonAffectes.set((r.data as any)?.users || []);
@@ -204,6 +246,18 @@ export class OrganisationComponent implements OnInit {
     }
 
     retirer(m: MembreDepartement): void {
+        this.confirmationService.confirm({
+            header: 'Désaffectation',
+            message: `Êtes-vous sûr de vouloir désaffecter ${m.nomComplet} de ce département ?`,
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Oui, désaffecter',
+            rejectLabel: 'Annuler',
+            acceptButtonStyleClass: 'p-button-danger',
+            accept: () => this.executerRetrait(m)
+        });
+    }
+
+    private executerRetrait(m: MembreDepartement): void {
         this.drhService.retirerMembre$(m.membreId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: () => {
                 this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Agent retiré du département' });

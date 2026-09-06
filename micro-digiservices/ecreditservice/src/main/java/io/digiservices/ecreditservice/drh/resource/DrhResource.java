@@ -103,6 +103,14 @@ public class DrhResource {
                 "Agent retiré du département", OK));
     }
 
+    @GetMapping("/personnel/{matricule}")
+    public ResponseEntity<Response> verifierMatricule(@PathVariable String matricule,
+                                                      HttpServletRequest req) {
+        return ResponseEntity.ok(getResponse(req,
+                Map.of("personnel", drhService.verifierMatricule(matricule)),
+                "Vérification du matricule", OK));
+    }
+
     @GetMapping("/users-non-affectes")
     public ResponseEntity<Response> usersNonAffectes(Authentication auth, HttpServletRequest req) {
         exigerDrh(auth);

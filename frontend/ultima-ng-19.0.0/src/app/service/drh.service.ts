@@ -96,6 +96,9 @@ export class DrhService {
     retirerMembre$ = (membreId: number): Observable<IResponse> =>
         this.http.delete<IResponse>(`${this.server}/ecredit/drh/membres/${membreId}`).pipe(catchError(this.handleError));
 
+    verifierMatricule$ = (matricule: string): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/drh/personnel/${encodeURIComponent(matricule)}`).pipe(catchError(this.handleError));
+
     usersNonAffectes$ = (): Observable<IResponse> =>
         this.http.get<IResponse>(`${this.server}/ecredit/drh/users-non-affectes`).pipe(catchError(this.handleError));
 

@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, DestroyRef, HostListener, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -66,15 +66,18 @@ export const STATUT_PREVISION_LABELS: { [k: string]: StatutTag } = {
                 </span>
             </div>
 
-            <div class="grid" *ngIf="modifiable()">
-                <div class="col-12 lg:col-6">
-                    <h6>Sélectionnez une période dans le calendrier</h6>
-                    <p-calendar [(ngModel)]="plage" selectionMode="range" [inline]="true" [numberOfMonths]="2"
-                                [minDate]="minDate" [maxDate]="maxDate" dateFormat="dd/mm/yy" />
-                    <button pButton class="mt-2" icon="pi pi-plus" label="Ajouter cette période"
-                            [disabled]="!plage || !plage[0] || !plage[1]" (click)="ajouterPeriode()"></button>
+            <div *ngIf="modifiable()">
+                <div class="prevision-cal mb-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                        <h6 class="m-0">Sélectionnez une période dans le calendrier (début puis fin)</h6>
+                        <button pButton icon="pi pi-plus" label="Ajouter cette période"
+                                [disabled]="!plage || !plage[0] || !plage[1]" (click)="ajouterPeriode()"></button>
+                    </div>
+                    <p-calendar [(ngModel)]="plage" selectionMode="range" [inline]="true" [numberOfMonths]="nbMois"
+                                [minDate]="minDate" [maxDate]="maxDate" dateFormat="dd/mm/yy" styleClass="w-full" />
                 </div>
-                <div class="col-12 lg:col-6">
+                <div class="grid">
+                <div class="col-12 lg:col-7">
                     <h6>Périodes prévues</h6>
                     <p-table [value]="periodes()" responsiveLayout="scroll">
                         <ng-template pTemplate="header">
@@ -100,12 +103,15 @@ export const STATUT_PREVISION_LABELS: { [k: string]: StatutTag } = {
                         <label class="block mb-1">Commentaire (facultatif)</label>
                         <textarea pTextarea [(ngModel)]="commentaire" rows="2" class="w-full"></textarea>
                     </div>
-                    <div class="flex gap-2 mt-3">
-                        <button pButton label="Enregistrer" icon="pi pi-save" [loading]="saving()"
+                </div>
+                <div class="col-12 lg:col-5">
+                    <div class="flex flex-col gap-2 mt-3 lg:mt-0" style="margin-top:2.4rem">
+                        <button pButton label="Enregistrer" icon="pi pi-save" [loading]="saving()" class="w-full"
                                 [disabled]="periodes().length === 0" (click)="enregistrer(false)"></button>
-                        <button pButton label="Enregistrer et soumettre" icon="pi pi-send" severity="success"
+                        <button pButton label="Enregistrer et soumettre" icon="pi pi-send" severity="success" class="w-full"
                                 [loading]="saving()" [disabled]="periodes().length === 0" (click)="enregistrer(true)"></button>
                     </div>
+                </div>
                 </div>
             </div>
 
@@ -145,6 +151,19 @@ export class MaPrevisionComponent implements OnInit {
 
     get minDate(): Date { return new Date(this.exercice, 0, 1); }
     get maxDate(): Date { return new Date(this.exercice, 11, 31); }
+
+    /** Nombre de mois affichés selon la largeur d'écran (1 mobile, 2 tablette, 3 grand écran). */
+    nbMois = MaPrevisionComponent.calculerNbMois();
+
+    @HostListener('window:resize')
+    onResize(): void {
+        this.nbMois = MaPrevisionComponent.calculerNbMois();
+    }
+
+    private static calculerNbMois(): number {
+        const w = window.innerWidth;
+        return w < 768 ? 1 : w < 1400 ? 2 : 3;
+    }
 
     totalJours = computed(() => this.periodes().reduce((s, p) => s + (p.nbJours || 0), 0));
 

@@ -148,6 +148,13 @@ public class DrhRepositoryImpl implements DrhRepository {
     }
 
     @Override
+    public Optional<Map<String, Object>> personnelParMatricule(String matricule) {
+        return jdbcClient.sql(DrhQuery.PERSONNEL_PAR_MATRICULE)
+                .param("matricule", matricule)
+                .query().listOfRows().stream().findFirst();
+    }
+
+    @Override
     public Optional<PrevisionDto> previsionDeUser(Long userId, int exercice) {
         return jdbcClient.sql(DrhQuery.PREVISION_BY_USER_EXERCICE)
                 .param("user_id", userId).param("exercice", exercice)

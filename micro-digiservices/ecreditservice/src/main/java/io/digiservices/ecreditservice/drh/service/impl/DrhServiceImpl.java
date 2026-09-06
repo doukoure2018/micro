@@ -85,7 +85,31 @@ public class DrhServiceImpl implements DrhService {
         if (request.getDepartementId() == null || request.getUserId() == null) {
             throw new ValidationException("Le département et l'utilisateur sont obligatoires");
         }
+        // Le matricule saisi doit exister dans le fichier du personnel (référentiel des salaires),
+        // sinon le rapprochement des présences (badgeuse) serait faux.
+        if (request.getMatricule() != null && !request.getMatricule().isBlank()) {
+            var personnel = drhRepository.personnelParMatricule(request.getMatricule().trim());
+            if (personnel.isEmpty()) {
+                throw new ValidationException("Matricule " + request.getMatricule().trim()
+                        + " introuvable dans le fichier du personnel (salaires) — vérifiez la saisie ou faites-le ajouter au référentiel");
+            }
+        }
         return drhRepository.affecterMembre(request);
+    }
+
+    @Override
+    public Map<String, Object> verifierMatricule(String matricule) {
+        if (matricule == null || matricule.isBlank()) {
+            return Map.of("existe", false);
+        }
+        return drhRepository.personnelParMatricule(matricule.trim())
+                .<Map<String, Object>>map(p -> Map.of(
+                        "existe", true,
+                        "matricule", String.valueOf(p.get("matricule")),
+                        "nom", String.valueOf(p.get("nom")),
+                        "prenom", String.valueOf(p.get("prenom")),
+                        "statut", String.valueOf(p.get("statut"))))
+                .orElse(Map.of("existe", false));
     }
 
     @Override

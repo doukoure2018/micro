@@ -17,6 +17,7 @@ public interface DrhService {
     Long affecterMembre(AffectationRequest request);
     void retirerMembre(Long membreId);
     List<Map<String, Object>> usersNonAffectes();
+    Map<String, Object> verifierMatricule(String matricule);
 
     // Prévision — agent
     PrevisionDto maPrevision(User user, int exercice);

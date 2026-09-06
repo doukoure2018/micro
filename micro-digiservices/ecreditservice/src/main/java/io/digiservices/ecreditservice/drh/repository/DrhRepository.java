@@ -21,6 +21,7 @@ public interface DrhRepository {
     void retirerMembre(Long membreId);
     Optional<MembreDto> membreActifDeUser(Long userId);
     List<Map<String, Object>> usersNonAffectes();
+    Optional<Map<String, Object>> personnelParMatricule(String matricule);
 
     // Prévisions
     Optional<PrevisionDto> previsionDeUser(Long userId, int exercice);

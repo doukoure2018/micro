@@ -83,6 +83,13 @@ public final class DrhQuery {
         SELECT libelle FROM drh_departement WHERE departement_id = :departement_id
         """;
 
+    /** Vérification du matricule dans le fichier du personnel (référentiel des salaires). */
+    public static final String PERSONNEL_PAR_MATRICULE = """
+        SELECT matricule, nom, prenom, statut
+          FROM info_personnel
+         WHERE matricule = :matricule
+        """;
+
     // ===== Prévisions =====
     public static final String PREVISION_SELECT = """
         SELECT p.prevision_id, p.user_id, u.first_name || ' ' || u.last_name AS nom_complet,
