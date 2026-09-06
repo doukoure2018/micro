@@ -85,8 +85,8 @@ const MOIS_NOMS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juill
             </div>
 
             <!-- Barre d'état de la sélection + légende -->
-            <div class="flex flex-wrap items-center justify-between gap-3 mb-3" *ngIf="modifiable()">
-                <div class="selection-info" [class.active]="debutSelection()">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+                <div class="selection-info" [class.active]="debutSelection()" *ngIf="modifiable()">
                     <i class="pi" [ngClass]="debutSelection() ? 'pi-arrows-h' : 'pi-hand-pointer'"></i>
                     <span *ngIf="!debutSelection()">Cliquez sur le <strong>premier jour</strong> d'une tranche de congé</span>
                     <span *ngIf="debutSelection()">Début : <strong>{{ debutSelection() | date: 'dd MMMM' }}</strong> —
@@ -95,8 +95,10 @@ const MOIS_NOMS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juill
                             (click)="annulerSelection()"></button>
                 </div>
                 <div class="legende">
-                    <span><i class="pastille enregistree"></i> Tranche enregistrée</span>
                     <span><i class="pastille prevue"></i> Nouvelle tranche</span>
+                    <span><i class="pastille st-orange"></i> Enregistrée</span>
+                    <span><i class="pastille st-jaune"></i> Acceptée responsable</span>
+                    <span><i class="pastille st-verte"></i> Validée DRH</span>
                     <span><i class="pastille apercu"></i> Sélection en cours</span>
                     <span><i class="pastille weekend"></i> Dimanche (ne compte pas)</span>
                     <span><i class="pastille ferie"></i> Jour férié</span>
@@ -216,15 +218,21 @@ const MOIS_NOMS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juill
         .lecture .jour:hover { background: transparent; transform: none; }
         .jour.weekend { color: var(--text-color-secondary); background: var(--surface-100); opacity: 0.65; border-radius: 0; }
         .jour.prevue { background: #4f46e5; color: #fff; border-radius: 0; }
-        .jour.prevue.enregistree { background: #16a34a; }
+        .jour.prevue.st-orange { background: #f97316; }
+        .jour.prevue.st-jaune { background: #eab308; color: #422006; }
+        .jour.prevue.st-verte { background: #16a34a; }
         .jour.prevue.debut { border-radius: 8px 0 0 8px; }
         .jour.prevue.fin { border-radius: 0 8px 8px 0; }
         .jour.prevue.debut.fin { border-radius: 8px; }
         .jour.prevue.weekend { background: #a5b4fc; color: #312e81; opacity: 1; }
-        .jour.prevue.enregistree.weekend { background: #86efac; color: #14532d; }
+        .jour.prevue.st-orange.weekend { background: #fdba74; color: #7c2d12; }
+        .jour.prevue.st-jaune.weekend { background: #fde047; color: #422006; }
+        .jour.prevue.st-verte.weekend { background: #86efac; color: #14532d; }
         .jour.ferie { background: #fef3c7; color: #b45309; font-weight: 700; border-radius: 8px; }
         .jour.ferie.prevue { background: #a5b4fc; color: #312e81; }
-        .jour.ferie.prevue.enregistree { background: #86efac; color: #14532d; }
+        .jour.ferie.prevue.st-orange { background: #fdba74; color: #7c2d12; }
+        .jour.ferie.prevue.st-jaune { background: #fde047; color: #422006; }
+        .jour.ferie.prevue.st-verte { background: #86efac; color: #14532d; }
         .jour.apercu { background: #c7d2fe; color: #312e81; border-radius: 0; }
         .jour.ferie.apercu { background: #fde68a; color: #92400e; }
         .jour.ancre { background: #4f46e5; color: #fff; border-radius: 8px; box-shadow: 0 0 0 3px #c7d2fe; }
@@ -239,7 +247,9 @@ const MOIS_NOMS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juill
         .legende span { display: flex; align-items: center; gap: 0.35rem; }
         .pastille { width: 0.9rem; height: 0.9rem; border-radius: 4px; display: inline-block; }
         .pastille.prevue { background: #4f46e5; }
-        .pastille.enregistree { background: #16a34a; }
+        .pastille.st-orange { background: #f97316; }
+        .pastille.st-jaune { background: #eab308; }
+        .pastille.st-verte { background: #16a34a; }
         .pastille.apercu { background: #c7d2fe; }
         .pastille.weekend { background: var(--surface-200); }
         .pastille.ferie { background: #fef3c7; border: 1px solid #f59e0b; }
@@ -323,6 +333,22 @@ export class MaPrevisionComponent implements OnInit {
 
     statutLabel(statut: string): StatutTag {
         return STATUT_PREVISION_LABELS[statut] || { label: statut, severity: 'secondary' };
+    }
+
+    /** Couleur des tranches enregistrées selon l'étape du circuit :
+     *  orange = enregistrée/soumise, jaune = acceptée par le responsable, vert = validée DRH. */
+    private couleurStatut(): 'st-orange' | 'st-jaune' | 'st-verte' {
+        const statut = this.prevision()?.statut;
+        if (statut === 'VALIDEE_DRH') return 'st-verte';
+        if (statut === 'ACCEPTEE_RESP' || statut === 'REAJUSTEE_RESP') return 'st-jaune';
+        return 'st-orange';
+    }
+
+    libelleEtape(): string {
+        const c = this.couleurStatut();
+        return c === 'st-verte' ? 'Tranche validée par la DRH'
+             : c === 'st-jaune' ? 'Tranche acceptée par le responsable'
+             : 'Tranche enregistrée';
     }
 
     // ==================== Construction du calendrier annuel ====================
@@ -424,11 +450,12 @@ export class MaPrevisionComponent implements OnInit {
             apercu = jour.iso >= a && jour.iso <= b;
         }
         const periode = this.periodes().find((p) => jour.iso >= p.dateDebut && jour.iso <= p.dateFin);
+        const enregistree = !!periode && periode.periodeId != null;
         return {
             weekend: jour.weekend,
             ferie: this.feries().has(jour.iso),
             prevue: !!periode,
-            enregistree: !!periode && periode.periodeId != null,
+            [this.couleurStatut()]: enregistree,
             debut: !!periode && jour.iso === periode.dateDebut,
             fin: !!periode && jour.iso === periode.dateFin,
             apercu: apercu && !periode,
@@ -441,7 +468,7 @@ export class MaPrevisionComponent implements OnInit {
         const ferie = this.feries().get(jour.iso);
         const periode = this.periodes().find((p) => jour.iso >= p.dateDebut && jour.iso <= p.dateFin);
         if (periode) {
-            const etat = periode.periodeId != null ? 'Tranche enregistrée' : 'Nouvelle tranche (non enregistrée)';
+            const etat = periode.periodeId != null ? this.libelleEtape() : 'Nouvelle tranche (non enregistrée)';
             const base = this.modifiable() ? etat + ' — cliquer pour la retirer' : etat;
             return ferie ? base + ' (' + ferie + ')' : base;
         }
