@@ -8,7 +8,8 @@ import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { TextareaModule } from 'primeng/textarea';
 import { TooltipModule } from 'primeng/tooltip';
-import { MessageService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DrhService, PrevisionConge, PeriodePrevision, ContexteDrh } from '@/service/drh.service';
 
@@ -48,10 +49,11 @@ const MOIS_NOMS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juill
 @Component({
     selector: 'app-ma-prevision',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, DropdownModule, TableModule, TagModule, ToastModule, TextareaModule, TooltipModule],
-    providers: [MessageService],
+    imports: [CommonModule, FormsModule, ButtonModule, ConfirmDialogModule, DropdownModule, TableModule, TagModule, ToastModule, TextareaModule, TooltipModule],
+    providers: [MessageService, ConfirmationService],
     template: `
         <p-toast />
+        <p-confirmDialog />
         <div class="card">
             <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
                 <div>
@@ -262,6 +264,7 @@ const MOIS_NOMS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juill
 export class MaPrevisionComponent implements OnInit {
     private drhService = inject(DrhService);
     private messageService = inject(MessageService);
+    private confirmationService = inject(ConfirmationService);
     private destroyRef = inject(DestroyRef);
 
     contexte = signal<ContexteDrh | null>(null);
@@ -436,7 +439,25 @@ export class MaPrevisionComponent implements OnInit {
     }
 
     retirerPeriode(index: number): void {
-        this.periodes.update((list) => list.filter((_, i) => i !== index));
+        const periode = this.periodes()[index];
+        if (!periode) return;
+        const fmt = (iso: string) => {
+            const [a, m, j] = iso.split('-');
+            return j + '/' + m + '/' + a;
+        };
+        const complement = periode.periodeId != null
+            ? ' La suppression sera définitive au prochain enregistrement.'
+            : '';
+        this.confirmationService.confirm({
+            header: 'Retirer la tranche',
+            message: 'Êtes-vous sûr de vouloir retirer la tranche du ' + fmt(periode.dateDebut)
+                + ' au ' + fmt(periode.dateFin) + ' (' + periode.nbJours + ' jours ouvrables) ?' + complement,
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Oui, retirer',
+            rejectLabel: 'Annuler',
+            acceptButtonStyleClass: 'p-button-danger',
+            accept: () => this.periodes.update((list) => list.filter((_, i) => i !== index))
+        });
     }
 
     // ==================== Rendu des cases ====================
