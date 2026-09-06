@@ -5,6 +5,7 @@ import { MenuItem } from 'primeng/api';
 import { AppMenuitem } from './app.menuitem';
 import { IUser } from '@/interface/user';
 import { UserService } from '@/service/user.service';
+import { DrhService } from '@/service/drh.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
@@ -22,6 +23,7 @@ export class AppMenu {
     @Input() user?: IUser;
     el: ElementRef = inject(ElementRef);
     private userService = inject(UserService);
+    private drhService = inject(DrhService);
     private destroyRef = inject(DestroyRef);
 
     @ViewChild('menuContainer') menuContainer!: ElementRef;
@@ -32,9 +34,34 @@ export class AppMenu {
     private fonctionAccueil = false;
     private fonctionsChargees = false;
 
+    /** Contexte DRH (congés) : responsable de département -> menu supplémentaire. */
+    private estResponsableDrh = false;
+    private contexteDrhCharge = false;
+
     ngOnInit() {
         this.initializeMenu();
         this.chargerFonctions();
+        this.chargerContexteDrh();
+    }
+
+    /** Tout agent peut être responsable de département (congés) : on interroge le backend une fois. */
+    private chargerContexteDrh() {
+        if (this.contexteDrhCharge) {
+            return;
+        }
+        this.contexteDrhCharge = true;
+        this.drhService
+            .contexte$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    if ((response.data as any)?.contexte?.estResponsable) {
+                        this.estResponsableDrh = true;
+                        this.initializeMenu();
+                    }
+                },
+                error: () => {}
+            });
     }
 
     /** Un AGENT_CREDIT peut cumuler la fonction ACCUEIL : on interroge le backend une fois. */
@@ -69,6 +96,40 @@ export class AppMenu {
                         icon: 'pi pi-fw pi-chart-pie',
                         routerLink: ['/dashboards/']
                     },
+                    {
+                        label: 'Mes congés',
+                        icon: 'pi pi-fw pi-calendar',
+                        routerLink: ['/dashboards/drh/ma-prevision']
+                    },
+                    ...(this.estResponsableDrh
+                        ? [
+                              {
+                                  label: 'Congés de mon département',
+                                  icon: 'pi pi-fw pi-calendar-plus',
+                                  routerLink: ['/dashboards/drh/departement-previsions']
+                              }
+                          ]
+                        : []),
+                    ...(this.user?.role === 'DRH' || this.user?.role === 'SUPER_ADMIN'
+                        ? [
+                              {
+                                  label: 'DRH',
+                                  icon: 'pi pi-fw pi-briefcase',
+                                  items: [
+                                      {
+                                          label: 'Validation des prévisions',
+                                          icon: 'pi pi-fw pi-check-square',
+                                          routerLink: ['/dashboards/drh/validation-previsions']
+                                      },
+                                      {
+                                          label: 'Organisation (départements)',
+                                          icon: 'pi pi-fw pi-sitemap',
+                                          routerLink: ['/dashboards/drh/organisation']
+                                      }
+                                  ]
+                              }
+                          ]
+                        : []),
                     ...(this.user?.role === 'AGENT_ACCUEIL'
                         ? [
                               {

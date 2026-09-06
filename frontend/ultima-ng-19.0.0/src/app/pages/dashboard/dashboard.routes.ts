@@ -155,6 +155,26 @@ export default [
         loadComponent: () => import('./credit/individuel/attente/detail/analyse-credit-agricole/analyse-credit-agricole.component').then((c) => c.AnalyseCreditAgricoleComponent)
     },
     {
+        path: 'drh/ma-prevision',
+        data: { breadcrumb: 'Ma prévision de congés' },
+        loadComponent: () => import('./drh/ma-prevision/ma-prevision.component').then((c) => c.MaPrevisionComponent)
+    },
+    {
+        path: 'drh/departement-previsions',
+        data: { breadcrumb: 'Prévisions de congés de mon département' },
+        loadComponent: () => import('./drh/departement-previsions/departement-previsions.component').then((c) => c.DepartementPrevisionsComponent)
+    },
+    {
+        path: 'drh/validation-previsions',
+        data: { breadcrumb: 'Validation DRH des prévisions' },
+        loadComponent: () => import('./drh/validation-previsions/validation-previsions.component').then((c) => c.ValidationPrevisionsComponent)
+    },
+    {
+        path: 'drh/organisation',
+        data: { breadcrumb: 'Organisation DRH' },
+        loadComponent: () => import('./drh/organisation/organisation.component').then((c) => c.OrganisationComponent)
+    },
+    {
         path: 'agent-credit/demande-groupe',
         canActivate: [AgentCreditGuard],
         data: { breadcrumb: 'Nouvelle demande de crédit groupe' },
