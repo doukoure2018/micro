@@ -147,7 +147,10 @@ public class DrhServiceImpl implements DrhService {
                 .orElseThrow(() -> new ValidationException(
                         "Vous n'êtes affecté à aucun département — contactez la DRH pour votre affectation"));
 
-        List<PeriodeDto> periodes = controlerPeriodes(request, exercice);
+        // Liste vide autorisee a l'enregistrement (suppression de la derniere tranche) ;
+        // la soumission, elle, exige au moins une periode.
+        boolean aucunePeriode = request.getPeriodes() == null || request.getPeriodes().isEmpty();
+        List<PeriodeDto> periodes = aucunePeriode ? List.of() : controlerPeriodes(request, exercice);
 
         var existante = drhRepository.previsionDeUser(user.getUserId(), exercice);
         Long previsionId;

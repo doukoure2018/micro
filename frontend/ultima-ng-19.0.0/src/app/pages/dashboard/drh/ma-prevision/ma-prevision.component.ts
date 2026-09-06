@@ -445,9 +445,8 @@ export class MaPrevisionComponent implements OnInit {
             const [a, m, j] = iso.split('-');
             return j + '/' + m + '/' + a;
         };
-        const complement = periode.periodeId != null
-            ? ' La suppression sera définitive au prochain enregistrement.'
-            : '';
+        const enregistree = periode.periodeId != null;
+        const complement = enregistree ? ' Cette tranche enregistrée sera supprimée définitivement.' : '';
         this.confirmationService.confirm({
             header: 'Retirer la tranche',
             message: 'Êtes-vous sûr de vouloir retirer la tranche du ' + fmt(periode.dateDebut)
@@ -456,7 +455,26 @@ export class MaPrevisionComponent implements OnInit {
             acceptLabel: 'Oui, retirer',
             rejectLabel: 'Annuler',
             acceptButtonStyleClass: 'p-button-danger',
-            accept: () => this.periodes.update((list) => list.filter((_, i) => i !== index))
+            accept: () => {
+                this.periodes.update((list) => list.filter((_, i) => i !== index));
+                if (enregistree) {
+                    // Persister immédiatement : sinon la tranche revient au rechargement de la page
+                    this.drhService.enregistrerPrevision$({
+                        exercice: this.exercice,
+                        commentaire: this.commentaire,
+                        periodes: this.periodes().map((p) => ({ dateDebut: p.dateDebut, dateFin: p.dateFin }))
+                    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+                        next: () => {
+                            this.messageService.add({ severity: 'success', summary: 'Supprimée', detail: 'Tranche supprimée de votre prévision' });
+                            this.charger();
+                        },
+                        error: (e) => {
+                            this.erreur(e);
+                            this.charger();
+                        }
+                    });
+                }
+            }
         });
     }
 
