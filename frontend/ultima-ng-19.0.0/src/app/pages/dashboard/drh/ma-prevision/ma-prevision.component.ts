@@ -12,7 +12,12 @@ import { MessageService } from 'primeng/api';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DrhService, PrevisionConge, PeriodePrevision, ContexteDrh } from '@/service/drh.service';
 
-export const STATUT_PREVISION_LABELS: { [k: string]: { label: string; severity: string } } = {
+export interface StatutTag {
+    label: string;
+    severity: 'secondary' | 'info' | 'success' | 'warn' | 'danger' | 'contrast';
+}
+
+export const STATUT_PREVISION_LABELS: { [k: string]: StatutTag } = {
     BROUILLON: { label: 'Brouillon', severity: 'secondary' },
     SOUMISE: { label: 'Soumise au responsable', severity: 'info' },
     ACCEPTEE_RESP: { label: 'Acceptée — en attente DRH', severity: 'warn' },
@@ -168,7 +173,7 @@ export class MaPrevisionComponent implements OnInit {
         });
     }
 
-    statutLabel(statut: string) {
+    statutLabel(statut: string): StatutTag {
         return STATUT_PREVISION_LABELS[statut] || { label: statut, severity: 'secondary' };
     }
 

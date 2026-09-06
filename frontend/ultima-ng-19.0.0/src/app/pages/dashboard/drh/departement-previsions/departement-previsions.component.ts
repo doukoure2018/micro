@@ -12,7 +12,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { MessageService } from 'primeng/api';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DrhService, PrevisionConge, PeriodePrevision, ContexteDrh } from '@/service/drh.service';
-import { STATUT_PREVISION_LABELS } from '../ma-prevision/ma-prevision.component';
+import { STATUT_PREVISION_LABELS, StatutTag } from '../ma-prevision/ma-prevision.component';
 
 /**
  * Vue du responsable de département : prévisions de ses agents,
@@ -143,7 +143,7 @@ export class DepartementPrevisionsComponent implements OnInit {
         });
     }
 
-    statutLabel(statut: string) {
+    statutLabel(statut: string): StatutTag {
         return STATUT_PREVISION_LABELS[statut] || { label: statut, severity: 'secondary' };
     }
 

@@ -11,7 +11,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { MessageService } from 'primeng/api';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DrhService, PrevisionConge } from '@/service/drh.service';
-import { STATUT_PREVISION_LABELS } from '../ma-prevision/ma-prevision.component';
+import { STATUT_PREVISION_LABELS, StatutTag } from '../ma-prevision/ma-prevision.component';
 
 /** Validation finale DRH : inscription des prévisions acceptées au calendrier officiel. */
 @Component({
@@ -100,7 +100,7 @@ export class ValidationPrevisionsComponent implements OnInit {
         });
     }
 
-    statutLabel(statut: string) {
+    statutLabel(statut: string): StatutTag {
         return STATUT_PREVISION_LABELS[statut] || { label: statut, severity: 'secondary' };
     }
 
