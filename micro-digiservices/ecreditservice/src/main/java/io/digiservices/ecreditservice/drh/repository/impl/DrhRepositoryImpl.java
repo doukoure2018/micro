@@ -227,6 +227,7 @@ public class DrhRepositoryImpl implements DrhRepository {
 
     @Override
     public void remplacerPeriodes(Long previsionId, List<PeriodeDto> periodes) {
+        jdbcClient.sql(DrhQuery.LOCK_PREVISION).param("prevision_id", previsionId).query(Long.class).optional();
         jdbcClient.sql(DrhQuery.DELETE_PERIODES).param("prevision_id", previsionId).update();
         for (PeriodeDto p : periodes) {
             jdbcClient.sql(DrhQuery.INSERT_PERIODE)

@@ -150,6 +150,12 @@ public final class DrhQuery {
          WHERE prevision_id = :prevision_id
         """;
 
+    /** Verrou de ligne : sérialise les sauvegardes concurrentes d'une même prévision
+     *  (sans lui, deux "DELETE puis INSERT" simultanés dupliquent les tranches). */
+    public static final String LOCK_PREVISION = """
+        SELECT prevision_id FROM drh_prevision_conge WHERE prevision_id = :prevision_id FOR UPDATE
+        """;
+
     public static final String DELETE_PERIODES = """
         DELETE FROM drh_prevision_periode WHERE prevision_id = :prevision_id
         """;
