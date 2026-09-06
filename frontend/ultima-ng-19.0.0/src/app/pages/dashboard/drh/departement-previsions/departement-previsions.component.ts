@@ -2,14 +2,14 @@ import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
-import { CalendarModule } from 'primeng/calendar';
+import { CalendrierAnnuelComponent } from '../calendrier-annuel/calendrier-annuel.component';
 import { DialogModule } from 'primeng/dialog';
 import { DropdownModule } from 'primeng/dropdown';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { TextareaModule } from 'primeng/textarea';
-import { MessageService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DrhService, PrevisionConge, PeriodePrevision, ContexteDrh } from '@/service/drh.service';
 import { STATUT_PREVISION_LABELS, StatutTag } from '../ma-prevision/ma-prevision.component';
@@ -21,8 +21,8 @@ import { STATUT_PREVISION_LABELS, StatutTag } from '../ma-prevision/ma-prevision
 @Component({
     selector: 'app-departement-previsions',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, CalendarModule, DialogModule, DropdownModule, TableModule, TagModule, ToastModule, TextareaModule],
-    providers: [MessageService],
+    imports: [CommonModule, FormsModule, ButtonModule, CalendrierAnnuelComponent, DialogModule, DropdownModule, TableModule, TagModule, ToastModule, TextareaModule],
+    providers: [MessageService, ConfirmationService],
     template: `
         <p-toast />
         <div class="card">
@@ -81,25 +81,23 @@ import { STATUT_PREVISION_LABELS, StatutTag } from '../ma-prevision/ma-prevision
             </ng-template>
         </p-dialog>
 
-        <p-dialog header="Réajuster la prévision" [(visible)]="reajustVisible" [modal]="true" [style]="{ width: '640px' }">
+        <p-dialog [header]="'Réajuster la prévision — ' + (cible?.nomComplet || '')" [(visible)]="reajustVisible"
+                  [modal]="true" [maximizable]="true"
+                  [style]="{ width: '95vw', maxWidth: '1500px' }" [contentStyle]="{ overflow: 'auto' }">
             <p class="text-sm text-color-secondary mb-3">
-                Après entretien avec l'agent, modifiez ses périodes : la prévision réajustée partira directement en validation DRH.
+                Après entretien avec l'agent, modifiez ses tranches directement dans le calendrier
+                (cliquez sur le premier puis le dernier jour ; cliquez sur une tranche pour la retirer).
+                La prévision réajustée partira directement en validation DRH.
             </p>
-            <div class="flex flex-wrap gap-3">
-                <div>
-                    <p-calendar [(ngModel)]="plage" selectionMode="range" [inline]="true"
-                                [minDate]="minDate" [maxDate]="maxDate" dateFormat="dd/mm/yy" />
-                    <button pButton class="mt-2" icon="pi pi-plus" label="Ajouter"
-                            [disabled]="!plage || !plage[0] || !plage[1]" (click)="ajouterPeriode()"></button>
-                </div>
-                <div class="flex-1" style="min-width:220px">
-                    <div *ngFor="let per of periodesEdit; let i = index" class="flex items-center gap-2 mb-1">
-                        <span class="text-sm">{{ per.dateDebut | date: 'dd/MM' }} au {{ per.dateFin | date: 'dd/MM/yyyy' }} ({{ per.nbJours }} j)</span>
-                        <button pButton icon="pi pi-trash" class="p-button-text p-button-danger p-button-sm"
-                                (click)="periodesEdit.splice(i, 1)"></button>
-                    </div>
-                    <div class="text-color-secondary text-sm" *ngIf="periodesEdit.length === 0">Aucune période</div>
-                </div>
+            <app-calendrier-annuel *ngIf="reajustVisible" [exercice]="exercice" [periodes]="periodesEdit"
+                                   (periodesChange)="periodesEdit = $event"
+                                   [droit]="contexte()?.droitAnnuelJours || 30" />
+            <div class="flex flex-wrap items-center gap-3 mt-3">
+                <span *ngFor="let per of periodesEdit" class="text-sm px-2 py-1 border-round"
+                      style="background:var(--surface-100)">
+                    {{ per.dateDebut | date: 'dd/MM' }} au {{ per.dateFin | date: 'dd/MM/yyyy' }} ({{ per.nbJours }} j)
+                </span>
+                <span class="font-medium">Total : {{ totalEdit() }} / {{ contexte()?.droitAnnuelJours || 30 }} j</span>
             </div>
             <ng-template pTemplate="footer">
                 <button pButton label="Annuler" class="p-button-text" (click)="reajustVisible = false"></button>
@@ -123,11 +121,11 @@ export class DepartementPrevisionsComponent implements OnInit {
     reajustVisible = false;
     motifRejet = '';
     cible: PrevisionConge | null = null;
-    plage: Date[] | null = null;
     periodesEdit: PeriodePrevision[] = [];
 
-    get minDate(): Date { return new Date(this.exercice, 0, 1); }
-    get maxDate(): Date { return new Date(this.exercice, 11, 31); }
+    totalEdit(): number {
+        return this.periodesEdit.reduce((s, p) => s + (p.nbJours || 0), 0);
+    }
 
     ngOnInit(): void {
         this.drhService.contexte$().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
@@ -171,42 +169,8 @@ export class DepartementPrevisionsComponent implements OnInit {
 
     ouvrirReajustement(p: PrevisionConge): void {
         this.cible = p;
-        this.plage = null;
         this.periodesEdit = p.periodes.map((x) => ({ ...x }));
         this.reajustVisible = true;
-    }
-
-    private toIso(d: Date): string {
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    }
-
-    ajouterPeriode(): void {
-        if (!this.plage || !this.plage[0] || !this.plage[1]) return;
-        const [debut, fin] = this.plage;
-        // Jours ouvrables du congé : seul le dimanche est exclu (les fériés sont ajoutés par le serveur)
-        let n = 0;
-        const d = new Date(debut);
-        while (d <= fin) {
-            if (d.getDay() !== 0) n++;
-            d.setDate(d.getDate() + 1);
-        }
-        const a = this.toIso(debut), b = this.toIso(fin);
-        if (this.periodesEdit.some((p) => !(b < p.dateDebut || a > p.dateFin))) {
-            this.messageService.add({ severity: 'warn', summary: 'Chevauchement', detail: 'Cette tranche chevauche une tranche existante' });
-            return;
-        }
-        const droit = this.contexte()?.droitAnnuelJours || 30;
-        const total = this.periodesEdit.reduce((s, p) => s + (p.nbJours || 0), 0);
-        if (total + n > droit) {
-            this.messageService.add({
-                severity: 'error', summary: 'Droit annuel dépassé',
-                detail: `Le total passerait à ${total + n} j — la prévision ne doit pas dépasser ${droit} jours ouvrables`
-            });
-            return;
-        }
-        this.periodesEdit = [...this.periodesEdit, { dateDebut: a, dateFin: b, nbJours: n }]
-            .sort((x, y) => x.dateDebut.localeCompare(y.dateDebut));
-        this.plage = null;
     }
 
     reajuster(): void {
