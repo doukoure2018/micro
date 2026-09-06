@@ -83,12 +83,16 @@ public final class DrhQuery {
         SELECT libelle FROM drh_departement WHERE departement_id = :departement_id
         """;
 
-    /** Habilitation DRH par l'organisation : membre actif du département de code 'DRH'. */
+    /** Habilitation DRH par l'organisation : RESPONSABLE du département de code 'DRH'.
+     *  Il cumule deux casquettes : responsable de sa direction (prévisions de ses membres)
+     *  + validation finale DRH pour toutes les directions. Un membre simple de la DRH
+     *  reste un agent ordinaire. */
     public static final String EST_MEMBRE_DEPARTEMENT_DRH = """
         SELECT EXISTS (
             SELECT 1 FROM drh_departement_membre m
               JOIN drh_departement d ON d.departement_id = m.departement_id
-             WHERE m.user_id = :user_id AND m.actif AND d.actif AND d.code = 'DRH'
+             WHERE m.user_id = :user_id AND m.actif AND m.est_responsable
+               AND d.actif AND d.code = 'DRH'
         )
         """;
 
