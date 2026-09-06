@@ -34,8 +34,9 @@ export class AppMenu {
     private fonctionAccueil = false;
     private fonctionsChargees = false;
 
-    /** Contexte DRH (congés) : responsable de département -> menu supplémentaire. */
+    /** Contexte DRH (congés) : responsable de département / habilitation DRH -> menus supplémentaires. */
     private estResponsableDrh = false;
+    private estHabiliteDrh = false;
     private contexteDrhCharge = false;
 
     ngOnInit() {
@@ -55,8 +56,10 @@ export class AppMenu {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (response) => {
-                    if ((response.data as any)?.contexte?.estResponsable) {
-                        this.estResponsableDrh = true;
+                    const contexte = (response.data as any)?.contexte;
+                    if (contexte?.estResponsable || contexte?.estDrh) {
+                        this.estResponsableDrh = !!contexte?.estResponsable;
+                        this.estHabiliteDrh = !!contexte?.estDrh;
                         this.initializeMenu();
                     }
                 },
@@ -110,7 +113,7 @@ export class AppMenu {
                               }
                           ]
                         : []),
-                    ...(this.user?.role === 'DRH' || this.user?.role === 'SUPER_ADMIN'
+                    ...(this.estHabiliteDrh
                         ? [
                               {
                                   label: 'DRH',

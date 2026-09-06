@@ -226,9 +226,7 @@ public class DrhResource {
     }
 
     private void exigerDrh(Authentication auth) {
-        User u = user(auth);
-        if (!io.digiservices.ecreditservice.drh.service.impl.DrhServiceImpl.ROLE_DRH.equals(u.getRole())
-                && !io.digiservices.ecreditservice.drh.service.impl.DrhServiceImpl.ROLE_SUPER_ADMIN.equals(u.getRole())) {
+        if (!drhService.estHabiliteDrh(user(auth))) {
             throw new ValidationException("Action réservée à la DRH");
         }
     }

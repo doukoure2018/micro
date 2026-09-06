@@ -342,8 +342,16 @@ public class DrhServiceImpl implements DrhService {
         return request.getExercice();
     }
 
+    /** Habilitation DRH : rôle DRH ou SUPER_ADMIN, OU membre actif du département DRH
+     *  (affecté via l'écran Organisation — pas besoin de changer le rôle applicatif). */
     private boolean estDrh(User user) {
-        return ROLE_DRH.equals(user.getRole()) || ROLE_SUPER_ADMIN.equals(user.getRole());
+        return ROLE_DRH.equals(user.getRole()) || ROLE_SUPER_ADMIN.equals(user.getRole())
+                || drhRepository.estMembreDepartementDrh(user.getUserId());
+    }
+
+    @Override
+    public boolean estHabiliteDrh(User user) {
+        return estDrh(user);
     }
 
     private void exigerDrh(User user) {

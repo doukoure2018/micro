@@ -83,6 +83,15 @@ public final class DrhQuery {
         SELECT libelle FROM drh_departement WHERE departement_id = :departement_id
         """;
 
+    /** Habilitation DRH par l'organisation : membre actif du département de code 'DRH'. */
+    public static final String EST_MEMBRE_DEPARTEMENT_DRH = """
+        SELECT EXISTS (
+            SELECT 1 FROM drh_departement_membre m
+              JOIN drh_departement d ON d.departement_id = m.departement_id
+             WHERE m.user_id = :user_id AND m.actif AND d.actif AND d.code = 'DRH'
+        )
+        """;
+
     /** Vérification du matricule dans le fichier du personnel (référentiel des salaires). */
     public static final String PERSONNEL_PAR_MATRICULE = """
         SELECT matricule, nom, prenom, statut

@@ -22,6 +22,7 @@ public interface DrhRepository {
     Optional<MembreDto> membreActifDeUser(Long userId);
     List<Map<String, Object>> usersNonAffectes();
     Optional<Map<String, Object>> personnelParMatricule(String matricule);
+    boolean estMembreDepartementDrh(Long userId);
 
     // Prévisions
     Optional<PrevisionDto> previsionDeUser(Long userId, int exercice);

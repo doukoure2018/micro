@@ -10,6 +10,7 @@ public interface DrhService {
 
     // Organisation
     ContexteDrhDto contexteDe(User user);
+    boolean estHabiliteDrh(User user);
     List<DepartementDto> listeDepartements();
     Long creerDepartement(DepartementRequest request);
     void modifierDepartement(Long departementId, DepartementRequest request);

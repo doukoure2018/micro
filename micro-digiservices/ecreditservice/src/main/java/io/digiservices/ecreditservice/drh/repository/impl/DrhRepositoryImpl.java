@@ -148,6 +148,13 @@ public class DrhRepositoryImpl implements DrhRepository {
     }
 
     @Override
+    public boolean estMembreDepartementDrh(Long userId) {
+        return Boolean.TRUE.equals(jdbcClient.sql(DrhQuery.EST_MEMBRE_DEPARTEMENT_DRH)
+                .param("user_id", userId)
+                .query(Boolean.class).single());
+    }
+
+    @Override
     public Optional<Map<String, Object>> personnelParMatricule(String matricule) {
         return jdbcClient.sql(DrhQuery.PERSONNEL_PAR_MATRICULE)
                 .param("matricule", matricule)
