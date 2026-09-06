@@ -1,5 +1,6 @@
 package io.digiservices.ecreditservice.drh.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -39,13 +40,16 @@ public final class DrhDtos {
         private String fonction;
         private Boolean estResponsable;
         private Boolean actif;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
         private LocalDate dateAffectation;
     }
 
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
     public static class PeriodeDto {
         private Long periodeId;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
         private LocalDate dateDebut;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
         private LocalDate dateFin;
         private Integer nbJours;
     }
@@ -63,10 +67,13 @@ public final class DrhDtos {
         private String statut;
         private String commentaire;
         private String motifRejet;
+        @JsonFormat(shape = JsonFormat.Shape.STRING)
         private OffsetDateTime soumiseLe;
         private String traiteeRespNom;
+        @JsonFormat(shape = JsonFormat.Shape.STRING)
         private OffsetDateTime traiteeRespLe;
         private String valideeDrhNom;
+        @JsonFormat(shape = JsonFormat.Shape.STRING)
         private OffsetDateTime valideeDrhLe;
         private Integer totalJours;
         private List<PeriodeDto> periodes;

@@ -114,7 +114,12 @@ public class DrhServiceImpl implements DrhService {
 
     @Override
     public List<Map<String, Object>> joursFeries(int exercice) {
-        return drhRepository.joursFeriesExercice(exercice);
+        // java.sql.Date serialise en nombre par l'ObjectMapper custom du service : on renvoie la chaine ISO
+        return drhRepository.joursFeriesExercice(exercice).stream()
+                .<Map<String, Object>>map(r -> Map.of(
+                        "jour", String.valueOf(r.get("jour")),
+                        "libelle", String.valueOf(r.get("libelle"))))
+                .toList();
     }
 
     @Override
