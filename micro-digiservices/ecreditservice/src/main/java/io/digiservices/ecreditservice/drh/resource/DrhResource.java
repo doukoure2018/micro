@@ -103,6 +103,14 @@ public class DrhResource {
                 "Agent retiré du département", OK));
     }
 
+    @GetMapping("/jours-feries")
+    public ResponseEntity<Response> joursFeries(@RequestParam(required = false) Integer exercice,
+                                                HttpServletRequest req) {
+        return ResponseEntity.ok(getResponse(req,
+                Map.of("joursFeries", drhService.joursFeries(exercice(exercice))),
+                "Jours fériés de l'exercice", OK));
+    }
+
     @GetMapping("/personnel/{matricule}")
     public ResponseEntity<Response> verifierMatricule(@PathVariable String matricule,
                                                       HttpServletRequest req) {

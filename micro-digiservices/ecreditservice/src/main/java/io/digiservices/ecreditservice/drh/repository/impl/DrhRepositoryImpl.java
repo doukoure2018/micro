@@ -253,6 +253,13 @@ public class DrhRepositoryImpl implements DrhRepository {
     }
 
     @Override
+    public List<Map<String, Object>> joursFeriesExercice(int exercice) {
+        return jdbcClient.sql(DrhQuery.JOURS_FERIES_EXERCICE)
+                .param("exercice", exercice)
+                .query().listOfRows();
+    }
+
+    @Override
     public int parametreInt(String cle, int defaut) {
         return jdbcClient.sql(DrhQuery.PARAMETRE).param("cle", cle)
                 .query(String.class).optional()

@@ -18,6 +18,7 @@ public interface DrhService {
     void retirerMembre(Long membreId);
     List<Map<String, Object>> usersNonAffectes();
     Map<String, Object> verifierMatricule(String matricule);
+    List<Map<String, Object>> joursFeries(int exercice);
 
     // Prévision — agent
     PrevisionDto maPrevision(User user, int exercice);

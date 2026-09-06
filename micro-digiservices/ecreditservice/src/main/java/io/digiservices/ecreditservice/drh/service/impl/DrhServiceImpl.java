@@ -113,6 +113,11 @@ public class DrhServiceImpl implements DrhService {
     }
 
     @Override
+    public List<Map<String, Object>> joursFeries(int exercice) {
+        return drhRepository.joursFeriesExercice(exercice);
+    }
+
+    @Override
     public void retirerMembre(Long membreId) {
         drhRepository.retirerMembre(membreId);
     }

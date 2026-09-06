@@ -98,6 +98,7 @@ const MOIS_NOMS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juill
                     <span><i class="pastille prevue"></i> Période prévue</span>
                     <span><i class="pastille apercu"></i> Sélection en cours</span>
                     <span><i class="pastille weekend"></i> Dimanche (ne compte pas)</span>
+                    <span><i class="pastille ferie"></i> Jour férié</span>
                 </div>
             </div>
 
@@ -218,7 +219,10 @@ const MOIS_NOMS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juill
         .jour.prevue.fin { border-radius: 0 8px 8px 0; }
         .jour.prevue.debut.fin { border-radius: 8px; }
         .jour.prevue.weekend { background: #a5b4fc; color: #312e81; opacity: 1; }
+        .jour.ferie { background: #fef3c7; color: #b45309; font-weight: 700; border-radius: 8px; }
+        .jour.ferie.prevue { background: #a5b4fc; color: #312e81; }
         .jour.apercu { background: #c7d2fe; color: #312e81; border-radius: 0; }
+        .jour.ferie.apercu { background: #fde68a; color: #92400e; }
         .jour.ancre { background: #4f46e5; color: #fff; border-radius: 8px; box-shadow: 0 0 0 3px #c7d2fe; }
         .jour.aujourdhui { outline: 2px dashed var(--primary-color, #4f46e5); outline-offset: -2px; }
         .selection-info {
@@ -233,6 +237,7 @@ const MOIS_NOMS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juill
         .pastille.prevue { background: #4f46e5; }
         .pastille.apercu { background: #c7d2fe; }
         .pastille.weekend { background: var(--surface-200); }
+        .pastille.ferie { background: #fef3c7; border: 1px solid #f59e0b; }
         @media (max-width: 640px) {
             .annee-grille { grid-template-columns: 1fr; }
             .jour { font-size: 1rem; }
@@ -260,6 +265,9 @@ export class MaPrevisionComponent implements OnInit {
     debutSelection = signal<string | null>(null);
     survol = signal<string | null>(null);
 
+    /** Jours fériés de l'exercice : iso -> libellé (colorés dans le calendrier, exclus du comptage). */
+    feries = signal<Map<string, string>>(new Map());
+
     private aujourdhui = this.toIso(new Date());
 
     totalJours = computed(() => this.periodes().reduce((s, p) => s + (p.nbJours || 0), 0));
@@ -275,12 +283,25 @@ export class MaPrevisionComponent implements OnInit {
         this.drhService.contexte$().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (r) => this.contexte.set((r.data as any)?.contexte || null)
         });
+        this.chargerFeries();
         this.charger();
+    }
+
+    private chargerFeries(): void {
+        this.drhService.joursFeries$(this.exercice).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: (r) => {
+                const map = new Map<string, string>();
+                ((r.data as any)?.joursFeries || []).forEach((f: any) => map.set(String(f.jour), String(f.libelle)));
+                this.feries.set(map);
+            },
+            error: () => this.feries.set(new Map())
+        });
     }
 
     changerExercice(): void {
         this.construireCalendrier();
         this.annulerSelection();
+        this.chargerFeries();
         this.charger();
     }
 
@@ -400,6 +421,7 @@ export class MaPrevisionComponent implements OnInit {
         const periode = this.periodes().find((p) => jour.iso >= p.dateDebut && jour.iso <= p.dateFin);
         return {
             weekend: jour.weekend,
+            ferie: this.feries().has(jour.iso),
             prevue: !!periode,
             debut: !!periode && jour.iso === periode.dateDebut,
             fin: !!periode && jour.iso === periode.dateFin,
@@ -410,22 +432,25 @@ export class MaPrevisionComponent implements OnInit {
     }
 
     tooltipJour(jour: JourCase): string {
+        const ferie = this.feries().get(jour.iso);
         const periode = this.periodes().find((p) => jour.iso >= p.dateDebut && jour.iso <= p.dateFin);
         if (periode) {
-            return this.modifiable() ? 'Tranche prévue — cliquer pour la retirer' : 'Tranche prévue';
+            const base = this.modifiable() ? 'Tranche prévue — cliquer pour la retirer' : 'Tranche prévue';
+            return ferie ? base + ' (' + ferie + ')' : base;
         }
-        return '';
+        return ferie || '';
     }
 
     // ==================== Outils ====================
 
-    /** Jours ouvrables du congé = lundi à samedi, seul le dimanche est exclu (le serveur ajoute les fériés). */
+    /** Jours ouvrables du congé = lundi à samedi, hors dimanches et jours fériés (le serveur fait foi). */
     private joursOuvrables(debutIso: string, finIso: string): number {
         let n = 0;
         const d = new Date(debutIso + 'T00:00:00');
         const fin = new Date(finIso + 'T00:00:00');
         while (d <= fin) {
-            if (d.getDay() !== 0) n++;
+            const iso = this.toIso(d);
+            if (d.getDay() !== 0 && !this.feries().has(iso)) n++;
             d.setDate(d.getDate() + 1);
         }
         return n;

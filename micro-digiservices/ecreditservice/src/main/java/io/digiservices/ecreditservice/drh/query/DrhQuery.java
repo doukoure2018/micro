@@ -170,6 +170,12 @@ public final class DrhQuery {
         SELECT jour FROM drh_jour_ferie WHERE jour BETWEEN :debut AND :fin
         """;
 
+    public static final String JOURS_FERIES_EXERCICE = """
+        SELECT jour, libelle FROM drh_jour_ferie
+         WHERE EXTRACT(YEAR FROM jour) = :exercice
+         ORDER BY jour
+        """;
+
     public static final String PARAMETRE = """
         SELECT valeur FROM drh_parametre WHERE cle = :cle
         """;
