@@ -183,14 +183,29 @@ export class DepartementPrevisionsComponent implements OnInit {
     ajouterPeriode(): void {
         if (!this.plage || !this.plage[0] || !this.plage[1]) return;
         const [debut, fin] = this.plage;
+        // Jours ouvrables du congé : seul le dimanche est exclu (les fériés sont ajoutés par le serveur)
         let n = 0;
         const d = new Date(debut);
         while (d <= fin) {
-            if (d.getDay() !== 0 && d.getDay() !== 6) n++;
+            if (d.getDay() !== 0) n++;
             d.setDate(d.getDate() + 1);
         }
-        this.periodesEdit = [...this.periodesEdit, { dateDebut: this.toIso(debut), dateFin: this.toIso(fin), nbJours: n }]
-            .sort((a, b) => a.dateDebut.localeCompare(b.dateDebut));
+        const a = this.toIso(debut), b = this.toIso(fin);
+        if (this.periodesEdit.some((p) => !(b < p.dateDebut || a > p.dateFin))) {
+            this.messageService.add({ severity: 'warn', summary: 'Chevauchement', detail: 'Cette tranche chevauche une tranche existante' });
+            return;
+        }
+        const droit = this.contexte()?.droitAnnuelJours || 30;
+        const total = this.periodesEdit.reduce((s, p) => s + (p.nbJours || 0), 0);
+        if (total + n > droit) {
+            this.messageService.add({
+                severity: 'error', summary: 'Droit annuel dépassé',
+                detail: `Le total passerait à ${total + n} j — la prévision ne doit pas dépasser ${droit} jours ouvrables`
+            });
+            return;
+        }
+        this.periodesEdit = [...this.periodesEdit, { dateDebut: a, dateFin: b, nbJours: n }]
+            .sort((x, y) => x.dateDebut.localeCompare(y.dateDebut));
         this.plage = null;
     }
 

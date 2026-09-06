@@ -21,7 +21,7 @@ import java.util.Set;
 /**
  * Phase 1 du chantier Congés & Présences DRH : organisation par départements et
  * prévisions annuelles de congés (circuit agent -> responsable -> DRH).
- * Jours ouvrables = lundi à vendredi hors jours fériés (samedi NON ouvrable — arbitrage du 2026-09-06).
+ * Jours ouvrables du congé = lundi à samedi hors dimanches et fériés (règle CRG du 2026-09-06).
  */
 @Service
 @RequiredArgsConstructor
@@ -308,12 +308,14 @@ public class DrhServiceImpl implements DrhService {
         return periodes;
     }
 
-    /** Jours ouvrables = lundi..vendredi hors jours fériés. Le samedi n'est pas ouvrable. */
+    /**
+     * Jours ouvrables du congé = lundi à SAMEDI inclus, hors dimanches et jours fériés
+     * (règle CRG confirmée le 2026-09-06 : le samedi fait partie du congé, pas le dimanche).
+     */
     static int joursOuvrables(LocalDate debut, LocalDate fin, Set<LocalDate> feries) {
         int n = 0;
         for (LocalDate d = debut; !d.isAfter(fin); d = d.plusDays(1)) {
-            DayOfWeek dow = d.getDayOfWeek();
-            if (dow != DayOfWeek.SATURDAY && dow != DayOfWeek.SUNDAY && !feries.contains(d)) {
+            if (d.getDayOfWeek() != DayOfWeek.SUNDAY && !feries.contains(d)) {
                 n++;
             }
         }

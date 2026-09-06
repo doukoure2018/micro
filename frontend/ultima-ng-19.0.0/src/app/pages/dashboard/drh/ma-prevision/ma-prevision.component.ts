@@ -58,7 +58,7 @@ const MOIS_NOMS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juill
                     <h4 class="m-0">Ma prévision de congés</h4>
                     <span class="text-sm text-color-secondary" *ngIf="contexte()">
                         {{ contexte()?.departementLibelle || 'Aucun département' }} — droit annuel :
-                        {{ contexte()?.droitAnnuelJours }} jours ouvrables (samedi et dimanche non ouvrables)
+                        {{ contexte()?.droitAnnuelJours }} jours ouvrables (le samedi compte dans le congé, pas le dimanche)
                     </span>
                 </div>
                 <div class="flex items-center gap-2">
@@ -97,7 +97,7 @@ const MOIS_NOMS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juill
                 <div class="legende">
                     <span><i class="pastille prevue"></i> Période prévue</span>
                     <span><i class="pastille apercu"></i> Sélection en cours</span>
-                    <span><i class="pastille weekend"></i> Week-end</span>
+                    <span><i class="pastille weekend"></i> Dimanche (ne compte pas)</span>
                 </div>
             </div>
 
@@ -106,7 +106,7 @@ const MOIS_NOMS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juill
                 <div class="mois-carte" *ngFor="let mois of moisCalendrier()">
                     <div class="mois-titre">{{ mois.nom }} {{ exercice }}</div>
                     <div class="jours-entete">
-                        <span *ngFor="let j of joursSemaine; let idx = index" [class.we]="idx >= 5">{{ j }}</span>
+                        <span *ngFor="let j of joursSemaine; let idx = index" [class.we]="idx === 6">{{ j }}</span>
                     </div>
                     <div class="semaine" *ngFor="let semaine of mois.semaines">
                         <ng-container *ngFor="let jour of semaine">
@@ -314,7 +314,7 @@ export class MaPrevisionComponent implements OnInit {
             for (let j = 1; j <= nbJours; j++) {
                 const d = new Date(annee, m, j);
                 const dow = d.getDay();
-                semaine.push({ iso: this.toIso(d), num: j, weekend: dow === 0 || dow === 6 });
+                semaine.push({ iso: this.toIso(d), num: j, weekend: dow === 0 });
                 if (semaine.length === 7) {
                     semaines.push(semaine);
                     semaine = [];
@@ -354,7 +354,16 @@ export class MaPrevisionComponent implements OnInit {
         }
         const nbJours = this.joursOuvrables(a, b);
         if (nbJours === 0) {
-            this.messageService.add({ severity: 'warn', summary: 'Aucun jour ouvrable', detail: 'Cette tranche ne contient que des week-ends' });
+            this.messageService.add({ severity: 'warn', summary: 'Aucun jour ouvrable', detail: 'Cette tranche ne contient que des dimanches' });
+            this.annulerSelection();
+            return;
+        }
+        const droit = this.contexte()?.droitAnnuelJours || 30;
+        if (this.totalJours() + nbJours > droit) {
+            this.messageService.add({
+                severity: 'error', summary: 'Droit annuel dépassé',
+                detail: `Cette tranche de ${nbJours} j porterait le total à ${this.totalJours() + nbJours} j — la prévision ne doit pas dépasser ${droit} jours ouvrables (il vous reste ${droit - this.totalJours()} j)`
+            });
             this.annulerSelection();
             return;
         }
@@ -410,14 +419,13 @@ export class MaPrevisionComponent implements OnInit {
 
     // ==================== Outils ====================
 
-    /** Jours ouvrables approchés côté client (lundi-vendredi) ; le serveur fait foi (fériés inclus). */
+    /** Jours ouvrables du congé = lundi à samedi, seul le dimanche est exclu (le serveur ajoute les fériés). */
     private joursOuvrables(debutIso: string, finIso: string): number {
         let n = 0;
         const d = new Date(debutIso + 'T00:00:00');
         const fin = new Date(finIso + 'T00:00:00');
         while (d <= fin) {
-            const dow = d.getDay();
-            if (dow !== 0 && dow !== 6) n++;
+            if (d.getDay() !== 0) n++;
             d.setDate(d.getDate() + 1);
         }
         return n;

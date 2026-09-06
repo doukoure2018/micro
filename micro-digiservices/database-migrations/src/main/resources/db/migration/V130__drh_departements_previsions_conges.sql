@@ -1,7 +1,7 @@
 -- V130 : chantier Congés & Présences DRH — phase 1 (socle organisation + prévisions).
 -- Référentiel des départements, affectation des agents (lien user <-> matricule),
 -- prévisions annuelles de congés avec circuit agent -> responsable -> DRH.
--- Jours ouvrables = lundi à vendredi hors jours fériés (le samedi n'est PAS ouvrable).
+-- Jours ouvrables du congé = lundi à samedi hors dimanches et jours fériés (le dimanche ne compte pas).
 
 -- ========== Référentiel des départements ==========
 CREATE TABLE IF NOT EXISTS drh_departement (
