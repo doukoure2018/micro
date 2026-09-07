@@ -45,7 +45,7 @@ interface SegmentMois {
                                     (onChange)="chargerVue()" />
                     <label class="font-medium ml-2">Exercice</label>
                     <p-dropdown [options]="exercices" [(ngModel)]="exercice" (onChange)="chargerVue()" />
-                    <p-dropdown *ngIf="vue === 'calendrier'" [options]="optionsDepartements()" optionLabel="libelle"
+                    <p-dropdown *ngIf="vue !== 'validation'" [options]="optionsDepartements()" optionLabel="libelle"
                                 optionValue="departementId" [(ngModel)]="departementFiltre" [showClear]="true"
                                 placeholder="Toutes les directions" (onChange)="chargerCalendrier()" />
                 </div>
@@ -126,6 +126,38 @@ interface SegmentMois {
                     </table>
                 </div>
             </div>
+
+            <!-- ===== Vue annuelle : tous les agents sur le calendrier 12 mois ===== -->
+            <div *ngIf="vue === 'annuel'">
+                <div class="legende mb-2">
+                    <span><i class="pastille st-orange"></i> En cours / soumise</span>
+                    <span><i class="pastille st-jaune"></i> Acceptée / réajustée (responsable)</span>
+                    <span><i class="pastille st-verte"></i> Validée DRH</span>
+                    <span class="text-color-secondary">Survolez un jour pour voir les agents</span>
+                </div>
+                <div class="annee-grille">
+                    <div class="mois-carte" *ngFor="let mois of moisAnnuel()">
+                        <div class="mois-titre">{{ mois.nom }} {{ exercice }}</div>
+                        <div class="jours-entete">
+                            <span *ngFor="let j of joursSemaine; let idx = index" [class.we]="idx === 6">{{ j }}</span>
+                        </div>
+                        <div class="semaine" *ngFor="let semaine of mois.semaines">
+                            <ng-container *ngFor="let jour of semaine">
+                                <span *ngIf="!jour" class="jour-a vide"></span>
+                                <span *ngIf="jour" class="jour-a" [class.dimanche]="jour.dimanche"
+                                      [class.occupe]="dotsJour(jour.iso).length > 0"
+                                      [pTooltip]="tooltipJourEquipe(jour.iso)" tooltipPosition="top">
+                                    <span class="num">{{ jour.num }}</span>
+                                    <span class="pts" *ngIf="dotsJour(jour.iso).length > 0">
+                                        <i *ngFor="let c of dotsJour(jour.iso)" class="pt" [ngClass]="c"></i>
+                                        <b *ngIf="surplusJour(jour.iso) > 0">+{{ surplusJour(jour.iso) }}</b>
+                                    </span>
+                                </span>
+                            </ng-container>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <p-dialog header="Renvoyer la prévision" [(visible)]="renvoiVisible" [modal]="true" [style]="{ width: '480px' }">
@@ -169,10 +201,11 @@ export class ValidationPrevisionsComponent implements OnInit {
     toutes = signal<PrevisionConge[]>([]);
     optionsDepartements = signal<DepartementDrh[]>([]);
 
-    vue: 'validation' | 'calendrier' = 'validation';
+    vue: 'validation' | 'calendrier' | 'annuel' = 'validation';
     vues = [
         { label: 'À valider', value: 'validation' },
-        { label: 'Calendrier du personnel', value: 'calendrier' }
+        { label: 'Calendrier du personnel', value: 'calendrier' },
+        { label: 'Vue annuelle', value: 'annuel' }
     ];
 
     exercice = new Date().getFullYear();
@@ -181,12 +214,17 @@ export class ValidationPrevisionsComponent implements OnInit {
 
     moisCourts = MOIS_COURTS;
     indicesMois = Array.from({ length: 12 }, (_, i) => i);
+    joursSemaine = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+    moisAnnuel = signal<{ nom: string; semaines: ({ iso: string; num: number; dimanche: boolean } | null)[][] }[]>([]);
+    /** iso -> agents en congé ce jour-là : classe d'étape + libellé. */
+    private occupation = new Map<string, { classe: string; nom: string; statut: string }[]>();
 
     renvoiVisible = false;
     motif = '';
     cible: PrevisionConge | null = null;
 
     ngOnInit(): void {
+        this.construireMois();
         this.chargerVue();
         this.drhService.departements$().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (r) => this.optionsDepartements.set((r.data as any)?.departements || [])
@@ -197,6 +235,7 @@ export class ValidationPrevisionsComponent implements OnInit {
         if (this.vue === 'validation') {
             this.chargerValidation();
         } else {
+            this.construireMois();
             this.chargerCalendrier();
         }
     }
@@ -211,9 +250,73 @@ export class ValidationPrevisionsComponent implements OnInit {
     chargerCalendrier(): void {
         this.drhService.previsionsToutes$(this.exercice, this.departementFiltre || undefined)
             .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-                next: (r) => this.toutes.set((r.data as any)?.previsions || []),
+                next: (r) => {
+                    this.toutes.set((r.data as any)?.previsions || []);
+                    this.construireOccupation();
+                },
                 error: (e) => this.erreur(e)
             });
+    }
+
+    private construireMois(): void {
+        const NOMS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+        const annee = this.exercice;
+        const mois = [];
+        for (let m = 0; m < 12; m++) {
+            const decalage = (new Date(annee, m, 1).getDay() + 6) % 7;
+            const nbJours = new Date(annee, m + 1, 0).getDate();
+            const semaines: ({ iso: string; num: number; dimanche: boolean } | null)[][] = [];
+            let semaine: ({ iso: string; num: number; dimanche: boolean } | null)[] = new Array(decalage).fill(null);
+            for (let j = 1; j <= nbJours; j++) {
+                const d = new Date(annee, m, j);
+                const iso = `${annee}-${String(m + 1).padStart(2, '0')}-${String(j).padStart(2, '0')}`;
+                semaine.push({ iso, num: j, dimanche: d.getDay() === 0 });
+                if (semaine.length === 7) { semaines.push(semaine); semaine = []; }
+            }
+            if (semaine.length > 0) {
+                while (semaine.length < 7) semaine.push(null);
+                semaines.push(semaine);
+            }
+            mois.push({ nom: NOMS[m], semaines });
+        }
+        this.moisAnnuel.set(mois);
+    }
+
+    /** Agrège toutes les prévisions par jour pour la vue annuelle. */
+    private construireOccupation(): void {
+        const map = new Map<string, { classe: string; nom: string; statut: string }[]>();
+        for (const p of this.toutes()) {
+            const classe = this.classeStatut(p.statut);
+            const statut = this.statutLabel(p.statut).label;
+            for (const per of p.periodes || []) {
+                const d = new Date(per.dateDebut + 'T00:00:00');
+                const fin = new Date(per.dateFin + 'T00:00:00');
+                while (d <= fin) {
+                    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    if (!map.has(iso)) map.set(iso, []);
+                    map.get(iso)!.push({ classe, nom: p.nomComplet, statut });
+                    d.setDate(d.getDate() + 1);
+                }
+            }
+        }
+        // Tri : validées d'abord pour des points stables
+        map.forEach((list) => list.sort((a, b) => a.classe.localeCompare(b.classe)));
+        this.occupation = map;
+    }
+
+    dotsJour(iso: string): string[] {
+        return (this.occupation.get(iso) || []).slice(0, 4).map((o) => o.classe);
+    }
+
+    surplusJour(iso: string): number {
+        const n = (this.occupation.get(iso) || []).length;
+        return n > 4 ? n - 4 : 0;
+    }
+
+    tooltipJourEquipe(iso: string): string {
+        const list = this.occupation.get(iso) || [];
+        if (list.length === 0) return '';
+        return list.map((o) => `${o.nom} — ${o.statut}`).join('\n');
     }
 
     statutLabel(statut: string): StatutTag {
