@@ -190,6 +190,25 @@ interface SegmentMois {
         .segment.st-orange { background: #f97316; color: #fff; }
         .segment.st-jaune { background: #eab308; color: #422006; }
         .segment.st-verte { background: #16a34a; color: #fff; }
+        /* Vue annuelle */
+        .annee-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 0.9rem; }
+        .mois-carte { background: var(--surface-card); border: 1px solid var(--surface-border); border-radius: 10px; padding: 0.65rem; }
+        .mois-titre { font-weight: 700; text-align: center; margin-bottom: 0.4rem; color: var(--primary-color, #4f46e5); }
+        .jours-entete { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 0.7rem;
+            font-weight: 600; color: var(--text-color-secondary); margin-bottom: 0.2rem; }
+        .jours-entete .we { opacity: 0.5; }
+        .semaine { display: grid; grid-template-columns: repeat(7, 1fr); }
+        .jour-a { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 1px; font-size: 0.78rem; border-radius: 8px; }
+        .jour-a.dimanche { color: var(--text-color-secondary); background: var(--surface-100); opacity: 0.6; border-radius: 0; }
+        .jour-a.occupe { background: var(--surface-100); font-weight: 600; }
+        .jour-a .num { line-height: 1; }
+        .jour-a .pts { display: flex; align-items: center; gap: 2px; }
+        .jour-a .pt { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+        .jour-a .pt.st-orange { background: #f97316; }
+        .jour-a .pt.st-jaune { background: #eab308; }
+        .jour-a .pt.st-verte { background: #16a34a; }
+        .jour-a .pts b { font-size: 0.62rem; color: var(--text-color-secondary); }
     `]
 })
 export class ValidationPrevisionsComponent implements OnInit {
