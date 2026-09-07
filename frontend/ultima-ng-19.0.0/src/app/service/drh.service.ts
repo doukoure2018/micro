@@ -283,4 +283,25 @@ export class DrhService {
 
     renvoyerPermission$ = (permissionId: number, motif: string): Observable<IResponse> =>
         this.http.post<IResponse>(`${this.server}/ecredit/drh/permissions/${permissionId}/renvoyer`, { motif }).pipe(catchError(this.handleError));
+
+    // ===== Présences badgeuse (phase 4) =====
+
+    importerPresences$ = (fichier: File): Observable<IResponse> => {
+        const form = new FormData();
+        form.append('file', fichier);
+        return this.http.post<IResponse>(`${this.server}/ecredit/drh/presences/import`, form).pipe(catchError(this.handleError));
+    };
+
+    presences$ = (du: string, au: string, statut?: string): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/drh/presences?du=${du}&au=${au}` +
+            (statut ? `&statut=${statut}` : '')).pipe(catchError(this.handleError));
+
+    synthesePresences$ = (du: string, au: string): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/drh/presences/synthese?du=${du}&au=${au}`).pipe(catchError(this.handleError));
+
+    pointagesNonRapproches$ = (du: string, au: string): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/drh/presences/non-rapproches?du=${du}&au=${au}`).pipe(catchError(this.handleError));
+
+    recalculerPresences$ = (du: string, au: string): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/drh/presences/recalculer?du=${du}&au=${au}`, {}).pipe(catchError(this.handleError));
 }

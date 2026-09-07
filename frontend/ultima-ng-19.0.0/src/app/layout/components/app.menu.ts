@@ -160,6 +160,11 @@ export class AppMenu {
                                           label: 'Organisation (départements)',
                                           icon: 'pi pi-fw pi-sitemap',
                                           routerLink: ['/dashboards/drh/organisation']
+                                      },
+                                      {
+                                          label: 'Gestion des présences',
+                                          icon: 'pi pi-fw pi-clock',
+                                          routerLink: ['/dashboards/drh/presences']
                                       }
                                   ]
                               }
