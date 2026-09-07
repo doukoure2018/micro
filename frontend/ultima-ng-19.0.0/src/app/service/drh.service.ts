@@ -66,7 +66,47 @@ export interface MembreDepartement {
     dateAffectation?: string;
 }
 
-/** Module DRH — phase 1 : organisation par départements + prévisions de congés. */
+export interface DemandeConge {
+    demandeId: number;
+    userId: number;
+    nomComplet: string;
+    matricule?: string;
+    fonction?: string;
+    departementId: number;
+    departementCode: string;
+    departementLibelle?: string;
+    exercice: number;
+    periodeId?: number;
+    dateDebut: string;
+    dateFin: string;
+    nbJours: number;
+    dejaPris: number;
+    soldeApres: number;
+    statut: string;
+    commentaire?: string;
+    motifRejet?: string;
+    soumiseLe?: string;
+    traiteeRespNom?: string;
+    traiteeRespLe?: string;
+    valideeDrhNom?: string;
+    valideeDrhLe?: string;
+    interrompueParNom?: string;
+    interrompueLe?: string;
+    dateReprise?: string;
+    joursRecredites?: number;
+    motifInterruption?: string;
+}
+
+export interface SoldeConge {
+    exercice: number;
+    droit: number;
+    pris: number;
+    restant: number;
+    previsionValidee: boolean;
+    tranchesDisponibles: PeriodePrevision[];
+}
+
+/** Module DRH — phases 1-2 : organisation, prévisions et demandes de congés. */
 @Injectable({ providedIn: 'root' })
 export class DrhService {
     private readonly server: string = environment.apiBaseUrl;
@@ -141,4 +181,39 @@ export class DrhService {
 
     renvoyerPrevision$ = (previsionId: number, motif: string): Observable<IResponse> =>
         this.http.post<IResponse>(`${this.server}/ecredit/drh/previsions/${previsionId}/renvoyer`, { motif }).pipe(catchError(this.handleError));
+
+    // ===== Demandes de congé (phase 2) =====
+
+    soldeConge$ = (exercice: number): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/drh/conges/solde?exercice=${exercice}`).pipe(catchError(this.handleError));
+
+    mesConges$ = (exercice: number): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/drh/conges/moi?exercice=${exercice}`).pipe(catchError(this.handleError));
+
+    creerConge$ = (body: { periodeId: number; dateDebut: string; dateFin: string; commentaire?: string }): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/drh/conges`, body).pipe(catchError(this.handleError));
+
+    congesDepartement$ = (exercice: number): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/drh/conges/departement?exercice=${exercice}`).pipe(catchError(this.handleError));
+
+    accepterConge$ = (demandeId: number): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/drh/conges/${demandeId}/accepter`, {}).pipe(catchError(this.handleError));
+
+    rejeterConge$ = (demandeId: number, motif: string): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/drh/conges/${demandeId}/rejeter`, { motif }).pipe(catchError(this.handleError));
+
+    interrompreConge$ = (demandeId: number, body: { dateReprise: string; motif: string }): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/drh/conges/${demandeId}/interrompre`, body).pipe(catchError(this.handleError));
+
+    annulerConge$ = (demandeId: number, motif: string): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/drh/conges/${demandeId}/annuler`, { motif }).pipe(catchError(this.handleError));
+
+    congesAValider$ = (exercice: number): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/drh/conges/a-valider?exercice=${exercice}`).pipe(catchError(this.handleError));
+
+    validerConge$ = (demandeId: number): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/drh/conges/${demandeId}/valider`, {}).pipe(catchError(this.handleError));
+
+    renvoyerConge$ = (demandeId: number, motif: string): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/drh/conges/${demandeId}/renvoyer`, { motif }).pipe(catchError(this.handleError));
 }

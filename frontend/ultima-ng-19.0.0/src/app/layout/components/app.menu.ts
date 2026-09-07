@@ -102,14 +102,36 @@ export class AppMenu {
                     {
                         label: 'Mes congés',
                         icon: 'pi pi-fw pi-calendar',
-                        routerLink: ['/dashboards/drh/ma-prevision']
+                        items: [
+                            {
+                                label: 'Ma prévision',
+                                icon: 'pi pi-fw pi-calendar-plus',
+                                routerLink: ['/dashboards/drh/ma-prevision']
+                            },
+                            {
+                                label: 'Mes demandes de congé',
+                                icon: 'pi pi-fw pi-send',
+                                routerLink: ['/dashboards/drh/mes-conges']
+                            }
+                        ]
                     },
                     ...(this.estResponsableDrh
                         ? [
                               {
                                   label: 'Congés de mon département',
-                                  icon: 'pi pi-fw pi-calendar-plus',
-                                  routerLink: ['/dashboards/drh/departement-previsions']
+                                  icon: 'pi pi-fw pi-users',
+                                  items: [
+                                      {
+                                          label: 'Prévisions',
+                                          icon: 'pi pi-fw pi-calendar-plus',
+                                          routerLink: ['/dashboards/drh/departement-previsions']
+                                      },
+                                      {
+                                          label: 'Demandes de congé',
+                                          icon: 'pi pi-fw pi-send',
+                                          routerLink: ['/dashboards/drh/conges-departement']
+                                      }
+                                  ]
                               }
                           ]
                         : []),
@@ -123,6 +145,11 @@ export class AppMenu {
                                           label: 'Validation des prévisions',
                                           icon: 'pi pi-fw pi-check-square',
                                           routerLink: ['/dashboards/drh/validation-previsions']
+                                      },
+                                      {
+                                          label: 'Validation des congés',
+                                          icon: 'pi pi-fw pi-verified',
+                                          routerLink: ['/dashboards/drh/validation-conges']
                                       },
                                       {
                                           label: 'Organisation (départements)',

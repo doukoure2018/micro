@@ -155,6 +155,21 @@ export default [
         loadComponent: () => import('./credit/individuel/attente/detail/analyse-credit-agricole/analyse-credit-agricole.component').then((c) => c.AnalyseCreditAgricoleComponent)
     },
     {
+        path: 'drh/mes-conges',
+        data: { breadcrumb: 'Mes demandes de congé' },
+        loadComponent: () => import('./drh/mes-conges/mes-conges.component').then((c) => c.MesCongesComponent)
+    },
+    {
+        path: 'drh/conges-departement',
+        data: { breadcrumb: 'Congés de mon département' },
+        loadComponent: () => import('./drh/conges-departement/conges-departement.component').then((c) => c.CongesDepartementComponent)
+    },
+    {
+        path: 'drh/validation-conges',
+        data: { breadcrumb: 'Validation DRH des congés' },
+        loadComponent: () => import('./drh/validation-conges/validation-conges.component').then((c) => c.ValidationCongesComponent)
+    },
+    {
         path: 'drh/ma-prevision',
         data: { breadcrumb: 'Ma prévision de congés' },
         loadComponent: () => import('./drh/ma-prevision/ma-prevision.component').then((c) => c.MaPrevisionComponent)
