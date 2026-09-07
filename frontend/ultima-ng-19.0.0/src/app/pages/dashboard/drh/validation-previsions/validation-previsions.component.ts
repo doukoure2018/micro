@@ -4,36 +4,55 @@ import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { DropdownModule } from 'primeng/dropdown';
+import { SelectButtonModule } from 'primeng/selectbutton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { TextareaModule } from 'primeng/textarea';
+import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { DrhService, PrevisionConge } from '@/service/drh.service';
+import { DrhService, PrevisionConge, PeriodePrevision, DepartementDrh } from '@/service/drh.service';
 import { STATUT_PREVISION_LABELS, StatutTag } from '../ma-prevision/ma-prevision.component';
 
-/** Validation finale DRH : inscription des prévisions acceptées au calendrier officiel. */
+const MOIS_COURTS = ['Janv', 'Févr', 'Mars', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'];
+
+interface SegmentMois {
+    label: string;
+    classe: string;
+}
+
+/**
+ * Écran DRH : validation finale des prévisions + calendrier consolidé
+ * de tout le personnel (agents en lignes, 12 mois en colonnes — comme
+ * le fichier Excel de planification, avec la couleur de l'étape du circuit).
+ */
 @Component({
     selector: 'app-validation-previsions',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, DialogModule, DropdownModule, TableModule, TagModule, ToastModule, TextareaModule],
+    imports: [CommonModule, FormsModule, ButtonModule, DialogModule, DropdownModule, SelectButtonModule, TableModule, TagModule, ToastModule, TextareaModule, TooltipModule],
     providers: [MessageService],
     template: `
         <p-toast />
         <div class="card">
             <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
                 <div>
-                    <h4 class="m-0">Validation DRH des prévisions de congés</h4>
-                    <span class="text-sm text-color-secondary">Prévisions acceptées ou réajustées par les responsables, en attente de validation finale.</span>
+                    <h4 class="m-0">Prévisions de congés — DRH</h4>
+                    <span class="text-sm text-color-secondary">Validation finale et calendrier consolidé du personnel.</span>
                 </div>
-                <div class="flex items-center gap-2">
-                    <label class="font-medium">Exercice</label>
-                    <p-dropdown [options]="exercices" [(ngModel)]="exercice" (onChange)="charger()" />
+                <div class="flex flex-wrap items-center gap-2">
+                    <p-selectButton [options]="vues" [(ngModel)]="vue" optionLabel="label" optionValue="value"
+                                    (onChange)="chargerVue()" />
+                    <label class="font-medium ml-2">Exercice</label>
+                    <p-dropdown [options]="exercices" [(ngModel)]="exercice" (onChange)="chargerVue()" />
+                    <p-dropdown *ngIf="vue === 'calendrier'" [options]="optionsDepartements()" optionLabel="libelle"
+                                optionValue="departementId" [(ngModel)]="departementFiltre" [showClear]="true"
+                                placeholder="Toutes les directions" (onChange)="chargerCalendrier()" />
                 </div>
             </div>
 
-            <p-table [value]="previsions()" responsiveLayout="scroll" [rowHover]="true">
+            <!-- ===== Vue validation ===== -->
+            <p-table *ngIf="vue === 'validation'" [value]="previsions()" responsiveLayout="scroll" [rowHover]="true">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Agent</th><th>Département</th><th>Périodes</th><th>Total</th><th>Responsable</th><th>Statut</th><th>Actions</th>
@@ -65,6 +84,48 @@ import { STATUT_PREVISION_LABELS, StatutTag } from '../ma-prevision/ma-prevision
                     <tr><td colspan="7" class="text-center text-color-secondary">Aucune prévision en attente pour {{ exercice }}</td></tr>
                 </ng-template>
             </p-table>
+
+            <!-- ===== Vue calendrier du personnel ===== -->
+            <div *ngIf="vue === 'calendrier'">
+                <div class="legende mb-2">
+                    <span><i class="pastille st-orange"></i> Enregistrée / soumise</span>
+                    <span><i class="pastille st-jaune"></i> Acceptée responsable</span>
+                    <span><i class="pastille st-verte"></i> Validée DRH</span>
+                </div>
+                <div class="cal-wrap">
+                    <table class="cal-table">
+                        <thead>
+                            <tr>
+                                <th class="col-agent">Agent</th>
+                                <th>Dir.</th>
+                                <th>Total</th>
+                                <th *ngFor="let m of moisCourts">{{ m }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let p of toutes()">
+                                <td class="col-agent">
+                                    {{ p.nomComplet }}
+                                    <div class="text-xs text-color-secondary" *ngIf="p.matricule">Mat. {{ p.matricule }}</div>
+                                </td>
+                                <td>{{ p.departementCode }}</td>
+                                <td class="font-medium">{{ p.totalJours }} j</td>
+                                <td *ngFor="let m of indicesMois" class="cellule-mois">
+                                    <span *ngFor="let seg of segmentsMois(p, m)" class="segment" [ngClass]="seg.classe"
+                                          [pTooltip]="statutLabel(p.statut).label" tooltipPosition="top">
+                                        {{ seg.label }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr *ngIf="toutes().length === 0">
+                                <td [attr.colspan]="15" class="text-center text-color-secondary p-3">
+                                    Aucune prévision pour {{ exercice }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <p-dialog header="Renvoyer la prévision" [(visible)]="renvoiVisible" [modal]="true" [style]="{ width: '480px' }">
@@ -75,7 +136,29 @@ import { STATUT_PREVISION_LABELS, StatutTag } from '../ma-prevision/ma-prevision
                 <button pButton label="Renvoyer" severity="danger" [disabled]="!motif.trim()" (click)="renvoyer()"></button>
             </ng-template>
         </p-dialog>
-    `
+    `,
+    styles: [`
+        .legende { display: flex; gap: 1rem; font-size: 0.82rem; color: var(--text-color-secondary); align-items: center; flex-wrap: wrap; }
+        .legende span { display: flex; align-items: center; gap: 0.35rem; }
+        .pastille { width: 0.9rem; height: 0.9rem; border-radius: 4px; display: inline-block; }
+        .pastille.st-orange { background: #f97316; }
+        .pastille.st-jaune { background: #eab308; }
+        .pastille.st-verte { background: #16a34a; }
+        .cal-wrap { overflow-x: auto; border: 1px solid var(--surface-border); border-radius: 8px; }
+        .cal-table { border-collapse: collapse; width: 100%; min-width: 1200px; font-size: 0.85rem; }
+        .cal-table th, .cal-table td { border: 1px solid var(--surface-border); padding: 0.4rem 0.45rem; text-align: center; vertical-align: middle; }
+        .cal-table thead th { background: var(--surface-100); font-weight: 700; position: sticky; top: 0; }
+        .col-agent { text-align: left !important; min-width: 180px; position: sticky; left: 0; background: var(--surface-card); z-index: 1; }
+        .cal-table thead .col-agent { background: var(--surface-100); z-index: 2; }
+        .cellule-mois { min-width: 64px; }
+        .segment {
+            display: block; border-radius: 6px; padding: 0.1rem 0.3rem; margin: 0.1rem 0;
+            font-weight: 600; white-space: nowrap; font-size: 0.8rem;
+        }
+        .segment.st-orange { background: #f97316; color: #fff; }
+        .segment.st-jaune { background: #eab308; color: #422006; }
+        .segment.st-verte { background: #16a34a; color: #fff; }
+    `]
 })
 export class ValidationPrevisionsComponent implements OnInit {
     private drhService = inject(DrhService);
@@ -83,25 +166,79 @@ export class ValidationPrevisionsComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
 
     previsions = signal<PrevisionConge[]>([]);
+    toutes = signal<PrevisionConge[]>([]);
+    optionsDepartements = signal<DepartementDrh[]>([]);
+
+    vue: 'validation' | 'calendrier' = 'validation';
+    vues = [
+        { label: 'À valider', value: 'validation' },
+        { label: 'Calendrier du personnel', value: 'calendrier' }
+    ];
+
     exercice = new Date().getFullYear();
     exercices = [new Date().getFullYear(), new Date().getFullYear() + 1];
+    departementFiltre: number | null = null;
+
+    moisCourts = MOIS_COURTS;
+    indicesMois = Array.from({ length: 12 }, (_, i) => i);
+
     renvoiVisible = false;
     motif = '';
     cible: PrevisionConge | null = null;
 
     ngOnInit(): void {
-        this.charger();
+        this.chargerVue();
+        this.drhService.departements$().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: (r) => this.optionsDepartements.set((r.data as any)?.departements || [])
+        });
     }
 
-    charger(): void {
+    chargerVue(): void {
+        if (this.vue === 'validation') {
+            this.chargerValidation();
+        } else {
+            this.chargerCalendrier();
+        }
+    }
+
+    chargerValidation(): void {
         this.drhService.previsionsAValider$(this.exercice).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (r) => this.previsions.set((r.data as any)?.previsions || []),
             error: (e) => this.erreur(e)
         });
     }
 
+    chargerCalendrier(): void {
+        this.drhService.previsionsToutes$(this.exercice, this.departementFiltre || undefined)
+            .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+                next: (r) => this.toutes.set((r.data as any)?.previsions || []),
+                error: (e) => this.erreur(e)
+            });
+    }
+
     statutLabel(statut: string): StatutTag {
         return STATUT_PREVISION_LABELS[statut] || { label: statut, severity: 'secondary' };
+    }
+
+    /** Segments d'une prévision recoupant le mois m (0-11) : « 02 au 17 », coloré par étape. */
+    segmentsMois(p: PrevisionConge, m: number): SegmentMois[] {
+        const debutMois = `${this.exercice}-${String(m + 1).padStart(2, '0')}-01`;
+        const dernierJour = new Date(this.exercice, m + 1, 0).getDate();
+        const finMois = `${this.exercice}-${String(m + 1).padStart(2, '0')}-${String(dernierJour).padStart(2, '0')}`;
+        const classe = this.classeStatut(p.statut);
+        return (p.periodes || [])
+            .filter((per: PeriodePrevision) => !(per.dateFin < debutMois || per.dateDebut > finMois))
+            .map((per: PeriodePrevision) => {
+                const debut = per.dateDebut > debutMois ? per.dateDebut : debutMois;
+                const fin = per.dateFin < finMois ? per.dateFin : finMois;
+                return { label: `${debut.slice(8)} au ${fin.slice(8)}`, classe };
+            });
+    }
+
+    private classeStatut(statut: string): string {
+        if (statut === 'VALIDEE_DRH') return 'st-verte';
+        if (statut === 'ACCEPTEE_RESP' || statut === 'REAJUSTEE_RESP') return 'st-jaune';
+        return 'st-orange';
     }
 
     valider(p: PrevisionConge): void {
@@ -128,7 +265,7 @@ export class ValidationPrevisionsComponent implements OnInit {
 
     private ok(detail: string): void {
         this.messageService.add({ severity: 'success', summary: 'Succès', detail });
-        this.charger();
+        this.chargerValidation();
     }
 
     private erreur(e: any): void {

@@ -200,6 +200,15 @@ public class DrhResource {
                 "Prévisions en attente de validation DRH", OK));
     }
 
+    @GetMapping("/previsions/toutes")
+    public ResponseEntity<Response> previsionsToutes(@RequestParam(required = false) Integer exercice,
+                                                     @RequestParam(required = false) Long departementId,
+                                                     Authentication auth, HttpServletRequest req) {
+        return ResponseEntity.ok(getResponse(req,
+                Map.of("previsions", drhService.previsionsToutes(user(auth), exercice(exercice), departementId)),
+                "Calendrier des prévisions du personnel", OK));
+    }
+
     @PostMapping("/previsions/{previsionId}/valider")
     public ResponseEntity<Response> valider(@PathVariable Long previsionId,
                                             Authentication auth, HttpServletRequest req) {

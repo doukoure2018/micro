@@ -193,6 +193,15 @@ public class DrhRepositoryImpl implements DrhRepository {
                 .stream().map(this::avecPeriodes).toList();
     }
 
+    @Override
+    public List<PrevisionDto> previsionsToutes(int exercice, Long departementId) {
+        return jdbcClient.sql(DrhQuery.PREVISIONS_TOUTES)
+                .param("exercice", exercice)
+                .param("departement_id", departementId)
+                .query(PREVISION_MAPPER).list()
+                .stream().map(this::avecPeriodes).toList();
+    }
+
     private PrevisionDto avecPeriodes(PrevisionDto p) {
         p.setPeriodes(periodesDePrevision(p.getPrevisionId()));
         return p;

@@ -34,6 +34,7 @@ public interface DrhService {
 
     // Prévision — DRH
     List<PrevisionDto> previsionsAValider(User drh, int exercice);
+    List<PrevisionDto> previsionsToutes(User drh, int exercice, Long departementId);
     PrevisionDto validerDrh(User drh, Long previsionId);
     PrevisionDto renvoyerDrh(User drh, Long previsionId, String motif);
 }

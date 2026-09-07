@@ -247,6 +247,12 @@ public class DrhServiceImpl implements DrhService {
     }
 
     @Override
+    public List<PrevisionDto> previsionsToutes(User drh, int exercice, Long departementId) {
+        exigerDrh(drh);
+        return drhRepository.previsionsToutes(exercice, departementId);
+    }
+
+    @Override
     @Transactional
     public PrevisionDto validerDrh(User drh, Long previsionId) {
         exigerDrh(drh);

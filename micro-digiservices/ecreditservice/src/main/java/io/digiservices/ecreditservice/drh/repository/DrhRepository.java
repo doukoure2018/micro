@@ -29,6 +29,7 @@ public interface DrhRepository {
     Optional<PrevisionDto> previsionById(Long previsionId);
     List<PrevisionDto> previsionsDuDepartement(Long departementId, int exercice);
     List<PrevisionDto> previsionsAValiderDrh(int exercice);
+    List<PrevisionDto> previsionsToutes(int exercice, Long departementId);
     Long creerPrevision(Long userId, Long departementId, int exercice, String commentaire);
     void majCommentaire(Long previsionId, String commentaire);
     void majStatut(Long previsionId, String statut, String motifRejet,

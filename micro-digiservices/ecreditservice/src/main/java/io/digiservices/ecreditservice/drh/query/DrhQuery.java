@@ -133,6 +133,14 @@ public final class DrhQuery {
              ORDER BY nom_complet
             """;
 
+    /** Vue DRH : toutes les prévisions de l'exercice (calendrier du personnel), filtre département optionnel. */
+    public static final String PREVISIONS_TOUTES =
+            PREVISION_SELECT + """
+             WHERE p.exercice = :exercice
+               AND (CAST(:departement_id AS BIGINT) IS NULL OR p.departement_id = :departement_id)
+             ORDER BY departement_code, nom_complet
+            """;
+
     public static final String PREVISIONS_A_VALIDER_DRH =
             PREVISION_SELECT + """
              WHERE p.statut IN ('ACCEPTEE_RESP','REAJUSTEE_RESP') AND p.exercice = :exercice

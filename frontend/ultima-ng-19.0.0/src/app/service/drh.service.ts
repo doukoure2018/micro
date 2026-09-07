@@ -132,6 +132,10 @@ export class DrhService {
     previsionsAValider$ = (exercice: number): Observable<IResponse> =>
         this.http.get<IResponse>(`${this.server}/ecredit/drh/previsions/a-valider?exercice=${exercice}`).pipe(catchError(this.handleError));
 
+    previsionsToutes$ = (exercice: number, departementId?: number): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/drh/previsions/toutes?exercice=${exercice}` +
+            (departementId ? `&departementId=${departementId}` : '')).pipe(catchError(this.handleError));
+
     validerPrevision$ = (previsionId: number): Observable<IResponse> =>
         this.http.post<IResponse>(`${this.server}/ecredit/drh/previsions/${previsionId}/valider`, {}).pipe(catchError(this.handleError));
 
