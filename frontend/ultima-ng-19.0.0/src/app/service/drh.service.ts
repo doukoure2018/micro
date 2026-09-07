@@ -106,7 +106,40 @@ export interface SoldeConge {
     tranchesDisponibles: PeriodePrevision[];
 }
 
-/** Module DRH — phases 1-2 : organisation, prévisions et demandes de congés. */
+export interface PermissionSociale {
+    permissionId: number;
+    userId: number;
+    nomComplet: string;
+    matricule?: string;
+    fonction?: string;
+    departementId: number;
+    departementCode: string;
+    departementLibelle?: string;
+    exercice: number;
+    motif: string;
+    lienParente?: string;
+    precisionMotif?: string;
+    dateDebut: string;
+    dateFin: string;
+    nbJours: number;
+    statut: string;
+    motifRejet?: string;
+    soumiseLe?: string;
+    traiteeRespNom?: string;
+    traiteeRespLe?: string;
+    valideeDrhNom?: string;
+    valideeDrhLe?: string;
+}
+
+export interface QuotaPermission {
+    exercice: number;
+    quota: number;
+    pris: number;
+    restant: number;
+    delaiPreavisJours: number;
+}
+
+/** Module DRH — phases 1-3 : organisation, prévisions, congés et permissions sociales. */
 @Injectable({ providedIn: 'root' })
 export class DrhService {
     private readonly server: string = environment.apiBaseUrl;
@@ -216,4 +249,36 @@ export class DrhService {
 
     renvoyerConge$ = (demandeId: number, motif: string): Observable<IResponse> =>
         this.http.post<IResponse>(`${this.server}/ecredit/drh/conges/${demandeId}/renvoyer`, { motif }).pipe(catchError(this.handleError));
+
+    // ===== Permissions sociales (phase 3) =====
+
+    quotaPermission$ = (exercice: number): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/drh/permissions/quota?exercice=${exercice}`).pipe(catchError(this.handleError));
+
+    mesPermissions$ = (exercice: number): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/drh/permissions/moi?exercice=${exercice}`).pipe(catchError(this.handleError));
+
+    creerPermission$ = (body: { motif: string; lienParente?: string; precisionMotif?: string; dateDebut: string; dateFin: string }): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/drh/permissions`, body).pipe(catchError(this.handleError));
+
+    annulerPermission$ = (permissionId: number, motif: string): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/drh/permissions/${permissionId}/annuler`, { motif }).pipe(catchError(this.handleError));
+
+    permissionsDepartement$ = (exercice: number): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/drh/permissions/departement?exercice=${exercice}`).pipe(catchError(this.handleError));
+
+    accepterPermission$ = (permissionId: number): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/drh/permissions/${permissionId}/accepter`, {}).pipe(catchError(this.handleError));
+
+    rejeterPermission$ = (permissionId: number, motif: string): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/drh/permissions/${permissionId}/rejeter`, { motif }).pipe(catchError(this.handleError));
+
+    permissionsAValider$ = (exercice: number): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/drh/permissions/a-valider?exercice=${exercice}`).pipe(catchError(this.handleError));
+
+    validerPermission$ = (permissionId: number): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/drh/permissions/${permissionId}/valider`, {}).pipe(catchError(this.handleError));
+
+    renvoyerPermission$ = (permissionId: number, motif: string): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/drh/permissions/${permissionId}/renvoyer`, { motif }).pipe(catchError(this.handleError));
 }

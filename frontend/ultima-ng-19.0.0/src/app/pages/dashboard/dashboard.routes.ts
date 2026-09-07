@@ -155,6 +155,11 @@ export default [
         loadComponent: () => import('./credit/individuel/attente/detail/analyse-credit-agricole/analyse-credit-agricole.component').then((c) => c.AnalyseCreditAgricoleComponent)
     },
     {
+        path: 'drh/mes-permissions',
+        data: { breadcrumb: 'Mes permissions sociales' },
+        loadComponent: () => import('./drh/mes-permissions/mes-permissions.component').then((c) => c.MesPermissionsComponent)
+    },
+    {
         path: 'drh/mes-conges',
         data: { breadcrumb: 'Mes demandes de congé' },
         loadComponent: () => import('./drh/mes-conges/mes-conges.component').then((c) => c.MesCongesComponent)

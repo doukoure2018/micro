@@ -112,6 +112,11 @@ export class AppMenu {
                                 label: 'Mes demandes de congé',
                                 icon: 'pi pi-fw pi-send',
                                 routerLink: ['/dashboards/drh/mes-conges']
+                            },
+                            {
+                                label: 'Permission sociale',
+                                icon: 'pi pi-fw pi-heart',
+                                routerLink: ['/dashboards/drh/mes-permissions']
                             }
                         ]
                     },

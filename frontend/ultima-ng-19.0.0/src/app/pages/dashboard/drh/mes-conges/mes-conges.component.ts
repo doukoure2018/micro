@@ -44,7 +44,26 @@ import { statutConge, imprimerDemandeConge } from '../conge-utils';
                     </div>
                 </div>
 
-                <div class="card" *ngIf="solde()?.previsionValidee">
+                <!-- Demande en instance : le formulaire est masqué jusqu'à son traitement -->
+                <div class="card" *ngIf="enInstance() as inst">
+                    <h5 class="m-0 mb-3"><i class="pi pi-hourglass mr-1"></i> Demande en instance</h5>
+                    <div class="flex flex-col gap-2">
+                        <p-tag [value]="statut(inst.statut).label" [severity]="statut(inst.statut).severity" />
+                        <div><b>Du :</b> {{ inst.dateDebut | date: 'dd/MM/yyyy' }} <b>au</b> {{ inst.dateFin | date: 'dd/MM/yyyy' }} inclus</div>
+                        <div><b>Durée :</b> {{ inst.nbJours }} jours ouvrables — solde après : {{ inst.soldeApres }} j</div>
+                        <div class="text-sm text-color-secondary" *ngIf="inst.traiteeRespNom">
+                            Acceptée par {{ inst.traiteeRespNom }} le {{ inst.traiteeRespLe | date: 'dd/MM/yyyy HH:mm' }}
+                        </div>
+                        <div class="text-sm text-color-secondary">
+                            Le formulaire sera de nouveau disponible une fois cette demande traitée.
+                        </div>
+                        <button pButton label="Annuler ma demande" icon="pi pi-times" severity="danger"
+                                class="p-button-outlined mt-2" *ngIf="inst.statut === 'SOUMISE'"
+                                (click)="annuler(inst)"></button>
+                    </div>
+                </div>
+
+                <div class="card" *ngIf="solde()?.previsionValidee && !enInstance()">
                     <h5 class="m-0 mb-3">Nouvelle demande de congé</h5>
                     <div class="flex flex-col gap-3">
                         <div>
@@ -138,6 +157,11 @@ export class MesCongesComponent implements OnInit {
     dateFin: Date | null = null;
     commentaire = '';
     nbJours = signal(0);
+
+    /** Demande en instance (soumise ou acceptée) : masque le formulaire de saisie. */
+    enInstance = computed(() =>
+        this.demandes().find((d) => d.statut === 'SOUMISE' || d.statut === 'ACCEPTEE_RESP') || null
+    );
 
     tranchesOptions = computed(() =>
         (this.solde()?.tranchesDisponibles || []).map((p) => ({
