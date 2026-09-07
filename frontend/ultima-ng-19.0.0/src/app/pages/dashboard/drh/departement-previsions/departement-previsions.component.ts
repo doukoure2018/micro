@@ -3,8 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { CalendrierAnnuelComponent } from '../calendrier-annuel/calendrier-annuel.component';
+import { ApercuPrevisionsComponent } from '../apercu-previsions/apercu-previsions.component';
 import { DialogModule } from 'primeng/dialog';
 import { DropdownModule } from 'primeng/dropdown';
+import { SelectButtonModule } from 'primeng/selectbutton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
@@ -21,7 +23,7 @@ import { STATUT_PREVISION_LABELS, StatutTag } from '../ma-prevision/ma-prevision
 @Component({
     selector: 'app-departement-previsions',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, CalendrierAnnuelComponent, DialogModule, DropdownModule, TableModule, TagModule, ToastModule, TextareaModule],
+    imports: [CommonModule, FormsModule, ApercuPrevisionsComponent, ButtonModule, CalendrierAnnuelComponent, DialogModule, DropdownModule, SelectButtonModule, TableModule, TagModule, ToastModule, TextareaModule],
     providers: [MessageService, ConfirmationService],
     template: `
         <p-toast />
@@ -31,13 +33,17 @@ import { STATUT_PREVISION_LABELS, StatutTag } from '../ma-prevision/ma-prevision
                     <h4 class="m-0">Prévisions de congés — {{ contexte()?.departementLibelle }}</h4>
                     <span class="text-sm text-color-secondary">Acceptez, rejetez (avec motif) ou réajustez les dates après entretien.</span>
                 </div>
-                <div class="flex items-center gap-2">
-                    <label class="font-medium">Exercice</label>
+                <div class="flex flex-wrap items-center gap-2">
+                    <p-selectButton [options]="vuesOptions" [(ngModel)]="vueActive" optionLabel="label" optionValue="value" />
+                    <label class="font-medium ml-2">Exercice</label>
                     <p-dropdown [options]="exercices" [(ngModel)]="exercice" (onChange)="charger()" />
                 </div>
             </div>
 
-            <p-table [value]="previsions()" responsiveLayout="scroll" [rowHover]="true">
+            <app-apercu-previsions *ngIf="vueActive !== 'demandes'" [previsions]="previsions()"
+                                   [exercice]="exercice" [vue]="vueActive === 'annuel' ? 'annuel' : 'calendrier'" />
+
+            <p-table *ngIf="vueActive === 'demandes'" [value]="previsions()" responsiveLayout="scroll" [rowHover]="true">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Agent</th><th>Fonction</th><th>Périodes</th><th>Total</th><th>Statut</th><th>Actions</th>
@@ -116,6 +122,13 @@ export class DepartementPrevisionsComponent implements OnInit {
     previsions = signal<PrevisionConge[]>([]);
     exercice = new Date().getFullYear();
     exercices = [new Date().getFullYear(), new Date().getFullYear() + 1];
+
+    vueActive: 'demandes' | 'calendrier' | 'annuel' = 'demandes';
+    vuesOptions = [
+        { label: 'Demandes', value: 'demandes' },
+        { label: 'Calendrier du personnel', value: 'calendrier' },
+        { label: 'Vue annuelle', value: 'annuel' }
+    ];
 
     rejetVisible = false;
     reajustVisible = false;
