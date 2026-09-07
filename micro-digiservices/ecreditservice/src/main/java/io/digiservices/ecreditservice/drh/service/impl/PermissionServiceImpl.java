@@ -32,6 +32,7 @@ public class PermissionServiceImpl implements PermissionService {
 
     private static final String PARAM_QUOTA = "PERMISSION_QUOTA_ANNUEL_JOURS";
     private static final String PARAM_PREAVIS = "PERMISSION_DELAI_PREAVIS_JOURS";
+    private static final String PARAM_MAX_CONSECUTIFS = "PERMISSION_MAX_JOURS_CONSECUTIFS";
     private static final Set<String> MOTIFS =
             Set.of("NAISSANCE", "BAPTEME", "MALADIE", "MARIAGE", "DECES", "AUTRE");
 
@@ -52,6 +53,8 @@ public class PermissionServiceImpl implements PermissionService {
                 .pris(pris)
                 .restant(Math.max(0, quota - pris))
                 .delaiPreavisJours(drhRepository.parametreInt(PARAM_PREAVIS, 2))
+                .maxJoursParDemande(drhRepository.parametreInt(PARAM_MAX_CONSECUTIFS, 3))
+                .enCours(permissionRepository.permissionEnCours(user.getUserId()).orElse(null))
                 .build();
     }
 
@@ -81,6 +84,14 @@ public class PermissionServiceImpl implements PermissionService {
                 .orElseThrow(() -> new ValidationException(
                         "Vous n'êtes affecté à aucun département — contactez la DRH"));
 
+        // Une seule permission à la fois : en circuit, ou validée et pas encore terminée
+        permissionRepository.permissionEnCours(user.getUserId()).ifPresent(enCours -> {
+            throw new ValidationException("Vous avez déjà une permission "
+                    + ("VALIDEE_DRH".equals(enCours.getStatut()) ? "en cours jusqu'au " + enCours.getDateFin()
+                       : "en instance de traitement")
+                    + " — attendez sa fin avant d'en demander une autre");
+        });
+
         // Préavis : saisie au plus tard J-N avant le départ, sauf décès (urgence)
         int preavis = drhRepository.parametreInt(PARAM_PREAVIS, 2);
         if (!"DECES".equals(request.getMotif())
@@ -98,6 +109,11 @@ public class PermissionServiceImpl implements PermissionService {
         int nbJours = DrhServiceImpl.joursOuvrables(request.getDateDebut(), request.getDateFin(), feries);
         if (nbJours == 0) {
             throw new ValidationException("La période choisie ne contient aucun jour ouvrable");
+        }
+        int maxConsecutifs = drhRepository.parametreInt(PARAM_MAX_CONSECUTIFS, 3);
+        if (nbJours > maxConsecutifs) {
+            throw new ValidationException("Une permission sociale ne peut pas dépasser "
+                    + maxConsecutifs + " jours d'affilée (demande de " + nbJours + " jours)");
         }
         if (permissionRepository.chevauchePermissionActive(user.getUserId(),
                 request.getDateDebut(), request.getDateFin())) {

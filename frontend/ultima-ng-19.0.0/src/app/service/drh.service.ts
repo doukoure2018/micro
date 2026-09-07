@@ -137,6 +137,8 @@ export interface QuotaPermission {
     pris: number;
     restant: number;
     delaiPreavisJours: number;
+    maxJoursParDemande?: number;
+    enCours?: PermissionSociale;
 }
 
 /** Module DRH — phases 1-3 : organisation, prévisions, congés et permissions sociales. */

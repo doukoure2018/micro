@@ -21,5 +21,6 @@ public interface PermissionRepository {
                    Long traiteeRespPar, Long valideeDrhPar, Long annuleePar);
 
     int joursConsommes(Long userId, int exercice);
+    Optional<PermissionDto> permissionEnCours(Long userId);
     boolean chevauchePermissionActive(Long userId, LocalDate dateDebut, LocalDate dateFin);
 }

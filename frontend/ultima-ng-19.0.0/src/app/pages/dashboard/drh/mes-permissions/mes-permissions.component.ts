@@ -14,6 +14,7 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DrhService, PermissionSociale, QuotaPermission } from '@/service/drh.service';
 import { statutConge, imprimerPermission, MOTIFS_PERMISSION, LIENS_PARENTE, libelleMotif, libelleLienParente } from '../conge-utils';
+import { SoldesAgentComponent } from '../soldes-agent/soldes-agent.component';
 
 /**
  * « Mes permissions sociales » : quota, dépôt (préavis J-2 sauf décès),
@@ -23,11 +24,12 @@ import { statutConge, imprimerPermission, MOTIFS_PERMISSION, LIENS_PARENTE, libe
 @Component({
     selector: 'app-mes-permissions',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, CalendarModule, ConfirmDialogModule, DropdownModule, InputTextModule, TableModule, TagModule, ToastModule, TooltipModule],
+    imports: [CommonModule, FormsModule, SoldesAgentComponent, ButtonModule, CalendarModule, ConfirmDialogModule, DropdownModule, InputTextModule, TableModule, TagModule, ToastModule, TooltipModule],
     providers: [MessageService, ConfirmationService],
     template: `
         <p-toast />
         <p-confirmDialog />
+        <app-soldes-agent [exercice]="exercice" />
         <div class="grid">
             <div class="col-12 lg:col-4">
                 <div class="card" *ngIf="quota() as q">
@@ -37,6 +39,7 @@ import { statutConge, imprimerPermission, MOTIFS_PERMISSION, LIENS_PARENTE, libe
                     <div class="flex justify-between text-lg"><span>Restant</span>
                         <b [class.text-red-500]="q.restant === 0" [class.text-green-600]="q.restant > 0">{{ q.restant }} j</b></div>
                     <div class="mt-3 text-sm text-color-secondary">
+                        Maximum {{ q.maxJoursParDemande }} jours d'affilée par permission.
                         Demande à déposer au moins {{ q.delaiPreavisJours }} jours avant le départ (sauf décès).
                         La permission sociale ne touche pas au droit de congé de 30 jours.
                     </div>
@@ -44,7 +47,8 @@ import { statutConge, imprimerPermission, MOTIFS_PERMISSION, LIENS_PARENTE, libe
 
                 <!-- Demande en instance : le formulaire est masqué -->
                 <div class="card" *ngIf="enInstance() as p">
-                    <h5 class="m-0 mb-3"><i class="pi pi-hourglass mr-1"></i> Demande en instance</h5>
+                    <h5 class="m-0 mb-3"><i class="pi pi-hourglass mr-1"></i>
+                        {{ p.statut === 'VALIDEE_DRH' ? 'Permission en cours' : 'Demande en instance' }}</h5>
                     <div class="flex flex-col gap-2">
                         <p-tag [value]="statut(p.statut).label" [severity]="statut(p.statut).severity" />
                         <div><b>Motif :</b> {{ motifLabel(p.motif) }}
@@ -54,6 +58,9 @@ import { statutConge, imprimerPermission, MOTIFS_PERMISSION, LIENS_PARENTE, libe
                         <div><b>Durée :</b> {{ p.nbJours }} jours ouvrables</div>
                         <div class="text-sm text-color-secondary" *ngIf="p.traiteeRespNom">
                             Acceptée par {{ p.traiteeRespNom }} le {{ p.traiteeRespLe | date: 'dd/MM/yyyy HH:mm' }}
+                        </div>
+                        <div class="text-sm text-color-secondary">
+                            Une nouvelle permission ne pourra être demandée qu'après la fin de celle-ci.
                         </div>
                         <button pButton label="Annuler ma demande" icon="pi pi-times" severity="danger"
                                 class="p-button-outlined mt-2" *ngIf="p.statut === 'SOUMISE'"
@@ -84,9 +91,16 @@ import { statutConge, imprimerPermission, MOTIFS_PERMISSION, LIENS_PARENTE, libe
                                 <p-calendar [(ngModel)]="dateFin" dateFormat="dd/mm/yy" [showIcon]="true" appendTo="body"
                                             (onSelect)="calculerJours()" /></div>
                         </div>
-                        <div class="font-medium" *ngIf="nbJours() > 0">{{ nbJours() }} jours ouvrables</div>
+                        <div class="font-medium" *ngIf="nbJours() > 0"
+                             [class.text-red-500]="nbJours() > (quota()?.maxJoursParDemande || 3)">
+                            {{ nbJours() }} jours ouvrables
+                            <span *ngIf="nbJours() > (quota()?.maxJoursParDemande || 3)">
+                                — maximum {{ quota()?.maxJoursParDemande || 3 }} jours d'affilée
+                            </span>
+                        </div>
                         <button pButton label="Soumettre à mon responsable" icon="pi pi-send" severity="success"
-                                [loading]="saving()" [disabled]="!motif || !dateDebut || !dateFin"
+                                [loading]="saving()"
+                                [disabled]="!motif || !dateDebut || !dateFin || nbJours() > (quota()?.maxJoursParDemande || 3)"
                                 (click)="soumettre()"></button>
                     </div>
                 </div>
@@ -156,10 +170,13 @@ export class MesPermissionsComponent implements OnInit {
     motifLabel = libelleMotif;
     lienLabel = libelleLienParente;
 
-    /** Demande en instance (soumise ou acceptée) : masque le formulaire. */
-    enInstance = computed(() =>
-        this.permissions().find((p) => p.statut === 'SOUMISE' || p.statut === 'ACCEPTEE_RESP') || null
-    );
+    /** Demande en instance (soumise/acceptée) OU permission validée pas encore terminée : masque le formulaire. */
+    enInstance = computed(() => {
+        const aujourdHui = new Date().toISOString().slice(0, 10);
+        return this.permissions().find((p) =>
+            p.statut === 'SOUMISE' || p.statut === 'ACCEPTEE_RESP'
+            || (p.statut === 'VALIDEE_DRH' && p.dateFin >= aujourdHui)) || null;
+    });
 
     ngOnInit(): void {
         this.charger();

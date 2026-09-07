@@ -15,6 +15,7 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DrhService, DemandeConge, SoldeConge, PeriodePrevision } from '@/service/drh.service';
 import { statutConge, imprimerDemandeConge } from '../conge-utils';
+import { SoldesAgentComponent } from '../soldes-agent/soldes-agent.component';
 
 /**
  * « Mes demandes de congé » : solde, dépôt d'une demande adossée à une
@@ -23,11 +24,12 @@ import { statutConge, imprimerDemandeConge } from '../conge-utils';
 @Component({
     selector: 'app-mes-conges',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, CalendarModule, ConfirmDialogModule, DialogModule, DropdownModule, TableModule, TagModule, ToastModule, TextareaModule, TooltipModule],
+    imports: [CommonModule, FormsModule, SoldesAgentComponent, ButtonModule, CalendarModule, ConfirmDialogModule, DialogModule, DropdownModule, TableModule, TagModule, ToastModule, TextareaModule, TooltipModule],
     providers: [MessageService, ConfirmationService],
     template: `
         <p-toast />
         <p-confirmDialog />
+        <app-soldes-agent [exercice]="exercice" />
         <div class="grid">
             <div class="col-12 lg:col-4">
                 <div class="card" *ngIf="solde() as s">

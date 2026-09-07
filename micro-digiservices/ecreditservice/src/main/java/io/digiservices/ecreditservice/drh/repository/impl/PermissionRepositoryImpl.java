@@ -107,6 +107,13 @@ public class PermissionRepositoryImpl implements PermissionRepository {
     }
 
     @Override
+    public Optional<PermissionDto> permissionEnCours(Long userId) {
+        return jdbcClient.sql(PermissionQuery.PERMISSION_EN_COURS)
+                .param("user_id", userId)
+                .query(PERMISSION_MAPPER).optional();
+    }
+
+    @Override
     public int joursConsommes(Long userId, int exercice) {
         return jdbcClient.sql(PermissionQuery.JOURS_PERMISSION_CONSOMMES)
                 .param("user_id", userId).param("exercice", exercice)

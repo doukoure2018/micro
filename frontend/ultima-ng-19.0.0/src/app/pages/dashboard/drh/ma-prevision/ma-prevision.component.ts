@@ -12,6 +12,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DrhService, PrevisionConge, PeriodePrevision, ContexteDrh } from '@/service/drh.service';
+import { SoldesAgentComponent } from '../soldes-agent/soldes-agent.component';
 
 export interface StatutTag {
     label: string;
@@ -49,11 +50,12 @@ const MOIS_NOMS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juill
 @Component({
     selector: 'app-ma-prevision',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, ConfirmDialogModule, DropdownModule, TableModule, TagModule, ToastModule, TextareaModule, TooltipModule],
+    imports: [CommonModule, FormsModule, SoldesAgentComponent, ButtonModule, ConfirmDialogModule, DropdownModule, TableModule, TagModule, ToastModule, TextareaModule, TooltipModule],
     providers: [MessageService, ConfirmationService],
     template: `
         <p-toast />
         <p-confirmDialog />
+        <app-soldes-agent [exercice]="exercice" />
         <div class="card">
             <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
                 <div>

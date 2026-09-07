@@ -68,6 +68,16 @@ public final class PermissionQuery {
          WHERE user_id = :user_id AND exercice = :exercice AND statut = 'VALIDEE_DRH'
         """;
 
+    /** Permission « en cours » : en circuit, ou validée et pas encore terminée. */
+    public static final String PERMISSION_EN_COURS =
+            PERMISSION_SELECT + """
+             WHERE ps.user_id = :user_id
+               AND (ps.statut IN ('SOUMISE','ACCEPTEE_RESP')
+                    OR (ps.statut = 'VALIDEE_DRH' AND ps.date_fin >= CURRENT_DATE))
+             ORDER BY ps.date_debut
+             LIMIT 1
+            """;
+
     public static final String PERMISSIONS_ACTIVES_CHEVAUCHANTES = """
         SELECT COUNT(*) FROM drh_permission_sociale
          WHERE user_id = :user_id

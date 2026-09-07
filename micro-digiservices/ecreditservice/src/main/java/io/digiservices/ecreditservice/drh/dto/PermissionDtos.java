@@ -63,5 +63,7 @@ public final class PermissionDtos {
         private Integer pris;
         private Integer restant;
         private Integer delaiPreavisJours;
+        private Integer maxJoursParDemande;
+        private PermissionDto enCours;
     }
 }
