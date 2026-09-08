@@ -37,6 +37,11 @@ public final class PresenceQuery {
          ORDER BY ip.nom
         """;
 
+    /** Purge des statuts d'un jour avant recalcul : évite les restes d'agents désormais non badgés. */
+    public static final String DELETE_PRESENCES_JOUR = """
+        DELETE FROM drh_presence_jour WHERE jour = :jour
+        """;
+
     public static final String UPSERT_PRESENCE_JOUR = """
         INSERT INTO drh_presence_jour (jour, matricule, nom, user_id, statut,
                                        minutes_retard, minutes_depart, justification,
@@ -62,6 +67,8 @@ public final class PresenceQuery {
           LEFT JOIN drh_departement d ON d.departement_id = m.departement_id
          WHERE pj.jour BETWEEN :du AND :au
            AND (CAST(:statut AS VARCHAR) IS NULL OR pj.statut = :statut)
+           AND EXISTS (SELECT 1 FROM info_personnel ip
+                        WHERE ip.matricule = pj.matricule AND ip.badge_siege AND ip.statut = 'ACTIVE')
          ORDER BY pj.jour DESC, pj.statut, pj.nom
         """;
 
@@ -73,8 +80,10 @@ public final class PresenceQuery {
                COUNT(*) FILTER (WHERE statut = 'ABSENT_JUSTIFIE') AS absents_justifies,
                COUNT(*) FILTER (WHERE statut = 'ABSENT_NON_JUSTIFIE') AS absents_non_justifies,
                COUNT(*) AS total
-          FROM drh_presence_jour
+          FROM drh_presence_jour pj
          WHERE jour BETWEEN :du AND :au
+           AND EXISTS (SELECT 1 FROM info_personnel ip
+                        WHERE ip.matricule = pj.matricule AND ip.badge_siege AND ip.statut = 'ACTIVE')
          GROUP BY jour
          ORDER BY jour
         """;

@@ -78,6 +78,11 @@ public class PresenceRepositoryImpl implements PresenceRepository {
     }
 
     @Override
+    public void supprimerPresencesJour(LocalDate jour) {
+        jdbcClient.sql(PresenceQuery.DELETE_PRESENCES_JOUR).param("jour", jour).update();
+    }
+
+    @Override
     public void upsertPresenceJour(LocalDate jour, String matricule, String nom, Long userId,
                                    String statut, int minutesRetard, int minutesDepart,
                                    String justification, LocalTime premiereEntree, LocalTime derniereSortie) {

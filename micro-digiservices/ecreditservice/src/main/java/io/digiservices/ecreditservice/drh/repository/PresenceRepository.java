@@ -21,6 +21,8 @@ public interface PresenceRepository {
     /** Personnel ACTIVE du fichier des salaires + user rattaché éventuel. */
     List<Map<String, Object>> personnelActif();
 
+    void supprimerPresencesJour(java.time.LocalDate jour);
+
     void upsertPresenceJour(LocalDate jour, String matricule, String nom, Long userId,
                             String statut, int minutesRetard, int minutesDepart,
                             String justification, LocalTime premiereEntree, LocalTime derniereSortie);

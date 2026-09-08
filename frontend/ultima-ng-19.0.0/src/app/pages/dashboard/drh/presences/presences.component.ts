@@ -53,6 +53,9 @@ const STATUTS_PRESENCE: { [k: string]: StatutPresence } = {
                            (change)="importer($event)" />
                     <button pButton icon="pi pi-upload" label="Importer un fichier badgeuse"
                             [loading]="importEnCours()" (click)="fichier.click()"></button>
+                    <button pButton icon="pi pi-refresh" label="Recalculer la période" class="p-button-outlined"
+                            pTooltip="Repasse le rapprochement sur la période affichée (personnel badgé uniquement)"
+                            [loading]="recalculEnCours()" (click)="recalculer()"></button>
                     <p-calendar [(ngModel)]="du" dateFormat="dd/mm/yy" [showIcon]="true" placeholder="Du" (onSelect)="charger()" />
                     <p-calendar [(ngModel)]="au" dateFormat="dd/mm/yy" [showIcon]="true" placeholder="Au" (onSelect)="charger()" />
                 </div>
@@ -177,6 +180,24 @@ export class PresencesComponent implements OnInit {
     nonRapproches = signal<any[]>([]);
     dernierImport = signal<any | null>(null);
     importEnCours = signal(false);
+    recalculEnCours = signal(false);
+
+    recalculer(): void {
+        if (!this.du || !this.au) return;
+        this.recalculEnCours.set(true);
+        this.drhService.recalculerPresences$(this.toIso(this.du), this.toIso(this.au))
+            .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+                next: (r) => {
+                    this.recalculEnCours.set(false);
+                    this.messageService.add({ severity: 'success', summary: 'Recalculé', detail: r.message || 'Rapprochement recalculé' });
+                    this.charger();
+                },
+                error: (e) => {
+                    this.recalculEnCours.set(false);
+                    this.erreur(e);
+                }
+            });
+    }
 
     vue: 'synthese' | 'detail' | 'non-rapproches' = 'synthese';
     vues = [

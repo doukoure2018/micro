@@ -170,6 +170,8 @@ public class PresenceServiceImpl implements PresenceService {
     private int rapprocherJours(Set<LocalDate> jours) {
         LocalTime heureArrivee = LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_ARRIVEE", "08:00"));
         LocalTime heureSortie = LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE", "16:30"));
+        LocalTime heureSortieVendredi = LocalTime.parse(
+                presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE_VENDREDI", "14:00"));
         int tolerance = Integer.parseInt(presenceRepository.parametreTexte("PRESENCE_TOLERANCE_MIN", "15"));
         List<Map<String, Object>> personnel = presenceRepository.personnelActif();
 
@@ -182,6 +184,9 @@ public class PresenceServiceImpl implements PresenceService {
             if (jour.getDayOfWeek() == DayOfWeek.SUNDAY || feries.contains(jour)) {
                 continue; // jour non ouvré : pas de contrôle de présence
             }
+            // Purge du jour : ne garde que le personnel badgé contrôlé ci-dessous
+            presenceRepository.supprimerPresencesJour(jour);
+            LocalTime sortieDuJour = jour.getDayOfWeek() == DayOfWeek.FRIDAY ? heureSortieVendredi : heureSortie;
             Map<String, LocalTime[]> pointages = presenceRepository.pointagesDuJour(jour);
             for (Map<String, Object> agent : personnel) {
                 String matricule = String.valueOf(agent.get("matricule"));
@@ -202,7 +207,7 @@ public class PresenceServiceImpl implements PresenceService {
                     long minutesRetard = Math.max(0,
                             Duration.between(heureArrivee, p[0]).toMinutes() - tolerance);
                     long minutesDepart = Math.max(0,
-                            Duration.between(p[1], heureSortie).toMinutes() - tolerance);
+                            Duration.between(p[1], sortieDuJour).toMinutes() - tolerance);
                     String statut = minutesRetard > 0 && minutesDepart > 0 ? "RETARD_ET_DEPART"
                             : minutesRetard > 0 ? "RETARD"
                             : minutesDepart > 0 ? "DEPART_ANTICIPE"
