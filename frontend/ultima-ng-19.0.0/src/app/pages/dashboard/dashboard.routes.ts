@@ -160,6 +160,11 @@ export default [
         loadComponent: () => import('./drh/presences/presences.component').then((c) => c.PresencesComponent)
     },
     {
+        path: 'drh/mouvements',
+        data: { breadcrumb: 'Gestion des mouvements' },
+        loadComponent: () => import('./drh/mouvements/mouvements.component').then((c) => c.MouvementsComponent)
+    },
+    {
         path: 'drh/mes-permissions',
         data: { breadcrumb: 'Mes permissions sociales' },
         loadComponent: () => import('./drh/mes-permissions/mes-permissions.component').then((c) => c.MesPermissionsComponent)

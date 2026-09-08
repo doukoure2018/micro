@@ -1,0 +1,588 @@
+﻿Time,Event,Event Message,Actor User,Target User,Door,Device,Device Version,Entry/Exit,Credential,Result
+"Sep  7, 2026, 20:27:16",access.door.unlock,Access Granted (NFC),MAMADY BAH,,CRG-DOOR1,EAH 8,,exit,NFC 30cd196f(100037),ACCESS
+"Sep  7, 2026, 20:19:40",access.door.unlock,Access Granted (NFC),MAMADY BAH,,CRG-DOOR1,EAH 8,,entry,NFC 30cd196f(100037),ACCESS
+"Sep  7, 2026, 20:19:35",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,nfc,INCOMPLETE
+"Sep  7, 2026, 19:55:57",access.door.unlock,Access Granted (Face),SEKOU CAMARA,,CRG-DOOR1,EAH 8,,exit,FACE 7ED93F91,ACCESS
+"Sep  7, 2026, 19:41:06",access.door.unlock,Access Granted (Face),AICHA SYLLA,,CRG-DOOR1,EAH 8,,exit,FACE AB68BF87,ACCESS
+"Sep  7, 2026, 19:24:46",access.door.unlock,Access Granted (PIN CODE),ABDOUL KARIM TOURE,,CRG-DOOR1,EAH 8,,exit,PIN_CODE A0297600,ACCESS
+"Sep  7, 2026, 18:42:48",access.door.unlock,Access Granted (NFC),OUSMANE SYLLA,,CRG-DOOR1,EAH 8,,exit,NFC ffa82b7c(100182),ACCESS
+"Sep  7, 2026, 18:35:44",access.door.unlock,Access Granted (NFC),ALPHA SIDIBE,,CRG-DOOR1,EAH 8,,exit,NFC db605bb9(100012),ACCESS
+"Sep  7, 2026, 18:29:00",access.door.unlock,Access Granted (NFC),SAMUEL TOKPA LOUA,,CRG-DOOR1,EAH 8,,exit,NFC 68bfa517(100110),ACCESS
+"Sep  7, 2026, 17:58:49",access.door.unlock,Access Granted (NFC),FARA NOEL OUENDENO,,CRG-DOOR1,EAH 8,,exit,NFC e787ee22(100172),ACCESS
+"Sep  7, 2026, 17:56:44",access.door.unlock,Access Granted (NFC),FARA NOEL OUENDENO,,CRG-DOOR1,EAH 8,,entry,NFC e787ee22(100172),ACCESS
+"Sep  7, 2026, 17:26:38",access.door.unlock,Access Granted (NFC),THIERNO MAMADOU BAILO SOW,,CRG-DOOR1,EAH 8,,exit,NFC aaad1c2a(100033),ACCESS
+"Sep  7, 2026, 17:09:38",access.door.unlock,Access Granted (NFC),ABDOULAYE TOURE,,CRG-DOOR1,EAH 8,,exit,NFC d9e4e065(100184),ACCESS
+"Sep  7, 2026, 17:08:29",access.door.unlock,Access Granted (NFC),SIBA DELAMOU,,CRG-DOOR1,EAH 8,,exit,NFC fc86ed46(100118),ACCESS
+"Sep  7, 2026, 17:06:08",access.door.unlock,Access Granted (Face),AMADOU SADJO SIDIBE,,CRG-DOOR1,EAH 8,,exit,FACE F1404151,ACCESS
+"Sep  7, 2026, 17:04:28",access.door.unlock,Access Granted (Face),MOUSTAPHA DIALLO,,CRG-DOOR1,EAH 8,,exit,FACE 3AF20DC6,ACCESS
+"Sep  7, 2026, 17:03:16",access.door.unlock,Access Granted (NFC),HABIB DIALLO,,CRG-DOOR1,EAH 8,,exit,NFC dd66103e(100031),ACCESS
+"Sep  7, 2026, 17:02:33",access.door.unlock,Access Granted (NFC),IBRAHIMA LABE BAH,,CRG-DOOR1,EAH 8,,exit,NFC 52cb3811(100092),ACCESS
+"Sep  7, 2026, 17:00:46",access.door.unlock,Access Granted (NFC),SEKOU SIDIBE,,CRG-DOOR1,EAH 8,,exit,NFC 9f28d2a8(100087),ACCESS
+"Sep  7, 2026, 16:59:09",access.door.unlock,Access Granted (NFC),MORIBA 3 HABA,,CRG-DOOR1,EAH 8,,exit,NFC bf88cfa0(100040),ACCESS
+"Sep  7, 2026, 16:58:01",access.door.unlock,Access Granted (NFC),MAMADOU ALIOU BALDE,,CRG-DOOR1,EAH 8,,exit,NFC bccfe85a(100170),ACCESS
+"Sep  7, 2026, 16:57:58",access.door.unlock,Access Granted (NFC),Foromo Kolie,,CRG-DOOR1,EAH 8,,exit,NFC c436494e(100053),ACCESS
+"Sep  7, 2026, 16:56:23",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,exit,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 16:55:52",access.door.unlock,Access Granted (NFC),SENY CAMARA,,CRG-DOOR1,EAH 8,,exit,NFC e72f5803(100137),ACCESS
+"Sep  7, 2026, 16:50:34",access.door.unlock,Access Granted (NFC),SENY CAMARA,,CRG-DOOR1,EAH 8,,entry,NFC e72f5803(100137),ACCESS
+"Sep  7, 2026, 16:50:10",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,entry,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 16:49:48",access.door.unlock,Access Granted (NFC),MAMADOU BOBO SALL,,CRG-DOOR1,EAH 8,,exit,NFC f26d5d76(100071),ACCESS
+"Sep  7, 2026, 16:49:46",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,entry,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 16:47:06",access.door.unlock,Access Granted (NFC),DAOUDA CONDE,,CRG-DOOR1,EAH 8,,exit,NFC 6476f934(100016),ACCESS
+"Sep  7, 2026, 16:44:54",access.door.unlock,Access Granted (NFC),FATOUMATA NOBA,,CRG-DOOR1,EAH 8,,exit,NFC 813ec4a0(100052),ACCESS
+"Sep  7, 2026, 16:44:03",access.door.unlock,Access Granted (NFC),ABDOULAYE SADIO TOURE,,CRG-DOOR1,EAH 8,,exit,NFC cf763d2a(100147),ACCESS
+"Sep  7, 2026, 16:43:57",access.door.unlock,Access Granted (NFC),ALPHA OUMAROU LALBABOU DIALLO,,CRG-DOOR1,EAH 8,,exit,NFC 919346d1(100085),ACCESS
+"Sep  7, 2026, 16:43:56",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,exit,nfc,INCOMPLETE
+"Sep  7, 2026, 16:43:30",access.door.unlock,Access Granted (NFC),PAUL DELAMOU,,CRG-DOOR1,EAH 8,,exit,NFC a53e3c00(100104),ACCESS
+"Sep  7, 2026, 16:43:05",access.door.unlock,Access Granted (NFC),SALIMATOU MOUCTAR DIALLO,,CRG-DOOR1,EAH 8,,exit,NFC 2a33452d(100135),ACCESS
+"Sep  7, 2026, 16:42:52",access.door.unlock,Access Granted (NFC),ABDOULAYE SADIO TOURE,,CRG-DOOR1,EAH 8,,exit,NFC cf763d2a(100147),ACCESS
+"Sep  7, 2026, 16:42:47",access.door.unlock,Access Granted (NFC),ASSEMIEN DANIEL BENBO,,CRG-DOOR1,EAH 8,,exit,NFC af516eb5(100014),ACCESS
+"Sep  7, 2026, 16:41:28",access.door.unlock,Access Granted (NFC),SALIFOU DOUKOURE,,CRG-DOOR1,EAH 8,,exit,NFC 7b0a7258(100088),ACCESS
+"Sep  7, 2026, 16:40:18",access.door.unlock,Access Granted (NFC),SEKOU MOHAMED CONDE,,CRG-DOOR1,EAH 8,,exit,NFC f6a0965b(100117),ACCESS
+"Sep  7, 2026, 16:39:57",access.door.unlock,Access Granted (NFC),HASSANE BAH,,CRG-DOOR1,EAH 8,,exit,NFC 6e34d84e(100089),ACCESS
+"Sep  7, 2026, 16:39:18",access.door.unlock,Access Granted (NFC),KEKOURA GROVOGUI,,CRG-DOOR1,EAH 8,,exit,NFC 90da1aec(100022),ACCESS
+"Sep  7, 2026, 16:39:09",access.door.unlock,Access Granted (NFC),MAMADOU SAFAYIOU BARRY,,CRG-DOOR1,EAH 8,,exit,NFC 8a833846(100045),ACCESS
+"Sep  7, 2026, 16:38:58",access.door.unlock,Access Granted (NFC),LAMINE BAH,,CRG-DOOR1,EAH 8,,exit,NFC 420a4ff5(100116),ACCESS
+"Sep  7, 2026, 16:38:47",access.door.unlock,Access Granted (NFC),MAMADOU BAILO BAH,,CRG-DOOR1,EAH 8,,exit,NFC 9315cf9d(100072),ACCESS
+"Sep  7, 2026, 16:36:24",access.door.unlock,Access Granted (NFC),KANFELA MARA,,CRG-DOOR1,EAH 8,,exit,NFC ef6fcb7a(100021),ACCESS
+"Sep  7, 2026, 16:36:21",access.door.unlock,Access Granted (NFC),SEKOU DOUMBOUYA,,CRG-DOOR1,EAH 8,,exit,NFC 88fefcdb(100020),ACCESS
+"Sep  7, 2026, 16:35:24",access.door.unlock,Access Granted (NFC),ABOUBACAR DEMBA CAMARA,,CRG-DOOR1,EAH 8,,exit,NFC d186871a(100097),ACCESS
+"Sep  7, 2026, 16:35:16",access.door.unlock,Access Granted (NFC),IBRAHIMA PITA BAH,,CRG-DOOR1,EAH 8,,exit,NFC 40ef11e2(100111),ACCESS
+"Sep  7, 2026, 16:35:07",access.door.unlock,Access Granted (NFC),MARIAMA LAMARANA DIALLO,,CRG-DOOR1,EAH 8,,exit,NFC 62a43451(100039),ACCESS
+"Sep  7, 2026, 16:34:21",access.door.unlock,Access Granted (NFC),ALAMAKO TOURE,,CRG-DOOR1,EAH 8,,exit,NFC e94913f0(100165),ACCESS
+"Sep  7, 2026, 16:34:19",access.door.unlock,Access Granted (NFC),ODIA KOUROUMA,,CRG-DOOR1,EAH 8,,exit,NFC 71c38d3e(100032),ACCESS
+"Sep  7, 2026, 16:34:09",access.door.unlock,Access Granted (NFC),IBRAHIMA KALIL MAGASSOUBA,,CRG-DOOR1,EAH 8,,exit,NFC e214ee86(100100),ACCESS
+"Sep  7, 2026, 16:33:34",access.door.unlock,Access Granted (NFC),KADIATOU SANGARE,,CRG-DOOR1,EAH 8,,exit,NFC 3f9a9388(100018),ACCESS
+"Sep  7, 2026, 16:33:01",access.door.unlock,Access Granted (NFC),SIDIKI KEITA,,CRG-DOOR1,EAH 8,,exit,NFC cb088795(100113),ACCESS
+"Sep  7, 2026, 16:32:55",access.door.unlock,Access Granted (NFC),Abdoulaye KOÏTA,,CRG-DOOR1,EAH 8,,exit,NFC 7197e1ee(100188),ACCESS
+"Sep  7, 2026, 16:32:49",access.door.unlock,Access Granted (NFC),APPOLINE DORE,,CRG-DOOR1,EAH 8,,exit,NFC 9ad479ea(100013),ACCESS
+"Sep  7, 2026, 16:32:31",access.door.unlock,Access Granted (NFC),BINTOU DIOUBATE,,CRG-DOOR1,EAH 8,,exit,NFC fccf155b(100149),ACCESS
+"Sep  7, 2026, 16:32:29",access.door.unlock,Access Granted (NFC),SEKOU SOULEYMANE SAMPIL,,CRG-DOOR1,EAH 8,,exit,NFC 4a2fb40a(100086),ACCESS
+"Sep  7, 2026, 16:32:25",access.door.unlock,Access Granted (NFC),FANTA CAMARA,,CRG-DOOR1,EAH 8,,exit,NFC 010482f3(100057),ACCESS
+"Sep  7, 2026, 16:32:23",access.door.unlock,Access Granted (NFC),FANTA CAMARA,,CRG-DOOR1,EAH 8,,exit,NFC 010482f3(100057),ACCESS
+"Sep  7, 2026, 16:32:20",access.door.unlock,Access Granted (NFC),M'MAH CISSE,,CRG-DOOR1,EAH 8,,exit,NFC f72b5531(100183),ACCESS
+"Sep  7, 2026, 16:32:09",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,exit,nfc,INCOMPLETE
+"Sep  7, 2026, 16:31:49",access.door.unlock,Access Granted (NFC),DAVID FOROMO GOUMOU,,CRG-DOOR1,EAH 8,,exit,NFC be590f07(100017),ACCESS
+"Sep  7, 2026, 16:31:44",access.door.unlock,Access Granted (NFC),AISSATOU SAMB MANDELA,,CRG-DOOR1,EAH 8,,exit,NFC 890341c6(100174),ACCESS
+"Sep  7, 2026, 16:31:08",access.door.unlock,Access Granted (NFC),FATOUMATA BINTA DIALLO,,CRG-DOOR1,EAH 8,,exit,NFC bd156820(100055),ACCESS
+"Sep  7, 2026, 16:31:05",access.door.unlock,Access Granted (NFC),ALPHA SIDIBE,,CRG-DOOR1,EAH 8,,entry,NFC db605bb9(100012),ACCESS
+"Sep  7, 2026, 16:29:24",access.door.unlock,Access Granted (NFC),SEKOU SOULEYMANE SAMPIL,,CRG-DOOR1,EAH 8,,entry,NFC 4a2fb40a(100086),ACCESS
+"Sep  7, 2026, 16:25:48",access.door.unlock,Access Granted (NFC),VISITEUR 8,,CRG-DOOR1,EAH 8,,exit,NFC e1b670d0(100067),ACCESS
+"Sep  7, 2026, 16:24:43",access.door.unlock,Access Granted (NFC),VISITEUR 8,,CRG-DOOR1,EAH 8,,entry,NFC e1b670d0(100067),ACCESS
+"Sep  7, 2026, 16:22:44",access.door.unlock,Access Granted (NFC),MAMADOU BAILO BAH,,CRG-DOOR1,EAH 8,,entry,NFC 9315cf9d(100072),ACCESS
+"Sep  7, 2026, 16:19:26",access.door.unlock,Access Granted (NFC),VISITEUR 8,,CRG-DOOR1,EAH 8,,entry,NFC e1b670d0(100067),ACCESS
+"Sep  7, 2026, 16:18:08",access.door.unlock,Access Granted (NFC),ABDOULAYE BALDE,,CRG-DOOR1,EAH 8,,exit,NFC 01b6f024(100081),ACCESS
+"Sep  7, 2026, 16:15:39",access.door.unlock,Access Granted (NFC),ABDOULAYE BALDE,,CRG-DOOR1,EAH 8,,entry,NFC 01b6f024(100081),ACCESS
+"Sep  7, 2026, 16:12:37",access.door.unlock,Access Granted (NFC),MASSA SOUMAORO,,CRG-DOOR1,EAH 8,,exit,NFC 29819b39(100069),ACCESS
+"Sep  7, 2026, 16:12:29",access.door.unlock,Access Granted (NFC),ABDOULAYE BALDE,,CRG-DOOR1,EAH 8,,entry,NFC 01b6f024(100081),ACCESS
+"Sep  7, 2026, 16:10:26",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,exit,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 16:09:20",access.door.unlock,Access Granted (NFC),MAMADOU BAILO BAH,,CRG-DOOR1,EAH 8,,exit,NFC 9315cf9d(100072),ACCESS
+"Sep  7, 2026, 16:07:19",access.door.unlock,Access Granted (NFC),MARIAMA LAMARANA DIALLO,,CRG-DOOR1,EAH 8,,entry,NFC 62a43451(100039),ACCESS
+"Sep  7, 2026, 16:06:17",access.door.unlock,Access Granted (NFC),IBRAHIMA BARRY,,CRG-DOOR1,EAH 8,,entry,NFC 39469a4c(100185),ACCESS
+"Sep  7, 2026, 16:06:11",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 16:05:48",access.door.unlock,Access Granted (NFC),VISITEUR 8,,CRG-DOOR1,EAH 8,,entry,NFC e1b670d0(100067),ACCESS
+"Sep  7, 2026, 16:02:04",access.door.unlock,Access Granted (NFC),PAUL DELAMOU,,CRG-DOOR1,EAH 8,,entry,NFC a53e3c00(100104),ACCESS
+"Sep  7, 2026, 16:02:03",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,nfc,INCOMPLETE
+"Sep  7, 2026, 16:00:35",access.door.unlock,Access Granted (NFC),ABDOULAYE TOURE,,CRG-DOOR1,EAH 8,,entry,NFC d9e4e065(100184),ACCESS
+"Sep  7, 2026, 16:00:10",access.door.unlock,Access Granted (Face),AMADOU SADJO SIDIBE,,CRG-DOOR1,EAH 8,,entry,FACE F1404151,ACCESS
+"Sep  7, 2026, 15:58:49",access.door.unlock,Access Granted (NFC),ALPHA SIDIBE,,CRG-DOOR1,EAH 8,,exit,NFC db605bb9(100012),ACCESS
+"Sep  7, 2026, 15:58:47",access.door.unlock,Access Granted (NFC),MAMADY BAH,,CRG-DOOR1,EAH 8,,exit,NFC 30cd196f(100037),ACCESS
+"Sep  7, 2026, 15:56:05",access.door.unlock,Access Granted (NFC),ALPHA OUMAROU LALBABOU DIALLO,,CRG-DOOR1,EAH 8,,entry,NFC 919346d1(100085),ACCESS
+"Sep  7, 2026, 15:55:45",access.door.unlock,Access Granted (NFC),MAMADY BAH,,CRG-DOOR1,EAH 8,,entry,NFC 30cd196f(100037),ACCESS
+"Sep  7, 2026, 15:54:32",access.door.unlock,Access Granted (NFC),ABDOULAYE BALDE,,CRG-DOOR1,EAH 8,,entry,NFC 01b6f024(100081),ACCESS
+"Sep  7, 2026, 15:54:31",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,nfc,INCOMPLETE
+"Sep  7, 2026, 15:53:26",access.door.unlock,Access Granted (NFC),ALPHA SIDIBE,,CRG-DOOR1,EAH 8,,exit,NFC db605bb9(100012),ACCESS
+"Sep  7, 2026, 15:53:21",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,exit,nfc,INCOMPLETE
+"Sep  7, 2026, 15:52:37",access.door.unlock,Access Granted (Face),AMADOU SADJO SIDIBE,,CRG-DOOR1,EAH 8,,exit,FACE F1404151,ACCESS
+"Sep  7, 2026, 15:52:28",access.multiple_device.offline,Multiple Device Offline,Access,,,,,,,SUCCESS
+"Sep  7, 2026, 15:50:09",access.door.unlock,Access Granted (NFC),ALPHA OUMAROU LALBABOU DIALLO,,CRG-DOOR1,EAH 8,,exit,NFC 919346d1(100085),ACCESS
+"Sep  7, 2026, 15:49:59",access.door.unlock,Access Granted (NFC),IBRAHIMA SORY KOULIBALY,,CRG-DOOR1,EAH 8,,exit,NFC 381b6baa(100161),ACCESS
+"Sep  7, 2026, 15:46:17",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,exit,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 15:46:16",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,exit,nfc,INCOMPLETE
+"Sep  7, 2026, 15:44:42",access.door.unlock,Access Granted (NFC),IBRAHIMA BARRY,,CRG-DOOR1,EAH 8,,exit,NFC 39469a4c(100185),ACCESS
+"Sep  7, 2026, 15:44:38",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,exit,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 15:44:33",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,exit,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 15:44:25",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,exit,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 15:44:20",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,exit,nfc,INCOMPLETE
+"Sep  7, 2026, 15:44:15",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,exit,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 15:44:11",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,exit,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 15:43:08",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,exit,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 15:41:02",access.door.unlock,Access Granted (NFC),VISITEUR 8,,CRG-DOOR1,EAH 8,,entry,NFC e1b670d0(100067),ACCESS
+"Sep  7, 2026, 15:40:20",access.door.unlock,Access Granted (NFC),ABDOULAYE BALDE,,CRG-DOOR1,EAH 8,,entry,NFC 01b6f024(100081),ACCESS
+"Sep  7, 2026, 15:39:37",access.door.unlock,Access Granted (NFC),VISITEUR 8,,CRG-DOOR1,EAH 8,,entry,NFC e1b670d0(100067),ACCESS
+"Sep  7, 2026, 15:35:58",access.door.unlock,Access Granted (NFC),IBRAHIMA BARRY,,CRG-DOOR1,EAH 8,,entry,NFC 39469a4c(100185),ACCESS
+"Sep  7, 2026, 15:35:54",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 15:33:48",access.door.unlock,Access Granted (NFC),ABDOULAYE BALDE,,CRG-DOOR1,EAH 8,,entry,NFC 01b6f024(100081),ACCESS
+"Sep  7, 2026, 15:30:53",access.door.unlock,Access Granted (NFC),SAMUEL TOKPA LOUA,,CRG-DOOR1,EAH 8,,entry,NFC 68bfa517(100110),ACCESS
+"Sep  7, 2026, 15:27:50",access.door.unlock,Access Granted (NFC),SAMUEL TOKPA LOUA,,CRG-DOOR1,EAH 8,,exit,NFC 68bfa517(100110),ACCESS
+"Sep  7, 2026, 15:24:16",access.door.unlock,Access Granted (NFC),AISSATOU SAMB MANDELA,,CRG-DOOR1,EAH 8,,entry,NFC 890341c6(100174),ACCESS
+"Sep  7, 2026, 15:21:23",access.door.unlock,Access Granted (NFC),VISITEUR 8,,CRG-DOOR1,EAH 8,,entry,NFC e1b670d0(100067),ACCESS
+"Sep  7, 2026, 15:21:22",access.door.unlock,Access Granted (NFC),ABDOULAYE TOURE,,CRG-DOOR1,EAH 8,,exit,NFC d9e4e065(100184),ACCESS
+"Sep  7, 2026, 15:20:54",access.door.unlock,Access Granted (NFC),SIBA DELAMOU,,CRG-DOOR1,EAH 8,,exit,NFC fc86ed46(100118),ACCESS
+"Sep  7, 2026, 15:20:06",access.door.unlock,Access Granted (NFC),IBRAHIMA BARRY,,CRG-DOOR1,EAH 8,,entry,NFC 39469a4c(100185),ACCESS
+"Sep  7, 2026, 15:18:35",access.door.unlock,Access Granted (NFC),ALPHA SIDIBE,,CRG-DOOR1,EAH 8,,entry,NFC db605bb9(100012),ACCESS
+"Sep  7, 2026, 15:11:37",access.door.unlock,Access Granted (NFC),KALIL KABA,,CRG-DOOR1,EAH 8,,exit,NFC 62dc3269(100035),ACCESS
+"Sep  7, 2026, 15:10:26",access.door.unlock,Access Granted (NFC),ALPHA SIDIBE,,CRG-DOOR1,EAH 8,,exit,NFC db605bb9(100012),ACCESS
+"Sep  7, 2026, 15:10:21",access.door.unlock,Access Granted (NFC),SALIFOU DOUKOURE,,CRG-DOOR1,EAH 8,,entry,NFC 7b0a7258(100088),ACCESS
+"Sep  7, 2026, 15:08:59",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,exit,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 15:07:23",access.door.unlock,Access Granted (NFC),AMADOU TIDIANE BAH,,CRG-DOOR1,EAH 8,,exit,NFC 7d9b25d8(100099),ACCESS
+"Sep  7, 2026, 15:06:27",access.door.unlock,Access Granted (NFC),VISITEUR 8,,CRG-DOOR1,EAH 8,,entry,NFC e1b670d0(100067),ACCESS
+"Sep  7, 2026, 15:02:06",access.door.unlock,Access Granted (NFC),AMADOU TIDIANE BAH,,CRG-DOOR1,EAH 8,,entry,NFC 7d9b25d8(100099),ACCESS
+"Sep  7, 2026, 15:01:07",access.door.unlock,Access Granted (NFC),ALPHA SIDIBE,,CRG-DOOR1,EAH 8,,entry,NFC db605bb9(100012),ACCESS
+"Sep  7, 2026, 14:58:53",access.door.unlock,Access Granted (NFC),ALPHA SIDIBE,,CRG-DOOR1,EAH 8,,entry,NFC db605bb9(100012),ACCESS
+"Sep  7, 2026, 14:57:14",access.door.unlock,Access Granted (NFC),AMADOU TIDIANE BAH,,CRG-DOOR1,EAH 8,,exit,NFC 7d9b25d8(100099),ACCESS
+"Sep  7, 2026, 14:56:52",access.door.unlock,Access Granted (NFC),SEKOU MOHAMED CONDE,,CRG-DOOR1,EAH 8,,entry,NFC f6a0965b(100117),ACCESS
+"Sep  7, 2026, 14:56:50",access.door.unlock,Access Granted (NFC),SIBA DELAMOU,,CRG-DOOR1,EAH 8,,entry,NFC fc86ed46(100118),ACCESS
+"Sep  7, 2026, 14:56:44",access.door.unlock,Access Granted (NFC),ABDOULAYE TOURE,,CRG-DOOR1,EAH 8,,entry,NFC d9e4e065(100184),ACCESS
+"Sep  7, 2026, 14:56:43",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,nfc,INCOMPLETE
+"Sep  7, 2026, 14:55:43",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,exit,nfc,INCOMPLETE
+"Sep  7, 2026, 14:55:35",access.door.unlock,Access Granted (NFC),VISITEUR 8,,CRG-DOOR1,EAH 8,,exit,NFC e1b670d0(100067),ACCESS
+"Sep  7, 2026, 14:55:33",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,exit,nfc,INCOMPLETE
+"Sep  7, 2026, 14:54:45",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,entry,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 14:53:59",access.door.unlock,Access Granted (NFC),VISITEUR 8,,CRG-DOOR1,EAH 8,,exit,NFC e1b670d0(100067),ACCESS
+"Sep  7, 2026, 14:53:13",access.door.unlock,Access Granted (NFC),SALIFOU DOUKOURE,,CRG-DOOR1,EAH 8,,exit,NFC 7b0a7258(100088),ACCESS
+"Sep  7, 2026, 14:52:45",access.door.unlock,Access Granted (NFC),AMADOU TIDIANE BAH,,CRG-DOOR1,EAH 8,,entry,NFC 7d9b25d8(100099),ACCESS
+"Sep  7, 2026, 14:52:42",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,nfc,INCOMPLETE
+"Sep  7, 2026, 14:52:16",access.door.unlock,Access Granted (NFC),VISITEUR 8,,CRG-DOOR1,EAH 8,,entry,NFC e1b670d0(100067),ACCESS
+"Sep  7, 2026, 14:50:45",access.door.unlock,Access Granted (NFC),KALIL KABA,,CRG-DOOR1,EAH 8,,entry,NFC 62dc3269(100035),ACCESS
+"Sep  7, 2026, 14:50:45",access.door.unlock,Access Granted (NFC),AMADOU TIDIANE BAH,,CRG-DOOR1,EAH 8,,exit,NFC 7d9b25d8(100099),ACCESS
+"Sep  7, 2026, 14:49:23",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,exit,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 14:48:51",access.door.unlock,Access Granted (NFC),VISITEUR 8,,CRG-DOOR1,EAH 8,,entry,NFC e1b670d0(100067),ACCESS
+"Sep  7, 2026, 14:47:58",access.door.unlock,Access Granted (NFC),MARIAMA LAMARANA DIALLO,,CRG-DOOR1,EAH 8,,exit,NFC 62a43451(100039),ACCESS
+"Sep  7, 2026, 14:46:52",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,entry,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 14:45:40",access.door.unlock,Access Granted (NFC),DG CRG,,CRG-DOOR1,EAH 8,,exit,NFC 408a3153(100126),ACCESS
+"Sep  7, 2026, 14:44:43",access.door.unlock,Access Granted (NFC),IBRAHIMA BARRY,,CRG-DOOR1,EAH 8,,exit,NFC 39469a4c(100185),ACCESS
+"Sep  7, 2026, 14:44:07",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,exit,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 14:43:47",access.door.unlock,Access Granted (NFC),SEKOU SOULEYMANE SAMPIL,,CRG-DOOR1,EAH 8,,entry,NFC 4a2fb40a(100086),ACCESS
+"Sep  7, 2026, 14:42:33",access.door.unlock,Access Granted (NFC),MARIAMA LAMARANA DIALLO,,CRG-DOOR1,EAH 8,,entry,NFC 62a43451(100039),ACCESS
+"Sep  7, 2026, 14:41:02",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,exit,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 14:40:39",access.door.unlock,Access Granted (NFC),IBRAHIMA SORY KOULIBALY,,CRG-DOOR1,EAH 8,,exit,NFC 381b6baa(100161),ACCESS
+"Sep  7, 2026, 14:38:31",access.door.unlock,Access Granted (NFC),SEKOU SOULEYMANE SAMPIL,,CRG-DOOR1,EAH 8,,exit,NFC 4a2fb40a(100086),ACCESS
+"Sep  7, 2026, 14:37:28",access.door.unlock,Access Granted (NFC),HASSANE BAH,,CRG-DOOR1,EAH 8,,entry,NFC 6e34d84e(100089),ACCESS
+"Sep  7, 2026, 14:35:16",access.door.unlock,Access Granted (NFC),SEKOU DOUMBOUYA,,CRG-DOOR1,EAH 8,,entry,NFC 88fefcdb(100020),ACCESS
+"Sep  7, 2026, 14:34:59",access.door.unlock,Access Granted (NFC),SEKOU SOULEYMANE SAMPIL,,CRG-DOOR1,EAH 8,,entry,NFC 4a2fb40a(100086),ACCESS
+"Sep  7, 2026, 14:33:51",access.door.unlock,Access Granted (NFC),ABDOULAYE TOURE,,CRG-DOOR1,EAH 8,,exit,NFC d9e4e065(100184),ACCESS
+"Sep  7, 2026, 14:32:17",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,exit,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 14:26:50",access.door.unlock,Access Granted (NFC),OUSMANE SYLLA,,CRG-DOOR1,EAH 8,,entry,NFC ffa82b7c(100182),ACCESS
+"Sep  7, 2026, 14:25:02",access.door.unlock,Access Granted (NFC),IBRAHIMA BARRY,,CRG-DOOR1,EAH 8,,entry,NFC 39469a4c(100185),ACCESS
+"Sep  7, 2026, 14:24:56",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 14:24:51",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 14:23:15",access.door.unlock,Access Granted (NFC),ABDOULAYE BALDE,,CRG-DOOR1,EAH 8,,entry,NFC 01b6f024(100081),ACCESS
+"Sep  7, 2026, 14:21:52",access.door.unlock,Access Granted (NFC),IBRAHIMA BARRY,,CRG-DOOR1,EAH 8,,entry,NFC 39469a4c(100185),ACCESS
+"Sep  7, 2026, 14:21:17",access.door.unlock,Access Granted (NFC),ABDOULAYE BALDE,,CRG-DOOR1,EAH 8,,entry,NFC 01b6f024(100081),ACCESS
+"Sep  7, 2026, 14:21:10",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 14:21:06",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 14:21:02",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 14:21:01",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,nfc,INCOMPLETE
+"Sep  7, 2026, 14:20:58",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 14:20:54",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 14:20:03",access.door.unlock,Access Granted (NFC),SIBA DELAMOU,,CRG-DOOR1,EAH 8,,exit,NFC fc86ed46(100118),ACCESS
+"Sep  7, 2026, 14:19:51",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,entry,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 14:19:21",access.door.unlock,Access Granted (NFC),ABDOULAYE BALDE,,CRG-DOOR1,EAH 8,,entry,NFC 01b6f024(100081),ACCESS
+"Sep  7, 2026, 14:17:43",access.door.unlock,Access Granted (NFC),ABDOULAYE BALDE,,CRG-DOOR1,EAH 8,,entry,NFC 01b6f024(100081),ACCESS
+"Sep  7, 2026, 14:17:17",access.door.unlock,Access Granted (NFC),MAMADOU SAFAYIOU BARRY,,CRG-DOOR1,EAH 8,,entry,NFC 8a833846(100045),ACCESS
+"Sep  7, 2026, 14:17:15",access.door.unlock,Access Granted (NFC),ABDOULAYE SADIO TOURE,,CRG-DOOR1,EAH 8,,entry,NFC cf763d2a(100147),ACCESS
+"Sep  7, 2026, 14:17:09",access.door.unlock,Access Granted (NFC),HABIB DIALLO,,CRG-DOOR1,EAH 8,,entry,NFC dd66103e(100031),ACCESS
+"Sep  7, 2026, 14:15:49",access.door.unlock,Access Granted (NFC),THORON SAOULOMOU,,CRG-DOOR1,EAH 8,,exit,NFC 2ae55e6a(100107),ACCESS
+"Sep  7, 2026, 14:15:49",access.door.unlock,Access Granted (NFC),SALIFOU DOUKOURE,,CRG-DOOR1,EAH 8,,entry,NFC 7b0a7258(100088),ACCESS
+"Sep  7, 2026, 14:15:23",access.door.unlock,Access Granted (NFC),AMADOU TIDIANE BAH,,CRG-DOOR1,EAH 8,,entry,NFC 7d9b25d8(100099),ACCESS
+"Sep  7, 2026, 14:15:09",access.door.unlock,Access Granted (Face),AMADOU SADJO SIDIBE,,CRG-DOOR1,EAH 8,,entry,FACE F1404151,ACCESS
+"Sep  7, 2026, 14:14:56",access.door.unlock,Access Granted (NFC),SEKOU MOHAMED CONDE,,CRG-DOOR1,EAH 8,,exit,NFC f6a0965b(100117),ACCESS
+"Sep  7, 2026, 14:14:12",access.door.unlock,Access Granted (NFC),ABDOULAYE BALDE,,CRG-DOOR1,EAH 8,,exit,NFC 01b6f024(100081),ACCESS
+"Sep  7, 2026, 14:13:52",access.door.unlock,Access Granted (NFC),MARIAMA LAMARANA DIALLO,,CRG-DOOR1,EAH 8,,exit,NFC 62a43451(100039),ACCESS
+"Sep  7, 2026, 14:13:45",access.door.unlock,Access Granted (NFC),IBRAHIMA LABE BAH,,CRG-DOOR1,EAH 8,,entry,NFC 52cb3811(100092),ACCESS
+"Sep  7, 2026, 14:13:25",access.door.unlock,Access Granted (NFC),AMADOU TIDIANE BAH,,CRG-DOOR1,EAH 8,,exit,NFC 7d9b25d8(100099),ACCESS
+"Sep  7, 2026, 14:12:52",access.door.unlock,Access Granted (NFC),VISITEUR 8,,CRG-DOOR1,EAH 8,,exit,NFC e1b670d0(100067),ACCESS
+"Sep  7, 2026, 14:12:45",access.door.unlock,Access Granted (NFC),THORON SAOULOMOU,,CRG-DOOR1,EAH 8,,entry,NFC 2ae55e6a(100107),ACCESS
+"Sep  7, 2026, 14:12:20",access.door.unlock,Access Granted (NFC),VISITEUR 8,,CRG-DOOR1,EAH 8,,entry,NFC e1b670d0(100067),ACCESS
+"Sep  7, 2026, 14:11:55",access.door.unlock,Access Granted (NFC),ABDOULAYE BALDE,,CRG-DOOR1,EAH 8,,entry,NFC 01b6f024(100081),ACCESS
+"Sep  7, 2026, 14:10:46",access.door.unlock,Access Granted (NFC),SEKOU SIDIBE,,CRG-DOOR1,EAH 8,,entry,NFC 9f28d2a8(100087),ACCESS
+"Sep  7, 2026, 14:10:14",access.door.unlock,Access Granted (NFC),HASSANE BAH,,CRG-DOOR1,EAH 8,,exit,NFC 6e34d84e(100089),ACCESS
+"Sep  7, 2026, 14:09:08",access.door.unlock,Access Granted (NFC),IBRAHIMA SORY KOULIBALY,,CRG-DOOR1,EAH 8,,entry,NFC 381b6baa(100161),ACCESS
+"Sep  7, 2026, 14:08:50",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,exit,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 14:07:26",access.door.unlock,Access Granted (NFC),AMADOU TIDIANE BAH,,CRG-DOOR1,EAH 8,,entry,NFC 7d9b25d8(100099),ACCESS
+"Sep  7, 2026, 14:06:56",access.door.unlock,Access Granted (NFC),VISITEUR 8,,CRG-DOOR1,EAH 8,,entry,NFC e1b670d0(100067),ACCESS
+"Sep  7, 2026, 14:06:23",access.door.unlock,Access Granted (NFC),DAVID FOROMO GOUMOU,,CRG-DOOR1,EAH 8,,entry,NFC be590f07(100017),ACCESS
+"Sep  7, 2026, 14:04:59",access.door.unlock,Access Granted (NFC),SEKOU DOUMBOUYA,,CRG-DOOR1,EAH 8,,exit,NFC 88fefcdb(100020),ACCESS
+"Sep  7, 2026, 14:04:47",access.door.unlock,Access Granted (NFC),KEKOURA GROVOGUI,,CRG-DOOR1,EAH 8,,entry,NFC 90da1aec(100022),ACCESS
+"Sep  7, 2026, 14:03:47",access.door.unlock,Access Granted (NFC),VISITEUR 8,,CRG-DOOR1,EAH 8,,entry,NFC e1b670d0(100067),ACCESS
+"Sep  7, 2026, 14:02:12",access.door.unlock,Access Granted (NFC),PAUL DELAMOU,,CRG-DOOR1,EAH 8,,exit,NFC a53e3c00(100104),ACCESS
+"Sep  7, 2026, 14:01:37",access.door.unlock,Access Granted (PIN CODE),ABDOUL KARIM TOURE,,CRG-DOOR1,EAH 8,,entry,PIN_CODE A0297600,ACCESS
+"Sep  7, 2026, 14:00:59",access.door.unlock,Access Granted (NFC),OUSMANE SYLLA,,CRG-DOOR1,EAH 8,,exit,NFC ffa82b7c(100182),ACCESS
+"Sep  7, 2026, 14:00:39",access.door.unlock,Access Granted (NFC),IBRAHIMA BARRY,,CRG-DOOR1,EAH 8,,entry,NFC 39469a4c(100185),ACCESS
+"Sep  7, 2026, 14:00:36",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 14:00:34",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 13:59:42",access.door.unlock,Access Granted (NFC),Abdoulaye KOÏTA,,CRG-DOOR1,EAH 8,,entry,NFC 7197e1ee(100188),ACCESS
+"Sep  7, 2026, 13:58:41",access.door.unlock,Access Granted (NFC),SALIFOU DOUKOURE,,CRG-DOOR1,EAH 8,,exit,NFC 7b0a7258(100088),ACCESS
+"Sep  7, 2026, 13:58:26",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,entry,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 13:57:56",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,exit,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 13:57:33",access.door.unlock,Access Granted (NFC),LAMINE BAH,,CRG-DOOR1,EAH 8,,entry,NFC 420a4ff5(100116),ACCESS
+"Sep  7, 2026, 13:57:28",access.door.unlock,Access Granted (NFC),DAOUDA CONDE,,CRG-DOOR1,EAH 8,,entry,NFC 6476f934(100016),ACCESS
+"Sep  7, 2026, 13:56:44",access.door.unlock,Access Granted (NFC),ABDOULAYE BALDE,,CRG-DOOR1,EAH 8,,exit,NFC 01b6f024(100081),ACCESS
+"Sep  7, 2026, 13:56:16",access.door.unlock,Access Granted (NFC),FATOUMATA BINTA DIALLO,,CRG-DOOR1,EAH 8,,entry,NFC bd156820(100055),ACCESS
+"Sep  7, 2026, 13:54:11",access.door.unlock,Access Granted (NFC),IBRAHIMA BARRY,,CRG-DOOR1,EAH 8,,entry,NFC 39469a4c(100185),ACCESS
+"Sep  7, 2026, 13:54:07",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 13:54:01",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 13:53:58",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 13:53:54",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 13:53:52",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 13:53:51",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 13:52:17",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,exit,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 13:51:48",access.door.unlock,Access Granted (NFC),IBRAHIMA BARRY,,CRG-DOOR1,EAH 8,,exit,NFC 39469a4c(100185),ACCESS
+"Sep  7, 2026, 13:51:43",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,exit,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 13:51:36",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,exit,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 13:50:21",access.door.unlock,Access Granted (NFC),ABDOUL AZIZ CAMARA,,CRG-DOOR1,EAH 8,,exit,NFC ad9daf78(100015),ACCESS
+"Sep  7, 2026, 13:49:49",access.door.unlock,Access Granted (NFC),VISITEUR 8,,CRG-DOOR1,EAH 8,,exit,NFC e1b670d0(100067),ACCESS
+"Sep  7, 2026, 13:48:16",access.door.unlock,Access Granted (NFC),ALAMAKO TOURE,,CRG-DOOR1,EAH 8,,entry,NFC e94913f0(100165),ACCESS
+"Sep  7, 2026, 13:47:01",access.door.unlock,Access Granted (NFC),HABIB DIALLO,,CRG-DOOR1,EAH 8,,exit,NFC dd66103e(100031),ACCESS
+"Sep  7, 2026, 13:45:23",access.door.unlock,Access Granted (NFC),Abdoulaye KOÏTA,,CRG-DOOR1,EAH 8,,exit,NFC 7197e1ee(100188),ACCESS
+"Sep  7, 2026, 13:43:57",access.door.unlock,Access Granted (NFC),ABDOUL AZIZ CAMARA,,CRG-DOOR1,EAH 8,,entry,NFC ad9daf78(100015),ACCESS
+"Sep  7, 2026, 13:43:11",access.door.unlock,Access Granted (NFC),VISITEUR 8,,CRG-DOOR1,EAH 8,,entry,NFC e1b670d0(100067),ACCESS
+"Sep  7, 2026, 13:42:43",access.door.unlock,Access Granted (NFC),IBRAHIMA LABE BAH,,CRG-DOOR1,EAH 8,,exit,NFC 52cb3811(100092),ACCESS
+"Sep  7, 2026, 13:42:33",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,entry,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 13:42:05",access.door.unlock,Access Granted (NFC),IBRAHIMA PITA BAH,,CRG-DOOR1,EAH 8,,entry,NFC 40ef11e2(100111),ACCESS
+"Sep  7, 2026, 13:41:41",access.door.unlock,Access Granted (NFC),ABDOULAYE BALDE,,CRG-DOOR1,EAH 8,,exit,NFC 01b6f024(100081),ACCESS
+"Sep  7, 2026, 13:41:18",access.door.unlock,Access Granted (NFC),AMADOU TIDIANE BAH,,CRG-DOOR1,EAH 8,,entry,NFC 7d9b25d8(100099),ACCESS
+"Sep  7, 2026, 13:40:57",access.door.unlock,Access Granted (NFC),AMADOU TIDIANE BAH,,CRG-DOOR1,EAH 8,,exit,NFC 7d9b25d8(100099),ACCESS
+"Sep  7, 2026, 13:40:40",access.door.unlock,Access Granted (NFC),ABDOULAYE BALDE,,CRG-DOOR1,EAH 8,,entry,NFC 01b6f024(100081),ACCESS
+"Sep  7, 2026, 13:40:18",access.door.unlock,Access Granted (Face),AMADOU SADJO SIDIBE,,CRG-DOOR1,EAH 8,,exit,FACE F1404151,ACCESS
+"Sep  7, 2026, 13:40:09",access.door.unlock,Access Granted (NFC),AMADOU TIDIANE BAH,,CRG-DOOR1,EAH 8,,entry,NFC 7d9b25d8(100099),ACCESS
+"Sep  7, 2026, 13:40:06",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,nfc,INCOMPLETE
+"Sep  7, 2026, 13:39:47",access.door.unlock,Access Granted (NFC),AMADOU TIDIANE BAH,,CRG-DOOR1,EAH 8,,exit,NFC 7d9b25d8(100099),ACCESS
+"Sep  7, 2026, 13:39:17",access.door.unlock,Access Granted (NFC),AMADOU TIDIANE BAH,,CRG-DOOR1,EAH 8,,entry,NFC 7d9b25d8(100099),ACCESS
+"Sep  7, 2026, 13:39:06",access.door.unlock,Access Granted (NFC),AMADOU TIDIANE BAH,,CRG-DOOR1,EAH 8,,exit,NFC 7d9b25d8(100099),ACCESS
+"Sep  7, 2026, 13:38:28",access.door.unlock,Access Granted (NFC),DAVID FOROMO GOUMOU,,CRG-DOOR1,EAH 8,,exit,NFC be590f07(100017),ACCESS
+"Sep  7, 2026, 13:38:16",access.door.unlock,Access Granted (NFC),ABDOULAYE BALDE,,CRG-DOOR1,EAH 8,,exit,NFC 01b6f024(100081),ACCESS
+"Sep  7, 2026, 13:37:40",access.door.unlock,Access Granted (NFC),SENY CAMARA,,CRG-DOOR1,EAH 8,,exit,NFC e72f5803(100137),ACCESS
+"Sep  7, 2026, 13:36:37",access.door.unlock,Access Granted (NFC),ABDOULAYE BALDE,,CRG-DOOR1,EAH 8,,entry,NFC 01b6f024(100081),ACCESS
+"Sep  7, 2026, 13:35:19",access.door.unlock,Access Granted (NFC),APPOLINE DORE,,CRG-DOOR1,EAH 8,,entry,NFC 9ad479ea(100013),ACCESS
+"Sep  7, 2026, 13:35:13",access.door.unlock,Access Granted (NFC),SAMUEL TOKPA LOUA,,CRG-DOOR1,EAH 8,,entry,NFC 68bfa517(100110),ACCESS
+"Sep  7, 2026, 13:35:04",access.door.unlock,Access Granted (NFC),SAMUEL TOKPA LOUA,,CRG-DOOR1,EAH 8,,exit,NFC 68bfa517(100110),ACCESS
+"Sep  7, 2026, 13:33:38",access.door.unlock,Access Granted (NFC),VISITEUR 8,,CRG-DOOR1,EAH 8,,entry,NFC e1b670d0(100067),ACCESS
+"Sep  7, 2026, 13:32:13",access.door.unlock,Access Granted (NFC),KALIL KABA,,CRG-DOOR1,EAH 8,,exit,NFC 62dc3269(100035),ACCESS
+"Sep  7, 2026, 13:30:47",access.door.unlock,Access Granted (NFC),FATOUMATA BINTA DIALLO,,CRG-DOOR1,EAH 8,,exit,NFC bd156820(100055),ACCESS
+"Sep  7, 2026, 13:29:38",access.door.unlock,Access Granted (NFC),LAMINE BAH,,CRG-DOOR1,EAH 8,,exit,NFC 420a4ff5(100116),ACCESS
+"Sep  7, 2026, 13:29:04",access.door.unlock,Access Granted (NFC),ABDOULAYE SADIO TOURE,,CRG-DOOR1,EAH 8,,exit,NFC cf763d2a(100147),ACCESS
+"Sep  7, 2026, 13:28:23",access.door.unlock,Access Granted (NFC),SIDIKI KEITA,,CRG-DOOR1,EAH 8,,entry,NFC cb088795(100113),ACCESS
+"Sep  7, 2026, 13:28:19",access.door.unlock,Access Granted (NFC),SEKOU SIDIBE,,CRG-DOOR1,EAH 8,,exit,NFC 9f28d2a8(100087),ACCESS
+"Sep  7, 2026, 13:28:04",access.door.unlock,Access Granted (NFC),KALIL KABA,,CRG-DOOR1,EAH 8,,entry,NFC 62dc3269(100035),ACCESS
+"Sep  7, 2026, 13:26:26",access.door.unlock,Access Granted (NFC),DAOUDA CONDE,,CRG-DOOR1,EAH 8,,exit,NFC 6476f934(100016),ACCESS
+"Sep  7, 2026, 13:23:50",access.door.unlock,Access Granted (NFC),KEKOURA GROVOGUI,,CRG-DOOR1,EAH 8,,exit,NFC 90da1aec(100022),ACCESS
+"Sep  7, 2026, 13:22:18",access.door.unlock,Access Granted (NFC),IBRAHIMA LABE BAH,,CRG-DOOR1,EAH 8,,entry,NFC 52cb3811(100092),ACCESS
+"Sep  7, 2026, 13:21:50",access.door.unlock,Access Granted (PIN CODE),DG CRG,,CRG-DOOR1,EAH 8,,exit,PIN_CODE 0DD22F1A,ACCESS
+"Sep  7, 2026, 13:21:45",access.door.unlock,Access Denied / Unknown (PIN_CODE),N/A,,CRG-DOOR1,EAH 8,,exit,PIN_CODE 0200,BLOCKED
+"Sep  7, 2026, 13:21:19",access.door.unlock,Access Granted (NFC),IBRAHIMA SORY KOULIBALY,,CRG-DOOR1,EAH 8,,exit,NFC 381b6baa(100161),ACCESS
+"Sep  7, 2026, 13:21:17",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,exit,nfc,INCOMPLETE
+"Sep  7, 2026, 13:21:13",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,exit,nfc,INCOMPLETE
+"Sep  7, 2026, 13:21:11",access.door.unlock,UNKNOWN CODE 109,IBRAHIMA SORY KOULIBALY,,CRG-DOOR1,EAH 8,,exit,NFC 381b6baa(100161),BLOCKED
+"Sep  7, 2026, 13:19:26",access.door.unlock,Access Granted (Face),AMADOU SADJO SIDIBE,,CRG-DOOR1,EAH 8,,entry,FACE F1404151,ACCESS
+"Sep  7, 2026, 13:18:57",access.door.unlock,Access Granted (NFC),VISITEUR 8,,CRG-DOOR1,EAH 8,,entry,NFC e1b670d0(100067),ACCESS
+"Sep  7, 2026, 13:16:15",access.door.unlock,Access Granted (NFC),SOULEYMANE BOCOUM,,CRG-DOOR1,EAH 8,,exit,NFC 3f8c18bb(100124),ACCESS
+"Sep  7, 2026, 13:15:59",access.door.unlock,Access Granted (NFC),MAMADY BAH,,CRG-DOOR1,EAH 8,,exit,NFC 30cd196f(100037),ACCESS
+"Sep  7, 2026, 13:15:20",access.door.unlock,Access Granted (NFC),ABDOULAYE BALDE,,CRG-DOOR1,EAH 8,,entry,NFC 01b6f024(100081),ACCESS
+"Sep  7, 2026, 13:14:51",access.door.unlock,Access Granted (NFC),MAMADY BAH,,CRG-DOOR1,EAH 8,,entry,NFC 30cd196f(100037),ACCESS
+"Sep  7, 2026, 13:12:01",access.door.unlock,Access Granted (NFC),IBRAHIMA BARRY,,CRG-DOOR1,EAH 8,,exit,NFC 39469a4c(100185),ACCESS
+"Sep  7, 2026, 13:11:56",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,exit,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 13:11:49",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,exit,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 13:11:30",access.door.unlock,Access Granted (NFC),SIDIKI KEITA,,CRG-DOOR1,EAH 8,,exit,NFC cb088795(100113),ACCESS
+"Sep  7, 2026, 13:11:05",access.door.unlock,Access Granted (NFC),MAMADOU SAFAYIOU BARRY,,CRG-DOOR1,EAH 8,,exit,NFC 8a833846(100045),ACCESS
+"Sep  7, 2026, 13:10:18",access.door.unlock,Access Granted (NFC),THORON SAOULOMOU,,CRG-DOOR1,EAH 8,,exit,NFC 2ae55e6a(100107),ACCESS
+"Sep  7, 2026, 13:10:07",access.door.unlock,Access Granted (NFC),APPOLINE DORE,,CRG-DOOR1,EAH 8,,exit,NFC 9ad479ea(100013),ACCESS
+"Sep  7, 2026, 13:08:50",access.door.unlock,Access Granted (NFC),AMADOU TIDIANE BAH,,CRG-DOOR1,EAH 8,,entry,NFC 7d9b25d8(100099),ACCESS
+"Sep  7, 2026, 13:07:59",access.door.unlock,Access Granted (NFC),ABDOULAYE BALDE,,CRG-DOOR1,EAH 8,,exit,NFC 01b6f024(100081),ACCESS
+"Sep  7, 2026, 13:05:44",access.door.unlock,Access Granted (NFC),ABOUBACAR SOUMAORO,,CRG-DOOR1,EAH 8,,exit,NFC e700e974(100076),ACCESS
+"Sep  7, 2026, 13:05:41",access.door.unlock,Access Granted (NFC),IBRAHIMA PITA BAH,,CRG-DOOR1,EAH 8,,exit,NFC 40ef11e2(100111),ACCESS
+"Sep  7, 2026, 13:03:17",access.door.unlock,Access Granted (Face),SEKOU CAMARA,,CRG-DOOR1,EAH 8,,exit,FACE 7ED93F91,ACCESS
+"Sep  7, 2026, 13:02:46",access.door.unlock,Access Granted (NFC),THORON SAOULOMOU,,CRG-DOOR1,EAH 8,,entry,NFC 2ae55e6a(100107),ACCESS
+"Sep  7, 2026, 13:02:43",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,nfc,INCOMPLETE
+"Sep  7, 2026, 13:02:10",access.door.unlock,Access Granted (Face),AMADOU SADJO SIDIBE,,CRG-DOOR1,EAH 8,,exit,FACE F1404151,ACCESS
+"Sep  7, 2026, 13:01:36",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,exit,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 13:00:31",access.door.unlock,Access Granted (NFC),SOULEYMANE BOCOUM,,CRG-DOOR1,EAH 8,,entry,NFC 3f8c18bb(100124),ACCESS
+"Sep  7, 2026, 12:59:50",access.door.unlock,Access Granted (NFC),VISITEUR 8,,CRG-DOOR1,EAH 8,,exit,NFC e1b670d0(100067),ACCESS
+"Sep  7, 2026, 12:59:45",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,exit,nfc,INCOMPLETE
+"Sep  7, 2026, 12:58:55",access.door.unlock,Access Granted (NFC),ABOUBACAR SOUMAORO,,CRG-DOOR1,EAH 8,,entry,NFC e700e974(100076),ACCESS
+"Sep  7, 2026, 12:58:17",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 12:57:24",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,exit,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 12:54:42",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 12:53:33",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,exit,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 12:51:46",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 12:51:06",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 12:49:11",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 12:49:07",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,nfc,INCOMPLETE
+"Sep  7, 2026, 12:45:43",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 12:44:54",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,entry,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 12:44:54",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,entry,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 12:43:42",access.door.unlock,Access Granted (NFC),IBRAHIMA LABE BAH,,CRG-DOOR1,EAH 8,,exit,NFC 52cb3811(100092),ACCESS
+"Sep  7, 2026, 12:39:32",access.door.unlock,Access Granted (NFC),ALAMAKO TOURE,,CRG-DOOR1,EAH 8,,exit,NFC e94913f0(100165),ACCESS
+"Sep  7, 2026, 12:34:57",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 12:30:01",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,exit,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 12:29:13",access.door.unlock,Access Granted (NFC),IBRAHIMA BARRY,,CRG-DOOR1,EAH 8,,exit,NFC 39469a4c(100185),ACCESS
+"Sep  7, 2026, 12:28:48",access.door.unlock,Access Granted (PIN CODE),DG CRG,,CRG-DOOR1,EAH 8,,entry,PIN_CODE 0DD22F1A,ACCESS
+"Sep  7, 2026, 12:28:43",access.door.unlock,Access Denied / Unknown (PIN_CODE),N/A,,CRG-DOOR1,EAH 8,,entry,PIN_CODE 0909,BLOCKED
+"Sep  7, 2026, 12:27:36",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,exit,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 12:27:25",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 12:26:48",access.door.unlock,Access Granted (NFC),ALPHA SIDIBE,,CRG-DOOR1,EAH 8,,entry,NFC db605bb9(100012),ACCESS
+"Sep  7, 2026, 12:24:58",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 12:24:32",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 12:23:37",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 12:20:07",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,entry,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 12:19:54",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 12:19:21",access.door.unlock,Access Granted (NFC),ALPHA SIDIBE,,CRG-DOOR1,EAH 8,,exit,NFC db605bb9(100012),ACCESS
+"Sep  7, 2026, 12:17:49",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 12:17:44",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,nfc,INCOMPLETE
+"Sep  7, 2026, 12:15:21",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 12:14:23",access.door.unlock,Access Granted (NFC),ABOUBACAR SOUMAORO,,CRG-DOOR1,EAH 8,,exit,NFC e700e974(100076),ACCESS
+"Sep  7, 2026, 12:12:49",access.door.unlock,Access Granted (NFC),IBRAHIMA BARRY,,CRG-DOOR1,EAH 8,,entry,NFC 39469a4c(100185),ACCESS
+"Sep  7, 2026, 12:08:45",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 12:05:40",access.door.unlock,Access Granted (NFC),IBRAHIMA SORY KOULIBALY,,CRG-DOOR1,EAH 8,,entry,NFC 381b6baa(100161),ACCESS
+"Sep  7, 2026, 12:04:59",access.door.unlock,Access Granted (NFC),MAMADOU ALIOU BARRY,,CRG-DOOR1,EAH 8,,exit,NFC 5f4b4160(100042),ACCESS
+"Sep  7, 2026, 12:04:06",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 12:02:31",access.door.unlock,Access Granted (NFC),MAMADOU ALIOU BARRY,,CRG-DOOR1,EAH 8,,entry,NFC 5f4b4160(100042),ACCESS
+"Sep  7, 2026, 12:02:10",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,exit,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 12:01:49",access.door.unlock,Access Granted (NFC),MAMADOU ALIOU BARRY,,CRG-DOOR1,EAH 8,,exit,NFC 5f4b4160(100042),ACCESS
+"Sep  7, 2026, 12:00:01",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 11:56:55",access.door.unlock,Access Granted (NFC),MAMADOU ALIOU BARRY,,CRG-DOOR1,EAH 8,,entry,NFC 5f4b4160(100042),ACCESS
+"Sep  7, 2026, 11:52:51",access.door.unlock,Access Granted (NFC),IBRAHIMA SORY KOULIBALY,,CRG-DOOR1,EAH 8,,exit,NFC 381b6baa(100161),ACCESS
+"Sep  7, 2026, 11:52:49",access.door.unlock,UNKNOWN CODE 109,IBRAHIMA SORY KOULIBALY,,CRG-DOOR1,EAH 8,,exit,NFC 381b6baa(100161),BLOCKED
+"Sep  7, 2026, 11:47:58",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,entry,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 11:46:48",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 11:46:11",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,exit,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 11:45:29",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 11:45:23",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,nfc,INCOMPLETE
+"Sep  7, 2026, 11:44:58",access.door.unlock,Access Granted (NFC),ALPHA SIDIBE,,CRG-DOOR1,EAH 8,,entry,NFC db605bb9(100012),ACCESS
+"Sep  7, 2026, 11:44:54",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,nfc,INCOMPLETE
+"Sep  7, 2026, 11:36:59",access.door.unlock,Access Granted (NFC),MAMADOU ALIOU BARRY,,CRG-DOOR1,EAH 8,,exit,NFC 5f4b4160(100042),ACCESS
+"Sep  7, 2026, 11:34:47",access.door.unlock,Access Granted (NFC),ALPHA SIDIBE,,CRG-DOOR1,EAH 8,,exit,NFC db605bb9(100012),ACCESS
+"Sep  7, 2026, 11:29:48",access.door.unlock,Access Granted (NFC),MAMADOU ALIOU BARRY,,CRG-DOOR1,EAH 8,,entry,NFC 5f4b4160(100042),ACCESS
+"Sep  7, 2026, 11:26:16",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,exit,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 11:25:03",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 11:24:27",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 11:16:45",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 11:13:56",access.door.unlock,Access Granted (NFC),MAMADOU DIAN BAH,,CRG-DOOR1,EAH 8,,exit,NFC 1a1c2586(100084),ACCESS
+"Sep  7, 2026, 11:11:29",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 11:11:28",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,nfc,INCOMPLETE
+"Sep  7, 2026, 11:10:04",access.door.unlock,Access Granted (NFC),MAMADOU DIAN BAH,,CRG-DOOR1,EAH 8,,entry,NFC 1a1c2586(100084),ACCESS
+"Sep  7, 2026, 10:57:13",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 10:50:41",access.door.unlock,Access Granted (NFC),Abdoulaye KOÏTA,,CRG-DOOR1,EAH 8,,entry,NFC 7197e1ee(100188),ACCESS
+"Sep  7, 2026, 10:50:27",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 10:47:51",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,exit,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 10:46:13",access.door.unlock,Access Granted (NFC),ABOUBACAR SOUMAORO,,CRG-DOOR1,EAH 8,,entry,NFC e700e974(100076),ACCESS
+"Sep  7, 2026, 10:42:41",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 10:42:16",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 10:39:26",access.door.unlock,Access Granted (NFC),KALIL KABA,,CRG-DOOR1,EAH 8,,exit,NFC 62dc3269(100035),ACCESS
+"Sep  7, 2026, 10:38:32",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 10:34:48",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 10:34:44",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,nfc,INCOMPLETE
+"Sep  7, 2026, 10:32:41",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,exit,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 10:32:04",access.door.unlock,Access Granted (NFC),MAMADOU ALIOU BARRY,,CRG-DOOR1,EAH 8,,entry,NFC 5f4b4160(100042),ACCESS
+"Sep  7, 2026, 10:31:06",access.door.unlock,Access Granted (NFC),CAMARA SEKOU,,CRG-DOOR1,EAH 8,,exit,NFC e49984a4(100029),ACCESS
+"Sep  7, 2026, 10:31:04",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,exit,nfc,INCOMPLETE
+"Sep  7, 2026, 10:30:52",access.door.unlock,Access Granted (NFC),CAMARA SEKOU,,CRG-DOOR1,EAH 8,,entry,NFC e49984a4(100029),ACCESS
+"Sep  7, 2026, 10:30:18",access.door.unlock,Access Granted (NFC),KALIL KABA,,CRG-DOOR1,EAH 8,,entry,NFC 62dc3269(100035),ACCESS
+"Sep  7, 2026, 10:27:59",access.door.unlock,Access Granted (NFC),IBRAHIMA SORY KOULIBALY,,CRG-DOOR1,EAH 8,,entry,NFC 381b6baa(100161),ACCESS
+"Sep  7, 2026, 10:27:56",access.door.unlock,UNKNOWN CODE 109,IBRAHIMA SORY KOULIBALY,,CRG-DOOR1,EAH 8,,entry,NFC 381b6baa(100161),BLOCKED
+"Sep  7, 2026, 10:27:54",access.door.unlock,UNKNOWN CODE 109,IBRAHIMA SORY KOULIBALY,,CRG-DOOR1,EAH 8,,entry,NFC 381b6baa(100161),BLOCKED
+"Sep  7, 2026, 10:27:18",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 10:22:39",access.door.unlock,Access Granted (NFC),Abdoulaye KOÏTA,,CRG-DOOR1,EAH 8,,exit,NFC 7197e1ee(100188),ACCESS
+"Sep  7, 2026, 10:20:00",access.door.unlock,Access Granted (NFC),MAMADOU ALIOU BARRY,,CRG-DOOR1,EAH 8,,exit,NFC 5f4b4160(100042),ACCESS
+"Sep  7, 2026, 10:19:12",access.door.unlock,Access Granted (NFC),BINTOU DIOUBATE,,CRG-DOOR1,EAH 8,,entry,NFC fccf155b(100149),ACCESS
+"Sep  7, 2026, 10:18:27",access.door.unlock,Access Granted (NFC),MAMADOU ALIOU BARRY,,CRG-DOOR1,EAH 8,,entry,NFC 5f4b4160(100042),ACCESS
+"Sep  7, 2026, 10:15:03",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 10:12:36",access.door.unlock,Access Granted (NFC),BINTOU DIOUBATE,,CRG-DOOR1,EAH 8,,exit,NFC fccf155b(100149),ACCESS
+"Sep  7, 2026, 10:09:14",access.door.unlock,Access Granted (NFC),CAMARA SEKOU,,CRG-DOOR1,EAH 8,,exit,NFC e49984a4(100029),ACCESS
+"Sep  7, 2026, 10:08:04",access.door.unlock,Access Granted (NFC),FARA NOEL OUENDENO,,CRG-DOOR1,EAH 8,,exit,NFC e787ee22(100172),ACCESS
+"Sep  7, 2026, 09:55:53",access.door.unlock,Access Granted (NFC),ASSEMIEN DANIEL BENBO,,CRG-DOOR1,EAH 8,,entry,NFC af516eb5(100014),ACCESS
+"Sep  7, 2026, 09:53:10",access.door.unlock,Access Granted (NFC),CAMARA SEKOU,,CRG-DOOR1,EAH 8,,entry,NFC e49984a4(100029),ACCESS
+"Sep  7, 2026, 09:50:49",access.door.unlock,Access Granted (NFC),FARA NOEL OUENDENO,,CRG-DOOR1,EAH 8,,entry,NFC e787ee22(100172),ACCESS
+"Sep  7, 2026, 09:50:03",access.door.unlock,Access Granted (NFC),MAMADOU ALIOU BARRY,,CRG-DOOR1,EAH 8,,exit,NFC 5f4b4160(100042),ACCESS
+"Sep  7, 2026, 09:49:15",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 09:48:56",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,nfc,INCOMPLETE
+"Sep  7, 2026, 09:45:17",access.door.unlock,Access Granted (NFC),FATOUMATA NOBA,,CRG-DOOR1,EAH 8,,entry,NFC 813ec4a0(100052),ACCESS
+"Sep  7, 2026, 09:45:14",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,nfc,INCOMPLETE
+"Sep  7, 2026, 09:45:03",access.door.unlock,Access Granted (NFC),MAMADOU ALIOU BARRY,,CRG-DOOR1,EAH 8,,entry,NFC 5f4b4160(100042),ACCESS
+"Sep  7, 2026, 09:43:15",access.door.unlock,Access Granted (NFC),CAMARA SEKOU,,CRG-DOOR1,EAH 8,,exit,NFC e49984a4(100029),ACCESS
+"Sep  7, 2026, 09:39:43",access.door.unlock,Access Granted (NFC),ASSEMIEN DANIEL BENBO,,CRG-DOOR1,EAH 8,,exit,NFC af516eb5(100014),ACCESS
+"Sep  7, 2026, 09:38:25",access.door.unlock,Access Granted (NFC),DAOUDA CONDE,,CRG-DOOR1,EAH 8,,entry,NFC 6476f934(100016),ACCESS
+"Sep  7, 2026, 09:37:26",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 09:37:24",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,nfc,INCOMPLETE
+"Sep  7, 2026, 09:36:11",access.door.unlock,Access Granted (NFC),ABOUBACAR DEMBA CAMARA,,CRG-DOOR1,EAH 8,,entry,NFC d186871a(100097),ACCESS
+"Sep  7, 2026, 09:34:00",access.door.unlock,Access Granted (NFC),SEKOU SIDIBE,,CRG-DOOR1,EAH 8,,entry,NFC 9f28d2a8(100087),ACCESS
+"Sep  7, 2026, 09:29:48",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 09:26:32",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 09:24:35",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 09:24:09",access.door.unlock,Access Granted (NFC),MAMADY BAH,,CRG-DOOR1,EAH 8,,exit,NFC 30cd196f(100037),ACCESS
+"Sep  7, 2026, 09:22:48",access.door.unlock,Access Granted (NFC),AMADOU TIDIANE BAH,,CRG-DOOR1,EAH 8,,exit,NFC 7d9b25d8(100099),ACCESS
+"Sep  7, 2026, 09:20:52",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 09:20:21",access.door.unlock,Access Granted (NFC),IBRAHIMA BARRY,,CRG-DOOR1,EAH 8,,exit,NFC 39469a4c(100185),ACCESS
+"Sep  7, 2026, 09:19:06",access.door.unlock,Access Granted (NFC),ALPHA OUMAROU LALBABOU DIALLO,,CRG-DOOR1,EAH 8,,entry,NFC 919346d1(100085),ACCESS
+"Sep  7, 2026, 09:18:52",access.door.unlock,Access Granted (NFC),MAMADY BAH,,CRG-DOOR1,EAH 8,,entry,NFC 30cd196f(100037),ACCESS
+"Sep  7, 2026, 09:18:48",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,nfc,INCOMPLETE
+"Sep  7, 2026, 09:17:52",access.door.unlock,Access Granted (NFC),SEKOU SIDIBE,,CRG-DOOR1,EAH 8,,exit,NFC 9f28d2a8(100087),ACCESS
+"Sep  7, 2026, 09:17:19",access.door.unlock,Access Granted (NFC),CAMARA SEKOU,,CRG-DOOR1,EAH 8,,entry,NFC e49984a4(100029),ACCESS
+"Sep  7, 2026, 09:16:44",access.door.unlock,Access Granted (NFC),MAMADOU ALIOU BARRY,,CRG-DOOR1,EAH 8,,exit,NFC 5f4b4160(100042),ACCESS
+"Sep  7, 2026, 09:16:16",access.door.unlock,Access Granted (NFC),SALIFOU DOUKOURE,,CRG-DOOR1,EAH 8,,entry,NFC 7b0a7258(100088),ACCESS
+"Sep  7, 2026, 09:15:51",access.door.unlock,Access Granted (Face),AMADOU SADJO SIDIBE,,CRG-DOOR1,EAH 8,,entry,FACE F1404151,ACCESS
+"Sep  7, 2026, 09:15:13",access.door.unlock,Access Granted (NFC),CAMARA SEKOU,,CRG-DOOR1,EAH 8,,exit,NFC e49984a4(100029),ACCESS
+"Sep  7, 2026, 09:15:05",access.door.unlock,Access Granted (NFC),IBRAHIMA BARRY,,CRG-DOOR1,EAH 8,,entry,NFC 39469a4c(100185),ACCESS
+"Sep  7, 2026, 09:15:00",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 09:13:23",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 09:11:56",access.door.unlock,Access Granted (NFC),MAMADOU ALIOU BARRY,,CRG-DOOR1,EAH 8,,entry,NFC 5f4b4160(100042),ACCESS
+"Sep  7, 2026, 09:11:15",access.door.unlock,Access Granted (NFC),DAOUDA CONDE,,CRG-DOOR1,EAH 8,,exit,NFC 6476f934(100016),ACCESS
+"Sep  7, 2026, 09:08:30",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,entry,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 09:08:29",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,nfc,INCOMPLETE
+"Sep  7, 2026, 09:04:32",access.door.unlock,Access Granted (NFC),ALPHA SIDIBE,,CRG-DOOR1,EAH 8,,entry,NFC db605bb9(100012),ACCESS
+"Sep  7, 2026, 09:04:22",access.door.unlock,Access Granted (NFC),VISITEUR 8,,CRG-DOOR1,EAH 8,,exit,NFC e1b670d0(100067),ACCESS
+"Sep  7, 2026, 09:03:49",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 09:03:14",access.door.unlock,Access Granted (NFC),ABOUBACAR DEMBA CAMARA,,CRG-DOOR1,EAH 8,,exit,NFC d186871a(100097),ACCESS
+"Sep  7, 2026, 09:03:04",access.door.unlock,Access Granted (NFC),IBRAHIMA SORY KOULIBALY,,CRG-DOOR1,EAH 8,,exit,NFC 381b6baa(100161),ACCESS
+"Sep  7, 2026, 09:03:02",access.door.unlock,UNKNOWN CODE 109,IBRAHIMA SORY KOULIBALY,,CRG-DOOR1,EAH 8,,exit,NFC 381b6baa(100161),BLOCKED
+"Sep  7, 2026, 09:03:00",access.door.unlock,UNKNOWN CODE 109,IBRAHIMA SORY KOULIBALY,,CRG-DOOR1,EAH 8,,exit,NFC 381b6baa(100161),BLOCKED
+"Sep  7, 2026, 09:02:45",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 09:01:08",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,exit,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 09:00:57",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,exit,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 09:00:56",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,exit,nfc,INCOMPLETE
+"Sep  7, 2026, 08:59:41",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 08:59:20",access.door.unlock,Access Granted (NFC),SENY CAMARA,,CRG-DOOR1,EAH 8,,entry,NFC e72f5803(100137),ACCESS
+"Sep  7, 2026, 08:58:19",access.door.unlock,Access Granted (NFC),SALIFOU DOUKOURE,,CRG-DOOR1,EAH 8,,exit,NFC 7b0a7258(100088),ACCESS
+"Sep  7, 2026, 08:58:08",access.door.unlock,Access Granted (NFC),IBRAHIMA SORY KOULIBALY,,CRG-DOOR1,EAH 8,,entry,NFC 381b6baa(100161),ACCESS
+"Sep  7, 2026, 08:56:25",access.door.unlock,Access Granted (NFC),KALIL KABA,,CRG-DOOR1,EAH 8,,exit,NFC 62dc3269(100035),ACCESS
+"Sep  7, 2026, 08:56:21",access.door.unlock,Access Granted (NFC),IBRAHIMA SORY KOULIBALY,,CRG-DOOR1,EAH 8,,exit,NFC 381b6baa(100161),ACCESS
+"Sep  7, 2026, 08:56:04",access.door.unlock,Access Granted (NFC),ALPHA SIDIBE,,CRG-DOOR1,EAH 8,,exit,NFC db605bb9(100012),ACCESS
+"Sep  7, 2026, 08:54:17",access.door.unlock,Access Granted (NFC),ABDOULAYE TOURE,,CRG-DOOR1,EAH 8,,entry,NFC d9e4e065(100184),ACCESS
+"Sep  7, 2026, 08:54:10",access.door.unlock,Access Granted (NFC),HASSANE BAH,,CRG-DOOR1,EAH 8,,entry,NFC 6e34d84e(100089),ACCESS
+"Sep  7, 2026, 08:52:34",access.door.unlock,Access Granted (NFC),KALIL KABA,,CRG-DOOR1,EAH 8,,entry,NFC 62dc3269(100035),ACCESS
+"Sep  7, 2026, 08:52:25",access.door.unlock,Access Granted (NFC),SENY CAMARA,,CRG-DOOR1,EAH 8,,exit,NFC e72f5803(100137),ACCESS
+"Sep  7, 2026, 08:51:04",access.door.unlock,Access Granted (NFC),KADIATOU SANGARE,,CRG-DOOR1,EAH 8,,entry,NFC 3f9a9388(100018),ACCESS
+"Sep  7, 2026, 08:50:40",access.door.unlock,Access Granted (NFC),VISITEUR 8,,CRG-DOOR1,EAH 8,,exit,NFC e1b670d0(100067),ACCESS
+"Sep  7, 2026, 08:50:18",access.door.unlock,Access Granted (NFC),VISITEUR 7,,CRG-DOOR1,EAH 8,,entry,NFC e92e66db(100066),ACCESS
+"Sep  7, 2026, 08:48:08",access.door.unlock,Access Granted (NFC),VISITEUR 8,,CRG-DOOR1,EAH 8,,entry,NFC e1b670d0(100067),ACCESS
+"Sep  7, 2026, 08:43:18",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,exit,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 08:42:58",access.door.unlock,Access Granted (NFC),OUSMANE SYLLA,,CRG-DOOR1,EAH 8,,exit,NFC ffa82b7c(100182),ACCESS
+"Sep  7, 2026, 08:41:30",access.door.unlock,Access Granted (NFC),HABIB DIALLO,,CRG-DOOR1,EAH 8,,entry,NFC dd66103e(100031),ACCESS
+"Sep  7, 2026, 08:40:59",access.door.unlock,Access Granted (Face),SEKOU CAMARA,,CRG-DOOR1,EAH 8,,entry,FACE 7ED93F91,ACCESS
+"Sep  7, 2026, 08:40:48",access.door.unlock,Access Granted (Face),SEKOU CAMARA,,CRG-DOOR1,EAH 8,,exit,FACE 7ED93F91,ACCESS
+"Sep  7, 2026, 08:40:29",access.door.unlock,Access Granted (Face),SEKOU CAMARA,,CRG-DOOR1,EAH 8,,entry,FACE 7ED93F91,ACCESS
+"Sep  7, 2026, 08:40:12",access.door.unlock,Access Granted (Face),SEKOU CAMARA,,CRG-DOOR1,EAH 8,,exit,FACE 7ED93F91,ACCESS
+"Sep  7, 2026, 08:38:15",access.door.unlock,Access Granted (NFC),SENY CAMARA,,CRG-DOOR1,EAH 8,,entry,NFC e72f5803(100137),ACCESS
+"Sep  7, 2026, 08:37:46",access.door.unlock,Access Granted (NFC),YOUSSOUF DECAZY CAMARA,,CRG-DOOR1,EAH 8,,exit,NFC de591e41(100134),ACCESS
+"Sep  7, 2026, 08:36:39",access.door.unlock,Access Granted (NFC),SAMUEL TOKPA LOUA,,CRG-DOOR1,EAH 8,,entry,NFC 68bfa517(100110),ACCESS
+"Sep  7, 2026, 08:35:27",access.door.unlock,Access Granted (NFC),SEKOU SOULEYMANE SAMPIL,,CRG-DOOR1,EAH 8,,entry,NFC 4a2fb40a(100086),ACCESS
+"Sep  7, 2026, 08:34:59",access.door.unlock,Access Granted (NFC),ABDOULAYE SADIO TOURE,,CRG-DOOR1,EAH 8,,entry,NFC cf763d2a(100147),ACCESS
+"Sep  7, 2026, 08:34:45",access.door.unlock,Access Granted (NFC),ABDOULAYE BALDE,,CRG-DOOR1,EAH 8,,exit,NFC 01b6f024(100081),ACCESS
+"Sep  7, 2026, 08:32:35",access.door.unlock,Access Granted (NFC),ABDOULAYE BALDE,,CRG-DOOR1,EAH 8,,entry,NFC 01b6f024(100081),ACCESS
+"Sep  7, 2026, 08:30:49",access.door.unlock,Access Granted (NFC),ALPHA SIDIBE,,CRG-DOOR1,EAH 8,,entry,NFC db605bb9(100012),ACCESS
+"Sep  7, 2026, 08:28:49",access.door.unlock,Access Granted (NFC),YOUSSOUF DECAZY CAMARA,,CRG-DOOR1,EAH 8,,entry,NFC de591e41(100134),ACCESS
+"Sep  7, 2026, 08:28:20",access.door.unlock,Access Granted (NFC),ABDOULAYE TOURE,,CRG-DOOR1,EAH 8,,exit,NFC d9e4e065(100184),ACCESS
+"Sep  7, 2026, 08:27:58",access.door.unlock,Access Granted (NFC),HASSANE BAH,,CRG-DOOR1,EAH 8,,exit,NFC 6e34d84e(100089),ACCESS
+"Sep  7, 2026, 08:27:26",access.door.unlock,Access Granted (NFC),MAMADOU ALIOU BARRY,,CRG-DOOR1,EAH 8,,exit,NFC 5f4b4160(100042),ACCESS
+"Sep  7, 2026, 08:24:04",access.door.unlock,Access Granted (NFC),VISITEUR 8,,CRG-DOOR1,EAH 8,,entry,NFC e1b670d0(100067),ACCESS
+"Sep  7, 2026, 08:21:51",access.door.unlock,Access Granted (NFC),ABOUBACAR DEMBA CAMARA,,CRG-DOOR1,EAH 8,,entry,NFC d186871a(100097),ACCESS
+"Sep  7, 2026, 08:21:29",access.door.unlock,Access Granted (NFC),MAMADOU ALIOU BARRY,,CRG-DOOR1,EAH 8,,entry,NFC 5f4b4160(100042),ACCESS
+"Sep  7, 2026, 08:20:50",access.door.unlock,Access Granted (Face),AMADOU SADJO SIDIBE,,CRG-DOOR1,EAH 8,,exit,FACE F1404151,ACCESS
+"Sep  7, 2026, 08:20:47",access.door.unlock,Access Granted (NFC),FANTA CAMARA,,CRG-DOOR1,EAH 8,,entry,NFC 010482f3(100057),ACCESS
+"Sep  7, 2026, 08:20:00",access.door.unlock,Access Granted (NFC),MAMADOU SAFAYIOU BARRY,,CRG-DOOR1,EAH 8,,entry,NFC 8a833846(100045),ACCESS
+"Sep  7, 2026, 08:19:18",access.door.unlock,Access Granted (NFC),IBRAHIMA LABE BAH,,CRG-DOOR1,EAH 8,,entry,NFC 52cb3811(100092),ACCESS
+"Sep  7, 2026, 08:19:13",access.door.unlock,Access Granted (NFC),SAMUEL TOKPA LOUA,,CRG-DOOR1,EAH 8,,exit,NFC 68bfa517(100110),ACCESS
+"Sep  7, 2026, 08:16:51",access.door.unlock,Access Granted (Face),AMADOU SADJO SIDIBE,,CRG-DOOR1,EAH 8,,entry,FACE F1404151,ACCESS
+"Sep  7, 2026, 08:15:45",access.door.unlock,Access Granted (NFC),AISSATOU SAMB MANDELA,,CRG-DOOR1,EAH 8,,entry,NFC 890341c6(100174),ACCESS
+"Sep  7, 2026, 08:13:48",access.door.unlock,Access Granted (NFC),MARIAMA LAMARANA DIALLO,,CRG-DOOR1,EAH 8,,entry,NFC 62a43451(100039),ACCESS
+"Sep  7, 2026, 08:11:51",access.door.unlock,Access Granted (NFC),ASSEMIEN DANIEL BENBO,,CRG-DOOR1,EAH 8,,entry,NFC af516eb5(100014),ACCESS
+"Sep  7, 2026, 08:11:34",access.door.unlock,Access Granted (NFC),AMADOU TIDIANE BAH,,CRG-DOOR1,EAH 8,,exit,NFC 7d9b25d8(100099),ACCESS
+"Sep  7, 2026, 08:11:16",access.door.unlock,Access Granted (NFC),IBRAHIMA SORY KOULIBALY,,CRG-DOOR1,EAH 8,,entry,NFC 381b6baa(100161),ACCESS
+"Sep  7, 2026, 08:11:14",access.door.unlock,UNKNOWN CODE 109,IBRAHIMA SORY KOULIBALY,,CRG-DOOR1,EAH 8,,entry,NFC 381b6baa(100161),BLOCKED
+"Sep  7, 2026, 08:11:12",access.door.unlock,UNKNOWN CODE 109,IBRAHIMA SORY KOULIBALY,,CRG-DOOR1,EAH 8,,entry,NFC 381b6baa(100161),BLOCKED
+"Sep  7, 2026, 08:10:16",access.door.unlock,Access Granted (NFC),MAMADOU ALIOU BARRY,,CRG-DOOR1,EAH 8,,entry,NFC 5f4b4160(100042),ACCESS
+"Sep  7, 2026, 08:10:03",access.door.unlock,Access Granted (NFC),MAMADOU ALIOU BARRY,,CRG-DOOR1,EAH 8,,exit,NFC 5f4b4160(100042),ACCESS
+"Sep  7, 2026, 08:09:42",access.door.unlock,Access Granted (NFC),SALIMATOU MOUCTAR DIALLO,,CRG-DOOR1,EAH 8,,entry,NFC 2a33452d(100135),ACCESS
+"Sep  7, 2026, 08:08:24",access.door.unlock,Access Granted (NFC),MAMADOU DIAN BAH,,CRG-DOOR1,EAH 8,,exit,NFC 1a1c2586(100084),ACCESS
+"Sep  7, 2026, 08:07:59",access.door.unlock,Access Granted (NFC),SIBA DELAMOU,,CRG-DOOR1,EAH 8,,entry,NFC fc86ed46(100118),ACCESS
+"Sep  7, 2026, 08:05:54",access.door.unlock,Access Granted (NFC),DAOUDA CONDE,,CRG-DOOR1,EAH 8,,entry,NFC 6476f934(100016),ACCESS
+"Sep  7, 2026, 08:05:34",access.door.unlock,Access Granted (NFC),KANFELA MARA,,CRG-DOOR1,EAH 8,,entry,NFC ef6fcb7a(100021),ACCESS
+"Sep  7, 2026, 08:05:23",access.door.unlock,Access Granted (NFC),ABDOULAYE TOURE,,CRG-DOOR1,EAH 8,,entry,NFC d9e4e065(100184),ACCESS
+"Sep  7, 2026, 08:05:17",access.door.unlock,Access Granted (NFC),M'MAH CISSE,,CRG-DOOR1,EAH 8,,entry,NFC f72b5531(100183),ACCESS
+"Sep  7, 2026, 08:05:13",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,nfc,INCOMPLETE
+"Sep  7, 2026, 08:03:28",access.door.unlock,Access Granted (Face),MOUSTAPHA DIALLO,,CRG-DOOR1,EAH 8,,entry,FACE 3AF20DC6,ACCESS
+"Sep  7, 2026, 08:01:47",access.door.unlock,Access Granted (NFC),MAMADOU DIAN BAH,,CRG-DOOR1,EAH 8,,entry,NFC 1a1c2586(100084),ACCESS
+"Sep  7, 2026, 08:01:04",access.door.unlock,Access Granted (NFC),ABOUBACAR DEMBA CAMARA,,CRG-DOOR1,EAH 8,,exit,NFC d186871a(100097),ACCESS
+"Sep  7, 2026, 08:00:55",access.door.unlock,Access Granted (NFC),PAUL DELAMOU,,CRG-DOOR1,EAH 8,,entry,NFC a53e3c00(100104),ACCESS
+"Sep  7, 2026, 07:58:31",access.door.unlock,Access Granted (NFC),MAMADOU ALIOU BARRY,,CRG-DOOR1,EAH 8,,exit,NFC 5f4b4160(100042),ACCESS
+"Sep  7, 2026, 07:57:27",access.door.unlock,Access Granted (NFC),MAMADOU ALIOU BARRY,,CRG-DOOR1,EAH 8,,entry,NFC 5f4b4160(100042),ACCESS
+"Sep  7, 2026, 07:57:16",access.door.unlock,Access Granted (NFC),OUSMANE SYLLA,,CRG-DOOR1,EAH 8,,entry,NFC ffa82b7c(100182),ACCESS
+"Sep  7, 2026, 07:56:52",access.door.unlock,Access Granted (NFC),ABOUBACAR DEMBA CAMARA,,CRG-DOOR1,EAH 8,,entry,NFC d186871a(100097),ACCESS
+"Sep  7, 2026, 07:56:07",access.door.unlock,Access Granted (NFC),SEKOU SIDIBE,,CRG-DOOR1,EAH 8,,entry,NFC 9f28d2a8(100087),ACCESS
+"Sep  7, 2026, 07:54:57",access.door.unlock,Access Granted (NFC),IBRAHIMA PITA BAH,,CRG-DOOR1,EAH 8,,entry,NFC 40ef11e2(100111),ACCESS
+"Sep  7, 2026, 07:54:12",access.door.unlock,Access Granted (NFC),MAMADOU DIAN BAH,,CRG-DOOR1,EAH 8,,exit,NFC 1a1c2586(100084),ACCESS
+"Sep  7, 2026, 07:51:06",access.door.unlock,Access Granted (NFC),MORIBA 3 HABA,,CRG-DOOR1,EAH 8,,entry,NFC bf88cfa0(100040),ACCESS
+"Sep  7, 2026, 07:50:31",access.door.unlock,Access Granted (NFC),KEKOURA GROVOGUI,,CRG-DOOR1,EAH 8,,entry,NFC 90da1aec(100022),ACCESS
+"Sep  7, 2026, 07:50:21",access.door.unlock,Access Granted (NFC),IBRAHIMA SORY KOULIBALY,,CRG-DOOR1,EAH 8,,exit,NFC 381b6baa(100161),ACCESS
+"Sep  7, 2026, 07:50:18",access.door.unlock,UNKNOWN CODE 109,IBRAHIMA SORY KOULIBALY,,CRG-DOOR1,EAH 8,,exit,NFC 381b6baa(100161),BLOCKED
+"Sep  7, 2026, 07:48:13",access.door.unlock,Access Granted (NFC),SIDIKI KEITA,,CRG-DOOR1,EAH 8,,entry,NFC cb088795(100113),ACCESS
+"Sep  7, 2026, 07:47:45",access.door.unlock,Access Granted (NFC),SEKOU SIDIBE,,CRG-DOOR1,EAH 8,,exit,NFC 9f28d2a8(100087),ACCESS
+"Sep  7, 2026, 07:46:58",access.door.unlock,Access Granted (PIN CODE),ABDOUL KARIM TOURE,,CRG-DOOR1,EAH 8,,entry,PIN_CODE A0297600,ACCESS
+"Sep  7, 2026, 07:46:40",access.door.unlock,Access Granted (NFC),SALIFOU DOUKOURE,,CRG-DOOR1,EAH 8,,entry,NFC 7b0a7258(100088),ACCESS
+"Sep  7, 2026, 07:44:14",access.door.unlock,Access Granted (NFC),MAMADOU DIAN BAH,,CRG-DOOR1,EAH 8,,exit,NFC 1a1c2586(100084),ACCESS
+"Sep  7, 2026, 07:43:38",access.door.unlock,Access Granted (NFC),IBRAHIMA BARRY,,CRG-DOOR1,EAH 8,,exit,NFC 39469a4c(100185),ACCESS
+"Sep  7, 2026, 07:42:29",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 07:42:23",access.door.unlock,Access Granted (NFC),IBRAHIMA KALIL MAGASSOUBA,,CRG-DOOR1,EAH 8,,entry,NFC e214ee86(100100),ACCESS
+"Sep  7, 2026, 07:42:20",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 07:42:15",access.door.unlock,Access Granted (NFC),APPOLINE DORE,,CRG-DOOR1,EAH 8,,entry,NFC 9ad479ea(100013),ACCESS
+"Sep  7, 2026, 07:42:04",access.door.unlock,Access Granted (NFC),MASSA SOUMAORO,,CRG-DOOR1,EAH 8,,entry,NFC 29819b39(100069),ACCESS
+"Sep  7, 2026, 07:41:47",access.door.unlock,Access Granted (NFC),SEKOU MOHAMED CONDE,,CRG-DOOR1,EAH 8,,entry,NFC f6a0965b(100117),ACCESS
+"Sep  7, 2026, 07:41:09",access.door.unlock,Access Granted (NFC),ALAMAKO TOURE,,CRG-DOOR1,EAH 8,,entry,NFC e94913f0(100165),ACCESS
+"Sep  7, 2026, 07:41:06",access.door.unlock,Access Granted (NFC),ODIA KOUROUMA,,CRG-DOOR1,EAH 8,,entry,NFC 71c38d3e(100032),ACCESS
+"Sep  7, 2026, 07:41:02",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,nfc,INCOMPLETE
+"Sep  7, 2026, 07:40:50",access.door.unlock,Access Granted (NFC),MAMADOU OMBRE DIALLO,,CRG-DOOR1,EAH 8,,exit,NFC d8f0388e(100038),ACCESS
+"Sep  7, 2026, 07:39:35",access.door.unlock,Access Granted (NFC),MAMADOU DIAN BAH,,CRG-DOOR1,EAH 8,,entry,NFC 1a1c2586(100084),ACCESS
+"Sep  7, 2026, 07:38:34",access.door.unlock,Access Granted (NFC),SAMUEL TOKPA LOUA,,CRG-DOOR1,EAH 8,,entry,NFC 68bfa517(100110),ACCESS
+"Sep  7, 2026, 07:38:26",access.door.unlock,Access Granted (NFC),DG CRG,,CRG-DOOR1,EAH 8,,entry,NFC 408a3153(100126),ACCESS
+"Sep  7, 2026, 07:35:19",access.door.unlock,Access Granted (NFC),OUSMANE SYLLA,,CRG-DOOR1,EAH 8,,exit,NFC ffa82b7c(100182),ACCESS
+"Sep  7, 2026, 07:33:28",access.door.unlock,Access Granted (NFC),MAMADOU BAILO BAH,,CRG-DOOR1,EAH 8,,entry,NFC 9315cf9d(100072),ACCESS
+"Sep  7, 2026, 07:32:09",access.door.unlock,Access Granted (NFC),MAMADOU OMBRE DIALLO,,CRG-DOOR1,EAH 8,,entry,NFC d8f0388e(100038),ACCESS
+"Sep  7, 2026, 07:32:06",access.door.unlock,Access Granted (NFC),MAMADOU ALIOU BARRY,,CRG-DOOR1,EAH 8,,exit,NFC 5f4b4160(100042),ACCESS
+"Sep  7, 2026, 07:31:55",access.door.unlock,Access Granted (NFC),SIDIKI KEITA,,CRG-DOOR1,EAH 8,,exit,NFC cb088795(100113),ACCESS
+"Sep  7, 2026, 07:30:35",access.door.unlock,Access Granted (NFC),SIDIKI TRAORE,,CRG-DOOR1,EAH 8,,entry,NFC 43868b27(100175),ACCESS
+"Sep  7, 2026, 07:30:15",access.door.unlock,Access Granted (NFC),KEKOURA GROVOGUI,,CRG-DOOR1,EAH 8,,exit,NFC 90da1aec(100022),ACCESS
+"Sep  7, 2026, 07:30:12",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,exit,nfc,INCOMPLETE
+"Sep  7, 2026, 07:30:02",access.door.unlock,Access Granted (NFC),SEKOU DOUMBOUYA,,CRG-DOOR1,EAH 8,,entry,NFC 88fefcdb(100020),ACCESS
+"Sep  7, 2026, 07:28:58",access.door.unlock,Access Granted (NFC),IBRAHIMA BARRY,,CRG-DOOR1,EAH 8,,exit,NFC 39469a4c(100185),ACCESS
+"Sep  7, 2026, 07:28:54",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,exit,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 07:28:46",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,exit,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 07:28:41",access.door.unlock,Access Denied / Unknown (NFC),N/A,,CRG-DOOR1,EAH 8,,exit,NFC Unknown NFC,BLOCKED
+"Sep  7, 2026, 07:27:36",access.door.unlock,Access Granted (NFC),MAMADOU ALIOU BARRY,,CRG-DOOR1,EAH 8,,entry,NFC 5f4b4160(100042),ACCESS
+"Sep  7, 2026, 07:25:29",access.door.unlock,Access Granted (NFC),Abdoulaye KOÏTA,,CRG-DOOR1,EAH 8,,entry,NFC 7197e1ee(100188),ACCESS
+"Sep  7, 2026, 07:22:27",access.door.unlock,Access Granted (NFC),KEKOURA GROVOGUI,,CRG-DOOR1,EAH 8,,entry,NFC 90da1aec(100022),ACCESS
+"Sep  7, 2026, 07:21:10",access.door.unlock,Access Granted (NFC),ABDOUL AZIZ CAMARA,,CRG-DOOR1,EAH 8,,exit,NFC ad9daf78(100015),ACCESS
+"Sep  7, 2026, 07:20:20",access.door.unlock,Access Granted (NFC),ABDOUL AZIZ CAMARA,,CRG-DOOR1,EAH 8,,entry,NFC ad9daf78(100015),ACCESS
+"Sep  7, 2026, 07:19:08",access.door.unlock,Access Granted (NFC),SEKOU MOHAMED CONDE,,CRG-DOOR1,EAH 8,,exit,NFC f6a0965b(100117),ACCESS
+"Sep  7, 2026, 07:18:21",access.door.unlock,Access Granted (NFC),MORIBA 3 HABA,,CRG-DOOR1,EAH 8,,exit,NFC bf88cfa0(100040),ACCESS
+"Sep  7, 2026, 07:18:10",access.door.unlock,Access Granted (NFC),MAMADOU BAILO BAH,,CRG-DOOR1,EAH 8,,exit,NFC 9315cf9d(100072),ACCESS
+"Sep  7, 2026, 07:16:40",access.door.unlock,Access Granted (Face),AICHA SYLLA,,CRG-DOOR1,EAH 8,,entry,FACE AB68BF87,ACCESS
+"Sep  7, 2026, 07:15:20",access.door.unlock,Access Granted (NFC),IBRAHIMA SORY KOULIBALY,,CRG-DOOR1,EAH 8,,entry,NFC 381b6baa(100161),ACCESS
+"Sep  7, 2026, 07:14:11",access.door.unlock,Access Granted (NFC),MAMADOU BAILO BAH,,CRG-DOOR1,EAH 8,,entry,NFC 9315cf9d(100072),ACCESS
+"Sep  7, 2026, 07:13:33",access.door.unlock,Access Granted (NFC),Foromo Kolie,,CRG-DOOR1,EAH 8,,entry,NFC c436494e(100053),ACCESS
+"Sep  7, 2026, 07:13:03",access.door.unlock,Access Granted (NFC),THIERNO MAMADOU BAILO SOW,,CRG-DOOR1,EAH 8,,entry,NFC aaad1c2a(100033),ACCESS
+"Sep  7, 2026, 07:11:31",access.door.unlock,Access Granted (NFC),OUSMANE SYLLA,,CRG-DOOR1,EAH 8,,entry,NFC ffa82b7c(100182),ACCESS
+"Sep  7, 2026, 07:11:28",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,nfc,INCOMPLETE
+"Sep  7, 2026, 07:11:18",access.door.unlock,Access Granted (NFC),FATOUMATA BINTA DIALLO,,CRG-DOOR1,EAH 8,,entry,NFC bd156820(100055),ACCESS
+"Sep  7, 2026, 07:11:17",access.door.unlock,Access Denied / scan incomplete (NFC),N/A,,CRG-DOOR1,EAH 8,,entry,nfc,INCOMPLETE
+"Sep  7, 2026, 07:09:02",access.door.unlock,Access Granted (NFC),MORIBA 3 HABA,,CRG-DOOR1,EAH 8,,entry,NFC bf88cfa0(100040),ACCESS
+"Sep  7, 2026, 07:08:00",access.door.unlock,Access Granted (NFC),CAMARA SEKOU,,CRG-DOOR1,EAH 8,,entry,NFC e49984a4(100029),ACCESS
+"Sep  7, 2026, 07:06:48",access.door.unlock,Access Granted (NFC),CAMARA SEKOU,,CRG-DOOR1,EAH 8,,exit,NFC e49984a4(100029),ACCESS
+"Sep  7, 2026, 07:06:05",access.door.unlock,Access Granted (NFC),HASSANE BAH,,CRG-DOOR1,EAH 8,,entry,NFC 6e34d84e(100089),ACCESS
+"Sep  7, 2026, 07:02:39",access.door.unlock,Access Granted (NFC),BINTOU DIOUBATE,,CRG-DOOR1,EAH 8,,entry,NFC fccf155b(100149),ACCESS
+"Sep  7, 2026, 07:02:19",access.door.unlock,Access Granted (Face),MOUSTAPHA DIALLO,,CRG-DOOR1,EAH 8,,exit,FACE 3AF20DC6,ACCESS
+"Sep  7, 2026, 07:01:58",access.door.unlock,Access Granted (NFC),MAMADOU BOBO SALL,,CRG-DOOR1,EAH 8,,entry,NFC f26d5d76(100071),ACCESS
+"Sep  7, 2026, 06:53:45",access.door.unlock,Access Granted (NFC),LAMINE BAH,,CRG-DOOR1,EAH 8,,entry,NFC 420a4ff5(100116),ACCESS
+"Sep  7, 2026, 06:52:04",access.door.unlock,Access Granted (Face),MOUSTAPHA DIALLO,,CRG-DOOR1,EAH 8,,entry,FACE 3AF20DC6,ACCESS
+"Sep  7, 2026, 06:51:12",access.door.unlock,Access Granted (Face),SEKOU CAMARA,,CRG-DOOR1,EAH 8,,entry,FACE 7ED93F91,ACCESS
+"Sep  7, 2026, 06:47:29",access.door.unlock,Access Granted (NFC),MAMADOU ALIOU BALDE,,CRG-DOOR1,EAH 8,,entry,NFC bccfe85a(100170),ACCESS
+"Sep  7, 2026, 06:47:25",access.door.unlock,Access Granted (NFC),SEKOU SIDIBE,,CRG-DOOR1,EAH 8,,entry,NFC 9f28d2a8(100087),ACCESS
+"Sep  7, 2026, 06:43:44",access.door.unlock,Access Granted (NFC),DAVID FOROMO GOUMOU,,CRG-DOOR1,EAH 8,,entry,NFC be590f07(100017),ACCESS
+"Sep  7, 2026, 06:43:15",access.door.unlock,Access Granted (NFC),SIDIKI KEITA,,CRG-DOOR1,EAH 8,,entry,NFC cb088795(100113),ACCESS
+"Sep  7, 2026, 06:40:14",access.door.unlock,Access Granted (NFC),SEKOU MOHAMED CONDE,,CRG-DOOR1,EAH 8,,entry,NFC f6a0965b(100117),ACCESS
+"Sep  7, 2026, 06:34:54",access.door.unlock,Access Granted (NFC),CAMARA SEKOU,,CRG-DOOR1,EAH 8,,entry,NFC e49984a4(100029),ACCESS
+"Sep  7, 2026, 06:34:24",access.door.unlock,Access Granted (NFC),CAMARA SEKOU,,CRG-DOOR1,EAH 8,,entry,NFC e49984a4(100029),ACCESS
+"Sep  7, 2026, 06:32:59",access.door.unlock,Access Granted (NFC),CAMARA SEKOU,,CRG-DOOR1,EAH 8,,exit,NFC e49984a4(100029),ACCESS
+"Sep  7, 2026, 06:32:41",access.door.unlock,Access Granted (NFC),MAMADOU BAILO BAH,,CRG-DOOR1,EAH 8,,exit,NFC 9315cf9d(100072),ACCESS
+"Sep  7, 2026, 06:30:00",access.door.unlock,Access Granted (NFC),CAMARA SEKOU,,CRG-DOOR1,EAH 8,,entry,NFC e49984a4(100029),ACCESS
+"Sep  7, 2026, 06:23:30",access.door.unlock,Access Granted (NFC),FATOUMATA NOBA,,CRG-DOOR1,EAH 8,,entry,NFC 813ec4a0(100052),ACCESS
+"Sep  7, 2026, 06:20:28",access.door.unlock,Access Granted (NFC),MAMADOU BAILO BAH,,CRG-DOOR1,EAH 8,,entry,NFC 9315cf9d(100072),ACCESS

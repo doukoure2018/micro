@@ -170,6 +170,11 @@ export class AppMenu {
                                           label: 'Gestion des présences',
                                           icon: 'pi pi-fw pi-clock',
                                           routerLink: ['/dashboards/drh/presences']
+                                      },
+                                      {
+                                          label: 'Gestion des mouvements',
+                                          icon: 'pi pi-fw pi-arrow-right-arrow-left',
+                                          routerLink: ['/dashboards/drh/mouvements']
                                       }
                                   ]
                               }

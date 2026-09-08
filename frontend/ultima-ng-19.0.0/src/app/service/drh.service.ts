@@ -304,4 +304,17 @@ export class DrhService {
 
     recalculerPresences$ = (du: string, au: string): Observable<IResponse> =>
         this.http.post<IResponse>(`${this.server}/ecredit/drh/presences/recalculer?du=${du}&au=${au}`, {}).pipe(catchError(this.handleError));
+
+    // ===== Mouvements (journal de la porte) =====
+
+    importerMouvements$ = (fichier: File): Observable<IResponse> => {
+        const form = new FormData();
+        form.append('file', fichier);
+        return this.http.post<IResponse>(`${this.server}/ecredit/drh/mouvements/import`, form).pipe(catchError(this.handleError));
+    };
+
+    /** type : PERSONNEL / VISITEUR / NON_IDENTIFIE / ANOMALIE (absent = tous). */
+    mouvements$ = (du: string, au: string, type?: string): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/drh/mouvements?du=${du}&au=${au}` +
+            (type ? `&type=${type}` : '')).pipe(catchError(this.handleError));
 }
