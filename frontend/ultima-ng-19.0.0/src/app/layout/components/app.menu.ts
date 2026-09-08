@@ -146,16 +146,33 @@ export class AppMenu {
                                   label: 'DRH',
                                   icon: 'pi pi-fw pi-briefcase',
                                   items: [
-                                      {
-                                          label: 'Validation des prévisions',
-                                          icon: 'pi pi-fw pi-check-square',
-                                          routerLink: ['/dashboards/drh/validation-previsions']
-                                      },
-                                      {
-                                          label: 'Validation des congés',
-                                          icon: 'pi pi-fw pi-verified',
-                                          routerLink: ['/dashboards/drh/validation-conges']
-                                      },
+                                      // Les validations restent au responsable DRH ; le SUPER_ADMIN
+                                      // a les avances sur salaire à la place.
+                                      ...(this.user?.role !== 'SUPER_ADMIN'
+                                          ? [
+                                                {
+                                                    label: 'Validation des prévisions',
+                                                    icon: 'pi pi-fw pi-check-square',
+                                                    routerLink: ['/dashboards/drh/validation-previsions']
+                                                },
+                                                {
+                                                    label: 'Validation des congés',
+                                                    icon: 'pi pi-fw pi-verified',
+                                                    routerLink: ['/dashboards/drh/validation-conges']
+                                                }
+                                            ]
+                                          : [
+                                                {
+                                                    label: 'Avances sur salaire',
+                                                    icon: 'pi pi-fw pi-wallet',
+                                                    routerLink: ['/dashboards/demande-avance-salaire']
+                                                },
+                                                {
+                                                    label: 'Mes demandes avances sur salaire',
+                                                    icon: 'pi pi-fw pi-list',
+                                                    routerLink: ['/dashboards/mes-demandes-salaire']
+                                                }
+                                            ]),
                                       {
                                           label: 'Organisation (départements)',
                                           icon: 'pi pi-fw pi-sitemap',
