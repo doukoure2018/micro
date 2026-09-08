@@ -43,7 +43,7 @@ public class SalaireQuery {
      * Récupérer un personnel par ID
      */
     public static final String SELECT_INFO_PERSONNEL_BY_ID = """
-        SELECT id, matricule, nom, prenom, numero_compte, created_at, updated_at
+        SELECT id, matricule, nom, prenom, numero_compte, statut, created_at, updated_at
         FROM info_personnel
         WHERE id = :id
         """;
