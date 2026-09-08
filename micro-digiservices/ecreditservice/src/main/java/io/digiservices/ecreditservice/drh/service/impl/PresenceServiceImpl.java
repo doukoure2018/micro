@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -41,6 +42,8 @@ import java.util.TreeSet;
 public class PresenceServiceImpl implements PresenceService {
 
     private static final DateTimeFormatter DATE_FR = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    /** Export badgeuse « access attendance » : dates anglaises entre guillemets, ex. "Sep 01, 2026". */
+    private static final DateTimeFormatter DATE_EN = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.ENGLISH);
 
     private final PresenceRepository presenceRepository;
     private final DrhRepository drhRepository;
@@ -62,10 +65,15 @@ public class PresenceServiceImpl implements PresenceService {
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(fichier.getInputStream(), StandardCharsets.UTF_8))) {
             String ligne;
+            Character separateur = null;
             while ((ligne = reader.readLine()) != null) {
                 ligne = ligne.strip();
                 if (ligne.isEmpty()) continue;
-                String[] c = ligne.split(";", -1);
+                if (separateur == null) {
+                    // L'export badgeuse existe en deux variantes : point-virgule ou virgule (avec dates entre guillemets)
+                    separateur = ligne.contains(";") ? ';' : ',';
+                }
+                String[] c = decouperLigne(ligne, separateur);
                 if (c.length < 5) { ignorees++; continue; }
                 if (c[0].toLowerCase().startsWith("date")) continue; // en-tête
                 lues++;
@@ -101,8 +109,9 @@ public class PresenceServiceImpl implements PresenceService {
             throw new ValidationException("Lecture du fichier impossible : " + e.getMessage());
         }
         if (jours.isEmpty()) {
-            throw new ValidationException("Aucun pointage exploitable dans ce fichier — vérifiez le format "
-                    + "(Date;User;Employee ID;First open door time;Last open door time)");
+            throw new ValidationException("Aucun pointage exploitable dans ce fichier — formats acceptés : "
+                    + "Date;User;Employee ID;… (dates JJ/MM/AAAA) ou l'export access-attendance "
+                    + "Date,User,Employee ID,… (dates \"Sep 01, 2026\")");
         }
 
         int joursRapproches = rapprocherJours(jours);
@@ -121,9 +130,33 @@ public class PresenceServiceImpl implements PresenceService {
                 .build();
     }
 
+    /** Découpe une ligne CSV en respectant les champs entre guillemets (ex. "Sep 01, 2026"). */
+    private static String[] decouperLigne(String ligne, char separateur) {
+        List<String> champs = new ArrayList<>();
+        StringBuilder courant = new StringBuilder();
+        boolean entreGuillemets = false;
+        for (int i = 0; i < ligne.length(); i++) {
+            char ch = ligne.charAt(i);
+            if (ch == '"') {
+                entreGuillemets = !entreGuillemets;
+            } else if (ch == separateur && !entreGuillemets) {
+                champs.add(courant.toString());
+                courant.setLength(0);
+            } else {
+                courant.append(ch);
+            }
+        }
+        champs.add(courant.toString());
+        return champs.toArray(new String[0]);
+    }
+
     private static LocalDate parseDate(String s) {
-        if (s.contains("/")) return LocalDate.parse(s, DATE_FR);
-        return LocalDate.parse(s.length() > 10 ? s.substring(0, 10) : s);
+        String v = s.replace("\"", "").strip();
+        if (v.contains("/")) return LocalDate.parse(v, DATE_FR);
+        if (v.matches("[A-Za-z]{3,}\\.? .*")) {
+            return LocalDate.parse(v.replace(".", ""), DATE_EN);
+        }
+        return LocalDate.parse(v.length() > 10 ? v.substring(0, 10) : v);
     }
 
     private static LocalTime parseHeure(String s) {

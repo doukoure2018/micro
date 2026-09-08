@@ -61,7 +61,7 @@ public final class PresenceQuery {
           LEFT JOIN drh_departement_membre m ON m.user_id = pj.user_id AND m.actif
           LEFT JOIN drh_departement d ON d.departement_id = m.departement_id
          WHERE pj.jour BETWEEN :du AND :au
-           AND (:statut IS NULL OR pj.statut = :statut)
+           AND (CAST(:statut AS VARCHAR) IS NULL OR pj.statut = :statut)
          ORDER BY pj.jour DESC, pj.statut, pj.nom
         """;
 

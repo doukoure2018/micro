@@ -43,7 +43,7 @@ const STATUTS_PRESENCE: { [k: string]: StatutPresence } = {
                 <div>
                     <h4 class="m-0">Gestion des présences</h4>
                     <span class="text-sm text-color-secondary">
-                        Import du fichier badgeuse (CSV « Date;User;Employee ID;… ») et rapprochement
+                        Import du fichier badgeuse (export « access-attendance » CSV, séparateur virgule ou point-virgule) et rapprochement
                         automatique avec le personnel, les congés et permissions validés.
                     </span>
                 </div>
