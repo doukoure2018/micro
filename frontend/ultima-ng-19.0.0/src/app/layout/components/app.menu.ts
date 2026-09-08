@@ -146,8 +146,7 @@ export class AppMenu {
                                   label: 'DRH',
                                   icon: 'pi pi-fw pi-briefcase',
                                   items: [
-                                      // Les validations restent au responsable DRH ; le SUPER_ADMIN
-                                      // a les avances sur salaire à la place.
+                                      // Les validations restent au responsable DRH (pas au SUPER_ADMIN)
                                       ...(this.user?.role !== 'SUPER_ADMIN'
                                           ? [
                                                 {
@@ -161,18 +160,7 @@ export class AppMenu {
                                                     routerLink: ['/dashboards/drh/validation-conges']
                                                 }
                                             ]
-                                          : [
-                                                {
-                                                    label: 'Avances sur salaire',
-                                                    icon: 'pi pi-fw pi-wallet',
-                                                    routerLink: ['/dashboards/demande-avance-salaire']
-                                                },
-                                                {
-                                                    label: 'Mes demandes avances sur salaire',
-                                                    icon: 'pi pi-fw pi-list',
-                                                    routerLink: ['/dashboards/mes-demandes-salaire']
-                                                }
-                                            ]),
+                                          : []),
                                       {
                                           label: 'Organisation (départements)',
                                           icon: 'pi pi-fw pi-sitemap',
@@ -182,6 +170,26 @@ export class AppMenu {
                                           label: 'Gestion des présences',
                                           icon: 'pi pi-fw pi-clock',
                                           routerLink: ['/dashboards/drh/presences']
+                                      }
+                                  ]
+                              }
+                          ]
+                        : []),
+                    ...(this.user?.role === 'SUPER_ADMIN'
+                        ? [
+                              {
+                                  label: 'Avance sur salaire',
+                                  icon: 'pi pi-fw pi-wallet',
+                                  items: [
+                                      {
+                                          label: 'Avances sur salaire',
+                                          icon: 'pi pi-fw pi-money-bill',
+                                          routerLink: ['/dashboards/demande-avance-salaire']
+                                      },
+                                      {
+                                          label: 'Mes demandes avances sur salaire',
+                                          icon: 'pi pi-fw pi-list',
+                                          routerLink: ['/dashboards/mes-demandes-salaire']
                                       }
                                   ]
                               }
