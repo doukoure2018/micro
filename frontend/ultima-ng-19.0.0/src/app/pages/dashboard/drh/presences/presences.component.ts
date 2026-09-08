@@ -113,7 +113,10 @@ const STATUTS_PRESENCE: { [k: string]: StatutPresence } = {
                 </div>
                 <p-table [value]="presencesFiltrees()" responsiveLayout="scroll" [paginator]="true" [rows]="25" [rowHover]="true">
                     <ng-template pTemplate="header">
-                        <tr><th>Jour</th><th>Agent</th><th>Mat.</th><th>Dir.</th><th>Entrée</th><th>Sortie</th><th>Statut</th></tr>
+                        <tr><th>Jour</th><th>Agent</th><th>Mat.</th><th>Dir.</th><th>Entrée</th><th>Sortie</th>
+                            <th pTooltip="Sorties en heures de travail reconstruites depuis le journal des mouvements (pause 13h-14h30 déduite)">Hors bureau</th>
+                            <th pTooltip="Minutes au-delà de la pause déjeuner 13h00-14h30">Dépass. pause</th>
+                            <th>Statut</th></tr>
                     </ng-template>
                     <ng-template pTemplate="body" let-p>
                         <tr>
@@ -123,6 +126,12 @@ const STATUTS_PRESENCE: { [k: string]: StatutPresence } = {
                             <td>{{ p.departementCode || '—' }}</td>
                             <td>{{ p.premiereEntree || '—' }}</td>
                             <td>{{ p.derniereSortie || '—' }}</td>
+                            <td [class.text-orange-500]="p.minutesHorsBureau > 0">
+                                {{ p.minutesHorsBureau > 0 ? duree(p.minutesHorsBureau) + ' (' + p.nbSortiesTravail + ' sortie' + (p.nbSortiesTravail > 1 ? 's' : '') + ')' : '—' }}
+                            </td>
+                            <td [class.text-red-500]="p.minutesDepassementPause > 0">
+                                {{ p.minutesDepassementPause > 0 ? '+' + p.minutesDepassementPause + ' min' : '—' }}
+                            </td>
                             <td>
                                 <p-tag [value]="statut(p.statut).label" [severity]="statut(p.statut).severity" />
                                 <div class="text-xs text-color-secondary" *ngIf="p.minutesRetard > 0">+{{ p.minutesRetard }} min de retard</div>
@@ -132,7 +141,7 @@ const STATUTS_PRESENCE: { [k: string]: StatutPresence } = {
                         </tr>
                     </ng-template>
                     <ng-template pTemplate="emptymessage">
-                        <tr><td colspan="7" class="text-center text-color-secondary">Aucune présence sur la période</td></tr>
+                        <tr><td colspan="9" class="text-center text-color-secondary">Aucune présence sur la période</td></tr>
                     </ng-template>
                 </p-table>
             </div>
@@ -229,6 +238,11 @@ export class PresencesComponent implements OnInit {
 
     statut(s: string): StatutPresence {
         return STATUTS_PRESENCE[s] || { label: s, severity: 'secondary' };
+    }
+
+    duree(minutes: number): string {
+        const h = Math.floor(minutes / 60), m = minutes % 60;
+        return h > 0 ? `${h} h ${String(m).padStart(2, '0')}` : `${m} min`;
     }
 
     ngOnInit(): void {

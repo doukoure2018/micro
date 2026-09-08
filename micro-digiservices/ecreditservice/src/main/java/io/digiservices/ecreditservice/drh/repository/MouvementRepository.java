@@ -42,4 +42,11 @@ public interface MouvementRepository {
     boolean matriculeConnu(String matricule);
 
     String parametreTexte(String cle, String defaut);
+
+    /**
+     * Journal drh_alerte réutilisé pour les mouvements : user_id porte le MATRICULE (numérique)
+     * et reference_id la semaine (année*1000 + jour de l'an du lundi).
+     * @return 1 si l'alerte est nouvelle, 0 si déjà envoyée (anti-doublon).
+     */
+    int enregistrerAlerte(String type, long userId, long referenceId);
 }

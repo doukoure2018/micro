@@ -33,6 +33,10 @@ public final class PresenceDtos {
         private LocalTime premiereEntree;
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm")
         private LocalTime derniereSortie;
+        // Enrichissement depuis le journal des mouvements (pause 13h-14h30 déjà déduite)
+        private Integer nbSortiesTravail;
+        private Integer minutesHorsBureau;
+        private Integer minutesDepassementPause;
     }
 
     @Data @NoArgsConstructor @AllArgsConstructor @Builder

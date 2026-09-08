@@ -143,4 +143,13 @@ public class MouvementRepositoryImpl implements MouvementRepository {
                 .param("cle", cle)
                 .query(String.class).optional().orElse(defaut);
     }
+
+    @Override
+    public int enregistrerAlerte(String type, long userId, long referenceId) {
+        return jdbcClient.sql(io.digiservices.ecreditservice.drh.query.CongeQuery.INSERT_ALERTE)
+                .param("type", type)
+                .param("user_id", userId)
+                .param("reference_id", referenceId)
+                .update();
+    }
 }

@@ -31,4 +31,10 @@ public interface MouvementService {
 
     /** Association manuelle badge -> matricule + ré-identification des mouvements passés. */
     int associerBadge(User drh, String badgeNo, String matricule);
+
+    /** Usage interne (présences) : journées reconstruites par matricule, sans contrôle d'habilitation. */
+    java.util.Map<String, MouvementPersonneDto> reconstituerPeriode(LocalDate du, LocalDate au);
+
+    /** Alerte DRH hebdomadaire : agents au-dessus du seuil de minutes hors bureau + dépassement de pause. */
+    int alerterDepassementsSemaine();
 }

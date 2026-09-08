@@ -26,6 +26,7 @@ public class DrhAlerteScheduler {
 
     private final CongeRepository congeRepository;
     private final DrhRepository drhRepository;
+    private final MouvementService mouvementService;
     private final SmsService smsService;
 
     /** Tous les jours à 08h00 (heure serveur). */
@@ -33,6 +34,16 @@ public class DrhAlerteScheduler {
     public void envoyerRappels() {
         rappeler(14, "RAPPEL_J14", false);
         rappeler(7, "RAPPEL_J7", true);
+    }
+
+    /** Chaque lundi à 08h15 : dépassements de mouvements de la semaine écoulée -> SMS à la DRH. */
+    @Scheduled(cron = "0 15 8 * * MON")
+    public void alerterMouvements() {
+        try {
+            mouvementService.alerterDepassementsSemaine();
+        } catch (Exception e) {
+            log.warn("Alerte mouvements hebdomadaire en échec : {}", e.getMessage());
+        }
     }
 
     private void rappeler(int joursAvant, String type, boolean relancerResponsable) {

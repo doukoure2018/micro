@@ -48,6 +48,7 @@ public class PresenceServiceImpl implements PresenceService {
     private final PresenceRepository presenceRepository;
     private final DrhRepository drhRepository;
     private final DrhService drhService;
+    private final io.digiservices.ecreditservice.drh.service.MouvementService mouvementService;
 
     // ==================== Import ====================
 
@@ -226,7 +227,27 @@ public class PresenceServiceImpl implements PresenceService {
     @Override
     public List<PresenceJourDto> presences(User drh, LocalDate du, LocalDate au, String statut) {
         exigerDrh(drh);
-        return presenceRepository.presencesPeriode(du, au, statut);
+        List<PresenceJourDto> presences = presenceRepository.presencesPeriode(du, au, statut);
+        enrichirDepuisMouvements(presences, du, au);
+        return presences;
+    }
+
+    /** Ajoute le temps hors bureau / dépassement de pause reconstruit depuis le journal des mouvements. */
+    private void enrichirDepuisMouvements(List<PresenceJourDto> presences, LocalDate du, LocalDate au) {
+        if (presences.isEmpty()) return;
+        var parAgent = mouvementService.reconstituerPeriode(du, au);
+        for (PresenceJourDto p : presences) {
+            var agent = parAgent.get(p.getMatricule());
+            if (agent == null) continue;
+            agent.getJours().stream()
+                    .filter(j -> j.getJour().equals(p.getJour()))
+                    .findFirst()
+                    .ifPresent(j -> {
+                        p.setNbSortiesTravail(j.getNbSortiesTravail());
+                        p.setMinutesHorsBureau(j.getMinutesHorsBureau());
+                        p.setMinutesDepassementPause(j.getMinutesDepassementPause());
+                    });
+        }
     }
 
     @Override
