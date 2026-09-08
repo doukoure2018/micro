@@ -1,5 +1,7 @@
 package io.digiservices.ecreditservice.drh.repository;
 
+import io.digiservices.ecreditservice.drh.dto.MouvementDtos.BadgeCorrespondanceDto;
+import io.digiservices.ecreditservice.drh.dto.MouvementDtos.BadgeInconnuDto;
 import io.digiservices.ecreditservice.drh.dto.MouvementDtos.MouvementDto;
 
 import java.time.LocalDate;
@@ -24,4 +26,20 @@ public interface MouvementRepository {
     List<Map<String, Object>> personnelActifNoms();
 
     List<MouvementDto> mouvementsPeriode(LocalDate du, LocalDate au, String type);
+
+    /** Événements ACCESS du personnel identifié : matricule, nom, jour, heure, sens (triés). */
+    List<Map<String, Object>> mouvementsIdentifiesPeriode(LocalDate du, LocalDate au, String matricule);
+
+    List<BadgeCorrespondanceDto> correspondances();
+
+    List<BadgeInconnuDto> badgesInconnus();
+
+    void associerBadgeManuel(String badgeNo, String matricule);
+
+    /** @return nombre de mouvements ré-identifiés a posteriori. */
+    int appliquerBadgeAuxMouvements(String badgeNo, String matricule);
+
+    boolean matriculeConnu(String matricule);
+
+    String parametreTexte(String cle, String defaut);
 }

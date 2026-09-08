@@ -54,6 +54,45 @@ public class MouvementResource {
                 "Mouvements de la période", OK));
     }
 
+    @GetMapping("/synthese")
+    public ResponseEntity<Response> synthese(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate du,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate au,
+            Authentication auth, HttpServletRequest req) {
+        return ResponseEntity.ok(getResponse(req,
+                Map.of("synthese", mouvementService.synthese(user(auth), du, au)),
+                "Synthèse des mouvements par agent", OK));
+    }
+
+    @GetMapping("/personne/{matricule}")
+    public ResponseEntity<Response> personne(
+            @PathVariable String matricule,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate du,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate au,
+            Authentication auth, HttpServletRequest req) {
+        return ResponseEntity.ok(getResponse(req,
+                Map.of("agent", mouvementService.personne(user(auth), matricule, du, au)),
+                "Mouvements de l'agent", OK));
+    }
+
+    @GetMapping("/badges")
+    public ResponseEntity<Response> badges(Authentication auth, HttpServletRequest req) {
+        return ResponseEntity.ok(getResponse(req,
+                Map.of("correspondances", mouvementService.correspondances(user(auth)),
+                        "inconnus", mouvementService.badgesInconnus(user(auth))),
+                "Correspondances badge - matricule", OK));
+    }
+
+    @PutMapping("/badges/{badgeNo}")
+    public ResponseEntity<Response> associerBadge(@PathVariable String badgeNo,
+                                                  @RequestParam String matricule,
+                                                  Authentication auth, HttpServletRequest req) {
+        int reidentifies = mouvementService.associerBadge(user(auth), badgeNo, matricule);
+        return ResponseEntity.ok(getResponse(req,
+                Map.of("mouvementsReidentifies", reidentifies),
+                "Badge associé — " + reidentifies + " mouvement(s) ré-identifié(s)", OK));
+    }
+
     @ExceptionHandler(ValidationException.class)
     public ResponseEntity<Response> handleValidation(ValidationException e, HttpServletRequest req) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(getResponse(req,

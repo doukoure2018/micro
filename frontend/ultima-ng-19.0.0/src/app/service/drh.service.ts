@@ -317,4 +317,16 @@ export class DrhService {
     mouvements$ = (du: string, au: string, type?: string): Observable<IResponse> =>
         this.http.get<IResponse>(`${this.server}/ecredit/drh/mouvements?du=${du}&au=${au}` +
             (type ? `&type=${type}` : '')).pipe(catchError(this.handleError));
+
+    syntheseMouvements$ = (du: string, au: string): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/drh/mouvements/synthese?du=${du}&au=${au}`).pipe(catchError(this.handleError));
+
+    mouvementsPersonne$ = (matricule: string, du: string, au: string): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/drh/mouvements/personne/${matricule}?du=${du}&au=${au}`).pipe(catchError(this.handleError));
+
+    badgesMouvements$ = (): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/drh/mouvements/badges`).pipe(catchError(this.handleError));
+
+    associerBadgeMouvement$ = (badgeNo: string, matricule: string): Observable<IResponse> =>
+        this.http.put<IResponse>(`${this.server}/ecredit/drh/mouvements/badges/${encodeURIComponent(badgeNo)}?matricule=${matricule}`, {}).pipe(catchError(this.handleError));
 }

@@ -1,8 +1,12 @@
 package io.digiservices.ecreditservice.drh.service;
 
 import io.digiservices.clients.domain.User;
+import io.digiservices.ecreditservice.drh.dto.MouvementDtos.BadgeCorrespondanceDto;
+import io.digiservices.ecreditservice.drh.dto.MouvementDtos.BadgeInconnuDto;
 import io.digiservices.ecreditservice.drh.dto.MouvementDtos.ImportMouvementsResultDto;
 import io.digiservices.ecreditservice.drh.dto.MouvementDtos.MouvementDto;
+import io.digiservices.ecreditservice.drh.dto.MouvementDtos.MouvementPersonneDto;
+import io.digiservices.ecreditservice.drh.dto.MouvementDtos.SyntheseMouvementDto;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
@@ -14,4 +18,17 @@ public interface MouvementService {
 
     /** type : null (tous) / PERSONNEL / VISITEUR / NON_IDENTIFIE / ANOMALIE. */
     List<MouvementDto> mouvements(User drh, LocalDate du, LocalDate au, String type);
+
+    /** Synthèse par agent : sorties en heures de travail, dépassements de pause, non clôturées. */
+    List<SyntheseMouvementDto> synthese(User drh, LocalDate du, LocalDate au);
+
+    /** Détail jour par jour d'un agent avec les intervalles sortie -> retour classés. */
+    MouvementPersonneDto personne(User drh, String matricule, LocalDate du, LocalDate au);
+
+    List<BadgeCorrespondanceDto> correspondances(User drh);
+
+    List<BadgeInconnuDto> badgesInconnus(User drh);
+
+    /** Association manuelle badge -> matricule + ré-identification des mouvements passés. */
+    int associerBadge(User drh, String badgeNo, String matricule);
 }

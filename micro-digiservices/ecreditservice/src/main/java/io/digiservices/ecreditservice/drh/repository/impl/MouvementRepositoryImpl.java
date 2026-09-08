@@ -1,6 +1,9 @@
 package io.digiservices.ecreditservice.drh.repository.impl;
 
+import io.digiservices.ecreditservice.drh.dto.MouvementDtos.BadgeCorrespondanceDto;
+import io.digiservices.ecreditservice.drh.dto.MouvementDtos.BadgeInconnuDto;
 import io.digiservices.ecreditservice.drh.dto.MouvementDtos.MouvementDto;
+import io.digiservices.ecreditservice.drh.query.DrhQuery;
 import io.digiservices.ecreditservice.drh.query.MouvementQuery;
 import io.digiservices.ecreditservice.drh.repository.MouvementRepository;
 import lombok.RequiredArgsConstructor;
@@ -77,5 +80,67 @@ public class MouvementRepositoryImpl implements MouvementRepository {
                 .param("du", du).param("au", au)
                 .param("type", (type == null || type.isBlank()) ? null : type)
                 .query(MOUVEMENT_MAPPER).list();
+    }
+
+    @Override
+    public List<Map<String, Object>> mouvementsIdentifiesPeriode(LocalDate du, LocalDate au, String matricule) {
+        return jdbcClient.sql(MouvementQuery.MOUVEMENTS_IDENTIFIES_PERIODE)
+                .param("du", du).param("au", au)
+                .param("matricule", (matricule == null || matricule.isBlank()) ? null : matricule)
+                .query().listOfRows();
+    }
+
+    @Override
+    public List<BadgeCorrespondanceDto> correspondances() {
+        return jdbcClient.sql(MouvementQuery.CORRESPONDANCES)
+                .query((rs, i) -> BadgeCorrespondanceDto.builder()
+                        .badgeNo(rs.getString("badge_no"))
+                        .matricule(rs.getString("matricule"))
+                        .source(rs.getString("source"))
+                        .nomPersonnel(rs.getString("nom_personnel"))
+                        .build())
+                .list();
+    }
+
+    @Override
+    public List<BadgeInconnuDto> badgesInconnus() {
+        return jdbcClient.sql(MouvementQuery.BADGES_INCONNUS)
+                .query((rs, i) -> BadgeInconnuDto.builder()
+                        .badgeNo(rs.getString("badge_no"))
+                        .nomBrut(rs.getString("nom_brut"))
+                        .nbMouvements(rs.getLong("nb_mouvements"))
+                        .dernierJour(rs.getObject("dernier_jour", LocalDate.class))
+                        .build())
+                .list();
+    }
+
+    @Override
+    public void associerBadgeManuel(String badgeNo, String matricule) {
+        jdbcClient.sql(MouvementQuery.UPSERT_BADGE_MANUEL)
+                .param("badge_no", badgeNo)
+                .param("matricule", matricule)
+                .update();
+    }
+
+    @Override
+    public int appliquerBadgeAuxMouvements(String badgeNo, String matricule) {
+        return jdbcClient.sql(MouvementQuery.APPLIQUER_BADGE_AUX_MOUVEMENTS)
+                .param("badge_no", badgeNo)
+                .param("matricule", matricule)
+                .update();
+    }
+
+    @Override
+    public boolean matriculeConnu(String matricule) {
+        return jdbcClient.sql(DrhQuery.PERSONNEL_PAR_MATRICULE)
+                .param("matricule", matricule)
+                .query().listOfRows().stream().findFirst().isPresent();
+    }
+
+    @Override
+    public String parametreTexte(String cle, String defaut) {
+        return jdbcClient.sql(MouvementQuery.PARAMETRE_TEXTE)
+                .param("cle", cle)
+                .query(String.class).optional().orElse(defaut);
     }
 }
