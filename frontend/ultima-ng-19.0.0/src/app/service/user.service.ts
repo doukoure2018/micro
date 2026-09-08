@@ -1104,6 +1104,10 @@ export class UserService {
      * Importer le fichier du personnel (Excel)
      * Format attendu: Matricule | Nom | Prénom
      */
+    addInfoPersonnel(personnel: { matricule: string; nom: string; prenom: string; numeroCompte?: string }): Observable<IResponse> {
+        return this.http.post<IResponse>(`${this.server}/ecredit/salaire/info-personnel`, personnel).pipe(catchError(this.handleError));
+    }
+
     importInfoPersonnel(file: File): Observable<IResponse> {
         const formData = new FormData();
         formData.append('file', file);

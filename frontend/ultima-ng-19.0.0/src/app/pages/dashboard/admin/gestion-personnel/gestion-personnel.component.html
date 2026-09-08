@@ -20,7 +20,23 @@
             <div class="tab-content">
                 <!-- Section Upload Personnel (inchangée) -->
                 <p-card header="Importer le fichier du personnel" styleClass="mb-4">
-                    <!-- ... contenu existant ... -->
+                    <div class="flex flex-wrap items-center gap-3">
+                        <input type="file" #fichierPersonnel accept=".xlsx,.xls,.csv" style="display:none"
+                               (change)="importerFichierPersonnel($event)" />
+                        <button pButton icon="pi pi-upload" label="Importer (Excel : Matricule | Nom | Prénom)"
+                                [loading]="importPersonnelEnCours()" (click)="fichierPersonnel.click()"></button>
+                        <button pButton icon="pi pi-user-plus" label="Ajouter un personnel"
+                                class="p-button-outlined" (click)="ouvrirAjoutPersonnel()"></button>
+                        <span class="text-sm text-color-secondary">
+                            Un matricule déjà présent est mis à jour (nom/prénom), les nouveaux sont créés.
+                        </span>
+                    </div>
+                    <div class="mt-3 p-2 border-round text-sm" style="background:var(--surface-100)"
+                         *ngIf="resultatImportPersonnel() as r">
+                        <b><i class="pi pi-check-circle mr-1" style="color:var(--green-500)"></i>Import terminé :</b>
+                        {{ r.lignesImportees }} / {{ r.totalLignes }} lignes importées
+                        <span *ngIf="r.lignesEnErreur > 0" style="color:var(--red-500)">— {{ r.lignesEnErreur }} en erreur</span>
+                    </div>
                 </p-card>
 
                 <!-- Table Personnel avec gestion du statut -->
@@ -503,5 +519,33 @@
 
     <ng-template pTemplate="footer">
         <p-button label="Fermer" icon="pi pi-times" (onClick)="hideErrorDialog()"></p-button>
+    </ng-template>
+</p-dialog>
+
+<p-dialog header="Ajouter un personnel" [(visible)]="ajoutPersonnelVisible" [modal]="true" [style]="{ width: '440px' }">
+    <div class="flex flex-col gap-3">
+        <div>
+            <label class="block mb-1 font-medium">Matricule *</label>
+            <input pInputText [(ngModel)]="nouveauPersonnel.matricule" class="w-full" maxlength="50"
+                   placeholder="Référence badgeuse / paie (numérique)" />
+        </div>
+        <div>
+            <label class="block mb-1 font-medium">Nom *</label>
+            <input pInputText [(ngModel)]="nouveauPersonnel.nom" class="w-full" maxlength="100" />
+        </div>
+        <div>
+            <label class="block mb-1 font-medium">Prénom *</label>
+            <input pInputText [(ngModel)]="nouveauPersonnel.prenom" class="w-full" maxlength="100" />
+        </div>
+        <div>
+            <label class="block mb-1">Numéro de compte (facultatif)</label>
+            <input pInputText [(ngModel)]="nouveauPersonnel.numeroCompte" class="w-full" maxlength="50" />
+        </div>
+    </div>
+    <ng-template pTemplate="footer">
+        <button pButton label="Annuler" class="p-button-text" (click)="ajoutPersonnelVisible = false"></button>
+        <button pButton label="Ajouter" icon="pi pi-check"
+                [disabled]="!nouveauPersonnel.matricule.trim() || !nouveauPersonnel.nom.trim() || !nouveauPersonnel.prenom.trim()"
+                [loading]="ajoutPersonnelEnCours()" (click)="ajouterPersonnel()"></button>
     </ng-template>
 </p-dialog>

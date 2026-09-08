@@ -43,6 +43,31 @@ public class SalaireServiceImpl implements SalaireService {
 
     @Override
     @Transactional
+    public InfoPersonnelDto addInfoPersonnel(InfoPersonnelDto personnel) {
+        if (personnel.getMatricule() == null || personnel.getMatricule().isBlank()
+                || personnel.getNom() == null || personnel.getNom().isBlank()
+                || personnel.getPrenom() == null || personnel.getPrenom().isBlank()) {
+            throw new IllegalArgumentException("Le matricule, le nom et le prénom sont obligatoires");
+        }
+        String matricule = personnel.getMatricule().trim();
+        if (!matricule.chars().allMatch(Character::isDigit)) {
+            throw new IllegalArgumentException("Le matricule doit être numérique (référence badgeuse)");
+        }
+        if (salaireRepository.findInfoPersonnelByMatricule(matricule).isPresent()) {
+            throw new IllegalArgumentException("Le matricule " + matricule
+                    + " existe déjà dans le fichier du personnel");
+        }
+        personnel.setMatricule(matricule);
+        personnel.setNom(personnel.getNom().trim());
+        personnel.setPrenom(personnel.getPrenom().trim());
+        Long id = salaireRepository.saveInfoPersonnel(personnel);
+        log.info("Personnel ajouté manuellement : {} {} (matricule {})",
+                personnel.getPrenom(), personnel.getNom(), matricule);
+        return salaireRepository.findInfoPersonnelById(id).orElse(personnel);
+    }
+
+    @Override
+    @Transactional
     public ImportResultDto importInfoPersonnelFromExcel(MultipartFile file) {
         log.info("Début de l'import du fichier info_personnel: {}", file.getOriginalFilename());
         

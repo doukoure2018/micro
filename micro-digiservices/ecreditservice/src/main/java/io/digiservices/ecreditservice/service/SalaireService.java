@@ -21,6 +21,9 @@ public interface SalaireService {
      */
     ImportResultDto importInfoPersonnelFromExcel(MultipartFile file);
 
+    /** Création manuelle d'un personnel (formulaire) — refuse un matricule déjà existant. */
+    InfoPersonnelDto addInfoPersonnel(InfoPersonnelDto personnel);
+
     /**
      * Récupérer tous les personnels
      */

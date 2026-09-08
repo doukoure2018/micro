@@ -71,6 +71,23 @@ public class SalaireResource {
     }
 
     /**
+     * Ajouter manuellement un personnel (formulaire de la page Gestion du personnel)
+     */
+    @PostMapping("/salaire/info-personnel")
+    public ResponseEntity<Response> addInfoPersonnel(@RequestBody InfoPersonnelDto personnel,
+                                                     HttpServletRequest request) {
+        try {
+            InfoPersonnelDto cree = salaireService.addInfoPersonnel(personnel);
+            return ResponseEntity.ok(getResponse(request,
+                    Map.of("personnel", cree),
+                    "Personnel ajouté au fichier du personnel", OK));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(getResponse(request, Map.of("error", e.getMessage()), e.getMessage(), BAD_REQUEST));
+        }
+    }
+
+    /**
      * Récupérer tous les personnels avec filtre optionnel par statut
      */
     @GetMapping("/salaire/info-personnel")
