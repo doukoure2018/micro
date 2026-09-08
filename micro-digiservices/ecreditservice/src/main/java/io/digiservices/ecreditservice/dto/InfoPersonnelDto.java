@@ -19,6 +19,7 @@ public class InfoPersonnelDto {
     private String prenom;
     private String numeroCompte;
     private String statut;
+    private Boolean badgeSiege;
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
 

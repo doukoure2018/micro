@@ -43,6 +43,12 @@ public class SalaireServiceImpl implements SalaireService {
 
     @Override
     @Transactional
+    public int updateInfoPersonnelBadge(Long id, boolean badge) {
+        return salaireRepository.updateInfoPersonnelBadge(id, badge);
+    }
+
+    @Override
+    @Transactional
     public InfoPersonnelDto addInfoPersonnel(InfoPersonnelDto personnel) {
         if (personnel.getMatricule() == null || personnel.getMatricule().isBlank()
                 || personnel.getNom() == null || personnel.getNom().isBlank()

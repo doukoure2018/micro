@@ -88,6 +88,19 @@ public class SalaireResource {
     }
 
     /**
+     * Marquer / démarquer un personnel comme badgé au siège
+     */
+    @PutMapping("/salaire/info-personnel/{id}/badge")
+    public ResponseEntity<Response> updateBadgeSiege(@PathVariable Long id,
+                                                     @RequestParam boolean actif,
+                                                     HttpServletRequest request) {
+        int maj = salaireService.updateInfoPersonnelBadge(id, actif);
+        return ResponseEntity.ok(getResponse(request,
+                Map.of("updated", maj),
+                actif ? "Personnel marqué badgé au siège" : "Badge siège retiré", OK));
+    }
+
+    /**
      * Récupérer tous les personnels avec filtre optionnel par statut
      */
     @GetMapping("/salaire/info-personnel")

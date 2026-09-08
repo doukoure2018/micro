@@ -38,6 +38,7 @@ public class SalaireRepositoryImpl implements SalaireRepository {
                     .prenom(rs.getString("prenom"))
                     .numeroCompte(rs.getString("numero_compte"))
                     .statut(rs.getString("statut"))
+                    .badgeSiege(rs.getBoolean("badge_siege"))
                     .createdAt(toLocalDateTime(rs.getTimestamp("created_at")))
                     .updatedAt(toLocalDateTime(rs.getTimestamp("updated_at")))
                     .build();
@@ -61,6 +62,15 @@ public class SalaireRepositoryImpl implements SalaireRepository {
     }
 
     // ==================== INFO PERSONNEL ====================
+
+    @Override
+    @Transactional
+    public int updateInfoPersonnelBadge(Long id, boolean badge) {
+        return jdbcClient.sql(SalaireQuery.UPDATE_INFO_PERSONNEL_BADGE)
+                .param("id", id)
+                .param("badge", badge)
+                .update();
+    }
 
     @Override
     @Transactional

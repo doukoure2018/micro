@@ -139,6 +139,9 @@
                                 <th pSortableColumn="statut" style="width: 120px">
                                     Statut <p-sortIcon field="statut"></p-sortIcon>
                                 </th>
+                                <th style="width: 120px" pTooltip="Contrôlé par le rapprochement des présences">
+                                    Badge siège
+                                </th>
                                 <th style="width: 150px">Date création</th>
                                 <th style="width: 120px">Actions</th>
                             </tr>
@@ -159,6 +162,12 @@
                                 <td>
                                     <p-tag [value]="getStatutLabel(personnel.statut)"
                                         [severity]="getStatutSeverity(personnel.statut)"></p-tag>
+                                </td>
+                                <td class="text-center">
+                                    <p-inputSwitch [ngModel]="personnel.badgeSiege"
+                                        (onChange)="basculerBadgeSiege(personnel, $event.checked)"
+                                        pTooltip="Badgé au siège : contrôlé par le rapprochement des présences"
+                                        tooltipPosition="left"></p-inputSwitch>
                                 </td>
                                 <td>{{ personnel.createdAt | javaDate:'dd/MM/yyyy HH:mm' }}</td>
                                 <td>

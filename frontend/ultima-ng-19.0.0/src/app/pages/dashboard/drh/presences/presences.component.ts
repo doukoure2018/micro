@@ -1,9 +1,10 @@
-import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { CalendarModule } from 'primeng/calendar';
 import { DropdownModule } from 'primeng/dropdown';
+import { InputTextModule } from 'primeng/inputtext';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
@@ -34,7 +35,7 @@ const STATUTS_PRESENCE: { [k: string]: StatutPresence } = {
 @Component({
     selector: 'app-presences',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, CalendarModule, DropdownModule, SelectButtonModule, TableModule, TagModule, ToastModule, TooltipModule],
+    imports: [CommonModule, FormsModule, ButtonModule, CalendarModule, DropdownModule, InputTextModule, SelectButtonModule, TableModule, TagModule, ToastModule, TooltipModule],
     providers: [MessageService],
     template: `
         <p-toast />
@@ -97,12 +98,17 @@ const STATUTS_PRESENCE: { [k: string]: StatutPresence } = {
 
             <!-- ===== Détail par agent ===== -->
             <div *ngIf="vue === 'detail'">
-                <div class="mb-2">
+                <div class="mb-2 flex flex-wrap gap-2 items-center">
                     <p-dropdown [options]="statutsOptions" optionLabel="label" optionValue="value"
                                 [(ngModel)]="statutFiltre" [showClear]="true"
                                 placeholder="Tous les statuts" (onChange)="charger()" />
+                    <span class="p-input-icon-left">
+                        <i class="pi pi-search"></i>
+                        <input pInputText type="text" [ngModel]="recherche()" (ngModelChange)="recherche.set($event)"
+                               placeholder="Rechercher par nom ou matricule…" [style]="{ width: '280px' }" />
+                    </span>
                 </div>
-                <p-table [value]="presences()" responsiveLayout="scroll" [paginator]="true" [rows]="25" [rowHover]="true">
+                <p-table [value]="presencesFiltrees()" responsiveLayout="scroll" [paginator]="true" [rows]="25" [rowHover]="true">
                     <ng-template pTemplate="header">
                         <tr><th>Jour</th><th>Agent</th><th>Mat.</th><th>Dir.</th><th>Entrée</th><th>Sortie</th><th>Statut</th></tr>
                     </ng-template>
@@ -134,7 +140,14 @@ const STATUTS_PRESENCE: { [k: string]: StatutPresence } = {
                     Badges sans matricule reconnu (visiteurs, libellés texte type « CHAUFFEUR », matricules absents du
                     fichier du personnel). Régularisez les matricules dans le fichier du personnel puis réimportez.
                 </div>
-                <p-table [value]="nonRapproches()" responsiveLayout="scroll" [paginator]="true" [rows]="25">
+                <div class="mb-2">
+                    <span class="p-input-icon-left">
+                        <i class="pi pi-search"></i>
+                        <input pInputText type="text" [ngModel]="recherche()" (ngModelChange)="recherche.set($event)"
+                               placeholder="Rechercher par libellé…" [style]="{ width: '280px' }" />
+                    </span>
+                </div>
+                <p-table [value]="nonRapprochesFiltres()" responsiveLayout="scroll" [paginator]="true" [rows]="25">
                     <ng-template pTemplate="header">
                         <tr><th>Jour</th><th>Libellé badge</th><th>Entrée</th><th>Sortie</th></tr>
                     </ng-template>
@@ -173,6 +186,21 @@ export class PresencesComponent implements OnInit {
     ];
 
     statutFiltre: string | null = null;
+    /** Recherche libre par nom ou matricule (détail + non rapprochés). */
+    recherche = signal('');
+
+    presencesFiltrees = computed(() => {
+        const q = this.recherche().trim().toLowerCase();
+        if (!q) return this.presences();
+        return this.presences().filter((p: any) =>
+            (p.nom || '').toLowerCase().includes(q) || String(p.matricule || '').includes(q));
+    });
+
+    nonRapprochesFiltres = computed(() => {
+        const q = this.recherche().trim().toLowerCase();
+        if (!q) return this.nonRapproches();
+        return this.nonRapproches().filter((p: any) => (p.nomBrut || '').toLowerCase().includes(q));
+    });
     statutsOptions = Object.keys(STATUTS_PRESENCE).map((k) => ({ label: STATUTS_PRESENCE[k].label, value: k }));
 
     du: Date = (() => { const d = new Date(); d.setDate(d.getDate() - 7); return d; })();

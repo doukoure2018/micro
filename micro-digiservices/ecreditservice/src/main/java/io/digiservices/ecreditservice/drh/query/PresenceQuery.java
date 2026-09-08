@@ -33,7 +33,7 @@ public final class PresenceQuery {
         SELECT ip.matricule, ip.nom, ip.prenom, m.user_id
           FROM info_personnel ip
           LEFT JOIN drh_departement_membre m ON m.matricule = ip.matricule AND m.actif
-         WHERE ip.statut = 'ACTIVE'
+         WHERE ip.statut = 'ACTIVE' AND ip.badge_siege
          ORDER BY ip.nom
         """;
 

@@ -21,6 +21,7 @@ public interface SalaireRepository {
      * Insérer ou mettre à jour un personnel (upsert sur matricule)
      */
     Long saveInfoPersonnel(InfoPersonnelDto personnel);
+    int updateInfoPersonnelBadge(Long id, boolean badge);
 
     /**
      * Insérer plusieurs personnels en batch

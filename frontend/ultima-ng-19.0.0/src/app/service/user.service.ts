@@ -1104,6 +1104,10 @@ export class UserService {
      * Importer le fichier du personnel (Excel)
      * Format attendu: Matricule | Nom | Prénom
      */
+    updateBadgeSiege(id: number, actif: boolean): Observable<IResponse> {
+        return this.http.put<IResponse>(`${this.server}/ecredit/salaire/info-personnel/${id}/badge?actif=${actif}`, {}).pipe(catchError(this.handleError));
+    }
+
     addInfoPersonnel(personnel: { matricule: string; nom: string; prenom: string; numeroCompte?: string }): Observable<IResponse> {
         return this.http.post<IResponse>(`${this.server}/ecredit/salaire/info-personnel`, personnel).pipe(catchError(this.handleError));
     }

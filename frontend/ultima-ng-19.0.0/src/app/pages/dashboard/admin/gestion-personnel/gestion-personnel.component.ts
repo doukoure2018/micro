@@ -109,6 +109,23 @@ export class GestionPersonnelComponent implements OnInit {
         });
     }
 
+    /** Marquer / retirer le badge siège d'un personnel (rapprochement des présences). */
+    basculerBadgeSiege(personnel: InfoPersonnelDto, actif: boolean): void {
+        this.salaireService.updateBadgeSiege(personnel.id!, actif).subscribe({
+            next: () => {
+                personnel.badgeSiege = actif;
+                this.messageService.add({ severity: 'success', summary: actif ? 'Badgé' : 'Retiré',
+                    detail: `${personnel.prenom} ${personnel.nom} ${actif ? 'sera contrôlé' : 'ne sera plus contrôlé'} par le rapprochement des présences` });
+            },
+            error: (e) => {
+                personnel.badgeSiege = !actif;
+                this.personnels.set([...this.personnels()]);
+                this.messageService.add({ severity: 'error', summary: 'Erreur',
+                    detail: e.error?.message || 'Mise à jour impossible' });
+            }
+        });
+    }
+
     ouvrirAjoutPersonnel(): void {
         this.nouveauPersonnel = { matricule: '', nom: '', prenom: '', numeroCompte: '' };
         this.ajoutPersonnelVisible = true;
