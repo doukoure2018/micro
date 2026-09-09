@@ -7,9 +7,15 @@ public final class MouvementQuery {
 
     /** Insertion idempotente d'un événement de la porte : les réimports ne créent pas de doublon. */
     public static final String INSERT_MOUVEMENT = """
-        INSERT INTO drh_mouvement (jour, heure, sens, matricule, nom_brut, badge_no, credential, resultat, visiteur, porte)
-        VALUES (:jour, :heure, :sens, :matricule, :nom_brut, :badge_no, :credential, :resultat, :visiteur, :porte)
+        INSERT INTO drh_mouvement (jour, heure, sens, matricule, nom_brut, badge_no, credential, resultat, visiteur, porte, lecteur_id)
+        VALUES (:jour, :heure, :sens, :matricule, :nom_brut, :badge_no, :credential, :resultat, :visiteur, :porte, :lecteur_id)
         ON CONFLICT (jour, heure, nom_brut, sens, resultat) DO NOTHING
+        """;
+
+    /** Calibrage a posteriori : applique le sens aux mouvements INCONNU d'un lecteur donné. */
+    public static final String APPLIQUER_SENS_LECTEUR = """
+        UPDATE drh_mouvement SET sens = :sens
+         WHERE lecteur_id = :lecteur_id AND sens = 'INCONNU'
         """;
 
     public static final String MOUVEMENTS_PERIODE = """

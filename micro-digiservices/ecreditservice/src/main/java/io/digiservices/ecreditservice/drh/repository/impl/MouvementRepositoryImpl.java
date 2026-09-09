@@ -39,7 +39,7 @@ public class MouvementRepositoryImpl implements MouvementRepository {
     @Override
     public int insererMouvement(LocalDate jour, LocalTime heure, String sens, String matricule,
                                 String nomBrut, String badgeNo, String credential,
-                                String resultat, boolean visiteur, String porte) {
+                                String resultat, boolean visiteur, String porte, String lecteurId) {
         return jdbcClient.sql(MouvementQuery.INSERT_MOUVEMENT)
                 .param("jour", jour)
                 .param("heure", heure)
@@ -51,6 +51,15 @@ public class MouvementRepositoryImpl implements MouvementRepository {
                 .param("resultat", resultat)
                 .param("visiteur", visiteur)
                 .param("porte", porte)
+                .param("lecteur_id", lecteurId)
+                .update();
+    }
+
+    @Override
+    public int appliquerSensLecteur(String lecteurId, String sens) {
+        return jdbcClient.sql(MouvementQuery.APPLIQUER_SENS_LECTEUR)
+                .param("lecteur_id", lecteurId)
+                .param("sens", sens)
                 .update();
     }
 

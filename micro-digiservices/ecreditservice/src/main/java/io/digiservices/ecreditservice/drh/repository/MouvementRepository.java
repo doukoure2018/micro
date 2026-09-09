@@ -15,7 +15,10 @@ public interface MouvementRepository {
     /** @return 1 si inséré, 0 si l'événement était déjà en base (réimport). */
     int insererMouvement(LocalDate jour, LocalTime heure, String sens, String matricule,
                          String nomBrut, String badgeNo, String credential,
-                         String resultat, boolean visiteur, String porte);
+                         String resultat, boolean visiteur, String porte, String lecteurId);
+
+    /** @return nombre de mouvements INCONNU requalifiés pour ce lecteur. */
+    int appliquerSensLecteur(String lecteurId, String sens);
 
     Optional<String> matriculePourBadge(String badgeNo);
 
