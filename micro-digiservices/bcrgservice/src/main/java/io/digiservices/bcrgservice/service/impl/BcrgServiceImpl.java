@@ -252,16 +252,22 @@ public class BcrgServiceImpl implements BcrgService {
     /** Référence composite v1.6, sans tiret depuis v1.13 {@code <codAgence><numCredito>} (cf. BcrgTranslator.refIntEng). */
     private record RefComposite(String codAgence, Long numCredito) {
         static RefComposite parse(String refEng) {
-            int sep = refEng == null ? -1 : refEng.lastIndexOf('-');
-            if (sep > 0 && sep < refEng.length() - 1) {
-                try {
-                    return new RefComposite(refEng.substring(0, sep), Long.valueOf(refEng.substring(sep + 1)));
-                } catch (NumberFormatException ignored) {
-                    // format invalide : traite ci-dessous
+            String r = refEng == null ? "" : refEng.trim();
+            int sep = r.lastIndexOf('-');
+            try {
+                if (sep > 0 && sep < r.length() - 1) {
+                    // ancien format v1.6 avec tiret, toujours accepte
+                    return new RefComposite(r.substring(0, sep), Long.valueOf(r.substring(sep + 1)));
                 }
+                if (r.length() > 3) {
+                    // v1.13 : concatenation code agence (3 chiffres) + numero de credit
+                    return new RefComposite(r.substring(0, 3), Long.valueOf(r.substring(3)));
+                }
+            } catch (NumberFormatException ignored) {
+                // format invalide : traite ci-dessous
             }
             throw new io.digiservices.bcrgservice.exception.BadRequestException(
-                    "Reference d'engagement invalide (format attendu <codAgence>-<numero>) : " + refEng);
+                    "Reference d'engagement invalide (format attendu <codAgence><numero>, ex. 102540631) : " + refEng);
         }
     }
 

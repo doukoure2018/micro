@@ -1,8 +1,28 @@
 {
   "info": {
-    "name": "BCRG - Declaration reglementaire (CRG)",
-    "description": "API de declaration BCRG exposee par bcrgservice (v1.4). Auth par header X-API-Key (BCRG_PUBLIC_API_KEY). Base: https://digi-creditrural-io.com/bcrg. Extraction incrementale : statut=restantes (defaut) exclut les references notifiees via POST /traitements ; statut=toutes = extraction complete. Cycle recommande : extraire page=0 -> integrer -> notifier -> recommencer.",
+    "name": "BCRG - Declaration reglementaire (CRG) v1.13",
+    "description": "API de declaration BCRG exposee par le CRG (v1.13 - 09/09/2026).\nBase : https://digi-creditrural-io.com/bcrg — Auth : header X-API-Key (fourni par le CRG), ajoute automatiquement par la collection.\n\nCIRCUIT : 1) extraire PP/PM (statut=restantes) -> integrer au SIC -> notifier via POST /traitements ; 2) extraire les engagements (les beneficiaires doivent avoir ete notifies) -> integrer -> notifier ; 3) GET /encours (filtre=declares, defaut) restitue les credits dont l'engagement est notifie.\n\nREFERENCES (v1.13) : RefIntEng = code agence (3 chiffres) + numero de credit concatenes, ex. 102540631. Les anciens formats (102-540631, numero nu) restent acceptes dans /traitements.\nPERIODE (/encours) : AAAA-MM = date d'arrete des calculs (DatArr), ne filtre pas les donnees.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "key",
+        "value": "X-API-Key",
+        "type": "string"
+      },
+      {
+        "key": "value",
+        "value": "{{apiKey}}",
+        "type": "string"
+      },
+      {
+        "key": "in",
+        "value": "header",
+        "type": "string"
+      }
+    ]
   },
   "variable": [
     {
@@ -11,372 +31,620 @@
     },
     {
       "key": "apiKey",
-      "value": ""
+      "value": "REMPLACER_PAR_LA_CLE_FOURNIE"
     },
     {
       "key": "idClient",
-      "value": ""
+      "value": "10200001236"
     },
     {
       "key": "refEng",
-      "value": ""
+      "value": "102540631"
     },
     {
       "key": "periode",
-      "value": "2026-06"
+      "value": "2026-09"
     },
     {
       "key": "module",
-      "value": "PERSONNE_PHYSIQUE"
+      "value": "ENGAGEMENT"
     }
   ],
-  "auth": {
-    "type": "apikey",
-    "apikey": [
-      {
-        "key": "key",
-        "value": "X-API-Key"
-      },
-      {
-        "key": "value",
-        "value": "{{apiKey}}"
-      },
-      {
-        "key": "in",
-        "value": "header"
-      }
-    ]
-  },
   "item": [
     {
-      "name": "M1 - Personnes Physiques (restantes, defaut)",
-      "request": {
-        "method": "GET",
-        "url": {
-          "raw": "{{baseUrl}}/personnes-physiques?page=0&size=10&statut=restantes",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "personnes-physiques"
-          ],
-          "query": [
-            {
-              "key": "page",
-              "value": "0"
+      "name": "M1 - Personnes physiques",
+      "item": [
+        {
+          "name": "PP restantes (defaut)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/personnes-physiques?page=0&size=10&statut=restantes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "personnes-physiques"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                },
+                {
+                  "key": "statut",
+                  "value": "restantes"
+                }
+              ]
             },
-            {
-              "key": "size",
-              "value": "10"
-            },
-            {
-              "key": "statut",
-              "value": "restantes",
-              "description": "restantes (defaut) | toutes"
-            }
-          ]
-        }
-      }
-    },
-    {
-      "name": "M1 - Personnes Physiques (extraction complete)",
-      "request": {
-        "method": "GET",
-        "url": {
-          "raw": "{{baseUrl}}/personnes-physiques?page=0&size=10&statut=toutes",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "personnes-physiques"
-          ],
-          "query": [
-            {
-              "key": "page",
-              "value": "0"
-            },
-            {
-              "key": "size",
-              "value": "10"
-            },
-            {
-              "key": "statut",
-              "value": "toutes"
-            }
-          ]
-        }
-      }
-    },
-    {
-      "name": "M1 - Personne Physique (detail par id)",
-      "request": {
-        "method": "GET",
-        "url": {
-          "raw": "{{baseUrl}}/personnes-physiques/{{idClient}}",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "personnes-physiques",
-            "{{idClient}}"
-          ]
-        }
-      }
-    },
-    {
-      "name": "M1 - Personnes Physiques par liste d'ids (v1.4)",
-      "request": {
-        "method": "GET",
-        "url": {
-          "raw": "{{baseUrl}}/personnes-physiques/par-ids?ids={{idClient}}",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "personnes-physiques",
-            "par-ids"
-          ],
-          "query": [
-            {
-              "key": "ids",
-              "value": "{{idClient}}",
-              "description": "1 a 200 identifiants internes, separes par des virgules"
-            }
-          ]
-        }
-      }
-    },
-    {
-      "name": "M1 - Personnes Physiques modifiees depuis declaration (v1.4)",
-      "request": {
-        "method": "GET",
-        "url": {
-          "raw": "{{baseUrl}}/personnes-physiques/modifiees?page=0&size=100",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "personnes-physiques",
-            "modifiees"
-          ],
-          "query": [
-            {
-              "key": "page",
-              "value": "0"
-            },
-            {
-              "key": "size",
-              "value": "100"
-            }
-          ]
-        },
-        "description": "Compare l'empreinte actuelle a celle stockee lors de la notification POST /traitements (module PERSONNE_PHYSIQUE). Apres reintegration, notifier a nouveau les references pour rafraichir l'empreinte."
-      }
-    },
-    {
-      "name": "M1 - Personnes Morales (restantes, defaut)",
-      "request": {
-        "method": "GET",
-        "url": {
-          "raw": "{{baseUrl}}/personnes-morales?page=0&size=10&statut=restantes",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "personnes-morales"
-          ],
-          "query": [
-            {
-              "key": "page",
-              "value": "0"
-            },
-            {
-              "key": "size",
-              "value": "10"
-            },
-            {
-              "key": "statut",
-              "value": "restantes",
-              "description": "restantes (defaut) | toutes"
-            }
-          ]
-        }
-      }
-    },
-    {
-      "name": "M1 - Personne Morale (detail par id)",
-      "request": {
-        "method": "GET",
-        "url": {
-          "raw": "{{baseUrl}}/personnes-morales/{{idClient}}",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "personnes-morales",
-            "{{idClient}}"
-          ]
-        }
-      }
-    },
-    {
-      "name": "M2 - Engagements (restantes, defaut)",
-      "request": {
-        "method": "GET",
-        "url": {
-          "raw": "{{baseUrl}}/engagements?page=0&size=10&statut=restantes",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "engagements"
-          ],
-          "query": [
-            {
-              "key": "page",
-              "value": "0"
-            },
-            {
-              "key": "size",
-              "value": "10"
-            },
-            {
-              "key": "statut",
-              "value": "restantes",
-              "description": "restantes (defaut) | toutes"
-            }
-          ]
-        }
-      }
-    },
-    {
-      "name": "M2 - Engagement (detail par ref)",
-      "request": {
-        "method": "GET",
-        "url": {
-          "raw": "{{baseUrl}}/engagements/{{refEng}}",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "engagements",
-            "{{refEng}}"
-          ]
-        }
-      }
-    },
-    {
-      "name": "M4 - Encours (periode AAAA-MM, photo complete)",
-      "request": {
-        "method": "GET",
-        "url": {
-          "raw": "{{baseUrl}}/encours?periode={{periode}}&page=0&size=10",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "encours"
-          ],
-          "query": [
-            {
-              "key": "periode",
-              "value": "{{periode}}"
-            },
-            {
-              "key": "page",
-              "value": "0"
-            },
-            {
-              "key": "size",
-              "value": "10"
-            }
-          ]
-        }
-      }
-    },
-    {
-      "name": "Traitements - Notifier les donnees traitees (POST)",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
+            "description": "Extraction incrementale : uniquement les PP non encore notifiees traitees."
           }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"module\": \"{{module}}\",\n  \"references\": [\"10200007832\", \"10200007833\"],\n  \"dateTraitement\": \"2026-08-12T10:30:00\"\n}"
         },
-        "url": {
-          "raw": "{{baseUrl}}/traitements",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "traitements"
-          ]
+        {
+          "name": "PP extraction complete",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/personnes-physiques?page=0&size=10&statut=toutes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "personnes-physiques"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                },
+                {
+                  "key": "statut",
+                  "value": "toutes"
+                }
+              ]
+            },
+            "description": "statut=toutes : sans filtre (audit)."
+          }
         },
-        "description": "module: PERSONNE_PHYSIQUE | PERSONNE_MORALE | ENGAGEMENT. references: 1 a 1000 identifiants (IdInterneClt ou RefIntEng). Idempotent : une reference deja notifiee ne cree pas de doublon."
-      }
-    },
-    {
-      "name": "Traitements - Etat du suivi d'un module",
-      "request": {
-        "method": "GET",
-        "url": {
-          "raw": "{{baseUrl}}/traitements/{{module}}",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "traitements",
-            "{{module}}"
-          ]
-        }
-      }
-    },
-    {
-      "name": "Traitements - Retirer une reference (retraitement)",
-      "request": {
-        "method": "DELETE",
-        "url": {
-          "raw": "{{baseUrl}}/traitements/{{module}}/{{idClient}}",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "traitements",
-            "{{module}}",
-            "{{idClient}}"
-          ]
+        {
+          "name": "PP detail par id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/personnes-physiques/{{idClient}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "personnes-physiques",
+                "{{idClient}}"
+              ]
+            },
+            "description": "Detail d'une personne physique (comptes, pieces, adresses)."
+          }
         },
-        "description": "La reference retiree reapparait dans l'extraction statut=restantes."
-      }
-    },
-    {
-      "name": "Test securite - sans cle (attendu 401)",
-      "request": {
-        "method": "GET",
-        "auth": {
-          "type": "noauth"
+        {
+          "name": "PP par liste d'ids (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/personnes-physiques/par-ids?ids={{idClient}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "personnes-physiques",
+                "par-ids"
+              ],
+              "query": [
+                {
+                  "key": "ids",
+                  "value": "{{idClient}}"
+                }
+              ]
+            },
+            "description": "1 a 200 identifiants, separes par des virgules."
+          }
         },
-        "url": {
-          "raw": "{{baseUrl}}/personnes-physiques?size=1",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "personnes-physiques"
-          ],
-          "query": [
-            {
-              "key": "size",
-              "value": "1"
+        {
+          "name": "PP par liste d'ids (POST, v1.7)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/personnes-physiques/par-ids",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "personnes-physiques",
+                "par-ids"
+              ]
+            },
+            "description": "Variante POST : identifiants dans le corps de la requete (1 a 200).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\n    \"10200001236\",\n    \"10200002998\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
-          ]
+          }
+        },
+        {
+          "name": "PP modifiees depuis declaration (v1.4)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/personnes-physiques/modifiees?page=0&size=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "personnes-physiques",
+                "modifiees"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "PP dont le contenu a change depuis leur notification (empreinte)."
+          }
         }
-      }
+      ]
+    },
+    {
+      "name": "M1 - Personnes morales",
+      "item": [
+        {
+          "name": "PM restantes (defaut)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/personnes-morales?page=0&size=10&statut=restantes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "personnes-morales"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                },
+                {
+                  "key": "statut",
+                  "value": "restantes"
+                }
+              ]
+            },
+            "description": "Extraction incrementale : uniquement les PM non encore notifiees traitees."
+          }
+        },
+        {
+          "name": "PM extraction complete",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/personnes-morales?page=0&size=10&statut=toutes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "personnes-morales"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                },
+                {
+                  "key": "statut",
+                  "value": "toutes"
+                }
+              ]
+            },
+            "description": "statut=toutes : sans filtre (audit)."
+          }
+        },
+        {
+          "name": "PM detail par id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/personnes-morales/{{idClient}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "personnes-morales",
+                "{{idClient}}"
+              ]
+            },
+            "description": "Detail d'une personne morale."
+          }
+        },
+        {
+          "name": "PM par liste d'ids (GET, v1.7)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/personnes-morales/par-ids?ids={{idClient}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "personnes-morales",
+                "par-ids"
+              ],
+              "query": [
+                {
+                  "key": "ids",
+                  "value": "{{idClient}}"
+                }
+              ]
+            },
+            "description": "1 a 200 identifiants, separes par des virgules."
+          }
+        },
+        {
+          "name": "PM par liste d'ids (POST, v1.7)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/personnes-morales/par-ids",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "personnes-morales",
+                "par-ids"
+              ]
+            },
+            "description": "Variante POST : identifiants dans le corps de la requete (1 a 200).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\n    \"30100000123\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "M2 - Engagements",
+      "item": [
+        {
+          "name": "Engagements restants (defaut)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/engagements?page=0&size=10&statut=restantes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "engagements"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                },
+                {
+                  "key": "statut",
+                  "value": "restantes"
+                }
+              ]
+            },
+            "description": "Extraction incrementale : engagements dont les beneficiaires (PP/PM) ont ete notifies traites et qui n'ont pas encore ete notifies eux-memes. RefIntEng sans tiret depuis v1.13 (ex. 102540631)."
+          }
+        },
+        {
+          "name": "Engagements extraction complete",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/engagements?page=0&size=10&statut=toutes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "engagements"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                },
+                {
+                  "key": "statut",
+                  "value": "toutes"
+                }
+              ]
+            },
+            "description": "statut=toutes : photo complete sans filtre d'eligibilite (audit)."
+          }
+        },
+        {
+          "name": "Engagement detail par reference",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/engagements/{{refEng}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "engagements",
+                "{{refEng}}"
+              ]
+            },
+            "description": "Detail d'un engagement. Reference v1.13 sans tiret (102540631) ; l'ancien format 102-540631 reste accepte."
+          }
+        }
+      ]
+    },
+    {
+      "name": "M4 - Encours",
+      "item": [
+        {
+          "name": "Encours des engagements notifies (defaut)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/encours?periode={{periode}}&page=0&size=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "encours"
+              ],
+              "query": [
+                {
+                  "key": "periode",
+                  "value": "{{periode}}"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "filtre=declares (defaut) : uniquement les credits dont l'engagement a ete notifie traite via POST /traitements. v1.12 : pagination directe sur ce sous-ensemble (totalElements = nb d'engagements notifies, pages denses). periode = date d'arrete des calculs (ne filtre pas les donnees)."
+          }
+        },
+        {
+          "name": "Encours photo complete (audit)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/encours?periode={{periode}}&page=0&size=10&filtre=aucun",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "encours"
+              ],
+              "query": [
+                {
+                  "key": "periode",
+                  "value": "{{periode}}"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                },
+                {
+                  "key": "filtre",
+                  "value": "aucun"
+                }
+              ]
+            },
+            "description": "filtre=aucun : tous les credits eligibles (CRD > 0 ou montant non entierement decaisse), sans condition de notification."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Traitements (notifications)",
+      "item": [
+        {
+          "name": "Notifier des references traitees",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/traitements",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "traitements"
+              ]
+            },
+            "description": "Idempotent (upsert), 1 a 1000 references. module : PERSONNE_PHYSIQUE | PERSONNE_MORALE | ENGAGEMENT. La reponse contient une referenceCrg par reference (v1.9). Pour ENGAGEMENT : references v1.13 sans tiret (les anciens formats restent acceptes).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"module\": \"ENGAGEMENT\",\n  \"dateTraitement\": \"2026-09-09\",\n  \"references\": [\n    \"102540631\",\n    \"102540632\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Etat du suivi d'un module",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/traitements/{{module}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "traitements",
+                "{{module}}"
+              ]
+            },
+            "description": "Statistiques du module : nombre de references notifiees, derniere notification."
+          }
+        },
+        {
+          "name": "Verifier des references (v1.11)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/traitements/{{module}}/verifier?references={{refEng}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "traitements",
+                "{{module}}",
+                "verifier"
+              ],
+              "query": [
+                {
+                  "key": "references",
+                  "value": "{{refEng}}"
+                }
+              ]
+            },
+            "description": "Diagnostic : pour chaque reference, notifieeTraitee (bool) + referenceCrg. 1 a 1000 references, separees par des virgules."
+          }
+        },
+        {
+          "name": "Retirer une reference (retraitement)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/traitements/{{module}}/{{refEng}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "traitements",
+                "{{module}}",
+                "{{refEng}}"
+              ]
+            },
+            "description": "Retire une reference du suivi : elle redevient extractible en statut=restantes."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Securite",
+      "item": [
+        {
+          "name": "Sans cle API (attendu 401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/personnes-physiques?size=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "personnes-physiques"
+              ],
+              "query": [
+                {
+                  "key": "size",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Verifie que l'API refuse tout appel sans header X-API-Key."
+          }
+        }
+      ]
     }
   ]
 }
