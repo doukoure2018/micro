@@ -31,6 +31,15 @@ public class ChangementTelephoneResource {
 
     private final ChangementTelephoneService service;
     private final UserClient userClient;
+    private final io.digiservices.ecreditservice.service.PerimetreAgentService perimetreAgentService;
+
+    /** Membre hors du point de service de l'agent -> 403 avec message explicite. */
+    @org.springframework.web.bind.annotation.ExceptionHandler(io.digiservices.ecreditservice.exception.ValidationException.class)
+    public ResponseEntity<Response> handlePerimetre(io.digiservices.ecreditservice.exception.ValidationException e,
+                                                    HttpServletRequest request) {
+        return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).body(getResponse(request,
+                Map.of("error", e.getMessage()), e.getMessage(), org.springframework.http.HttpStatus.FORBIDDEN));
+    }
 
     /**
      * AGENT_CREDIT cree une nouvelle demande d'autorisation.
@@ -40,6 +49,8 @@ public class ChangementTelephoneResource {
                                           Authentication authentication,
                                           HttpServletRequest httpRequest) {
         User user = userClient.getUserByUuid(authentication.getName());
+        // Un agent de crédit ne demande un changement que pour les membres de son point de service
+        perimetreAgentService.exigerMembreDansPerimetre(user, request.getCodCliente());
         DemandeChangementTelephoneDto dto = service.creer(
                 request,
                 user.getUserId(),

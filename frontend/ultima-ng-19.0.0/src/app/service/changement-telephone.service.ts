@@ -14,6 +14,11 @@ export class ChangementTelephoneService {
         return this.http.post<IResponse>(this.base, request).pipe(catchError(this.handleError));
     }
 
+    /** Périmètre d'action de l'agent : code de son point de service (préfixe des numéros membre). */
+    getPerimetreAgent(): Observable<IResponse> {
+        return this.http.get<IResponse>(`${environment.apiBaseUrl}/ecredit/perimetre/agent`).pipe(catchError(this.handleError));
+    }
+
     listAttenteDA(): Observable<IResponse> {
         return this.http.get<IResponse>(`${this.base}/attente`).pipe(catchError(this.handleError));
     }

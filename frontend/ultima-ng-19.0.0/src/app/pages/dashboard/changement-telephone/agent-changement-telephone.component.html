@@ -144,9 +144,17 @@
             <textarea pTextarea class="w-full" rows="3" [(ngModel)]="form.raisonModification"></textarea>
         </div>
     </div>
+    @if (!codClienteAutorise()) {
+    <div class="p-2 border-round text-sm mt-3"
+        style="background: var(--yellow-50); border: 1px solid var(--yellow-300)">
+        <i class="pi pi-lock mr-1"></i>{{ messagePerimetre() }}
+    </div>
+    }
     <ng-template pTemplate="footer">
         <p-button label="Annuler" severity="secondary" (onClick)="showCreateDialog.set(false)" [disabled]="submitting()"></p-button>
+        @if (codClienteAutorise()) {
         <p-button label="Envoyer au DA" icon="pi pi-send" (onClick)="submit()" [loading]="submitting()"></p-button>
+        }
     </ng-template>
 </p-dialog>
 

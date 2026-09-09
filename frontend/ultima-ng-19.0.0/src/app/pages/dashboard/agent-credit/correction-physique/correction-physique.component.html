@@ -12,9 +12,16 @@
                 </p>
                 }
             </div>
+            @if (peutCorriger()) {
             <p-button label="Corriger la fiche Signalétique" icon="pi pi-plus" (click)="openAddDialog()"
                 [loading]="isLoading()" [disabled]="!ficheData()">
             </p-button>
+            } @else if (ficheData()) {
+            <div class="p-2 border-round text-sm"
+                style="background: var(--yellow-50); border: 1px solid var(--yellow-300); max-width: 30rem">
+                <i class="pi pi-lock mr-1"></i>{{ messagePerimetre() }}
+            </div>
+            }
         </div>
     </p-card>
 

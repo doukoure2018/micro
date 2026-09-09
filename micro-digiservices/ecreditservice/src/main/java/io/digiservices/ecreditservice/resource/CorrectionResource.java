@@ -14,7 +14,9 @@ import io.digiservices.ecreditservice.dto.CorrectionDelegationStat;
 import io.digiservices.ecreditservice.dto.CorrectionAgenceStat;
 import io.digiservices.ecreditservice.dto.CorrectionPointVenteStat;
 import io.digiservices.ecreditservice.dto.CorrectionEvolutionStat;
+import io.digiservices.ecreditservice.exception.ValidationException;
 import io.digiservices.ecreditservice.service.CorrectionService;
+import io.digiservices.ecreditservice.service.PerimetreAgentService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -46,6 +48,25 @@ public class CorrectionResource {
     private final CorrectionService correctionService;
 
     private final UserClient userClient;
+
+    private final PerimetreAgentService perimetreAgentService;
+
+    /** Périmètre d'action de l'agent connecté : code de son point de service (préfixe des numéros membre). */
+    @GetMapping("/perimetre/agent")
+    public ResponseEntity<Response> getPerimetreAgent(@NotNull Authentication authentication,
+                                                      HttpServletRequest request) {
+        User user = userClient.getUserByUuid(authentication.getName());
+        return ResponseEntity.ok(getResponse(request,
+                Map.of("perimetre", perimetreAgentService.perimetre(user)),
+                "Périmètre d'action de l'agent", OK));
+    }
+
+    /** Membre hors du point de service de l'agent -> 403 avec message explicite. */
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<Response> handlePerimetre(ValidationException e, HttpServletRequest request) {
+        return ResponseEntity.status(FORBIDDEN).body(getResponse(request,
+                Map.of("error", e.getMessage()), e.getMessage(), FORBIDDEN));
+    }
 
     /**
      * Récupère la fiche signalétique d'un client
@@ -255,6 +276,11 @@ public class CorrectionResource {
             HttpServletRequest request) {
 
         log.info("Mise à jour fiche signalétique via ecredit - Client: {}",
+                updateFicheSignaletiqueDTO.getCodCliente());
+
+        // Un agent de crédit ne corrige que les membres de son point de service
+        perimetreAgentService.exigerMembreDansPerimetre(
+                userClient.getUserByUuid(authentication.getName()),
                 updateFicheSignaletiqueDTO.getCodCliente());
 
         try {
@@ -573,10 +599,15 @@ public class CorrectionResource {
      */
     @PostMapping("/addMotifCorrection")
     public ResponseEntity<Response> insertMotifCorrection(
+            @NotNull Authentication authentication,
             @Valid @RequestBody MotifCorrection motifCorrection,
             HttpServletRequest request) {
 
         log.info("Création d'un motif de correction pour le client: {}", motifCorrection.getCodCliente());
+
+        // Un agent de crédit ne corrige que les membres de son point de service
+        perimetreAgentService.exigerMembreDansPerimetre(
+                userClient.getUserByUuid(authentication.getName()), motifCorrection.getCodCliente());
 
         try {
             MotifCorrection motifCorrectionNew = correctionService.addMotifCorrection(motifCorrection);

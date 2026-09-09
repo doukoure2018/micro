@@ -294,25 +294,6 @@ export class AppMenu {
                 icon: 'pi pi-fw pi-box',
                 routerLink: ['/dashboards/stock']
             });
-            if (this.user?.authorized) {
-                items.push({
-                    label: 'Correction P. Physique',
-                    icon: 'pi pi-fw pi-user-edit',
-                    routerLink: ['/dashboards/correction-physique']
-                });
-            }
-            items.push({
-                label: 'Correction en attente',
-                icon: 'pi pi-fw pi-hourglass',
-                routerLink: ['/dashboards/correction-en-attente']
-            });
-        }
-        if (this.role === 'AGENT_CORRECTEUR') {
-            items.push({
-                label: 'Correction P. Physique',
-                icon: 'pi pi-fw pi-user-edit',
-                routerLink: ['/dashboards/correction-physique']
-            });
         }
         return items;
     }
@@ -329,10 +310,31 @@ export class AppMenu {
             });
         }
         if (this.role === 'AGENT_CREDIT') {
+            if (this.user?.authorized) {
+                items.push({
+                    label: 'Correction P. Physique',
+                    icon: 'pi pi-fw pi-user-edit',
+                    routerLink: ['/dashboards/correction-physique']
+                });
+            }
+            items.push(
+                {
+                    label: 'Correction en attente',
+                    icon: 'pi pi-fw pi-hourglass',
+                    routerLink: ['/dashboards/correction-en-attente']
+                },
+                {
+                    label: 'Changement téléphone',
+                    icon: 'pi pi-fw pi-phone',
+                    routerLink: ['/dashboards/changement-telephone/agent']
+                }
+            );
+        }
+        if (this.role === 'AGENT_CORRECTEUR') {
             items.push({
-                label: 'Changement téléphone',
-                icon: 'pi pi-fw pi-phone',
-                routerLink: ['/dashboards/changement-telephone/agent']
+                label: 'Correction P. Physique',
+                icon: 'pi pi-fw pi-user-edit',
+                routerLink: ['/dashboards/correction-physique']
             });
         }
         if (this.role === 'DA') {

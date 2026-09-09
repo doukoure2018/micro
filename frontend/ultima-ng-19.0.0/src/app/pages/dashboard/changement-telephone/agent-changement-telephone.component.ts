@@ -74,8 +74,32 @@ export class AgentChangementTelephoneComponent implements OnInit {
     demandesRejetees = computed(() => this.demandes().filter(d => d.statut === 'REJETE' || d.statut === 'REJETE_DEFINITIF'));
     demandesValidees = computed(() => this.demandes().filter(d => d.statut === 'VALIDE_SAF'));
 
+    /** Périmètre de l'agent : demande possible uniquement pour les membres de son point de service. */
+    perimetre = signal<{ restreint: boolean; pointventeCode?: string; libelle?: string } | null>(null);
+
     ngOnInit() {
         this.refresh();
+        this.service.getPerimetreAgent().subscribe({
+            next: (r) => this.perimetre.set((r.data as any)?.perimetre || null),
+            error: () => {}
+        });
+    }
+
+    /** Vrai tant que le numéro saisi est vide ou commence par le code du point de service de l'agent. */
+    codClienteAutorise(): boolean {
+        const p = this.perimetre();
+        if (!p || !p.restreint) return true;
+        const code = (this.form.codCliente || '').trim();
+        if (!code) return true;
+        return !!p.pointventeCode && code.startsWith(p.pointventeCode);
+    }
+
+    messagePerimetre(): string {
+        const p = this.perimetre();
+        if (!p || !p.restreint) return '';
+        if (!p.pointventeCode) return "Aucun point de service rattaché à votre compte — contactez l'administrateur.";
+        const code = (this.form.codCliente || '').trim();
+        return `Ce membre appartient au point de service ${code.substring(0, 3)} — vous ne pouvez demander un changement que pour les membres de votre point de service (${p.pointventeCode}${p.libelle ? ' ' + p.libelle : ''}).`;
     }
 
     refresh() {
@@ -140,6 +164,10 @@ export class AgentChangementTelephoneComponent implements OnInit {
     }
 
     submit() {
+        if (!this.codClienteAutorise()) {
+            this.toast.add({ severity: 'warn', summary: 'Hors de votre point de service', detail: this.messagePerimetre() });
+            return;
+        }
         if (!this.validateForm()) return;
         this.submitting.set(true);
         this.service.creer(this.form).subscribe({
