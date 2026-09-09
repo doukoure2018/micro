@@ -1,5 +1,7 @@
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
-import { ApplicationConfig } from '@angular/core';
+import { registerLocaleData } from '@angular/common';
+import localeFr from '@angular/common/locales/fr';
+import { ApplicationConfig, LOCALE_ID } from '@angular/core';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideRouter, withEnabledBlockingInitialNavigation, withInMemoryScrolling } from '@angular/router';
 import { providePrimeNG } from 'primeng/config';
@@ -32,8 +34,12 @@ const MyPreset = definePreset(Material, {
     }
 });
 
+// Dates en français dans toute l'application (pipes date : jours, mois…)
+registerLocaleData(localeFr);
+
 export const appConfig: ApplicationConfig = {
     providers: [
+        { provide: LOCALE_ID, useValue: 'fr' },
         provideRouter(
             appRoutes,
             withInMemoryScrolling({

@@ -12,6 +12,21 @@ public final class MouvementQuery {
         ON CONFLICT (jour, heure, nom_brut, sens, resultat) DO NOTHING
         """;
 
+    /**
+     * Le même badgeage arrive par deux sources (webhook = heure de livraison, CSV = heure de
+     * l'événement, numéros de badge différents) : doublon si même personne, même sens, même
+     * résultat à moins de :tolerance secondes.
+     */
+    public static final String EXISTE_MOUVEMENT_PROCHE = """
+        SELECT EXISTS (
+            SELECT 1 FROM drh_mouvement
+             WHERE jour = :jour AND sens = :sens AND resultat = :resultat
+               AND (nom_brut = :nom_brut
+                    OR (CAST(:matricule AS VARCHAR) IS NOT NULL AND matricule = :matricule))
+               AND ABS(EXTRACT(EPOCH FROM (heure - CAST(:heure AS TIME)))) <= :tolerance
+        )
+        """;
+
     /** Calibrage a posteriori : applique le sens aux mouvements INCONNU d'un lecteur donné. */
     public static final String APPLIQUER_SENS_LECTEUR = """
         UPDATE drh_mouvement SET sens = :sens

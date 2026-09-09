@@ -56,6 +56,20 @@ public class MouvementRepositoryImpl implements MouvementRepository {
     }
 
     @Override
+    public boolean existeMouvementProche(LocalDate jour, LocalTime heure, String sens, String resultat,
+                                         String nomBrut, String matricule, int toleranceSecondes) {
+        return Boolean.TRUE.equals(jdbcClient.sql(MouvementQuery.EXISTE_MOUVEMENT_PROCHE)
+                .param("jour", jour)
+                .param("heure", heure)
+                .param("sens", sens)
+                .param("resultat", resultat)
+                .param("nom_brut", nomBrut)
+                .param("matricule", matricule)
+                .param("tolerance", toleranceSecondes)
+                .query(Boolean.class).single());
+    }
+
+    @Override
     public int appliquerSensLecteur(String lecteurId, String sens) {
         return jdbcClient.sql(MouvementQuery.APPLIQUER_SENS_LECTEUR)
                 .param("lecteur_id", lecteurId)

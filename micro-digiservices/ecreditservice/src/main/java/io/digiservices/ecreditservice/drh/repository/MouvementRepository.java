@@ -20,6 +20,10 @@ public interface MouvementRepository {
     /** @return nombre de mouvements INCONNU requalifiés pour ce lecteur. */
     int appliquerSensLecteur(String lecteurId, String sens);
 
+    /** Doublon inter-sources : même personne/sens/résultat à moins de `toleranceSecondes`. */
+    boolean existeMouvementProche(LocalDate jour, LocalTime heure, String sens, String resultat,
+                                  String nomBrut, String matricule, int toleranceSecondes);
+
     Optional<String> matriculePourBadge(String badgeNo);
 
     /** @return 1 si la correspondance a été apprise, 0 si le badge était déjà connu. */
