@@ -266,6 +266,13 @@ public class PresenceServiceImpl implements PresenceService {
     @Transactional
     public int recalculer(User drh, LocalDate du, LocalDate au) {
         exigerDrh(drh);
+        return recalculerInterne(du, au);
+    }
+
+    /** Usage interne (webhook UniFi / tâche planifiée) : sans contrôle d'habilitation. */
+    @Override
+    @Transactional
+    public int recalculerInterne(LocalDate du, LocalDate au) {
         Set<LocalDate> jours = new TreeSet<>();
         for (LocalDate d = du; !d.isAfter(au); d = d.plusDays(1)) {
             jours.add(d);

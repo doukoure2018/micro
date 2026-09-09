@@ -83,8 +83,9 @@ import { UserService } from '@/service/user.service';
                             <td>{{ m.jour | date: 'EEE dd/MM/yyyy' }}</td>
                             <td class="font-medium">{{ m.heure?.substring(0, 5) }}</td>
                             <td>
-                                <p-tag [value]="m.sens === 'ENTRY' ? 'Entrée' : 'Sortie'"
-                                       [severity]="m.sens === 'ENTRY' ? 'success' : 'warn'" />
+                                <p-tag [value]="m.sens === 'ENTRY' ? 'Entrée' : m.sens === 'EXIT' ? 'Sortie' : '?'"
+                                       [severity]="m.sens === 'ENTRY' ? 'success' : m.sens === 'EXIT' ? 'warn' : 'secondary'"
+                                       [pTooltip]="m.sens === 'INCONNU' ? 'Sens non transmis par la centrale (webhook)' : ''" />
                             </td>
                             <td>
                                 {{ m.nomPersonnel || m.nomBrut }}

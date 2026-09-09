@@ -49,4 +49,10 @@ public interface MouvementRepository {
      * @return 1 si l'alerte est nouvelle, 0 si déjà envoyée (anti-doublon).
      */
     int enregistrerAlerte(String type, long userId, long referenceId);
+
+    // ===== Connecteur UniFi Access =====
+
+    void upsertUnifiUser(String unifiId, String matricule, String nom, String employeeNumber, String statut);
+
+    Optional<String> matriculePourUnifiId(String unifiId);
 }

@@ -14,4 +14,7 @@ public interface PresenceService {
     List<SyntheseJourDto> synthese(User drh, LocalDate du, LocalDate au);
     List<PointageNonRapprocheDto> nonRapproches(User drh, LocalDate du, LocalDate au);
     int recalculer(User drh, LocalDate du, LocalDate au);
+
+    /** Usage interne (webhook UniFi / tâche planifiée) : sans contrôle d'habilitation. */
+    int recalculerInterne(LocalDate du, LocalDate au);
 }

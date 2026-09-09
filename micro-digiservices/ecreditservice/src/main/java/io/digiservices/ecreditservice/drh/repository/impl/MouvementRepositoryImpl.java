@@ -145,6 +145,24 @@ public class MouvementRepositoryImpl implements MouvementRepository {
     }
 
     @Override
+    public void upsertUnifiUser(String unifiId, String matricule, String nom, String employeeNumber, String statut) {
+        jdbcClient.sql(MouvementQuery.UPSERT_UNIFI_USER)
+                .param("unifi_id", unifiId)
+                .param("matricule", matricule)
+                .param("nom", nom)
+                .param("employee_number", employeeNumber)
+                .param("statut", statut)
+                .update();
+    }
+
+    @Override
+    public Optional<String> matriculePourUnifiId(String unifiId) {
+        return jdbcClient.sql(MouvementQuery.UNIFI_USER_MATRICULE)
+                .param("unifi_id", unifiId)
+                .query(String.class).optional();
+    }
+
+    @Override
     public int enregistrerAlerte(String type, long userId, long referenceId) {
         return jdbcClient.sql(io.digiservices.ecreditservice.drh.query.CongeQuery.INSERT_ALERTE)
                 .param("type", type)

@@ -49,9 +49,25 @@ public final class MouvementQuery {
           FROM drh_mouvement m
           JOIN info_personnel ip ON ip.matricule = m.matricule
          WHERE m.resultat = 'ACCESS'
+           AND m.sens IN ('ENTRY', 'EXIT')
            AND m.jour BETWEEN :du AND :au
            AND (CAST(:matricule AS VARCHAR) IS NULL OR m.matricule = :matricule)
          ORDER BY m.matricule, m.jour, m.heure
+        """;
+
+    // ===== Connecteur UniFi Access =====
+
+    public static final String UPSERT_UNIFI_USER = """
+        INSERT INTO drh_unifi_user (unifi_id, matricule, nom, employee_number, statut, updated_at)
+        VALUES (:unifi_id, :matricule, :nom, :employee_number, :statut, CURRENT_TIMESTAMP)
+        ON CONFLICT (unifi_id)
+        DO UPDATE SET matricule = COALESCE(EXCLUDED.matricule, drh_unifi_user.matricule),
+                      nom = EXCLUDED.nom, employee_number = EXCLUDED.employee_number,
+                      statut = EXCLUDED.statut, updated_at = CURRENT_TIMESTAMP
+        """;
+
+    public static final String UNIFI_USER_MATRICULE = """
+        SELECT matricule FROM drh_unifi_user WHERE unifi_id = :unifi_id AND matricule IS NOT NULL
         """;
 
     public static final String CORRESPONDANCES = """

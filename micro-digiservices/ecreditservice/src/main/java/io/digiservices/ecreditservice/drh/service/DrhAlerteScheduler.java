@@ -27,6 +27,7 @@ public class DrhAlerteScheduler {
     private final CongeRepository congeRepository;
     private final DrhRepository drhRepository;
     private final MouvementService mouvementService;
+    private final PresenceService presenceService;
     private final SmsService smsService;
 
     /** Tous les jours à 08h00 (heure serveur). */
@@ -43,6 +44,16 @@ public class DrhAlerteScheduler {
             mouvementService.alerterDepassementsSemaine();
         } catch (Exception e) {
             log.warn("Alerte mouvements hebdomadaire en échec : {}", e.getMessage());
+        }
+    }
+
+    /** Heures ouvrées : consolide les présences du jour depuis les pointages (webhook UniFi). */
+    @Scheduled(cron = "0 10 7-19 * * MON-SAT")
+    public void rapprocherPresencesDuJour() {
+        try {
+            presenceService.recalculerInterne(LocalDate.now(), LocalDate.now());
+        } catch (Exception e) {
+            log.warn("Rapprochement présences du jour en échec : {}", e.getMessage());
         }
     }
 

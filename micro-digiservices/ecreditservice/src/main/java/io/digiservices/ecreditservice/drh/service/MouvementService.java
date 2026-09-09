@@ -35,6 +35,12 @@ public interface MouvementService {
     /** Usage interne (présences) : journées reconstruites par matricule, sans contrôle d'habilitation. */
     java.util.Map<String, MouvementPersonneDto> reconstituerPeriode(LocalDate du, LocalDate au);
 
+    /** Référentiel users UniFi poussé depuis le siège : upsert drh_unifi_user + apprentissage badges. */
+    int importerUsersUnifi(java.util.List<java.util.Map<String, Object>> usersUnifi);
+
+    /** Événement webhook UniFi (access.door.unlock) : insertion mouvement + pointage présence. */
+    boolean traiterEvenementWebhook(long epochSecondes, com.fasterxml.jackson.databind.JsonNode evenement);
+
     /** Alerte DRH hebdomadaire : agents au-dessus du seuil de minutes hors bureau + dépassement de pause. */
     int alerterDepassementsSemaine();
 }
