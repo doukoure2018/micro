@@ -25,7 +25,7 @@ public class SalaireQuery {
      * Récupérer tous les personnels
      */
     public static final String SELECT_ALL_INFO_PERSONNEL = """
-    SELECT id, matricule, nom, prenom, numero_compte, statut, created_at, updated_at
+    SELECT id, matricule, nom, prenom, numero_compte, statut, badge_siege, created_at, updated_at
     FROM info_personnel
     ORDER BY nom, prenom
     """;
@@ -34,7 +34,7 @@ public class SalaireQuery {
      * Récupérer un personnel par matricule
      */
     public static final String SELECT_INFO_PERSONNEL_BY_MATRICULE = """
-        SELECT id, matricule, nom, prenom, numero_compte, created_at, updated_at
+        SELECT id, matricule, nom, prenom, numero_compte, statut, badge_siege, created_at, updated_at
         FROM info_personnel
         WHERE matricule = :matricule
         """;
@@ -43,9 +43,14 @@ public class SalaireQuery {
      * Récupérer un personnel par ID
      */
     public static final String SELECT_INFO_PERSONNEL_BY_ID = """
-        SELECT id, matricule, nom, prenom, numero_compte, created_at, updated_at
+        SELECT id, matricule, nom, prenom, numero_compte, statut, badge_siege, created_at, updated_at
         FROM info_personnel
         WHERE id = :id
+        """;
+
+    /** Marquer / démarquer un personnel comme badgé au siège (contrôle des présences). */
+    public static final String UPDATE_INFO_PERSONNEL_BADGE = """
+        UPDATE info_personnel SET badge_siege = :badge, updated_at = NOW() WHERE id = :id
         """;
 
     /**
@@ -598,7 +603,7 @@ public class SalaireQuery {
      * Récupérer uniquement les personnels actifs
      */
     public static final String SELECT_ACTIVE_INFO_PERSONNEL = """
-    SELECT id, matricule, nom, prenom, numero_compte, statut, created_at, updated_at
+    SELECT id, matricule, nom, prenom, numero_compte, statut, badge_siege, created_at, updated_at
     FROM info_personnel
     WHERE statut = 'ACTIVE'
     ORDER BY nom, prenom
@@ -608,7 +613,7 @@ public class SalaireQuery {
      * Récupérer les personnels par statut
      */
     public static final String SELECT_INFO_PERSONNEL_BY_STATUT = """
-    SELECT id, matricule, nom, prenom, numero_compte, statut, created_at, updated_at
+    SELECT id, matricule, nom, prenom, numero_compte, statut, badge_siege, created_at, updated_at
     FROM info_personnel
     WHERE statut = :statut
     ORDER BY nom, prenom

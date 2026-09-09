@@ -47,6 +47,25 @@ export class CorrectionPhysiqueComponent {
     ficheData = computed(() => this.state().ficheSignaletique);
     showDialog = computed(() => this.state().showAddDialog);
 
+    /** Périmètre de l'agent : un AGENT_CREDIT ne corrige que les membres de son point de service. */
+    perimetre = signal<{ restreint: boolean; pointventeCode?: string; libelle?: string } | null>(null);
+    /** Numéro membre de la fiche affichée. */
+    dernierCodCliente = signal<string>('');
+
+    peutCorriger = computed(() => {
+        const p = this.perimetre();
+        if (!p || !p.restreint) return true;
+        if (!p.pointventeCode) return false;
+        return this.dernierCodCliente().startsWith(p.pointventeCode);
+    });
+
+    messagePerimetre = computed(() => {
+        const p = this.perimetre();
+        if (!p || !p.restreint) return '';
+        if (!p.pointventeCode) return "Aucun point de service rattaché à votre compte — contactez l'administrateur.";
+        return `Ce membre appartient au point de service ${this.dernierCodCliente().substring(0, 3)} — vous ne pouvez corriger que les membres de votre point de service (${p.pointventeCode}${p.libelle ? ' ' + p.libelle : ''}).`;
+    });
+
     searchForm: FormGroup;
 
     private userService = inject(UserService);
@@ -62,6 +81,13 @@ export class CorrectionPhysiqueComponent {
 
     ngOnInit(): void {
         this.loadUser();
+        this.userService
+            .getPerimetreAgent$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r) => this.perimetre.set((r.data as any)?.perimetre || null),
+                error: () => {}
+            });
     }
 
     loadUser(): void {
@@ -105,6 +131,7 @@ export class CorrectionPhysiqueComponent {
         }
 
         const codCliente = this.searchForm.get('codCliente')?.value;
+        this.dernierCodCliente.set(String(codCliente || ''));
         this.state.update((s) => ({ ...s, searching: true, error: undefined }));
 
         this.userService

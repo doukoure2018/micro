@@ -21,6 +21,12 @@ public interface SalaireService {
      */
     ImportResultDto importInfoPersonnelFromExcel(MultipartFile file);
 
+    /** Création manuelle d'un personnel (formulaire) — refuse un matricule déjà existant. */
+    InfoPersonnelDto addInfoPersonnel(InfoPersonnelDto personnel);
+
+    /** Marquer / démarquer un personnel comme badgé au siège (contrôle des présences). */
+    int updateInfoPersonnelBadge(Long id, boolean badge);
+
     /**
      * Récupérer tous les personnels
      */

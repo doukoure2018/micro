@@ -5,6 +5,7 @@ export interface InfoPersonnelDto {
     prenom: string;
     numeroCompte?: string;
     statut?: 'ACTIVE' | 'INACTIVE';
+    badgeSiege?: boolean;
     createdAt?: Date | string;
     updatedAt?: Date | string;
 }

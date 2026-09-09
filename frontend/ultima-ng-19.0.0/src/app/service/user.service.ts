@@ -671,6 +671,9 @@ export class UserService {
     // Correction annomalie
     getFicheSignaletique$ = (codCliente: string) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/fiche-signaletique/${codCliente}`).pipe(tap(console.log), catchError(this.handleError));
 
+    /** Périmètre d'action de l'agent : code de son point de service (préfixe des numéros membre). */
+    getPerimetreAgent$ = (): Observable<IResponse> => this.http.get<IResponse>(`${this.server}/ecredit/perimetre/agent`).pipe(catchError(this.handleError));
+
     addPersonnePhysique$ = (personnePhysique: PersonnePhysique) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/addPersonnePhysique`, personnePhysique).pipe(tap(console.log), catchError(this.handleError));
 
     getListPPAttente$ = (): Observable<IResponse> => this.http.get<IResponse>(`${this.server}/ecredit/listPPAttente`).pipe(tap(console.log), catchError(this.handleError));
@@ -1104,6 +1107,14 @@ export class UserService {
      * Importer le fichier du personnel (Excel)
      * Format attendu: Matricule | Nom | Prénom
      */
+    updateBadgeSiege(id: number, actif: boolean): Observable<IResponse> {
+        return this.http.put<IResponse>(`${this.server}/ecredit/salaire/info-personnel/${id}/badge?actif=${actif}`, {}).pipe(catchError(this.handleError));
+    }
+
+    addInfoPersonnel(personnel: { matricule: string; nom: string; prenom: string; numeroCompte?: string }): Observable<IResponse> {
+        return this.http.post<IResponse>(`${this.server}/ecredit/salaire/info-personnel`, personnel).pipe(catchError(this.handleError));
+    }
+
     importInfoPersonnel(file: File): Observable<IResponse> {
         const formData = new FormData();
         formData.append('file', file);

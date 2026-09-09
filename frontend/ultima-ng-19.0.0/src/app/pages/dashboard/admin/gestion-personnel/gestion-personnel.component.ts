@@ -80,6 +80,78 @@ export class GestionPersonnelComponent implements OnInit {
 
     // Données
     personnels = signal<InfoPersonnelDto[]>([]);
+
+    // Import du fichier du personnel + ajout manuel
+    importPersonnelEnCours = signal(false);
+    resultatImportPersonnel = signal<any | null>(null);
+    ajoutPersonnelVisible = false;
+    ajoutPersonnelEnCours = signal(false);
+    nouveauPersonnel = { matricule: '', nom: '', prenom: '', numeroCompte: '' };
+
+    importerFichierPersonnel(event: Event): void {
+        const input = event.target as HTMLInputElement;
+        const fichier = input.files?.[0];
+        input.value = '';
+        if (!fichier) return;
+        this.importPersonnelEnCours.set(true);
+        this.salaireService.importInfoPersonnel(fichier).subscribe({
+            next: (response) => {
+                this.importPersonnelEnCours.set(false);
+                this.resultatImportPersonnel.set((response.data as any)?.importResult || null);
+                this.messageService.add({ severity: 'success', summary: 'Importé', detail: response.message || 'Fichier du personnel importé' });
+                this.loadPersonnels();
+            },
+            error: (e) => {
+                this.importPersonnelEnCours.set(false);
+                this.messageService.add({ severity: 'error', summary: 'Erreur',
+                    detail: e.error?.data?.error || e.error?.message || "Import impossible — vérifiez le format (Matricule | Nom | Prénom)" });
+            }
+        });
+    }
+
+    /** Marquer / retirer le badge siège d'un personnel (rapprochement des présences). */
+    basculerBadgeSiege(personnel: InfoPersonnelDto, actif: boolean): void {
+        this.salaireService.updateBadgeSiege(personnel.id!, actif).subscribe({
+            next: () => {
+                personnel.badgeSiege = actif;
+                this.messageService.add({ severity: 'success', summary: actif ? 'Badgé' : 'Retiré',
+                    detail: `${personnel.prenom} ${personnel.nom} ${actif ? 'sera contrôlé' : 'ne sera plus contrôlé'} par le rapprochement des présences` });
+            },
+            error: (e) => {
+                personnel.badgeSiege = !actif;
+                this.personnels.set([...this.personnels()]);
+                this.messageService.add({ severity: 'error', summary: 'Erreur',
+                    detail: e.error?.message || 'Mise à jour impossible' });
+            }
+        });
+    }
+
+    ouvrirAjoutPersonnel(): void {
+        this.nouveauPersonnel = { matricule: '', nom: '', prenom: '', numeroCompte: '' };
+        this.ajoutPersonnelVisible = true;
+    }
+
+    ajouterPersonnel(): void {
+        this.ajoutPersonnelEnCours.set(true);
+        this.salaireService.addInfoPersonnel({
+            matricule: this.nouveauPersonnel.matricule.trim(),
+            nom: this.nouveauPersonnel.nom.trim(),
+            prenom: this.nouveauPersonnel.prenom.trim(),
+            numeroCompte: this.nouveauPersonnel.numeroCompte.trim() || undefined
+        }).subscribe({
+            next: () => {
+                this.ajoutPersonnelEnCours.set(false);
+                this.ajoutPersonnelVisible = false;
+                this.messageService.add({ severity: 'success', summary: 'Ajouté', detail: 'Personnel ajouté au fichier du personnel' });
+                this.loadPersonnels();
+            },
+            error: (e) => {
+                this.ajoutPersonnelEnCours.set(false);
+                this.messageService.add({ severity: 'error', summary: 'Erreur',
+                    detail: e.error?.data?.error || e.error?.message || 'Ajout impossible' });
+            }
+        });
+    }
     avancesSalaire = signal<AvanceSalaireDto[]>([]);
 
     searchTerm = signal<string>('');
