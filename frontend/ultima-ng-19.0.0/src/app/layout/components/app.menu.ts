@@ -407,46 +407,50 @@ export class AppMenu {
         const managerDrh = this.estManager('DRH');
         if (this.estHabiliteDrh || managerDrh) {
             const admin: MenuItem[] = [];
-            // Les validations restent au responsable DRH (pas au SUPER_ADMIN)
-            if (this.estHabiliteDrh && this.role !== 'SUPER_ADMIN') {
-                admin.push(
-                    {
-                        label: 'Validation des prévisions',
-                        icon: 'pi pi-fw pi-check-square',
-                        routerLink: ['/dashboards/drh/validation-previsions']
-                    },
-                    {
-                        label: 'Validation des congés',
-                        icon: 'pi pi-fw pi-verified',
-                        routerLink: ['/dashboards/drh/validation-conges']
-                    }
-                );
+            if (this.role === 'SUPER_ADMIN') {
+                // Le SUPER_ADMIN ne fait que configurer l'organisation ; l'opérationnel reste à la DRH
+                admin.push({
+                    label: 'Organisation (départements)',
+                    icon: 'pi pi-fw pi-sitemap',
+                    routerLink: ['/dashboards/drh/organisation']
+                });
+            } else {
+                if (this.estHabiliteDrh) {
+                    admin.push(
+                        {
+                            label: 'Validation des prévisions',
+                            icon: 'pi pi-fw pi-check-square',
+                            routerLink: ['/dashboards/drh/validation-previsions']
+                        },
+                        {
+                            label: 'Validation des congés',
+                            icon: 'pi pi-fw pi-verified',
+                            routerLink: ['/dashboards/drh/validation-conges']
+                        },
+                        {
+                            label: 'Organisation (départements)',
+                            icon: 'pi pi-fw pi-sitemap',
+                            routerLink: ['/dashboards/drh/organisation']
+                        },
+                        {
+                            label: 'Gestion des présences',
+                            icon: 'pi pi-fw pi-clock',
+                            routerLink: ['/dashboards/drh/presences']
+                        },
+                        {
+                            label: 'Gestion des mouvements',
+                            icon: 'pi pi-fw pi-arrow-right-arrow-left',
+                            routerLink: ['/dashboards/drh/mouvements']
+                        }
+                    );
+                }
+                // Habilitation DRH OU rôle MANAGER du service DRH
+                admin.push({
+                    label: 'Gestion du personnel',
+                    icon: 'pi pi-fw pi-address-book',
+                    routerLink: ['/dashboards/gestion-personnel']
+                });
             }
-            if (this.estHabiliteDrh) {
-                admin.push(
-                    {
-                        label: 'Organisation (départements)',
-                        icon: 'pi pi-fw pi-sitemap',
-                        routerLink: ['/dashboards/drh/organisation']
-                    },
-                    {
-                        label: 'Gestion des présences',
-                        icon: 'pi pi-fw pi-clock',
-                        routerLink: ['/dashboards/drh/presences']
-                    },
-                    {
-                        label: 'Gestion des mouvements',
-                        icon: 'pi pi-fw pi-arrow-right-arrow-left',
-                        routerLink: ['/dashboards/drh/mouvements']
-                    }
-                );
-            }
-            // Habilitation DRH OU rôle MANAGER du service DRH
-            admin.push({
-                label: 'Gestion du personnel',
-                icon: 'pi pi-fw pi-address-book',
-                routerLink: ['/dashboards/gestion-personnel']
-            });
             items.push({
                 label: 'Administration DRH',
                 icon: 'pi pi-fw pi-briefcase',
