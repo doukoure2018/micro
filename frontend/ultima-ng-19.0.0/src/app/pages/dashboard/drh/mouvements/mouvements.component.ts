@@ -112,7 +112,7 @@ import { UserService } from '@/service/user.service';
                     </div>
 
                     <!-- Affluence par demi-heure -->
-                    <div class="mb-4" *ngIf="affluence(tb).length > 0">
+                    <div class="mb-4" *ngIf="barresAffluence().length > 0">
                         <div class="text-sm font-medium mb-1">
                             Affluence de la porte par demi-heure
                             <span class="text-xs text-color-secondary font-normal ml-2">
@@ -121,7 +121,7 @@ import { UserService } from '@/service/user.service';
                             </span>
                         </div>
                         <div class="flex items-end gap-1" style="height:90px">
-                            <div *ngFor="let b of affluence(tb)" class="flex-1 flex flex-col items-center justify-end" style="min-width:0">
+                            <div *ngFor="let b of barresAffluence()" class="flex-1 flex flex-col items-center justify-end" style="min-width:0">
                                 <div class="text-xs text-color-secondary" *ngIf="b.nb > 0">{{ b.nb }}</div>
                                 <div class="w-full border-round-top"
                                      [style.height.px]="b.hauteur"
@@ -446,6 +446,7 @@ export class MouvementsComponent implements OnInit {
     recherche = signal('');
     vuePrincipale = signal<string>('tableau-bord');
     tableauBord = signal<any | null>(null);
+    barresAffluence = signal<{ label: string; nb: number; hauteur: number; avantTravail: boolean }[]>([]);
     jourTb: Date = new Date();
     typeJournal = signal<string>('');
     /** badge_no -> matricule choisi dans le dropdown d'association. */
@@ -454,16 +455,9 @@ export class MouvementsComponent implements OnInit {
     /** Mode responsable (route mouvements-departement) : vues limitées, périmètre filtré côté serveur. */
     modeDepartement = false;
 
-    get vuesPrincipales() {
-        const vues = [
-            { label: 'Tableau de bord', value: 'tableau-bord' },
-            { label: 'Journal', value: 'journal' },
-            { label: 'Synthèse par agent', value: 'synthese' },
-            { label: 'Détail par personne', value: 'personne' },
-            { label: 'Badges', value: 'badges' }
-        ];
-        return this.modeDepartement ? vues.filter((v) => ['tableau-bord', 'synthese', 'personne'].includes(v.value)) : vues;
-    }
+    // Référence STABLE (calculée une fois dans ngOnInit) : un getter renvoyant un nouveau
+    // tableau à chaque cycle de détection ferait boucler le p-selectButton.
+    vuesPrincipales: { label: string; value: string }[] = [];
     typesJournal = [
         { label: 'Tous', value: '' },
         { label: 'Personnel', value: 'PERSONNEL' },
@@ -510,6 +504,16 @@ export class MouvementsComponent implements OnInit {
 
     ngOnInit(): void {
         this.modeDepartement = !!this.activatedRoute.snapshot.data['modeDepartement'];
+        const vues = [
+            { label: 'Tableau de bord', value: 'tableau-bord' },
+            { label: 'Journal', value: 'journal' },
+            { label: 'Synthèse par agent', value: 'synthese' },
+            { label: 'Détail par personne', value: 'personne' },
+            { label: 'Badges', value: 'badges' }
+        ];
+        this.vuesPrincipales = this.modeDepartement
+            ? vues.filter((v) => ['tableau-bord', 'synthese', 'personne'].includes(v.value))
+            : vues;
         this.charger();
     }
 
@@ -626,7 +630,13 @@ export class MouvementsComponent implements OnInit {
     chargerTableauBord(): void {
         this.drhService.tableauBordMouvements$(this.toIso(this.jourTb))
             .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-                next: (r) => this.tableauBord.set((r.data as any)?.tableauBord || null),
+                next: (r) => {
+                    const tb = (r.data as any)?.tableauBord || null;
+                    this.tableauBord.set(tb);
+                    // Barres calculées UNE FOIS par chargement : un appel de méthode dans le
+                    // template recréerait le tableau à chaque cycle de détection (page figée).
+                    this.barresAffluence.set(tb ? this.affluence(tb) : []);
+                },
                 error: (e) => this.erreur(e)
             });
     }
