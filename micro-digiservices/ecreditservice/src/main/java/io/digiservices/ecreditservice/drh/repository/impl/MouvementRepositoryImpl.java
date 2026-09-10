@@ -209,16 +209,16 @@ public class MouvementRepositoryImpl implements MouvementRepository {
     }
 
     @Override
-    public int[] affluenceParHeure(LocalDate jour) {
-        int[] heures = new int[24];
-        jdbcClient.sql(MouvementQuery.AFFLUENCE_PAR_HEURE)
+    public int[] affluenceParDemiHeure(LocalDate jour) {
+        int[] creneaux = new int[48];
+        jdbcClient.sql(MouvementQuery.AFFLUENCE_PAR_DEMI_HEURE)
                 .param("jour", jour)
                 .query().listOfRows()
                 .forEach(r -> {
-                    int h = ((Number) r.get("h")).intValue();
-                    if (h >= 0 && h < 24) heures[h] = ((Number) r.get("nb")).intValue();
+                    int c = ((Number) r.get("creneau")).intValue();
+                    if (c >= 0 && c < 48) creneaux[c] = ((Number) r.get("nb")).intValue();
                 });
-        return heures;
+        return creneaux;
     }
 
     @Override

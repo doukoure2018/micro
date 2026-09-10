@@ -1,4 +1,5 @@
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -30,15 +31,16 @@ import { UserService } from '@/service/user.service';
         <div class="card">
             <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
                 <div>
-                    <h4 class="m-0">Gestion des mouvements</h4>
+                    <h4 class="m-0">{{ modeDepartement ? 'Mouvements de mon département' : 'Gestion des mouvements' }}</h4>
                     <span class="text-sm text-color-secondary">
-                        Journal des entrées/sorties de la porte : pause déjeuner 13h00–14h30 non comptée
-                        (ignorée le vendredi), sorties en heures de travail et dépassements mesurés.
+                        {{ modeDepartement
+                            ? 'Entrées/sorties de la porte pour les agents de votre département : pause déjeuner 13h00–14h30 non comptée (ignorée le vendredi).'
+                            : 'Journal des entrées/sorties de la porte : pause déjeuner 13h00–14h30 non comptée (ignorée le vendredi), sorties en heures de travail et dépassements mesurés.' }}
                     </span>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <input type="file" #fichier accept=".csv,text/csv" style="display:none" (change)="importer($event)" />
-                    <button pButton icon="pi pi-upload" label="Importer un journal access-log"
+                    <button pButton icon="pi pi-upload" label="Importer un journal access-log" *ngIf="!modeDepartement"
                             [loading]="importEnCours()" (click)="fichier.click()"></button>
                     <p-calendar [(ngModel)]="du" dateFormat="dd/mm/yy" [showIcon]="true" placeholder="Du" (onSelect)="charger()" />
                     <p-calendar [(ngModel)]="au" dateFormat="dd/mm/yy" [showIcon]="true" placeholder="Au" (onSelect)="charger()" />
@@ -109,17 +111,23 @@ import { UserService } from '@/service/user.service';
                         </div>
                     </div>
 
-                    <!-- Affluence par heure -->
+                    <!-- Affluence par demi-heure -->
                     <div class="mb-4" *ngIf="affluence(tb).length > 0">
-                        <div class="text-sm font-medium mb-1">Affluence de la porte par heure</div>
+                        <div class="text-sm font-medium mb-1">
+                            Affluence de la porte par demi-heure
+                            <span class="text-xs text-color-secondary font-normal ml-2">
+                                <span style="display:inline-block;width:10px;height:10px;background:#f97316;border-radius:2px;vertical-align:middle"></span>
+                                avant {{ tb.heureDebutTravail || '08:30' }} (début du travail)
+                            </span>
+                        </div>
                         <div class="flex items-end gap-1" style="height:90px">
                             <div *ngFor="let b of affluence(tb)" class="flex-1 flex flex-col items-center justify-end" style="min-width:0">
                                 <div class="text-xs text-color-secondary" *ngIf="b.nb > 0">{{ b.nb }}</div>
                                 <div class="w-full border-round-top"
                                      [style.height.px]="b.hauteur"
-                                     [style.background]="b.nb > 0 ? 'var(--primary-color)' : 'var(--surface-200)'"
+                                     [style.background]="b.nb > 0 ? (b.avantTravail ? '#f97316' : 'var(--primary-color)') : 'var(--surface-200)'"
                                      [style.opacity]="b.nb > 0 ? 0.85 : 1"></div>
-                                <div class="text-xs text-color-secondary">{{ b.h }}h</div>
+                                <div class="text-xs text-color-secondary" style="white-space:nowrap">{{ b.label }}</div>
                             </div>
                         </div>
                     </div>
@@ -423,6 +431,7 @@ export class MouvementsComponent implements OnInit {
     private userService = inject(UserService);
     private messageService = inject(MessageService);
     private destroyRef = inject(DestroyRef);
+    private activatedRoute = inject(ActivatedRoute);
 
     mouvements = signal<any[]>([]);
     synthese = signal<any[]>([]);
@@ -442,13 +451,19 @@ export class MouvementsComponent implements OnInit {
     /** badge_no -> matricule choisi dans le dropdown d'association. */
     associations: { [badgeNo: string]: string } = {};
 
-    vuesPrincipales = [
-        { label: 'Tableau de bord', value: 'tableau-bord' },
-        { label: 'Journal', value: 'journal' },
-        { label: 'Synthèse par agent', value: 'synthese' },
-        { label: 'Détail par personne', value: 'personne' },
-        { label: 'Badges', value: 'badges' }
-    ];
+    /** Mode responsable (route mouvements-departement) : vues limitées, périmètre filtré côté serveur. */
+    modeDepartement = false;
+
+    get vuesPrincipales() {
+        const vues = [
+            { label: 'Tableau de bord', value: 'tableau-bord' },
+            { label: 'Journal', value: 'journal' },
+            { label: 'Synthèse par agent', value: 'synthese' },
+            { label: 'Détail par personne', value: 'personne' },
+            { label: 'Badges', value: 'badges' }
+        ];
+        return this.modeDepartement ? vues.filter((v) => ['tableau-bord', 'synthese', 'personne'].includes(v.value)) : vues;
+    }
     typesJournal = [
         { label: 'Tous', value: '' },
         { label: 'Personnel', value: 'PERSONNEL' },
@@ -494,6 +509,7 @@ export class MouvementsComponent implements OnInit {
         this.personnel().map((p: any) => ({ label: `${p.prenom} ${p.nom} (${p.matricule})`, value: p.matricule })));
 
     ngOnInit(): void {
+        this.modeDepartement = !!this.activatedRoute.snapshot.data['modeDepartement'];
         this.charger();
     }
 
@@ -571,16 +587,27 @@ export class MouvementsComponent implements OnInit {
         return new Date();
     }
 
-    /** Barres 06h-20h (élargies si des badgeages existent en dehors), hauteur proportionnelle au pic. */
-    affluence(tb: any): { h: number; nb: number; hauteur: number }[] {
-        const heures: number[] = tb?.affluenceParHeure || [];
-        if (!heures.some((n) => n > 0)) return [];
-        let min = 6, max = 20;
-        heures.forEach((n, h) => { if (n > 0) { min = Math.min(min, h); max = Math.max(max, h); } });
-        const pic = Math.max(...heures);
+    /**
+     * Barres par demi-heure 06h00-20h00 (élargies si des badgeages existent en dehors),
+     * hauteur proportionnelle au pic. Les créneaux AVANT l'heure de début de travail
+     * (PRESENCE_HEURE_ARRIVEE, ex. 08:30) sont en orange.
+     */
+    affluence(tb: any): { label: string; nb: number; hauteur: number; avantTravail: boolean }[] {
+        const creneaux: number[] = tb?.affluenceParDemiHeure || [];
+        if (!creneaux.some((n) => n > 0)) return [];
+        const [hDebut, mDebut] = (tb.heureDebutTravail || '08:30').split(':').map(Number);
+        const creneauDebutTravail = hDebut * 2 + (mDebut >= 30 ? 1 : 0);
+        let min = 12, max = 40; // 06h00 -> 20h00
+        creneaux.forEach((n, c) => { if (n > 0) { min = Math.min(min, c); max = Math.max(max, c); } });
+        const pic = Math.max(...creneaux);
         const barres = [];
-        for (let h = min; h <= max; h++) {
-            barres.push({ h, nb: heures[h] || 0, hauteur: Math.max(3, Math.round(((heures[h] || 0) / pic) * 60)) });
+        for (let c = min; c <= max; c++) {
+            barres.push({
+                label: c % 2 === 0 ? `${c / 2}h` : '',
+                nb: creneaux[c] || 0,
+                hauteur: Math.max(3, Math.round(((creneaux[c] || 0) / pic) * 60)),
+                avantTravail: c < creneauDebutTravail
+            });
         }
         return barres;
     }

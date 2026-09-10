@@ -165,6 +165,11 @@ export default [
         loadComponent: () => import('./drh/mouvements/mouvements.component').then((c) => c.MouvementsComponent)
     },
     {
+        path: 'drh/mouvements-departement',
+        data: { breadcrumb: 'Mouvements de mon département', modeDepartement: true },
+        loadComponent: () => import('./drh/mouvements/mouvements.component').then((c) => c.MouvementsComponent)
+    },
+    {
         path: 'drh/mes-permissions',
         data: { breadcrumb: 'Mes permissions sociales' },
         loadComponent: () => import('./drh/mes-permissions/mes-permissions.component').then((c) => c.MesPermissionsComponent)

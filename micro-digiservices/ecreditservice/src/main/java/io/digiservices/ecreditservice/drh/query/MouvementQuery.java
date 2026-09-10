@@ -160,9 +160,10 @@ public final class MouvementQuery {
 
     // ===== Tableau de bord — phase 2 =====
 
-    /** Badgeages ACCESS du jour ventilés par heure (0-23). */
-    public static final String AFFLUENCE_PAR_HEURE = """
-        SELECT EXTRACT(HOUR FROM heure)::int AS h, COUNT(*) AS nb
+    /** Badgeages ACCESS du jour ventilés par demi-heure (créneaux 0-47). */
+    public static final String AFFLUENCE_PAR_DEMI_HEURE = """
+        SELECT (EXTRACT(HOUR FROM heure)::int * 2 + EXTRACT(MINUTE FROM heure)::int / 30) AS creneau,
+               COUNT(*) AS nb
           FROM drh_mouvement
          WHERE jour = :jour AND resultat = 'ACCESS'
          GROUP BY 1

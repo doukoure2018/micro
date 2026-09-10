@@ -390,7 +390,7 @@ export class AppMenu {
         ];
         if (this.estResponsableDrh) {
             items.push({
-                label: 'Congés de mon département',
+                label: 'Mon département',
                 icon: 'pi pi-fw pi-users',
                 items: [
                     {
@@ -402,6 +402,11 @@ export class AppMenu {
                         label: 'Demandes de congé',
                         icon: 'pi pi-fw pi-send',
                         routerLink: ['/dashboards/drh/conges-departement']
+                    },
+                    {
+                        label: 'Mouvements du personnel',
+                        icon: 'pi pi-fw pi-arrow-right-arrow-left',
+                        routerLink: ['/dashboards/drh/mouvements-departement']
                     }
                 ]
             });

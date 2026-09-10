@@ -61,8 +61,8 @@ public interface MouvementRepository {
     /** Affectations actives : matricule -> code département. */
     Map<String, String> departementsParMatricule();
 
-    /** Badgeages ACCESS du jour par heure : tableau de 24 compteurs. */
-    int[] affluenceParHeure(LocalDate jour);
+    /** Badgeages ACCESS du jour par demi-heure : tableau de 48 compteurs. */
+    int[] affluenceParDemiHeure(LocalDate jour);
 
     /** Mouvements du jour hors plage normale (avant debut ou après fin). */
     int nbHorsPlageJour(LocalDate jour, LocalTime debut, LocalTime fin);

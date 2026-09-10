@@ -137,7 +137,8 @@ public final class MouvementDtos {
         private int seuilBadgeages;             // MOUVEMENT_TOP_SEUIL_JOUR
         private List<LigneTableauBordDto> lignes;
         // ===== Phase 2 =====
-        private List<Integer> affluenceParHeure;        // 24 entrées : badgeages ACCESS par heure
+        private List<Integer> affluenceParDemiHeure;    // 48 créneaux de 30 min : badgeages ACCESS
+        private String heureDebutTravail;               // PRESENCE_HEURE_ARRIVEE (ex. 08:30) — coupure de couleur du graphe
         private int horsPlage;                          // mouvements hors plage normale ce jour
         private List<RecidiveRetardDto> recidivesRetard;    // ≥ seuil retards sur 30 jours glissants
         private List<DepartementStatsDto> departements;     // mois en cours, par direction
