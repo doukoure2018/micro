@@ -83,7 +83,11 @@ const STATUTS_PRESENCE: { [k: string]: StatutPresence } = {
                 </ng-template>
                 <ng-template pTemplate="body" let-s>
                     <tr>
-                        <td class="font-medium">{{ s.jour | date: 'EEEE dd/MM/yyyy' }}</td>
+                        <td class="font-medium">
+                            {{ s.jour | date: 'EEEE dd/MM/yyyy' }}
+                            <p-tag *ngIf="s.enCours" value="Journée en cours" severity="info" class="ml-2"
+                                   pTooltip="Chiffres provisoires : recalculés toutes les heures jusqu'à l'heure de sortie réglementaire" />
+                        </td>
                         <td class="text-green-600 font-medium">{{ s.presents }}</td>
                         <td [class.text-orange-500]="s.retards > 0">{{ s.retards }}</td>
                         <td [class.text-orange-500]="s.departsAnticipes > 0">{{ s.departsAnticipes }}</td>
@@ -134,8 +138,12 @@ const STATUTS_PRESENCE: { [k: string]: StatutPresence } = {
                             </td>
                             <td>
                                 <p-tag [value]="statut(p.statut).label" [severity]="statut(p.statut).severity" />
+                                <div class="text-xs text-blue-500 mt-1" *ngIf="p.enCours"
+                                     pTooltip="Statut provisoire : la journée n'est pas terminée">
+                                    <i class="pi pi-clock mr-1"></i>Journée en cours
+                                </div>
                                 <div class="text-xs text-color-secondary" *ngIf="p.minutesRetard > 0">+{{ p.minutesRetard }} min de retard</div>
-                                <div class="text-xs text-color-secondary" *ngIf="p.minutesDepart > 0">parti {{ p.minutesDepart }} min trop tôt</div>
+                                <div class="text-xs text-color-secondary" *ngIf="p.minutesDepart > 0 && !p.enCours">parti {{ p.minutesDepart }} min trop tôt</div>
                                 <div class="text-xs" *ngIf="p.justification">{{ p.justification === 'CONGE' ? 'En congé validé' : 'Permission sociale validée' }}</div>
                             </td>
                         </tr>

@@ -20,6 +20,8 @@ import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.ArrayList;
@@ -229,7 +231,22 @@ public class PresenceServiceImpl implements PresenceService {
         exigerDrh(drh);
         List<PresenceJourDto> presences = presenceRepository.presencesPeriode(du, au, statut);
         enrichirDepuisMouvements(presences, du, au);
+        presences.forEach(p -> p.setEnCours(jourEnCours(p.getJour())));
         return presences;
+    }
+
+    /**
+     * Jour courant tant que l'heure de sortie réglementaire n'est pas passée : les statuts
+     * calculés par le rapprochement horaire sont provisoires (départs anticipés et absents
+     * apparents tant que la journée n'est pas terminée).
+     */
+    private boolean jourEnCours(LocalDate jour) {
+        ZonedDateTime maintenant = ZonedDateTime.now(ZoneId.of("Africa/Conakry"));
+        if (jour == null || !jour.equals(maintenant.toLocalDate())) return false;
+        LocalTime sortie = jour.getDayOfWeek() == DayOfWeek.FRIDAY
+                ? LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE_VENDREDI", "14:00"))
+                : LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE", "16:30"));
+        return maintenant.toLocalTime().isBefore(sortie);
     }
 
     /** Ajoute le temps hors bureau / dépassement de pause reconstruit depuis le journal des mouvements. */
@@ -253,7 +270,9 @@ public class PresenceServiceImpl implements PresenceService {
     @Override
     public List<SyntheseJourDto> synthese(User drh, LocalDate du, LocalDate au) {
         exigerDrh(drh);
-        return presenceRepository.synthesePeriode(du, au);
+        List<SyntheseJourDto> synthese = presenceRepository.synthesePeriode(du, au);
+        synthese.forEach(s -> s.setEnCours(jourEnCours(s.getJour())));
+        return synthese;
     }
 
     @Override

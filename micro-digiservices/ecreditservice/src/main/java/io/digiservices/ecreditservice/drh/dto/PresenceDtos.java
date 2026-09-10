@@ -37,6 +37,8 @@ public final class PresenceDtos {
         private Integer nbSortiesTravail;
         private Integer minutesHorsBureau;
         private Integer minutesDepassementPause;
+        // Jour courant avant l'heure de sortie réglementaire : statuts encore provisoires
+        private boolean enCours;
     }
 
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
@@ -49,6 +51,8 @@ public final class PresenceDtos {
         private long absentsJustifies;
         private long absentsNonJustifies;
         private long total;
+        // Jour courant avant l'heure de sortie réglementaire : statuts encore provisoires
+        private boolean enCours;
     }
 
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
