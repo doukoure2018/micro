@@ -81,7 +81,6 @@ eureka:
   instance:
     prefer-ip-address: true
     hostname: userservice
-    ip-address: 51.91.254.218
     lease-renewal-interval-in-seconds: 30
     lease-expiration-duration-in-seconds: 90
   client:

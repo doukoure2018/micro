@@ -81,7 +81,6 @@ eureka:
   instance:
     prefer-ip-address: true
     hostname: notificationservice
-    ip-address: 51.91.254.218
   client:
     service-url:
       defaultZone: http://admin:admin2711@discoveryserver:5002/eureka/

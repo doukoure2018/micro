@@ -27,7 +27,6 @@ eureka:
   instance:
     hostname: discoveryserver
     prefer-ip-address: true
-    ip-address: 51.91.254.218
   client:
     fetch-registry: false
     register-with-eureka: false
