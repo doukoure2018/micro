@@ -357,7 +357,10 @@
                         <td class="label-cell" colspan="2">Repère</td>
                         <td colspan="2">
                             <input pInputText [(ngModel)]="formData.typePropriete" name="typePropriete" class="w-full"
-                                [disabled]="state().submitting">
+                                maxlength="255" [disabled]="state().submitting">
+                            <small class="text-color-secondary" *ngIf="(formData.typePropriete?.length || 0) > 200">
+                                {{ formData.typePropriete?.length }}/255 caractères
+                            </small>
                         </td>
                     </tr>
                     } @else {
