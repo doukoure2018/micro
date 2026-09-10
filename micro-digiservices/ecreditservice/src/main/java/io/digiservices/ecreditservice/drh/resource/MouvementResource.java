@@ -54,6 +54,15 @@ public class MouvementResource {
                 "Mouvements de la période", OK));
     }
 
+    @GetMapping("/tableau-bord")
+    public ResponseEntity<Response> tableauBord(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate jour,
+            Authentication auth, HttpServletRequest req) {
+        return ResponseEntity.ok(getResponse(req,
+                Map.of("tableauBord", mouvementService.tableauBord(user(auth), jour)),
+                "Tableau de bord des mouvements", OK));
+    }
+
     @GetMapping("/synthese")
     public ResponseEntity<Response> synthese(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate du,

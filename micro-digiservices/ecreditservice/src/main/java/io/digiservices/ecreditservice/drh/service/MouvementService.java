@@ -43,4 +43,10 @@ public interface MouvementService {
 
     /** Alerte DRH hebdomadaire : agents au-dessus du seuil de minutes hors bureau + dépassement de pause. */
     int alerterDepassementsSemaine();
+
+    /** Tableau de bord du jour : tuiles de synthèse + classement des agents par badgeages. */
+    io.digiservices.ecreditservice.drh.dto.MouvementDtos.TableauBordDto tableauBord(User drh, LocalDate jour);
+
+    /** Alerte DRH quotidienne (17h15, 14h15 le vendredi) : agents au-dessus du seuil de badgeages du jour. */
+    int alerterMouvementsJour();
 }

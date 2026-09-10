@@ -59,6 +59,91 @@ import { UserService } from '@/service/user.service';
                             (ngModelChange)="changerVuePrincipale($event)"
                             optionLabel="label" optionValue="value" class="mb-3 block" />
 
+            <!-- ===== Tableau de bord du jour ===== -->
+            <div *ngIf="vuePrincipale() === 'tableau-bord'">
+                <div class="flex flex-wrap items-center gap-2 mb-3">
+                    <button pButton icon="pi pi-chevron-left" class="p-button-text p-button-sm" (click)="changerJourTb(-1)"></button>
+                    <p-calendar [(ngModel)]="jourTb" dateFormat="dd/mm/yy" [showIcon]="true" (onSelect)="chargerTableauBord()" />
+                    <button pButton icon="pi pi-chevron-right" class="p-button-text p-button-sm" (click)="changerJourTb(1)"></button>
+                    <button pButton label="Aujourd'hui" class="p-button-outlined p-button-sm" (click)="jourTb = aujourdhui(); chargerTableauBord()"></button>
+                </div>
+
+                <div *ngIf="tableauBord() as tb">
+                    <!-- Tuiles -->
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
+                        <div class="p-3 border-round" style="background:var(--surface-50);border:1px solid var(--surface-200)">
+                            <div class="text-2xl font-bold">{{ tb.presents }}<span class="text-sm text-color-secondary">/{{ tb.effectifControle }}</span></div>
+                            <div class="text-xs text-color-secondary">Présents aujourd'hui</div>
+                            <div class="text-xs" *ngIf="tb.presentsVeille != null"
+                                 [class.text-green-600]="tb.presents >= tb.presentsVeille"
+                                 [class.text-orange-500]="tb.presents < tb.presentsVeille">
+                                {{ tb.presents >= tb.presentsVeille ? '▲' : '▼' }} {{ tb.presents - tb.presentsVeille }} vs jour précédent
+                            </div>
+                        </div>
+                        <div class="p-3 border-round" style="background:var(--surface-50);border:1px solid var(--surface-200)">
+                            <div class="text-2xl font-bold">{{ tb.dansLesLocaux }}</div>
+                            <div class="text-xs text-color-secondary">Dans les locaux<br>(dernier badge = entrée)</div>
+                        </div>
+                        <div class="p-3 border-round" style="background:var(--surface-50);border:1px solid var(--surface-200)">
+                            <div class="text-2xl font-bold" [class.text-orange-500]="tb.retards > 0">{{ tb.retards }}</div>
+                            <div class="text-xs text-color-secondary">Retards à l'arrivée</div>
+                            <div class="text-xs text-color-secondary" *ngIf="tb.minutesRetardCumulees > 0">{{ tb.minutesRetardCumulees }} min cumulées</div>
+                        </div>
+                        <div class="p-3 border-round" style="background:var(--surface-50);border:1px solid var(--surface-200)">
+                            <div class="text-2xl font-bold">{{ duree(tb.minutesHorsBureau) }}</div>
+                            <div class="text-xs text-color-secondary">Hors bureau cumulé</div>
+                            <div class="text-xs text-color-secondary" *ngIf="tb.agentsHorsBureau > 0">{{ tb.agentsHorsBureau }} agent(s)</div>
+                        </div>
+                        <div class="p-3 border-round" style="background:var(--surface-50);border:1px solid var(--surface-200)">
+                            <div class="text-2xl font-bold" [class.text-orange-500]="tb.retoursNonBadges > 0">{{ tb.retoursNonBadges }}</div>
+                            <div class="text-xs text-color-secondary">Retours non badgés</div>
+                        </div>
+                        <div class="p-3 border-round" style="background:var(--surface-50);border:1px solid var(--surface-200)">
+                            <div class="text-2xl font-bold" [class.text-red-500]="tb.accesRefuses > 0">{{ tb.accesRefuses }}</div>
+                            <div class="text-xs text-color-secondary">Accès refusés</div>
+                            <div class="text-xs text-red-500" *ngIf="tb.accesRefusesMemeBadge >= 3">dont {{ tb.accesRefusesMemeBadge }}× le même badge</div>
+                        </div>
+                    </div>
+
+                    <!-- Classement par badgeages -->
+                    <div class="text-sm text-color-secondary mb-2">
+                        Classement du jour par nombre de badgeages — seuil d'alerte : {{ tb.seuilBadgeages }}
+                        (une journée type ≈ 4 : arrivée, pause aller-retour, départ). Alerte SMS DRH à 17h15 (14h15 le vendredi).
+                    </div>
+                    <p-table [value]="tb.lignes" responsiveLayout="scroll" [paginator]="tb.lignes.length > 25" [rows]="25" [rowHover]="true">
+                        <ng-template pTemplate="header">
+                            <tr><th>#</th><th>Agent</th><th>Mat.</th><th>Dept</th><th>Badgeages</th>
+                                <th>Sorties travail</th><th>Hors bureau</th><th>Dépass. pause</th><th>Dernier badge</th><th>Statut</th></tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-l let-i="rowIndex">
+                            <tr class="cursor-pointer" (click)="ouvrirPersonne(l.matricule)">
+                                <td>{{ i + 1 }}</td>
+                                <td class="font-medium">{{ l.nom }}</td>
+                                <td>{{ l.matricule }}</td>
+                                <td>{{ l.departementCode || '—' }}</td>
+                                <td class="font-bold" [class.text-red-500]="l.badgeages > tb.seuilBadgeages">{{ l.badgeages }}</td>
+                                <td>{{ l.nbSortiesTravail || '—' }}</td>
+                                <td [class.text-orange-500]="l.minutesHorsBureau > 0">{{ l.minutesHorsBureau > 0 ? duree(l.minutesHorsBureau) : '—' }}</td>
+                                <td [class.text-red-500]="l.minutesDepassementPause > 0">{{ l.minutesDepassementPause > 0 ? '+' + l.minutesDepassementPause + ' min' : '—' }}</td>
+                                <td>
+                                    {{ l.dernierBadge }}
+                                    <p-tag [value]="l.dernierSens === 'ENTRY' ? 'dans les locaux' : l.dernierSens === 'EXIT' ? 'sorti' : '?'"
+                                           [severity]="l.dernierSens === 'ENTRY' ? 'success' : l.dernierSens === 'EXIT' ? 'secondary' : 'warn'" styleClass="ml-1" />
+                                </td>
+                                <td>
+                                    <p-tag *ngIf="l.badgeages > tb.seuilBadgeages" value="EXCESSIF" severity="danger" />
+                                    <p-tag *ngIf="l.badgeages > 6 && l.badgeages <= tb.seuilBadgeages" value="À surveiller" severity="warn" />
+                                    <p-tag *ngIf="l.badgeages <= 6" value="Normal" severity="success" />
+                                </td>
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="emptymessage">
+                            <tr><td colspan="10" class="text-center text-color-secondary">Aucun badgeage identifié ce jour</td></tr>
+                        </ng-template>
+                    </p-table>
+                </div>
+            </div>
+
             <!-- ===== Journal ===== -->
             <div *ngIf="vuePrincipale() === 'journal'">
                 <div class="flex flex-wrap items-center gap-3 mb-3">
@@ -284,12 +369,15 @@ export class MouvementsComponent implements OnInit {
     importEnCours = signal(false);
     chargement = signal(false);
     recherche = signal('');
-    vuePrincipale = signal<string>('journal');
+    vuePrincipale = signal<string>('tableau-bord');
+    tableauBord = signal<any | null>(null);
+    jourTb: Date = new Date();
     typeJournal = signal<string>('');
     /** badge_no -> matricule choisi dans le dropdown d'association. */
     associations: { [badgeNo: string]: string } = {};
 
     vuesPrincipales = [
+        { label: 'Tableau de bord', value: 'tableau-bord' },
         { label: 'Journal', value: 'journal' },
         { label: 'Synthèse par agent', value: 'synthese' },
         { label: 'Détail par personne', value: 'personne' },
@@ -413,7 +501,30 @@ export class MouvementsComponent implements OnInit {
             });
     }
 
+    aujourdhui(): Date {
+        return new Date();
+    }
+
+    changerJourTb(delta: number): void {
+        const d = new Date(this.jourTb);
+        d.setDate(d.getDate() + delta);
+        this.jourTb = d;
+        this.chargerTableauBord();
+    }
+
+    chargerTableauBord(): void {
+        this.drhService.tableauBordMouvements$(this.toIso(this.jourTb))
+            .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+                next: (r) => this.tableauBord.set((r.data as any)?.tableauBord || null),
+                error: (e) => this.erreur(e)
+            });
+    }
+
     charger(): void {
+        if (this.vuePrincipale() === 'tableau-bord') {
+            this.chargerTableauBord();
+            return;
+        }
         if (!this.du || !this.au) return;
         const du = this.toIso(this.du), au = this.toIso(this.au);
         const vue = this.vuePrincipale();

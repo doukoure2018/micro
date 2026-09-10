@@ -127,4 +127,34 @@ public final class MouvementQuery {
     public static final String PARAMETRE_TEXTE = """
         SELECT valeur FROM drh_parametre WHERE cle = :cle
         """;
+
+    // ===== Tableau de bord du jour =====
+
+    /** Badgeages ACCESS du personnel identifié : total, dernier passage et son sens. */
+    public static final String COMPTAGES_BADGEAGES_JOUR = """
+        SELECT m.matricule,
+               COUNT(*)                                       AS badgeages,
+               MAX(m.heure)                                   AS derniere_heure,
+               (ARRAY_AGG(m.sens ORDER BY m.heure DESC))[1]   AS dernier_sens
+          FROM drh_mouvement m
+         WHERE m.jour = :jour AND m.resultat = 'ACCESS' AND NOT m.visiteur AND m.matricule IS NOT NULL
+         GROUP BY m.matricule
+         ORDER BY COUNT(*) DESC, MAX(m.heure) DESC
+        """;
+
+    /** Accès refusés du jour : total et pire répétition d'un même badge/libellé. */
+    public static final String STATS_BLOQUES_JOUR = """
+        SELECT COUNT(*) AS total, COALESCE(MAX(nb), 0) AS max_meme_badge
+          FROM (SELECT COUNT(*) AS nb
+                  FROM drh_mouvement
+                 WHERE jour = :jour AND resultat <> 'ACCESS'
+                 GROUP BY COALESCE(badge_no, nom_brut)) s
+        """;
+
+    public static final String DEPARTEMENTS_PAR_MATRICULE = """
+        SELECT m.matricule, d.code
+          FROM drh_departement_membre m
+          JOIN drh_departement d ON d.departement_id = m.departement_id
+         WHERE m.actif AND m.matricule IS NOT NULL
+        """;
 }

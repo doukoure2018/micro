@@ -193,4 +193,27 @@ public class MouvementRepositoryImpl implements MouvementRepository {
                 .param("reference_id", referenceId)
                 .update();
     }
+
+    @Override
+    public List<Map<String, Object>> comptagesBadgeagesJour(LocalDate jour) {
+        return jdbcClient.sql(MouvementQuery.COMPTAGES_BADGEAGES_JOUR)
+                .param("jour", jour)
+                .query().listOfRows();
+    }
+
+    @Override
+    public Map<String, Object> statsBloquesJour(LocalDate jour) {
+        return jdbcClient.sql(MouvementQuery.STATS_BLOQUES_JOUR)
+                .param("jour", jour)
+                .query().listOfRows().get(0);
+    }
+
+    @Override
+    public Map<String, String> departementsParMatricule() {
+        Map<String, String> map = new java.util.HashMap<>();
+        jdbcClient.sql(MouvementQuery.DEPARTEMENTS_PAR_MATRICULE)
+                .query().listOfRows()
+                .forEach(r -> map.put(String.valueOf(r.get("matricule")), String.valueOf(r.get("code"))));
+        return map;
+    }
 }

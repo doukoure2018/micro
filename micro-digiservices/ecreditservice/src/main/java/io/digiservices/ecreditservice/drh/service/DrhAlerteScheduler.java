@@ -47,6 +47,25 @@ public class DrhAlerteScheduler {
         }
     }
 
+    /**
+     * Synthèse quotidienne des mouvements excessifs : à 17h15 du lundi au jeudi + samedi,
+     * et à 14h15 le vendredi (heure de sortie avancée). Une seule exécution envoie
+     * réellement grâce au test jour/heure, l'anti-doublon drh_alerte couvre le reste.
+     */
+    @Scheduled(cron = "0 15 14,17 * * MON-SAT")
+    public void alerterMouvementsJour() {
+        boolean vendredi = LocalDate.now().getDayOfWeek() == java.time.DayOfWeek.FRIDAY;
+        int heure = java.time.LocalTime.now().getHour();
+        if (vendredi != (heure == 14)) {
+            return; // 14h15 seulement le vendredi, 17h15 les autres jours
+        }
+        try {
+            mouvementService.alerterMouvementsJour();
+        } catch (Exception e) {
+            log.warn("Alerte mouvements du jour en échec : {}", e.getMessage());
+        }
+    }
+
     /** Heures ouvrées : consolide les présences du jour depuis les pointages (webhook UniFi). */
     @Scheduled(cron = "0 10 7-19 * * MON-SAT")
     public void rapprocherPresencesDuJour() {

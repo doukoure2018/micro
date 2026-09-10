@@ -115,4 +115,41 @@ public final class MouvementDtos {
         private LocalDate dernierJour;
         private List<String> avertissements;
     }
+
+    /** Tableau de bord du jour : tuiles de synthèse + classement des agents par badgeages. */
+    @Data @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class TableauBordDto {
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+        private LocalDate jour;
+        // Présences (depuis drh_presence_jour, si le rapprochement du jour a tourné)
+        private long presents;
+        private long effectifControle;
+        private Long presentsVeille;            // null si pas de jour contrôlé précédent
+        private long retards;
+        private int minutesRetardCumulees;
+        // Mouvements du jour
+        private int dansLesLocaux;              // dernier mouvement du jour = entrée
+        private int minutesHorsBureau;          // cumul sorties travail
+        private int agentsHorsBureau;
+        private int retoursNonBadges;           // sorties jamais clôturées
+        private int accesRefuses;               // BLOCKED du jour
+        private int accesRefusesMemeBadge;      // pire répétition d'un même badge refusé
+        private int seuilBadgeages;             // MOUVEMENT_TOP_SEUIL_JOUR
+        private List<LigneTableauBordDto> lignes;
+    }
+
+    /** Ligne du classement : un agent identifié ayant badgé ce jour. */
+    @Data @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class LigneTableauBordDto {
+        private String matricule;
+        private String nom;
+        private String departementCode;
+        private int badgeages;
+        private int nbSortiesTravail;
+        private int minutesHorsBureau;
+        private int minutesDepassementPause;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm")
+        private LocalTime dernierBadge;
+        private String dernierSens;             // ENTRY / EXIT / INCONNU
+    }
 }

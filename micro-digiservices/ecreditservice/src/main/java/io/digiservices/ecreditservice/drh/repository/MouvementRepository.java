@@ -50,6 +50,17 @@ public interface MouvementRepository {
 
     String parametreTexte(String cle, String defaut);
 
+    // ===== Tableau de bord du jour =====
+
+    /** Badgeages ACCESS du personnel identifié pour un jour : matricule, badgeages, derniere_heure, dernier_sens. */
+    List<Map<String, Object>> comptagesBadgeagesJour(LocalDate jour);
+
+    /** Accès refusés du jour : total, max_meme_badge. */
+    Map<String, Object> statsBloquesJour(LocalDate jour);
+
+    /** Affectations actives : matricule -> code département. */
+    Map<String, String> departementsParMatricule();
+
     /**
      * Journal drh_alerte réutilisé pour les mouvements : user_id porte le MATRICULE (numérique)
      * et reference_id la semaine (année*1000 + jour de l'an du lundi).
