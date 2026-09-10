@@ -209,6 +209,40 @@ public class MouvementRepositoryImpl implements MouvementRepository {
     }
 
     @Override
+    public int[] affluenceParHeure(LocalDate jour) {
+        int[] heures = new int[24];
+        jdbcClient.sql(MouvementQuery.AFFLUENCE_PAR_HEURE)
+                .param("jour", jour)
+                .query().listOfRows()
+                .forEach(r -> {
+                    int h = ((Number) r.get("h")).intValue();
+                    if (h >= 0 && h < 24) heures[h] = ((Number) r.get("nb")).intValue();
+                });
+        return heures;
+    }
+
+    @Override
+    public int nbHorsPlageJour(LocalDate jour, LocalTime debut, LocalTime fin) {
+        return jdbcClient.sql(MouvementQuery.HORS_PLAGE_JOUR)
+                .param("jour", jour).param("debut", debut).param("fin", fin)
+                .query(Integer.class).single();
+    }
+
+    @Override
+    public List<Map<String, Object>> recidivesRetard(LocalDate du, LocalDate au, int seuil) {
+        return jdbcClient.sql(MouvementQuery.RECIDIVES_RETARD)
+                .param("du", du).param("au", au).param("seuil", seuil)
+                .query().listOfRows();
+    }
+
+    @Override
+    public List<Map<String, Object>> statsDepartementsPeriode(LocalDate du, LocalDate au) {
+        return jdbcClient.sql(MouvementQuery.STATS_DEPARTEMENTS_PERIODE)
+                .param("du", du).param("au", au)
+                .query().listOfRows();
+    }
+
+    @Override
     public Map<String, String> departementsParMatricule() {
         Map<String, String> map = new java.util.HashMap<>();
         jdbcClient.sql(MouvementQuery.DEPARTEMENTS_PAR_MATRICULE)

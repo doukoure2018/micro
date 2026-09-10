@@ -61,6 +61,18 @@ public interface MouvementRepository {
     /** Affectations actives : matricule -> code département. */
     Map<String, String> departementsParMatricule();
 
+    /** Badgeages ACCESS du jour par heure : tableau de 24 compteurs. */
+    int[] affluenceParHeure(LocalDate jour);
+
+    /** Mouvements du jour hors plage normale (avant debut ou après fin). */
+    int nbHorsPlageJour(LocalDate jour, LocalTime debut, LocalTime fin);
+
+    /** Agents à au moins `seuil` retards sur la période : matricule, nom, nb, minutes. */
+    List<Map<String, Object>> recidivesRetard(LocalDate du, LocalDate au, int seuil);
+
+    /** Présences de la période agrégées par département : code, agents, controles, presents, retards, absents_nj. */
+    List<Map<String, Object>> statsDepartementsPeriode(LocalDate du, LocalDate au);
+
     /**
      * Journal drh_alerte réutilisé pour les mouvements : user_id porte le MATRICULE (numérique)
      * et reference_id la semaine (année*1000 + jour de l'an du lundi).

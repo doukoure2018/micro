@@ -103,6 +103,25 @@ import { UserService } from '@/service/user.service';
                             <div class="text-xs text-color-secondary">Accès refusés</div>
                             <div class="text-xs text-red-500" *ngIf="tb.accesRefusesMemeBadge >= 3">dont {{ tb.accesRefusesMemeBadge }}× le même badge</div>
                         </div>
+                        <div class="p-3 border-round" style="background:var(--surface-50);border:1px solid var(--surface-200)">
+                            <div class="text-2xl font-bold" [class.text-red-500]="tb.horsPlage > 0">{{ tb.horsPlage }}</div>
+                            <div class="text-xs text-color-secondary" pTooltip="Avant 06h30, après 20h00, dimanche ou férié — alerte SMS immédiate à la DRH">Badgeages hors plage</div>
+                        </div>
+                    </div>
+
+                    <!-- Affluence par heure -->
+                    <div class="mb-4" *ngIf="affluence(tb).length > 0">
+                        <div class="text-sm font-medium mb-1">Affluence de la porte par heure</div>
+                        <div class="flex items-end gap-1" style="height:90px">
+                            <div *ngFor="let b of affluence(tb)" class="flex-1 flex flex-col items-center justify-end" style="min-width:0">
+                                <div class="text-xs text-color-secondary" *ngIf="b.nb > 0">{{ b.nb }}</div>
+                                <div class="w-full border-round-top"
+                                     [style.height.px]="b.hauteur"
+                                     [style.background]="b.nb > 0 ? 'var(--primary-color)' : 'var(--surface-200)'"
+                                     [style.opacity]="b.nb > 0 ? 0.85 : 1"></div>
+                                <div class="text-xs text-color-secondary">{{ b.h }}h</div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Classement par badgeages -->
@@ -141,6 +160,53 @@ import { UserService } from '@/service/user.service';
                             <tr><td colspan="10" class="text-center text-color-secondary">Aucun badgeage identifié ce jour</td></tr>
                         </ng-template>
                     </p-table>
+
+                    <!-- Récidive de retards (30 jours glissants) -->
+                    <div class="mt-4" *ngIf="tb.recidivesRetard?.length > 0">
+                        <div class="text-sm font-medium mb-1">
+                            <i class="pi pi-exclamation-triangle text-orange-500 mr-1"></i>
+                            Récidive de retards — 30 derniers jours
+                        </div>
+                        <p-table [value]="tb.recidivesRetard" responsiveLayout="scroll">
+                            <ng-template pTemplate="header">
+                                <tr><th>Agent</th><th>Mat.</th><th>Retards</th><th>Minutes cumulées</th></tr>
+                            </ng-template>
+                            <ng-template pTemplate="body" let-r>
+                                <tr class="cursor-pointer" (click)="ouvrirPersonne(r.matricule)">
+                                    <td class="font-medium">{{ r.nom }}</td>
+                                    <td>{{ r.matricule }}</td>
+                                    <td class="text-orange-500 font-bold">{{ r.nbRetards }}</td>
+                                    <td>{{ r.minutesCumulees }} min</td>
+                                </tr>
+                            </ng-template>
+                        </p-table>
+                    </div>
+
+                    <!-- Par département (mois en cours) -->
+                    <div class="mt-4" *ngIf="tb.departements?.length > 0">
+                        <div class="text-sm font-medium mb-1">Par département — mois en cours (agents affectés uniquement)</div>
+                        <p-table [value]="tb.departements" responsiveLayout="scroll">
+                            <ng-template pTemplate="header">
+                                <tr><th>Dept</th><th>Agents</th><th>Taux de présence</th><th>Retards</th>
+                                    <th>Absents NON justifiés</th><th>Hors bureau</th></tr>
+                            </ng-template>
+                            <ng-template pTemplate="body" let-d>
+                                <tr>
+                                    <td class="font-medium">{{ d.code }}</td>
+                                    <td>{{ d.agents }}</td>
+                                    <td [class.text-green-600]="tauxPresence(d) >= 80" [class.text-orange-500]="tauxPresence(d) < 80">
+                                        {{ tauxPresence(d) }} %
+                                    </td>
+                                    <td [class.text-orange-500]="d.retards > 0">{{ d.retards }}</td>
+                                    <td [class.text-red-500]="d.absentsNonJustifies > 0">{{ d.absentsNonJustifies }}</td>
+                                    <td>{{ d.minutesHorsBureau > 0 ? duree(d.minutesHorsBureau) : '—' }}</td>
+                                </tr>
+                            </ng-template>
+                        </p-table>
+                        <div class="text-xs text-color-secondary mt-1">
+                            Taux de présence = jours PRESENT / jours contrôlés du mois. Les agents non affectés à un département n'apparaissent pas ici.
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -503,6 +569,24 @@ export class MouvementsComponent implements OnInit {
 
     aujourdhui(): Date {
         return new Date();
+    }
+
+    /** Barres 06h-20h (élargies si des badgeages existent en dehors), hauteur proportionnelle au pic. */
+    affluence(tb: any): { h: number; nb: number; hauteur: number }[] {
+        const heures: number[] = tb?.affluenceParHeure || [];
+        if (!heures.some((n) => n > 0)) return [];
+        let min = 6, max = 20;
+        heures.forEach((n, h) => { if (n > 0) { min = Math.min(min, h); max = Math.max(max, h); } });
+        const pic = Math.max(...heures);
+        const barres = [];
+        for (let h = min; h <= max; h++) {
+            barres.push({ h, nb: heures[h] || 0, hauteur: Math.max(3, Math.round(((heures[h] || 0) / pic) * 60)) });
+        }
+        return barres;
+    }
+
+    tauxPresence(d: any): number {
+        return d.controles > 0 ? Math.round((d.presents / d.controles) * 100) : 0;
     }
 
     changerJourTb(delta: number): void {

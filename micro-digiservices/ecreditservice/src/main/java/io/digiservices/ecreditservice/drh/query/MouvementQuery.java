@@ -157,4 +157,47 @@ public final class MouvementQuery {
           JOIN drh_departement d ON d.departement_id = m.departement_id
          WHERE m.actif AND m.matricule IS NOT NULL
         """;
+
+    // ===== Tableau de bord — phase 2 =====
+
+    /** Badgeages ACCESS du jour ventilés par heure (0-23). */
+    public static final String AFFLUENCE_PAR_HEURE = """
+        SELECT EXTRACT(HOUR FROM heure)::int AS h, COUNT(*) AS nb
+          FROM drh_mouvement
+         WHERE jour = :jour AND resultat = 'ACCESS'
+         GROUP BY 1
+        """;
+
+    /** Mouvements du jour hors plage normale de badgeage. */
+    public static final String HORS_PLAGE_JOUR = """
+        SELECT COUNT(*)
+          FROM drh_mouvement
+         WHERE jour = :jour AND (heure < :debut OR heure > :fin)
+        """;
+
+    /** Agents en récidive de retards sur la période (statuts RETARD / RETARD_ET_DEPART). */
+    public static final String RECIDIVES_RETARD = """
+        SELECT matricule, MAX(nom) AS nom, COUNT(*) AS nb, COALESCE(SUM(minutes_retard), 0) AS minutes
+          FROM drh_presence_jour
+         WHERE jour BETWEEN :du AND :au AND statut IN ('RETARD', 'RETARD_ET_DEPART')
+         GROUP BY matricule
+        HAVING COUNT(*) >= :seuil
+         ORDER BY COUNT(*) DESC, SUM(minutes_retard) DESC
+        """;
+
+    /** Présences de la période agrégées par département (agents affectés uniquement). */
+    public static final String STATS_DEPARTEMENTS_PERIODE = """
+        SELECT d.code,
+               COUNT(DISTINCT pj.matricule)                                        AS agents,
+               COUNT(*)                                                            AS controles,
+               COUNT(*) FILTER (WHERE pj.statut = 'PRESENT')                       AS presents,
+               COUNT(*) FILTER (WHERE pj.statut IN ('RETARD','RETARD_ET_DEPART'))  AS retards,
+               COUNT(*) FILTER (WHERE pj.statut = 'ABSENT_NON_JUSTIFIE')           AS absents_nj
+          FROM drh_presence_jour pj
+          JOIN drh_departement_membre m ON m.matricule = pj.matricule AND m.actif
+          JOIN drh_departement d ON d.departement_id = m.departement_id
+         WHERE pj.jour BETWEEN :du AND :au
+         GROUP BY d.code
+         ORDER BY d.code
+        """;
 }

@@ -136,6 +136,32 @@ public final class MouvementDtos {
         private int accesRefusesMemeBadge;      // pire répétition d'un même badge refusé
         private int seuilBadgeages;             // MOUVEMENT_TOP_SEUIL_JOUR
         private List<LigneTableauBordDto> lignes;
+        // ===== Phase 2 =====
+        private List<Integer> affluenceParHeure;        // 24 entrées : badgeages ACCESS par heure
+        private int horsPlage;                          // mouvements hors plage normale ce jour
+        private List<RecidiveRetardDto> recidivesRetard;    // ≥ seuil retards sur 30 jours glissants
+        private List<DepartementStatsDto> departements;     // mois en cours, par direction
+    }
+
+    /** Agent en récidive de retards sur les 30 derniers jours. */
+    @Data @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class RecidiveRetardDto {
+        private String matricule;
+        private String nom;
+        private int nbRetards;
+        private int minutesCumulees;
+    }
+
+    /** Statistiques du mois en cours pour un département (agents affectés uniquement). */
+    @Data @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class DepartementStatsDto {
+        private String code;
+        private int agents;                 // agents distincts contrôlés
+        private long controles;             // agent-jours contrôlés
+        private long presents;
+        private long retards;
+        private long absentsNonJustifies;
+        private int minutesHorsBureau;      // cumul sorties travail du mois
     }
 
     /** Ligne du classement : un agent identifié ayant badgé ce jour. */
