@@ -12,7 +12,8 @@ services:
     expose:
       - 5432
     ports:
-      - "5432:5432"
+      # Confiné en loopback (remédiation sécurité) : accès distant via tunnel SSH uniquement
+      - "127.0.0.1:5432:5432"
     volumes:
       - microservices_postgres_data_v16:/var/lib/postgresql/data
     networks:
@@ -107,7 +108,7 @@ services:
     image: doukoure93/discoveryserver:latest
     container_name: discoveryserver
     ports:
-      - "5002:5002"
+      - "127.0.0.1:5002:5002"
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       SPRING_DATASOURCE_URL: "jdbc:postgresql://postgresdb:5432/localdb"
@@ -140,7 +141,7 @@ services:
     image: doukoure93/gateway:latest
     container_name: gateway
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
     volumes:
@@ -170,7 +171,7 @@ services:
     image: doukoure93/authorizationserver:latest
     container_name: authorizationserver
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       SPRING_DATASOURCE_URL: "jdbc:postgresql://postgresdb:5432/localdb"
@@ -226,7 +227,7 @@ services:
     image: doukoure93/userservice:latest
     container_name: userservice
     ports:
-      - "8085:8085"
+      - "127.0.0.1:8085:8085"
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       SPRING_DATASOURCE_URL: "jdbc:postgresql://postgresdb:5432/localdb"
@@ -272,7 +273,7 @@ services:
     image: doukoure93/ecreditservice:latest
     container_name: ecreditservice
     ports:
-      - "8087:8087"
+      - "127.0.0.1:8087:8087"
     environment:
       # Alertes portefeuille SAF (phase 3) : digests quotidiens + synthese PAR hebdo
       PORTEFEUILLE_ALERTES_ACTIVES: "true"
@@ -324,7 +325,7 @@ services:
     image: doukoure93/agriculteurservice:latest
     container_name: agriculteurservice
     ports:
-      - "8088:8088"
+      - "127.0.0.1:8088:8088"
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://admin:admin2711@discoveryserver:5002/eureka/"
@@ -364,7 +365,7 @@ services:
     image: doukoure93/bcrgservice:latest
     container_name: bcrgservice
     ports:
-      - "8089:8089"
+      - "127.0.0.1:8089:8089"
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://admin:admin2711@discoveryserver:5002/eureka/"
@@ -410,7 +411,7 @@ services:
     image: doukoure93/ebanking:latest
     container_name: ebankingservice
     ports:
-      - "8081:8081"
+      - "127.0.0.1:8081:8081"
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       SPRING_DATASOURCE_URL: "jdbc:sqlserver://10.220.220.8:1433;databaseName=BDCRG;trustServerCertificate=true;encrypt=true"
@@ -463,7 +464,7 @@ services:
     image: doukoure93/notificationservice:latest
     container_name: notificationservice
     ports:
-      - "8086:8086"
+      - "127.0.0.1:8086:8086"
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       SPRING_DATASOURCE_URL: "jdbc:postgresql://postgresdb:5432/localdb"
@@ -544,7 +545,7 @@ services:
     container_name: digicrg-app
     image: doukoure93/digicrg-app
     ports:
-      - "4200:4200"
+      - "127.0.0.1:4200:4200"
     environment:
       API_BASE_URL: ${API_BASE_URL}
       AUTH_SERVER_URL: ${AUTH_SERVER_URL}
