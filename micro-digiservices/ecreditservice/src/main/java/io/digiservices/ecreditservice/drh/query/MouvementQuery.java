@@ -142,9 +142,9 @@ public final class MouvementQuery {
          ORDER BY COUNT(*) DESC, MAX(m.heure) DESC
         """;
 
-    /** Accès refusés du jour : total et pire répétition d'un même badge/libellé. */
+    /** Accès refusés du jour : total des refus et pire répétition d'un même badge/libellé. */
     public static final String STATS_BLOQUES_JOUR = """
-        SELECT COUNT(*) AS total, COALESCE(MAX(nb), 0) AS max_meme_badge
+        SELECT COALESCE(SUM(nb), 0) AS total, COALESCE(MAX(nb), 0) AS max_meme_badge
           FROM (SELECT COUNT(*) AS nb
                   FROM drh_mouvement
                  WHERE jour = :jour AND resultat <> 'ACCESS'
