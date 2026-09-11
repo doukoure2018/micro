@@ -25,6 +25,9 @@ public interface MouvementService {
     /** Détail jour par jour d'un agent avec les intervalles sortie -> retour classés. */
     MouvementPersonneDto personne(User drh, String matricule, LocalDate du, LocalDate au);
 
+    /** Détails de TOUS les agents du périmètre (DRH = tout, responsable = son département) — export Excel. */
+    List<MouvementPersonneDto> details(User drh, LocalDate du, LocalDate au);
+
     List<BadgeCorrespondanceDto> correspondances(User drh);
 
     List<BadgeInconnuDto> badgesInconnus(User drh);

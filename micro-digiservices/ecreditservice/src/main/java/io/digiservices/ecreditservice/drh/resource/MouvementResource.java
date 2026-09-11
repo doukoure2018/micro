@@ -73,6 +73,16 @@ public class MouvementResource {
                 "Synthèse des mouvements par agent", OK));
     }
 
+    @GetMapping("/details")
+    public ResponseEntity<Response> details(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate du,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate au,
+            Authentication auth, HttpServletRequest req) {
+        return ResponseEntity.ok(getResponse(req,
+                Map.of("details", mouvementService.details(user(auth), du, au)),
+                "Détails des mouvements de la période", OK));
+    }
+
     @GetMapping("/personne/{matricule}")
     public ResponseEntity<Response> personne(
             @PathVariable String matricule,

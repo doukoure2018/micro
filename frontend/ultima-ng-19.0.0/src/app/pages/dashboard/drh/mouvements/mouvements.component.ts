@@ -1,5 +1,6 @@
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import * as XLSX from 'xlsx';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -277,6 +278,9 @@ import { UserService } from '@/service/user.service';
                         <input pInputText type="text" [ngModel]="recherche()" (ngModelChange)="recherche.set($event)"
                                placeholder="Rechercher par nom ou matricule…" [style]="{ width: '300px' }" />
                     </span>
+                    <button pButton icon="pi pi-file-excel" label="Exporter Excel" class="p-button-outlined p-button-success p-button-sm"
+                            pTooltip="Deux feuilles : synthèse par agent + détail de chaque sortie de la période"
+                            [loading]="exportEnCours()" (click)="exporterExcel()"></button>
                     <span class="text-sm text-color-secondary">
                         Tri : les plus grosses sorties (travail + dépassement de pause) en premier.
                         Cliquez sur une ligne pour le détail jour par jour.
@@ -531,7 +535,8 @@ export class MouvementsComponent implements OnInit {
         switch (s.classement) {
             case 'PAUSE': return `Pause ${s.heureSortie}→${s.heureRetour}`;
             case 'PAUSE_DEPASSEE': return `Pause +${s.minutesComptees} min`;
-            case 'SORTIE_TRAVAIL': return `Sortie ${s.heureSortie}→${s.heureRetour} (${s.dureeMinutes} min)`;
+            case 'SORTIE_TRAVAIL': return `Sortie ${s.heureSortie}→${s.heureRetour} (${s.minutesComptees} min)`;
+            case 'AVANT_TRAVAIL': return `Sortie ${s.heureSortie}→${s.heureRetour} (avant le début du travail)`;
             default: return `${s.heureSortie} retour non badgé`;
         }
     }
@@ -541,6 +546,7 @@ export class MouvementsComponent implements OnInit {
             case 'PAUSE': return 'info';
             case 'PAUSE_DEPASSEE': return 'warn';
             case 'SORTIE_TRAVAIL': return 'danger';
+            case 'AVANT_TRAVAIL': return 'info';
             default: return 'secondary';
         }
     }
@@ -549,7 +555,8 @@ export class MouvementsComponent implements OnInit {
         switch (s.classement) {
             case 'PAUSE': return 'Pause déjeuner dans la plage 13h00–14h30 : non comptée';
             case 'PAUSE_DEPASSEE': return `Sortie ${s.heureSortie}→${s.heureRetour} : ${s.minutesComptees} min hors plage de pause`;
-            case 'SORTIE_TRAVAIL': return 'Sortie en heures de travail : durée comptée hors bureau';
+            case 'SORTIE_TRAVAIL': return 'Sortie en heures de travail : seules les minutes après l\'heure de début (08h30) sont comptées hors bureau';
+            case 'AVANT_TRAVAIL': return 'Sortie terminée avant l\'heure de début du travail : non comptée';
             default: return 'Sortie suivie d’une autre sortie : le retour n’a pas été badgé';
         }
     }
@@ -589,6 +596,67 @@ export class MouvementsComponent implements OnInit {
 
     aujourdhui(): Date {
         return new Date();
+    }
+
+    exportEnCours = signal(false);
+
+    /** Export Excel : feuille Synthèse (chargée à l'écran) + feuille Détails (une ligne par sortie). */
+    exporterExcel(): void {
+        if (!this.du || !this.au) return;
+        const du = this.toIso(this.du), au = this.toIso(this.au);
+        this.exportEnCours.set(true);
+        this.drhService.detailsMouvements$(du, au).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: (r) => {
+                this.exportEnCours.set(false);
+                const details = ((r.data as any)?.details || []) as any[];
+                const libelleType: { [k: string]: string } = {
+                    PAUSE: 'Pause déjeuner',
+                    PAUSE_DEPASSEE: 'Pause dépassée',
+                    SORTIE_TRAVAIL: 'Sortie en heures de travail',
+                    AVANT_TRAVAIL: 'Avant le début du travail',
+                    NON_CLOTUREE: 'Retour non badgé'
+                };
+                const feuilleSynthese = this.synthese().map((s: any) => ({
+                    'Matricule': s.matricule,
+                    'Agent': s.nom,
+                    'Jours actifs': s.joursActifs,
+                    'Pauses': s.nbPauses,
+                    'Sorties travail': s.nbSortiesTravail,
+                    'Hors bureau (min)': s.minutesHorsBureau,
+                    'Dépassement pause (min)': s.minutesDepassementPause,
+                    'Retours non badgés': s.nonCloturees
+                }));
+                const feuilleDetails: any[] = [];
+                for (const agent of details) {
+                    for (const j of agent.jours || []) {
+                        if (!j.sorties?.length) {
+                            feuilleDetails.push({
+                                'Matricule': agent.matricule, 'Agent': agent.nom, 'Jour': j.jour,
+                                'Arrivée': j.premiereEntree, 'Départ': j.derniereSortie,
+                                'Sortie': '', 'Retour': '', 'Durée (min)': '', 'Type': 'Aucune sortie', 'Minutes comptées': 0
+                            });
+                        }
+                        for (const s of j.sorties || []) {
+                            feuilleDetails.push({
+                                'Matricule': agent.matricule, 'Agent': agent.nom, 'Jour': j.jour,
+                                'Arrivée': j.premiereEntree, 'Départ': j.derniereSortie,
+                                'Sortie': s.heureSortie, 'Retour': s.heureRetour || '',
+                                'Durée (min)': s.dureeMinutes ?? '', 'Type': libelleType[s.classement] || s.classement,
+                                'Minutes comptées': s.minutesComptees
+                            });
+                        }
+                    }
+                }
+                const classeur = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(classeur, XLSX.utils.json_to_sheet(feuilleSynthese), 'Synthèse');
+                XLSX.utils.book_append_sheet(classeur, XLSX.utils.json_to_sheet(feuilleDetails), 'Détails');
+                XLSX.writeFile(classeur, `mouvements_${du}_${au}.xlsx`);
+            },
+            error: (e) => {
+                this.exportEnCours.set(false);
+                this.erreur(e);
+            }
+        });
     }
 
     /**

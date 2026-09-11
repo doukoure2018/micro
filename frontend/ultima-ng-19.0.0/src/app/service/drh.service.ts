@@ -330,6 +330,9 @@ export class DrhService {
     associerBadgeMouvement$ = (badgeNo: string, matricule: string): Observable<IResponse> =>
         this.http.put<IResponse>(`${this.server}/ecredit/drh/mouvements/badges/${encodeURIComponent(badgeNo)}?matricule=${matricule}`, {}).pipe(catchError(this.handleError));
 
+    detailsMouvements$ = (du: string, au: string): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/drh/mouvements/details?du=${du}&au=${au}`).pipe(catchError(this.handleError));
+
     tableauBordMouvements$ = (jour: string): Observable<IResponse> =>
         this.http.get<IResponse>(`${this.server}/ecredit/drh/mouvements/tableau-bord?jour=${jour}`).pipe(catchError(this.handleError));
 }
