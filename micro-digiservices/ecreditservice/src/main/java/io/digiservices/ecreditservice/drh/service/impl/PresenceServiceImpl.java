@@ -174,7 +174,7 @@ public class PresenceServiceImpl implements PresenceService {
         LocalTime heureArrivee = LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_ARRIVEE", "08:00"));
         LocalTime heureSortie = LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE", "16:30"));
         LocalTime heureSortieVendredi = LocalTime.parse(
-                presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE_VENDREDI", "14:00"));
+                presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE_VENDREDI", "13:00"));
         int tolerance = Integer.parseInt(presenceRepository.parametreTexte("PRESENCE_TOLERANCE_MIN", "15"));
         List<Map<String, Object>> personnel = presenceRepository.personnelActif();
 
@@ -244,7 +244,7 @@ public class PresenceServiceImpl implements PresenceService {
         ZonedDateTime maintenant = ZonedDateTime.now(ZoneId.of("Africa/Conakry"));
         if (jour == null || !jour.equals(maintenant.toLocalDate())) return false;
         LocalTime sortie = jour.getDayOfWeek() == DayOfWeek.FRIDAY
-                ? LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE_VENDREDI", "14:00"))
+                ? LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE_VENDREDI", "13:00"))
                 : LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE", "16:30"));
         return maintenant.toLocalTime().isBefore(sortie);
     }

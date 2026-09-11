@@ -559,7 +559,7 @@ export class MouvementsComponent implements OnInit {
             case 'PAUSE_DEPASSEE': return `Sortie ${s.heureSortie}→${s.heureRetour} : ${s.minutesComptees} min hors plage de pause`;
             case 'SORTIE_TRAVAIL': return 'Sortie en heures de travail : seules les minutes après l\'heure de début (08h30) sont comptées hors bureau';
             case 'AVANT_TRAVAIL': return 'Sortie terminée avant l\'heure de début du travail : non comptée';
-            case 'APRES_TRAVAIL': return 'Sortie commencée après la fin du travail (16h30, vendredi 14h30) : non comptée';
+            case 'APRES_TRAVAIL': return 'Sortie commencée après la fin du travail (16h30, vendredi 13h00) : non comptée';
             default: return 'Sortie suivie d’une autre sortie : le retour n’a pas été badgé';
         }
     }
