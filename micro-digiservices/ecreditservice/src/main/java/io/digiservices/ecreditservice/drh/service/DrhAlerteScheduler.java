@@ -48,17 +48,21 @@ public class DrhAlerteScheduler {
     }
 
     /**
-     * Synthèse quotidienne des mouvements excessifs : à 17h15 du lundi au jeudi + samedi,
-     * et à 14h15 le vendredi (heure de sortie avancée). Une seule exécution envoie
-     * réellement grâce au test jour/heure, l'anti-doublon drh_alerte couvre le reste.
+     * Synthèse quotidienne des mouvements excessifs : 17h15 du lundi au jeudi + samedi,
+     * 14h45 le vendredi (fin du travail à 14h30). L'anti-doublon drh_alerte protège
+     * contre tout double envoi.
      */
-    @Scheduled(cron = "0 15 14,17 * * MON-SAT")
-    public void alerterMouvementsJour() {
-        boolean vendredi = LocalDate.now().getDayOfWeek() == java.time.DayOfWeek.FRIDAY;
-        int heure = java.time.LocalTime.now().getHour();
-        if (vendredi != (heure == 14)) {
-            return; // 14h15 seulement le vendredi, 17h15 les autres jours
-        }
+    @Scheduled(cron = "0 15 17 * * MON-THU,SAT")
+    public void alerterMouvementsJourSemaine() {
+        alerterMouvementsJourInterne();
+    }
+
+    @Scheduled(cron = "0 45 14 * * FRI")
+    public void alerterMouvementsJourVendredi() {
+        alerterMouvementsJourInterne();
+    }
+
+    private void alerterMouvementsJourInterne() {
         try {
             mouvementService.alerterMouvementsJour();
         } catch (Exception e) {

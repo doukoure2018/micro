@@ -537,6 +537,7 @@ export class MouvementsComponent implements OnInit {
             case 'PAUSE_DEPASSEE': return `Pause +${s.minutesComptees} min`;
             case 'SORTIE_TRAVAIL': return `Sortie ${s.heureSortie}→${s.heureRetour} (${s.minutesComptees} min)`;
             case 'AVANT_TRAVAIL': return `Sortie ${s.heureSortie}→${s.heureRetour} (avant le début du travail)`;
+            case 'APRES_TRAVAIL': return `Sortie ${s.heureSortie}→${s.heureRetour} (après la fin du travail)`;
             default: return `${s.heureSortie} retour non badgé`;
         }
     }
@@ -547,6 +548,7 @@ export class MouvementsComponent implements OnInit {
             case 'PAUSE_DEPASSEE': return 'warn';
             case 'SORTIE_TRAVAIL': return 'danger';
             case 'AVANT_TRAVAIL': return 'info';
+            case 'APRES_TRAVAIL': return 'info';
             default: return 'secondary';
         }
     }
@@ -557,6 +559,7 @@ export class MouvementsComponent implements OnInit {
             case 'PAUSE_DEPASSEE': return `Sortie ${s.heureSortie}→${s.heureRetour} : ${s.minutesComptees} min hors plage de pause`;
             case 'SORTIE_TRAVAIL': return 'Sortie en heures de travail : seules les minutes après l\'heure de début (08h30) sont comptées hors bureau';
             case 'AVANT_TRAVAIL': return 'Sortie terminée avant l\'heure de début du travail : non comptée';
+            case 'APRES_TRAVAIL': return 'Sortie commencée après la fin du travail (16h30, vendredi 14h30) : non comptée';
             default: return 'Sortie suivie d’une autre sortie : le retour n’a pas été badgé';
         }
     }
@@ -614,6 +617,7 @@ export class MouvementsComponent implements OnInit {
                     PAUSE_DEPASSEE: 'Pause dépassée',
                     SORTIE_TRAVAIL: 'Sortie en heures de travail',
                     AVANT_TRAVAIL: 'Avant le début du travail',
+                    APRES_TRAVAIL: 'Après la fin du travail',
                     NON_CLOTUREE: 'Retour non badgé'
                 };
                 const feuilleSynthese = this.synthese().map((s: any) => ({
