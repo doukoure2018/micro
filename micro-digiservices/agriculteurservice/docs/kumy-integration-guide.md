@@ -74,14 +74,62 @@ Exemple : `scope=openid profile email agent_profile`
 | Claim | Description | Exemple |
 |---|---|---|
 | `agent_id` | Identifiant **stable et jamais réattribué** de l'agent (clé d'identité) | `CR-42` |
-| `role` | Rôle CRG (voir §6) | `AGENT_CREDIT` |
-| `agence_region` | Délégation (région) de rattachement | `Guinée Forestière` |
-| `agence_name` | Agence de rattachement | `NZEREKORE` |
-| `agence_code` | Code du point de service | `420` |
+| `role` | Rôle CRG exposé à AgriScore (voir §6) | `AGENT_CREDIT` |
+| `perimetre_niveau` | Niveau de ce que l'agent a le droit de voir : `POINT_DE_SERVICE`, `AGENCE`, `DELEGATION`, `NATIONAL` (voir §6) | `AGENCE` |
+| `delegation_id` | Identifiant de la délégation (= `id` des routes `/agriculteurs/structure/delegations`) | `5` |
+| `agence_region` | Libellé de la délégation (région) | `Guinée Forestière` |
+| `agence_id` | Identifiant de l'agence (= `id` de `/agriculteurs/structure/delegations/{id}/agences`) | `7` |
+| `agence_name` | Libellé de l'agence | `NZEREKORE` |
+| `pointvente_id` | Identifiant du point de service | `30` |
+| `pointvente_code` | Code du point de service. **C'est aussi le `codeAgence` renvoyé par `/agriculteurs/farmers` et `/agriculteurs/credits`** : clé de jointure pour cloisonner les agriculteurs par agent | `420` |
 | `point_de_service` | Libellé du point de service | `N'Zerekoré 2` |
+| `agence_code` | *Déprécié* — ancien nom de `pointvente_code`, même valeur, conservé pour compatibilité | `420` |
 
-> Les claims géographiques absents (ex. un DR n'a pas de point de service) sont
-> simplement **omis**.
+> Les claims de rattachement sont limités au niveau de l'agent : un DA reçoit `delegation_id` et
+> `agence_id` mais pas de point de service ; un DR ne reçoit que `delegation_id` ; un DE/DG ne
+> reçoit aucun rattachement. Dans l'**ID Token**, un rattachement manquant (fiche agent incomplète)
+> est **omis** (un claim JWT ne peut pas valoir null) ; sur **/userinfo**, il vaut **`null`**.
+
+### 5.1 Périmètre géographique complet (`/userinfo` uniquement)
+
+`/userinfo` renvoie en plus l'objet **`perimetre`** : l'arbre des entités visibles par l'agent,
+**toujours de la même forme** quel que soit le rôle (délégations → agences → points de service),
+élagué à son niveau. Un seul parseur côté KUMY suffit.
+
+```json
+{
+  "agent_id": "CR-260", "role": "DA", "perimetre_niveau": "AGENCE",
+  "delegation_id": 2, "agence_region": "Haute Guinée",
+  "agence_id": 22, "agence_name": "DINGUIRAYE",
+  "perimetre": {
+    "niveau": "AGENCE",
+    "delegations": [
+      { "id": 2, "libelle": "Haute Guinée",
+        "agences": [
+          { "id": 22, "libelle": "DINGUIRAYE",
+            "points_de_service": [
+              { "id": 113, "code": "555", "libelle": "Dialakoro" },
+              { "id": 112, "code": "556", "libelle": "Kalinko" },
+              { "id": 111, "code": "558", "libelle": "Dinguiraye" },
+              { "id": 110, "code": "560", "libelle": "Mbonet" }
+            ] }
+        ] }
+    ]
+  }
+}
+```
+
+| Rôle | `perimetre.delegations` contient |
+|---|---|
+| `AGENT_CREDIT` | sa délégation → son agence → **son seul** point de service |
+| `DA`, `RA` | sa délégation → son agence → **tous** les points de service de l'agence |
+| `DR` | sa délégation → **toutes** ses agences → tous leurs points de service |
+| `DE`, `DG` | **toutes** les délégations (5) → toutes les agences (38) → tous les points de service (188) |
+
+> L'arbre n'est **pas** dans l'ID Token (jusqu'à ~10 Ko au niveau national, incompatible avec les
+> custom claims Firebase limités à 1 000 octets). Fiche agent incomplète : l'agent n'est pas refusé,
+> l'arbre contient ce qui est connu et reste vide en dessous (ex. DA sans agence → `agences: []`).
+> Le référentiel est mis en cache 5 minutes côté CRG.
 
 ---
 
@@ -90,14 +138,18 @@ Exemple : `scope=openid profile email agent_profile`
 Le CRG expose **le rôle** ; KUMY gère les permissions fines de son côté
 (pas de claim `habilitations`).
 
-| Rôle | Niveau organisationnel |
-|---|---|
-| `AGENT_CREDIT` | Point de service |
-| `RA` | Agence |
-| `DA` | Agence |
-| `DR` | Délégation |
+| Rôle | Niveau organisationnel | `perimetre_niveau` |
+|---|---|---|
+| `AGENT_CREDIT` | Point de service | `POINT_DE_SERVICE` |
+| `RA` | Agence | `AGENCE` |
+| `DA` | Agence | `AGENCE` |
+| `DR` | Délégation | `DELEGATION` |
+| `DE` | Direction de l'Exploitation (siège) | `NATIONAL` |
+| `DG` | Direction Générale (siège) | `NATIONAL` |
 
 > Organisation CRG à 3 niveaux : **délégation → agence → point de service**.
+> Seuls ces six rôles accèdent à AgriScore ; pour tout autre compte (caisse, administration,
+> autres directions du siège), aucun claim `agent_profile` n'est émis.
 
 ---
 
@@ -137,6 +189,39 @@ Header: X-API-Key: <clé transmise par canal sécurisé séparé>
 curl -H "X-API-Key: <clé>" \
   https://digi-creditrural-io.com/api/agents/CR-42/status
 ```
+
+---
+
+## 7b. Périmètre géographique agent (rafraîchissement serveur-à-serveur)
+
+Même objet `perimetre` que `/userinfo` (§5.1), sans jeton agent : permet à KUMY de rafraîchir le
+périmètre (nouvelle agence, mutation) sans nouveau login. Même clé API que le contrôle de statut.
+
+**Requête**
+```
+GET https://digi-creditrural-io.com/api/agents/{agent_id}/perimeter
+Header: X-API-Key: <clé transmise par canal sécurisé séparé>
+```
+
+**Réponse `200`**
+```json
+{
+  "agentId": "CR-260",
+  "role": "DA",
+  "active": true,
+  "perimetre": { "niveau": "AGENCE", "delegations": [ … ] }
+}
+```
+
+| Code HTTP | Signification |
+|---|---|
+| `200` | périmètre calculé ; `active` suit la règle de `/status` |
+| `200` + `"niveau":"AUCUN"` et `delegations: []` | agent hors périmètre AgriScore (`role` = rôle brut CRG) |
+| `401` | clé API absente ou invalide |
+| `404` | agent inconnu |
+| `400` | format d'`agent_id` invalide (attendu `CR-<n>`) |
+
+Fréquence recommandée : à chaque login (via `/userinfo`) et une fois par jour côté serveur.
 
 ---
 

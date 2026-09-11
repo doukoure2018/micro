@@ -104,7 +104,7 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public AgentProfile getAgentProfile(Long userId) {
         try {
-            return jdbcClient.sql(SELECT_AGENT_PROFILE_QUERY).param("userId", userId).query(AgentProfile.class).optional().orElse(null);
+            return jdbcClient.sql(SELECT_AGENT_PROFILE_QUERY).param("userId", userId).query(AgentProfile.class).list().stream().findFirst().orElse(null);
         }catch (Exception e){
             log.error("Erreur récupération du profil agent (userId={}): {}", userId, e.getMessage());
             return null;

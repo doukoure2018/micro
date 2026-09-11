@@ -2,7 +2,7 @@ package io.digiservices.authorizationserver.security;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.digiservices.authorizationserver.model.AgentProfile;
+import io.digiservices.authorizationserver.perimetre.AgentPerimetreService;
 import io.digiservices.authorizationserver.model.User;
 import io.digiservices.authorizationserver.repository.UserRepository;
 import jakarta.servlet.ServletException;
@@ -81,7 +81,6 @@ public class AuthorizationServerConfig {
 
     // Scope métier KUMY/AgriScore (SSO fédéré OIDC) et rôles CRG concernés par AgriScore.
     private static final String AGENT_PROFILE_SCOPE = "agent_profile";
-    private static final Set<String> AGENT_PROFILE_ROLES = Set.of("AGENT_CREDIT", "RA", "DA", "DR");
 
     private final JwtConfiguration jwtConfiguration;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -93,6 +92,7 @@ public class AuthorizationServerConfig {
     private String oauthIssuer;
 
     private final UserRepository userRepository;
+    private final AgentPerimetreService agentPerimetreService;
 
     @Bean
     @Order(1)
@@ -403,39 +403,25 @@ public class AuthorizationServerConfig {
     }
 
     /**
-     * Ajoute les claims du scope {@code agent_profile} (identité + rattachement géographique de l'agent)
-     * transmis à KUMY/AgriScore. N'émet rien si le rôle est hors périmètre AgriScore
-     * (seuls AGENT_CREDIT, RA, DA, DR sont concernés).
+     * Ajoute les claims du scope {@code agent_profile} transmis à KUMY/AgriScore : identité,
+     * rôle AgriScore, niveau de périmètre et rattachement géographique limité à ce niveau
+     * (cf. {@link AgentPerimetreService}). N'émet rien si l'agent est hors périmètre AgriScore
+     * (seuls AGENT_CREDIT, RA, DA, DR, DG et MANAGER du service DE sont concernés).
      */
     private void addAgentProfileClaims(JwtEncodingContext context, User user) {
-        String role = user.getRole();
-        if (role == null || !AGENT_PROFILE_ROLES.contains(role)) {
-            log.warn("⚠️ Agent {} (role '{}') hors périmètre AgriScore — claims agent_profile non émis",
-                    user.getUserId(), role);
-            return;
-        }
         try {
-            // agent_id stable, jamais réattribué : basé sur la PK user_id (cf. accord KUMY)
-            context.getClaims()
-                    .claim("agent_id", "CR-" + user.getUserId())
-                    .claim("role", role);
-
-            AgentProfile profile = userRepository.getAgentProfile(user.getUserId());
-            if (profile != null) {
-                addClaimIfPresent(context, "agence_region", profile.delegationLibele());
-                addClaimIfPresent(context, "agence_name", profile.agenceLibele());
-                addClaimIfPresent(context, "agence_code", profile.pointventeCode());
-                addClaimIfPresent(context, "point_de_service", profile.pointventeLibele());
+            AgentPerimetreService.Resolution resolution = agentPerimetreService.resolve(user.getUserId());
+            if (resolution.horsPerimetre()) {
+                log.warn("⚠️ Agent {} (role '{}') hors périmètre AgriScore — claims agent_profile non émis",
+                        user.getUserId(), user.getRole());
+                return;
             }
-            log.info("✅ Claims agent_profile ajoutés pour agent CR-{} (role {})", user.getUserId(), role);
+            agentPerimetreService.idTokenClaims(user.getUserId(), resolution)
+                    .forEach((name, value) -> context.getClaims().claim(name, value));
+            log.info("✅ Claims agent_profile ajoutés pour agent CR-{} (role {}, niveau {})",
+                    user.getUserId(), resolution.role(), resolution.niveau());
         } catch (Exception e) {
             log.error("❌ Erreur ajout des claims agent_profile pour user {}: {}", user.getUserId(), e.getMessage(), e);
-        }
-    }
-
-    private void addClaimIfPresent(JwtEncodingContext context, String name, String value) {
-        if (value != null && !value.isBlank()) {
-            context.getClaims().claim(name, value);
         }
     }
 
@@ -450,10 +436,36 @@ public class AuthorizationServerConfig {
      */
     private org.springframework.security.oauth2.core.oidc.OidcUserInfo mapUserInfo(
             org.springframework.security.oauth2.server.authorization.oidc.authentication.OidcUserInfoAuthenticationContext context) {
-        var idToken = context.getAuthorization().getToken(org.springframework.security.oauth2.core.oidc.OidcIdToken.class).getToken();
+        var authorization = context.getAuthorization();
+        var idToken = authorization.getToken(org.springframework.security.oauth2.core.oidc.OidcIdToken.class).getToken();
         Map<String, Object> claims = new HashMap<>(idToken.getClaims());
         claims.keySet().removeAll(JWT_TECHNICAL_CLAIMS);
+
+        // Périmètre géographique complet (arbre delegations -> agences -> points_de_service) :
+        // uniquement pour le scope agent_profile (KUMY). Rattachement manquant => null explicite.
+        if (authorization.getAuthorizedScopes().contains(AGENT_PROFILE_SCOPE)) {
+            Long userId = parseUserId(claims.get("sub"));
+            if (userId != null) {
+                try {
+                    AgentPerimetreService.Resolution resolution = agentPerimetreService.resolve(userId);
+                    claims.putAll(agentPerimetreService.userInfoClaims(userId, resolution));
+                } catch (Exception e) {
+                    log.error("❌ Erreur calcul du périmètre /userinfo pour user {}: {}", userId, e.getMessage(), e);
+                }
+            }
+        }
         return new org.springframework.security.oauth2.core.oidc.OidcUserInfo(claims);
+    }
+
+    private static Long parseUserId(Object sub) {
+        if (sub == null) {
+            return null;
+        }
+        try {
+            return Long.parseLong(sub.toString());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     // Method for access token authorities (returns String)

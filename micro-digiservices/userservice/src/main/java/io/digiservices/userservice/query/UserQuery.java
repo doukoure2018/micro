@@ -58,7 +58,8 @@ public class UserQuery {
             u.agence_id,
             u.delegation_id,
             u.is_authorized,
-            u.matricule
+            u.matricule,
+            u.service
             FROM users u JOIN user_roles ur ON ur.user_id = u.user_id JOIN roles r ON r.role_id = ur.role_id WHERE u.user_id =:userId;
             """;
     public static final String SELECT_USER_BY_EMAIL_QUERY=
