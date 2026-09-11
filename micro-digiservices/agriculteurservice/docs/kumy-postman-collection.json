@@ -128,6 +128,28 @@
       ]
     },
     {
+      "name": "4b. Périmètre agent — avec clé API (200)",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "X-API-Key", "value": "{{api_key}}", "type": "text" } ],
+        "url": { "raw": "{{api_base}}/agents/{{agent_id}}/perimeter", "host": [ "{{api_base}}" ], "path": [ "agents", "{{agent_id}}", "perimeter" ] },
+        "description": "Périmètre géographique de l'agent (delegations -> agences -> points_de_service), élagué à son niveau (POINT_DE_SERVICE / AGENCE / DELEGATION / NATIONAL). Même objet que le claim perimetre de /userinfo. Clé API identique au contrôle de statut."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('contient perimetre.niveau', () => pm.expect(pm.response.json().perimetre).to.have.property('niveau'));",
+              "pm.test('contient perimetre.delegations', () => pm.expect(pm.response.json().perimetre.delegations).to.be.an('array'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "5. Statut agent — sans clé (401 attendu)",
       "request": {
         "method": "GET",

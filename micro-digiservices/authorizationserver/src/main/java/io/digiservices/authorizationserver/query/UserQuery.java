@@ -75,14 +75,21 @@ public class UserQuery {
     // pour les claims métier agent_profile transmis à KUMY/AgriScore (SSO fédéré).
     public static final String SELECT_AGENT_PROFILE_QUERY=
                                 """
-                                   SELECT d.libele AS delegation_libele,
-                                          a.libele AS agence_libele,
-                                          p.libele AS pointvente_libele,
-                                          p.code   AS pointvente_code
+                                   SELECT r.name          AS role,
+                                          u.service        AS service,
+                                          u.delegation_id  AS delegation_id,
+                                          d.libele         AS delegation_libele,
+                                          u.agence_id      AS agence_id,
+                                          a.libele         AS agence_libele,
+                                          u.pointvente_id  AS pointvente_id,
+                                          p.libele         AS pointvente_libele,
+                                          p.code           AS pointvente_code
                                    FROM users u
-                                   LEFT JOIN delegation d ON d.id = u.delegation_id
-                                   LEFT JOIN agence a     ON a.id = u.agence_id
-                                   LEFT JOIN pointvente p ON p.id = u.pointvente_id
+                                   LEFT JOIN user_roles ur ON ur.user_id = u.user_id
+                                   LEFT JOIN roles r       ON r.role_id = ur.role_id
+                                   LEFT JOIN delegation d  ON d.id = u.delegation_id
+                                   LEFT JOIN agence a      ON a.id = u.agence_id
+                                   LEFT JOIN pointvente p  ON p.id = u.pointvente_id
                                    WHERE u.user_id = :userId
                                 """;
 
