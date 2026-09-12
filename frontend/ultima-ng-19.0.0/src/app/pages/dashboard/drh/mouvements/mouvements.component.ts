@@ -20,7 +20,7 @@ import { UserService } from '@/service/user.service';
 /**
  * Gestion des mouvements (DRH) : import du journal de la porte (export access-log),
  * journal brut, synthèse par agent (sorties travail / dépassements de pause 13h-14h30,
- * pause ignorée le vendredi), détail par personne et correspondances badge -> matricule.
+ * pause ignorée le vendredi et le samedi, journées continues), détail par personne et correspondances badge -> matricule.
  */
 @Component({
     selector: 'app-mouvements',
@@ -35,8 +35,8 @@ import { UserService } from '@/service/user.service';
                     <h4 class="m-0">{{ modeDepartement ? 'Mouvements de mon département' : 'Gestion des mouvements' }}</h4>
                     <span class="text-sm text-color-secondary">
                         {{ modeDepartement
-                            ? 'Entrées/sorties de la porte pour les agents de votre département : pause déjeuner 13h00–14h30 non comptée (ignorée le vendredi).'
-                            : 'Journal des entrées/sorties de la porte : pause déjeuner 13h00–14h30 non comptée (ignorée le vendredi), sorties en heures de travail et dépassements mesurés.' }}
+                            ? 'Entrées/sorties de la porte pour les agents de votre département : pause déjeuner 13h00–14h30 non comptée (ignorée le vendredi et le samedi).'
+                            : 'Journal des entrées/sorties de la porte : pause déjeuner 13h00–14h30 non comptée (ignorée le vendredi et le samedi), sorties en heures de travail et dépassements mesurés.' }}
                     </span>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
@@ -332,8 +332,24 @@ import { UserService } from '@/service/user.service';
                     <ng-template pTemplate="body" let-j>
                         <tr>
                             <td class="font-medium">{{ j.jour | date: 'EEEE dd/MM/yyyy' }}</td>
-                            <td>{{ j.premiereEntree || '—' }}</td>
-                            <td>{{ j.derniereSortie || '—' }}</td>
+                            <td>
+                                <ng-container *ngIf="!j.entreeNonBadgee; else entreeNonBadgee">{{ j.premiereEntree || '—' }}</ng-container>
+                                <ng-template #entreeNonBadgee>
+                                    <p-tag value="Entrée non badgée" severity="warn"
+                                           pTooltip="Premier badge de la journée = sortie : la personne est entrée sans badger, l'heure d'arrivée est inconnue" />
+                                </ng-template>
+                            </td>
+                            <td>
+                                <ng-container *ngIf="!j.departNonBadge; else departNonBadge">{{ j.derniereSortie || '—' }}</ng-container>
+                                <ng-template #departNonBadge>
+                                    <p-tag *ngIf="estAujourdhui(j.jour); else departManquant" value="Dans les locaux" severity="info"
+                                           pTooltip="Dernier badge = entrée : la personne n'est pas encore ressortie" />
+                                    <ng-template #departManquant>
+                                        <p-tag value="Départ non badgé" severity="secondary"
+                                               pTooltip="Dernier badge de la journée = entrée : le départ n'a pas été badgé" />
+                                    </ng-template>
+                                </ng-template>
+                            </td>
                             <td>
                                 <span *ngIf="j.sorties.length === 0" class="text-color-secondary text-sm">Aucune sortie intermédiaire</span>
                                 <div class="flex flex-wrap gap-1">
@@ -356,8 +372,10 @@ import { UserService } from '@/service/user.service';
                     <p-tag value="Pause" severity="info" /> dans la plage 13h00–14h30 (non comptée) —
                     <p-tag value="Pause +X min" severity="warn" /> pause dépassée (minutes hors plage) —
                     <p-tag value="Sortie" severity="danger" /> sortie en heures de travail —
-                    <p-tag value="Retour non badgé" severity="secondary" /> sortie sans retour badgé.
-                    Le vendredi, la pause n'est pas appliquée (sortie à 14h00).
+                    <p-tag value="Retour non badgé" severity="secondary" /> sortie sans retour badgé —
+                    <p-tag value="Entrée non badgée" severity="warn" /> premier badge = sortie (arrivée inconnue) —
+                    <p-tag value="Départ non badgé" severity="secondary" /> dernier badge = entrée.
+                    Horaires : 08h30–16h30 du lundi au jeudi, 08h30–13h00 le vendredi, 08h30–14h00 le samedi ; la pause n'est pas appliquée le vendredi ni le samedi.
                 </div>
             </div>
 
@@ -559,9 +577,15 @@ export class MouvementsComponent implements OnInit {
             case 'PAUSE_DEPASSEE': return `Sortie ${s.heureSortie}→${s.heureRetour} : ${s.minutesComptees} min hors plage de pause`;
             case 'SORTIE_TRAVAIL': return 'Sortie en heures de travail : seules les minutes après l\'heure de début (08h30) sont comptées hors bureau';
             case 'AVANT_TRAVAIL': return 'Sortie terminée avant l\'heure de début du travail : non comptée';
-            case 'APRES_TRAVAIL': return 'Sortie commencée après la fin du travail (16h30, vendredi 13h00) : non comptée';
+            case 'APRES_TRAVAIL': return 'Sortie commencée après la fin du travail (16h30, vendredi 13h00, samedi 14h00) : non comptée';
             default: return 'Sortie suivie d’une autre sortie : le retour n’a pas été badgé';
         }
+    }
+
+    estAujourdhui(jour: string): boolean {
+        const d = new Date();
+        const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        return jour === iso;
     }
 
     changerVuePrincipale(v: string): void {
@@ -636,14 +660,16 @@ export class MouvementsComponent implements OnInit {
                         if (!j.sorties?.length) {
                             feuilleDetails.push({
                                 'Matricule': agent.matricule, 'Agent': agent.nom, 'Jour': j.jour,
-                                'Arrivée': j.premiereEntree, 'Départ': j.derniereSortie,
+                                'Arrivée': j.entreeNonBadgee ? 'non badgée' : j.premiereEntree,
+                                'Départ': j.departNonBadge ? 'non badgé' : j.derniereSortie,
                                 'Sortie': '', 'Retour': '', 'Durée (min)': '', 'Type': 'Aucune sortie', 'Minutes comptées': 0
                             });
                         }
                         for (const s of j.sorties || []) {
                             feuilleDetails.push({
                                 'Matricule': agent.matricule, 'Agent': agent.nom, 'Jour': j.jour,
-                                'Arrivée': j.premiereEntree, 'Départ': j.derniereSortie,
+                                'Arrivée': j.entreeNonBadgee ? 'non badgée' : j.premiereEntree,
+                                'Départ': j.departNonBadge ? 'non badgé' : j.derniereSortie,
                                 'Sortie': s.heureSortie, 'Retour': s.heureRetour || '',
                                 'Durée (min)': s.dureeMinutes ?? '', 'Type': libelleType[s.classement] || s.classement,
                                 'Minutes comptées': s.minutesComptees

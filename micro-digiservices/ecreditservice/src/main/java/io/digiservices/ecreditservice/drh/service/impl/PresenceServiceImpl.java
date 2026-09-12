@@ -175,6 +175,8 @@ public class PresenceServiceImpl implements PresenceService {
         LocalTime heureSortie = LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE", "16:30"));
         LocalTime heureSortieVendredi = LocalTime.parse(
                 presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE_VENDREDI", "13:00"));
+        LocalTime heureSortieSamedi = LocalTime.parse(
+                presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE_SAMEDI", "14:00"));
         int tolerance = Integer.parseInt(presenceRepository.parametreTexte("PRESENCE_TOLERANCE_MIN", "15"));
         List<Map<String, Object>> personnel = presenceRepository.personnelActif();
 
@@ -189,7 +191,7 @@ public class PresenceServiceImpl implements PresenceService {
             }
             // Purge du jour : ne garde que le personnel badgé contrôlé ci-dessous
             presenceRepository.supprimerPresencesJour(jour);
-            LocalTime sortieDuJour = jour.getDayOfWeek() == DayOfWeek.FRIDAY ? heureSortieVendredi : heureSortie;
+            LocalTime sortieDuJour = heureSortieDuJour(jour, heureSortie, heureSortieVendredi, heureSortieSamedi);
             Map<String, LocalTime[]> pointages = presenceRepository.pointagesDuJour(jour);
             for (Map<String, Object> agent : personnel) {
                 String matricule = String.valueOf(agent.get("matricule"));
@@ -243,10 +245,20 @@ public class PresenceServiceImpl implements PresenceService {
     private boolean jourEnCours(LocalDate jour) {
         ZonedDateTime maintenant = ZonedDateTime.now(ZoneId.of("Africa/Conakry"));
         if (jour == null || !jour.equals(maintenant.toLocalDate())) return false;
-        LocalTime sortie = jour.getDayOfWeek() == DayOfWeek.FRIDAY
-                ? LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE_VENDREDI", "13:00"))
-                : LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE", "16:30"));
+        LocalTime sortie = heureSortieDuJour(jour,
+                LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE", "16:30")),
+                LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE_VENDREDI", "13:00")),
+                LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE_SAMEDI", "14:00")));
         return maintenant.toLocalTime().isBefore(sortie);
+    }
+
+    /** Fin de journée réglementaire : 16h30 du lundi au jeudi, 13h00 le vendredi, 14h00 le samedi (paramétrables). */
+    static LocalTime heureSortieDuJour(LocalDate jour, LocalTime standard, LocalTime vendredi, LocalTime samedi) {
+        return switch (jour.getDayOfWeek()) {
+            case FRIDAY -> vendredi;
+            case SATURDAY -> samedi;
+            default -> standard;
+        };
     }
 
     /** Ajoute le temps hors bureau / dépassement de pause reconstruit depuis le journal des mouvements. */

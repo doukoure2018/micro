@@ -53,6 +53,10 @@ public final class MouvementDtos {
         private LocalTime premiereEntree;
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm")
         private LocalTime derniereSortie;
+        /** Premier badge du jour = sortie : entrée sans badge, arrivée inconnue ({@code premiereEntree} null). */
+        private boolean entreeNonBadgee;
+        /** Dernier badge du jour = entrée : départ non badgé ou journée en cours ({@code derniereSortie} null). */
+        private boolean departNonBadge;
         private List<SortieDto> sorties;
         private int nbSortiesTravail;
         private int minutesHorsBureau;        // sorties travail

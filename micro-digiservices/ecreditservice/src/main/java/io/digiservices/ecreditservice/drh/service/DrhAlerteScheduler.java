@@ -48,17 +48,22 @@ public class DrhAlerteScheduler {
     }
 
     /**
-     * Synthèse quotidienne des mouvements excessifs : 17h15 du lundi au jeudi + samedi,
-     * 13h15 le vendredi (fin du travail à 13h00). L'anti-doublon drh_alerte protège
-     * contre tout double envoi.
+     * Synthèse quotidienne des mouvements excessifs, un quart d'heure après la fin du travail :
+     * 17h15 du lundi au jeudi (fin 16h30), 13h15 le vendredi (fin 13h00), 14h15 le samedi
+     * (fin 14h00). L'anti-doublon drh_alerte protège contre tout double envoi.
      */
-    @Scheduled(cron = "0 15 17 * * MON-THU,SAT")
+    @Scheduled(cron = "0 15 17 * * MON-THU")
     public void alerterMouvementsJourSemaine() {
         alerterMouvementsJourInterne();
     }
 
     @Scheduled(cron = "0 15 13 * * FRI")
     public void alerterMouvementsJourVendredi() {
+        alerterMouvementsJourInterne();
+    }
+
+    @Scheduled(cron = "0 15 14 * * SAT")
+    public void alerterMouvementsJourSamedi() {
         alerterMouvementsJourInterne();
     }
 
