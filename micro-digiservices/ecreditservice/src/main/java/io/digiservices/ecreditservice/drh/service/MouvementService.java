@@ -50,6 +50,6 @@ public interface MouvementService {
     /** Tableau de bord du jour : tuiles de synthèse + classement des agents par badgeages. */
     io.digiservices.ecreditservice.drh.dto.MouvementDtos.TableauBordDto tableauBord(User drh, LocalDate jour);
 
-    /** Alerte DRH quotidienne (17h15, 14h15 le vendredi) : agents au-dessus du seuil de badgeages du jour. */
+    /** Alerte DRH quotidienne (17h15, 13h15 le vendredi, 14h15 le samedi) : agents au-dessus du seuil de badgeages du jour. */
     int alerterMouvementsJour();
 }
