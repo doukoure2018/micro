@@ -32,7 +32,8 @@ public class GlobalExceptionHandler {
             case 503 -> HttpStatus.SERVICE_UNAVAILABLE;
             default -> ex.status() <= 0 ? HttpStatus.SERVICE_UNAVAILABLE : HttpStatus.BAD_GATEWAY;
         };
-        log.warn("[AGRI] appel ebanking en echec (status amont={}) -> {}", ex.status(), status.value());
+        log.warn("[AGRI] appel amont en echec (status amont={}, url={}) -> {}", ex.status(),
+                ex.request() != null ? ex.request().url() : "?", status.value());
         String message = switch (status) {
             case NOT_FOUND -> "Ressource introuvable";
             case SERVICE_UNAVAILABLE -> "Service de donnees (ebanking/BDCRG) momentanement indisponible";

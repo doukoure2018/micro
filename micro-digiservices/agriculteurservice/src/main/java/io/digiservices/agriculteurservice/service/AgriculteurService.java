@@ -10,6 +10,7 @@ import io.digiservices.agriculteurservice.dto.EcheanceDto;
 import io.digiservices.agriculteurservice.dto.MembreCooperativeDto;
 import io.digiservices.agriculteurservice.dto.PageDto;
 import io.digiservices.agriculteurservice.dto.PointDeVenteDto;
+import io.digiservices.clients.agents.AgentPerimetreDto;
 
 import java.util.List;
 
@@ -48,4 +49,8 @@ public interface AgriculteurService {
     List<PointDeVenteDto> getPointsDeVenteByAgence(Long agenceId);
 
     List<PointDeVenteDto> getPointsDeVenteByDelegation(Long delegationId);
+
+    // --- Perimetre d'un agent (cloisonnement AgriScore) : delegue a userservice ---
+
+    AgentPerimetreDto getAgentPerimetre(String agentId);
 }

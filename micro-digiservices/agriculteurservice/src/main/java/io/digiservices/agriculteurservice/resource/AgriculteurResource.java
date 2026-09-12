@@ -12,6 +12,7 @@ import io.digiservices.agriculteurservice.dto.PageDto;
 import io.digiservices.agriculteurservice.dto.PointDeVenteDto;
 import io.digiservices.agriculteurservice.exception.BadRequestException;
 import io.digiservices.agriculteurservice.service.AgriculteurService;
+import io.digiservices.clients.agents.AgentPerimetreDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +26,7 @@ import java.util.List;
 
 /**
  * API publique AgriPilot ({@code /agriculteurs/**}). Reponses : DTO / PageDto bruts.
- * Delegue a {@link AgriculteurService}. Securisee par JWT + role AGRIPILOT (Phase 4).
+ * Delegue a {@link AgriculteurService}. Securisee par cle API publique (header X-API-Key).
  */
 @RestController
 @RequestMapping("/agriculteurs")
@@ -34,6 +35,7 @@ import java.util.List;
 public class AgriculteurResource {
 
     private static final int MAX_PAGE_SIZE = 100;
+    private static final java.util.regex.Pattern AGENT_ID = java.util.regex.Pattern.compile("CR-\\d{1,10}");
 
     private final AgriculteurService agriculteurService;
 
@@ -142,6 +144,22 @@ public class AgriculteurResource {
             @PathVariable("delegationId") Long delegationId) {
         log.info("[AGRI] GET /agriculteurs/structure/delegations/{}/points-de-vente", delegationId);
         return ResponseEntity.ok(agriculteurService.getPointsDeVenteByDelegation(delegationId));
+    }
+
+    // ============================================================
+    //  Perimetre d'un agent (cloisonnement "qui voit quoi" cote AgriScore).
+    //  agentId = claim agent_id du SSO (format CR-<n>). Meme objet que le claim
+    //  "perimetre" de /userinfo ; les points de service portent le "code" = codeAgence
+    //  des agriculteurs et credits de cette API.
+    // ============================================================
+
+    @GetMapping("/agents/{agentId}/perimetre")
+    public ResponseEntity<AgentPerimetreDto> getAgentPerimetre(@PathVariable("agentId") String agentId) {
+        if (!AGENT_ID.matcher(agentId).matches()) {
+            throw new BadRequestException("Le parametre 'agentId' doit etre au format CR-<n>");
+        }
+        log.info("[AGRI] GET /agriculteurs/agents/{}/perimetre", agentId);
+        return ResponseEntity.ok(agriculteurService.getAgentPerimetre(agentId));
     }
 
     /** page &gt;= 0 et 1 &le; size &le; 100, sinon HTTP 400. */

@@ -48,6 +48,11 @@ ebanking:
   agri:
     api-key: ${EBANKING_AGRI_API_KEY:}
 
+# Cle API INTERNE : pour appeler /agents/** de userservice (perimetre agent) - meme cle que KUMY_AGENTS_API_KEY cote userservice
+userservice:
+  agents:
+    api-key: ${KUMY_AGENTS_API_KEY:}
+
 feign:
   client:
     config:

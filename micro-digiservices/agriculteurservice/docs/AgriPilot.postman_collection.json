@@ -10,7 +10,10 @@
     { "key": "agencyId", "value": "", "type": "string" },
     { "key": "clientId", "value": "", "type": "string" },
     { "key": "creditId", "value": "", "type": "string" },
-    { "key": "groupId", "value": "", "type": "string" }
+    { "key": "groupId", "value": "", "type": "string" },
+    { "key": "agentId", "value": "CR-39", "type": "string" },
+    { "key": "delegationId", "value": "5", "type": "string" },
+    { "key": "agenceId", "value": "5", "type": "string" }
   ],
   "item": [
     {
@@ -103,6 +106,55 @@
           "path": ["agriculteurs", "cooperatives", "{{groupId}}", "members"],
           "query": [ { "key": "page", "value": "0" }, { "key": "size", "value": "20" } ]
         }
+      }
+    },
+    {
+      "name": "Echeancier d'un credit",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "X-API-Key", "value": "{{publicApiKey}}", "type": "text" } ],
+        "url": { "raw": "{{baseUrl}}/agriculteurs/credits/{{creditId}}/repayment-schedule", "host": ["{{baseUrl}}"], "path": ["agriculteurs", "credits", "{{creditId}}", "repayment-schedule"] }
+      }
+    },
+    {
+      "name": "Structure : delegations",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "X-API-Key", "value": "{{publicApiKey}}", "type": "text" } ],
+        "url": { "raw": "{{baseUrl}}/agriculteurs/structure/delegations", "host": ["{{baseUrl}}"], "path": ["agriculteurs", "structure", "delegations"] }
+      }
+    },
+    {
+      "name": "Structure : agences d'une delegation",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "X-API-Key", "value": "{{publicApiKey}}", "type": "text" } ],
+        "url": { "raw": "{{baseUrl}}/agriculteurs/structure/delegations/{{delegationId}}/agences", "host": ["{{baseUrl}}"], "path": ["agriculteurs", "structure", "delegations", "{{delegationId}}", "agences"] }
+      }
+    },
+    {
+      "name": "Structure : points de service d'une agence",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "X-API-Key", "value": "{{publicApiKey}}", "type": "text" } ],
+        "url": { "raw": "{{baseUrl}}/agriculteurs/structure/agences/{{agenceId}}/points-de-vente", "host": ["{{baseUrl}}"], "path": ["agriculteurs", "structure", "agences", "{{agenceId}}", "points-de-vente"] }
+      }
+    },
+    {
+      "name": "Structure : points de service d'une delegation",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "X-API-Key", "value": "{{publicApiKey}}", "type": "text" } ],
+        "url": { "raw": "{{baseUrl}}/agriculteurs/structure/delegations/{{delegationId}}/points-de-vente", "host": ["{{baseUrl}}"], "path": ["agriculteurs", "structure", "delegations", "{{delegationId}}", "points-de-vente"] }
+      }
+    },
+    {
+      "name": "Perimetre d'un agent",
+      "request": {
+        "method": "GET",
+        "description": "agentId = claim agent_id du SSO (CR-<n>). Arbre delegations -> agences -> points_de_service elague au niveau de l'agent ; points_de_service[].code = codeAgence des agriculteurs/credits (cle de jointure pour le cloisonnement).",
+        "header": [ { "key": "X-API-Key", "value": "{{publicApiKey}}", "type": "text" } ],
+        "url": { "raw": "{{baseUrl}}/agriculteurs/agents/{{agentId}}/perimetre", "host": ["{{baseUrl}}"], "path": ["agriculteurs", "agents", "{{agentId}}", "perimetre"] }
       }
     },
     {

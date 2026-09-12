@@ -48,15 +48,57 @@ X-API-Key: <cle-publique>
 
 | Méthode | Chemin | Description | Pagination |
 |---|---|---|---|
-| GET | `/agriculteurs/agencies` | Liste des agences | non |
-| GET | `/agriculteurs/agencies/{agencyId}/portfolio` | Portefeuille agricole d'une agence | oui |
+| GET | `/agriculteurs/agencies` | Liste des agences SAF | non |
+| GET | `/agriculteurs/agencies/{agencyId}/portfolio` | Portefeuille agricole d'une agence SAF | oui |
 | GET | `/agriculteurs/farmers` | Agriculteurs (clients ayant un crédit agricole) | oui |
 | GET | `/agriculteurs/farmers/{clientId}` | Détail d'un agriculteur | non |
 | GET | `/agriculteurs/farmers/{clientId}/credits` | Crédits agricoles d'un agriculteur | non |
 | GET | `/agriculteurs/credits/{creditId}` | Détail d'un crédit agricole | non |
+| GET | `/agriculteurs/credits/{creditId}/repayment-schedule` | Échéancier d'un crédit (statut `pending`/`paid`/`late`/`missed`, jours de retard) | non |
 | GET | `/agriculteurs/cooperatives` | Coopératives / groupements | oui |
 | GET | `/agriculteurs/cooperatives/{groupId}` | Détail d'une coopérative | non |
 | GET | `/agriculteurs/cooperatives/{groupId}/members` | Membres d'une coopérative | oui |
+| GET | `/agriculteurs/structure/delegations` | Délégations (« régions ») du réseau CRG | non |
+| GET | `/agriculteurs/structure/delegations/{delegationId}/agences` | Agences CRG d'une délégation | non |
+| GET | `/agriculteurs/structure/agences/{agenceId}/points-de-vente` | Points de service d'une agence | non |
+| GET | `/agriculteurs/structure/delegations/{delegationId}/points-de-vente` | Points de service d'une délégation | non |
+| GET | `/agriculteurs/agents/{agentId}/perimetre` | **Périmètre d'un agent** (ce qu'il a le droit de voir), voir ci-dessous | non |
+
+### Périmètre d'un agent (cloisonnement)
+
+`agentId` = claim `agent_id` du SSO (format `CR-<n>`). La réponse est **toujours de la même forme**
+(délégations → agences → points de service), élaguée au niveau de l'agent :
+
+| Rôle | `perimetre.niveau` | Contenu |
+|---|---|---|
+| `AGENT_CREDIT` | `POINT_DE_SERVICE` | sa délégation → son agence → son seul point de service |
+| `DA`, `RA` | `AGENCE` | sa délégation → son agence → tous ses points de service |
+| `DR` | `DELEGATION` | sa délégation → toutes ses agences → tous leurs points de service |
+| `DE`, `DG` | `NATIONAL` | tout le réseau (5 délégations, 38 agences, 188 points de service) |
+| autre | `AUCUN` | `delegations: []` (agent hors périmètre AgriScore) |
+
+```json
+{
+  "agentId": "CR-39", "role": "DA", "active": true,
+  "perimetre": {
+    "niveau": "AGENCE",
+    "delegations": [
+      { "id": 5, "libelle": "Guinée Forestière",
+        "agences": [
+          { "id": 5, "libelle": "NZEREKORE",
+            "points_de_service": [ { "id": 30, "code": "420", "libelle": "N'Zerekoré 2" } ] }
+        ] }
+    ]
+  }
+}
+```
+
+> **Clé de jointure** : `points_de_service[].code` est le code agence SAF, c'est-à-dire le
+> `codeAgence` renvoyé sur chaque agriculteur (`/farmers`) et chaque crédit (`/credits`).
+> Un agent voit donc les agriculteurs dont `codeAgence` ∈ codes de son périmètre.
+> Fiche agent incomplète : l'agent n'est pas refusé, l'arbre contient ce qui est connu (ex. DA sans
+> agence → `agences: []`). Référentiel mis en cache 5 min côté CRG. `active` suit la règle du
+> contrôle de statut. Erreurs : `400` agentId mal formé, `404` agent inconnu.
 
 ### Pagination
 Paramètres `page` (≥ 0, défaut 0) et `size` (1–100, défaut 20). Hors bornes → **400**.

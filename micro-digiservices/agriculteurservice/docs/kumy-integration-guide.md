@@ -192,24 +192,35 @@ curl -H "X-API-Key: <clé>" \
 
 ---
 
-## 7b. Périmètre géographique agent (rafraîchissement serveur-à-serveur)
+## 7b. Périmètre géographique agent (API, recommandé)
 
-Même objet `perimetre` que `/userinfo` (§5.1), sans jeton agent : permet à KUMY de rafraîchir le
-périmètre (nouvelle agence, mutation) sans nouveau login. Même clé API que le contrôle de statut.
+Même objet `perimetre` que `/userinfo` (§5.1), obtenu **par API à partir de l'`agent_id`** du SSO,
+sans dépendre du contenu du jeton. C'est la voie recommandée pour le cloisonnement : elle utilise la
+**clé publique de l'API agriculteurs** (celle des données) et suit les changements de référentiel
+(nouvelle agence, mutation) sans nouveau login.
 
 **Requête**
 ```
-GET https://digi-creditrural-io.com/api/agents/{agent_id}/perimeter
-Header: X-API-Key: <clé transmise par canal sécurisé séparé>
+GET https://digi-creditrural-io.com/agriculteurs/agents/{agent_id}/perimetre
+Header: X-API-Key: <clé publique API agriculteurs>
 ```
 
 **Réponse `200`**
 ```json
 {
-  "agentId": "CR-260",
+  "agentId": "CR-39",
   "role": "DA",
   "active": true,
-  "perimetre": { "niveau": "AGENCE", "delegations": [ … ] }
+  "perimetre": {
+    "niveau": "AGENCE",
+    "delegations": [
+      { "id": 5, "libelle": "Guinée Forestière",
+        "agences": [
+          { "id": 5, "libelle": "NZEREKORE",
+            "points_de_service": [ { "id": 30, "code": "420", "libelle": "N'Zerekoré 2" } ] }
+        ] }
+    ]
+  }
 }
 ```
 
@@ -217,11 +228,16 @@ Header: X-API-Key: <clé transmise par canal sécurisé séparé>
 |---|---|
 | `200` | périmètre calculé ; `active` suit la règle de `/status` |
 | `200` + `"niveau":"AUCUN"` et `delegations: []` | agent hors périmètre AgriScore (`role` = rôle brut CRG) |
+| `400` | format d'`agent_id` invalide (attendu `CR-<n>`) |
 | `401` | clé API absente ou invalide |
 | `404` | agent inconnu |
-| `400` | format d'`agent_id` invalide (attendu `CR-<n>`) |
 
-Fréquence recommandée : à chaque login (via `/userinfo`) et une fois par jour côté serveur.
+> `points_de_service[].code` = `codeAgence` des agriculteurs et crédits de l'API `/agriculteurs` :
+> un agent voit les agriculteurs dont le `codeAgence` appartient aux codes de son périmètre.
+> Fréquence recommandée : à chaque login et une fois par jour côté serveur.
+
+Le même périmètre reste disponible sur `GET /api/agents/{agent_id}/perimeter` avec la clé du
+contrôle de statut (§7), et sous forme de claim `perimetre` sur `/userinfo` (§5.1).
 
 ---
 

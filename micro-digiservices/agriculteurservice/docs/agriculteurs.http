@@ -7,6 +7,9 @@
 @clientId =
 @creditId =
 @groupId =
+@agentId = CR-39
+@delegationId = 5
+@agenceId = 5
 
 ### Agences
 GET {{baseUrl}}/agriculteurs/agencies
@@ -42,6 +45,30 @@ X-API-Key: {{apiKey}}
 
 ### Membres d'une cooperative
 GET {{baseUrl}}/agriculteurs/cooperatives/{{groupId}}/members?page=0&size=20
+X-API-Key: {{apiKey}}
+
+### Echeancier d'un credit
+GET {{baseUrl}}/agriculteurs/credits/{{creditId}}/repayment-schedule
+X-API-Key: {{apiKey}}
+
+### Structure : delegations
+GET {{baseUrl}}/agriculteurs/structure/delegations
+X-API-Key: {{apiKey}}
+
+### Structure : agences d'une delegation
+GET {{baseUrl}}/agriculteurs/structure/delegations/{{delegationId}}/agences
+X-API-Key: {{apiKey}}
+
+### Structure : points de service d'une agence
+GET {{baseUrl}}/agriculteurs/structure/agences/{{agenceId}}/points-de-vente
+X-API-Key: {{apiKey}}
+
+### Structure : points de service d'une delegation
+GET {{baseUrl}}/agriculteurs/structure/delegations/{{delegationId}}/points-de-vente
+X-API-Key: {{apiKey}}
+
+### Perimetre d'un agent (agentId = claim agent_id du SSO)
+GET {{baseUrl}}/agriculteurs/agents/{{agentId}}/perimetre
 X-API-Key: {{apiKey}}
 
 ### Controle securite : sans cle -> 401

@@ -333,6 +333,8 @@ services:
       AGRIPILOT_PUBLIC_API_KEY: ${AGRIPILOT_PUBLIC_API_KEY:-}
       # Cle INTERNE : doit valoir la MEME cle que AGRIPILOT_API_KEY cote ebanking
       EBANKING_AGRI_API_KEY: ${EBANKING_AGRI_API_KEY:-}
+      # Cle INTERNE : appel de userservice /agents/** (perimetre agent), meme cle que cote userservice
+      KUMY_AGENTS_API_KEY: ${KUMY_AGENTS_API_KEY:-}
       JAVA_TOOL_OPTIONS: "-Xms256m -Xmx512m"
     volumes:
       - ./logs/agriculteurservice:/var/log/agriculteurservice

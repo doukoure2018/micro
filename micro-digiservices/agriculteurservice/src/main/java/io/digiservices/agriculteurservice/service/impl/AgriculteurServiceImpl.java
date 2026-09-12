@@ -13,6 +13,8 @@ import io.digiservices.agriculteurservice.dto.PointDeVenteDto;
 import io.digiservices.agriculteurservice.service.AgriculteurService;
 import io.digiservices.agriculteurservice.utils.AgriMapper;
 import io.digiservices.clients.EbankingAgriClient;
+import io.digiservices.clients.UserAgentsClient;
+import io.digiservices.clients.agents.AgentPerimetreDto;
 import io.digiservices.clients.UserClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +35,7 @@ public class AgriculteurServiceImpl implements AgriculteurService {
 
     private final EbankingAgriClient ebankingAgriClient;
     private final UserClient userClient;
+    private final UserAgentsClient userAgentsClient;
     private final AgriMapper mapper;
 
     @Override
@@ -113,5 +116,12 @@ public class AgriculteurServiceImpl implements AgriculteurService {
         return userClient.pointVenteOffline().stream()
                 .filter(p -> Objects.equals(delegationId, p.getDelegation_id()))
                 .map(mapper::toPointDeVente).toList();
+    }
+
+    // --- Perimetre agent : calcule par userservice (source unique, meme objet que /userinfo) ---
+
+    @Override
+    public AgentPerimetreDto getAgentPerimetre(String agentId) {
+        return userAgentsClient.getAgentPerimetre(agentId);
     }
 }
