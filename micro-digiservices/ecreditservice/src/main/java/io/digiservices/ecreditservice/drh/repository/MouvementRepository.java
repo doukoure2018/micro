@@ -64,6 +64,9 @@ public interface MouvementRepository {
     /** Badgeages ACCESS du jour par demi-heure : tableau de 48 compteurs. */
     int[] affluenceParDemiHeure(LocalDate jour);
 
+    /** Affluence par demi-heure ventilée par sens : clés ENTRY, EXIT, INCONNU → 48 créneaux. */
+    java.util.Map<String, int[]> affluenceParDemiHeureEtSens(LocalDate jour);
+
     /** Mouvements du jour hors plage normale (avant debut ou après fin). */
     int nbHorsPlageJour(LocalDate jour, LocalTime debut, LocalTime fin);
 

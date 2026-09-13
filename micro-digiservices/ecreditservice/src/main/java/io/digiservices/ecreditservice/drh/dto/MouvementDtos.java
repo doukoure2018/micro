@@ -141,7 +141,10 @@ public final class MouvementDtos {
         private int seuilBadgeages;             // MOUVEMENT_TOP_SEUIL_JOUR
         private List<LigneTableauBordDto> lignes;
         // ===== Phase 2 =====
-        private List<Integer> affluenceParDemiHeure;    // 48 créneaux de 30 min : badgeages ACCESS
+        private List<Integer> affluenceParDemiHeure;    // 48 créneaux de 30 min : badgeages ACCESS (tous sens)
+        private List<Integer> entreesParDemiHeure;      // idem, sens ENTRY (lecteur d'entrée)
+        private List<Integer> sortiesParDemiHeure;      // idem, sens EXIT (lecteur de sortie)
+        private List<Integer> sensInconnuParDemiHeure;  // idem, sens non déterminé
         private String heureDebutTravail;               // PRESENCE_HEURE_ARRIVEE (ex. 08:30) — coupure de couleur du graphe
         private int horsPlage;                          // mouvements hors plage normale ce jour
         private List<RecidiveRetardDto> recidivesRetard;    // ≥ seuil retards sur 30 jours glissants

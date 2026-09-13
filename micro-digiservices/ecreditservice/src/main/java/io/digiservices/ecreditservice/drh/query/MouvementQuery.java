@@ -169,6 +169,16 @@ public final class MouvementQuery {
          GROUP BY 1
         """;
 
+    /** Affluence par demi-heure ET par sens (ENTRY / EXIT / INCONNU) — badgeages acceptés uniquement. */
+    public static final String AFFLUENCE_PAR_DEMI_HEURE_ET_SENS = """
+        SELECT (EXTRACT(HOUR FROM heure)::int * 2 + EXTRACT(MINUTE FROM heure)::int / 30) AS creneau,
+               COALESCE(sens, 'INCONNU') AS sens,
+               COUNT(*) AS nb
+          FROM drh_mouvement
+         WHERE jour = :jour AND resultat = 'ACCESS'
+         GROUP BY 1, 2
+        """;
+
     /** Mouvements du jour hors plage normale de badgeage. */
     public static final String HORS_PLAGE_JOUR = """
         SELECT COUNT(*)

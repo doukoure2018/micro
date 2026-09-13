@@ -209,6 +209,22 @@ public class MouvementRepositoryImpl implements MouvementRepository {
     }
 
     @Override
+    public java.util.Map<String, int[]> affluenceParDemiHeureEtSens(LocalDate jour) {
+        java.util.Map<String, int[]> parSens = new java.util.HashMap<>();
+        for (String sens : new String[]{"ENTRY", "EXIT", "INCONNU"}) parSens.put(sens, new int[48]);
+        jdbcClient.sql(MouvementQuery.AFFLUENCE_PAR_DEMI_HEURE_ET_SENS)
+                .param("jour", jour)
+                .query().listOfRows()
+                .forEach(r -> {
+                    int c = ((Number) r.get("creneau")).intValue();
+                    String sens = String.valueOf(r.get("sens"));
+                    int[] creneaux = parSens.getOrDefault(sens, parSens.get("INCONNU"));
+                    if (c >= 0 && c < 48) creneaux[c] += ((Number) r.get("nb")).intValue();
+                });
+        return parSens;
+    }
+
+    @Override
     public int[] affluenceParDemiHeure(LocalDate jour) {
         int[] creneaux = new int[48];
         jdbcClient.sql(MouvementQuery.AFFLUENCE_PAR_DEMI_HEURE)

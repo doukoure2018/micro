@@ -22,6 +22,12 @@ import { UserService } from '@/service/user.service';
  * journal brut, synthèse par agent (sorties travail / dépassements de pause 13h-14h30,
  * pause ignorée le vendredi et le samedi, journées continues), détail par personne et correspondances badge -> matricule.
  */
+/** Barre du graphique d'affluence : un créneau de 30 min, empilement sorties / entrées / sens inconnu. */
+interface BarreAffluence {
+    label: string; plage: string; nb: number; entrees: number; sorties: number; inconnus: number;
+    hauteur: number; hEntrees: number; hSorties: number; hInconnus: number; avantTravail: boolean;
+}
+
 @Component({
     selector: 'app-mouvements',
     standalone: true,
@@ -117,26 +123,43 @@ import { UserService } from '@/service/user.service';
                         <div class="text-sm font-medium mb-1">
                             Affluence de la porte par demi-heure
                             <span class="text-xs text-color-secondary font-normal ml-2">
-                                <span style="display:inline-block;width:10px;height:10px;background:#f97316;border-radius:2px;vertical-align:middle"></span>
-                                avant {{ tb.heureDebutTravail || '08:30' }} (début du travail)
+                                <span style="display:inline-block;width:10px;height:10px;background:#16a34a;border-radius:2px;vertical-align:middle"></span>
+                                entrées (badge au lecteur d'entrée)
+                                <span class="ml-2" style="display:inline-block;width:10px;height:10px;background:#dc2626;border-radius:2px;vertical-align:middle"></span>
+                                sorties (badge au lecteur de sortie)
+                                <span class="ml-2" style="display:inline-block;width:10px;height:10px;background:#9ca3af;border-radius:2px;vertical-align:middle"></span>
+                                sens inconnu
+                                <span class="ml-2" style="display:inline-block;width:10px;height:3px;background:#f97316;vertical-align:middle"></span>
+                                créneau avant {{ tb.heureDebutTravail || '08:30' }} (début du travail)
                             </span>
                         </div>
-                        <div class="flex items-end gap-1" style="height:90px">
-                            <div *ngFor="let b of barresAffluence()" class="flex-1 flex flex-col items-center justify-end" style="min-width:0">
-                                <div class="text-xs text-color-secondary" *ngIf="b.nb > 0">{{ b.nb }}</div>
-                                <div class="w-full border-round-top"
-                                     [style.height.px]="b.hauteur"
-                                     [style.background]="b.nb > 0 ? (b.avantTravail ? '#f97316' : 'var(--primary-color)') : 'var(--surface-200)'"
-                                     [style.opacity]="b.nb > 0 ? 0.85 : 1"></div>
+                        <div class="flex items-end gap-1" style="height:100px">
+                            <div *ngFor="let b of barresAffluence()" class="flex-1 flex flex-col items-center justify-end" style="min-width:0"
+                                 [title]="b.nb > 0 ? (b.plage + ' : ' + b.entrees + ' entrée(s), ' + b.sorties + ' sortie(s)' + (b.inconnus > 0 ? ', ' + b.inconnus + ' sens inconnu' : '')) : b.plage">
+                                <div class="text-xs" style="white-space:nowrap;line-height:1.1" *ngIf="b.nb > 0">
+                                    <span style="color:#16a34a">{{ b.entrees }}</span><span class="text-color-secondary">/</span><span style="color:#dc2626">{{ b.sorties }}</span>
+                                </div>
+                                <div class="w-full flex flex-col justify-end border-round-top overflow-hidden" [style.height.px]="b.hauteur"
+                                     [style.background]="b.nb > 0 ? 'transparent' : 'var(--surface-200)'">
+                                    <div *ngIf="b.hInconnus > 0" [style.height.px]="b.hInconnus" style="background:#9ca3af;opacity:0.85"></div>
+                                    <div *ngIf="b.hEntrees > 0" [style.height.px]="b.hEntrees" style="background:#16a34a;opacity:0.85"></div>
+                                    <div *ngIf="b.hSorties > 0" [style.height.px]="b.hSorties" style="background:#dc2626;opacity:0.85"></div>
+                                </div>
+                                <div class="w-full" style="height:3px" [style.background]="b.avantTravail ? '#f97316' : 'transparent'"></div>
                                 <div class="text-xs text-color-secondary" style="white-space:nowrap">{{ b.label }}</div>
                             </div>
+                        </div>
+                        <div class="text-xs text-color-secondary mt-1">
+                            Chiffres au-dessus des barres : <span style="color:#16a34a">entrées</span>/<span style="color:#dc2626">sorties</span>.
+                            Une <b>sortie</b> est un badge au lecteur de sortie ; le <b>retour</b> est le badge d'entrée qui suit une sortie dans la journée
+                            (il clôture la sortie et permet d'en mesurer la durée). Une sortie sans entrée derrière = retour non badgé.
                         </div>
                     </div>
 
                     <!-- Classement par badgeages -->
                     <div class="text-sm text-color-secondary mb-2">
                         Classement du jour par nombre de badgeages — seuil d'alerte : {{ tb.seuilBadgeages }}
-                        (une journée type ≈ 4 : arrivée, pause aller-retour, départ). Alerte SMS DRH à 17h15 (14h15 le vendredi).
+                        (une journée type ≈ 4 : arrivée, pause aller-retour, départ). Alerte SMS DRH à 17h15 (13h15 le vendredi, 14h15 le samedi).
                     </div>
                     <p-table [value]="tb.lignes" responsiveLayout="scroll" [paginator]="tb.lignes.length > 25" [rows]="25" [rowHover]="true">
                         <ng-template pTemplate="header">
@@ -468,7 +491,7 @@ export class MouvementsComponent implements OnInit {
     recherche = signal('');
     vuePrincipale = signal<string>('tableau-bord');
     tableauBord = signal<any | null>(null);
-    barresAffluence = signal<{ label: string; nb: number; hauteur: number; avantTravail: boolean }[]>([]);
+    barresAffluence = signal<BarreAffluence[]>([]);
     jourTb: Date = new Date();
     typeJournal = signal<string>('');
     /** badge_no -> matricule choisi dans le dropdown d'association. */
@@ -694,20 +717,32 @@ export class MouvementsComponent implements OnInit {
      * hauteur proportionnelle au pic. Les créneaux AVANT l'heure de début de travail
      * (PRESENCE_HEURE_ARRIVEE, ex. 08:30) sont en orange.
      */
-    affluence(tb: any): { label: string; nb: number; hauteur: number; avantTravail: boolean }[] {
+    affluence(tb: any): BarreAffluence[] {
         const creneaux: number[] = tb?.affluenceParDemiHeure || [];
         if (!creneaux.some((n) => n > 0)) return [];
+        const entrees: number[] = tb.entreesParDemiHeure || [];
+        const sorties: number[] = tb.sortiesParDemiHeure || [];
+        const inconnus: number[] = tb.sensInconnuParDemiHeure || [];
         const [hDebut, mDebut] = (tb.heureDebutTravail || '08:30').split(':').map(Number);
         const creneauDebutTravail = hDebut * 2 + (mDebut >= 30 ? 1 : 0);
         let min = 12, max = 40; // 06h00 -> 20h00
         creneaux.forEach((n, c) => { if (n > 0) { min = Math.min(min, c); max = Math.max(max, c); } });
         const pic = Math.max(...creneaux);
+        const HAUTEUR_MAX = 64;
+        const px = (n: number) => Math.round((n / pic) * HAUTEUR_MAX);
+        const hh = (c: number) => `${String(Math.floor(c / 2)).padStart(2, '0')}h${c % 2 === 0 ? '00' : '30'}`;
         const barres = [];
         for (let c = min; c <= max; c++) {
+            const nb = creneaux[c] || 0;
+            const e = entrees[c] || 0, s = sorties[c] || 0;
+            // Si le détail par sens n'est pas fourni (ancien backend), tout est « inconnu »
+            const i = entrees.length || sorties.length ? (inconnus[c] || 0) : nb;
             barres.push({
                 label: c % 2 === 0 ? `${c / 2}h` : '',
-                nb: creneaux[c] || 0,
-                hauteur: Math.max(3, Math.round(((creneaux[c] || 0) / pic) * 60)),
+                plage: `${hh(c)} - ${hh(c + 1)}`,
+                nb, entrees: e, sorties: s, inconnus: i,
+                hauteur: nb > 0 ? Math.max(3, px(nb)) : 3,
+                hEntrees: px(e), hSorties: px(s), hInconnus: px(i),
                 avantTravail: c < creneauDebutTravail
             });
         }
