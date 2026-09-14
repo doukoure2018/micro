@@ -158,6 +158,15 @@
       }
     },
     {
+      "name": "Perimetre de toute la structure (administration)",
+      "request": {
+        "method": "GET",
+        "description": "Sans parametre. Meme reponse que /agents/{agentId}/perimetre pour un agent NATIONAL : toutes les delegations -> agences -> points_de_service. agentId = null, role = STRUCTURE, active = true. Usage : administration / maintenance AgriScore.",
+        "header": [ { "key": "X-API-Key", "value": "{{publicApiKey}}", "type": "text" } ],
+        "url": { "raw": "{{baseUrl}}/agriculteurs/structure/perimetre", "host": ["{{baseUrl}}"], "path": ["agriculteurs", "structure", "perimetre"] }
+      }
+    },
+    {
       "name": "Controle securite : sans cle -> 401",
       "request": {
         "method": "GET",

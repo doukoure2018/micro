@@ -124,4 +124,9 @@ public class AgriculteurServiceImpl implements AgriculteurService {
     public AgentPerimetreDto getAgentPerimetre(String agentId) {
         return userAgentsClient.getAgentPerimetre(agentId);
     }
+
+    @Override
+    public AgentPerimetreDto getStructurePerimetre() {
+        return userAgentsClient.getStructurePerimetre();
+    }
 }

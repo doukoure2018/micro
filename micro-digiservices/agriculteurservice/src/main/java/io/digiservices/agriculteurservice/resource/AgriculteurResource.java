@@ -139,6 +139,18 @@ public class AgriculteurResource {
         return ResponseEntity.ok(agriculteurService.getPointsDeVenteByAgence(agenceId));
     }
 
+    /**
+     * Perimetre de TOUTE la structure : meme reponse que /agents/{agentId}/perimetre pour un agent
+     * de niveau NATIONAL, sans parametre ni agent (agentId null, role STRUCTURE, active true).
+     * Demande KUMY (2026-09-14) : administration / maintenance d'AgriScore, un administrateur
+     * peut se placer sur n'importe quel point de service pour analyser un incident.
+     */
+    @GetMapping("/structure/perimetre")
+    public ResponseEntity<AgentPerimetreDto> getStructurePerimetre() {
+        log.info("[AGRI] GET /agriculteurs/structure/perimetre");
+        return ResponseEntity.ok(agriculteurService.getStructurePerimetre());
+    }
+
     @GetMapping("/structure/delegations/{delegationId}/points-de-vente")
     public ResponseEntity<List<PointDeVenteDto>> getPointsDeVenteByDelegation(
             @PathVariable("delegationId") Long delegationId) {

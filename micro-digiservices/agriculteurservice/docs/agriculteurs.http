@@ -71,6 +71,10 @@ X-API-Key: {{apiKey}}
 GET {{baseUrl}}/agriculteurs/agents/{{agentId}}/perimetre
 X-API-Key: {{apiKey}}
 
+### Perimetre de toute la structure (administration, sans parametre)
+GET {{baseUrl}}/agriculteurs/structure/perimetre
+X-API-Key: {{apiKey}}
+
 ### Controle securite : sans cle -> 401
 GET {{baseUrl}}/agriculteurs/agencies
 

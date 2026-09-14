@@ -239,6 +239,47 @@ Header: X-API-Key: <clé publique API agriculteurs>
 Le même périmètre reste disponible sur `GET /api/agents/{agent_id}/perimeter` avec la clé du
 contrôle de statut (§7), et sous forme de claim `perimetre` sur `/userinfo` (§5.1).
 
+## 7c. Périmètre de toute la structure (administration / maintenance)
+
+Route **sans paramètre**, ajoutée à la demande de KUMY (14/09/2026) pour l'administration et la
+maintenance d'AgriScore : en cas d'incident, un administrateur peut se placer sur n'importe quel
+point de service pour analyser. La réponse a **exactement la même forme** que §7b pour un agent de
+niveau `NATIONAL` : toutes les délégations → agences → points de service du réseau CRG.
+
+**Requête**
+```
+GET https://digi-creditrural-io.com/agriculteurs/structure/perimetre
+Header: X-API-Key: <clé publique API agriculteurs>
+```
+
+**Réponse `200`** (en-tête fixe, arbre complet)
+```json
+{
+  "agentId": null,
+  "role": "STRUCTURE",
+  "active": true,
+  "perimetre": {
+    "niveau": "NATIONAL",
+    "delegations": [
+      { "id": 2, "libelle": "Haute Guinée",
+        "agences": [
+          { "id": 22, "libelle": "DINGUIRAYE",
+            "points_de_service": [ { "id": 113, "code": "555", "libelle": "Dialakoro" }, { "id": 112, "code": "556", "libelle": "Kalinko" } ] }
+        ] }
+    ]
+  }
+}
+```
+
+| Code HTTP | Signification |
+|---|---|
+| `200` | arbre complet du réseau (5 délégations, 38 agences, 188 points de service) |
+| `401` | clé API absente ou invalide |
+
+> Réservée aux comptes d'administration d'AgriScore : elle ne doit pas servir au cloisonnement
+> d'un agent ordinaire, qui reste calculé par §7b. Le même objet est disponible sur
+> `GET /api/agents/structure/perimeter` avec la clé du contrôle de statut (§7).
+
 ---
 
 ## 8. Secrets (canal sécurisé séparé)

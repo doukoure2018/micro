@@ -63,6 +63,7 @@ X-API-Key: <cle-publique>
 | GET | `/agriculteurs/structure/agences/{agenceId}/points-de-vente` | Points de service d'une agence | non |
 | GET | `/agriculteurs/structure/delegations/{delegationId}/points-de-vente` | Points de service d'une délégation | non |
 | GET | `/agriculteurs/agents/{agentId}/perimetre` | **Périmètre d'un agent** (ce qu'il a le droit de voir), voir ci-dessous | non |
+| GET | `/agriculteurs/structure/perimetre` | **Périmètre de toute la structure** (même forme, niveau `NATIONAL`, sans agent) — administration/maintenance AgriScore | non |
 
 ### Périmètre d'un agent (cloisonnement)
 
@@ -99,6 +100,15 @@ X-API-Key: <cle-publique>
 > Fiche agent incomplète : l'agent n'est pas refusé, l'arbre contient ce qui est connu (ex. DA sans
 > agence → `agences: []`). Référentiel mis en cache 5 min côté CRG. `active` suit la règle du
 > contrôle de statut. Erreurs : `400` agentId mal formé, `404` agent inconnu.
+
+#### Périmètre de toute la structure (administration)
+
+`GET /agriculteurs/structure/perimetre`, sans paramètre, renvoie **exactement la même forme** que
+le périmètre d'un agent de niveau `NATIONAL` : toutes les délégations → agences → points de service.
+Destiné à l'administration et à la maintenance d'AgriScore (un administrateur peut se placer sur
+n'importe quel point de service pour analyser un incident). Champs d'en-tête fixes :
+`"agentId": null`, `"role": "STRUCTURE"`, `"active": true`, `"perimetre.niveau": "NATIONAL"`.
+Erreurs : `401` clé absente ou invalide uniquement.
 
 ### Pagination
 Paramètres `page` (≥ 0, défaut 0) et `size` (1–100, défaut 20). Hors bornes → **400**.

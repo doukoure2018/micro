@@ -53,4 +53,7 @@ public interface AgriculteurService {
     // --- Perimetre d'un agent (cloisonnement AgriScore) : delegue a userservice ---
 
     AgentPerimetreDto getAgentPerimetre(String agentId);
+
+    /** Perimetre de toute la structure (meme reponse qu'un agent NATIONAL, sans agent). */
+    AgentPerimetreDto getStructurePerimetre();
 }

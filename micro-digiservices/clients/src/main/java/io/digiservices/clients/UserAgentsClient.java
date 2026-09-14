@@ -15,4 +15,8 @@ public interface UserAgentsClient {
 
     @GetMapping("/agents/{agentId}/perimeter")
     AgentPerimetreDto getAgentPerimetre(@PathVariable("agentId") String agentId);
+
+    /** Périmètre de toute la structure (niveau NATIONAL, sans agent : agentId null, role STRUCTURE). */
+    @GetMapping("/agents/structure/perimeter")
+    AgentPerimetreDto getStructurePerimetre();
 }

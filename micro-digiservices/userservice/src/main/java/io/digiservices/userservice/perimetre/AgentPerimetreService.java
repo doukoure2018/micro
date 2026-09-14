@@ -28,4 +28,19 @@ public class AgentPerimetreService {
                 roleAgriScore != null ? roleAgriScore : user.getRole(),
                 active, perimetre);
     }
+
+    /** Rôle exposé pour le périmètre de toute la structure (aucun agent). */
+    public static final String ROLE_STRUCTURE = "STRUCTURE";
+
+    /**
+     * Périmètre de TOUTE la structure CRG (endpoint {@code /agents/structure/perimeter}) : même
+     * objet que le périmètre d'un agent de niveau NATIONAL (toutes les délégations, agences et
+     * points de service), sans agent ({@code agentId = null}, {@code role = STRUCTURE},
+     * {@code active = true}). Demandé par KUMY pour l'administration/maintenance d'AgriScore.
+     */
+    public AgentPerimetreResponse perimetreStructure() {
+        Map<String, Object> perimetre = AgentPerimetreBuilder.build(PerimetreNiveau.NATIONAL,
+                null, null, null, structureReseauRepository.getStructure());
+        return new AgentPerimetreResponse(null, ROLE_STRUCTURE, true, perimetre);
+    }
 }

@@ -77,6 +77,17 @@ public class AgentResource {
     }
 
     /** Convertit "CR-42" en user_id (42). Retourne null si le format est invalide. */
+    /**
+     * Périmètre de toute la structure (toutes délégations → agences → points de service), même forme
+     * que {@code /{agentId}/perimeter} au niveau NATIONAL, sans agent. Usage KUMY : administration et
+     * maintenance d'AgriScore (un administrateur peut se placer sur n'importe quel point de service).
+     * Le chemin littéral {@code /structure/perimeter} prime sur {@code /{agentId}/perimeter}.
+     */
+    @GetMapping("/structure/perimeter")
+    public ResponseEntity<AgentPerimetreResponse> getStructurePerimetre() {
+        return ResponseEntity.ok(agentPerimetreService.perimetreStructure());
+    }
+
     private Long parseAgentId(String agentId) {
         if (agentId == null || !agentId.startsWith(AGENT_ID_PREFIX)) {
             return null;

@@ -63,6 +63,34 @@ class AgentPerimetreResourceTest {
     }
 
     @Test
+    void structureRenvoieToutLeReseauSansAgent() throws Exception {
+        Map<String, Object> perimetre = new java.util.LinkedHashMap<>();
+        perimetre.put("niveau", "NATIONAL");
+        perimetre.put("delegations", List.of(
+                Map.of("id", 2, "libelle", "Haute Guinée", "agences", List.of()),
+                Map.of("id", 5, "libelle", "Guinée Forestière", "agences", List.of(
+                        Map.of("id", 5, "libelle", "NZEREKORE", "points_de_service", List.of(
+                                Map.of("id", 30, "code", "420", "libelle", "N'Zerekoré 2")))))));
+        when(userAgentsClient.getStructurePerimetre())
+                .thenReturn(new AgentPerimetreDto(null, "STRUCTURE", true, perimetre));
+
+        mockMvc.perform(get("/agriculteurs/structure/perimetre").header("X-API-Key", KEY))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.agentId").doesNotExist())
+                .andExpect(jsonPath("$.role").value("STRUCTURE"))
+                .andExpect(jsonPath("$.active").value(true))
+                .andExpect(jsonPath("$.perimetre.niveau").value("NATIONAL"))
+                .andExpect(jsonPath("$.perimetre.delegations.length()").value(2))
+                .andExpect(jsonPath("$.perimetre.delegations[1].agences[0].points_de_service[0].code").value("420"));
+    }
+
+    @Test
+    void structureSansCleRenvoie401() throws Exception {
+        mockMvc.perform(get("/agriculteurs/structure/perimetre"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void sansCleRenvoie401() throws Exception {
         mockMvc.perform(get("/agriculteurs/agents/CR-39/perimetre"))
                 .andExpect(status().isUnauthorized());
