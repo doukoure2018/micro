@@ -106,9 +106,17 @@
                                     Nbre d'éch. : <strong>{{ getNbreEcheancePropose() || '-' }}</strong>
                                 </div>
                             </div>
-                            <!-- Échéance -->
+                            <!-- Échéance saisie sur le formulaire de la demande (sollicitée par le client) -->
+                            <div class="flex border-bottom-1 surface-border">
+                                <div class="p-2 text-right white-space-nowrap" style="width: 100px;">Échéance sollicitée :</div>
+                                <div class="p-2 flex-1 text-center font-bold" style="background-color: #fff2cc;">
+                                    {{ formatCurrency(getEcheanceDemande()) || '-' }}
+                                    <span class="block text-xs font-normal text-color-secondary">saisie sur la demande</span>
+                                </div>
+                            </div>
+                            <!-- Échéance proposée par l'agent -->
                             <div class="flex">
-                                <div class="p-2 text-right" style="width: 100px;">Échéance :</div>
+                                <div class="p-2 text-right white-space-nowrap" style="width: 100px;">Échéance proposée :</div>
                                 <div class="p-2 flex-1 text-center" style="background-color: #c6efce;">
                                     {{ formatCurrency(getEcheanceProposee()) || '-' }}
                                 </div>
