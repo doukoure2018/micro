@@ -284,6 +284,10 @@ public class CorrectionResource {
                 updateFicheSignaletiqueDTO.getCodCliente());
 
         try {
+            // Un code de référence vide ("") violerait une clé étrangère SAF (CL_SECTOR_ECONOMICO,
+            // PA_DISTRITOS...) : on reprend la valeur actuelle de la fiche SAF pour ces champs.
+            completerCodesReferenceDepuisSaf(updateFicheSignaletiqueDTO);
+
             // Call the ebanking service to update SAF
             Map<String, Object> result = ebankingClient.updateFicheSignaletique(updateFicheSignaletiqueDTO);
 
@@ -352,19 +356,22 @@ public class CorrectionResource {
                 );
             }
         } catch (FeignException e) {
-            log.error("Erreur Feign lors de la mise à jour - Client: {}",
-                    updateFicheSignaletiqueDTO.getCodCliente(), e);
+            String messageSaf = messageErreurEbanking(e, updateFicheSignaletiqueDTO);
+            log.error("Erreur lors de la mise à jour SAF - Client: {} - {}",
+                    updateFicheSignaletiqueDTO.getCodCliente(), messageSaf, e);
 
             HttpStatus status = HttpStatus.resolve(e.status());
             if (status == null) {
                 status = INTERNAL_SERVER_ERROR;
             }
 
+            // Le message de la réponse est celui affiché à l'agent : il doit dire QUOI corriger.
             return ResponseEntity.status(status).body(
                     getResponse(request,
                             Map.of("error", e.getMessage(),
+                                    "messageSaf", messageSaf,
                                     "client", updateFicheSignaletiqueDTO.getCodCliente()),
-                            "Erreur de communication avec le service ebanking",
+                            messageSaf,
                             status)
             );
         } catch (Exception e) {
@@ -1103,5 +1110,154 @@ public class CorrectionResource {
         return URI.create("/ecredit/personnePhysique");
     }
 
+    // ------------------------------------------------------------------------------------
+    //  Validation d'une correction PP : garde-fous contre les violations de clé étrangère SAF
+    // ------------------------------------------------------------------------------------
 
+    /**
+     * Champs du DTO de mise à jour qui sont des codes de référence SAF (clé étrangère côté SQL Server),
+     * avec le nom du champ correspondant dans la fiche signalétique renvoyée par ebanking.
+     */
+    private static final Map<String, String> CODES_REFERENCE_SAF = new LinkedHashMap<>();
+    static {
+        CODES_REFERENCE_SAF.put("codSector", "codSector");       // CL.CL_SECTOR_ECONOMICO
+        CODES_REFERENCE_SAF.put("district", "codDistrito");      // PA.PA_DISTRITOS
+        CODES_REFERENCE_SAF.put("codProvincia", "codProvincia"); // PA.PA_PROVINCIAS
+        CODES_REFERENCE_SAF.put("codActividad", "codActividad"); // CL.CL_ACTIVIDAD_ECONOMICA
+        CODES_REFERENCE_SAF.put("codProfesion", "codProfesion"); // CL.CL_PROFESIONES
+        CODES_REFERENCE_SAF.put("typePiece", "codTipoId");       // CL.CL_TIPOS_IDENTIFICACION
+        CODES_REFERENCE_SAF.put("pays", "codPais");              // PA.PA_PAISES
+    }
+
+    /** Libellés métier des clés étrangères SAF rencontrées, pour un message compréhensible par l'agent. */
+    private static final Map<String, String> LIBELLES_FK_SAF = Map.of(
+            "CL_SECTOR", "le secteur d'activité",
+            "PA_DISTRITOS", "le district",
+            "PA_PROVINCIAS", "la province",
+            "CL_ACTIVIDAD", "l'activité économique",
+            "CL_PROFESION", "la profession",
+            "TIPOS_ID", "le type de pièce d'identité",
+            "PA_PAISES", "le pays"
+    );
+
+    /**
+     * Pour chaque code de référence vide dans la correction, reprend la valeur actuelle de la fiche SAF
+     * (lecture best-effort : en cas d'échec de lecture, le DTO est envoyé tel quel et SAF tranchera).
+     * Cause réelle constatée le 2026-09-15 : des fiches corrigées avec cod_sector = '' ou district = ''
+     * (chaîne vide, pas NULL) → « L'instruction UPDATE est en conflit avec la contrainte FOREIGN KEY ».
+     */
+    private void completerCodesReferenceDepuisSaf(UpdateFicheSignaletiqueDTO dto) {
+        Map<String, String> vides = new LinkedHashMap<>();
+        for (String champ : CODES_REFERENCE_SAF.keySet()) {
+            if (estVide(valeurChamp(dto, champ))) {
+                vides.put(champ, CODES_REFERENCE_SAF.get(champ));
+            }
+        }
+        if (vides.isEmpty()) {
+            return;
+        }
+        Map<String, Object> ficheSaf;
+        try {
+            Map<String, Object> reponse = ebankingClient.getFicheSignaletique(dto.getCodCliente());
+            Object data = reponse == null ? null : reponse.get("data");
+            ficheSaf = data instanceof Map<?, ?> m ? castMap(m) : reponse;
+        } catch (Exception e) {
+            log.warn("Codes de référence vides {} pour le client {} : fiche SAF illisible ({}), envoi tel quel",
+                    vides.keySet(), dto.getCodCliente(), e.getMessage());
+            return;
+        }
+        if (ficheSaf == null) {
+            return;
+        }
+        for (Map.Entry<String, String> e : vides.entrySet()) {
+            Object valeurSaf = ficheSaf.get(e.getValue());
+            if (!estVide(valeurSaf)) {
+                affecterChamp(dto, e.getKey(), String.valueOf(valeurSaf).trim());
+                log.info("Correction PP {} : {} vide dans la correction, valeur SAF conservée '{}'",
+                        dto.getCodCliente(), e.getKey(), valeurSaf);
+            } else {
+                // Une chaîne vide violerait la clé étrangère ; NULL laisse la procédure décider.
+                affecterChamp(dto, e.getKey(), null);
+                log.warn("Correction PP {} : {} vide dans la correction ET dans SAF", dto.getCodCliente(), e.getKey());
+            }
+        }
+    }
+
+    /** Message métier extrait de la réponse d'erreur d'ebanking (corps JSON {code:-1, message:...}). */
+    private String messageErreurEbanking(FeignException e, UpdateFicheSignaletiqueDTO dto) {
+        String message = null;
+        try {
+            String corps = e.contentUTF8();
+            if (corps != null && !corps.isBlank()) {
+                Map<?, ?> json = new com.fasterxml.jackson.databind.ObjectMapper().readValue(corps, Map.class);
+                Object m = json.get("message");
+                if (m != null) {
+                    message = String.valueOf(m);
+                }
+            }
+        } catch (Exception ignore) {
+            // corps non JSON : on retombe sur le message générique
+        }
+        if (message == null) {
+            return "Erreur de communication avec le service ebanking";
+        }
+        for (Map.Entry<String, String> fk : LIBELLES_FK_SAF.entrySet()) {
+            if (message.contains(fk.getKey())) {
+                String champ = champPourFk(fk.getKey());
+                String valeur = champ == null ? null : valeurChamp(dto, champ);
+                return "Validation refusée par SAF : " + fk.getValue()
+                        + (valeur == null ? "" : " '" + valeur + "'")
+                        + " n'existe pas dans le référentiel SAF. Corrigez ce champ dans la fiche puis revalidez.";
+            }
+        }
+        return message;
+    }
+
+    private static String champPourFk(String cleFk) {
+        return switch (cleFk) {
+            case "CL_SECTOR" -> "codSector";
+            case "PA_DISTRITOS" -> "district";
+            case "PA_PROVINCIAS" -> "codProvincia";
+            case "CL_ACTIVIDAD" -> "codActividad";
+            case "CL_PROFESION" -> "codProfesion";
+            case "TIPOS_ID" -> "typePiece";
+            case "PA_PAISES" -> "pays";
+            default -> null;
+        };
+    }
+
+    private static String valeurChamp(UpdateFicheSignaletiqueDTO dto, String champ) {
+        return switch (champ) {
+            case "codSector" -> dto.getCodSector();
+            case "district" -> dto.getDistrict();
+            case "codProvincia" -> dto.getCodProvincia();
+            case "codActividad" -> dto.getCodActividad();
+            case "codProfesion" -> dto.getCodProfesion();
+            case "typePiece" -> dto.getTypePiece();
+            case "pays" -> dto.getPays();
+            default -> null;
+        };
+    }
+
+    private static void affecterChamp(UpdateFicheSignaletiqueDTO dto, String champ, String valeur) {
+        switch (champ) {
+            case "codSector" -> dto.setCodSector(valeur);
+            case "district" -> dto.setDistrict(valeur);
+            case "codProvincia" -> dto.setCodProvincia(valeur);
+            case "codActividad" -> dto.setCodActividad(valeur);
+            case "codProfesion" -> dto.setCodProfesion(valeur);
+            case "typePiece" -> dto.setTypePiece(valeur);
+            case "pays" -> dto.setPays(valeur);
+            default -> { }
+        }
+    }
+
+    private static boolean estVide(Object v) {
+        return v == null || String.valueOf(v).isBlank();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> castMap(Map<?, ?> m) {
+        return (Map<String, Object>) m;
+    }
 }
