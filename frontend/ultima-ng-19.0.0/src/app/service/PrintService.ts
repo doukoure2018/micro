@@ -363,6 +363,10 @@ export class PrintService {
                 <span class="info-value">${s.nombreEcheancePropose || 0}</span>
             </div>
             <div class="info-item">
+                <span class="info-label">Échéance sollicitée (demande):</span>
+                <span class="info-value">${this.formatCurrency(s.echeance)}</span>
+            </div>
+            <div class="info-item">
                 <span class="info-label">Échéance proposée:</span>
                 <span class="info-value">${this.formatCurrency(s.echeanceProposee)}</span>
             </div>
