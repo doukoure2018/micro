@@ -822,10 +822,12 @@ export class UpdateCorrectionPersonnePhysiqueComponent implements OnInit {
                     this.state.update((s) => ({ ...s, loadingAvant: false }));
 
                     if (response.code === 200 || (response.data && response.code === 0)) {
+                        const avertissements: string[] = (response.data as any)?.avertissements || [];
                         this.messageService.add({
-                            severity: 'success',
-                            summary: 'Succès',
-                            detail: 'La fiche signalétique a été mise à jour avec succès dans SAF'
+                            severity: avertissements.length ? 'warn' : 'success',
+                            summary: avertissements.length ? 'Validée avec réserve' : 'Succès',
+                            detail: response.message || 'La fiche signalétique a été mise à jour avec succès dans SAF',
+                            life: avertissements.length ? 15000 : 5000
                         });
 
                         // Update the correction status in PostgreSQL if needed

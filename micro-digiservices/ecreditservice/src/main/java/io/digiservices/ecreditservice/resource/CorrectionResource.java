@@ -288,8 +288,13 @@ public class CorrectionResource {
             // PA_DISTRITOS...) : on reprend la valeur actuelle de la fiche SAF pour ces champs.
             completerCodesReferenceDepuisSaf(updateFicheSignaletiqueDTO);
 
-            // Call the ebanking service to update SAF
-            Map<String, Object> result = ebankingClient.updateFicheSignaletique(updateFicheSignaletiqueDTO);
+            // Call the ebanking service to update SAF ; si SAF refuse un code de référence (clé étrangère),
+            // on reprend la valeur SAF actuelle de ce champ et on rejoue une fois (voir mettreAJourSafAvecReprise).
+            List<String> avertissements = new ArrayList<>();
+            Map<String, Object> result = mettreAJourSafAvecReprise(updateFicheSignaletiqueDTO, avertissements);
+            if (!avertissements.isEmpty()) {
+                result.put("avertissements", avertissements);
+            }
 
             // Vérifier le code de retour
             Integer code = (Integer) result.get("code");
@@ -339,10 +344,13 @@ public class CorrectionResource {
                     result.put("warning", "Mise à jour SAF réussie mais statut de correction non mis à jour");
                 }
 
+                String messageOk = avertissements.isEmpty()
+                        ? "Fiche signalétique mise à jour avec succès"
+                        : "Fiche signalétique mise à jour, avec réserve : " + String.join(" ; ", avertissements);
                 return ResponseEntity.ok(
                         getResponse(request,
                                 result,
-                                "Fiche signalétique mise à jour avec succès",
+                                messageOk,
                                 OK)
                 );
             } else {
@@ -1158,17 +1166,10 @@ public class CorrectionResource {
         if (vides.isEmpty()) {
             return;
         }
-        Map<String, Object> ficheSaf;
-        try {
-            Map<String, Object> reponse = ebankingClient.getFicheSignaletique(dto.getCodCliente());
-            Object data = reponse == null ? null : reponse.get("data");
-            ficheSaf = data instanceof Map<?, ?> m ? castMap(m) : reponse;
-        } catch (Exception e) {
-            log.warn("Codes de référence vides {} pour le client {} : fiche SAF illisible ({}), envoi tel quel",
-                    vides.keySet(), dto.getCodCliente(), e.getMessage());
-            return;
-        }
+        Map<String, Object> ficheSaf = lireFicheSaf(dto.getCodCliente());
         if (ficheSaf == null) {
+            log.warn("Codes de référence vides {} pour le client {} : fiche SAF illisible, envoi tel quel",
+                    vides.keySet(), dto.getCodCliente());
             return;
         }
         for (Map.Entry<String, String> e : vides.entrySet()) {
@@ -1185,32 +1186,93 @@ public class CorrectionResource {
         }
     }
 
-    /** Message métier extrait de la réponse d'erreur d'ebanking (corps JSON {code:-1, message:...}). */
-    private String messageErreurEbanking(FeignException e, UpdateFicheSignaletiqueDTO dto) {
-        String message = null;
+    /**
+     * Appel de mise à jour SAF avec reprise : si SAF refuse la fiche pour un code de référence inconnu
+     * (clé étrangère secteur, district, province...), le champ fautif reprend la valeur SAF actuelle
+     * (valide par définition) et l'appel est rejoué. Chaque reprise est consignée dans {@code avertissements}
+     * pour être affichée à l'agent. Cas réel du 2026-09-15 : cod_sector présent mais absent de
+     * CL_SECTOR_ECONOMICO (référentiel du formulaire ≠ référentiel SAF).
+     */
+    private Map<String, Object> mettreAJourSafAvecReprise(UpdateFicheSignaletiqueDTO dto, List<String> avertissements) {
+        try {
+            return ebankingClient.updateFicheSignaletique(dto);
+        } catch (FeignException e) {
+            String cleFk = cleFkDans(messageBrutEbanking(e));
+            String champ = cleFk == null ? null : champPourFk(cleFk);
+            if (champ == null || avertissements.size() >= CODES_REFERENCE_SAF.size()) {
+                throw e;
+            }
+            String valeurRefusee = valeurChamp(dto, champ);
+            Map<String, Object> ficheSaf = lireFicheSaf(dto.getCodCliente());
+            Object valeurSaf = ficheSaf == null ? null : ficheSaf.get(CODES_REFERENCE_SAF.get(champ));
+            if (estVide(valeurSaf) || String.valueOf(valeurSaf).trim().equals(valeurRefusee)) {
+                throw e; // rien de mieux à proposer : l'erreur explicite remonte à l'agent
+            }
+            affecterChamp(dto, champ, String.valueOf(valeurSaf).trim());
+            String avertissement = LIBELLES_FK_SAF.get(cleFk) + " '" + valeurRefusee
+                    + "' n'existe pas dans le référentiel SAF, la valeur SAF actuelle '" + valeurSaf + "' a été conservée";
+            log.warn("Correction PP {} : {} (reprise de l'appel SAF)", dto.getCodCliente(), avertissement);
+            avertissements.add(avertissement);
+            return mettreAJourSafAvecReprise(dto, avertissements);
+        }
+    }
+
+    /** Fiche SAF actuelle (clé {@code data} de la réponse ebanking), ou {@code null} si illisible. */
+    private Map<String, Object> lireFicheSaf(String codCliente) {
+        try {
+            Map<String, Object> reponse = ebankingClient.getFicheSignaletique(codCliente);
+            if (reponse == null) {
+                return null;
+            }
+            Object data = reponse.get("data");
+            return data instanceof Map<?, ?> m ? castMap(m) : reponse;
+        } catch (Exception e) {
+            log.warn("Fiche SAF illisible pour le client {} : {}", codCliente, e.getMessage());
+            return null;
+        }
+    }
+
+    /** Message brut du corps d'erreur ebanking (JSON {code:-1, message:...}), ou {@code null}. */
+    private static String messageBrutEbanking(FeignException e) {
         try {
             String corps = e.contentUTF8();
             if (corps != null && !corps.isBlank()) {
                 Map<?, ?> json = new com.fasterxml.jackson.databind.ObjectMapper().readValue(corps, Map.class);
                 Object m = json.get("message");
-                if (m != null) {
-                    message = String.valueOf(m);
-                }
+                return m == null ? null : String.valueOf(m);
             }
         } catch (Exception ignore) {
-            // corps non JSON : on retombe sur le message générique
+            // corps non JSON
         }
+        return null;
+    }
+
+    /** Clé de {@link #LIBELLES_FK_SAF} reconnue dans un message d'erreur SAF, sinon {@code null}. */
+    private static String cleFkDans(String message) {
+        if (message == null) {
+            return null;
+        }
+        for (String cle : LIBELLES_FK_SAF.keySet()) {
+            if (message.contains(cle)) {
+                return cle;
+            }
+        }
+        return null;
+    }
+
+    /** Message métier affiché à l'agent quand la mise à jour SAF est refusée. */
+    private String messageErreurEbanking(FeignException e, UpdateFicheSignaletiqueDTO dto) {
+        String message = messageBrutEbanking(e);
         if (message == null) {
             return "Erreur de communication avec le service ebanking";
         }
-        for (Map.Entry<String, String> fk : LIBELLES_FK_SAF.entrySet()) {
-            if (message.contains(fk.getKey())) {
-                String champ = champPourFk(fk.getKey());
-                String valeur = champ == null ? null : valeurChamp(dto, champ);
-                return "Validation refusée par SAF : " + fk.getValue()
-                        + (valeur == null ? "" : " '" + valeur + "'")
-                        + " n'existe pas dans le référentiel SAF. Corrigez ce champ dans la fiche puis revalidez.";
-            }
+        String cleFk = cleFkDans(message);
+        if (cleFk != null) {
+            String champ = champPourFk(cleFk);
+            String valeur = champ == null ? null : valeurChamp(dto, champ);
+            return "Validation refusée par SAF : " + LIBELLES_FK_SAF.get(cleFk)
+                    + (valeur == null ? "" : " '" + valeur + "'")
+                    + " n'existe pas dans le référentiel SAF. Corrigez ce champ dans la fiche puis revalidez.";
         }
         return message;
     }
