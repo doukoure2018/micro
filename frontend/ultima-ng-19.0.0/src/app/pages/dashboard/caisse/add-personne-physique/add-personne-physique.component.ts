@@ -256,16 +256,18 @@ export class AddPersonnePhysiqueComponent implements OnInit {
 
             // Adresse
             detDireccion: [''],
-            codProvincia: [''],
-            codCanton: [{ value: '', disabled: true }], // Disabled until province is selected
-            district: [{ value: '', disabled: true }], // Disabled until canton is selected
+            // Province, canton, district et secteur sont des clés étrangères SAF : une valeur vide
+            // fait échouer la validation de la correction (FK PA_DISTRITOS / CL_SECTOR_ECONOMICO).
+            codProvincia: ['', Validators.required],
+            codCanton: [{ value: '', disabled: true }, Validators.required], // Disabled until province is selected
+            district: [{ value: '', disabled: true }, Validators.required], // Disabled until canton is selected
             agence: [''],
             codeAgence: [''],
 
             // Professionnel
             codActividad: [''],
             codProfesion: [''],
-            codSector: [''],
+            codSector: ['', Validators.required],
             typeEntre: [''],
             nbrAnnee2: [null],
 

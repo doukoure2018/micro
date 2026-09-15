@@ -191,16 +191,17 @@ export class UpdateCorrectionRejetComponent implements OnInit {
 
             // Adresse
             detDireccion: [''],
-            codProvincia: [''],
+            // Province, district et secteur = clés étrangères SAF : vide → validation finale refusée
+            codProvincia: ['', Validators.required],
             codCanton: [''], // AJOUTÉ
-            district: [''],
+            district: ['', Validators.required],
             agence: [''],
             codeAgence: [''],
 
             // Professionnel
             codActividad: [''],
             codProfesion: [''],
-            codSector: [''],
+            codSector: ['', Validators.required],
             typeEntre: [''],
             nbrAnnee2: [null],
 

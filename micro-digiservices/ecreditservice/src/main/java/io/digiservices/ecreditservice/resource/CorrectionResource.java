@@ -397,6 +397,7 @@ public class CorrectionResource {
         log.info("Endpoint - Création personne physique: {}", personnePhysique.getCodCliente());
 
         try {
+            exigerCodesReference(personnePhysique);
             PersonnePhysique newPersonnePhysique = correctionService.addPersonnePhysique(personnePhysique);
 
             return created(getUri())
@@ -490,6 +491,7 @@ public class CorrectionResource {
         log.info("Endpoint - Mise à jour personne physique: {}", personnePhysique.getCodCliente());
 
         try {
+            exigerCodesReference(personnePhysique);
             PersonnePhysique updated = correctionService.updatePersonnePhysique(personnePhysique);
 
             return ResponseEntity.ok(
@@ -1249,6 +1251,22 @@ public class CorrectionResource {
             case "typePiece" -> dto.setTypePiece(valeur);
             case "pays" -> dto.setPays(valeur);
             default -> { }
+        }
+    }
+
+    /**
+     * Une correction PP doit porter un secteur d'activité et un district non vides : ce sont des clés
+     * étrangères SAF et une chaîne vide fait échouer la validation finale (constat du 2026-09-15).
+     * Levée en IllegalArgumentException → HTTP 400 « Erreur de validation » par les endpoints appelants.
+     */
+    private static void exigerCodesReference(PersonnePhysique pp) {
+        List<String> manquants = new ArrayList<>();
+        if (estVide(pp.getCodSector())) manquants.add("le secteur d'activité");
+        if (estVide(pp.getDistrict())) manquants.add("le district");
+        if (estVide(pp.getCodProvincia())) manquants.add("la province");
+        if (!manquants.isEmpty()) {
+            throw new IllegalArgumentException("Champs obligatoires manquants : " + String.join(", ", manquants)
+                    + ". Ces codes doivent exister dans le référentiel SAF.");
         }
     }
 

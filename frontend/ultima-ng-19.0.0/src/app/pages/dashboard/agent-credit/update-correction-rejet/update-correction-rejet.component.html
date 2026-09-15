@@ -274,19 +274,25 @@
                     </div>
 
                     <div class="col-12 md:col-3">
-                        <label for="codProvincia">Province</label>
+                        <label for="codProvincia">Province *</label>
                         <p-dropdown id="codProvincia" [options]="provinceOptions" formControlName="codProvincia"
                             placeholder="Sélectionner" [filter]="true" filterPlaceholder="Rechercher..."
                             styleClass="w-full">
                         </p-dropdown>
+                        <small class="p-error" *ngIf="f['codProvincia'].touched && f['codProvincia'].errors?.['required']">
+                            Province requise
+                        </small>
                     </div>
 
                     <div class="col-12 md:col-3">
-                        <label for="district">District</label>
+                        <label for="district">District *</label>
                         <p-dropdown id="district" [options]="districtOptions" formControlName="district"
                             placeholder="Sélectionner d'abord une province" [disabled]="!districtOptions.length"
                             [filter]="true" filterPlaceholder="Rechercher..." styleClass="w-full">
                         </p-dropdown>
+                        <small class="p-error" *ngIf="f['district'].touched && f['district'].errors?.['required']">
+                            District requis (le district doit exister dans SAF)
+                        </small>
                     </div>
 
                     <div class="col-12 md:col-3">
@@ -314,10 +320,13 @@
             <div class="card-body">
                 <div class="grid">
                     <div class="col-12 md:col-3">
-                        <label for="codSector">Secteur</label>
+                        <label for="codSector">Secteur *</label>
                         <p-dropdown id="codSector" [options]="sectorOptions" formControlName="codSector"
                             placeholder="Sélectionner" styleClass="w-full">
                         </p-dropdown>
+                        <small class="p-error" *ngIf="f['codSector'].touched && f['codSector'].errors?.['required']">
+                            Secteur d'activité requis
+                        </small>
                     </div>
 
                     <div class="col-12 md:col-3">
