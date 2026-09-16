@@ -51,7 +51,11 @@ public class AnalyseCreditAgricoleQuery {
                 verdict = EXCLUDED.verdict,
                 analyse_par = EXCLUDED.analyse_par,
                 updated_at = CURRENT_TIMESTAMP
-            RETURNING """ + COLONNES;
+            RETURNING
+            """ + COLONNES;
+    // ⚠️ Ne pas écrire `RETURNING """ + COLONNES` : dans un text block, l'espace avant les guillemets
+    // fermants est un blanc de fin de ligne, supprimé à la compilation → "RETURNINGanalyse_agricole_id"
+    // (erreur de syntaxe PostgreSQL constatée en prod le 2026-09-16).
 
     /** Contexte de la demande pour le recalcul : nature, état, type de groupe, modalités du prêt. */
     public static final String SELECT_CONTEXTE_AGRICOLE = """
