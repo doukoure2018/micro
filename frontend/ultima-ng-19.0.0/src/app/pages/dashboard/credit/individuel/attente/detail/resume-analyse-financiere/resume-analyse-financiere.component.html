@@ -82,20 +82,12 @@
                     </tr>
                     <!-- Échéance saisie sur le formulaire de la demande (sollicitée par le client) -->
                     <tr>
-                        <td style="padding: 8px 12px; text-align: right; border-bottom: 1px solid #ccc; white-space: nowrap;">
+                        <td style="padding: 8px 12px; text-align: right; white-space: nowrap;">
                             Échéance sollicitée :</td>
                         <td
-                            style="padding: 8px 12px; text-align: center; background-color: #fff2cc; font-weight: bold; border-bottom: 1px solid #ccc;">
+                            style="padding: 8px 12px; text-align: center; background-color: #fff2cc; font-weight: bold;">
                             {{ formatCurrency(state().synthese?.echeance) }}
                             <span style="display: block; font-size: 11px; font-weight: normal; color: #666;">saisie sur la demande</span>
-                        </td>
-                    </tr>
-                    <!-- Échéance proposée par l'agent -->
-                    <tr>
-                        <td style="padding: 8px 12px; text-align: right; white-space: nowrap;">Échéance proposée :</td>
-                        <td
-                            style="padding: 8px 12px; text-align: center; background-color: #c6efce; font-weight: bold;">
-                            {{ formatCurrency(state().synthese?.echeanceProposee) }}
                         </td>
                     </tr>
                 </table>
