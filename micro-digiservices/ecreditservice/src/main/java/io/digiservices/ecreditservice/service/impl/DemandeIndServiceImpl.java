@@ -7,6 +7,8 @@ import io.digiservices.ecreditservice.exception.ValidationException;
 import io.digiservices.ecreditservice.service.AnalyseChargesFonctionnaireService;
 import io.digiservices.ecreditservice.service.DemandeIndService;
 import io.digiservices.ecreditservice.validation.CreditFonctionnaireValidator;
+import io.digiservices.ecreditservice.utils.EcheancierCalculateur;
+import io.digiservices.ecreditservice.validation.CreditGroupeValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -229,6 +231,7 @@ public class DemandeIndServiceImpl implements DemandeIndService {
         // Validation des données
         validateDemandeData(demandeIndividuel);
         // Calcul automatique de l'échéance si nécessaire
+        fixerEcheanceAgricole(demandeIndividuel);
         if (demandeIndividuel.getEcheance() == null) {
             calculateEcheance(demandeIndividuel);
         }
@@ -272,6 +275,20 @@ public class DemandeIndServiceImpl implements DemandeIndService {
         // Autres validations...
     }
 
+    /**
+     * CAS / CAS-R (V147) : l'échéance retenue est la plus élevée de l'échéancier avec moratoire
+     * (la 1re, qui porte les intérêts du différé), calculée ici et jamais reprise du front.
+     */
+    private void fixerEcheanceAgricole(DemandeIndividuel demande) {
+        if (!CreditGroupeValidator.isGroupeAgricole(demande)) {
+            return;
+        }
+        demande.setEcheance(EcheancierCalculateur.calculer(
+                demande.getMontantDemande(), demande.getTauxInteret(), demande.getDureeDemande(),
+                EcheancierServiceImpl.moratoireEffectif(demande.getDureeDemande(), demande.getPeriodeDiffere(), demande.getNombreEcheance()),
+                demande.getNombreEcheance(), demande.getDateOctroiPrevue()).getEcheanceMax());
+    }
+
     private void calculateEcheance(DemandeIndividuel demande) {
         // Calcul de l'échéance mensuelle
         // Formule simplifiée - à adapter selon vos besoins
@@ -288,6 +305,7 @@ public class DemandeIndServiceImpl implements DemandeIndService {
     public void updateDemandeComplete(DemandeIndividuel demande) {
         log.info("Mise a jour complete de la demande {}", demande.getDemandeIndividuelId());
         validateDemandeData(demande);
+        fixerEcheanceAgricole(demande);
         if (demande.getEcheance() == null) {
             calculateEcheance(demande);
         }

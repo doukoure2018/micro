@@ -65,6 +65,9 @@ public class AnalyseCreditAgricoleQuery {
                    d.montant_demande,
                    d.nombre_echeance,
                    d.taux_interet,
+                   d.duree_demande,
+                   d.periode_differe,
+                   d.date_octroi_prevue,
                    g.type_groupe
             FROM demandeindividuel d
             LEFT JOIN demande_groupe g ON g.demandeindividuel_id = d.demandeindividuel_id

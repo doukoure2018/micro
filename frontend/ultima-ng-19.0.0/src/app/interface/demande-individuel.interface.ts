@@ -124,6 +124,56 @@ export interface AnalyseCreditAgricole {
     analysePar?: string;
 }
 
+/**
+ * Échéancier prévisionnel avec moratoire, calculé par le backend (V147, règle métier du 2026-09-18) :
+ * capital constant, intérêt simple mensuel sur capital restant, la 1re échéance porte (moratoire + 1)
+ * mois d'intérêts. Endpoints : GET /ecredit/echeancier/simulation et /ecredit/echeancier/demande/{id}.
+ */
+export interface LigneEcheancier {
+    numero: number;
+    dateEcheance: string | null;
+    moisDepuisOctroi: number;
+    capitalRestantAvant: number;
+    moisInteret: number;
+    interet: number;
+    capital: number;
+    montant: number;
+}
+
+export interface Echeancier {
+    montant: number;
+    tauxMensuel: number;
+    dureeMois: number;
+    moratoireMois: number;
+    nombreEcheances: number;
+    dateOctroi: string | null;
+    lignes: LigneEcheancier[];
+    totalCapital: number;
+    totalInterets: number;
+    totalARembourser: number;
+    echeanceMax: number;
+    datePremiereEcheance: string | null;
+    dateDerniereEcheance: string | null;
+    /** Repères pour la mise en place manuelle dans SAF (jours, taux annuel). */
+    reperesSaf: {
+        plazoCreditoJours: number;
+        cantCuotas: number;
+        plazoAdicionalJours: number;
+        tasaInteresAnnuelle: number;
+        fecInicioPlan: string | null;
+    };
+}
+
+export interface SimulationEcheancierParams {
+    montant: number;
+    taux: number;
+    duree: number;
+    moratoire: number;
+    nombreEcheances: number;
+    /** ISO yyyy-MM-dd */
+    dateOctroi?: string | null;
+}
+
 export function analyseCreditAgricoleVide(): AnalyseCreditAgricole {
     return {
         fraisLabour: 0,
@@ -320,9 +370,12 @@ export interface DemandeIndividuel {
     dureeDemande: number;
     periodiciteRemboursement: PeriodiciteRemboursement;
     tauxInteret: number;
+    /** Moratoire en mois (V147) : durée = moratoire + nombre d'échéances pour CAS / CAS-R. */
     periodeDiffere?: number;
     nombreEcheance: number;
     echeance?: number;
+    /** Date d'octroi prévue (V147, ISO yyyy-MM-dd) : référence de l'échéancier prévisionnel. */
+    dateOctroiPrevue?: string | null;
     objectCredit: ObjectCredit;
     detailObjectCredit: string;
     statutCredit: 'Nouveau' | 'Renouvellement';

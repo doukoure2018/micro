@@ -82,7 +82,10 @@ public class AnalyseCreditAgricoleRepositoryImpl implements AnalyseCreditAgricol
                             rs.getString("type_groupe"),
                             rs.getBigDecimal("montant_demande"),
                             (Integer) rs.getObject("nombre_echeance"),
-                            rs.getBigDecimal("taux_interet")))
+                            rs.getBigDecimal("taux_interet"),
+                            (Integer) rs.getObject("duree_demande"),
+                            (Integer) rs.getObject("periode_differe"),
+                            rs.getObject("date_octroi_prevue", java.time.LocalDate.class)))
                     .single();
         } catch (EmptyResultDataAccessException e) {
             return null;

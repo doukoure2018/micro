@@ -4,6 +4,7 @@ import io.digiservices.ecreditservice.dto.DemandeGroupe;
 import io.digiservices.ecreditservice.dto.DemandeIndividuel;
 import io.digiservices.ecreditservice.dto.MembreGroupe;
 import io.digiservices.ecreditservice.exception.ValidationException;
+import io.digiservices.ecreditservice.utils.EcheancierCalculateur;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -16,17 +17,35 @@ import java.util.Set;
  * - la somme des montants à percevoir des membres = montant demandé du groupe
  * - le nombre de lignes membres = nombre de membres déclaré
  * - champs PE réservés au type CFE
+ * - CAS / CAS-R (V147) : périodicité mensuelle et durée = moratoire + nombre d'échéances
  */
 public final class CreditGroupeValidator {
 
     public static final String NATURE_GROUPE = "Demande de credit Pour Groupe Solidaire";
     public static final Set<String> TYPES_GROUPE = Set.of("CAS", "CAS_R", "CCS", "CRS", "CFE", "MCK", "ACM");
+    /** Groupes agricoles : analyse charges/produits + échéancier avec moratoire. */
+    public static final Set<String> TYPES_GROUPE_AGRICOLES = Set.of("CAS", "CAS_R");
 
     private CreditGroupeValidator() {
     }
 
     public static boolean isGroupe(DemandeIndividuel demande) {
         return NATURE_GROUPE.equals(demande.getNatureClient());
+    }
+
+    public static boolean isGroupeAgricole(DemandeIndividuel demande) {
+        return demande != null && isGroupe(demande) && demande.getDemandeGroupe() != null
+                && demande.getDemandeGroupe().getTypeGroupe() != null
+                && TYPES_GROUPE_AGRICOLES.contains(demande.getDemandeGroupe().getTypeGroupe());
+    }
+
+    /** CAS / CAS-R : l'échéancier avec moratoire est mensuel et impose durée = moratoire + N. */
+    private static void validateModalitesAgricoles(DemandeIndividuel demande) {
+        if (demande.getPeriodiciteRemboursement() != null
+                && !"Mensuelle".equalsIgnoreCase(demande.getPeriodiciteRemboursement())) {
+            throw new ValidationException("Périodicité mensuelle obligatoire pour un groupe CAS / CAS-R (échéancier avec moratoire)");
+        }
+        EcheancierCalculateur.validerCoherence(demande.getDureeDemande(), demande.getPeriodeDiffere(), demande.getNombreEcheance());
     }
 
     /** Validation bloquante à la saisie d'une demande groupe (et à sa correction). No-op pour les autres natures. */
@@ -44,6 +63,9 @@ public final class CreditGroupeValidator {
         }
         if (isBlank(groupe.getNomGroupe())) {
             throw new ValidationException("Le nom du groupe est obligatoire");
+        }
+        if (TYPES_GROUPE_AGRICOLES.contains(groupe.getTypeGroupe())) {
+            validateModalitesAgricoles(demande);
         }
         if (isBlank(groupe.getMandataire1()) || isBlank(groupe.getContactMandataire1())) {
             throw new ValidationException("Le mandataire 1 et son contact sont obligatoires");

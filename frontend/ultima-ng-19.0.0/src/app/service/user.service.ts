@@ -1653,6 +1653,26 @@ export class UserService {
     saveAnalyseAgricole$ = (demandeId: number, analyse: any) =>
         <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/groupe/analyse-agricole/${demandeId}`, analyse).pipe(catchError(this.handleError));
 
+    // ==================== ECHEANCIER PREVISIONNEL AVEC MORATOIRE (V147) ====================
+
+    /** Aperçu en saisie : même calcul que le backend (capital constant, intérêt mensuel sur capital restant). */
+    simulerEcheancier$ = (p: { montant: number; taux: number; duree: number; moratoire: number; nombreEcheances: number; dateOctroi?: string | null }) => {
+        let params = new HttpParams()
+            .set('montant', String(p.montant))
+            .set('taux', String(p.taux ?? 0))
+            .set('duree', String(p.duree))
+            .set('moratoire', String(p.moratoire ?? 0))
+            .set('nombreEcheances', String(p.nombreEcheances));
+        if (p.dateOctroi) {
+            params = params.set('dateOctroi', p.dateOctroi);
+        }
+        return <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/echeancier/simulation`, { params }).pipe(catchError(this.handleError));
+    };
+
+    /** Échéancier d'une demande enregistrée (modalités sollicitées). */
+    getEcheancierDemande$ = (demandeId: number) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/echeancier/demande/${demandeId}`).pipe(catchError(this.handleError));
+
     // ==================== CREDIT FONCTIONNAIRE (analyse charges & quotite) ====================
 
     getAnalyseChargesFonctionnaire$ = (demandeId: number) =>

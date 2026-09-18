@@ -633,8 +633,13 @@
                         <tr class="border-b border-gray-200">
                             <td class="py-3 px-4 text-gray-600 font-medium w-1/4">Périodicité</td>
                             <td class="py-3 px-4">{{ state().demandeIndividuel?.periodiciteRemboursement }}</td>
-                            <td class="py-3 px-4 text-gray-600 font-medium w-1/4">Période de différé</td>
-                            <td class="py-3 px-4">{{ state().demandeIndividuel?.periodeDiffere }} mois</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium w-1/4">Moratoire (différé)</td>
+                            <td class="py-3 px-4">
+                                {{ state().echeancier?.moratoireMois ?? state().demandeIndividuel?.periodeDiffere ?? 0 }} mois
+                                <span *ngIf="state().demandeIndividuel?.dateOctroiPrevue" class="text-gray-500 text-sm ml-2">
+                                    · octroi prévu le {{ state().demandeIndividuel?.dateOctroiPrevue | date:'dd/MM/yyyy' }}
+                                </span>
+                            </td>
                         </tr>
                         <tr class="border-b border-gray-200">
                             <td class="py-3 px-4 text-gray-600 font-medium">Nombre d'échéances</td>
@@ -668,6 +673,12 @@
                         </tr>
                     </tbody>
                 </table>
+
+                <!-- Groupe agricole (CAS / CAS-R) : échéancier prévisionnel avec moratoire (V147), calcul backend -->
+                <div *ngIf="isGroupeAgricole() && (state().echeancier || state().echeancierErreur)" class="mt-6">
+                    <app-echeancier-previsionnel [echeancier]="state().echeancier" [erreur]="state().echeancierErreur"
+                        titre="Échéancier prévisionnel (modalités sollicitées)"></app-echeancier-previsionnel>
+                </div>
             </div>
         </div>
 

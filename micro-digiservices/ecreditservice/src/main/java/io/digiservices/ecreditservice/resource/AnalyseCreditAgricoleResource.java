@@ -5,6 +5,7 @@ import io.digiservices.ecreditservice.domain.Response;
 import io.digiservices.ecreditservice.dto.AnalyseCreditAgricoleDto;
 import io.digiservices.ecreditservice.exception.ValidationException;
 import io.digiservices.ecreditservice.service.AnalyseCreditAgricoleService;
+import io.digiservices.ecreditservice.service.EcheancierService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,7 @@ import static org.springframework.http.HttpStatus.OK;
 public class AnalyseCreditAgricoleResource {
 
     private final AnalyseCreditAgricoleService analyseAgricoleService;
+    private final EcheancierService echeancierService;
     private final UserClient userClient;
 
     @GetMapping("/analyse-agricole/{demandeId}")
@@ -37,6 +39,7 @@ public class AnalyseCreditAgricoleResource {
             HttpServletRequest httpRequest) {
         Map<String, Object> data = new HashMap<>();
         data.put("analyseAgricole", analyseAgricoleService.getByDemandeId(demandeId).orElse(null));
+        ajouterEcheancier(data, demandeId);
         return ResponseEntity.ok(
                 getResponse(httpRequest, data, "Analyse agricole récupérée", OK));
     }
@@ -53,8 +56,20 @@ public class AnalyseCreditAgricoleResource {
         }
         String analysePar = user.getFirstName() + " " + user.getLastName();
         var result = analyseAgricoleService.enregistrer(demandeId, dto, analysePar);
+        Map<String, Object> data = new HashMap<>();
+        data.put("analyseAgricole", result);
+        ajouterEcheancier(data, demandeId);
         return ResponseEntity.ok(
-                getResponse(httpRequest, Map.of("analyseAgricole", result),
-                        "Analyse agricole enregistrée", OK));
+                getResponse(httpRequest, data, "Analyse agricole enregistrée", OK));
+    }
+
+    /** Échéancier prévisionnel (moratoire) ; en cas de modalités incohérentes, le message est renvoyé au lieu de bloquer l'écran. */
+    private void ajouterEcheancier(Map<String, Object> data, Long demandeId) {
+        try {
+            data.put("echeancier", echeancierService.pourDemande(demandeId));
+        } catch (ValidationException e) {
+            data.put("echeancier", null);
+            data.put("echeancierErreur", e.getMessage());
+        }
     }
 }

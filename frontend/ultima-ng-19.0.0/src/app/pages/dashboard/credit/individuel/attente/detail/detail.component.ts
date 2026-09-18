@@ -1,5 +1,6 @@
-import { AnalyseChargesFonctionnaire, AnalyseCreditAgricole, DemandeFonctionnaire, DemandeIndividuel, NATURE_CREDIT_GROUPE, PieceJointeDemande, TYPES_GROUPE_OPTIONS, TYPE_CONTRAT_OPTIONS_FONCTIONNAIRE, demandeFonctionnaireVide, quotiteCessibleFonctionnaire } from '@/interface/demande-individuel.interface';
+import { AnalyseChargesFonctionnaire, AnalyseCreditAgricole, DemandeFonctionnaire, DemandeIndividuel, Echeancier, NATURE_CREDIT_GROUPE, PieceJointeDemande, TYPES_GROUPE_OPTIONS, TYPE_CONTRAT_OPTIONS_FONCTIONNAIRE, demandeFonctionnaireVide, quotiteCessibleFonctionnaire } from '@/interface/demande-individuel.interface';
 import { NiveauValidationFinale, libelleNiveauValidation, niveauValidationFinale } from '@/interface/validation-seuils';
+import { EcheancierPrevisionnelComponent } from '@/pages/dashboard/credit/echeancier-previsionnel/echeancier-previsionnel.component';
 import { CreditActiviteData } from '@/service/credit-activite.model';
 import { registerLocaleData } from '@angular/common';
 import localeFr from '@angular/common/locales/fr';
@@ -77,7 +78,8 @@ import { SyntheseDeComponent } from './synthese-de/synthese-de.component';
         AvatarModule,
         ChipModule,
         TimelineModule,
-        SyntheseDeComponent
+        SyntheseDeComponent,
+        EcheancierPrevisionnelComponent
     ],
     templateUrl: './detail.component.html',
     styleUrls: ['./detail.component.scss'],
@@ -127,6 +129,9 @@ export class DetailComponent {
         showWorkflowRejetDR: boolean;
         analyseChargesFonctionnaire?: AnalyseChargesFonctionnaire | null;
         analyseCreditAgricole?: AnalyseCreditAgricole | null;
+        /** Échéancier avec moratoire (CAS / CAS-R, V147) affiché aux approbateurs. */
+        echeancier?: Echeancier | null;
+        echeancierErreur?: string | null;
         piecesFonctionnaire?: PieceJointeDemande[];
         showTransformationFonctionnaire?: boolean;
         transformationEnCours?: boolean;
@@ -469,6 +474,7 @@ export class DetailComponent {
                         if (demandeData.natureClient === 'Demande de credit Pour Groupe Solidaire'
                                 && ['CAS', 'CAS_R'].includes(demandeData.demandeGroupe?.typeGroupe || '')) {
                             this.loadAnalyseCreditAgricole(+demandeData.demandeIndividuelId!);
+                            this.loadEcheancier(+demandeData.demandeIndividuelId!);
                         }
 
                         // Groupe CFE : même analyse charges & quotité que le fonctionnaire (cumul des salaires)
@@ -1557,6 +1563,17 @@ export class DetailComponent {
             .subscribe({
                 next: (response) => this.state.update((s) => ({ ...s, analyseCreditAgricole: (response.data as any)?.analyseAgricole || null })),
                 error: () => this.state.update((s) => ({ ...s, analyseCreditAgricole: null }))
+            });
+    }
+
+    /** Échéancier prévisionnel avec moratoire (calcul backend) : même tableau que la saisie et l'analyse agricole. */
+    private loadEcheancier(demandeId: number): void {
+        this.userService
+            .getEcheancierDemande$(demandeId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => this.state.update((s) => ({ ...s, echeancier: (response.data as any)?.echeancier || null, echeancierErreur: null })),
+                error: (error) => this.state.update((s) => ({ ...s, echeancier: null, echeancierErreur: error?.message || 'Échéancier indisponible' }))
             });
     }
 

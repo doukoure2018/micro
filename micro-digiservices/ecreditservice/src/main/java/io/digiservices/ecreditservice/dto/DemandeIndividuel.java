@@ -85,6 +85,8 @@ public class DemandeIndividuel {
     private Integer periodeDiffere;
     private Integer nombreEcheance;
     private BigDecimal echeance;
+    /** Date d'octroi prévue (V147) : référence de l'échéancier prévisionnel avec moratoire. */
+    private LocalDate dateOctroiPrevue;
     private String objectCredit;
     private String detailObjectCredit;
     private String statutCredit;
