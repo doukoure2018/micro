@@ -250,9 +250,13 @@ public class DemandeIndServiceImpl implements DemandeIndService {
 
     @Override
     public List<DemandeIndividuel> getAllDemandesWithGaranties(Long agenceId, Long pointVenteId, Long userId) {
-        log.info("Récupération des demandes pour agence: {}, point de vente: {}", agenceId, pointVenteId);
+        return getAllDemandesWithGaranties(agenceId, pointVenteId, userId, "TOUS");
+    }
 
-        return demandeIndRepository.getAllDemandesWithGaranties(agenceId, pointVenteId, userId);
+    @Override
+    public List<DemandeIndividuel> getAllDemandesWithGaranties(Long agenceId, Long pointVenteId, Long userId, String scope) {
+        log.info("Récupération des demandes pour agence: {}, point de vente: {}, scope: {}", agenceId, pointVenteId, scope);
+        return demandeIndRepository.getAllDemandesWithGaranties(agenceId, pointVenteId, userId, scope);
     }
 
     @Override

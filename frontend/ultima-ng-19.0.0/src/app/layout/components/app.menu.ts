@@ -178,6 +178,22 @@ export class AppMenu {
                 routerLink: ['/dashboards/agent-credit/demandes-affectees']
             });
         }
+        if (this.role === 'AGENT_CREDIT' || this.role === 'DA') {
+            // V148 : la liste « en cours » ne contient plus les dossiers approuvés / rejetés,
+            // qui ont leur propre page (réservée DA et agents de crédit)
+            items.push(
+                {
+                    label: 'Dossiers en cours',
+                    icon: 'pi pi-fw pi-folder-open',
+                    routerLink: ['/dashboards/credit/individuel/attente']
+                },
+                {
+                    label: 'Dossiers clôturés (approuvés / rejetés)',
+                    icon: 'pi pi-fw pi-verified',
+                    routerLink: ['/dashboards/credit/individuel/clotures']
+                }
+            );
+        }
         if (this.role === 'DA') {
             items.push(
                 {

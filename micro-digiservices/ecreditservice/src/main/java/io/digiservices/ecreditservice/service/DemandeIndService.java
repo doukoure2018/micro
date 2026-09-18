@@ -79,6 +79,9 @@ public interface DemandeIndService {
 
     List<DemandeIndividuel> getAllDemandesWithGaranties(Long agenceId, Long pointVenteId, Long userId);
 
+    /** V148 : scope EN_COURS (dossiers en traitement), CLOTURES (VALIDATED_FINAL ou rejetes) ou TOUS. */
+    List<DemandeIndividuel> getAllDemandesWithGaranties(Long agenceId, Long pointVenteId, Long userId, String scope);
+
     List<DelegationCreditDto> listCreditParDelegation();
 
     void updateDemandeComplete(DemandeIndividuel demande);
