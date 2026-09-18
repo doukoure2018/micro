@@ -1,4 +1,5 @@
-import { DemandeGroupe, DemandeIndividuel, GarantiePropose, MembreGroupe, NATURE_CREDIT_GROUPE, TYPES_GROUPE_OPTIONS, TypeGroupe, demandeGroupeVide, membreGroupeVide } from '@/interface/demande-individuel.interface';
+import { DemandeGroupe, DemandeIndividuel, Echeancier, GarantiePropose, MembreGroupe, NATURE_CREDIT_GROUPE, TYPES_GROUPE_OPTIONS, TypeGroupe, demandeGroupeVide, membreGroupeVide } from '@/interface/demande-individuel.interface';
+import { EcheancierPrevisionnelComponent } from '@/pages/dashboard/credit/echeancier-previsionnel/echeancier-previsionnel.component';
 import { Activite, CreditActiviteData, SousActivite, SousSousActivite } from '@/service/credit-activite.model';
 import { IResponse } from '@/interface/response';
 import { UserService } from '@/service/user.service';
@@ -38,7 +39,7 @@ registerLocaleData(localeFr, 'fr-FR');
 @Component({
     selector: 'app-demande-groupe',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, CalendarModule, CheckboxModule, DialogModule, DropdownModule, InputNumberModule, InputTextModule, ProgressSpinnerModule, TableModule, TagModule, TextareaModule, ToastModule, TooltipModule],
+    imports: [CommonModule, FormsModule, ButtonModule, CalendarModule, CheckboxModule, DialogModule, DropdownModule, InputNumberModule, InputTextModule, ProgressSpinnerModule, TableModule, TagModule, TextareaModule, ToastModule, TooltipModule, EcheancierPrevisionnelComponent],
     templateUrl: './demande-groupe.component.html',
     providers: [MessageService]
 })
@@ -95,6 +96,9 @@ export class DemandeGroupeComponent implements OnInit {
         tauxInteret: 3,
         periodiciteRemboursement: 'Mensuelle',
         echeance: 0,
+        /** CAS / CAS-R (V147) : moratoire en mois, durée = moratoire + nombre d'échéances. */
+        periodeDiffere: 0,
+        dateOctroiPrevue: null as Date | null,
         selectedTypeActivite: undefined as number | undefined,
         selectedSousActivite: undefined as number | undefined,
         selectedSousSousActivite: undefined as number | undefined,
@@ -129,6 +133,11 @@ export class DemandeGroupeComponent implements OnInit {
     /** Vérification SAF asynchrone : ne bloque pas la saisie (décision 2026-08-27). */
     private verificationMembre$ = new Subject<MembreGroupe>();
 
+    /** Échéancier CAS / CAS-R calculé par le backend (V147) : aperçu en direct, jamais recalculé ici. */
+    echeancierPrevisionnel = signal<Echeancier | null>(null);
+    echeancierErreur = signal<string | null>(null);
+    private recalculEcheancier$ = new Subject<void>();
+
     ngOnInit(): void {
         const param = this.route.snapshot.paramMap.get('demandeId');
         this.demandeId = param ? +param : null;
@@ -136,6 +145,39 @@ export class DemandeGroupeComponent implements OnInit {
         if (this.demandeId) {
             this.chargerDemandeExistante(this.demandeId);
         }
+        this.recalculEcheancier$
+            .pipe(
+                debounceTime(300),
+                switchMap(() => {
+                    const p = this.pret;
+                    if (!this.isAgricole() || !(p.montantDemande > 0) || !(p.dureeDemande > 0) || !(p.nombreEcheance > 0)) {
+                        this.echeancierErreur.set(null);
+                        return of(null);
+                    }
+                    return this.userService
+                        .simulerEcheancier$({
+                            montant: p.montantDemande,
+                            taux: p.tauxInteret,
+                            duree: p.dureeDemande,
+                            moratoire: p.periodeDiffere || 0,
+                            nombreEcheances: p.nombreEcheance,
+                            dateOctroi: this.dateOctroiIso()
+                        })
+                        .pipe(
+                            catchError((error) => {
+                                this.echeancierErreur.set(error?.message || error || 'Modalités incohérentes');
+                                return of(null);
+                            })
+                        );
+                }),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe((response: IResponse | null) => {
+                const e = (response?.data as any)?.echeancier as Echeancier | undefined;
+                this.echeancierPrevisionnel.set(e || null);
+                if (e) this.echeancierErreur.set(null);
+            });
+
         this.verificationMembre$
             .pipe(
                 debounceTime(600),
@@ -187,6 +229,12 @@ export class DemandeGroupeComponent implements OnInit {
                     this.pret.tauxInteret = Number(demande.tauxInteret) || 3;
                     this.pret.periodiciteRemboursement = demande.periodiciteRemboursement || 'Mensuelle';
                     this.pret.echeance = Number(demande.echeance) || 0;
+                    // Dossiers antérieurs à la V147 : periode_differe = 0 -> moratoire implicite = durée - N (structure SAF)
+                    this.pret.periodeDiffere = Number(demande.periodeDiffere) > 0
+                        ? Number(demande.periodeDiffere)
+                        : Math.max(this.pret.dureeDemande - this.pret.nombreEcheance, 0);
+                    this.pret.dateOctroiPrevue = demande.dateOctroiPrevue ? new Date(demande.dateOctroiPrevue) : null;
+                    this.recalculEcheancier$.next();
                     this.pret.nombreAnneeActivite = Number(demande.nombreAnneeActivite) || 0;
                     this.pret.selectedTypeActivite = demande.typeActivite ? Number(demande.typeActivite) : undefined;
                     if (this.pret.selectedTypeActivite) {
@@ -292,6 +340,40 @@ export class DemandeGroupeComponent implements OnInit {
             // Même règle que le fonctionnaire individuel : mensuelle uniquement
             this.pret.periodiciteRemboursement = 'Mensuelle';
         }
+        if (this.isAgricole()) {
+            // Échéancier avec moratoire : mensuel, moratoire pré-rempli = durée - N (modifiable)
+            this.pret.periodiciteRemboursement = 'Mensuelle';
+            this.pret.periodeDiffere = Math.max((this.pret.dureeDemande || 0) - (this.pret.nombreEcheance || 0), 0);
+        }
+        this.recalculEcheancier$.next();
+    }
+
+    // ==================== ÉCHÉANCIER CAS / CAS-R (calcul backend, V147) ====================
+
+    /**
+     * Toute modification des modalités relance la simulation backend. Quand la durée ou le
+     * nombre d'échéances change, le moratoire est pré-rempli à durée - N (l'agent peut l'ajuster,
+     * la cohérence durée = moratoire + N est contrôlée avant envoi).
+     */
+    onModalitesChange(champ: 'montant' | 'duree' | 'nombreEcheance' | 'taux' | 'moratoire' | 'dateOctroi'): void {
+        if (this.isAgricole() && (champ === 'duree' || champ === 'nombreEcheance')) {
+            this.pret.periodeDiffere = Math.max((this.pret.dureeDemande || 0) - (this.pret.nombreEcheance || 0), 0);
+        }
+        this.recalculEcheancier$.next();
+    }
+
+    /** Vrai si durée ≠ moratoire + nombre d'échéances (règle métier du 2026-09-18). */
+    modalitesIncoherentes(): boolean {
+        if (!this.isAgricole()) return false;
+        return (this.pret.periodeDiffere || 0) + (this.pret.nombreEcheance || 0) !== (this.pret.dureeDemande || 0);
+    }
+
+    private dateOctroiIso(): string | null {
+        const d = this.pret.dateOctroiPrevue;
+        if (!d) return null;
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${d.getFullYear()}-${mm}-${dd}`;
     }
 
     /** CFE : cumul des salaires nets des membres = base de la quotité cessible du groupe (35 %). */
@@ -326,31 +408,6 @@ export class DemandeGroupeComponent implements OnInit {
 
     partsEgalesMontant(): boolean {
         return this.totalParts() === (this.pret.montantDemande || 0) && this.totalParts() > 0;
-    }
-
-    // ==================== ÉCHÉANCIER CAS / CAS-R ====================
-
-    /**
-     * Capital constant, intérêt identique par échéance : I = (Montant / N) x taux.
-     * Formule confirmée pour N = 2 ; à affiner pour N = 1 et N = 3 (règles à venir du métier).
-     */
-    echeancier(): { numero: number; capital: number; interet: number; montant: number }[] {
-        const montant = this.pret.montantDemande || 0;
-        const n = this.pret.nombreEcheance || 0;
-        const taux = (this.pret.tauxInteret || 0) / 100;
-        if (!this.isAgricole() || montant <= 0 || n <= 0) return [];
-        const capital = montant / n;
-        const interet = capital * taux;
-        return Array.from({ length: n }, (_, i) => ({
-            numero: i + 1,
-            capital: Math.round(capital),
-            interet: Math.round(interet),
-            montant: Math.round(capital + interet)
-        }));
-    }
-
-    totalEcheances(): number {
-        return this.echeancier().reduce((total, e) => total + e.montant, 0);
     }
 
     // ==================== GARANTIES ====================
@@ -454,9 +511,11 @@ export class DemandeGroupeComponent implements OnInit {
             dureeDemande: this.pret.dureeDemande,
             periodiciteRemboursement: this.pret.periodiciteRemboursement,
             tauxInteret: this.pret.tauxInteret,
-            periodeDiffere: 0,
+            periodeDiffere: this.isAgricole() ? this.pret.periodeDiffere || 0 : 0,
+            dateOctroiPrevue: this.isAgricole() ? this.dateOctroiIso() : null,
             nombreEcheance: this.pret.nombreEcheance,
-            echeance: this.isAgricole() && this.echeancier().length > 0 ? this.echeancier()[0].montant : this.pret.echeance,
+            // CAS / CAS-R : le backend recalcule l'échéance (1re ligne de l'échéancier) ; valeur indicative ici
+            echeance: this.isAgricole() ? this.echeancierPrevisionnel()?.echeanceMax ?? 0 : this.pret.echeance,
             objectCredit: this.pret.objectCredit,
             detailObjectCredit: this.pret.detailObjectCredit || this.pret.objectCredit,
             statutCredit: 'Nouveau',
@@ -472,6 +531,15 @@ export class DemandeGroupeComponent implements OnInit {
             garanties: this.isCfe() ? [] : this.state().garanties
         } as unknown as DemandeIndividuel;
 
+        if (this.modalitesIncoherentes()) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Modalités incohérentes',
+                detail: `La durée (${this.pret.dureeDemande} mois) doit être égale au moratoire (${this.pret.periodeDiffere || 0} mois) + le nombre d'échéances (${this.pret.nombreEcheance}). Exemple : 9 mois = 7 mois de moratoire + 2 échéances.`,
+                life: 8000
+            });
+            return;
+        }
         this.state.update((s) => ({ ...s, submitting: true }));
 
         if (this.estCorrection() && this.demandeId) {

@@ -6,6 +6,7 @@ import io.digiservices.ecreditservice.exception.ValidationException;
 import io.digiservices.ecreditservice.repository.AnalyseCreditAgricoleRepository;
 import io.digiservices.ecreditservice.repository.AnalyseCreditAgricoleRepository.ContexteAgricole;
 import io.digiservices.ecreditservice.service.AnalyseCreditAgricoleService;
+import io.digiservices.ecreditservice.utils.EcheancierCalculateur;
 import io.digiservices.ecreditservice.validation.CreditGroupeValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,9 +20,9 @@ import java.util.Set;
 
 /**
  * Analyse du crédit agricole solidaire (groupes CAS / CAS_R).
- * Total des échéances = montant x (1 + taux/100) — dérivé de l'échéancier à capital
- * constant avec intérêt identique par échéance I = (montant/N) x taux (formule
- * confirmée pour 2 échéances le 2026-08-27 ; cas 1 et 3 échéances à affiner).
+ * Total des échéances = total à rembourser de l'échéancier prévisionnel avec moratoire
+ * (règle métier du 2026-09-18, {@link EcheancierCalculateur}) : capital constant M/N, intérêt
+ * simple mensuel sur capital restant, la 1re échéance portant (moratoire + 1) mois d'intérêts.
  * Verdict FINANCABLE <=> marge nette (produits - charges) > total des échéances.
  */
 @Service
@@ -99,12 +100,12 @@ public class AnalyseCreditAgricoleServiceImpl implements AnalyseCreditAgricoleSe
                 .add(nvl(dto.getAutresProduits()))
                 .setScale(2, RoundingMode.HALF_UP);
 
-        BigDecimal montant = ctx.montantDemande() != null ? ctx.montantDemande() : BigDecimal.ZERO;
-        BigDecimal taux = ctx.tauxInteret() != null ? ctx.tauxInteret() : BigDecimal.ZERO;
-        // Total échéances = montant + N x I, avec I = (montant/N) x taux => montant x (1 + taux/100)
-        BigDecimal totalEcheances = montant
-                .add(montant.multiply(taux).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP))
-                .setScale(2, RoundingMode.HALF_UP);
+        // Total échéances = capital + intérêts de l'échéancier avec moratoire (même calcul que
+        // l'aperçu en saisie et le détail vu par les approbateurs)
+        BigDecimal totalEcheances = EcheancierCalculateur.calculer(
+                ctx.montantDemande(), ctx.tauxInteret(), ctx.dureeDemande(),
+                EcheancierServiceImpl.moratoireEffectif(ctx.dureeDemande(), ctx.periodeDiffere(), ctx.nombreEcheance()),
+                ctx.nombreEcheance(), ctx.dateOctroiPrevue()).getTotalARembourser();
 
         BigDecimal margeNette = totalProduits.subtract(totalCharges).setScale(2, RoundingMode.HALF_UP);
 

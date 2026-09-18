@@ -3,6 +3,7 @@ package io.digiservices.ecreditservice.repository;
 import io.digiservices.ecreditservice.dto.AnalyseCreditAgricoleDto;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Optional;
 
 public interface AnalyseCreditAgricoleRepository {
@@ -21,6 +22,9 @@ public interface AnalyseCreditAgricoleRepository {
             String typeGroupe,
             BigDecimal montantDemande,
             Integer nombreEcheance,
-            BigDecimal tauxInteret) {
+            BigDecimal tauxInteret,
+            Integer dureeDemande,
+            Integer periodeDiffere,
+            LocalDate dateOctroiPrevue) {
     }
 }

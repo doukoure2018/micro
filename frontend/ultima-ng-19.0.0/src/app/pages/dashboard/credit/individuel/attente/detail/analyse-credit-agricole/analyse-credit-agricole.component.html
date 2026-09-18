@@ -91,12 +91,12 @@
                     <div class="border-2 border-blue-200 bg-blue-50 rounded-xl p-4">
                         <div class="text-sm text-gray-600">Montant du crédit</div>
                         <div class="text-xl font-bold text-gray-800">{{ montantCredit() | number:'1.0-0':'fr-FR' }} GNF</div>
-                        <div class="text-xs text-gray-500 mt-1">{{ nombreEcheances() }} échéance(s) · taux {{ tauxInteret() }} %</div>
+                        <div class="text-xs text-gray-500 mt-1">{{ nombreEcheances() }} échéance(s) · moratoire {{ moratoire() }} mois · taux {{ tauxInteret() }} % / mois</div>
                     </div>
                     <div class="border-2 border-amber-300 bg-amber-50 rounded-xl p-4">
                         <div class="text-sm text-gray-600">Total des échéances</div>
                         <div class="text-xl font-bold text-amber-700">{{ totalEcheances() | number:'1.0-0':'fr-FR' }} GNF</div>
-                        <div class="text-xs text-gray-500 mt-1">Capital + intérêts (repris de la demande)</div>
+                        <div class="text-xs text-gray-500 mt-1">Capital + intérêts, moratoire compris (échéancier backend)</div>
                     </div>
                     <div class="border-2 border-emerald-300 bg-emerald-50 rounded-xl p-4">
                         <div class="text-sm text-gray-600">Total produits − charges</div>
@@ -117,31 +117,11 @@
                     </div>
                 </div>
 
-                <!-- Échéancier -->
-                @if (echeancier().length > 0) {
-                <div class="mt-6 overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="bg-gray-100 text-left">
-                                <th class="p-3 font-semibold">Échéance</th>
-                                <th class="p-3 font-semibold text-right">Capital</th>
-                                <th class="p-3 font-semibold text-right">Intérêt</th>
-                                <th class="p-3 font-semibold text-right">Montant à payer</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @for (e of echeancier(); track e.numero) {
-                            <tr class="border-b border-gray-100">
-                                <td class="p-3">Échéance {{ e.numero }}</td>
-                                <td class="p-3 text-right">{{ e.capital | number:'1.0-0':'fr-FR' }}</td>
-                                <td class="p-3 text-right">{{ e.interet | number:'1.0-0':'fr-FR' }}</td>
-                                <td class="p-3 text-right font-semibold">{{ e.montant | number:'1.0-0':'fr-FR' }}</td>
-                            </tr>
-                            }
-                        </tbody>
-                    </table>
+                <!-- Échéancier prévisionnel avec moratoire (calcul backend, V147) -->
+                <div class="mt-6">
+                    <app-echeancier-previsionnel [echeancier]="state().echeancier" [erreur]="state().echeancierErreur"
+                        titre="Échéancier prévisionnel"></app-echeancier-previsionnel>
                 </div>
-                }
             </div>
         </div>
 

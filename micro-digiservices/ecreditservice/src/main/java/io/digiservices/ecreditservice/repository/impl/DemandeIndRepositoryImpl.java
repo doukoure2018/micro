@@ -767,6 +767,17 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
                 log.info("Résultat création demande - ID: {}, Success: {}, Message: {}",
                         demandeId, success, message);
 
+                // V147 : la date d'octroi prévue n'est pas un paramètre de la fonction stockée (57 params)
+                if (Boolean.TRUE.equals(success) && demandeId != null && demandeId > 0
+                        && demandeIndividuel.getDateOctroiPrevue() != null) {
+                    try (PreparedStatement ps = connection.prepareStatement(
+                            "UPDATE demandeindividuel SET date_octroi_prevue = ? WHERE demandeindividuel_id = ?")) {
+                        ps.setDate(1, Date.valueOf(demandeIndividuel.getDateOctroiPrevue()));
+                        ps.setLong(2, demandeId);
+                        ps.executeUpdate();
+                    }
+                }
+
                 if (isFonctionnaire || isGroupe) {
                     if (Boolean.TRUE.equals(success) && demandeId != null && demandeId > 0) {
                         if (isFonctionnaire) {
@@ -1329,6 +1340,9 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
             demande.setPeriodiciteRemboursement((String) demandeMap.get("periodicite_remboursement"));
             demande.setTauxInteret(getBigDecimalValue(demandeMap, "taux_interet"));
             demande.setPeriodeDiffere(getIntegerValue(demandeMap, "periode_differe"));
+            if (demandeMap.get("date_octroi_prevue") != null) {
+                demande.setDateOctroiPrevue(LocalDate.parse(demandeMap.get("date_octroi_prevue").toString()));
+            }
             demande.setNombreEcheance(getIntegerValue(demandeMap, "nombre_echeance"));
             demande.setEcheance(getBigDecimalValue(demandeMap, "echeance"));
             demande.setObjectCredit((String) demandeMap.get("object_credit"));
@@ -1516,6 +1530,7 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
             params.put("periodiciteRemboursement", demande.getPeriodiciteRemboursement());
             params.put("tauxInteret", demande.getTauxInteret());
             params.put("periodeDiffere", demande.getPeriodeDiffere());
+            params.put("dateOctroiPrevue", demande.getDateOctroiPrevue());
             params.put("nombreEcheance", demande.getNombreEcheance());
             params.put("echeance", demande.getEcheance());
             params.put("objectCredit", demande.getObjectCredit());

@@ -1,4 +1,5 @@
-import { AnalyseCreditAgricole, DemandeIndividuel, analyseCreditAgricoleVide } from '@/interface/demande-individuel.interface';
+import { AnalyseCreditAgricole, DemandeIndividuel, Echeancier, analyseCreditAgricoleVide } from '@/interface/demande-individuel.interface';
+import { EcheancierPrevisionnelComponent } from '@/pages/dashboard/credit/echeancier-previsionnel/echeancier-previsionnel.component';
 import { UserService } from '@/service/user.service';
 import { CommonModule, registerLocaleData } from '@angular/common';
 import localeFr from '@angular/common/locales/fr';
@@ -19,14 +20,15 @@ registerLocaleData(localeFr, 'fr-FR');
 /**
  * Écran d'analyse du crédit agricole solidaire (groupes CAS / CAS-R) :
  * grille des 12 postes de charges de campagne, produits escomptés,
- * marge nette comparée en direct au total des échéances (capital constant,
- * intérêt identique par échéance — formule confirmée pour 2 échéances).
+ * marge nette comparée en direct au total des échéances de l'échéancier avec
+ * moratoire calculé par le backend (V147 : capital constant, intérêt mensuel sur
+ * capital restant, la 1re échéance portant les intérêts du différé).
  * Remplace le bilan d'activité / flux de trésorerie du commerçant.
  */
 @Component({
     selector: 'app-analyse-credit-agricole',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule, ButtonModule, InputNumberModule, TagModule, ToastModule, TooltipModule],
+    imports: [CommonModule, FormsModule, RouterModule, ButtonModule, InputNumberModule, TagModule, ToastModule, TooltipModule, EcheancierPrevisionnelComponent],
     templateUrl: './analyse-credit-agricole.component.html',
     providers: [MessageService]
 })
@@ -61,6 +63,9 @@ export class AnalyseCreditAgricoleComponent implements OnInit {
         loading: boolean;
         saving: boolean;
         demande?: DemandeIndividuel;
+        /** Échéancier avec moratoire renvoyé avec l'analyse (null + message si modalités incohérentes). */
+        echeancier?: Echeancier | null;
+        echeancierErreur?: string | null;
     }>({ loading: true, saving: false });
 
     ngOnInit(): void {
@@ -77,7 +82,13 @@ export class AnalyseCreditAgricoleComponent implements OnInit {
                     if (saved) {
                         this.analyse = { ...analyseCreditAgricoleVide(), ...saved };
                     }
-                    this.state.update((s) => ({ ...s, loading: false, demande: demandeIndividuel }));
+                    this.state.update((s) => ({
+                        ...s,
+                        loading: false,
+                        demande: demandeIndividuel,
+                        echeancier: (analyse.data as any)?.echeancier || null,
+                        echeancierErreur: (analyse.data as any)?.echeancierErreur || null
+                    }));
                 },
                 error: (error) => {
                     this.state.update((s) => ({ ...s, loading: false }));
@@ -86,7 +97,7 @@ export class AnalyseCreditAgricoleComponent implements OnInit {
             });
     }
 
-    // ==================== CALCULS EN DIRECT (mêmes formules que le backend) ====================
+    // ==================== CALCULS EN DIRECT (charges/produits ici, échéancier par le backend) ====================
 
     estAgricole(): boolean {
         return ['CAS', 'CAS_R'].includes(this.state().demande?.demandeGroupe?.typeGroupe || '');
@@ -104,6 +115,10 @@ export class AnalyseCreditAgricoleComponent implements OnInit {
         return Number(this.state().demande?.nombreEcheance) || 0;
     }
 
+    moratoire(): number {
+        return this.state().echeancier?.moratoireMois ?? (Number(this.state().demande?.periodeDiffere) || 0);
+    }
+
     totalCharges(): number {
         return this.postes.reduce((total, poste) => total + (Number(this.analyse[poste.key]) || 0), 0);
     }
@@ -116,23 +131,13 @@ export class AnalyseCreditAgricoleComponent implements OnInit {
         return this.totalProduits() - this.totalCharges();
     }
 
-    /** Total échéances = montant x (1 + taux/100) — capital constant, intérêt identique par échéance. */
+    /**
+     * Total à rembourser (capital + intérêts, moratoire compris) de l'échéancier backend ;
+     * à défaut (modalités incohérentes), la dernière valeur enregistrée.
+     */
     totalEcheances(): number {
-        return Math.round(this.montantCredit() * (1 + this.tauxInteret() / 100));
-    }
-
-    echeancier(): { numero: number; capital: number; interet: number; montant: number }[] {
-        const montant = this.montantCredit();
-        const n = this.nombreEcheances();
-        if (montant <= 0 || n <= 0) return [];
-        const capital = montant / n;
-        const interet = capital * (this.tauxInteret() / 100);
-        return Array.from({ length: n }, (_, i) => ({
-            numero: i + 1,
-            capital: Math.round(capital),
-            interet: Math.round(interet),
-            montant: Math.round(capital + interet)
-        }));
+        const e = this.state().echeancier;
+        return Math.round(e ? Number(e.totalARembourser) : Number(this.analyse.totalEcheances) || 0);
     }
 
     financable(): boolean {
@@ -152,7 +157,12 @@ export class AnalyseCreditAgricoleComponent implements OnInit {
                     if (saved) {
                         this.analyse = { ...analyseCreditAgricoleVide(), ...saved };
                     }
-                    this.state.update((s) => ({ ...s, saving: false }));
+                    this.state.update((s) => ({
+                        ...s,
+                        saving: false,
+                        echeancier: (response.data as any)?.echeancier ?? s.echeancier,
+                        echeancierErreur: (response.data as any)?.echeancierErreur || null
+                    }));
                     this.messageService.add({
                         severity: saved?.verdict === 'FINANCABLE' ? 'success' : 'warn',
                         summary: 'Analyse enregistrée',
