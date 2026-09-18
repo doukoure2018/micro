@@ -585,9 +585,10 @@ export class UserService {
      * @param pointVenteId - ID du point de vente (optionnel)
      * @returns Observable<IResponse> contenant la liste des demandes avec leurs garanties
      */
-    getAllDemandesWithGaranties$ = (agenceId?: number, pointVenteId?: number): Observable<IResponse> => {
+    /** V148 : scope EN_COURS (dossiers en traitement) | CLOTURES (approuvés niveau final ou rejetés) | TOUS. */
+    getAllDemandesWithGaranties$ = (agenceId?: number, pointVenteId?: number, scope: 'EN_COURS' | 'CLOTURES' | 'TOUS' = 'TOUS'): Observable<IResponse> => {
         let url = `${this.server}/ecredit/all-with-garanties`;
-        const params: string[] = [];
+        const params: string[] = [`scope=${scope}`];
 
         if (agenceId) {
             params.push(`agenceId=${agenceId}`);

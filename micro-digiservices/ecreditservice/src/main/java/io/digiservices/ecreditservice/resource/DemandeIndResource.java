@@ -813,14 +813,20 @@ public class DemandeIndResource {
     public ResponseEntity<Response> getAllDemandesWithGaranties(
             @NotNull Authentication authentication,
             @RequestParam(name = "agenceId", required = false) Long agenceId,
-            @RequestParam(name = "pointVenteId", required = false) Long pointVenteId)
+            @RequestParam(name = "pointVenteId", required = false) Long pointVenteId,
+            @RequestParam(name = "scope", required = false, defaultValue = "TOUS") String scope)
     {
         try {
+            // V148 : scope EN_COURS (page « dossiers en cours »), CLOTURES (approuves au niveau
+            // final ou rejetes, page reservee DA / AGENT_CREDIT) ou TOUS (ancien comportement)
+            if (!Set.of("EN_COURS", "CLOTURES", "TOUS").contains(scope)) {
+                throw new ValidationException("scope invalide : " + scope + " (attendu EN_COURS, CLOTURES ou TOUS)");
+            }
             // V127 : les dossiers affectes a l'agent connecte restent visibles meme
             // quand leur point de service differe de celui de l'agent
             User utilisateur = userClient.getUserByUuid(authentication.getName());
             List<DemandeIndividuel> demandes = demandeIndService.getAllDemandesWithGaranties(
-                    agenceId, pointVenteId, utilisateur != null ? utilisateur.getUserId() : null);
+                    agenceId, pointVenteId, utilisateur != null ? utilisateur.getUserId() : null, scope);
 
             return ResponseEntity.ok(
                     Response.builder()

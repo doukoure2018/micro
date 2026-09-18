@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { RapprochementCutoffGuard } from '@/service/rapprochement-cutoff.guard';
 import { AgentCreditGuard } from '@/service/agent-credit.guard';
 import { AgentAccueilGuard } from '@/service/agent-accueil.guard';
+import { DaAgentCreditGuard } from '@/service/da-agent-credit.guard';
 
 export default [
     {
@@ -278,7 +279,14 @@ export default [
     },
     {
         path: 'credit/individuel/attente',
-        data: { breadcrumb: 'Liste des Credits Individuels en attente' },
+        data: { breadcrumb: 'Dossiers de credit en cours', scope: 'EN_COURS' },
+        loadComponent: () => import('./credit/individuel/attente/attente.component').then((c) => c.AttenteComponent)
+    },
+    {
+        // V148 : dossiers approuves au niveau final ou rejetes, reserves DA / AGENT_CREDIT
+        path: 'credit/individuel/clotures',
+        canActivate: [DaAgentCreditGuard],
+        data: { breadcrumb: 'Dossiers clotures (approuves / rejetes)', scope: 'CLOTURES' },
         loadComponent: () => import('./credit/individuel/attente/attente.component').then((c) => c.AttenteComponent)
     },
     {

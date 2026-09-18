@@ -1125,10 +1125,15 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
 
     @Override
     public List<DemandeIndividuel> getAllDemandesWithGaranties(Long agenceId, Long pointVenteId, Long userId) {
+        return getAllDemandesWithGaranties(agenceId, pointVenteId, userId, "TOUS");
+    }
+
+    @Override
+    public List<DemandeIndividuel> getAllDemandesWithGaranties(Long agenceId, Long pointVenteId, Long userId, String scope) {
         try {
             return jdbcTemplate.query(
-                    DemandeIndQuery.CALL_GET_ALL_DEMANDES_WITH_GARANTIES_FUNC,
-                    new Object[]{agenceId, pointVenteId, userId},
+                    DemandeIndQuery.CALL_GET_ALL_DEMANDES_WITH_GARANTIES_SCOPE_FUNC,
+                    new Object[]{agenceId, pointVenteId, userId, scope == null ? "TOUS" : scope},
                     (rs, rowNum) -> {
                         String demandeJson = rs.getString("demande_data");
                         String garantiesJson = rs.getString("garanties_data");

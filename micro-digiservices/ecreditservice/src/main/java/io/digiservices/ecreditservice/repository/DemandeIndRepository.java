@@ -83,6 +83,9 @@ public interface DemandeIndRepository {
 
     List<DemandeIndividuel> getAllDemandesWithGaranties(Long agenceId, Long pointVenteId, Long userId);
 
+    /** V148 : meme perimetre, filtre par scope EN_COURS / CLOTURES / TOUS. */
+    List<DemandeIndividuel> getAllDemandesWithGaranties(Long agenceId, Long pointVenteId, Long userId, String scope);
+
     boolean checkDemandeExists(Long demandeindividuelId);
 
     void rejetDemandeInd(Long demandeindividuelId);

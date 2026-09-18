@@ -1,10 +1,11 @@
 import { DemandeIndividuel } from '@/interface/demande-individuel.interface';
+import { CARTES_CLOTURES, CARTES_EN_COURS, CarteFiltre, ScopeDossiers, estCloture, libelleEtat, severiteEtat } from '@/interface/etat-dossier';
 import { IResponse } from '@/interface/response';
 import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
 import { Component, computed, DestroyRef, inject, signal, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { IconField } from 'primeng/iconfield';
 import { InputIcon } from 'primeng/inputicon';
@@ -22,7 +23,7 @@ import { switchMap, of, catchError, forkJoin } from 'rxjs';
 @Component({
     selector: 'app-attente',
     standalone: true,
-    imports: [CommonModule, TableModule, InputTextModule, ProgressBarModule, ButtonModule, IconField, InputIcon, TagModule, MessageModule, CardModule, DividerModule, BadgeModule, TooltipModule],
+    imports: [CommonModule, RouterLink, TableModule, InputTextModule, ProgressBarModule, ButtonModule, IconField, InputIcon, TagModule, MessageModule, CardModule, DividerModule, BadgeModule, TooltipModule],
     templateUrl: './attente.component.html',
     styleUrls: ['./attente.component.scss']
 })
@@ -45,15 +46,27 @@ export class AttenteComponent implements OnInit {
     // Propriété séparée pour les lignes expandées (compatible avec PrimeNG)
     expandedRows: { [key: string]: boolean } = {};
 
-    // Filtre actif par statut
-    activeFilter = signal<'ALL' | 'EN_ATTENTE' | 'AFFECTATION' | 'REJETEE'>('ALL');
+    /**
+     * V148 : périmètre de la page, porté par la route (data.scope).
+     * EN_COURS = dossiers en traitement (page « Dossiers en cours »), CLOTURES = approuvés au
+     * niveau final ou rejetés (page « Dossiers clôturés », réservée DA / AGENT_CREDIT).
+     */
+    scope: ScopeDossiers = 'EN_COURS';
+    /** Cartes de filtre en tête de liste (fixées à l'init selon le scope : pas de tableau créé dans le template). */
+    cartes: CarteFiltre[] = CARTES_EN_COURS;
+
+    // Filtre actif (clé d'une carte)
+    activeFilter = signal<string>('ALL');
 
     // IDs des demandes entièrement validées par le DA (bilan + flux VALIDE)
     demandesValideesIds = signal<Set<number>>(new Set());
 
-    // Exclure uniquement les demandes entièrement validées par le DA
+    // Exclure uniquement les demandes entièrement validées par le DA (page « en cours » seulement)
     private demandesSansBilanFlux = computed(() => {
-        const all = this.state().demandeAttentes || [];
+        const all = (this.state().demandeAttentes || []).filter((d) => (this.scope === 'CLOTURES' ? estCloture(d) : !estCloture(d)));
+        if (this.scope === 'CLOTURES') {
+            return all;
+        }
         const valideesIds = this.demandesValideesIds();
         return all.filter(d => {
             const id = d.demandeIndividuelId;
@@ -61,37 +74,23 @@ export class AttenteComponent implements OnInit {
         });
     });
 
-    // Compteurs par statut
-    countEnAttente = computed(() => {
-        return this.demandesSansBilanFlux().filter(d => d.statutDemande === 'EN_ATTENTE' && (!d.validationState || d.validationState === 'NOUVEAU')).length;
+    // Compteurs par carte de filtre
+    compteurs = computed<Record<string, number>>(() => {
+        const all = this.demandesSansBilanFlux();
+        const result: Record<string, number> = {};
+        for (const carte of this.cartes) {
+            result[carte.cle] = all.filter((d) => carte.predicat(d)).length;
+        }
+        return result;
     });
 
-    countAffectation = computed(() => {
-        return this.demandesSansBilanFlux().filter(d => d.validationState === 'SELECTION').length;
-    });
-
-    countRejetee = computed(() => {
-        return this.demandesSansBilanFlux().filter(d => d.statutDemande === 'REJECTED' || d.validationState === 'REJECTED').length;
-    });
+    carteActive = computed<CarteFiltre | undefined>(() => this.cartes.find((c) => c.cle === this.activeFilter()));
 
     // Demandes filtrées, groupées par jour et triées par date décroissante
     filteredDemandes = computed(() => {
         const all = this.demandesSansBilanFlux();
-        let filtered: any[];
-
-        switch (this.activeFilter()) {
-            case 'EN_ATTENTE':
-                filtered = all.filter(d => d.statutDemande === 'EN_ATTENTE' && (!d.validationState || d.validationState === 'NOUVEAU'));
-                break;
-            case 'AFFECTATION':
-                filtered = all.filter(d => d.validationState === 'SELECTION');
-                break;
-            case 'REJETEE':
-                filtered = all.filter(d => d.statutDemande === 'REJECTED' || d.validationState === 'REJECTED');
-                break;
-            default:
-                filtered = [...all];
-        }
+        const carte = this.carteActive();
+        const filtered: any[] = carte && carte.cle !== 'ALL' ? all.filter((d) => carte.predicat(d)) : [...all];
 
         return filtered
             .map(d => ({
@@ -110,9 +109,12 @@ export class AttenteComponent implements OnInit {
 
     private userService = inject(UserService);
     private router = inject(Router);
+    private route = inject(ActivatedRoute);
     private destroyRef = inject(DestroyRef);
 
     ngOnInit(): void {
+        this.scope = (this.route.snapshot.data['scope'] as ScopeDossiers) || 'EN_COURS';
+        this.cartes = this.scope === 'CLOTURES' ? CARTES_CLOTURES : CARTES_EN_COURS;
         // Charger les IDs des demandes entièrement validées par le DA
         this.loadDemandesValideesIds();
         // Récupérer les informations de l'utilisateur puis charger les données
@@ -196,7 +198,7 @@ export class AttenteComponent implements OnInit {
 
                     // Si nous avons des paramètres, utiliser la nouvelle méthode
                     if (agenceId || pointVenteId) {
-                        return this.userService.getAllDemandesWithGaranties$(agenceId, pointVenteId);
+                        return this.userService.getAllDemandesWithGaranties$(agenceId, pointVenteId, this.scope);
                     } else {
                         // Sinon, utiliser l'ancienne méthode pour récupérer toutes les demandes
                         return this.userService.getAllDemandeAttente$();
@@ -351,34 +353,21 @@ export class AttenteComponent implements OnInit {
         table.filterGlobal((event.target as HTMLInputElement).value, 'contains');
     }
 
+    /** Libellé d'état (référentiel commun etat-dossier.ts, V148). */
     getStatusLabel(statutDemande: string, validationState: string): string {
-        if (statutDemande === 'EN_ATTENTE' && validationState === 'NOUVEAU') {
-            return 'NOUVELLE DEMANDE';
-        } else if (statutDemande === 'EN_ATTENTE' && validationState === 'SELECTION') {
-            return "EN COURS D'APPROBATION";
-        } else if (statutDemande === 'EN_ATTENTE' && validationState === 'APPROVED') {
-            return 'APPROUVÉE';
-        }
-        return statutDemande;
+        return libelleEtat({ statutDemande, validationState });
     }
 
     getStateValidation(statutDemande: string, validationState: string): string {
-        if (statutDemande === 'EN_ATTENTE' && validationState === 'NOUVEAU') {
-            return 'EN ATTENTE POUR LA SELECTION';
-        } else if (statutDemande === 'EN_ATTENTE' && validationState === 'SELECTION') {
-            return "DEMANDE EN COURS D'APPROBATION PAR L'AGENT";
-        } else if (statutDemande === 'EN_ATTENTE' && validationState === 'APPROVED') {
-            return "DEMANDE APPROUVÉE PAR L'AGENT";
-        }
-        return validationState;
+        return libelleEtat({ statutDemande, validationState });
     }
 
     getStatusSeverity(statutDemande: string, validationState: string): 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast' | undefined {
-        if (validationState === 'APPROVED') return 'success';
-        if (statutDemande === 'EN_ATTENTE') return 'info';
-        if (statutDemande === 'REJECTED' || validationState === 'REJECTED') return 'danger';
-        if (validationState === 'SELECTION') return 'warn';
-        return 'secondary';
+        return severiteEtat({ statutDemande, validationState });
+    }
+
+    titrePage(): string {
+        return this.scope === 'CLOTURES' ? 'Dossiers clôturés (approuvés et rejetés)' : 'Dossiers de crédit en cours';
     }
 
     viewDetailDemandeAttente(demandeindividuel_id: number) {

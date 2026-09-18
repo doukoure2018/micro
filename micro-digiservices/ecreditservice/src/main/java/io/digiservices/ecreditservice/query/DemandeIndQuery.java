@@ -594,6 +594,10 @@ public class DemandeIndQuery {
     public static final String CALL_GET_ALL_DEMANDES_WITH_GARANTIES_FUNC =
             "SELECT * FROM get_all_demandes_with_garanties(CAST(? AS BIGINT), CAST(? AS BIGINT), CAST(? AS BIGINT))";
 
+    // V148 : 4e parametre = perimetre d'etat : EN_COURS (ni rejete ni VALIDATED_FINAL), CLOTURES, TOUS
+    public static final String CALL_GET_ALL_DEMANDES_WITH_GARANTIES_SCOPE_FUNC =
+            "SELECT * FROM get_all_demandes_with_garanties(CAST(? AS BIGINT), CAST(? AS BIGINT), CAST(? AS BIGINT), CAST(? AS TEXT))";
+
 
     public static final String GET_INSTANCE_DEMANDE_INDIVIDUEL_BY_ID_QUERY =
                     """
