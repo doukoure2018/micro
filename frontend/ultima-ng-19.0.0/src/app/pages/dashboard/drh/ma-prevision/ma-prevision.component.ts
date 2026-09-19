@@ -71,9 +71,22 @@ const MOIS_NOMS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juill
                 </div>
             </div>
 
-            <div *ngIf="!contexte()?.estMembre" class="p-3 border-round mb-4"
-                 style="background:var(--yellow-50);border:1px solid var(--yellow-300)">
-                Vous n'êtes affecté à aucun département : contactez la DRH pour votre affectation avant de saisir une prévision.
+            <div *ngIf="contexte() && !contexte()?.estMembre" class="p-3 border-round mb-4 flex items-start gap-3"
+                 style="background:var(--orange-50);border:1px solid var(--orange-300)">
+                <i class="pi pi-lock text-xl" style="color:var(--orange-600)"></i>
+                <div>
+                    <div class="font-semibold" style="color:var(--orange-800)">{{ MESSAGE_NON_AFFECTE }}</div>
+                    <div class="text-sm mt-1" style="color:var(--orange-700)">
+                        Le calendrier reste en lecture seule tant que la DRH ne vous a pas affecté(e) à une direction
+                        (écran Organisation). Contactez la DRH pour votre affectation.
+                    </div>
+                </div>
+            </div>
+
+            <div *ngIf="contexte()?.estMembre && !modifiable() && prevision() as p" class="p-3 border-round mb-4 flex items-start gap-3"
+                 style="background:var(--blue-50);border:1px solid var(--blue-300)">
+                <i class="pi pi-info-circle text-xl" style="color:var(--blue-600)"></i>
+                <div class="text-sm" style="color:var(--blue-800)">{{ messageLectureSeule(p.statut) }}</div>
             </div>
 
             <div *ngIf="prevision() as p" class="mb-4 p-3 border-round flex flex-wrap items-center gap-3"
@@ -292,6 +305,9 @@ export class MaPrevisionComponent implements OnInit {
 
     totalJours = computed(() => this.periodes().reduce((s, p) => s + (p.nbJours || 0), 0));
 
+    /** Message affiché quand l'agent n'est affecté à aucune direction (bandeau + clic sur le calendrier). */
+    readonly MESSAGE_NON_AFFECTE = "Vous devez être affecté(e) à une direction avant de pouvoir sélectionner une tranche de prévision.";
+
     modifiable = computed(() => {
         const p = this.prevision();
         return !!this.contexte()?.estMembre &&
@@ -388,8 +404,33 @@ export class MaPrevisionComponent implements OnInit {
 
     // ==================== Sélection ====================
 
+    /** Pourquoi le calendrier est en lecture seule pour une prévision déjà engagée dans le circuit. */
+    messageLectureSeule(statut: string): string {
+        switch (statut) {
+            case 'SOUMISE':
+                return 'Votre prévision est soumise à votre responsable : elle ne peut plus être modifiée tant qu\'il ne l\'a pas traitée.';
+            case 'ACCEPTEE_RESP':
+            case 'REAJUSTEE_RESP':
+                return 'Votre prévision a été acceptée par votre responsable et attend la validation de la DRH : elle n\'est plus modifiable.';
+            case 'VALIDEE_DRH':
+                return 'Votre prévision est validée par la DRH : elle n\'est plus modifiable. Contactez la DRH pour toute modification.';
+            default:
+                return 'Votre prévision n\'est pas modifiable dans son état actuel.';
+        }
+    }
+
     clicJour(jour: JourCase): void {
-        if (!this.modifiable()) return;
+        if (!this.modifiable()) {
+            // Ne plus ignorer le clic en silence : dire pourquoi la sélection est impossible
+            const p = this.prevision();
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Sélection impossible',
+                detail: !this.contexte()?.estMembre ? this.MESSAGE_NON_AFFECTE : this.messageLectureSeule(p?.statut || ''),
+                life: 6000
+            });
+            return;
+        }
         const debut = this.debutSelection();
         if (!debut) {
             // Cliquer sur une tranche existante la retire
