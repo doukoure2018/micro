@@ -507,7 +507,7 @@ public class WorkflowResource {
     @GetMapping("/mes-receptions")
     public ResponseEntity<Response> getMesReceptions(Authentication authentication, HttpServletRequest httpRequest) {
         var user = userClient.getUserByUuid(authentication.getName());
-        requireFonctionAccueil(user);
+        requireAccueilOuAgentCredit(user);
         var result = workflowService.getMesReceptions(user.getUserId());
         return ResponseEntity.ok(
                 getResponse(httpRequest, Map.of("workflowDemandes", result), "Receptions recuperees", OK));
@@ -519,7 +519,7 @@ public class WorkflowResource {
             Authentication authentication,
             HttpServletRequest httpRequest) {
         var user = userClient.getUserByUuid(authentication.getName());
-        requireFonctionAccueil(user);
+        requireAccueilOuAgentCredit(user);
         workflowService.rediligenterAccueil(demandeId, user.getUserId());
         return ResponseEntity.ok(
                 getResponse(httpRequest, Map.of("message", "Demande rediligentee"),
@@ -634,6 +634,17 @@ public class WorkflowResource {
     private void requireDA(io.digiservices.clients.domain.User user) {
         if (!"DA".equals(user.getRole()) || user.getAgenceId() == null) {
             throw new ApiException("Acces reserve au Directeur d'Agence");
+        }
+    }
+
+    /**
+     * V149 : suivi et rediligence de SES saisies — ouvert a tout AGENT_CREDIT (la requete impose
+     * saisie_par = utilisateur), meme si sa fonction ACCUEIL a ete desactivee entre-temps ; sinon
+     * un dossier renvoye a l'accueil par le DA n'etait plus corrigeable par personne.
+     */
+    private void requireAccueilOuAgentCredit(io.digiservices.clients.domain.User user) {
+        if (user == null || !("AGENT_ACCUEIL".equals(user.getRole()) || "AGENT_CREDIT".equals(user.getRole()))) {
+            throw new ApiException("Acces reserve aux agents d'accueil et de credit");
         }
     }
 

@@ -104,9 +104,9 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
     }
 
     @Override
-    public void updateStatutDemandeInd(Long demandeindividuel_id, String statut, String codUsuarios) {
+    public int updateStatutDemandeInd(Long demandeindividuel_id, String statut, String codUsuarios) {
         try {
-            jdbcClient.sql(UPDATE_STATUT_DEMANDE).params(Map.of("demandeindividuel_id",demandeindividuel_id,"statut",statut,"codUsuarios",codUsuarios)).update();
+            return jdbcClient.sql(UPDATE_STATUT_DEMANDE).params(Map.of("demandeindividuel_id",demandeindividuel_id,"statut",statut,"codUsuarios",codUsuarios)).update();
         } catch (EmptyResultDataAccessException exception) {
             log.error(exception.getMessage());
             throw new ApiException("No demandeInd found by email");
@@ -803,10 +803,12 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
             rollbackQuietly(connection);
             return DemandeResponse.error("Aucun résultat retourné par la procédure");
 
-        } catch (SQLException e) {
+        } catch (SQLException | RuntimeException e) {
+            // RuntimeException (ex. NPE sur un champ groupe manquant) : sans ce rollback explicite, la
+            // restauration de l'autocommit pouvait valider une demande sans son extension groupe
             rollbackQuietly(connection);
-            log.error("Erreur SQL lors de la création de la demande: {}", e.getMessage(), e);
-            return DemandeResponse.error("Erreur SQL: " + e.getMessage());
+            log.error("Erreur lors de la création de la demande: {}", e.getMessage(), e);
+            return DemandeResponse.error("Erreur base de données : " + e.getMessage());
         } finally {
             closeQuietly(rs);
             closeQuietly(stmt);
@@ -1338,6 +1340,12 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
             demande.setAdresseLieuActivite((String) demandeMap.get("adresse_lieu_activite"));
             demande.setAutreActivite((String) demandeMap.get("autre_activite"));
             demande.setLieuActivite((String) demandeMap.get("lieu_activite"));
+
+            // Circuit accueil (V149) : saisissant et motif de renvoi du DA, pour que le saisissant
+            // puisse corriger et rediligenter depuis le détail
+            demande.setSaisiePar(getLongValue(demandeMap, "saisie_par"));
+            demande.setSaisieParRole((String) demandeMap.get("saisie_par_role"));
+            demande.setMotifAnnulationDa((String) demandeMap.get("motif_annulation_da"));
 
             // Modalités financières
             demande.setMontantDemande(getBigDecimalValue(demandeMap, "montant_demande"));

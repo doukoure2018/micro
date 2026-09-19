@@ -16,12 +16,12 @@ export type EtapeDossier = 'RECEPTION' | 'ANALYSE' | 'CORRECTION' | 'APPROBATION
 const ETAPES: Record<string, EtapeDossier> = {
     // Accueil / affectation par le DA
     EN_ATTENTE_DA: 'RECEPTION',
-    CORRECTION_ACCUEIL: 'RECEPTION',
     NOUVEAU: 'RECEPTION',
     // Chez l'agent de crédit
     AFFECTEE: 'ANALYSE',
     SELECTION: 'ANALYSE',
-    // Renvoyé à l'agent pour correction
+    // Renvoyé pour correction (au saisissant par le DA, ou à l'agent par la hiérarchie)
+    CORRECTION_ACCUEIL: 'CORRECTION',
     CORRECTION: 'CORRECTION',
     CORRECTION_DR: 'CORRECTION',
     CORRECTION_DE: 'CORRECTION',
@@ -38,7 +38,7 @@ const ETAPES: Record<string, EtapeDossier> = {
 
 const LIBELLES: Record<string, string> = {
     EN_ATTENTE_DA: 'Reçue, à affecter par le DA',
-    CORRECTION_ACCUEIL: "Retournée à l'accueil",
+    CORRECTION_ACCUEIL: 'À corriger (renvoi du DA au saisissant)',
     NOUVEAU: 'Nouvelle demande',
     AFFECTEE: 'Affectée à un agent',
     SELECTION: "En analyse par l'agent",
@@ -57,7 +57,7 @@ const LIBELLES: Record<string, string> = {
 
 const SEVERITES: Record<string, SeveriteTag> = {
     EN_ATTENTE_DA: 'secondary',
-    CORRECTION_ACCUEIL: 'secondary',
+    CORRECTION_ACCUEIL: 'danger',
     NOUVEAU: 'secondary',
     AFFECTEE: 'info',
     SELECTION: 'info',
@@ -116,7 +116,7 @@ export const CARTES_EN_COURS: CarteFiltre[] = [
     { cle: 'ALL', libelle: 'Toutes en cours', description: 'Dossiers en traitement', icone: 'pi-list', couleur: 'primary', predicat: () => true },
     { cle: 'RECEPTION', libelle: 'À affecter', description: 'Reçues, en attente du DA', icone: 'pi-inbox', couleur: 'gray', predicat: (d) => etapeDossier(d) === 'RECEPTION' },
     { cle: 'ANALYSE', libelle: "En analyse", description: "Chez l'agent de crédit", icone: 'pi-user-edit', couleur: 'blue', predicat: (d) => etapeDossier(d) === 'ANALYSE' },
-    { cle: 'CORRECTION', libelle: 'À corriger', description: "Retournées à l'agent", icone: 'pi-undo', couleur: 'red', predicat: (d) => etapeDossier(d) === 'CORRECTION' },
+    { cle: 'CORRECTION', libelle: 'À corriger', description: 'Renvoyées pour correction', icone: 'pi-undo', couleur: 'red', predicat: (d) => etapeDossier(d) === 'CORRECTION' },
     { cle: 'APPROBATION', libelle: 'En approbation', description: 'DA → DR → DE → DG', icone: 'pi-sitemap', couleur: 'orange', predicat: (d) => etapeDossier(d) === 'APPROBATION' }
 ];
 

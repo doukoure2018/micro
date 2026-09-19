@@ -63,7 +63,7 @@ import { TooltipModule } from 'primeng/tooltip';
                                     icon="pi pi-pencil"
                                     class="p-button-sm p-button-outlined"
                                     pTooltip="Corriger la demande"
-                                    [routerLink]="['/dashboards/agent-credit/correction-demande', d.demandeIndividuelId]"
+                                    [routerLink]="lienCorrection(d)"
                                 ></button>
                                 <button
                                     *ngIf="d.validationState === 'CORRECTION_ACCUEIL'"
@@ -110,6 +110,13 @@ export class MesReceptionsComponent implements OnInit {
                     this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || 'Chargement impossible', life: 5000 });
                 }
             });
+    }
+
+    /** V149 : une demande groupe se corrige dans le formulaire groupe (le formulaire individuel ne connaît pas cette nature). */
+    lienCorrection(d: any): any[] {
+        return (d.natureClient || '').includes('Groupe')
+            ? ['/dashboards/agent-credit/demande-groupe', d.demandeIndividuelId]
+            : ['/dashboards/agent-credit/correction-demande', d.demandeIndividuelId];
     }
 
     rediligenter(d: any): void {

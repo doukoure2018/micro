@@ -376,6 +376,10 @@ export interface DemandeIndividuel {
     echeance?: number;
     /** Date d'octroi prévue (V147, ISO yyyy-MM-dd) : référence de l'échéancier prévisionnel. */
     dateOctroiPrevue?: string | null;
+    /** V149 : saisissant (circuit accueil) et motif du renvoi à l'accueil par le DA. */
+    saisiePar?: number | null;
+    saisieParRole?: string | null;
+    motifAnnulationDa?: string | null;
     objectCredit: ObjectCredit;
     detailObjectCredit: string;
     statutCredit: 'Nouveau' | 'Renouvellement';

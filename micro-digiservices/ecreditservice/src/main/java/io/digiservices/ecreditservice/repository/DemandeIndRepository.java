@@ -14,7 +14,7 @@ public interface DemandeIndRepository {
 
     List<DemandeIndividuel> getListDemandeAttenteNotification(Long pointventeId,Long agenceId);
 
-    void updateStatutDemandeInd(Long demandeindividuel_id, String statut, String codUsuarios);
+    int updateStatutDemandeInd(Long demandeindividuel_id, String statut, String codUsuarios);
 
     /** Nature client actuelle d'une demande, null si demande inconnue. */
     String getNatureClient(Long demandeindividuelId);

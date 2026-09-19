@@ -63,7 +63,11 @@ public class DemandeIndServiceImpl implements DemandeIndService {
             analyseChargesFonctionnaireService.verifierFinancableSiFonctionnaire(demandeindividuel_id);
             analyseCreditAgricoleService.verifierFinancableSiGroupeAgricole(demandeindividuel_id);
         }
-        demandeIndRepository.updateStatutDemandeInd(demandeindividuel_id,statut,codUsuarios);
+        int rows = demandeIndRepository.updateStatutDemandeInd(demandeindividuel_id,statut,codUsuarios);
+        if (rows == 0) {
+            throw new ValidationException("Approbation impossible : le dossier n'est pas en cours d'instruction chez l'agent "
+                    + "(déjà approuvé, en validation hiérarchique, non pris en charge, renvoyé à l'accueil ou rejeté)");
+        }
     }
 
     @Override

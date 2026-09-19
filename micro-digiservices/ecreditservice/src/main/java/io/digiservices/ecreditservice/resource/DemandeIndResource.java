@@ -98,6 +98,11 @@ public class DemandeIndResource {
             // Validation des nouveaux champs obligatoires selon la nature du client
             validateNewFields(demandeIndividuel);
 
+            // Groupe solidaire : contrôle complet de l'extension (type, mandataires, membres, longueurs)
+            // AVANT l'insertion. Sans lui, une contrainte de demande_groupe/membre_groupe faisait échouer
+            // l'insertion après la demande principale (rollback) tout en renvoyant un succès (analyse 2026-09-19).
+            CreditGroupeValidator.validateDemande(demandeIndividuel);
+
             // Une demande GROUPE suit le meme circuit que le particulier : saisie ->
             // EN_ATTENTE_DA -> affectation par le DA -> prise en charge par l'agent.
             // Le circuit est impose ici (cote serveur), quel que soit le payload.
@@ -114,7 +119,15 @@ public class DemandeIndResource {
 
             DemandeResponse result = demandeIndService.addDemandeIndWithGaranties(demandeIndividuel);
 
-            if (isGroupe && result.isSuccess() && saisissant != null) {
+            if (!result.isSuccess() || result.getDemandeId() == null || result.getDemandeId() <= 0) {
+                // Jamais de 201 sur une insertion annulée : l'agent doit voir l'échec et ressaisir
+                log.error("Création de demande refusée par la base (nature={}, membre={}) : {}",
+                        demandeIndividuel.getNatureClient(), demandeIndividuel.getNumeroMembre(), result.getMessage());
+                throw new ValidationException("La demande n'a PAS été enregistrée : "
+                        + (result.getMessage() == null ? "erreur inconnue" : result.getMessage()));
+            }
+
+            if (isGroupe && saisissant != null) {
                 // Trace du saisissant (saisie_par) : indispensable au retour accueil
                 // (annulation DA -> CORRECTION_ACCUEIL -> rediligence par le saisissant)
                 workflowService.marquerReception(result.getDemandeId(), saisissant.getUserId(),
@@ -473,14 +486,60 @@ public class DemandeIndResource {
                                           Map.of("demandeAttentes",demandeIndService.getListDemandeCreditByDate(utilisateur.getPointventeId(), utilisateur.getUserId())), "Liste des demandes en attente", OK));
     }
 
+    /**
+     * Approbation d'une demande par l'agent de crédit (bouton « Approuver la demande »).
+     * V149 : ce point d'entrée n'accepte plus qu'APPROVED, par un AGENT_CREDIT, sur un dossier en cours
+     * d'instruction, et seulement si le dossier est complet (ce que le DA exige pour valider) — un dossier
+     * approuvé incomplet restait bloqué chez le DA sans bouton de validation (analyse 2026-09-19).
+     */
     @PatchMapping("/update/{statut}/{codUsuarios}/{demandeindividuel_id}")
     public ResponseEntity<Response> updateDemandeInd(@NotNull Authentication authentication,
                                                      @PathVariable(name = "statut") String statut,
                                                      @PathVariable(name = "codUsuarios") String codUsuarios,
                                                      @PathVariable(name = "demandeindividuel_id") Long demandeindividuel_id,
                                                      HttpServletRequest request) {
+        if (!"APPROVED".equals(statut)) {
+            throw new ValidationException("Seule l'approbation (APPROVED) par l'agent de crédit est autorisée ici");
+        }
+        User utilisateur = userClient.getUserByUuid(authentication.getName());
+        if (utilisateur == null || !"AGENT_CREDIT".equals(utilisateur.getRole())) {
+            throw new ValidationException("Seul l'agent de crédit en charge du dossier peut l'approuver");
+        }
+        verifierDossierCompletAvantApprobation(demandeindividuel_id);
         demandeIndService.updateStatutDemandeInd(demandeindividuel_id,statut,codUsuarios);
         return created(getUri()).body(getResponse(request, emptyMap(), "Mise à jour effectué avec Success", OK));
+    }
+
+    /**
+     * Même règle que le bloc « Validation hiérarchique DA » du détail : dossier de crédit constitué, et
+     * analyse financière soumise quand le bilan est requis (montant >= 50 M). Les natures Fonctionnaire,
+     * groupe CFE et groupes agricoles CAS / CAS-R ont leurs propres contrôles (analyse charges, analyse agricole).
+     */
+    private void verifierDossierCompletAvantApprobation(Long demandeId) {
+        DemandeIndividuel demande = demandeIndService.getDemandeWithGaranties(demandeId);
+        if (CreditFonctionnaireValidator.isFonctionnaire(demande) || estGroupeCfe(demande)
+                || CreditGroupeValidator.isGroupeAgricole(demande)) {
+            return;
+        }
+        if (analyseService.getDossierByDemandeIndividuelId(demandeId) == null) {
+            throw new ValidationException("Approbation impossible : le dossier de crédit n'est pas encore constitué. "
+                    + "Complétez-le avant d'approuver, sinon le Directeur d'Agence ne pourra pas valider la demande.");
+        }
+        boolean bilanRequis = demande.getMontantDemande() != null
+                && demande.getMontantDemande().compareTo(new java.math.BigDecimal("50000000")) >= 0;
+        if (bilanRequis) {
+            AnalyseFinanciereDto analyse = null;
+            try {
+                analyse = analyseFinanciereService.getAnalyseByDemandeId(demandeId);
+            } catch (Exception e) {
+                log.debug("Aucune analyse financiere pour la demande {}", demandeId);
+            }
+            String statutAnalyse = analyse != null ? analyse.getStatut() : null;
+            if (!"SOUMISE".equals(statutAnalyse) && !"VALIDEE".equals(statutAnalyse)) {
+                throw new ValidationException("Approbation impossible : pour un montant de 50 000 000 GNF ou plus, "
+                        + "l'analyse financière (bilan et flux de trésorerie) doit être soumise avant l'approbation.");
+            }
+        }
     }
 
     /**
