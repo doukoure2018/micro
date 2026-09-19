@@ -170,6 +170,14 @@ export class AppMenu {
                     routerLink: ['/dashboards/accueil/mes-receptions']
                 }
             );
+        } else if (this.role === 'AGENT_CREDIT') {
+            // V149 : un agent dont la fonction accueil a été retirée garde le suivi (et la correction)
+            // de ses propres saisies renvoyées par le DA
+            items.push({
+                label: 'Mes demandes réceptionnées',
+                icon: 'pi pi-fw pi-list-check',
+                routerLink: ['/dashboards/accueil/mes-receptions']
+            });
         }
         if (this.role === 'AGENT_CREDIT') {
             items.push({

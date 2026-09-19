@@ -70,6 +70,14 @@ public final class CreditGroupeValidator {
         if (isBlank(groupe.getMandataire1()) || isBlank(groupe.getContactMandataire1())) {
             throw new ValidationException("Le mandataire 1 et son contact sont obligatoires");
         }
+        // Longueurs des colonnes demande_groupe (V124) : un dépassement faisait échouer l'insertion en base
+        limiter(groupe.getNomGroupe(), 150, "Le nom du groupe");
+        limiter(groupe.getDistrictQuartier(), 150, "Le district / quartier");
+        limiter(groupe.getSecteur(), 150, "Le secteur");
+        limiter(groupe.getMandataire1(), 150, "Le nom du mandataire 1");
+        limiter(groupe.getMandataire2(), 150, "Le nom du mandataire 2");
+        limiter(groupe.getContactMandataire1(), 30, "Le contact du mandataire 1");
+        limiter(groupe.getContactMandataire2(), 30, "Le contact du mandataire 2");
 
         List<MembreGroupe> membres = demande.getMembresGroupe();
         if (membres == null || membres.isEmpty()) {
@@ -85,6 +93,8 @@ public final class CreditGroupeValidator {
             if (isBlank(membre.getNumeroMembre()) || isBlank(membre.getNomPrenom())) {
                 throw new ValidationException("Chaque membre doit avoir un numéro de membre et un nom");
             }
+            limiter(membre.getNumeroMembre(), 30, "Le numéro du membre " + membre.getNumeroMembre());
+            limiter(membre.getNomPrenom(), 150, "Le nom du membre " + membre.getNumeroMembre());
             if (membre.getMontantPercevoir() == null || membre.getMontantPercevoir().signum() <= 0) {
                 throw new ValidationException("Le montant à percevoir du membre " + membre.getNumeroMembre()
                         + " doit être supérieur à zéro");
@@ -102,5 +112,11 @@ public final class CreditGroupeValidator {
 
     private static boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
+    }
+
+    private static void limiter(String valeur, int max, String libelle) {
+        if (valeur != null && valeur.length() > max) {
+            throw new ValidationException(libelle + " dépasse " + max + " caractères (" + valeur.length() + ")");
+        }
     }
 }

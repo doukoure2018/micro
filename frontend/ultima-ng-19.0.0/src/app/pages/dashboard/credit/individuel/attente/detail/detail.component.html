@@ -885,6 +885,34 @@
                 correction — elle vous reviendra après rediligence.</span>
         </div>
 
+        <!-- V149 : le saisissant voit le motif du DA, corrige (formulaire groupe ou individuel) et rediligente -->
+        <div *ngIf="estSaisissantEnCorrectionAccueil()"
+            class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-orange-300 mb-8">
+            <div class="bg-orange-500 text-white px-6 py-4 flex items-center gap-3">
+                <i class="pi pi-undo text-xl"></i>
+                <span class="font-bold text-lg uppercase tracking-wide">Demande renvoyée par le Directeur d'Agence — à corriger</span>
+            </div>
+            <div class="p-6">
+                <div class="bg-orange-50 border-l-4 border-orange-400 rounded-r-lg p-5 mb-6">
+                    <div class="text-sm text-orange-700 font-semibold mb-1">Motif du DA</div>
+                    <div class="text-orange-900">{{ state().demandeIndividuel?.motifAnnulationDa || 'Aucun motif saisi' }}</div>
+                </div>
+                <div class="flex flex-wrap justify-center gap-4">
+                    <a [routerLink]="lienCorrectionSaisissant()"
+                        class="inline-flex items-center bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg font-semibold no-underline">
+                        <i class="pi pi-pencil mr-2"></i>Corriger la demande
+                    </a>
+                    <button pButton type="button" icon="pi pi-send" label="Rediligenter (renvoyer au DA)"
+                        [loading]="state().loading" class="bg-green-600 hover:bg-green-700"
+                        (click)="rediligenterAccueil()"></button>
+                </div>
+                <p class="text-center text-sm text-gray-500 mt-4">
+                    Corrigez d'abord les points demandés, puis rediligentez : la demande revient chez le DA
+                    {{ state().demandeIndividuel?.agentCreditAffecte ? "et chez l'agent déjà affecté" : 'pour affectation' }}.
+                </p>
+            </div>
+        </div>
+
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
         <!-- SECTION ANALYSE - AGENT DE CRÉDIT                                      -->
         <!-- ═══════════════════════════════════════════════════════════════════════ -->

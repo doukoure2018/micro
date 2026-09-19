@@ -1354,6 +1354,47 @@ export class DetailComponent {
         return ['EN_ATTENTE_DA', 'AFFECTEE'].includes(vs);
     }
 
+    /** V149 : l'utilisateur connecté a saisi cette demande et le DA l'a renvoyée pour correction. */
+    estSaisissantEnCorrectionAccueil(): boolean {
+        const d = this.state().demandeIndividuel;
+        const userId = this.state().user?.userId;
+        return d?.validationState === 'CORRECTION_ACCUEIL' && !!userId && Number(d?.saisiePar) === Number(userId);
+    }
+
+    /** Correction : formulaire groupe pour une demande groupe, formulaire individuel sinon. */
+    lienCorrectionSaisissant(): any[] {
+        const id = this.state().demandeIndividuel?.demandeIndividuelId;
+        return this.isGroupeNature() ? ['/dashboards/agent-credit/demande-groupe', id] : ['/dashboards/agent-credit/correction-demande', id];
+    }
+
+    /** Après correction : la demande repart chez le DA (ou chez l'agent déjà affecté). */
+    rediligenterAccueil(): void {
+        const demandeId = this.state().demandeIndividuel?.demandeIndividuelId;
+        if (!demandeId) return;
+        this.confirmationService.confirm({
+            message: 'Les corrections demandées par le DA sont-elles faites ? La demande lui sera renvoyée.',
+            header: 'Rediligenter la demande',
+            icon: 'pi pi-send',
+            accept: () => {
+                this.state.update((s) => ({ ...s, loading: true }));
+                this.userService
+                    .rediligenterAccueil$(+demandeId)
+                    .pipe(takeUntilDestroyed(this.destroyRef))
+                    .subscribe({
+                        next: () => {
+                            this.state.update((s) => ({ ...s, loading: false }));
+                            this.messageService.add({ severity: 'success', summary: 'Demande rediligentée', detail: "La demande est renvoyée au Directeur d'Agence", life: 5000 });
+                            this.loadDemandeWithGaranties();
+                        },
+                        error: (err: any) => {
+                            this.state.update((s) => ({ ...s, loading: false }));
+                            this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err?.message || err || 'Échec de la rediligence', life: 6000 });
+                        }
+                    });
+            }
+        });
+    }
+
     ouvrirRenvoiAccueil(): void {
         this.motifRenvoiAccueil = '';
         this.state.update(this.mergeState({ showRenvoiAccueil: true }));

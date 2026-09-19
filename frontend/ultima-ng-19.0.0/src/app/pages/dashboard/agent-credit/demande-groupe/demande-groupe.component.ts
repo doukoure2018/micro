@@ -568,10 +568,16 @@ export class DemandeGroupeComponent implements OnInit {
             .subscribe({
                 next: (response) => {
                     const demandeId = (response.data as any)?.demandeId;
+                    if ((response.data as any)?.success === false || !demandeId) {
+                        // Garde-fou : le backend renvoie désormais une erreur, mais on n'affiche jamais un succès sans identifiant
+                        this.state.update((s) => ({ ...s, submitting: false }));
+                        this.messageService.add({ severity: 'error', summary: 'Demande NON enregistrée', detail: (response.data as any)?.message || response.message || 'La création a échoué, vérifiez la saisie', life: 10000 });
+                        return;
+                    }
                     this.messageService.add({
                         severity: 'success',
                         summary: 'Succès',
-                        detail: `Demande groupe créée et transmise au Directeur d'Agence pour affectation. ID: ${demandeId || 'N/A'}`,
+                        detail: `Demande groupe créée et transmise au Directeur d'Agence pour affectation. ID: ${demandeId}`,
                         life: 5000
                     });
                     this.state.update((s) => ({ ...s, submitting: false }));

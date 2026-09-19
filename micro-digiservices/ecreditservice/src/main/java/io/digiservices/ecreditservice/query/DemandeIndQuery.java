@@ -115,7 +115,18 @@ public class DemandeIndQuery {
                       AND (statut_demande = 'EN_ATTENTE' OR validation_state = 'APPROVED')
             """;
 
-    public static final String UPDATE_STATUT_DEMANDE =  "UPDATE demandeIndividuel SET validation_state = :statut, cod_usuarios = :codUsuarios WHERE demandeIndividuel_id = :demandeindividuel_id";
+    /**
+     * Approbation par l'agent de crédit. V149 : garde d'état — pas d'approbation d'un dossier déjà dans le
+     * circuit hiérarchique, pas encore pris en charge (EN_ATTENTE_DA / AFFECTEE), renvoyé à l'accueil ou rejeté.
+     */
+    public static final String UPDATE_STATUT_DEMANDE = """
+            UPDATE demandeIndividuel
+            SET validation_state = :statut, cod_usuarios = :codUsuarios
+            WHERE demandeIndividuel_id = :demandeindividuel_id
+              AND COALESCE(validation_state, 'NOUVEAU') NOT IN ('APPROVED', 'VALIDATED_DA', 'VALIDATED_DR', 'PENDING_DG',
+                                                                'VALIDATED_FINAL', 'EN_ATTENTE_DA', 'AFFECTEE', 'CORRECTION_ACCUEIL')
+              AND COALESCE(statut_demande, '') NOT IN ('REJET', 'REJECTED')
+            """;
 
     public static final String SELECT_ALL_DEMANDE_ATTENTE_BY_DATE_QUERY =
                     """

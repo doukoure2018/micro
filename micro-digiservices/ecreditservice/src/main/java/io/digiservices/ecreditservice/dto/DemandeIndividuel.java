@@ -102,6 +102,10 @@ public class DemandeIndividuel {
     // Verrou d'affectation : agent de crédit propriétaire du dossier (+ nom pour l'affichage)
     private Long agentCreditAffecte;
     private String agentAffecteNom;
+    /** V149 : saisissant (circuit accueil) et motif du renvoi à l'accueil par le DA. */
+    private Long saisiePar;
+    private String saisieParRole;
+    private String motifAnnulationDa;
 
     // Extension groupe solidaire (nature Groupe Solidaire) + membres
     private DemandeGroupe demandeGroupe;
