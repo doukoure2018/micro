@@ -939,6 +939,26 @@
                     </div>
                 </div>
 
+                <!-- V152 : dossier affecté, non pris en charge -> prise en charge depuis le détail -->
+                <div *ngIf="estAffecteAMoiNonPrisEnCharge()"
+                    class="mb-6 border-2 border-indigo-400 bg-indigo-50 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <i class="pi pi-inbox text-indigo-600 text-xl"></i>
+                        <div>
+                            <div class="font-bold text-indigo-800">Ce dossier vous a été affecté par le DA</div>
+                            <div class="text-sm text-indigo-700">Prenez-le en charge pour commencer l'instruction : sans cette étape, l'approbation est refusée.</div>
+                        </div>
+                    </div>
+                    <button pButton type="button" icon="pi pi-check" label="Prendre en charge ce dossier"
+                        class="bg-indigo-600 hover:bg-indigo-700 font-bold" [loading]="state().loading"
+                        (click)="prendreEnChargeDepuisDetail()"></button>
+                </div>
+                <div *ngIf="!peutApprouver() && !estAffecteAMoiNonPrisEnCharge() && libelleBlocageApprobation()"
+                    class="mb-6 border border-gray-300 bg-gray-50 rounded-xl p-4 text-gray-700 flex items-center gap-3">
+                    <i class="pi pi-info-circle text-gray-500 text-xl"></i>
+                    <span>{{ libelleBlocageApprobation() }}</span>
+                </div>
+
                 <!-- Bandeau correction demande complète -->
                 <div *ngIf="isDemandeCompleteNeedsCorrection()"
                     class="mb-6 border-2 border-orange-400 bg-orange-50 rounded-xl p-4">
@@ -2157,11 +2177,14 @@
                 <div
                     class="mt-6 text-center p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border-2 border-green-200">
                     <button pButton (click)="approvedDemande(state().demandeIndividuel!)"
-                        [disabled]="!state().userHasAvis || isInCorrectionState()"
+                        [disabled]="!state().userHasAvis || isInCorrectionState() || !peutApprouver()"
                         class="px-10 py-3 font-bold shadow-lg text-base"
-                        [ngClass]="state().userHasAvis && !isInCorrectionState() ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gray-400'"
+                        [ngClass]="state().userHasAvis && !isInCorrectionState() && peutApprouver() ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gray-400'"
                         icon="pi pi-check-circle" label="APPROUVER LA DEMANDE">
                     </button>
+                    <p *ngIf="!peutApprouver()" class="text-orange-600 mt-4 font-medium">
+                        <i class="pi pi-exclamation-triangle mr-2"></i>{{ libelleBlocageApprobation() }}
+                    </p>
                     <p *ngIf="isInCorrectionState()" class="text-orange-600 mt-4 font-medium">
                         <i class="pi pi-exclamation-triangle mr-2"></i>Veuillez d'abord resoumettre les corrections
                         avant d'approuver la demande

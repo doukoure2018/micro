@@ -65,9 +65,32 @@ public class DemandeIndServiceImpl implements DemandeIndService {
         }
         int rows = demandeIndRepository.updateStatutDemandeInd(demandeindividuel_id,statut,codUsuarios);
         if (rows == 0) {
-            throw new ValidationException("Approbation impossible : le dossier n'est pas en cours d'instruction chez l'agent "
-                    + "(déjà approuvé, en validation hiérarchique, pas encore pris en charge, ou renvoyé à l'accueil)");
+            String etat = null;
+            try {
+                etat = demandeIndRepository.getDemandeWithGaranties(demandeindividuel_id).getValidationState();
+            } catch (Exception e) {
+                log.warn("État du dossier {} illisible après refus d'approbation : {}", demandeindividuel_id, e.getMessage());
+            }
+            log.warn("Approbation refusée pour le dossier {} : état actuel {}", demandeindividuel_id, etat);
+            throw new ValidationException(messageRefusApprobation(etat));
         }
+    }
+
+    /** Message métier selon l'état qui empêche l'approbation par l'agent. */
+    private static String messageRefusApprobation(String etat) {
+        if (etat == null) {
+            return "Approbation impossible : dossier introuvable";
+        }
+        return switch (etat) {
+            case "AFFECTEE" -> "Approbation impossible : ce dossier vous est affecté mais n'est pas encore pris en charge. "
+                    + "Cliquez d'abord sur « Prendre en charge » (détail du dossier ou page « Demandes affectées par mon DA »), puis approuvez.";
+            case "EN_ATTENTE_DA" -> "Approbation impossible : ce dossier attend son affectation par le Directeur d'Agence.";
+            case "CORRECTION_ACCUEIL" -> "Approbation impossible : ce dossier a été renvoyé à l'accueil pour correction ; il doit être corrigé puis rediligenté.";
+            case "APPROVED" -> "Ce dossier est déjà approuvé : il est chez le Directeur d'Agence.";
+            case "VALIDATED_DA", "VALIDATED_DR", "PENDING_DG" -> "Approbation impossible : ce dossier est déjà en validation hiérarchique (" + etat + ").";
+            case "VALIDATED_FINAL" -> "Ce dossier est déjà validé au niveau final.";
+            default -> "Approbation impossible : le dossier est à l'état " + etat + ", qui ne permet pas l'approbation par l'agent.";
+        };
     }
 
     @Override
