@@ -451,7 +451,7 @@ export type TypeGarantie = 'Caution Solidaire' | 'Garantie Financiere' | 'Garant
 /**
  * Type pour les objets de crédit
  */
-export type ObjectCredit = 'Fond de roulement' | 'Investissement' | 'Invest+Fond de Roulement' | 'Bon de Commande';
+export type ObjectCredit = 'Fond de roulement' | 'Investissement' | 'Invest+Fond de Roulement' | 'Bon de Commande' | 'Campagne agricole' | 'Autre';
 
 /**
  * Options pour le dropdown de nature client

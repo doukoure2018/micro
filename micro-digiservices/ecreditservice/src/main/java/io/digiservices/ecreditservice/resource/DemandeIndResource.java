@@ -281,7 +281,18 @@ public class DemandeIndResource {
      * @param demande La demande à valider
      * @throws ValidationException Si un champ obligatoire est manquant
      */
+    /** Valeurs acceptées par la contrainte demandeindividuel_object_credit_check (V26 + V151). */
+    private static final java.util.Set<String> OBJETS_CREDIT = java.util.Set.of(
+            "Fond de roulement", "Investissement", "Invest+Fond de Roulement", "Bon de Commande",
+            "Campagne agricole", "Autre");
+
     private void validateNewFields(DemandeIndividuel demande) {
+        // Objet du crédit : message explicite plutôt qu'une violation de contrainte en base
+        if (demande.getObjectCredit() == null || !OBJETS_CREDIT.contains(demande.getObjectCredit())) {
+            throw new ValidationException("Objet du crédit invalide : '" + demande.getObjectCredit()
+                    + "' (attendu : " + String.join(", ", OBJETS_CREDIT) + ")");
+        }
+
         // La préfecture et sous-préfecture sont optionnelles mais si fournies,
         // elles doivent avoir une longueur raisonnable
         if (demande.getPrefecture() != null && demande.getPrefecture().length() > 255) {
