@@ -78,6 +78,7 @@ public class MouvementServiceImpl implements MouvementService {
     private final DrhRepository drhRepository;
     private final DrhService drhService;
     private final SmsService smsService;
+    private final io.digiservices.ecreditservice.service.SalaireService salaireService;
 
     // ==================== Import ====================
 
@@ -934,6 +935,38 @@ public class MouvementServiceImpl implements MouvementService {
     public List<BadgeInconnuDto> badgesInconnus(User drh) {
         exigerDrh(drh);
         return mouvementRepository.badgesInconnus();
+    }
+
+    @Override
+    @Transactional
+    public Map<String, Object> creerPersonneEtAssocier(User drh, String badgeNo, String nom, String prenom) {
+        exigerDrh(drh);
+        if (badgeNo == null || badgeNo.isBlank()) {
+            throw new ValidationException("Numéro de badge manquant");
+        }
+        if (nom == null || nom.isBlank() || prenom == null || prenom.isBlank()) {
+            throw new ValidationException("Le nom et le prénom sont obligatoires");
+        }
+        if (mouvementRepository.matriculePourBadge(badgeNo.strip()).isPresent()) {
+            throw new ValidationException("Ce badge est déjà rattaché à un matricule : utilisez « Associer » pour le modifier");
+        }
+        String matricule = String.valueOf(mouvementRepository.prochainMatriculeTechnique());
+        var personnel = new io.digiservices.ecreditservice.dto.InfoPersonnelDto();
+        personnel.setMatricule(matricule);
+        personnel.setNom(nom.strip().toUpperCase(Locale.ROOT));
+        personnel.setPrenom(prenom.strip());
+        var cree = salaireService.addInfoPersonnel(personnel);
+        if (cree.getId() != null) {
+            salaireService.updateInfoPersonnelBadge(cree.getId(), true); // contrôlé par le rapprochement des présences
+        }
+        int reidentifies = associerBadge(drh, badgeNo, matricule);
+        log.info("Personne créée depuis le badge {} : {} {} (matricule technique {}), {} mouvements ré-identifiés",
+                badgeNo, personnel.getPrenom(), personnel.getNom(), matricule, reidentifies);
+        Map<String, Object> resultat = new HashMap<>();
+        resultat.put("matricule", matricule);
+        resultat.put("id", cree.getId());
+        resultat.put("mouvementsReidentifies", reidentifies);
+        return resultat;
     }
 
     @Override

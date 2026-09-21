@@ -112,6 +112,17 @@ public class MouvementResource {
                 "Badge associé — " + reidentifies + " mouvement(s) ré-identifié(s)", OK));
     }
 
+    /** Personne badgée sans matricule : création dans le fichier du personnel (matricule technique) + association du badge. */
+    @PostMapping("/badges/{badgeNo}/creer-personne")
+    public ResponseEntity<Response> creerPersonneEtAssocier(@PathVariable String badgeNo,
+                                                            @RequestBody Map<String, String> body,
+                                                            Authentication auth, HttpServletRequest req) {
+        var resultat = mouvementService.creerPersonneEtAssocier(user(auth), badgeNo, body.get("nom"), body.get("prenom"));
+        return ResponseEntity.ok(getResponse(req, resultat,
+                "Personne créée (matricule " + resultat.get("matricule") + ") et badge associé — "
+                        + resultat.get("mouvementsReidentifies") + " mouvement(s) ré-identifié(s)", OK));
+    }
+
     @ExceptionHandler(ValidationException.class)
     public ResponseEntity<Response> handleValidation(ValidationException e, HttpServletRequest req) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(getResponse(req,

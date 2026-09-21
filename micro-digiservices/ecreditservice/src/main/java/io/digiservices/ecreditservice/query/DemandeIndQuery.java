@@ -121,11 +121,13 @@ public class DemandeIndQuery {
      */
     public static final String UPDATE_STATUT_DEMANDE = """
             UPDATE demandeIndividuel
-            SET validation_state = :statut, cod_usuarios = :codUsuarios
+            SET validation_state = :statut, cod_usuarios = :codUsuarios,
+                -- dossier rejeté par l'ancien circuit (statut REJET) puis corrigé par l'agent : il repart chez le DA
+                statut_demande = CASE WHEN COALESCE(statut_demande, '') IN ('REJET', 'REJECTED') THEN 'EN_ATTENTE'
+                                      ELSE statut_demande END
             WHERE demandeIndividuel_id = :demandeindividuel_id
               AND COALESCE(validation_state, 'NOUVEAU') NOT IN ('APPROVED', 'VALIDATED_DA', 'VALIDATED_DR', 'PENDING_DG',
                                                                 'VALIDATED_FINAL', 'EN_ATTENTE_DA', 'AFFECTEE', 'CORRECTION_ACCUEIL')
-              AND COALESCE(statut_demande, '') NOT IN ('REJET', 'REJECTED')
             """;
 
     public static final String SELECT_ALL_DEMANDE_ATTENTE_BY_DATE_QUERY =

@@ -4,6 +4,7 @@ import * as XLSX from 'xlsx';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
 import { CalendarModule } from 'primeng/calendar';
 import { DropdownModule } from 'primeng/dropdown';
 import { InputTextModule } from 'primeng/inputtext';
@@ -31,7 +32,7 @@ interface BarreAffluence {
 @Component({
     selector: 'app-mouvements',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, CalendarModule, DropdownModule, InputTextModule, SelectButtonModule, TableModule, TagModule, ToastModule, TooltipModule],
+    imports: [CommonModule, FormsModule, ButtonModule, CalendarModule, DialogModule, DropdownModule, InputTextModule, SelectButtonModule, TableModule, TagModule, ToastModule, TooltipModule],
     providers: [MessageService],
     template: `
         <p-toast />
@@ -410,6 +411,8 @@ interface BarreAffluence {
                         <div class="p-2 border-round mb-2 text-sm" style="background:var(--yellow-50);border:1px solid var(--yellow-300)">
                             Badges vus à la porte sans matricule reconnu (homonymes, orthographes différentes).
                             Associez-les une fois : les mouvements passés et futurs seront identifiés.
+                            Si la personne n'est pas dans le fichier du personnel, « Créer la personne » l'y ajoute avec un
+                            matricule technique (90001 et suivants) et rattache le badge en une fois.
                         </div>
                         <p-table [value]="badgesInconnus()" responsiveLayout="scroll" [paginator]="true" [rows]="10">
                             <ng-template pTemplate="header">
@@ -426,9 +429,14 @@ interface BarreAffluence {
                                                     placeholder="Personnel…" [style]="{ minWidth: '220px' }" appendTo="body" />
                                     </td>
                                     <td>
-                                        <button pButton icon="pi pi-link" class="p-button-sm" label="Associer"
-                                                [disabled]="!associations[b.badgeNo]"
-                                                (click)="associer(b.badgeNo)"></button>
+                                        <div class="flex gap-1">
+                                            <button pButton icon="pi pi-link" class="p-button-sm" label="Associer"
+                                                    [disabled]="!associations[b.badgeNo]"
+                                                    (click)="associer(b.badgeNo)"></button>
+                                            <button pButton icon="pi pi-user-plus" class="p-button-sm p-button-outlined" label="Créer la personne"
+                                                    pTooltip="Absent du fichier du personnel : créer avec un matricule technique et rattacher ce badge"
+                                                    (click)="ouvrirCreationPersonne(b)"></button>
+                                        </div>
                                     </td>
                                 </tr>
                             </ng-template>
@@ -437,6 +445,29 @@ interface BarreAffluence {
                             </ng-template>
                         </p-table>
                     </div>
+                    <p-dialog header="Créer la personne et rattacher le badge" [(visible)]="creationPersonne.visible" [modal]="true" [style]="{ width: '480px' }">
+                        <div class="flex flex-col gap-3">
+                            <div class="text-sm text-color-secondary">
+                                Nom lu à la porte : <b>{{ creationPersonne.nomBrut }}</b> — badge {{ creationPersonne.badgeNo }}.
+                                Un matricule technique (90001 et suivants) sera attribué ; remplacez-le dans Gestion du personnel
+                                quand la paie en attribuera un.
+                            </div>
+                            <div>
+                                <label class="block mb-1 font-medium">Prénom *</label>
+                                <input pInputText [(ngModel)]="creationPersonne.prenom" class="w-full" maxlength="100" />
+                            </div>
+                            <div>
+                                <label class="block mb-1 font-medium">Nom *</label>
+                                <input pInputText [(ngModel)]="creationPersonne.nom" class="w-full" maxlength="100" />
+                            </div>
+                        </div>
+                        <ng-template pTemplate="footer">
+                            <button pButton label="Annuler" class="p-button-text" (click)="creationPersonne.visible = false"></button>
+                            <button pButton label="Créer et rattacher" icon="pi pi-user-plus"
+                                    [disabled]="!creationPersonne.nom.trim() || !creationPersonne.prenom.trim()"
+                                    [loading]="creationPersonne.enCours" (click)="creerPersonne()"></button>
+                        </ng-template>
+                    </p-dialog>
                     <div class="col-12 lg:col-6">
                         <h5>Correspondances badge → matricule</h5>
                         <div class="mb-2">
@@ -822,6 +853,36 @@ export class MouvementsComponent implements OnInit {
                 });
             }
         }
+    }
+
+    /** V152 : création d'une personne (matricule technique) depuis un badge non rattaché. */
+    creationPersonne = { visible: false, badgeNo: '', nomBrut: '', nom: '', prenom: '', enCours: false };
+
+    ouvrirCreationPersonne(b: any): void {
+        const mots = String(b.nomBrut || '').trim().split(/\s+/).filter(Boolean);
+        // Heuristique : dernier mot = nom, le reste = prénom(s) ; modifiable dans le dialogue
+        const nom = mots.length > 1 ? mots[mots.length - 1] : mots[0] || '';
+        const prenom = mots.length > 1 ? mots.slice(0, -1).join(' ') : '';
+        this.creationPersonne = { visible: true, badgeNo: b.badgeNo, nomBrut: b.nomBrut, nom, prenom, enCours: false };
+    }
+
+    creerPersonne(): void {
+        const c = this.creationPersonne;
+        if (!c.nom.trim() || !c.prenom.trim()) return;
+        c.enCours = true;
+        this.drhService.creerPersonneEtAssocierBadge$(c.badgeNo, c.nom.trim(), c.prenom.trim()).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: (r) => {
+                c.enCours = false;
+                c.visible = false;
+                this.messageService.add({ severity: 'success', summary: 'Personne créée et badge rattaché', detail: r.message || 'Fait', life: 8000 });
+                this.personnel.set([]); // la liste déroulante se rechargera avec la nouvelle personne
+                this.charger();
+            },
+            error: (e) => {
+                c.enCours = false;
+                this.erreur(e);
+            }
+        });
     }
 
     associer(badgeNo: string): void {

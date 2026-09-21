@@ -52,4 +52,11 @@ public interface MouvementService {
 
     /** Alerte DRH quotidienne (17h15, 13h15 le vendredi, 14h15 le samedi) : agents au-dessus du seuil de badgeages du jour. */
     int alerterMouvementsJour();
+
+    /**
+     * Personne badgée absente du fichier du personnel : création avec un matricule technique (90001+),
+     * badge siège activé, puis association du badge (mouvements passés ré-identifiés).
+     * @return {matricule, id, mouvementsReidentifies}
+     */
+    java.util.Map<String, Object> creerPersonneEtAssocier(User drh, String badgeNo, String nom, String prenom);
 }
