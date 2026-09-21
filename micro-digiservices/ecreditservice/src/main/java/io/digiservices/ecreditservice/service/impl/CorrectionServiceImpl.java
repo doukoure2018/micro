@@ -279,6 +279,13 @@ public class CorrectionServiceImpl implements CorrectionService {
         if (pp.getIndSexo() != null && !pp.getIndSexo().matches("[MF]")) {
             throw new IllegalArgumentException("Le sexe doit être M ou F");
         }
+
+        // Longueurs de la fiche SAF : conjoint / bénéficiaire (message explicite au lieu d'une troncature ou d'un refus)
+        String longueurs = io.digiservices.ecreditservice.validation.LongueursSaf.message(
+                pp.getConjoint(), pp.getNomBeneficiario(), pp.getRelacBeneficiario());
+        if (longueurs != null) {
+            throw new IllegalArgumentException(longueurs);
+        }
     }
 
     private void validateMotifCorrection(MotifCorrection motif) {

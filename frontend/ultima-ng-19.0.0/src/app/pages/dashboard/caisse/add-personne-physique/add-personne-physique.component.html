@@ -143,7 +143,13 @@
 
                     <div class="col-12 md:col-4">
                         <label for="conjoint">Conjoint</label>
-                        <input id="conjoint" type="text" pInputText formControlName="conjoint" class="w-full" />
+                        <input id="conjoint" type="text" pInputText formControlName="conjoint" class="w-full" maxlength="15" />
+                        <small class="text-muted" *ngIf="!f['conjoint'].errors">
+                            {{ f['conjoint'].value?.length || 0 }}/15 caractères (limite de la fiche SAF)
+                        </small>
+                        <small class="p-error" *ngIf="f['conjoint'].errors?.['maxlength']">
+                            Le nom du conjoint ne doit pas dépasser 15 caractères (limite de la fiche SAF)
+                        </small>
                     </div>
                 </div>
             </div>
@@ -329,13 +335,25 @@
                     <div class="col-12 md:col-6">
                         <label for="nomBeneficiario">Nom du Bénéficiaire</label>
                         <input id="nomBeneficiario" type="text" pInputText formControlName="nomBeneficiario"
-                            class="w-full" />
+                            class="w-full" maxlength="15" />
+                        <small class="text-muted" *ngIf="!f['nomBeneficiario'].errors">
+                            {{ f['nomBeneficiario'].value?.length || 0 }}/15 caractères (limite de la fiche SAF)
+                        </small>
+                        <small class="p-error" *ngIf="f['nomBeneficiario'].errors?.['maxlength']">
+                            Le nom du bénéficiaire ne doit pas dépasser 15 caractères (limite de la fiche SAF)
+                        </small>
                     </div>
 
                     <div class="col-12 md:col-6">
                         <label for="relacBeneficiario">Relation avec Bénéficiaire</label>
                         <input id="relacBeneficiario" type="text" pInputText formControlName="relacBeneficiario"
-                            class="w-full" />
+                            class="w-full" maxlength="20" />
+                        <small class="text-muted" *ngIf="!f['relacBeneficiario'].errors">
+                            {{ f['relacBeneficiario'].value?.length || 0 }}/20 caractères
+                        </small>
+                        <small class="p-error" *ngIf="f['relacBeneficiario'].errors?.['maxlength']">
+                            La relation ne doit pas dépasser 20 caractères (limite de la fiche SAF)
+                        </small>
                     </div>
                 </div>
             </div>

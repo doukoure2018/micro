@@ -126,6 +126,7 @@ export class AddPersonnePhysiqueComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
 
     ngOnInit(): void {
+        this.chargerSecteursSaf();
         console.log('=== Component ngOnInit ===');
         console.log('ficheData at init:', this.ficheData);
         console.log('userId at init:', this.userId);
@@ -251,8 +252,8 @@ export class AddPersonnePhysiqueComponent implements OnInit {
             pays: ['GN', Validators.required],
 
             // Bénéficiaire
-            nomBeneficiario: [''],
-            relacBeneficiario: [''],
+            nomBeneficiario: ['', [Validators.maxLength(15)]],
+            relacBeneficiario: ['', [Validators.maxLength(20)]],
 
             // Adresse
             detDireccion: [''],
@@ -426,8 +427,9 @@ export class AddPersonnePhysiqueComponent implements OnInit {
             this.personneForm.markAllAsTouched();
             this.messageService.add({
                 severity: 'warn',
-                summary: 'Validation',
-                detail: 'Veuillez remplir tous les champs obligatoires'
+                summary: 'Formulaire incomplet ou invalide',
+                detail: this.messageChampsInvalides() || 'Veuillez remplir tous les champs obligatoires',
+                life: 10000
             });
             return;
         }
@@ -491,6 +493,50 @@ export class AddPersonnePhysiqueComponent implements OnInit {
 
     cancel(): void {
         this.onCancel.emit();
+    }
+
+    /** Libellés des champs pour le message de validation (listés quand le formulaire est refusé). */
+    private readonly LIBELLES_CHAMPS: { [k: string]: string } = {
+        codCliente: 'Code client', numId: 'Numéro de pièce', typePiece: 'Type de pièce', nomCliente: 'Nom complet',
+        nomClient: 'Nom', prenomClient: 'Prénom', telPrincipal: 'Téléphone principal', telOtro: 'Autre téléphone',
+        fechNacimiento: 'Date de naissance', fecVencim: "Date d'expiration de la pièce", lieuxNaiss: 'Lieu de naissance',
+        nationalite: 'Nationalité', pays: 'Pays', codProvincia: 'Province', codCanton: 'Canton', district: 'District',
+        codSector: 'Secteur', codActividad: 'Activité', codProfesion: 'Profession', indSexo: 'Sexe', estCivil: 'État civil',
+        conjoint: 'Conjoint', nomBeneficiario: 'Nom du bénéficiaire', relacBeneficiario: 'Relation avec le bénéficiaire',
+        detDireccion: 'Adresse', typeHabit: "Type d'habitation", typeEntre: "Type d'entreprise"
+    };
+
+    /** Message explicite : quels champs bloquent, et pourquoi (obligatoire, trop long, format). */
+    private messageChampsInvalides(): string {
+        const details: string[] = [];
+        Object.keys(this.personneForm.controls).forEach((k) => {
+            const c = this.personneForm.get(k);
+            if (!c || !c.invalid) return;
+            const libelle = this.LIBELLES_CHAMPS[k] || k;
+            if (c.errors?.['maxlength']) {
+                details.push(`${libelle} : ${c.errors['maxlength'].actualLength} caractères, maximum ${c.errors['maxlength'].requiredLength} (limite de la fiche SAF)`);
+            } else if (c.errors?.['required']) {
+                details.push(`${libelle} : obligatoire`);
+            } else if (c.errors?.['pattern']) {
+                details.push(`${libelle} : format invalide`);
+            } else {
+                details.push(`${libelle} : invalide`);
+            }
+        });
+        return details.join(' — ');
+    }
+
+    /** Secteurs économiques lus dans SAF ; la liste figée reste le repli si SAF est injoignable. */
+    private chargerSecteursSaf(): void {
+        this.userService.getSecteursSaf$().subscribe({
+            next: (r) => {
+                const secteurs = ((r.data as any)?.secteurs || []) as { code: string; libelle: string }[];
+                if (secteurs.length > 0) {
+                    this.sectorOptions = secteurs.map((s) => ({ label: `${s.code} — ${s.libelle}`, value: s.code }));
+                }
+            },
+            error: () => { /* repli : liste figée ReferenceData.SECTORS */ }
+        });
     }
 
     get f() {

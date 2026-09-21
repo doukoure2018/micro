@@ -122,6 +122,10 @@ public interface EbankingClient {
     @PutMapping(path = "/ebanking/fiche-signaletique")
     Map<String, Object> updateFicheSignaletique(@RequestBody UpdateFicheSignaletiqueDTO dto);
 
+    /** Référentiel SAF des secteurs économiques (CL.CL_SECTOR_ECONOMICO) : {sectorEconomicoPKId:{COD_EMPRESA, COD_SECTOR}, DES_SECTOR}. */
+    @GetMapping(path = "/ebanking/ecredit/sector")
+    List<Map<String, Object>> getSecteursEconomiques();
+
     @GetMapping(path = "/ebanking/fiche-signaletique-solde/{codCliente}")
     ResponseEntity<?> getFicheSignaletiqueWithSolde(@PathVariable(name = "codCliente") String codCliente);
 
