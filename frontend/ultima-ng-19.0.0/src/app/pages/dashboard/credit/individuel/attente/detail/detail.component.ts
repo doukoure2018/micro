@@ -1348,6 +1348,57 @@ export class DetailComponent {
         return ['EN_ATTENTE_DA', 'AFFECTEE', 'CORRECTION_ACCUEIL'].includes(vs);
     }
 
+    // ==================== Prise en charge depuis le détail (V152) ====================
+
+    /** Dossier affecté à l'agent connecté, pas encore pris en charge. */
+    estAffecteAMoiNonPrisEnCharge(): boolean {
+        const d = this.state().demandeIndividuel;
+        const userId = this.state().user?.userId;
+        return d?.validationState === 'AFFECTEE' && !!userId && Number(d?.agentCreditAffecte) === Number(userId);
+    }
+
+    /** L'agent ne peut approuver qu'un dossier en instruction chez lui (règle serveur V149). */
+    peutApprouver(): boolean {
+        const vs = this.state().demandeIndividuel?.validationState || 'NOUVEAU';
+        return !['APPROVED', 'VALIDATED_DA', 'VALIDATED_DR', 'PENDING_DG', 'VALIDATED_FINAL', 'EN_ATTENTE_DA', 'AFFECTEE', 'CORRECTION_ACCUEIL'].includes(vs);
+    }
+
+    libelleBlocageApprobation(): string {
+        const d = this.state().demandeIndividuel;
+        switch (d?.validationState) {
+            case 'AFFECTEE':
+                return this.estAffecteAMoiNonPrisEnCharge()
+                    ? "Prenez d'abord ce dossier en charge (bouton ci-dessus) avant de l'approuver."
+                    : `Ce dossier est affecté à ${d?.agentAffecteNom || 'un autre agent'} : seul cet agent peut le prendre en charge et l'approuver.`;
+            case 'EN_ATTENTE_DA': return "Ce dossier attend son affectation par le Directeur d'Agence.";
+            case 'CORRECTION_ACCUEIL': return "Ce dossier a été renvoyé à l'accueil pour correction.";
+            case 'APPROVED': return "Ce dossier est déjà approuvé : il est chez le Directeur d'Agence.";
+            case 'VALIDATED_DA': case 'VALIDATED_DR': case 'PENDING_DG': return 'Ce dossier est déjà en validation hiérarchique.';
+            case 'VALIDATED_FINAL': return 'Ce dossier est déjà validé au niveau final.';
+            default: return '';
+        }
+    }
+
+    prendreEnChargeDepuisDetail(): void {
+        const demandeId = this.state().demandeIndividuel?.demandeIndividuelId;
+        if (!demandeId) return;
+        this.state.update((s) => ({ ...s, loading: true }));
+        this.userService
+            .prendreEnChargeAC$(+demandeId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.state.update((s) => ({ ...s, loading: false }));
+                    this.messageService.add({ severity: 'success', summary: 'Dossier pris en charge', detail: "Vous pouvez maintenant l'analyser et l'approuver", life: 5000 });
+                    this.loadDemandeWithGaranties();
+                },
+                error: (err: any) => {
+                    this.state.update((s) => ({ ...s, loading: false }));
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err?.message || err || 'Prise en charge impossible', life: 6000 });
+                }
+            });
+    }
+
     /** Le renvoi n'est possible que tant que la demande n'est pas déjà chez l'accueil. */
     peutRenvoyerAccueil(): boolean {
         const vs = this.state().demandeIndividuel?.validationState || '';
