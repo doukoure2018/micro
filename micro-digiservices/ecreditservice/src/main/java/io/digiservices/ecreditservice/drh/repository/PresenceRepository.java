@@ -25,7 +25,17 @@ public interface PresenceRepository {
 
     void upsertPresenceJour(LocalDate jour, String matricule, String nom, Long userId,
                             String statut, int minutesRetard, int minutesDepart,
-                            String justification, LocalTime premiereEntree, LocalTime derniereSortie);
+                            String justification, String observation,
+                            LocalTime premiereEntree, LocalTime derniereSortie);
+
+    // V150 : déclarations manuelles DRH
+    /** matricule -> {motif, commentaire} des déclarations actives couvrant le jour. */
+    Map<String, String[]> declarationsCouvrantJour(LocalDate jour);
+    long insererDeclaration(DeclarationRequest req, Long declarePar, String declareParNom);
+    List<DeclarationDto> declarationsPeriode(LocalDate du, LocalDate au, String matricule);
+    DeclarationDto declarationParId(long id);
+    int desactiverDeclaration(long id);
+    List<BadgeSansPointageDto> badgesSansPointage(LocalDate depuis);
 
     List<PresenceJourDto> presencesPeriode(LocalDate du, LocalDate au, String statut);
     List<SyntheseJourDto> synthesePeriode(LocalDate du, LocalDate au);

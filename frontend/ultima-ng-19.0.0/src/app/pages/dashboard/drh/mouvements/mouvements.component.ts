@@ -392,13 +392,13 @@ interface BarreAffluence {
                     </ng-template>
                 </p-table>
                 <div class="text-xs text-color-secondary mt-2">
-                    <p-tag value="Pause" severity="info" /> dans la plage 13h00–14h30 (non comptée) —
-                    <p-tag value="Pause +X min" severity="warn" /> pause dépassée (minutes hors plage) —
+                    <p-tag value="Pause" severity="info" /> 1 h au plus, prise entre 13h00 et 14h30 (non comptée) —
+                    <p-tag value="Pause +X min" severity="warn" /> pause dépassée (au-delà d'1 h ou hors fenêtre 13h00–14h30) —
                     <p-tag value="Sortie" severity="danger" /> sortie en heures de travail —
                     <p-tag value="Retour non badgé" severity="secondary" /> sortie sans retour badgé —
                     <p-tag value="Entrée non badgée" severity="warn" /> premier badge = sortie (arrivée inconnue) —
                     <p-tag value="Départ non badgé" severity="secondary" /> dernier badge = entrée.
-                    Horaires : 08h30–16h30 du lundi au jeudi, 08h30–13h00 le vendredi, 08h30–14h00 le samedi ; la pause n'est pas appliquée le vendredi ni le samedi.
+                    Horaires comptés : 08h35–16h25 du lundi au jeudi, 08h35–13h55 le vendredi et le samedi (marges de 5 min) ; les sorties avant 08h35 ou après 16h25 ne sont pas comptées ; la pause n'est pas appliquée le vendredi ni le samedi.
                 </div>
             </div>
 
@@ -600,7 +600,7 @@ export class MouvementsComponent implements OnInit {
             case 'PAUSE_DEPASSEE': return `Sortie ${s.heureSortie}→${s.heureRetour} : ${s.minutesComptees} min hors plage de pause`;
             case 'SORTIE_TRAVAIL': return 'Sortie en heures de travail : seules les minutes après l\'heure de début (08h30) sont comptées hors bureau';
             case 'AVANT_TRAVAIL': return 'Sortie terminée avant l\'heure de début du travail : non comptée';
-            case 'APRES_TRAVAIL': return 'Sortie commencée après la fin du travail (16h30, vendredi 13h00, samedi 14h00) : non comptée';
+            case 'APRES_TRAVAIL': return 'Sortie commencée après la fin des horaires comptés (16h25, vendredi et samedi 13h55) : non comptée';
             default: return 'Sortie suivie d’une autre sortie : le retour n’a pas été badgé';
         }
     }

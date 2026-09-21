@@ -48,6 +48,17 @@ public class SalaireServiceImpl implements SalaireService {
     }
 
     @Override
+    public int updateInfoPersonnelNom(Long id, String nom, String prenom) {
+        if (nom == null || nom.isBlank() || prenom == null || prenom.isBlank()) {
+            throw new IllegalArgumentException("Le nom et le prénom sont obligatoires");
+        }
+        if (nom.length() > 100 || prenom.length() > 100) {
+            throw new IllegalArgumentException("Le nom et le prénom ne peuvent pas dépasser 100 caractères");
+        }
+        return salaireRepository.updateInfoPersonnelNom(id, nom.strip(), prenom.strip());
+    }
+
+    @Override
     @Transactional
     public InfoPersonnelDto addInfoPersonnel(InfoPersonnelDto personnel) {
         if (personnel.getMatricule() == null || personnel.getMatricule().isBlank()

@@ -305,6 +305,23 @@ export class DrhService {
     recalculerPresences$ = (du: string, au: string): Observable<IResponse> =>
         this.http.post<IResponse>(`${this.server}/ecredit/drh/presences/recalculer?du=${du}&au=${au}`, {}).pipe(catchError(this.handleError));
 
+    // V150 : synthèse hebdomadaire, déclarations DRH (oubli de badge, mission…), badgés sans pointage
+    syntheseSemainePresences$ = (du: string, au: string): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/drh/presences/synthese-semaine?du=${du}&au=${au}`).pipe(catchError(this.handleError));
+
+    declarationsPresence$ = (du: string, au: string, matricule?: string): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/drh/presences/declarations?du=${du}&au=${au}` +
+            (matricule ? `&matricule=${encodeURIComponent(matricule)}` : '')).pipe(catchError(this.handleError));
+
+    declarerPresence$ = (req: { matricule: string; jourDebut: string; jourFin: string; motif: string; commentaire?: string }): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/drh/presences/declarations`, req).pipe(catchError(this.handleError));
+
+    supprimerDeclarationPresence$ = (id: number): Observable<IResponse> =>
+        this.http.delete<IResponse>(`${this.server}/ecredit/drh/presences/declarations/${id}`).pipe(catchError(this.handleError));
+
+    badgesSansPointage$ = (jours = 30): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/drh/presences/badges-sans-pointage?jours=${jours}`).pipe(catchError(this.handleError));
+
     // ===== Mouvements (journal de la porte) =====
 
     importerMouvements$ = (fichier: File): Observable<IResponse> => {

@@ -27,6 +27,9 @@ public interface SalaireService {
     /** Marquer / démarquer un personnel comme badgé au siège (contrôle des présences). */
     int updateInfoPersonnelBadge(Long id, boolean badge);
 
+    /** V150 */
+    int updateInfoPersonnelNom(Long id, String nom, String prenom);
+
     /**
      * Récupérer tous les personnels
      */

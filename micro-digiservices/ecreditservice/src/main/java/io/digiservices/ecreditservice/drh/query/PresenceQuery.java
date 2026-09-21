@@ -44,15 +44,15 @@ public final class PresenceQuery {
 
     public static final String UPSERT_PRESENCE_JOUR = """
         INSERT INTO drh_presence_jour (jour, matricule, nom, user_id, statut,
-                                       minutes_retard, minutes_depart, justification,
+                                       minutes_retard, minutes_depart, justification, observation,
                                        premiere_entree, derniere_sortie, calcule_le)
         VALUES (:jour, :matricule, :nom, :user_id, :statut,
-                :minutes_retard, :minutes_depart, :justification,
+                :minutes_retard, :minutes_depart, :justification, :observation,
                 :premiere_entree, :derniere_sortie, CURRENT_TIMESTAMP)
         ON CONFLICT (jour, matricule)
         DO UPDATE SET nom = EXCLUDED.nom, user_id = EXCLUDED.user_id, statut = EXCLUDED.statut,
                       minutes_retard = EXCLUDED.minutes_retard, minutes_depart = EXCLUDED.minutes_depart,
-                      justification = EXCLUDED.justification,
+                      justification = EXCLUDED.justification, observation = EXCLUDED.observation,
                       premiere_entree = EXCLUDED.premiere_entree, derniere_sortie = EXCLUDED.derniere_sortie,
                       calcule_le = CURRENT_TIMESTAMP
         """;
@@ -60,7 +60,7 @@ public final class PresenceQuery {
     public static final String PRESENCES_PERIODE = """
         SELECT pj.presence_id, pj.jour, pj.matricule, pj.nom, pj.user_id,
                d.code AS departement_code,
-               pj.statut, pj.minutes_retard, pj.minutes_depart, pj.justification,
+               pj.statut, pj.minutes_retard, pj.minutes_depart, pj.justification, pj.observation,
                pj.premiere_entree, pj.derniere_sortie
           FROM drh_presence_jour pj
           LEFT JOIN drh_departement_membre m ON m.user_id = pj.user_id AND m.actif
@@ -74,7 +74,8 @@ public final class PresenceQuery {
 
     public static final String SYNTHESE_PERIODE = """
         SELECT jour,
-               COUNT(*) FILTER (WHERE statut = 'PRESENT') AS presents,
+               COUNT(*) FILTER (WHERE statut IN ('PRESENT','PRESENT_DECLARE')) AS presents,
+               COUNT(*) FILTER (WHERE statut IN ('PRESENT','PRESENT_DECLARE','RETARD','DEPART_ANTICIPE','RETARD_ET_DEPART')) AS presents_total,
                COUNT(*) FILTER (WHERE statut IN ('RETARD','RETARD_ET_DEPART')) AS retards,
                COUNT(*) FILTER (WHERE statut IN ('DEPART_ANTICIPE','RETARD_ET_DEPART')) AS departs_anticipes,
                COUNT(*) FILTER (WHERE statut = 'ABSENT_JUSTIFIE') AS absents_justifies,
@@ -117,5 +118,51 @@ public final class PresenceQuery {
 
     public static final String PARAMETRE_TEXTE = """
         SELECT valeur FROM drh_parametre WHERE cle = :cle
+        """;
+
+    // ==================== V150 : déclarations manuelles DRH ====================
+
+    /** Déclarations actives couvrant un jour : matricule -> motif / commentaire (la plus récente gagne). */
+    public static final String DECLARATIONS_COUVRANT_JOUR = """
+        SELECT DISTINCT ON (matricule) matricule, motif, commentaire
+          FROM drh_presence_declaration
+         WHERE actif AND :jour BETWEEN jour_debut AND jour_fin
+         ORDER BY matricule, created_at DESC
+        """;
+
+    public static final String INSERT_DECLARATION = """
+        INSERT INTO drh_presence_declaration (matricule, jour_debut, jour_fin, motif, commentaire, declare_par, declare_par_nom)
+        VALUES (:matricule, :jour_debut, :jour_fin, :motif, :commentaire, :declare_par, :declare_par_nom)
+        RETURNING declaration_id
+        """;
+
+    public static final String DECLARATIONS_PERIODE = """
+        SELECT d.declaration_id, d.matricule, TRIM(COALESCE(ip.prenom, '') || ' ' || COALESCE(ip.nom, '')) AS nom,
+               d.jour_debut, d.jour_fin, d.motif, d.commentaire, d.declare_par_nom, d.created_at, d.actif
+          FROM drh_presence_declaration d
+          LEFT JOIN info_personnel ip ON ip.matricule = d.matricule
+         WHERE d.actif
+           AND d.jour_fin >= :du AND d.jour_debut <= :au
+           AND (CAST(:matricule AS VARCHAR) IS NULL OR d.matricule = :matricule)
+         ORDER BY d.jour_debut DESC, nom
+        """;
+
+    public static final String DECLARATION_PAR_ID = """
+        SELECT declaration_id, matricule, jour_debut, jour_fin, motif, commentaire, declare_par_nom, created_at, actif
+          FROM drh_presence_declaration WHERE declaration_id = :id
+        """;
+
+    public static final String DESACTIVER_DECLARATION = """
+        UPDATE drh_presence_declaration SET actif = FALSE WHERE declaration_id = :id AND actif
+        """;
+
+    /** Badgés siège actifs sans aucun pointage depuis :depuis (à retirer du contrôle ou à vérifier). */
+    public static final String BADGES_SANS_POINTAGE = """
+        SELECT ip.id, ip.matricule, ip.nom, ip.prenom,
+               (SELECT MAX(p.jour) FROM drh_pointage p WHERE p.matricule = ip.matricule) AS dernier_pointage
+          FROM info_personnel ip
+         WHERE ip.statut = 'ACTIVE' AND ip.badge_siege
+           AND NOT EXISTS (SELECT 1 FROM drh_pointage p WHERE p.matricule = ip.matricule AND p.jour >= :depuis)
+         ORDER BY dernier_pointage NULLS FIRST, ip.nom
         """;
 }

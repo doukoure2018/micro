@@ -23,6 +23,9 @@ public interface SalaireRepository {
     Long saveInfoPersonnel(InfoPersonnelDto personnel);
     int updateInfoPersonnelBadge(Long id, boolean badge);
 
+    /** V150 */
+    int updateInfoPersonnelNom(Long id, String nom, String prenom);
+
     /**
      * Insérer plusieurs personnels en batch
      */

@@ -29,6 +29,8 @@ public final class PresenceDtos {
         private Integer minutesRetard;
         private Integer minutesDepart;
         private String justification;
+        /** V150 : motif + commentaire de la déclaration DRH (oubli de badge, mission…). */
+        private String observation;
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm")
         private LocalTime premiereEntree;
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm")
@@ -46,6 +48,8 @@ public final class PresenceDtos {
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
         private LocalDate jour;
         private long presents;
+        /** V150 : personnes effectivement venues = présents + retards + départs anticipés (chacune comptée une fois). */
+        private long presentsTotal;
         private long retards;
         private long departsAnticipes;
         private long absentsJustifies;
@@ -53,6 +57,66 @@ public final class PresenceDtos {
         private long total;
         // Jour courant avant l'heure de sortie réglementaire : statuts encore provisoires
         private boolean enCours;
+    }
+
+    /** V150 : moyenne par jour ouvré d'une semaine (lundi -> samedi). */
+    @Data @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class SyntheseSemaineDto {
+        private String semaine;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+        private LocalDate du;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+        private LocalDate au;
+        private int joursOuvres;
+        private double presentsTotalMoyen;
+        private double retardsMoyen;
+        private double departsAnticipesMoyen;
+        private double absentsJustifiesMoyen;
+        private double absentsNonJustifiesMoyen;
+        private double effectifMoyen;
+        /** Somme des présents / somme des effectifs contrôlés, en %. */
+        private double tauxPresence;
+        private boolean enCours;
+    }
+
+    /** V150 : déclaration manuelle DRH (oubli de badge, mission, formation, maladie, autre). */
+    @Data @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class DeclarationDto {
+        private Long declarationId;
+        private String matricule;
+        private String nom;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+        private LocalDate jourDebut;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+        private LocalDate jourFin;
+        private String motif;
+        private String commentaire;
+        private String declareParNom;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        private java.time.LocalDateTime createdAt;
+        private boolean actif;
+    }
+
+    @Data @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class DeclarationRequest {
+        private String matricule;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+        private LocalDate jourDebut;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+        private LocalDate jourFin;
+        private String motif;
+        private String commentaire;
+    }
+
+    /** V150 : badgé siège actif sans pointage récent. */
+    @Data @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class BadgeSansPointageDto {
+        private Long id;
+        private String matricule;
+        private String nom;
+        private String prenom;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+        private LocalDate dernierPointage;
     }
 
     @Data @NoArgsConstructor @AllArgsConstructor @Builder

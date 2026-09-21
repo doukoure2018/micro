@@ -3,12 +3,15 @@ import { ImportResultDto, ValidationErrorDto } from '@/interface/prevision-treso
 import { AvanceSalaireDto } from '@/interface/salary';
 import { JavaDatePipe } from '@/pipes/java-date.pipe';
 import { UserService } from '@/service/user.service';
+import { DrhService } from '@/service/drh.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { BadgeModule } from 'primeng/badge';
 import { ButtonModule } from 'primeng/button';
+import { CalendarModule } from 'primeng/calendar';
 import { CardModule } from 'primeng/card';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DialogModule } from 'primeng/dialog';
@@ -57,7 +60,8 @@ export interface SalairePreviewRow {
         ConfirmDialogModule,
         DropdownModule,
         InputSwitchModule,
-        InputTextModule
+        InputTextModule,
+        CalendarModule
     ],
     templateUrl: './gestion-personnel.component.html',
     styleUrl: './gestion-personnel.component.scss',
@@ -65,8 +69,148 @@ export interface SalairePreviewRow {
 })
 export class GestionPersonnelComponent implements OnInit {
     private salaireService = inject(UserService);
+    private drhService = inject(DrhService);
     private messageService = inject(MessageService);
     private confirmationService = inject(ConfirmationService);
+    private destroyRef = inject(DestroyRef);
+
+    // ==================== V150 : filtre siège, modification du nom, déclarations, badgés sans pointage ====================
+
+    /** Filtre siège : TOUS | SIEGE (badge siège) | HORS_SIEGE. */
+    filtreSiege = signal<'TOUS' | 'SIEGE' | 'HORS_SIEGE'>('TOUS');
+    siegeOptions = [
+        { label: 'Tout le personnel', value: 'TOUS' },
+        { label: 'Personnel du siège (badgés)', value: 'SIEGE' },
+        { label: 'Hors siège', value: 'HORS_SIEGE' }
+    ];
+
+    editionNomVisible = false;
+    editionNomEnCours = signal(false);
+    editionNom: { id: number; matricule: string; nom: string; prenom: string } = { id: 0, matricule: '', nom: '', prenom: '' };
+
+    declarationVisible = false;
+    declarationEnCours = signal(false);
+    declaration: { id?: number; matricule: string; nomComplet: string; du: Date | null; au: Date | null; motif: string; commentaire: string } =
+        { matricule: '', nomComplet: '', du: null, au: null, motif: 'OUBLI_BADGE', commentaire: '' };
+    motifOptions = [
+        { label: 'Oubli de badge (présent)', value: 'OUBLI_BADGE' },
+        { label: 'Mission', value: 'MISSION' },
+        { label: 'Formation', value: 'FORMATION' },
+        { label: 'Maladie', value: 'MALADIE' },
+        { label: 'Autre absence justifiée', value: 'AUTRE' }
+    ];
+    /** Déclarations récentes de la personne ouverte dans le dialogue (90 derniers jours + 60 à venir). */
+    declarationsPersonne = signal<any[]>([]);
+
+    badgesSansPointageVisible = false;
+    badgesSansPointage = signal<any[]>([]);
+    badgesSansPointageEnCours = signal(false);
+
+    ouvrirEditionNom(p: InfoPersonnelDto): void {
+        this.editionNom = { id: p.id!, matricule: p.matricule, nom: p.nom || '', prenom: p.prenom || '' };
+        this.editionNomVisible = true;
+    }
+
+    enregistrerNom(): void {
+        const nom = this.editionNom.nom.trim(), prenom = this.editionNom.prenom.trim();
+        if (!nom || !prenom) return;
+        this.editionNomEnCours.set(true);
+        this.salaireService.updateNomPersonnel(this.editionNom.id, nom, prenom).subscribe({
+            next: () => {
+                this.editionNomEnCours.set(false);
+                this.editionNomVisible = false;
+                this.messageService.add({ severity: 'success', summary: 'Nom modifié', detail: `${prenom} ${nom} (matricule ${this.editionNom.matricule})` });
+                this.loadPersonnels();
+            },
+            error: (e) => {
+                this.editionNomEnCours.set(false);
+                this.messageService.add({ severity: 'error', summary: 'Erreur', detail: e.error?.data?.error || e.error?.message || 'Modification impossible' });
+            }
+        });
+    }
+
+    ouvrirDeclaration(p: InfoPersonnelDto): void {
+        const aujourdhui = new Date();
+        this.declaration = { id: p.id, matricule: p.matricule, nomComplet: `${p.prenom || ''} ${p.nom || ''}`.trim(),
+            du: aujourdhui, au: aujourdhui, motif: 'OUBLI_BADGE', commentaire: '' };
+        this.declarationVisible = true;
+        this.chargerDeclarationsPersonne(p.matricule);
+    }
+
+    private chargerDeclarationsPersonne(matricule: string): void {
+        const du = new Date(); du.setDate(du.getDate() - 90);
+        const au = new Date(); au.setDate(au.getDate() + 60);
+        this.drhService.declarationsPresence$(this.toIso(du), this.toIso(au), matricule).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: (r) => this.declarationsPersonne.set((r.data as any)?.declarations || []),
+            error: () => this.declarationsPersonne.set([])
+        });
+    }
+
+    enregistrerDeclaration(): void {
+        const d = this.declaration;
+        if (!d.du) return;
+        this.declarationEnCours.set(true);
+        this.drhService.declarerPresence$({
+            matricule: d.matricule, jourDebut: this.toIso(d.du), jourFin: this.toIso(d.au || d.du),
+            motif: d.motif, commentaire: d.commentaire.trim() || undefined
+        }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: () => {
+                this.declarationEnCours.set(false);
+                this.messageService.add({ severity: 'success', summary: 'Déclaration enregistrée',
+                    detail: `${d.nomComplet} : ${this.libelleMotif(d.motif)} — présences recalculées` });
+                this.declaration.commentaire = '';
+                this.chargerDeclarationsPersonne(d.matricule);
+            },
+            error: (e) => {
+                this.declarationEnCours.set(false);
+                this.messageService.add({ severity: 'error', summary: 'Erreur', detail: e.error?.data?.error || e.error?.message || 'Déclaration impossible' });
+            }
+        });
+    }
+
+    retirerDeclaration(dec: any): void {
+        this.drhService.supprimerDeclarationPresence$(dec.declarationId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: () => {
+                this.messageService.add({ severity: 'success', summary: 'Retirée', detail: 'Déclaration retirée, présences recalculées' });
+                this.chargerDeclarationsPersonne(this.declaration.matricule);
+            },
+            error: (e) => this.messageService.add({ severity: 'error', summary: 'Erreur', detail: e.error?.data?.error || e.error?.message || 'Retrait impossible' })
+        });
+    }
+
+    libelleMotif(m: string): string {
+        return this.motifOptions.find((o) => o.value === m)?.label || m;
+    }
+
+    ouvrirBadgesSansPointage(): void {
+        this.badgesSansPointageVisible = true;
+        this.badgesSansPointageEnCours.set(true);
+        this.drhService.badgesSansPointage$(30).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: (r) => {
+                this.badgesSansPointageEnCours.set(false);
+                this.badgesSansPointage.set((r.data as any)?.badges || []);
+            },
+            error: (e) => {
+                this.badgesSansPointageEnCours.set(false);
+                this.messageService.add({ severity: 'error', summary: 'Erreur', detail: e.error?.data?.error || e.error?.message || 'Chargement impossible' });
+            }
+        });
+    }
+
+    retirerBadge(b: any): void {
+        this.salaireService.updateBadgeSiege(b.id, false).subscribe({
+            next: () => {
+                this.badgesSansPointage.update((list) => list.filter((x) => x.id !== b.id));
+                this.messageService.add({ severity: 'success', summary: 'Badge retiré', detail: `${b.prenom} ${b.nom} ne sera plus contrôlé` });
+                this.loadPersonnels();
+            },
+            error: (e) => this.messageService.add({ severity: 'error', summary: 'Erreur', detail: e.error?.message || 'Mise à jour impossible' })
+        });
+    }
+
+    private toIso(d: Date): string {
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
 
     // ==================== SIGNALS ====================
 
@@ -233,7 +377,9 @@ export class GestionPersonnelComponent implements OnInit {
     // ✅ NOUVEAU: Personnels filtrés par recherche
     filteredPersonnels = computed(() => {
         const search = this.searchTerm().toLowerCase().trim();
-        const list = this.personnels();
+        const siege = this.filtreSiege();
+        const list = this.personnels().filter((p) =>
+            siege === 'TOUS' ? true : siege === 'SIEGE' ? !!p.badgeSiege : !p.badgeSiege);
 
         if (!search) {
             return list;

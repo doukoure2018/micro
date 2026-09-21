@@ -100,6 +100,24 @@ public class SalaireResource {
                 actif ? "Personnel marqué badgé au siège" : "Badge siège retiré", OK));
     }
 
+    /** V150 : corriger le nom / prénom d'un personnel (matricule inchangé). */
+    @PutMapping("/salaire/info-personnel/{id}/nom")
+    public ResponseEntity<Response> updateNom(@PathVariable Long id,
+                                              @RequestBody Map<String, String> body,
+                                              HttpServletRequest request) {
+        try {
+            int maj = salaireService.updateInfoPersonnelNom(id, body.get("nom"), body.get("prenom"));
+            if (maj == 0) {
+                return ResponseEntity.badRequest()
+                        .body(getResponse(request, Map.of("error", "Personnel introuvable"), "Personnel introuvable", BAD_REQUEST));
+            }
+            return ResponseEntity.ok(getResponse(request, Map.of("updated", maj), "Nom mis à jour", OK));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(getResponse(request, Map.of("error", e.getMessage()), e.getMessage(), BAD_REQUEST));
+        }
+    }
+
     /**
      * Récupérer tous les personnels avec filtre optionnel par statut
      */

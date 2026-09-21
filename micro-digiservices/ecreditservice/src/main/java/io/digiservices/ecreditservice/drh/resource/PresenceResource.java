@@ -85,6 +85,53 @@ public class PresenceResource {
                 "Rapprochement recalculé sur " + jours + " jour(s) ouvré(s)", OK));
     }
 
+    // ==================== V150 ====================
+
+    @GetMapping("/synthese-semaine")
+    public ResponseEntity<Response> syntheseSemaine(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate du,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate au,
+            Authentication auth, HttpServletRequest req) {
+        return ResponseEntity.ok(getResponse(req,
+                Map.of("semaines", presenceService.syntheseSemaine(user(auth), du, au)),
+                "Synthèse hebdomadaire des présences", OK));
+    }
+
+    @GetMapping("/declarations")
+    public ResponseEntity<Response> declarations(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate du,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate au,
+            @RequestParam(required = false) String matricule,
+            Authentication auth, HttpServletRequest req) {
+        return ResponseEntity.ok(getResponse(req,
+                Map.of("declarations", presenceService.declarations(user(auth), du, au, matricule)),
+                "Déclarations DRH de la période", OK));
+    }
+
+    @PostMapping("/declarations")
+    public ResponseEntity<Response> declarer(@RequestBody io.digiservices.ecreditservice.drh.dto.PresenceDtos.DeclarationRequest request,
+                                             Authentication auth, HttpServletRequest req) {
+        var d = presenceService.declarer(user(auth), request);
+        return ResponseEntity.ok(getResponse(req, Map.of("declaration", d),
+                "Déclaration enregistrée et présences recalculées", OK));
+    }
+
+    @DeleteMapping("/declarations/{declarationId}")
+    public ResponseEntity<Response> supprimerDeclaration(@PathVariable long declarationId,
+                                                         Authentication auth, HttpServletRequest req) {
+        presenceService.supprimerDeclaration(user(auth), declarationId);
+        return ResponseEntity.ok(getResponse(req, Map.of("declarationId", declarationId),
+                "Déclaration retirée et présences recalculées", OK));
+    }
+
+    @GetMapping("/badges-sans-pointage")
+    public ResponseEntity<Response> badgesSansPointage(@RequestParam(defaultValue = "30") int jours,
+                                                       Authentication auth, HttpServletRequest req) {
+        return ResponseEntity.ok(getResponse(req,
+                Map.of("badges", presenceService.badgesSansPointage(user(auth), jours), "jours", jours),
+                "Badgés siège sans pointage depuis " + jours + " jours", OK));
+    }
+
     @ExceptionHandler(ValidationException.class)
     public ResponseEntity<Response> handleValidation(ValidationException e, HttpServletRequest req) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(getResponse(req,

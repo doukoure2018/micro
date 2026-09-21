@@ -352,11 +352,18 @@ public class MouvementServiceImpl implements MouvementService {
     private Map<String, MouvementPersonneDto> reconstituer(LocalDate du, LocalDate au, String matricule) {
         LocalTime pauseDebut = LocalTime.parse(mouvementRepository.parametreTexte("MOUVEMENT_PAUSE_DEBUT", "13:00"));
         LocalTime pauseFin = LocalTime.parse(mouvementRepository.parametreTexte("MOUVEMENT_PAUSE_FIN", "14:30"));
-        // Hors des horaires de travail (avant le début, après la fin), les sorties ne comptent pas
-        LocalTime debutTravail = LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_ARRIVEE", "08:30"));
-        LocalTime finTravail = LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE", "16:30"));
-        LocalTime finVendredi = LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE_VENDREDI", "13:00"));
-        LocalTime finSamedi = LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE_SAMEDI", "14:00"));
+        // V150 : la pause dure 1 h, prise n'importe où dans la fenêtre 13:00-14:30 (décalage 13:30-14:30 toléré)
+        pauseDuree = Integer.parseInt(mouvementRepository.parametreTexte("MOUVEMENT_PAUSE_DUREE_MIN", "60"));
+        // Hors des horaires de travail (avant le début, après la fin), les sorties ne comptent pas.
+        // V150 : bornes alignées sur les marges de présence — avant 08:35 et après 16:25 (vendredi/samedi 13:55)
+        int tolArrivee = Integer.parseInt(presenceRepository.parametreTexte("PRESENCE_TOLERANCE_ARRIVEE_MIN",
+                presenceRepository.parametreTexte("PRESENCE_TOLERANCE_MIN", "5")));
+        int tolDepart = Integer.parseInt(presenceRepository.parametreTexte("PRESENCE_TOLERANCE_DEPART_MIN",
+                presenceRepository.parametreTexte("PRESENCE_TOLERANCE_MIN", "5")));
+        LocalTime debutTravail = LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_ARRIVEE", "08:30")).plusMinutes(tolArrivee);
+        LocalTime finTravail = LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE", "16:30")).minusMinutes(tolDepart);
+        LocalTime finVendredi = LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE_VENDREDI", "14:00")).minusMinutes(tolDepart);
+        LocalTime finSamedi = LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE_SAMEDI", "14:00")).minusMinutes(tolDepart);
         LocalTime[] fins = {finTravail, finVendredi, finSamedi};
 
         Map<String, MouvementPersonneDto> agents = new LinkedHashMap<>();
@@ -442,9 +449,14 @@ public class MouvementServiceImpl implements MouvementService {
                 .build();
     }
 
+    /** V150 : durée réglementaire de la pause (minutes), lue à chaque reconstitution. */
+    private int pauseDuree = 60;
+
     /**
-     * Un intervalle qui chevauche la pause 13:00-14:30 est une pause : seules les minutes
-     * hors plage comptent (avant 13:00 + après 14:30). Hors pause : sortie en heures de travail.
+     * Un intervalle qui chevauche la fenêtre de pause 13:00-14:30 est une pause. V150 : la pause
+     * dure au plus MOUVEMENT_PAUSE_DUREE_MIN (60 min), où que l'agent la place dans la fenêtre ;
+     * comptent en dépassement les minutes hors fenêtre (avant 13:00, après 14:30) et les minutes
+     * dans la fenêtre au-delà de la durée réglementaire. Hors pause : sortie en heures de travail.
      */
     private SortieDto classer(LocalTime sortie, LocalTime retour, boolean journeeContinue,
                               LocalTime pauseDebut, LocalTime pauseFin,
@@ -455,9 +467,12 @@ public class MouvementServiceImpl implements MouvementService {
         if (!journeeContinue && sortie.isBefore(pauseFin) && retour.isAfter(pauseDebut)) {
             int avant = (int) Math.max(0, Duration.between(sortie, pauseDebut).toMinutes());
             int apres = (int) Math.max(0, Duration.between(pauseFin, retour).toMinutes());
-            return avant + apres == 0
+            int dansFenetre = duree - avant - apres;
+            int excedent = Math.max(0, dansFenetre - pauseDuree);
+            int depassement = avant + apres + excedent;
+            return depassement == 0
                     ? b.classement("PAUSE").minutesComptees(0).build()
-                    : b.classement("PAUSE_DEPASSEE").minutesComptees(avant + apres).build();
+                    : b.classement("PAUSE_DEPASSEE").minutesComptees(depassement).build();
         }
         // Seules les minutes DANS les horaires de travail comptent :
         // [PRESENCE_HEURE_ARRIVEE, PRESENCE_HEURE_SORTIE(_VENDREDI)]
