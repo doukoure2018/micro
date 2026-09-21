@@ -75,6 +75,13 @@
                             <p-dropdown [options]="statutOptions" [(ngModel)]="selectedStatutFilter"
                                 (onChange)="onStatutFilterChange($event)" optionLabel="label" optionValue="value"
                                 [style]="{ width: '180px' }" placeholder="Filtrer par statut"></p-dropdown>
+                            <!-- V150 : filtre siège / hors siège -->
+                            <p-dropdown [options]="siegeOptions" [ngModel]="filtreSiege()" (ngModelChange)="filtreSiege.set($event)"
+                                optionLabel="label" optionValue="value" [style]="{ width: '220px' }"
+                                pTooltip="Siège = personnel badgé, contrôlé par le rapprochement des présences"></p-dropdown>
+                            <p-button icon="pi pi-eye-slash" label="Badgés sans pointage (30 j)" [outlined]="true" size="small"
+                                severity="warn" (onClick)="ouvrirBadgesSansPointage()"
+                                pTooltip="Badgés siège jamais vus à la porte depuis 30 jours : à retirer du contrôle ou à vérifier"></p-button>
                         </div>
 
                         <!-- ✅ NOUVEAU: Recherche par nom/prénom -->
@@ -172,6 +179,13 @@
                                 <td>{{ personnel.createdAt | javaDate:'dd/MM/yyyy HH:mm' }}</td>
                                 <td>
                                     <div class="action-buttons">
+                                        <p-button icon="pi pi-pencil" [text]="true" [rounded]="true" size="small"
+                                            (onClick)="ouvrirEditionNom(personnel)" pTooltip="Modifier le nom / prénom"
+                                            tooltipPosition="left"></p-button>
+                                        <p-button icon="pi pi-calendar-times" severity="warn" [text]="true" [rounded]="true" size="small"
+                                            (onClick)="ouvrirDeclaration(personnel)"
+                                            pTooltip="Déclarer un oubli de badge ou une absence justifiée (mission, formation, maladie…)"
+                                            tooltipPosition="left"></p-button>
                                         @if (personnel.statut === 'ACTIVE') {
                                         <p-button icon="pi pi-user-minus" severity="danger" [text]="true"
                                             [rounded]="true" size="small" (onClick)="desactiverPersonnel(personnel)"
@@ -584,5 +598,107 @@
         <button pButton label="Ajouter" icon="pi pi-check"
                 [disabled]="!nouveauPersonnel.matricule.trim() || !nouveauPersonnel.nom.trim() || !nouveauPersonnel.prenom.trim()"
                 [loading]="ajoutPersonnelEnCours()" (click)="ajouterPersonnel()"></button>
+    </ng-template>
+</p-dialog>
+
+<!-- V150 : modification du nom / prénom -->
+<p-dialog header="Modifier le nom" [(visible)]="editionNomVisible" [modal]="true" [style]="{ width: '440px' }">
+    <div class="flex flex-col gap-3">
+        <div class="text-sm text-color-secondary">Matricule <b>{{ editionNom.matricule }}</b> — le matricule ne change pas (clé du badge et des présences).</div>
+        <div>
+            <label class="block mb-1 font-medium">Nom *</label>
+            <input pInputText [(ngModel)]="editionNom.nom" class="w-full" maxlength="100" />
+        </div>
+        <div>
+            <label class="block mb-1 font-medium">Prénom *</label>
+            <input pInputText [(ngModel)]="editionNom.prenom" class="w-full" maxlength="100" />
+        </div>
+    </div>
+    <ng-template pTemplate="footer">
+        <button pButton label="Annuler" class="p-button-text" (click)="editionNomVisible = false"></button>
+        <button pButton label="Enregistrer" icon="pi pi-check"
+                [disabled]="!editionNom.nom.trim() || !editionNom.prenom.trim()"
+                [loading]="editionNomEnCours()" (click)="enregistrerNom()"></button>
+    </ng-template>
+</p-dialog>
+
+<!-- V150 : déclaration DRH — oubli de badge / absence justifiée -->
+<p-dialog header="Déclarer un oubli de badge ou une absence" [(visible)]="declarationVisible" [modal]="true" [style]="{ width: '560px' }">
+    <div class="flex flex-col gap-3">
+        <div class="text-sm">
+            <b>{{ declaration.nomComplet }}</b> — matricule {{ declaration.matricule }}
+        </div>
+        <div class="flex gap-3 flex-wrap">
+            <div>
+                <label class="block mb-1 font-medium">Du *</label>
+                <p-calendar [(ngModel)]="declaration.du" dateFormat="dd/mm/yy" [showIcon]="true" appendTo="body"></p-calendar>
+            </div>
+            <div>
+                <label class="block mb-1 font-medium">Au</label>
+                <p-calendar [(ngModel)]="declaration.au" dateFormat="dd/mm/yy" [showIcon]="true" appendTo="body" [minDate]="declaration.du || undefined"></p-calendar>
+            </div>
+        </div>
+        <div>
+            <label class="block mb-1 font-medium">Motif *</label>
+            <p-dropdown [options]="motifOptions" [(ngModel)]="declaration.motif" optionLabel="label" optionValue="value"
+                        styleClass="w-full" appendTo="body"></p-dropdown>
+            <small class="text-color-secondary">
+                Oubli de badge = présent (aucun retard ni départ anticipé). Les autres motifs justifient l'absence.
+            </small>
+        </div>
+        <div>
+            <label class="block mb-1">Commentaire (observation affichée dans les présences)</label>
+            <input pInputText [(ngModel)]="declaration.commentaire" class="w-full" maxlength="300"
+                   placeholder="Ex. : badge oublié, arrivé 08:20 (vu par le chef de service)" />
+        </div>
+        <div *ngIf="declarationsPersonne().length > 0">
+            <div class="font-medium mb-1 text-sm">Déclarations existantes</div>
+            <p-table [value]="declarationsPersonne()" responsiveLayout="scroll" styleClass="p-datatable-sm">
+                <ng-template pTemplate="body" let-d>
+                    <tr>
+                        <td>{{ d.jourDebut | date: 'dd/MM/yyyy' }}<span *ngIf="d.jourFin !== d.jourDebut"> → {{ d.jourFin | date: 'dd/MM/yyyy' }}</span></td>
+                        <td><p-tag [value]="libelleMotif(d.motif)" [severity]="d.motif === 'OUBLI_BADGE' ? 'success' : 'info'"></p-tag></td>
+                        <td class="text-sm text-color-secondary">{{ d.commentaire || '' }}</td>
+                        <td><button pButton icon="pi pi-trash" class="p-button-text p-button-danger p-button-sm"
+                                    pTooltip="Retirer" (click)="retirerDeclaration(d)"></button></td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </div>
+    <ng-template pTemplate="footer">
+        <button pButton label="Fermer" class="p-button-text" (click)="declarationVisible = false"></button>
+        <button pButton label="Enregistrer la déclaration" icon="pi pi-check"
+                [disabled]="!declaration.du || !declaration.motif"
+                [loading]="declarationEnCours()" (click)="enregistrerDeclaration()"></button>
+    </ng-template>
+</p-dialog>
+
+<!-- V150 : badgés siège sans pointage depuis 30 jours -->
+<p-dialog header="Badgés siège sans pointage depuis 30 jours" [(visible)]="badgesSansPointageVisible" [modal]="true" [style]="{ width: '640px' }">
+    <div class="text-sm text-color-secondary mb-2">
+        Ces personnes sont contrôlées par le rapprochement (badge siège) mais n'ont badgé aucun jour depuis 30 jours :
+        elles apparaissent chaque jour en « absent non justifié ». Retirez le badge siège si elles ne travaillent plus au siège.
+    </div>
+    <p-table [value]="badgesSansPointage()" [loading]="badgesSansPointageEnCours()" responsiveLayout="scroll" styleClass="p-datatable-sm">
+        <ng-template pTemplate="header">
+            <tr><th>Matricule</th><th>Nom</th><th>Prénom</th><th>Dernier pointage</th><th></th></tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-b>
+            <tr>
+                <td>{{ b.matricule }}</td>
+                <td>{{ b.nom }}</td>
+                <td>{{ b.prenom }}</td>
+                <td>{{ b.dernierPointage ? (b.dernierPointage | date: 'dd/MM/yyyy') : 'jamais' }}</td>
+                <td><button pButton label="Retirer le badge siège" icon="pi pi-user-minus" class="p-button-sm p-button-outlined p-button-danger"
+                            (click)="retirerBadge(b)"></button></td>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr><td colspan="5" class="text-center text-color-secondary">Tous les badgés siège ont pointé au moins une fois sur les 30 derniers jours</td></tr>
+        </ng-template>
+    </p-table>
+    <ng-template pTemplate="footer">
+        <button pButton label="Fermer" class="p-button-text" (click)="badgesSansPointageVisible = false"></button>
     </ng-template>
 </p-dialog>

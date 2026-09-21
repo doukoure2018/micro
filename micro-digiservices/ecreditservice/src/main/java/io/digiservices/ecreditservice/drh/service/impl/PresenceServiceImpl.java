@@ -171,13 +171,15 @@ public class PresenceServiceImpl implements PresenceService {
 
     /** Recalcule le statut de chaque agent du personnel pour chaque jour ouvré de la liste. */
     private int rapprocherJours(Set<LocalDate> jours) {
-        LocalTime heureArrivee = LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_ARRIVEE", "08:00"));
+        LocalTime heureArrivee = LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_ARRIVEE", "08:30"));
         LocalTime heureSortie = LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE", "16:30"));
         LocalTime heureSortieVendredi = LocalTime.parse(
-                presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE_VENDREDI", "13:00"));
+                presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE_VENDREDI", "14:00"));
         LocalTime heureSortieSamedi = LocalTime.parse(
                 presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE_SAMEDI", "14:00"));
-        int tolerance = Integer.parseInt(presenceRepository.parametreTexte("PRESENCE_TOLERANCE_MIN", "15"));
+        // V150 : marges distinctes — retard à partir de 08:36 (5 min), départ anticipé avant 16:25 (5 min)
+        int toleranceArrivee = toleranceArrivee();
+        int toleranceDepart = toleranceDepart();
         List<Map<String, Object>> personnel = presenceRepository.personnelActif();
 
         LocalDate min = jours.stream().min(LocalDate::compareTo).orElseThrow();
@@ -193,37 +195,71 @@ public class PresenceServiceImpl implements PresenceService {
             presenceRepository.supprimerPresencesJour(jour);
             LocalTime sortieDuJour = heureSortieDuJour(jour, heureSortie, heureSortieVendredi, heureSortieSamedi);
             Map<String, LocalTime[]> pointages = presenceRepository.pointagesDuJour(jour);
+            Map<String, String[]> declarations = presenceRepository.declarationsCouvrantJour(jour);
             for (Map<String, Object> agent : personnel) {
                 String matricule = String.valueOf(agent.get("matricule"));
                 String nom = (agent.get("prenom") + " " + agent.get("nom")).strip();
                 Long userId = agent.get("user_id") == null ? null : ((Number) agent.get("user_id")).longValue();
                 LocalTime[] p = pointages.get(matricule);
+                String[] declaration = declarations.get(matricule);
+                String motifDeclare = declaration == null ? null : declaration[0];
+                String observation = declaration == null ? null : libelleObservation(declaration[0], declaration[1]);
 
-                if (p == null) {
-                    String justification = null;
-                    if (userId != null) {
+                if ("OUBLI_BADGE".equals(motifDeclare)) {
+                    // Déclaré présent par la DRH : ni retard ni départ anticipé, les heures badgées
+                    // (partielles ou absentes) sont conservées à titre indicatif
+                    presenceRepository.upsertPresenceJour(jour, matricule, nom, userId, "PRESENT_DECLARE",
+                            0, 0, null, observation, p == null ? null : p[0], p == null ? null : p[1]);
+                } else if (p == null) {
+                    String justification = motifDeclare; // MISSION / FORMATION / MALADIE / AUTRE
+                    if (justification == null && userId != null) {
                         if (presenceRepository.congeCouvreJour(userId, jour)) justification = "CONGE";
                         else if (presenceRepository.permissionCouvreJour(userId, jour)) justification = "PERMISSION";
                     }
                     presenceRepository.upsertPresenceJour(jour, matricule, nom, userId,
                             justification != null ? "ABSENT_JUSTIFIE" : "ABSENT_NON_JUSTIFIE",
-                            0, 0, justification, null, null);
+                            0, 0, justification, observation, null, null);
                 } else {
                     long minutesRetard = Math.max(0,
-                            Duration.between(heureArrivee, p[0]).toMinutes() - tolerance);
+                            Duration.between(heureArrivee, p[0]).toMinutes() - toleranceArrivee);
                     long minutesDepart = Math.max(0,
-                            Duration.between(p[1], sortieDuJour).toMinutes() - tolerance);
+                            Duration.between(p[1], sortieDuJour).toMinutes() - toleranceDepart);
                     String statut = minutesRetard > 0 && minutesDepart > 0 ? "RETARD_ET_DEPART"
                             : minutesRetard > 0 ? "RETARD"
                             : minutesDepart > 0 ? "DEPART_ANTICIPE"
                             : "PRESENT";
                     presenceRepository.upsertPresenceJour(jour, matricule, nom, userId, statut,
-                            (int) minutesRetard, (int) minutesDepart, null, p[0], p[1]);
+                            (int) minutesRetard, (int) minutesDepart, null, observation, p[0], p[1]);
                 }
             }
             calcules++;
         }
         return calcules;
+    }
+
+    /** V150 : tolérance d'arrivée (clé dédiée, repli sur l'ancienne clé unique). */
+    private int toleranceArrivee() {
+        return Integer.parseInt(presenceRepository.parametreTexte("PRESENCE_TOLERANCE_ARRIVEE_MIN",
+                presenceRepository.parametreTexte("PRESENCE_TOLERANCE_MIN", "5")));
+    }
+
+    /** V150 : tolérance de départ (clé dédiée, repli sur l'ancienne clé unique). */
+    private int toleranceDepart() {
+        return Integer.parseInt(presenceRepository.parametreTexte("PRESENCE_TOLERANCE_DEPART_MIN",
+                presenceRepository.parametreTexte("PRESENCE_TOLERANCE_MIN", "5")));
+    }
+
+    static final Map<String, String> LIBELLES_MOTIF = Map.of(
+            "OUBLI_BADGE", "Oubli de badge",
+            "MISSION", "Mission",
+            "FORMATION", "Formation",
+            "MALADIE", "Maladie",
+            "AUTRE", "Autre");
+
+    private static String libelleObservation(String motif, String commentaire) {
+        String base = LIBELLES_MOTIF.getOrDefault(motif, motif);
+        String texte = (commentaire == null || commentaire.isBlank()) ? base : base + " : " + commentaire.strip();
+        return texte.length() > 300 ? texte.substring(0, 300) : texte;
     }
 
     // ==================== Consultation ====================
@@ -247,7 +283,7 @@ public class PresenceServiceImpl implements PresenceService {
         if (jour == null || !jour.equals(maintenant.toLocalDate())) return false;
         LocalTime sortie = heureSortieDuJour(jour,
                 LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE", "16:30")),
-                LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE_VENDREDI", "13:00")),
+                LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE_VENDREDI", "14:00")),
                 LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE_SAMEDI", "14:00")));
         return maintenant.toLocalTime().isBefore(sortie);
     }
@@ -285,6 +321,110 @@ public class PresenceServiceImpl implements PresenceService {
         List<SyntheseJourDto> synthese = presenceRepository.synthesePeriode(du, au);
         synthese.forEach(s -> s.setEnCours(jourEnCours(s.getJour())));
         return synthese;
+    }
+
+    /** V150 : moyennes par jour ouvré, semaine par semaine (lundi -> samedi), à partir de la synthèse quotidienne. */
+    @Override
+    public List<SyntheseSemaineDto> syntheseSemaine(User drh, LocalDate du, LocalDate au) {
+        exigerDrh(drh);
+        List<SyntheseJourDto> jours = presenceRepository.synthesePeriode(du, au);
+        Map<LocalDate, List<SyntheseJourDto>> parSemaine = new java.util.TreeMap<>();
+        for (SyntheseJourDto j : jours) {
+            if (j.getTotal() == 0) continue;
+            LocalDate lundi = j.getJour().with(java.time.temporal.TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            parSemaine.computeIfAbsent(lundi, k -> new ArrayList<>()).add(j);
+        }
+        List<SyntheseSemaineDto> resultat = new ArrayList<>();
+        java.time.format.DateTimeFormatter fmt = java.time.format.DateTimeFormatter.ofPattern("dd/MM");
+        for (var e : parSemaine.entrySet()) {
+            List<SyntheseJourDto> s = e.getValue();
+            int n = s.size();
+            long presentsTotal = s.stream().mapToLong(SyntheseJourDto::getPresentsTotal).sum();
+            long effectif = s.stream().mapToLong(SyntheseJourDto::getTotal).sum();
+            LocalDate samedi = e.getKey().plusDays(5);
+            resultat.add(SyntheseSemaineDto.builder()
+                    .semaine("Semaine du " + e.getKey().format(fmt) + " au " + samedi.format(fmt))
+                    .du(e.getKey()).au(samedi)
+                    .joursOuvres(n)
+                    .presentsTotalMoyen(arrondi((double) presentsTotal / n))
+                    .retardsMoyen(arrondi(s.stream().mapToLong(SyntheseJourDto::getRetards).sum() / (double) n))
+                    .departsAnticipesMoyen(arrondi(s.stream().mapToLong(SyntheseJourDto::getDepartsAnticipes).sum() / (double) n))
+                    .absentsJustifiesMoyen(arrondi(s.stream().mapToLong(SyntheseJourDto::getAbsentsJustifies).sum() / (double) n))
+                    .absentsNonJustifiesMoyen(arrondi(s.stream().mapToLong(SyntheseJourDto::getAbsentsNonJustifies).sum() / (double) n))
+                    .effectifMoyen(arrondi((double) effectif / n))
+                    .tauxPresence(effectif == 0 ? 0 : arrondi(100.0 * presentsTotal / effectif))
+                    .enCours(s.stream().anyMatch(j -> jourEnCours(j.getJour())))
+                    .build());
+        }
+        return resultat;
+    }
+
+    private static double arrondi(double v) {
+        return Math.round(v * 10.0) / 10.0;
+    }
+
+    // ==================== V150 : déclarations manuelles DRH ====================
+
+    @Override
+    @Transactional
+    public DeclarationDto declarer(User drh, DeclarationRequest request) {
+        exigerDrh(drh);
+        if (request == null || request.getMatricule() == null || request.getMatricule().isBlank()) {
+            throw new ValidationException("Le matricule est obligatoire");
+        }
+        if (!presenceRepository.matriculeConnu(request.getMatricule().strip())) {
+            throw new ValidationException("Matricule inconnu dans le fichier du personnel : " + request.getMatricule());
+        }
+        if (request.getJourDebut() == null) {
+            throw new ValidationException("La date de début est obligatoire");
+        }
+        if (request.getJourFin() == null) {
+            request.setJourFin(request.getJourDebut());
+        }
+        if (request.getJourFin().isBefore(request.getJourDebut())) {
+            throw new ValidationException("La date de fin doit être postérieure ou égale à la date de début");
+        }
+        if (java.time.temporal.ChronoUnit.DAYS.between(request.getJourDebut(), request.getJourFin()) > 60) {
+            throw new ValidationException("Une déclaration couvre au plus 60 jours");
+        }
+        if (request.getMotif() == null || !LIBELLES_MOTIF.containsKey(request.getMotif())) {
+            throw new ValidationException("Motif invalide (attendu : OUBLI_BADGE, MISSION, FORMATION, MALADIE, AUTRE)");
+        }
+        if (request.getCommentaire() != null && request.getCommentaire().length() > 300) {
+            throw new ValidationException("Le commentaire ne peut pas dépasser 300 caractères");
+        }
+        request.setMatricule(request.getMatricule().strip());
+        long id = presenceRepository.insererDeclaration(request, drh.getUserId(),
+                (drh.getFirstName() + " " + drh.getLastName()).strip());
+        // Le rapprochement tient compte de la déclaration dès maintenant (et à chaque recalcul horaire)
+        recalculerInterne(request.getJourDebut(), request.getJourFin());
+        log.info("Déclaration présence {} : {} {} du {} au {} par {}", id, request.getMotif(), request.getMatricule(),
+                request.getJourDebut(), request.getJourFin(), drh.getUserId());
+        return presenceRepository.declarationParId(id);
+    }
+
+    @Override
+    public List<DeclarationDto> declarations(User drh, LocalDate du, LocalDate au, String matricule) {
+        exigerDrh(drh);
+        return presenceRepository.declarationsPeriode(du, au, matricule);
+    }
+
+    @Override
+    @Transactional
+    public void supprimerDeclaration(User drh, long declarationId) {
+        exigerDrh(drh);
+        DeclarationDto d = presenceRepository.declarationParId(declarationId);
+        if (d == null || !d.isActif()) {
+            throw new ValidationException("Déclaration introuvable ou déjà retirée");
+        }
+        presenceRepository.desactiverDeclaration(declarationId);
+        recalculerInterne(d.getJourDebut(), d.getJourFin());
+    }
+
+    @Override
+    public List<BadgeSansPointageDto> badgesSansPointage(User drh, int jours) {
+        exigerDrh(drh);
+        return presenceRepository.badgesSansPointage(LocalDate.now(ZoneId.of("Africa/Conakry")).minusDays(Math.max(1, jours)));
     }
 
     @Override

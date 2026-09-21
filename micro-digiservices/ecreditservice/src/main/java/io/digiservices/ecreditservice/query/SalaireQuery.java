@@ -53,6 +53,11 @@ public class SalaireQuery {
         UPDATE info_personnel SET badge_siege = :badge, updated_at = NOW() WHERE id = :id
         """;
 
+    /** V150 : correction du nom / prénom (le matricule, clé du badge et des présences, ne change pas). */
+    public static final String UPDATE_INFO_PERSONNEL_NOM = """
+        UPDATE info_personnel SET nom = :nom, prenom = :prenom, updated_at = NOW() WHERE id = :id
+        """;
+
     /**
      * Compter le nombre de personnels
      */

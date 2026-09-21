@@ -10,7 +10,9 @@ import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
-import { MessageService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import * as XLSX from 'xlsx';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DrhService } from '@/service/drh.service';
 
@@ -21,6 +23,7 @@ interface StatutPresence {
 
 const STATUTS_PRESENCE: { [k: string]: StatutPresence } = {
     PRESENT: { label: 'Présent', severity: 'success' },
+    PRESENT_DECLARE: { label: 'Présent (déclaré DRH)', severity: 'success' },
     RETARD: { label: "Retard à l'arrivée", severity: 'warn' },
     DEPART_ANTICIPE: { label: "Départ avant l'heure", severity: 'warn' },
     RETARD_ET_DEPART: { label: 'Retard + départ anticipé', severity: 'danger' },
@@ -35,10 +38,11 @@ const STATUTS_PRESENCE: { [k: string]: StatutPresence } = {
 @Component({
     selector: 'app-presences',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, CalendarModule, DropdownModule, InputTextModule, SelectButtonModule, TableModule, TagModule, ToastModule, TooltipModule],
-    providers: [MessageService],
+    imports: [CommonModule, FormsModule, ButtonModule, CalendarModule, ConfirmDialogModule, DropdownModule, InputTextModule, SelectButtonModule, TableModule, TagModule, ToastModule, TooltipModule],
+    providers: [MessageService, ConfirmationService],
     template: `
         <p-toast />
+        <p-confirmDialog />
         <div class="card">
             <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
                 <div>
@@ -56,6 +60,9 @@ const STATUTS_PRESENCE: { [k: string]: StatutPresence } = {
                     <button pButton icon="pi pi-refresh" label="Recalculer la période" class="p-button-outlined"
                             pTooltip="Repasse le rapprochement sur la période affichée (personnel badgé uniquement)"
                             [loading]="recalculEnCours()" (click)="recalculer()"></button>
+                    <button pButton icon="pi pi-file-excel" label="Exporter Excel" class="p-button-outlined p-button-success"
+                            pTooltip="Synthèse par jour, par semaine et détail par agent de la période affichée"
+                            [loading]="exportEnCours()" (click)="exporterExcel()"></button>
                     <p-calendar [(ngModel)]="du" dateFormat="dd/mm/yy" [showIcon]="true" placeholder="Du" (onSelect)="charger()" />
                     <p-calendar [(ngModel)]="au" dateFormat="dd/mm/yy" [showIcon]="true" placeholder="Au" (onSelect)="charger()" />
                 </div>
@@ -77,7 +84,10 @@ const STATUTS_PRESENCE: { [k: string]: StatutPresence } = {
             <p-table *ngIf="vue === 'synthese'" [value]="synthese()" responsiveLayout="scroll">
                 <ng-template pTemplate="header">
                     <tr>
-                        <th>Jour</th><th>Présents</th><th>Retards à l'arrivée</th><th>Départs avant l'heure</th>
+                        <th>Jour</th>
+                        <th pTooltip="Personnes effectivement venues : présents + retards + départs avant l'heure (chacune comptée une fois)">Total présents</th>
+                        <th pTooltip="Présents à l'heure (dont présents déclarés par la DRH : oubli de badge)">Présents à l'heure</th>
+                        <th>Retards à l'arrivée</th><th>Départs avant l'heure</th>
                         <th>Absents justifiés</th><th>Absents NON justifiés</th><th>Effectif contrôlé</th>
                     </tr>
                 </ng-template>
@@ -88,7 +98,8 @@ const STATUTS_PRESENCE: { [k: string]: StatutPresence } = {
                             <p-tag *ngIf="s.enCours" value="Journée en cours" severity="info" class="ml-2"
                                    pTooltip="Chiffres provisoires : recalculés toutes les heures jusqu'à l'heure de sortie réglementaire" />
                         </td>
-                        <td class="text-green-600 font-medium">{{ s.presents }}</td>
+                        <td class="text-green-700 font-bold">{{ s.presentsTotal }}</td>
+                        <td class="text-green-600">{{ s.presents }}</td>
                         <td [class.text-orange-500]="s.retards > 0">{{ s.retards }}</td>
                         <td [class.text-orange-500]="s.departsAnticipes > 0">{{ s.departsAnticipes }}</td>
                         <td>{{ s.absentsJustifies }}</td>
@@ -97,11 +108,73 @@ const STATUTS_PRESENCE: { [k: string]: StatutPresence } = {
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
-                    <tr><td colspan="7" class="text-center text-color-secondary">
+                    <tr><td colspan="8" class="text-center text-color-secondary">
                         Aucune donnée sur la période — importez un fichier badgeuse
                     </td></tr>
                 </ng-template>
             </p-table>
+
+            <!-- ===== Synthèse par semaine (V150) : moyennes par jour ouvré ===== -->
+            <p-table *ngIf="vue === 'semaine'" [value]="semaines()" responsiveLayout="scroll">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Semaine</th><th>Jours ouvrés</th>
+                        <th pTooltip="Moyenne par jour des personnes effectivement venues">Total présents / jour</th>
+                        <th>Retards / jour</th><th>Départs avant l'heure / jour</th>
+                        <th>Absents justifiés / jour</th><th>Absents NON justifiés / jour</th>
+                        <th>Effectif contrôlé / jour</th>
+                        <th pTooltip="Somme des présents sur la semaine / somme des effectifs contrôlés">Taux de présence</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-w>
+                    <tr>
+                        <td class="font-medium">{{ w.semaine }}
+                            <p-tag *ngIf="w.enCours" value="En cours" severity="info" class="ml-2" pTooltip="Semaine non terminée : moyennes provisoires" />
+                        </td>
+                        <td>{{ w.joursOuvres }}</td>
+                        <td class="text-green-700 font-bold">{{ w.presentsTotalMoyen | number: '1.0-1' }}</td>
+                        <td [class.text-orange-500]="w.retardsMoyen > 0">{{ w.retardsMoyen | number: '1.0-1' }}</td>
+                        <td [class.text-orange-500]="w.departsAnticipesMoyen > 0">{{ w.departsAnticipesMoyen | number: '1.0-1' }}</td>
+                        <td>{{ w.absentsJustifiesMoyen | number: '1.0-1' }}</td>
+                        <td [class.text-red-500]="w.absentsNonJustifiesMoyen > 0">{{ w.absentsNonJustifiesMoyen | number: '1.0-1' }}</td>
+                        <td>{{ w.effectifMoyen | number: '1.0-1' }}</td>
+                        <td class="font-medium" [class.text-green-700]="w.tauxPresence >= 80" [class.text-orange-500]="w.tauxPresence < 80">{{ w.tauxPresence | number: '1.0-1' }} %</td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr><td colspan="9" class="text-center text-color-secondary">Aucune semaine contrôlée sur la période</td></tr>
+                </ng-template>
+            </p-table>
+
+            <!-- ===== Déclarations DRH (V150) : oubli de badge, mission, formation, maladie ===== -->
+            <div *ngIf="vue === 'declarations'">
+                <div class="p-2 border-round mb-2 text-sm" style="background:var(--surface-100)">
+                    Déclarations saisies par la DRH depuis <b>Gestion du personnel</b> (action « Déclarer une absence / un oubli de badge »).
+                    Un oubli de badge donne le statut « Présent (déclaré DRH) » ; les autres motifs justifient l'absence.
+                    Retirer une déclaration recalcule les jours concernés.
+                </div>
+                <p-table [value]="declarations()" responsiveLayout="scroll" [paginator]="true" [rows]="25">
+                    <ng-template pTemplate="header">
+                        <tr><th>Agent</th><th>Mat.</th><th>Du</th><th>Au</th><th>Motif</th><th>Commentaire</th><th>Déclarée par</th><th></th></tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-d>
+                        <tr>
+                            <td>{{ d.nom || '—' }}</td>
+                            <td>{{ d.matricule }}</td>
+                            <td>{{ d.jourDebut | date: 'dd/MM/yyyy' }}</td>
+                            <td>{{ d.jourFin | date: 'dd/MM/yyyy' }}</td>
+                            <td><p-tag [value]="libelleMotif(d.motif)" [severity]="d.motif === 'OUBLI_BADGE' ? 'success' : 'info'" /></td>
+                            <td>{{ d.commentaire || '—' }}</td>
+                            <td class="text-sm text-color-secondary">{{ d.declareParNom }} · {{ d.createdAt | date: 'dd/MM HH:mm' }}</td>
+                            <td><button pButton icon="pi pi-trash" class="p-button-text p-button-danger p-button-sm"
+                                        pTooltip="Retirer la déclaration" (click)="supprimerDeclaration(d)"></button></td>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="emptymessage">
+                        <tr><td colspan="8" class="text-center text-color-secondary">Aucune déclaration sur la période</td></tr>
+                    </ng-template>
+                </p-table>
+            </div>
 
             <!-- ===== Détail par agent ===== -->
             <div *ngIf="vue === 'detail'">
@@ -119,8 +192,9 @@ const STATUTS_PRESENCE: { [k: string]: StatutPresence } = {
                     <ng-template pTemplate="header">
                         <tr><th>Jour</th><th>Agent</th><th>Mat.</th><th>Dir.</th><th>Entrée</th><th>Sortie</th>
                             <th pTooltip="Sorties en heures de travail reconstruites depuis le journal des mouvements (pause 13h-14h30 déduite)">Hors bureau</th>
-                            <th pTooltip="Minutes au-delà de la pause déjeuner 13h00-14h30">Dépass. pause</th>
-                            <th>Statut</th></tr>
+                            <th pTooltip="Minutes au-delà de la pause d'une heure (fenêtre 13h00-14h30)">Dépass. pause</th>
+                            <th>Statut</th>
+                            <th pTooltip="Déclaration de la DRH : oubli de badge, mission, formation, maladie…">Observation</th></tr>
                     </ng-template>
                     <ng-template pTemplate="body" let-p>
                         <tr>
@@ -144,12 +218,13 @@ const STATUTS_PRESENCE: { [k: string]: StatutPresence } = {
                                 </div>
                                 <div class="text-xs text-color-secondary" *ngIf="p.minutesRetard > 0">+{{ p.minutesRetard }} min de retard</div>
                                 <div class="text-xs text-color-secondary" *ngIf="p.minutesDepart > 0 && !p.enCours">parti {{ p.minutesDepart }} min trop tôt</div>
-                                <div class="text-xs" *ngIf="p.justification">{{ p.justification === 'CONGE' ? 'En congé validé' : 'Permission sociale validée' }}</div>
+                                <div class="text-xs" *ngIf="p.justification">{{ libelleJustification(p.justification) }}</div>
                             </td>
+                            <td class="text-sm" [class.text-color-secondary]="!p.observation">{{ p.observation || '—' }}</td>
                         </tr>
                     </ng-template>
                     <ng-template pTemplate="emptymessage">
-                        <tr><td colspan="9" class="text-center text-color-secondary">Aucune présence sur la période</td></tr>
+                        <tr><td colspan="10" class="text-center text-color-secondary">Aucune présence sur la période</td></tr>
                     </ng-template>
                 </p-table>
             </div>
@@ -190,9 +265,13 @@ const STATUTS_PRESENCE: { [k: string]: StatutPresence } = {
 export class PresencesComponent implements OnInit {
     private drhService = inject(DrhService);
     private messageService = inject(MessageService);
+    private confirmationService = inject(ConfirmationService);
     private destroyRef = inject(DestroyRef);
 
     synthese = signal<any[]>([]);
+    semaines = signal<any[]>([]);
+    declarations = signal<any[]>([]);
+    exportEnCours = signal(false);
     presences = signal<any[]>([]);
     nonRapproches = signal<any[]>([]);
     dernierImport = signal<any | null>(null);
@@ -216,12 +295,27 @@ export class PresencesComponent implements OnInit {
             });
     }
 
-    vue: 'synthese' | 'detail' | 'non-rapproches' = 'synthese';
+    vue: 'synthese' | 'semaine' | 'detail' | 'declarations' | 'non-rapproches' = 'synthese';
     vues = [
-        { label: 'Synthèse', value: 'synthese' },
+        { label: 'Synthèse par jour', value: 'synthese' },
+        { label: 'Synthèse par semaine', value: 'semaine' },
         { label: 'Détail par agent', value: 'detail' },
+        { label: 'Déclarations DRH', value: 'declarations' },
         { label: 'Non rapprochés', value: 'non-rapproches' }
     ];
+
+    readonly MOTIFS: { [k: string]: string } = {
+        OUBLI_BADGE: 'Oubli de badge', MISSION: 'Mission', FORMATION: 'Formation', MALADIE: 'Maladie', AUTRE: 'Autre',
+        CONGE: 'En congé validé', PERMISSION: 'Permission sociale validée'
+    };
+
+    libelleMotif(m: string): string {
+        return this.MOTIFS[m] || m;
+    }
+
+    libelleJustification(j: string): string {
+        return this.MOTIFS[j] || j;
+    }
 
     statutFiltre: string | null = null;
     /** Recherche libre par nom ou matricule (détail + non rapprochés). */
@@ -273,6 +367,72 @@ export class PresencesComponent implements OnInit {
         });
         this.drhService.pointagesNonRapproches$(du, au).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (r) => this.nonRapproches.set((r.data as any)?.pointages || [])
+        });
+        this.drhService.syntheseSemainePresences$(du, au).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: (r) => this.semaines.set((r.data as any)?.semaines || [])
+        });
+        this.drhService.declarationsPresence$(du, au).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: (r) => this.declarations.set((r.data as any)?.declarations || [])
+        });
+    }
+
+    supprimerDeclaration(d: any): void {
+        this.confirmationService.confirm({
+            header: 'Retirer la déclaration',
+            message: `Retirer la déclaration « ${this.libelleMotif(d.motif)} » de ${d.nom || d.matricule} du ${d.jourDebut} au ${d.jourFin} ? Les présences de ces jours seront recalculées.`,
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Oui, retirer', rejectLabel: 'Annuler', acceptButtonStyleClass: 'p-button-danger',
+            accept: () => this.drhService.supprimerDeclarationPresence$(d.declarationId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+                next: () => {
+                    this.messageService.add({ severity: 'success', summary: 'Retirée', detail: 'Déclaration retirée, présences recalculées' });
+                    this.charger();
+                },
+                error: (e) => this.erreur(e)
+            })
+        });
+    }
+
+    /** Export Excel (V150) : synthèse par jour, par semaine et détail par agent sur la période affichée. */
+    exporterExcel(): void {
+        if (!this.du || !this.au) return;
+        const du = this.toIso(this.du), au = this.toIso(this.au);
+        this.exportEnCours.set(true);
+        // Le détail exporté ignore le filtre statut de l'écran : on recharge la période complète
+        this.drhService.presences$(du, au).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: (r) => {
+                this.exportEnCours.set(false);
+                const details = ((r.data as any)?.presences || []) as any[];
+                const feuilleJour = this.synthese().map((s: any) => ({
+                    'Jour': s.jour, 'Total présents': s.presentsTotal, "Présents à l'heure": s.presents,
+                    'Retards': s.retards, "Départs avant l'heure": s.departsAnticipes,
+                    'Absents justifiés': s.absentsJustifies, 'Absents non justifiés': s.absentsNonJustifies,
+                    'Effectif contrôlé': s.total
+                }));
+                const feuilleSemaine = this.semaines().map((w: any) => ({
+                    'Semaine': w.semaine, 'Jours ouvrés': w.joursOuvres, 'Total présents / jour': w.presentsTotalMoyen,
+                    'Retards / jour': w.retardsMoyen, "Départs avant l'heure / jour": w.departsAnticipesMoyen,
+                    'Absents justifiés / jour': w.absentsJustifiesMoyen, 'Absents non justifiés / jour': w.absentsNonJustifiesMoyen,
+                    'Effectif contrôlé / jour': w.effectifMoyen, 'Taux de présence (%)': w.tauxPresence
+                }));
+                const feuilleDetail = details.map((p: any) => ({
+                    'Jour': p.jour, 'Agent': p.nom, 'Matricule': p.matricule, 'Direction': p.departementCode || '',
+                    'Entrée': p.premiereEntree || '', 'Sortie': p.derniereSortie || '',
+                    'Statut': this.statut(p.statut).label, 'Retard (min)': p.minutesRetard || 0,
+                    'Départ anticipé (min)': p.minutesDepart || 0, 'Hors bureau (min)': p.minutesHorsBureau || 0,
+                    'Dépassement pause (min)': p.minutesDepassementPause || 0,
+                    'Justification': p.justification ? this.libelleJustification(p.justification) : '',
+                    'Observation': p.observation || ''
+                }));
+                const classeur = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(classeur, XLSX.utils.json_to_sheet(feuilleJour), 'Synthèse par jour');
+                XLSX.utils.book_append_sheet(classeur, XLSX.utils.json_to_sheet(feuilleSemaine), 'Synthèse par semaine');
+                XLSX.utils.book_append_sheet(classeur, XLSX.utils.json_to_sheet(feuilleDetail), 'Détail par agent');
+                XLSX.writeFile(classeur, `presences_${du}_${au}.xlsx`);
+            },
+            error: (e) => {
+                this.exportEnCours.set(false);
+                this.erreur(e);
+            }
         });
     }
 

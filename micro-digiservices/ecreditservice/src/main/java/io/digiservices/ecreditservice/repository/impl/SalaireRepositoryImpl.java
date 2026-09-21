@@ -73,6 +73,15 @@ public class SalaireRepositoryImpl implements SalaireRepository {
     }
 
     @Override
+    public int updateInfoPersonnelNom(Long id, String nom, String prenom) {
+        return jdbcClient.sql(SalaireQuery.UPDATE_INFO_PERSONNEL_NOM)
+                .param("id", id)
+                .param("nom", nom)
+                .param("prenom", prenom)
+                .update();
+    }
+
+    @Override
     @Transactional
     public Long saveInfoPersonnel(InfoPersonnelDto personnel) {
         log.debug("Saving info personnel: {}", personnel.getMatricule());

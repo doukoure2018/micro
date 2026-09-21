@@ -1112,6 +1112,11 @@ export class UserService {
         return this.http.put<IResponse>(`${this.server}/ecredit/salaire/info-personnel/${id}/badge?actif=${actif}`, {}).pipe(catchError(this.handleError));
     }
 
+    /** V150 : corriger le nom / prénom d'un personnel (matricule inchangé). */
+    updateNomPersonnel(id: number, nom: string, prenom: string): Observable<IResponse> {
+        return this.http.put<IResponse>(`${this.server}/ecredit/salaire/info-personnel/${id}/nom`, { nom, prenom }).pipe(catchError(this.handleError));
+    }
+
     addInfoPersonnel(personnel: { matricule: string; nom: string; prenom: string; numeroCompte?: string }): Observable<IResponse> {
         return this.http.post<IResponse>(`${this.server}/ecredit/salaire/info-personnel`, personnel).pipe(catchError(this.handleError));
     }
