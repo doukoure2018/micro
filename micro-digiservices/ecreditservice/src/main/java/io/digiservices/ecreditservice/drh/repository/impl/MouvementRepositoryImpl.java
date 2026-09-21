@@ -161,6 +161,11 @@ public class MouvementRepositoryImpl implements MouvementRepository {
     }
 
     @Override
+    public int prochainMatriculeTechnique() {
+        return jdbcClient.sql(MouvementQuery.PROCHAIN_MATRICULE_TECHNIQUE).query(Integer.class).single();
+    }
+
+    @Override
     public String parametreTexte(String cle, String defaut) {
         return jdbcClient.sql(MouvementQuery.PARAMETRE_TEXTE)
                 .param("cle", cle)

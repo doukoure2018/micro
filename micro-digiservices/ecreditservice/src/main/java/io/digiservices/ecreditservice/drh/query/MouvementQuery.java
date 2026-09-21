@@ -117,6 +117,17 @@ public final class MouvementQuery {
         DO UPDATE SET matricule = EXCLUDED.matricule, source = 'MANUEL', updated_at = CURRENT_TIMESTAMP
         """;
 
+    /**
+     * Matricule technique suivant pour une personne badgée sans matricule de paie : plage réservée
+     * à partir de 90001 (les matricules de paie sont < 1000 au 2026-09-21).
+     */
+    public static final String PROCHAIN_MATRICULE_TECHNIQUE = """
+        WITH numeriques AS MATERIALIZED (
+            SELECT CAST(matricule AS INTEGER) AS m FROM info_personnel WHERE matricule ~ '^[0-9]{5,9}$'
+        )
+        SELECT COALESCE(MAX(m), 90000) + 1 FROM numeriques WHERE m >= 90001
+        """;
+
     /** Ré-identifie a posteriori les mouvements déjà importés avec ce badge. */
     public static final String APPLIQUER_BADGE_AUX_MOUVEMENTS = """
         UPDATE drh_mouvement

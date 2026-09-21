@@ -48,6 +48,9 @@ public interface MouvementRepository {
 
     boolean matriculeConnu(String matricule);
 
+    /** Matricule technique suivant (plage 90001+) pour une personne badgée sans matricule de paie. */
+    int prochainMatriculeTechnique();
+
     String parametreTexte(String cle, String defaut);
 
     // ===== Tableau de bord du jour =====

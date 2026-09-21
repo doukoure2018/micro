@@ -66,7 +66,7 @@ public class DemandeIndServiceImpl implements DemandeIndService {
         int rows = demandeIndRepository.updateStatutDemandeInd(demandeindividuel_id,statut,codUsuarios);
         if (rows == 0) {
             throw new ValidationException("Approbation impossible : le dossier n'est pas en cours d'instruction chez l'agent "
-                    + "(déjà approuvé, en validation hiérarchique, non pris en charge, renvoyé à l'accueil ou rejeté)");
+                    + "(déjà approuvé, en validation hiérarchique, pas encore pris en charge, ou renvoyé à l'accueil)");
         }
     }
 
