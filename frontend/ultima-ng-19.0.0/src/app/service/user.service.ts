@@ -697,6 +697,9 @@ export class UserService {
     /**
      * Update fiche signalétique in SAF SQL Server from PostgreSQL data
      */
+    /** Référentiel SAF des secteurs économiques (liste {code, libelle}) : seuls ces codes passent la validation SAF. */
+    getSecteursSaf$ = (): Observable<IResponse> => this.http.get<IResponse>(`${this.server}/ecredit/reference/secteurs-saf`).pipe(catchError(this.handleError));
+
     updateFicheSignaletique$ = (updateData: any): Observable<IResponse> => this.http.put<IResponse>(`${this.server}/ecredit/update/fiche-signaletique`, updateData).pipe(tap(console.log), catchError(this.handleError));
 
     // Mettre à jour la personne physique

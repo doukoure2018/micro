@@ -283,6 +283,16 @@ public class CorrectionResource {
                 userClient.getUserByUuid(authentication.getName()),
                 updateFicheSignaletiqueDTO.getCodCliente());
 
+        // Longueurs SAF (conjoint, bénéficiaire) : refus explicite avant tout appel à SAF
+        String longueurs = io.digiservices.ecreditservice.validation.LongueursSaf.message(
+                updateFicheSignaletiqueDTO.getConjoint(), updateFicheSignaletiqueDTO.getNomBeneficiario(),
+                updateFicheSignaletiqueDTO.getRelacBeneficiario());
+        if (longueurs != null) {
+            log.warn("Correction PP {} refusée avant SAF : {}", updateFicheSignaletiqueDTO.getCodCliente(), longueurs);
+            return ResponseEntity.badRequest()
+                    .body(getResponse(request, Map.of("error", longueurs), longueurs, BAD_REQUEST));
+        }
+
         try {
             // Un code de référence vide ("") violerait une clé étrangère SAF (CL_SECTOR_ECONOMICO,
             // PA_DISTRITOS...) : on reprend la valeur actuelle de la fiche SAF pour ces champs.
@@ -395,6 +405,50 @@ public class CorrectionResource {
         }
     }
 
+
+    /**
+     * Référentiel SAF des secteurs économiques (CL.CL_SECTOR_ECONOMICO), pour que les formulaires ne
+     * proposent que des codes que SAF accepte (les codes 103/104/107/112 saisis jusqu'ici étaient refusés
+     * par la clé étrangère FK_CL_PERSO_FIS_VS_CL_SECTOR). Réponse : liste {code, libelle} triée par code.
+     */
+    @GetMapping("/reference/secteurs-saf")
+    public ResponseEntity<Response> secteursSaf(HttpServletRequest request) {
+        try {
+            List<Map<String, Object>> bruts = ebankingClient.getSecteursEconomiques();
+            List<Map<String, String>> secteurs = new ArrayList<>();
+            for (Map<String, Object> ligne : bruts == null ? List.<Map<String, Object>>of() : bruts) {
+                String code = valeurCle(ligne, "COD_SECTOR");
+                String libelle = valeurCle(ligne, "DES_SECTOR");
+                if (code == null || code.isBlank()) continue;
+                secteurs.add(Map.of("code", code.trim(), "libelle", libelle == null ? code.trim() : libelle.trim()));
+            }
+            secteurs.sort(java.util.Comparator.comparing(m -> m.get("code")));
+            return ResponseEntity.ok(getResponse(request, Map.of("secteurs", secteurs, "count", secteurs.size()),
+                    "Secteurs économiques SAF", OK));
+        } catch (Exception e) {
+            log.error("Secteurs SAF indisponibles : {}", e.getMessage());
+            return ResponseEntity.status(org.springframework.http.HttpStatus.BAD_GATEWAY)
+                    .body(getResponse(request, Map.of("error", "Référentiel SAF indisponible : " + e.getMessage()),
+                            "Référentiel SAF indisponible", org.springframework.http.HttpStatus.BAD_GATEWAY));
+        }
+    }
+
+    /** Cherche une clé (insensible à la casse) au premier niveau puis dans les sous-objets (clé composite JPA). */
+    @SuppressWarnings("unchecked")
+    private static String valeurCle(Map<String, Object> ligne, String cle) {
+        for (Map.Entry<String, Object> e : ligne.entrySet()) {
+            if (e.getKey().equalsIgnoreCase(cle)) {
+                return e.getValue() == null ? null : String.valueOf(e.getValue());
+            }
+        }
+        for (Object v : ligne.values()) {
+            if (v instanceof Map<?, ?> sous) {
+                String trouve = valeurCle((Map<String, Object>) sous, cle);
+                if (trouve != null) return trouve;
+            }
+        }
+        return null;
+    }
 
     @PostMapping("/addPersonnePhysique")
     public ResponseEntity<Response> insertPersonnePhysique(
