@@ -2,9 +2,9 @@ import { IResponse } from '@/interface/response';
 import { IUser } from '@/interface/user';
 import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, inject, Input, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, Input, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { BadgeModule } from 'primeng/badge';
 import { ButtonModule } from 'primeng/button';
@@ -38,10 +38,62 @@ export class CreditsValidesDeComponent implements OnInit {
 
     private userService = inject(UserService);
     private router = inject(Router);
+    private route = inject(ActivatedRoute);
     private destroyRef = inject(DestroyRef);
     private messageService = inject(MessageService);
 
+    /** Niveau qui a signé la validation finale : DG si visa DG, sinon DE, DR, DA (échelle de délégation). */
+    niveauFinal(d: any): 'DA' | 'DR' | 'DE' | 'DG' {
+        if (d?.dateValidationDg) return 'DG';
+        if (d?.dateValidationDe) return 'DE';
+        if (d?.dateValidationDr) return 'DR';
+        return 'DA';
+    }
+
+    validePar(d: any): string {
+        switch (this.niveauFinal(d)) {
+            case 'DG': return d.validatedByDg || '—';
+            case 'DE': return d.validatedByDe || '—';
+            case 'DR': return d.validatedByDr || '—';
+            default: return d.validatedByDa || '—';
+        }
+    }
+
+    dateValidationFinale(d: any): string | null {
+        return d?.dateValidationDg || d?.dateValidationDe || d?.dateValidationDr || d?.dateValidationDa || null;
+    }
+
+    /** Filtre par niveau de validation finale (cartes + paramètre d'URL ?niveau=DG depuis le menu). */
+    filtreNiveau = signal<'TOUS' | 'DA' | 'DR' | 'DE' | 'DG'>('TOUS');
+    readonly niveaux: { cle: 'TOUS' | 'DA' | 'DR' | 'DE' | 'DG'; libelle: string; description: string; couleur: string }[] = [
+        { cle: 'TOUS', libelle: 'Tous les crédits validés', description: 'Niveau final atteint', couleur: 'primary' },
+        { cle: 'DA', libelle: 'Validés par un DA', description: 'Montant ≤ 25 M', couleur: 'blue' },
+        { cle: 'DR', libelle: 'Validés par un DR', description: 'Montant ≤ 50 M', couleur: 'orange' },
+        { cle: 'DE', libelle: 'Validés par la DE', description: 'Montant ≤ 100 M', couleur: 'green' },
+        { cle: 'DG', libelle: 'Validés par le DG', description: 'Montant > 100 M, visa DG', couleur: 'purple' }
+    ];
+    compteurs = computed<Record<string, number>>(() => {
+        const r: Record<string, number> = { TOUS: this.demandes().length, DA: 0, DR: 0, DE: 0, DG: 0 };
+        this.demandes().forEach((d) => { r[this.niveauFinal(d)]++; });
+        return r;
+    });
+    demandesFiltrees = computed(() => {
+        const f = this.filtreNiveau();
+        return f === 'TOUS' ? this.demandes() : this.demandes().filter((d) => this.niveauFinal(d) === f);
+    });
+    severiteNiveau(n: string): 'info' | 'warn' | 'success' | 'contrast' | 'secondary' {
+        return n === 'DG' ? 'contrast' : n === 'DE' ? 'success' : n === 'DR' ? 'warn' : 'info';
+    }
+    titre(): string {
+        const f = this.filtreNiveau();
+        return f === 'TOUS' ? 'Crédits validés (tous niveaux)' : this.niveaux.find((n) => n.cle === f)?.libelle || 'Crédits validés';
+    }
+
     ngOnInit(): void {
+        const niveau = String(this.route.snapshot.queryParamMap.get('niveau') || '').toUpperCase();
+        if (['DA', 'DR', 'DE', 'DG'].includes(niveau)) {
+            this.filtreNiveau.set(niveau as any);
+        }
         this.loadData();
     }
 

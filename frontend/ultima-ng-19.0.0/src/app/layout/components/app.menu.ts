@@ -231,9 +231,15 @@ export class AppMenu {
         if (this.estManager('DE')) {
             items.push(
                 {
-                    label: 'Demandes crédits validées par DE',
+                    label: 'Crédits validés (tous niveaux)',
                     icon: 'pi pi-fw pi-check-circle',
                     routerLink: ['/dashboards/credits-valides-de']
+                },
+                {
+                    label: 'Crédits validés par le DG',
+                    icon: 'pi pi-fw pi-crown',
+                    routerLink: ['/dashboards/credits-valides-de'],
+                    queryParams: { niveau: 'DG' }
                 },
                 {
                     label: 'Rejets DG à confirmer',
