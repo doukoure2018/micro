@@ -478,6 +478,8 @@ public class WorkflowQuery {
                    d.date_validation_da AS "dateValidationDa",
                    d.date_validation_dr AS "dateValidationDr",
                    d.date_validation_de AS "dateValidationDe",
+                   d.validated_by_dg AS "validatedByDg",
+                   d.date_validation_dg AS "dateValidationDg",
                    d.createdat AS "createdAt",
                    del.libele AS "delegationLibele",
                    ag.libele AS "agenceLibele",
@@ -487,7 +489,8 @@ public class WorkflowQuery {
             LEFT JOIN agence ag ON d.agence = ag.id
             LEFT JOIN pointvente pv ON d.pos = pv.id
             WHERE d.validation_state = 'VALIDATED_FINAL'
-            ORDER BY d.date_validation_de DESC NULLS LAST, d.createdat DESC
+            ORDER BY COALESCE(d.date_validation_dg, d.date_validation_de, d.date_validation_dr, d.date_validation_da) DESC NULLS LAST,
+                     d.createdat DESC
             """;
 
     // ==================== DE ACTIONS ====================

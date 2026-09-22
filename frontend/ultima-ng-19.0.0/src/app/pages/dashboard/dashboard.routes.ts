@@ -43,7 +43,7 @@ export default [
     },
     {
         path: 'credits-valides-de',
-        data: { breadcrumb: 'Crédits validés par DE' },
+        data: { breadcrumb: 'Crédits validés' },
         loadComponent: () => import('./admin/de/credits-valides-de/credits-valides-de.component').then((c) => c.CreditsValidesDeComponent)
     },
     {
