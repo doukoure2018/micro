@@ -203,7 +203,7 @@
 
         <h3>3.4 Approbation par l'agent</h3>
         <p>
-            L'agent formule son <strong>avis</strong> et approuve le dossier → état <span class="state approved">APPROVED</span>. Son nom complet est enregistré comme créateur, ce qui servira à lui réadresser le dossier
+            L'agent formule son <strong>avis</strong> et approuve le dossier → état <span class="state approved">APPROVED</span>. À partir de <strong>50 000 000 GNF</strong> (hors fonctionnaire et groupe), l'approbation est refusée tant que l'analyse financière n'est pas <strong>soumise</strong> (contrôle côté page et côté serveur, 23/09/2026). Son nom complet est enregistré comme créateur, ce qui servira à lui réadresser le dossier
             en cas de correction ou de renvoi.
         </p>
         <p class="note">
@@ -239,7 +239,7 @@
                     </tr>
                     <tr>
                         <td><strong>Renvoyer à l'agent</strong> (motif)</td>
-                        <td>Cas particulier : le dossier a été adressé au <strong>mauvais DA</strong> (erreur de délégation/agence/PDV)</td>
+                        <td>Dossier adressé au <strong>mauvais DA</strong> (erreur de délégation/agence/PDV), ou dossier arrivé chez le DA <strong>sans analyse exploitable</strong> (bilan non soumis, analyse charges / agricole absente, pièces manquantes) : la validation est impossible mais le DA peut toujours rejeter ou renvoyer (règle du 23/09/2026)</td>
                         <td><span class="state retour">RETOUR_AGENT</span></td>
                     </tr>
                 </tbody>

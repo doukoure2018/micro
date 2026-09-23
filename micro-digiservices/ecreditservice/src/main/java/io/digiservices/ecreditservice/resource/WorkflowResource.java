@@ -128,7 +128,7 @@ public class WorkflowResource {
     public ResponseEntity<Response> getRenvoyeesAC(Authentication authentication, HttpServletRequest httpRequest) {
         var user = userClient.getUserByUuid(authentication.getName());
         String codUsuarios = user.getFirstName() + " " + user.getLastName();
-        var result = workflowService.getRenvoyeesAC(codUsuarios);
+        var result = workflowService.getRenvoyeesAC(codUsuarios, user.getUsername(), user.getUserId());
         return ResponseEntity.ok(
                 getResponse(httpRequest, Map.of("workflowDemandes", result), "Demandes renvoyées récupérées", OK));
     }

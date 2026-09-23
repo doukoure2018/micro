@@ -19,6 +19,9 @@ import java.util.List;
 @Slf4j
 public class WorkflowServiceImpl implements WorkflowService {
 
+    /** Seuil du bilan obligatoire (V107, aligne sur DetailComponent.SEUIL_BILAN_GNF cote front). */
+    private static final java.math.BigDecimal SEUIL_BILAN_GNF = new java.math.BigDecimal("50000000");
+
     private final WorkflowRepository workflowRepository;
     private final AnalyseChargesFonctionnaireService analyseChargesFonctionnaireService;
     private final io.digiservices.ecreditservice.service.AnalyseCreditAgricoleService analyseCreditAgricoleService;
@@ -32,9 +35,40 @@ public class WorkflowServiceImpl implements WorkflowService {
         // Crédit fonctionnaire : blocage si l'analyse charges & quotité n'est pas finançable
         analyseChargesFonctionnaireService.verifierFinancableSiFonctionnaire(demandeId);
         analyseCreditAgricoleService.verifierFinancableSiGroupeAgricole(demandeId);
+        verifierBilanSoumisSiRequis(demandeId);
         int rows = workflowRepository.approuverAC(demandeId, avis, codUsuarios, userId);
         if (rows == 0) {
             throw new ApiException("Demande non trouvée, état invalide ou dossier affecté à un autre agent");
+        }
+    }
+
+    /**
+     * Garde-fou 2026-09-23 (dossier 1389, 6 dossiers bloqués en prod) : un dossier individuel
+     * >= 50 M hors fonctionnaire et hors groupe ne peut pas être approuvé (ni renvoyé au DA)
+     * tant que l'analyse financière n'est pas SOUMISE ou VALIDEE. Sinon le DA reçoit un dossier
+     * qu'il ne peut ni valider ni rejeter. Les natures fonctionnaire / groupe ont leurs propres
+     * analyses (charges & quotité, analyse agricole), contrôlées par ailleurs.
+     */
+    private void verifierBilanSoumisSiRequis(Long demandeId) {
+        var ctx = workflowRepository.getControleBilanAC(demandeId);
+        if (ctx == null) {
+            return;
+        }
+        Object montantObj = ctx.get("montantDemande");
+        java.math.BigDecimal montant = montantObj == null ? java.math.BigDecimal.ZERO : new java.math.BigDecimal(montantObj.toString());
+        String nature = ctx.get("natureClient") == null ? "" : ctx.get("natureClient").toString();
+        if (montant.compareTo(SEUIL_BILAN_GNF) < 0
+                || io.digiservices.ecreditservice.validation.CreditFonctionnaireValidator.NATURE_FONCTIONNAIRE.equals(nature)
+                || io.digiservices.ecreditservice.validation.CreditGroupeValidator.NATURE_GROUPE.equals(nature)) {
+            return;
+        }
+        String statut = ctx.get("statutAnalyse") == null ? null : ctx.get("statutAnalyse").toString();
+        if (!"SOUMISE".equals(statut) && !"VALIDEE".equals(statut)) {
+            String etat = statut == null ? "non renseignée" : "en " + statut.toLowerCase();
+            throw new ApiException(
+                    "Approbation impossible : l'analyse financière (bilan, flux de trésorerie) est obligatoire "
+                            + "pour un montant supérieur ou égal à 50 000 000 GNF et elle est " + etat
+                            + ". Renseignez et soumettez l'analyse avant d'approuver la demande.");
         }
     }
 
@@ -108,8 +142,8 @@ public class WorkflowServiceImpl implements WorkflowService {
     }
 
     @Override
-    public List<WorkflowDemandeDto> getRenvoyeesAC(String codUsuarios) {
-        return workflowRepository.getRenvoyeesAC(codUsuarios);
+    public List<WorkflowDemandeDto> getRenvoyeesAC(String codUsuarios, String username, Long userId) {
+        return workflowRepository.getRenvoyeesAC(codUsuarios, username, userId);
     }
 
     @Override
@@ -119,6 +153,7 @@ public class WorkflowServiceImpl implements WorkflowService {
             throw new ApiException("La délégation et l'agence de destination sont obligatoires");
         }
         log.info("Resoumission au DA pour demande {} (delegation={}, agence={}, pos={})", demandeId, delegation, agence, pos);
+        verifierBilanSoumisSiRequis(demandeId);
         int rows = workflowRepository.resoumettreDA(demandeId, delegation, agence, pos);
         if (rows == 0) {
             throw new ApiException("Demande non trouvée ou état invalide pour la resoumission");

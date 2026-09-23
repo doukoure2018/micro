@@ -39,6 +39,20 @@ public class WorkflowRepositoryImpl implements WorkflowRepository {
     }
 
     @Override
+    public java.util.Map<String, Object> getControleBilanAC(Long demandeId) {
+        try {
+            var rows = jdbcClient.sql(SELECT_CONTROLE_BILAN_AC)
+                    .param("demandeId", demandeId)
+                    .query()
+                    .listOfRows();
+            return rows.isEmpty() ? null : rows.get(0);
+        } catch (Exception e) {
+            log.error("Erreur lors du controle bilan AC: {}", e.getMessage());
+            throw new ApiException("Erreur lors du controle de l'analyse financiere: " + e.getMessage());
+        }
+    }
+
+    @Override
     public int resoumettreCorrection(Long demandeId) {
         try {
             return jdbcClient.sql(UPDATE_RESOUMETTRE_CORRECTION)
@@ -130,10 +144,12 @@ public class WorkflowRepositoryImpl implements WorkflowRepository {
     }
 
     @Override
-    public List<WorkflowDemandeDto> getRenvoyeesAC(String codUsuarios) {
+    public List<WorkflowDemandeDto> getRenvoyeesAC(String codUsuarios, String username, Long userId) {
         try {
             return jdbcClient.sql(SELECT_RENVOYEES_AC)
                     .param("codUsuarios", codUsuarios)
+                    .param("username", username)
+                    .param("userId", userId)
                     .query(WorkflowDemandeDto.class)
                     .list();
         } catch (Exception e) {
