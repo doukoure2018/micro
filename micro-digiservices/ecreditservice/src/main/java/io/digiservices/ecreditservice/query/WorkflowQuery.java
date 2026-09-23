@@ -15,6 +15,22 @@ public class WorkflowQuery {
             """;
 
     /**
+     * Controle avant approbation AC / resoumission au DA (2026-09-23, dossier 1389) : montant,
+     * nature et statut de la derniere analyse financiere (bilan). Un dossier >= 50 M hors
+     * fonctionnaire / groupe ne peut pas partir chez le DA sans bilan SOUMISE / VALIDEE, sinon
+     * le DA ne peut ni valider ni rejeter (bloc masque par le front).
+     */
+    public static final String SELECT_CONTROLE_BILAN_AC = """
+            SELECT d.montant_demande AS "montantDemande",
+                   d.nature_client AS "natureClient",
+                   (SELECT a.statut FROM analyse_financiere a
+                     WHERE a.demandeindividuel_id = d.demandeindividuel_id
+                     ORDER BY a.analyse_id DESC LIMIT 1) AS "statutAnalyse"
+            FROM demandeindividuel d
+            WHERE d.demandeindividuel_id = :demandeId
+            """;
+
+    /**
      * Resoumission par l'agent apres correction demandee par le DR ou le DE : le dossier
      * retourne dans la file du niveau qui l'a rejete (CORRECTION_DR -> VALIDATED_DA revu
      * par le DR, CORRECTION_DE -> VALIDATED_DR revu par le DE). L'etat est fixe
@@ -196,7 +212,11 @@ public class WorkflowQuery {
               AND validation_state = 'APPROVED'
             """;
 
-    /** Demandes renvoyees a l'agent createur (identifie par cod_usuarios = nom complet). */
+    /**
+     * Demandes renvoyees a l'agent createur. En prod (2026-09-23) cod_usuarios porte le nom
+     * complet sur ~20 % des dossiers et le username sur ~70 % (les 5 RETOUR_AGENT existants
+     * etaient invisibles a leur agent) : on accepte les deux, plus l'agent affecte (V116).
+     */
     public static final String SELECT_RENVOYEES_AC = """
             SELECT d.demandeindividuel_id AS "demandeIndividuelId",
                    d.nom, d.prenom, d.telephone,
@@ -214,7 +234,9 @@ public class WorkflowQuery {
                    d.createdat AS "createdAt"
             FROM demandeindividuel d
             WHERE d.validation_state = 'RETOUR_AGENT'
-              AND d.cod_usuarios = :codUsuarios
+              AND (d.cod_usuarios = :codUsuarios
+                   OR d.cod_usuarios = :username
+                   OR d.agent_credit_affecte = CAST(:userId AS BIGINT))
             ORDER BY d.createdat DESC
             """;
 

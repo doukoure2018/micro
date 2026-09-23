@@ -21,7 +21,7 @@ public interface WorkflowService {
 
     // Renvoi DA -> agent (erreur de destination)
     void renvoyerAgent(Long demandeId, String motif, String renvoyePar);
-    List<WorkflowDemandeDto> getRenvoyeesAC(String codUsuarios);
+    List<WorkflowDemandeDto> getRenvoyeesAC(String codUsuarios, String username, Long userId);
     void resoumettreDA(Long demandeId, Long delegation, Long agence, Long pos);
 
     // AC lists (filtrees par proprietaire du dossier)

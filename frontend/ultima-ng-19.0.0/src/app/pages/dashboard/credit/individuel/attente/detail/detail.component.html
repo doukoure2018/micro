@@ -1750,13 +1750,7 @@
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
         <!-- SECTION VALIDATION WORKFLOW DA - Apres verification bilan et flux       -->
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
-        <div *ngIf="state().user?.role === 'DA'
-               && state().demandeIndividuel?.validationState === 'APPROVED'
-               && (necessiteAnalyseCharges()
-                   ? !!state().analyseChargesFonctionnaire
-                   : isGroupeAgricole()
-                   ? !!state().analyseCreditAgricole
-                   : (!isBilanRequired() || state().analyseStatut === 'SOUMISE' || state().analyseStatut === 'VALIDEE') && state().hasDossierCredit)"
+        <div *ngIf="state().user?.role === 'DA' && state().demandeIndividuel?.validationState === 'APPROVED'"
             class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-green-300 mb-8">
             <div class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-4 flex items-center gap-3">
                 <i class="pi pi-check-square text-xl"></i>
@@ -1764,6 +1758,31 @@
                     d'Agence</span>
             </div>
             <div class="p-6">
+                @if (!daPeutValider()) {
+                <!-- Validation impossible (analyse manquante / pièces) : le DA garde REJETER et RENVOYER À L'AGENT (2026-09-23, dossier 1389) -->
+                <div class="bg-orange-50 border-l-4 border-orange-500 rounded-r-lg p-4 mb-6">
+                    <div class="flex items-start gap-3">
+                        <i class="pi pi-exclamation-triangle text-orange-600 text-2xl mt-1"></i>
+                        <div>
+                            <p class="font-bold text-orange-800 m-0 mb-1">Validation impossible en l'&eacute;tat</p>
+                            <p class="text-orange-800 m-0 mb-2">{{ libelleBlocageValidationDA() }}</p>
+                            <p class="text-orange-700 m-0 text-sm">Vous pouvez <strong>rejeter</strong> le dossier (motif + sections &agrave; revoir) ou le
+                                <strong>renvoyer &agrave; l'agent de cr&eacute;dit</strong> pour qu'il compl&egrave;te l'analyse puis vous le
+                                retransmette.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-center gap-4 mt-2 flex-wrap">
+                    <button pButton type="button" (click)="ouvrirRenvoiAgent()"
+                        class="p-button-warning p-button-outlined px-8 py-3 font-bold" icon="pi pi-undo"
+                        label="RENVOYER À L'AGENT">
+                    </button>
+                    <button pButton type="button" (click)="ouvrirWorkflowRejetDA()"
+                        class="p-button-danger p-button-outlined px-8 py-3 font-bold" icon="pi pi-times-circle"
+                        label="REJETER">
+                    </button>
+                </div>
+                } @else {
                 <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
                     <div class="flex items-center gap-3">
                         <i class="pi pi-info-circle text-green-600 text-xl"></i>
@@ -1809,8 +1828,38 @@
                         label="REJETER">
                     </button>
                 </div>
+                }
             </div>
         </div>
+
+        <!-- Modal Renvoi à l'agent (DA) -->
+        <p-dialog header="Renvoyer le dossier &agrave; l'agent de cr&eacute;dit" [visible]="state().showRenvoiAgent" [modal]="true"
+            [style]="{ width: '560px' }" [closable]="true"
+            (onHide)="state.update(mergeState({showRenvoiAgent: false}))">
+            <div class="mb-4 p-3 bg-orange-50 border-round">
+                <p class="font-semibold m-0">{{ state().demandeIndividuel?.prenom }} {{ state().demandeIndividuel?.nom }}</p>
+                <p class="text-600 m-0">{{ state().demandeIndividuel?.montantDemande | currency:'GNF ':'symbol':'1.0-0' }} - {{
+                    state().demandeIndividuel?.objectCredit }}</p>
+                <p class="text-600 m-0 mt-2 text-sm">Le dossier repart chez l'agent (&eacute;tat &laquo; renvoy&eacute; &agrave; l'agent &raquo;). Il
+                    compl&egrave;te l'analyse puis vous le retransmet depuis &laquo; Demandes renvoy&eacute;es &raquo;.</p>
+            </div>
+            <form [formGroup]="renvoiAgentForm">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Motif du renvoi <span class="text-red-500">*</span></label>
+                <textarea pTextarea formControlName="motif" rows="3" class="w-full"
+                    placeholder="Ex : analyse financi&egrave;re non soumise, merci de renseigner le bilan et le flux de tr&eacute;sorerie"
+                    [autoResize]="true"></textarea>
+                <small *ngIf="renvoiAgentForm.get('motif')?.invalid && renvoiAgentForm.get('motif')?.touched" class="text-red-500">Minimum
+                    10 caracteres requis</small>
+            </form>
+            <ng-template #footer>
+                <div class="flex justify-end gap-3">
+                    <button pButton type="button" label="Annuler" icon="pi pi-times" class="p-button-secondary p-button-outlined"
+                        (click)="state.update(mergeState({showRenvoiAgent: false}))"></button>
+                    <button pButton type="button" label="Confirmer le renvoi" icon="pi pi-undo" class="p-button-warning"
+                        (click)="confirmerRenvoiAgent()" [disabled]="renvoiAgentForm.invalid"></button>
+                </div>
+            </ng-template>
+        </p-dialog>
 
         <!-- Modal Rejet Workflow DA -->
         <p-dialog header="Rejeter la demande" [visible]="state().showWorkflowRejetDA" [modal]="true"
@@ -2182,13 +2231,16 @@
                 <div
                     class="mt-6 text-center p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border-2 border-green-200">
                     <button pButton (click)="approvedDemande(state().demandeIndividuel!)"
-                        [disabled]="!state().userHasAvis || isInCorrectionState() || !peutApprouver()"
+                        [disabled]="!state().userHasAvis || isInCorrectionState() || !peutApprouver() || bilanRequisNonSoumis()"
                         class="px-10 py-3 font-bold shadow-lg text-base"
-                        [ngClass]="state().userHasAvis && !isInCorrectionState() && peutApprouver() ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gray-400'"
+                        [ngClass]="state().userHasAvis && !isInCorrectionState() && peutApprouver() && !bilanRequisNonSoumis() ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gray-400'"
                         icon="pi pi-check-circle" label="APPROUVER LA DEMANDE">
                     </button>
                     <p *ngIf="!peutApprouver()" class="text-orange-600 mt-4 font-medium">
                         <i class="pi pi-exclamation-triangle mr-2"></i>{{ libelleBlocageApprobation() }}
+                    </p>
+                    <p *ngIf="peutApprouver() && bilanRequisNonSoumis()" class="text-orange-600 mt-4 font-medium">
+                        <i class="pi pi-exclamation-triangle mr-2"></i>{{ libelleBlocageBilan() }}
                     </p>
                     <p *ngIf="isInCorrectionState()" class="text-orange-600 mt-4 font-medium">
                         <i class="pi pi-exclamation-triangle mr-2"></i>Veuillez d'abord resoumettre les corrections

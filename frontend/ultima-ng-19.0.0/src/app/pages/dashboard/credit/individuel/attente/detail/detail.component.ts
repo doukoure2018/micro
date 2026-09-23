@@ -127,6 +127,8 @@ export class DetailComponent {
         showModalRejetFlux: boolean;
         showWorkflowRejetDA: boolean;
         showWorkflowRejetDR: boolean;
+        /** Modal « Renvoyer à l'agent » (DA, dossier APPROVED sans analyse exploitable). */
+        showRenvoiAgent: boolean;
         analyseChargesFonctionnaire?: AnalyseChargesFonctionnaire | null;
         analyseCreditAgricole?: AnalyseCreditAgricole | null;
         /** Échéancier avec moratoire (CAS / CAS-R, V147) affiché aux approbateurs. */
@@ -160,7 +162,8 @@ export class DetailComponent {
         showModalRejetBilan: false,
         showModalRejetFlux: false,
         showWorkflowRejetDA: false,
-        showWorkflowRejetDR: false
+        showWorkflowRejetDR: false,
+        showRenvoiAgent: false
     });
 
     updateForm: FormGroup;
@@ -183,6 +186,7 @@ export class DetailComponent {
     // Formulaires workflow DA
     workflowDAForm: FormGroup;
     workflowDARejetForm: FormGroup;
+    renvoiAgentForm: FormGroup;
 
     // Formulaires workflow DR
     workflowDRForm: FormGroup;
@@ -260,6 +264,9 @@ export class DetailComponent {
             motifRejet: ['', [Validators.required, Validators.minLength(10)]],
             sectionsARevoir: [[], [Validators.required]],
             instructions: ['']
+        });
+        this.renvoiAgentForm = this.fb.group({
+            motif: ['', [Validators.required, Validators.minLength(10)]]
         });
 
         this.workflowDRForm = this.fb.group({
@@ -1277,6 +1284,11 @@ export class DetailComponent {
         console.log('Demande à approuver:', demandeIndividuel);
         const currentUser = this.state().user;
         const codUsuarios = currentUser?.username;
+
+        if (this.bilanRequisNonSoumis()) {
+            this.messageService.add({ severity: 'warn', summary: 'Approbation impossible', detail: this.libelleBlocageBilan(), life: 7000 });
+            return;
+        }
 
         if (!demandeIndividuel.demandeIndividuelId || !codUsuarios) {
             this.messageService.add({
@@ -2901,6 +2913,70 @@ export class DetailComponent {
         const montant = this.state().demandeIndividuel?.montantDemande;
         if (montant == null) return true; // par defaut, on l'affiche si on ne sait pas
         return Number(montant) >= DetailComponent.SEUIL_BILAN_GNF;
+    }
+
+    /**
+     * Garde-fou 2026-09-23 (dossier 1389) : dossier soumis au bilan (>= 50 M, hors analyse
+     * charges & quotité et hors analyse agricole) dont l'analyse financière n'est ni SOUMISE ni
+     * VALIDEE. L'agent ne peut pas l'approuver (même règle côté serveur) : sinon le DA recevait
+     * un dossier qu'il ne pouvait ni valider ni rejeter.
+     */
+    bilanRequisNonSoumis(): boolean {
+        if (this.necessiteAnalyseCharges() || this.isGroupeAgricole()) return false;
+        if (!this.isBilanRequired()) return false;
+        const st = this.state().analyseStatut;
+        return st !== 'SOUMISE' && st !== 'VALIDEE';
+    }
+
+    libelleBlocageBilan(): string {
+        const st = this.state().analyseStatut;
+        const etat = st === 'BROUILLON' ? 'est encore en brouillon' : "n'a pas été renseignée";
+        return `L'analyse financière (bilan, flux de trésorerie) est obligatoire à partir de 50 000 000 GNF et elle ${etat}. Renseignez et soumettez l'analyse avant d'approuver la demande.`;
+    }
+
+    /** Le DA peut valider : l'analyse attendue pour la nature du dossier est disponible et le dossier de crédit existe. */
+    daPeutValider(): boolean {
+        if (this.necessiteAnalyseCharges()) return !!this.state().analyseChargesFonctionnaire;
+        if (this.isGroupeAgricole()) return !!this.state().analyseCreditAgricole;
+        return !this.bilanRequisNonSoumis() && !!this.state().hasDossierCredit;
+    }
+
+    /** Explication affichée au DA quand la validation est impossible (il peut toujours rejeter ou renvoyer à l'agent). */
+    libelleBlocageValidationDA(): string {
+        if (this.necessiteAnalyseCharges()) return "L'agent de crédit n'a pas encore renseigné l'analyse charges & quotité : validation impossible.";
+        if (this.isGroupeAgricole()) return "L'agent de crédit n'a pas encore renseigné l'analyse agricole : validation impossible.";
+        if (this.bilanRequisNonSoumis()) {
+            const st = this.state().analyseStatut;
+            const etat = st === 'BROUILLON' ? 'est restée en brouillon' : "n'a pas été soumise";
+            return `L'analyse financière, obligatoire à partir de 50 000 000 GNF, ${etat} par l'agent de crédit : validation impossible.`;
+        }
+        if (!this.state().hasDossierCredit) return "Le dossier de crédit (pièces) n'a pas été constitué par l'agent : validation impossible.";
+        return '';
+    }
+
+    ouvrirRenvoiAgent(): void {
+        this.renvoiAgentForm.reset();
+        this.state.update(this.mergeState({ showRenvoiAgent: true }));
+    }
+
+    /** DA : renvoie un dossier APPROVED à l'agent créateur (RETOUR_AGENT) pour compléter l'analyse ou les pièces. */
+    confirmerRenvoiAgent(): void {
+        if (this.renvoiAgentForm.invalid) return;
+        const demandeId = this.state().demandeIndividuel?.demandeIndividuelId;
+        if (!demandeId) return;
+        this.userService
+            .renvoyerAgent$(+demandeId, this.renvoiAgentForm.value.motif)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.messageService.add({ severity: 'info', summary: 'Renvoi', detail: "Dossier renvoyé à l'agent de crédit : il le retrouve dans « Demandes renvoyées » de son tableau de bord", life: 5000 });
+                    this.state.update(this.mergeState({ showRenvoiAgent: false }));
+                    this.loadDemandeWithGaranties();
+                },
+                error: (err: any) => {
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || 'Erreur lors du renvoi', life: 5000 });
+                }
+            });
     }
 
     /**

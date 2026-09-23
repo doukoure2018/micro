@@ -11,6 +11,9 @@ public interface WorkflowRepository {
     // AC
     int approuverAC(Long demandeId, String avis, String codUsuarios, Long userId);
 
+    /** Montant, nature et statut du bilan (cles montantDemande / natureClient / statutAnalyse) ; null si inconnue. */
+    java.util.Map<String, Object> getControleBilanAC(Long demandeId);
+
     int resoumettreCorrection(Long demandeId);
 
     // DA lists
@@ -23,7 +26,7 @@ public interface WorkflowRepository {
 
     // Renvoi DA -> agent (erreur de destination)
     int renvoyerAgent(Long demandeId, String motif, String renvoyePar);
-    List<WorkflowDemandeDto> getRenvoyeesAC(String codUsuarios);
+    List<WorkflowDemandeDto> getRenvoyeesAC(String codUsuarios, String username, Long userId);
     int resoumettreDA(Long demandeId, Long delegation, Long agence, Long pos);
 
     // AC lists (filtrees par proprietaire : agent_credit_affecte = userId, ou legacy sans proprietaire)
