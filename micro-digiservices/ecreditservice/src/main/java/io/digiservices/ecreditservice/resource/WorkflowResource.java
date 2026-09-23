@@ -469,7 +469,7 @@ public class WorkflowResource {
         workflowService.confirmerRejetDG(demandeId, instructions, sectionsARevoir, confirmedBy);
         return ResponseEntity.ok(
                 getResponse(httpRequest, Map.of("message", "Rejet DG confirme"),
-                        "Rejet confirme, demande renvoyee en correction", OK));
+                        "Rejet confirme : dossier renvoye a l'agent pour correction, il reviendra directement chez le DE", OK));
     }
 
     // ==================== ACCUEIL (reception des demandes) ====================

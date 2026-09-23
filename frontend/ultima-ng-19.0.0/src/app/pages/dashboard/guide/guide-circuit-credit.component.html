@@ -333,8 +333,12 @@
         <h3>7.1 Le circuit de rejet DG — double contrôle</h3>
         <p>
             Un rejet DG <strong>ne redescend pas directement</strong> à l'agent : il passe par une <strong>confirmation du DE</strong> (« Rejets DG à confirmer »). Le DE prend connaissance du motif du DG, formule ses
-            <strong>instructions</strong> et confirme → le dossier repart en <span class="state correction">CORRECTION</span> chez l'agent créateur. Ce maillon garantit que la Direction de l'Exploitation reste informée
+            <strong>instructions</strong> et confirme → le dossier repart en <span class="state correction">CORRECTION_DE</span> chez l'agent créateur. Ce maillon garantit que la Direction de l'Exploitation reste informée
             et cadre la reprise du dossier.
+        </p>
+        <p>
+            Après correction, l'agent resoumet et le dossier revient <strong>directement chez le DE</strong> qui a confirmé le rejet (état <span class="state">VALIDATED_DR</span>) : pas de nouveau passage par le DA ni
+            par le DR. Le DE réexamine puis renvoie au DG. Le DA et le DR <strong>voient</strong> le dossier dans leurs listes de suivi mais n'ont <strong>aucune action</strong> dessus (règle du 23/09/2026).
         </p>
         <p class="note">
             <i class="pi pi-eye"></i>
@@ -401,7 +405,7 @@
                     </tr>
                     <tr>
                         <td><span class="state correction">CORRECTION</span></td>
-                        <td>Rejet DA ou rejet DG confirmé</td>
+                        <td>Rejet DA</td>
                         <td>À corriger par l'agent</td>
                         <td>AC</td>
                     </tr>
@@ -413,9 +417,9 @@
                     </tr>
                     <tr>
                         <td><span class="state correction">CORRECTION_DE</span></td>
-                        <td>Rejet DE</td>
-                        <td>À corriger (retour visible DR + AC)</td>
-                        <td>AC → DR</td>
+                        <td>Rejet DE, ou rejet DG confirmé par le DE</td>
+                        <td>À corriger (retour visible DR + AC, DA/DR sans action) ; après resoumission, retour direct chez le DE</td>
+                        <td>AC → DE</td>
                     </tr>
                     <tr>
                         <td><span class="state retour">RETOUR_AGENT</span></td>

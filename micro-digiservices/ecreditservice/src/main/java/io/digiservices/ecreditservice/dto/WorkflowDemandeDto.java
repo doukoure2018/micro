@@ -69,6 +69,9 @@ public class WorkflowDemandeDto {
     // Confirmation de rejet DG par le DE (feedback vers l'agent)
     private String instructionsDe;
     private String confirmedByDe;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss.SSSSSS")
+    private LocalDateTime dateConfirmationRejetDe;
     // Validation DG
     private String avisDg;
     private String motifRejetDg;

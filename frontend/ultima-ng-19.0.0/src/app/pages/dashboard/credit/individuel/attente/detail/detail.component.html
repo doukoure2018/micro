@@ -135,9 +135,14 @@
             <div class="flex items-start gap-3">
                 <i class="pi pi-exclamation-triangle text-red-500 text-2xl mt-1"></i>
                 <div class="flex-1">
-                    <h4 class="text-red-800 font-bold m-0 mb-1">Demande rejetee par {{ getCorrectionInfo().level }}</h4>
+                    <h4 class="text-red-800 font-bold m-0 mb-1">{{ getCorrectionInfo().titre }}</h4>
                     <p *ngIf="getCorrectionInfo().motif" class="text-red-700 m-0 mb-2"><strong>Motif :</strong> {{
                         getCorrectionInfo().motif }}</p>
+                    <p *ngIf="getCorrectionInfo().contexteDg" class="text-red-700 m-0 mb-2"><strong>Rappel du motif de rejet
+                            DG :</strong> {{ getCorrectionInfo().contexteDg }}</p>
+                    <p *ngIf="estRejetDgConfirme()" class="text-orange-700 m-0 mb-2"><i class="pi pi-directions mr-1"></i>Apr&egrave;s
+                        correction, le dossier reviendra directement chez le DE (pas de nouveau passage DA / DR), qui le
+                        renverra au DG.</p>
                     <p *ngIf="getCorrectionInfo().sections" class="text-red-600 m-0 mb-2"><strong>Sections a revoir
                             :</strong> {{ getCorrectionInfo().sections }}</p>
                     <p *ngIf="getCorrectionInfo().instructions" class="text-blue-700 m-0"><i

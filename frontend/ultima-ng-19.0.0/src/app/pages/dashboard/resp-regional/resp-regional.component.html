@@ -157,7 +157,15 @@
                                         </div>
                                     </td>
                                     <td class="text-right font-bold text-red-600">{{ formatMontantGNF(demande.montantDemande) }}</td>
-                                    <td>{{ demande.motifRejetDe }}</td>
+                                    <td>
+                                        @if (demande.motifRejetDg && !demande.motifRejetDe) {
+                                        <p-tag value="Rejet DG confirmé par le DE" severity="danger" class="mr-1"></p-tag>
+                                        <span>{{ demande.motifRejetDg }}</span>
+                                        <br><small class="text-orange-600">Lecture seule : après correction, retour direct chez le DE</small>
+                                        } @else {
+                                        {{ demande.motifRejetDe }}
+                                        }
+                                    </td>
                                     <td><small>{{ demande.sectionsARevoirDe }}</small></td>
                                     <td class="text-center">
                                         <p-button icon="pi pi-eye" label="Voir" (click)="viewDemandeDetail(demande.demandeIndividuelId)"

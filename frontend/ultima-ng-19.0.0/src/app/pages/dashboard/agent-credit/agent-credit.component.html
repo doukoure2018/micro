@@ -559,10 +559,20 @@
                     </td>
                     <td class="text-right font-bold text-purple-600">{{ formatMontantGNF(demande.montantDemande) }}</td>
                     <td>
+                        @if (demande.motifRejetDg && !demande.motifRejetDe) {
+                        <p-tag value="Rejet DG confirmé par le DE" severity="danger" class="mr-1"></p-tag>
+                        <span>{{ demande.motifRejetDg }}</span>
+                        <br *ngIf="demande.instructionsDe">
+                        <small *ngIf="demande.instructionsDe" class="text-blue-600"><i
+                                class="pi pi-info-circle mr-1"></i>Instructions DE : {{ demande.instructionsDe }}</small>
+                        <br>
+                        <small class="text-orange-600"><i class="pi pi-directions mr-1"></i>Après correction, retour direct chez le DE</small>
+                        } @else {
                         <span>{{ demande.motifRejetDe }}</span>
                         <br *ngIf="demande.instructionsDr">
                         <small *ngIf="demande.instructionsDr" class="text-blue-600"><i
                                 class="pi pi-info-circle mr-1"></i>{{ demande.instructionsDr }}</small>
+                        }
                     </td>
                     <td><small>{{ demande.sectionsARevoirDe }}</small></td>
                     <td class="text-center">
