@@ -1413,6 +1413,17 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
             if (demandeMap.get("date_validation_de") != null) {
                 demande.setDateValidationDe(LocalDateTime.parse(demandeMap.get("date_validation_de").toString()));
             }
+            // DG : motif de rejet + confirmation du rejet par le DE (retour direct chez le DE apres correction)
+            demande.setMotifRejetDg((String) demandeMap.get("motif_rejet_dg"));
+            demande.setValidatedByDg((String) demandeMap.get("validated_by_dg"));
+            if (demandeMap.get("date_rejet_dg") != null) {
+                demande.setDateRejetDg(LocalDateTime.parse(demandeMap.get("date_rejet_dg").toString()));
+            }
+            demande.setInstructionsDe((String) demandeMap.get("instructions_de"));
+            demande.setConfirmedByDe((String) demandeMap.get("confirmed_by_de"));
+            if (demandeMap.get("date_confirmation_rejet_de") != null) {
+                demande.setDateConfirmationRejetDe(LocalDateTime.parse(demandeMap.get("date_confirmation_rejet_de").toString()));
+            }
 
             // Timestamp
             if (demandeMap.get("createdat") != null) {

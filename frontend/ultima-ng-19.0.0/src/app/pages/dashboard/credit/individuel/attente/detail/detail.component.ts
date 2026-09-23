@@ -2991,16 +2991,29 @@ export class DetailComponent {
         });
     }
 
-    getCorrectionInfo(): { level: string; motif: string; sections: string; instructions: string } {
+    /**
+     * Rejet DG confirmé par le DE (règle du 2026-09-23) : le dossier est en CORRECTION_DE sans
+     * motif de rejet DE propre ; le motif à afficher est celui du DG et les instructions celles
+     * du DE. Après correction, la resoumission le renvoie directement chez le DE (VALIDATED_DR).
+     */
+    estRejetDgConfirme(): boolean {
+        const d = this.state().demandeIndividuel;
+        return d?.validationState === 'CORRECTION_DE' && !!d?.motifRejetDg && !d?.motifRejetDe;
+    }
+
+    getCorrectionInfo(): { level: string; titre: string; motif: string; sections: string; instructions: string; contexteDg: string } {
         const d = this.state().demandeIndividuel;
         const vs = d?.validationState || '';
-        let raw = { level: '', motif: '', sections: '', instructions: '' };
+        let raw = { level: '', titre: '', motif: '', sections: '', instructions: '', contexteDg: '' };
         if (vs === 'CORRECTION') {
-            raw = { level: 'DA', motif: d?.motifRejetDa || '', sections: d?.sectionsARevoirDa || '', instructions: d?.instructionsAc || '' };
+            raw = { level: 'DA', titre: 'Demande rejetée par le DA', motif: d?.motifRejetDa || '', sections: d?.sectionsARevoirDa || '', instructions: d?.instructionsAc || '', contexteDg: '' };
         } else if (vs === 'CORRECTION_DR') {
-            raw = { level: 'DR', motif: d?.motifRejetDr || '', sections: d?.sectionsARevoirDr || '', instructions: d?.instructionsDa || '' };
+            raw = { level: 'DR', titre: 'Demande rejetée par le DR', motif: d?.motifRejetDr || '', sections: d?.sectionsARevoirDr || '', instructions: d?.instructionsDa || '', contexteDg: '' };
+        } else if (this.estRejetDgConfirme()) {
+            const par = d?.confirmedByDe ? ` (${d.confirmedByDe})` : '';
+            raw = { level: 'DE', titre: `Rejet DG confirmé par le DE${par}`, motif: d?.motifRejetDg || '', sections: d?.sectionsARevoirDe || '', instructions: d?.instructionsDe || '', contexteDg: '' };
         } else if (vs === 'CORRECTION_DE') {
-            raw = { level: 'DE', motif: d?.motifRejetDe || '', sections: d?.sectionsARevoirDe || '', instructions: d?.instructionsDr || '' };
+            raw = { level: 'DE', titre: 'Demande rejetée par le DE', motif: d?.motifRejetDe || '', sections: d?.sectionsARevoirDe || '', instructions: d?.instructionsDr || '', contexteDg: d?.motifRejetDg || '' };
         }
         if (raw.sections) {
             raw.sections = raw.sections

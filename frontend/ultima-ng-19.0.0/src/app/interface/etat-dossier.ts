@@ -92,8 +92,10 @@ export function etapeDossier(d: { statutDemande?: string | null; validationState
     return ETAPES[d.validationState || 'NOUVEAU'] || 'RECEPTION';
 }
 
-export function libelleEtat(d: { statutDemande?: string | null; validationState?: string | null }): string {
+export function libelleEtat(d: { statutDemande?: string | null; validationState?: string | null; motifRejetDg?: string | null; motifRejetDe?: string | null }): string {
     if (estRejete(d)) return 'Rejetée';
+    // Rejet DG confirmé par le DE (2026-09-23) : CORRECTION_DE sans motif DE propre
+    if (d.validationState === 'CORRECTION_DE' && d.motifRejetDg && !d.motifRejetDe) return 'À corriger (rejet DG confirmé par le DE)';
     return LIBELLES[d.validationState || 'NOUVEAU'] || d.validationState || 'Nouvelle demande';
 }
 

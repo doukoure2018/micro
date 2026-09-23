@@ -329,6 +329,11 @@ public class WorkflowQuery {
                    d.sections_a_revoir_de AS "sectionsARevoirDe",
                    d.instructions_dr AS "instructionsDr",
                    d.validated_by_de AS "validatedByDe",
+                   d.motif_rejet_dg AS "motifRejetDg",
+                   d.validated_by_dg AS "validatedByDg",
+                   d.date_rejet_dg AS "dateRejetDg",
+                   d.instructions_de AS "instructionsDe",
+                   d.confirmed_by_de AS "confirmedByDe",
                    d.avis_agent_credit AS "avisAgentCredit",
                    d.avis_da AS "avisDa",
                    d.avis_dr AS "avisDr",
@@ -385,6 +390,11 @@ public class WorkflowQuery {
                    d.sections_a_revoir_de AS "sectionsARevoirDe",
                    d.instructions_dr AS "instructionsDr",
                    d.validated_by_de AS "validatedByDe",
+                   d.motif_rejet_dg AS "motifRejetDg",
+                   d.validated_by_dg AS "validatedByDg",
+                   d.date_rejet_dg AS "dateRejetDg",
+                   d.instructions_de AS "instructionsDe",
+                   d.confirmed_by_de AS "confirmedByDe",
                    d.avis_agent_credit AS "avisAgentCredit",
                    d.avis_da AS "avisDa",
                    d.createdat AS "createdAt",
@@ -412,7 +422,7 @@ public class WorkflowQuery {
                 sections_a_revoir_dr = NULL,
                 instructions_da = NULL
             WHERE demandeindividuel_id = :demandeId
-              AND validation_state IN ('VALIDATED_DA', 'CORRECTION_DE')
+              AND validation_state = 'VALIDATED_DA'
             """;
 
     public static final String UPDATE_REJETER_DR = """
@@ -447,6 +457,9 @@ public class WorkflowQuery {
                    d.validated_by_dr AS "validatedByDr",
                    d.date_validation_da AS "dateValidationDa",
                    d.date_validation_dr AS "dateValidationDr",
+                   d.motif_rejet_dg AS "motifRejetDg",
+                   d.instructions_de AS "instructionsDe",
+                   d.confirmed_by_de AS "confirmedByDe",
                    d.createdat AS "createdAt",
                    del.libele AS "delegationLibele",
                    ag.libele AS "agenceLibele"
@@ -829,10 +842,19 @@ public class WorkflowQuery {
               AND validation_state = 'PENDING_DG'
             """;
 
-    /** Le DE confirme le rejet DG -> la demande repart en CORRECTION vers l'agent. */
+    /**
+     * Le DE confirme le rejet DG -> la demande repart chez l'agent en CORRECTION_DE (decision
+     * du 2026-09-23) : apres correction, la resoumission (UPDATE_RESOUMETTRE_CORRECTION) la
+     * repositionne directement dans la file du DE (VALIDATED_DR), qui la renvoie au DG. Le DA et
+     * le DR voient le dossier (listes de suivi) mais n'ont aucune action dessus. Avant cette
+     * date l'etat etait CORRECTION : le dossier refaisait tout le circuit DA -> DR -> DE -> DG.
+     * Le motif DG (motif_rejet_dg) reste visible jusqu'a la validation DG ; motif_rejet_de reste
+     * NULL, ce qui distingue ce cas d'un rejet DE classique.
+     */
     public static final String UPDATE_CONFIRMER_REJET_DG = """
             UPDATE demandeindividuel
-            SET validation_state = 'CORRECTION',
+            SET validation_state = 'CORRECTION_DE',
+                motif_rejet_de = NULL,
                 instructions_de = :instructions,
                 sections_a_revoir_de = :sectionsARevoir,
                 confirmed_by_de = :confirmedBy,

@@ -46,7 +46,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     @Override
     @Transactional
     public void resoumettreCorrection(Long demandeId) {
-        log.info("Resoumission après correction DR/DE pour demande {}", demandeId);
+        log.info("Resoumission après correction DR/DE (ou rejet DG confirmé par le DE) pour demande {}", demandeId);
         // Crédit fonctionnaire : la quotité doit rester finançable après la correction
         analyseChargesFonctionnaireService.verifierFinancableSiFonctionnaire(demandeId);
         analyseCreditAgricoleService.verifierFinancableSiGroupeAgricole(demandeId);

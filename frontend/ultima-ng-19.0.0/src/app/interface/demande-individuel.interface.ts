@@ -428,6 +428,13 @@ export interface DemandeIndividuel {
     instructionsDr?: string;
     dateValidationDe?: string | Date;
     validatedByDe?: string;
+    // DG : rejet + confirmation du rejet par le DE (le dossier revient directement chez le DE après correction)
+    motifRejetDg?: string;
+    validatedByDg?: string;
+    dateRejetDg?: string | Date;
+    instructionsDe?: string;
+    confirmedByDe?: string;
+    dateConfirmationRejetDe?: string | Date;
 
     // ==================== CHAMPS SUPPLÉMENTAIRES FORMULAIRE ====================
     dateAdhesion?: Date | null;

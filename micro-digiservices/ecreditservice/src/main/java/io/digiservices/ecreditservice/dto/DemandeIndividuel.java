@@ -143,6 +143,13 @@ public class DemandeIndividuel {
     private String instructionsDr;
     private LocalDateTime dateValidationDe;
     private String validatedByDe;
+    // DG (rejet + confirmation du rejet par le DE)
+    private String motifRejetDg;
+    private String validatedByDg;
+    private LocalDateTime dateRejetDg;
+    private String instructionsDe;
+    private String confirmedByDe;
+    private LocalDateTime dateConfirmationRejetDe;
 
     // ==================== CHAMPS POUR AFFICHAGE (libellés) ====================
     private String delegationLibele;
