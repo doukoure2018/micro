@@ -35,11 +35,19 @@ public class AnalyseSyntheseDto {
     private String objectCredit;
     private String periodiciteRemboursement;
 
-    // Proposition
+    private BigDecimal tauxInteret;
+    private String validationState;
+
+    // Proposition (V152 : taux/periodicite proposes, saisie par l'agent ou reprise de la demande)
     private BigDecimal montantPropose;
     private Integer dureeProposee;
     private Integer nombreEcheancePropose;
     private BigDecimal echeanceProposee;
+    private BigDecimal tauxInteretPropose;
+    private String periodiciteProposee;
+    private Boolean propositionSaisie;
+    private Integer moisPeriodiciteSollicite;
+    private Integer moisPeriodicitePropose;
 
     // ══════════════════════════════════════════════════════════════════════════
     // BILAN - PÉRIODE N (Évaluation actuelle)

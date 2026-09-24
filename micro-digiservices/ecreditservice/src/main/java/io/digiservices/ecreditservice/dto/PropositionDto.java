@@ -18,4 +18,11 @@ public class PropositionDto {
     private BigDecimal echeanceProposee;
     private BigDecimal tauxInteretPropose;
     private String periodiciteProposee;
+    /** V152 : TRUE si saisie par l'agent, FALSE si reprise de la demande. */
+    private Boolean propositionSaisie;
+    // Valeurs de la demande (lecture seule, pour pre-remplir / calculer)
+    private BigDecimal montantDemande;
+    private Integer dureeDemande;
+    private String periodiciteRemboursement;
+    private BigDecimal tauxInteret;
 }

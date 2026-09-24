@@ -238,6 +238,12 @@ export class UserService {
     obtenirResumeCredit$ = (demandeCreditId: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/resumeCredit/${demandeCreditId}`).pipe(tap(console.log), catchError(this.handleError));
 
     // Synthèse de l'analyse financière (Bilan d'activité)
+    /** V152 : proposition de l'agent (montant, durée, périodicité, taux) ; nombre d'échéances et traite calculés par le serveur. */
+    enregistrerPropositionAnalyse$ = (demandeIndividuelId: number, body: { montantPropose: number; dureeProposee: number; periodiciteProposee: string; tauxInteretPropose: number }) =>
+        <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/bilan_finance/proposition/${demandeIndividuelId}`, body).pipe(catchError(this.handleError));
+    /** V152 : supprime la proposition de l'agent -> les valeurs proposées reprennent celles de la demande. */
+    reprendreDemandePropositionAnalyse$ = (demandeIndividuelId: number) =>
+        <Observable<IResponse>>this.http.delete<IResponse>(`${this.server}/ecredit/bilan_finance/proposition/${demandeIndividuelId}`).pipe(catchError(this.handleError));
     getSyntheseAnalyseFinanciere$ = (demandeIndividuelId: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/bilan_finance/synthese/demande/${demandeIndividuelId}`).pipe(tap(console.log), catchError(this.handleError));
 
     /**

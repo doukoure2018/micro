@@ -7,6 +7,7 @@ import io.digiservices.ecreditservice.exception.ApiException;
 import io.digiservices.ecreditservice.repository.AnalyseFinanciereRepository;
 import io.digiservices.ecreditservice.repository.CollecteDonneesRepository;
 import io.digiservices.ecreditservice.service.AnalyseFinanciereService;
+import io.digiservices.ecreditservice.utils.PropositionCalculateur;
 import io.digiservices.ecreditservice.validation.AnalyseFinanciereValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -241,12 +242,48 @@ public class AnalyseFinanciereServiceImpl implements AnalyseFinanciereService {
     @Override
     @Transactional
     public PropositionDto updateProposition(Long demandeindividuelId, PropositionDto dto) {
-        AnalyseFinanciereValidator.validatePeriodicite(dto.getPeriodiciteProposee());
+        // V152 : defauts repris de la demande, nombre d'echeances et traite calcules par le serveur
+        PropositionDto courant = repository.getProposition(demandeindividuelId);
+        if (dto.getMontantPropose() == null || dto.getMontantPropose().signum() <= 0) {
+            throw new io.digiservices.ecreditservice.exception.ValidationException("Le montant proposé doit être supérieur à 0");
+        }
+        if (dto.getDureeProposee() == null || dto.getDureeProposee() <= 0) {
+            throw new io.digiservices.ecreditservice.exception.ValidationException("La durée proposée (en mois) doit être supérieure à 0");
+        }
+        String periodicite = (dto.getPeriodiciteProposee() == null || dto.getPeriodiciteProposee().isBlank())
+                ? courant.getPeriodiciteRemboursement() : dto.getPeriodiciteProposee();
+        periodicite = PropositionCalculateur.normaliserPeriodicite(periodicite);
+        AnalyseFinanciereValidator.validatePeriodicite(periodicite);
+        java.math.BigDecimal taux = dto.getTauxInteretPropose() != null ? dto.getTauxInteretPropose() : courant.getTauxInteret();
+        if (taux == null || taux.signum() < 0) {
+            throw new io.digiservices.ecreditservice.exception.ValidationException("Le taux d'intérêt mensuel proposé est obligatoire (ex. 2,5 pour 2,5 % par mois)");
+        }
+        int mois = PropositionCalculateur.moisParPeriode(periodicite);
+        int nombreEcheances = PropositionCalculateur.nombreEcheances(dto.getDureeProposee(), mois);
+        java.math.BigDecimal echeance = PropositionCalculateur.echeanceMax(dto.getMontantPropose(), taux, mois, nombreEcheances);
 
+        dto.setPeriodiciteProposee(periodicite);
+        dto.setTauxInteretPropose(taux);
+        dto.setNombreEcheancePropose(nombreEcheances);
+        dto.setEcheanceProposee(echeance);
         repository.updateProposition(demandeindividuelId, dto);
-        log.info("Updated proposition for demande: {}", demandeindividuelId);
+        log.info("Proposition enregistrée pour la demande {} : montant={}, durée={} mois, périodicité={}, taux={} %, N={}, traite={}",
+                demandeindividuelId, dto.getMontantPropose(), dto.getDureeProposee(), periodicite, taux, nombreEcheances, echeance);
 
+        // Ratios stockes (analyse_ratios) recalcules avec la proposition
+        recalculerRatiosSiAnalyse(demandeindividuelId);
         return repository.getProposition(demandeindividuelId);
+    }
+
+    private void recalculerRatiosSiAnalyse(Long demandeindividuelId) {
+        try {
+            var analyse = repository.getAnalyseByDemandeId(demandeindividuelId);
+            if (analyse != null && analyse.getAnalyseId() != null) {
+                repository.calculateRatios(analyse.getAnalyseId());
+            }
+        } catch (Exception e) {
+            log.warn("Ratios non recalculés après proposition pour la demande {} : {}", demandeindividuelId, e.getMessage());
+        }
     }
 
     @Override
@@ -258,7 +295,8 @@ public class AnalyseFinanciereServiceImpl implements AnalyseFinanciereService {
     @Transactional
     public void deleteProposition(Long demandeindividuelId) {
         repository.deleteProposition(demandeindividuelId);
-        log.info("Deleted proposition for demande: {}", demandeindividuelId);
+        log.info("Proposition supprimée (valeurs reprises de la demande) pour la demande {}", demandeindividuelId);
+        recalculerRatiosSiAnalyse(demandeindividuelId);
     }
 
     // ==================== RATIOS ====================
@@ -360,6 +398,9 @@ public class AnalyseFinanciereServiceImpl implements AnalyseFinanciereService {
         if (!repository.analyseExists(request.getAnalyseId())) {
             throw new ApiException("Analyse non trouvee avec ID: " + request.getAnalyseId());
         }
+
+        // V152 : sans proposition saisie, les colonnes *_propose reprennent la demande courante
+        repository.reinitialiserPropositionNonSaisie(request.getAnalyseId());
 
         SoumissionResultDto result = repository.soumettreAnalyse(
                 request.getAnalyseId(),
