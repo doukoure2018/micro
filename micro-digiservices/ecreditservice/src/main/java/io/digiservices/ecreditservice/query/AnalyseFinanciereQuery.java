@@ -408,6 +408,11 @@ public class AnalyseFinanciereQuery {
 
     // ==================== PROPOSITION (dans demandeindividuel) ====================
 
+    /**
+     * Proposition de l'agent (V152) : nombre d'echeances et traite proposee calcules par le serveur
+     * (PropositionCalculateur), marqueur proposition_saisie = TRUE (les colonnes ne sont plus ecrasees
+     * par la reprise de la demande a la soumission de l'analyse).
+     */
     public static final String UPDATE_PROPOSITION = """
         UPDATE demandeindividuel SET
             montant_propose = :montantPropose,
@@ -415,8 +420,21 @@ public class AnalyseFinanciereQuery {
             nombre_echeance_propose = :nombreEcheancePropose,
             echeance_proposee = :echeanceProposee,
             taux_interet_propose = :tauxInteretPropose,
-            periodicite_proposee = :periodiciteProposee
+            periodicite_proposee = :periodiciteProposee,
+            proposition_saisie = TRUE
         WHERE demandeindividuel_id = :demandeindividuelId
+        """;
+
+    /**
+     * Avant fn_soumettre_analyse : si aucune proposition n'a ete saisie, on remet montant_propose a 0
+     * pour que la fonction reprenne les valeurs courantes de la demande (sinon la copie faite a la
+     * 1re soumission restait figee apres correction de la demande : 38 dossiers en prod le 2026-09-23).
+     */
+    public static final String RESET_PROPOSITION_NON_SAISIE = """
+        UPDATE demandeindividuel d SET
+            montant_propose = 0
+        WHERE d.demandeindividuel_id = (SELECT af.demandeindividuel_id FROM analyse_financiere af WHERE af.analyse_id = :analyseId)
+          AND COALESCE(d.proposition_saisie, FALSE) = FALSE
         """;
 
     public static final String SELECT_PROPOSITION = """
@@ -427,19 +445,26 @@ public class AnalyseFinanciereQuery {
             nombre_echeance_propose as "nombreEcheancePropose",
             echeance_proposee as "echeanceProposee",
             taux_interet_propose as "tauxInteretPropose",
-            periodicite_proposee as "periodiciteProposee"
+            periodicite_proposee as "periodiciteProposee",
+            COALESCE(proposition_saisie, FALSE) as "propositionSaisie",
+            montant_demande as "montantDemande",
+            duree_demande as "dureeDemande",
+            periodicite_remboursement as "periodiciteRemboursement",
+            taux_interet as "tauxInteret"
         FROM demandeindividuel
         WHERE demandeindividuel_id = :demandeindividuelId
         """;
 
+    /** Suppression de la proposition = reprise des valeurs de la demande (V152), plus de colonnes NULL. */
     public static final String DELETE_PROPOSITION = """
         UPDATE demandeindividuel SET
-            montant_propose = NULL,
-            duree_proposee = NULL,
-            nombre_echeance_propose = NULL,
-            echeance_proposee = NULL,
+            montant_propose = montant_demande,
+            duree_proposee = duree_demande,
+            nombre_echeance_propose = nombre_echeance,
+            echeance_proposee = echeance,
             taux_interet_propose = NULL,
-            periodicite_proposee = NULL
+            periodicite_proposee = NULL,
+            proposition_saisie = FALSE
         WHERE demandeindividuel_id = :demandeindividuelId
         """;
 
@@ -537,6 +562,12 @@ public class AnalyseFinanciereQuery {
             d.echeance,
             d.object_credit as "objectCredit",
             d.periodicite_remboursement as "periodiciteRemboursement",
+            d.taux_interet as "tauxInteret",
+            d.validation_state as "validationState",
+            -- V152 : proposition de l'agent (taux, periodicite, saisie ou reprise de la demande)
+            d.taux_interet_propose as "tauxInteretPropose",
+            d.periodicite_proposee as "periodiciteProposee",
+            COALESCE(d.proposition_saisie, FALSE) as "propositionSaisie",
             d.montant_propose as "montantPropose",
             d.duree_proposee as "dureeProposee",
             d.nombre_echeance_propose as "nombreEcheancePropose",
@@ -683,29 +714,22 @@ public class AnalyseFinanciereQuery {
             COALESCE(bcRaw.ajust_credit_fournisseur, 0) as "ajustCreditFournisseur",
             COALESCE(bc.besoin_reel_exploitation, 0) as "besoinReelExploitation",
 
-            -- ══════ RATIOS CALCULÉS ══════
-            CASE WHEN COALESCE(d.echeance, 0) > 0
-                 THEN rentN.capacite_remboursement / d.echeance ELSE NULL END as "calcR1Sollicite",
-            CASE WHEN COALESCE(d.echeance_proposee, 0) > 0
-                 THEN rentN.capacite_remboursement / d.echeance_proposee ELSE NULL END as "calcR1Propose",
-            CASE WHEN COALESCE(bilN.total_actif, 0) > 0
-                 THEN bilN.capitaux_propres / bilN.total_actif ELSE NULL END as "calcR2",
-            CASE WHEN (COALESCE(bilN.emprunt_court_terme, 0) + COALESCE(bilN.autres_dettes, 0)) > 0
-                 THEN (bilN.creances_clients + bilN.tresorerie_caisse_banque) / (bilN.emprunt_court_terme + bilN.autres_dettes) ELSE NULL END as "calcR3",
-            CASE WHEN (COALESCE(bilN.total_actif, 0) + COALESCE(d.montant_demande, 0)) > 0
-                 THEN (bilN.total_dettes + d.montant_demande) / (bilN.total_actif + d.montant_demande) ELSE NULL END as "calcR4Sollicite",
-            CASE WHEN (COALESCE(bilN.total_actif, 0) + COALESCE(d.montant_propose, 0)) > 0
-                 THEN (bilN.total_dettes + COALESCE(d.montant_propose, 0)) / (bilN.total_actif + COALESCE(d.montant_propose, 0)) ELSE NULL END as "calcR4Propose",
-            CASE WHEN (COALESCE(rentN.resultat_exploitation, 0) + COALESCE(rentN.autres_revenus_hors_activite, 0)) > 0
-                 THEN rentN.autres_revenus_hors_activite / (rentN.resultat_exploitation + rentN.autres_revenus_hors_activite) ELSE NULL END as "calcR5",
-            -- R.6 = SUM(garantie_propose.valeur_emprunte) / montant_demande
-            CASE WHEN COALESCE(d.montant_demande, 0) > 0
-                 THEN COALESCE(gar.total_valeur_emprunte, 0) / d.montant_demande ELSE NULL END as "calcR6Sollicite",
-            CASE WHEN COALESCE(d.montant_propose, 0) > 0
-                 THEN COALESCE(gar.total_valeur_emprunte, 0) / d.montant_propose ELSE NULL END as "calcR6Propose"
+            -- ══════ RATIOS (V152 : source unique = vue v_synthese_analyse, la meme que fn_calculer_ratios) ══════
+            vs.calc_r1_sollicite as "calcR1Sollicite",
+            vs.calc_r1_propose as "calcR1Propose",
+            vs.calc_r2 as "calcR2",
+            vs.calc_r3 as "calcR3",
+            vs.calc_r4_sollicite as "calcR4Sollicite",
+            vs.calc_r4_propose as "calcR4Propose",
+            vs.calc_r5 as "calcR5",
+            vs.calc_r6_sollicite as "calcR6Sollicite",
+            vs.calc_r6_propose as "calcR6Propose",
+            vs.mois_periodicite_sollicite as "moisPeriodiciteSollicite",
+            vs.mois_periodicite_propose as "moisPeriodicitePropose"
 
         FROM analyse_financiere af
         JOIN demandeindividuel d ON d.demandeindividuel_id = af.demandeindividuel_id
+        LEFT JOIN v_synthese_analyse vs ON vs.analyse_id = af.analyse_id
         LEFT JOIN v_bilan_complet bilN ON bilN.analyse_id = af.analyse_id AND bilN.type_periode = 'N'
         LEFT JOIN v_bilan_complet bilN1 ON bilN1.analyse_id = af.analyse_id AND bilN1.type_periode = 'N_MOINS_1'
         LEFT JOIN v_rentabilite_complete rentN ON rentN.analyse_id = af.analyse_id AND rentN.type_periode = 'N'

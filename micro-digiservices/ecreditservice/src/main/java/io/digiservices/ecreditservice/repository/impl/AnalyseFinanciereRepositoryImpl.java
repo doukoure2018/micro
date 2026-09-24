@@ -416,6 +416,18 @@ public class AnalyseFinanciereRepositoryImpl implements AnalyseFinanciereReposit
     }
 
     @Override
+    public int reinitialiserPropositionNonSaisie(Long analyseId) {
+        try {
+            return jdbcClient.sql(RESET_PROPOSITION_NON_SAISIE)
+                    .param("analyseId", analyseId)
+                    .update();
+        } catch (Exception e) {
+            log.error("Error resetting proposition (non saisie): {}", e.getMessage(), e);
+            throw new ApiException("Erreur lors de la reprise de la demande dans la proposition");
+        }
+    }
+
+    @Override
     public PropositionDto getProposition(Long demandeindividuelId) {
         try {
             return jdbcClient.sql(SELECT_PROPOSITION)

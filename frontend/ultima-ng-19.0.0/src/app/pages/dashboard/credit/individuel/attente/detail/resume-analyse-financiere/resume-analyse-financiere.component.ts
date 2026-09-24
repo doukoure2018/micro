@@ -4,6 +4,9 @@ import { PrintService, PrintAnalyseData } from '@/service/PrintService';
 import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject, Input, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { SelectModule } from 'primeng/select';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -67,11 +70,19 @@ interface AnalyseSynthese {
     objectCredit: string;
     periodiciteRemboursement: string;
 
-    // Proposition data
+    tauxInteret?: number;
+    validationState?: string;
+
+    // Proposition data (V152 : saisie par l'agent, ou reprise de la demande)
     montantPropose: number;
     dureeProposee: number;
     nombreEcheancePropose: number;
     echeanceProposee: number;
+    tauxInteretPropose?: number;
+    periodiciteProposee?: string;
+    propositionSaisie?: boolean;
+    moisPeriodiciteSollicite?: number;
+    moisPeriodicitePropose?: number;
 
     // ══════════════════════════════════════════════════════════════════════════
     // BILAN - PÉRIODE N (Évaluation actuelle)
@@ -273,7 +284,7 @@ interface RatioDetail {
 @Component({
     selector: 'app-resume-analyse-financiere',
     standalone: true,
-    imports: [CommonModule, CardModule, TableModule, TagModule, ButtonModule, ProgressSpinnerModule, ToastModule, DividerModule, DialogModule],
+    imports: [CommonModule, FormsModule, CardModule, TableModule, TagModule, ButtonModule, ProgressSpinnerModule, ToastModule, DividerModule, DialogModule, InputNumberModule, SelectModule],
     templateUrl: './resume-analyse-financiere.component.html',
     styleUrl: './resume-analyse-financiere.component.scss',
     providers: [MessageService]
@@ -297,6 +308,84 @@ export class ResumeAnalyseFinanciereComponent {
     private printService = inject(PrintService);
 
     demandeId: number | null = null;
+
+    // ── Proposition de l'agent (V152) ─────────────────────────────────────────
+    /** États dans lesquels l'agent de crédit a encore la main sur le dossier. */
+    private static readonly ETATS_AGENT = ['NOUVEAU', 'AFFECTEE', 'SELECTION', 'VALIDATION', 'CORRECTION', 'CORRECTION_DR', 'CORRECTION_DE', 'RETOUR_AGENT'];
+    readonly periodicites = [
+        { label: 'Mensuelle', value: 'Mensuelle' },
+        { label: 'Bimestrielle', value: 'Bimestrielle' },
+        { label: 'Trimestrielle', value: 'Trimestrielle' },
+        { label: 'Quadrimestrielle', value: 'Quadrimestrielle' },
+        { label: 'Semestrielle', value: 'Semestrielle' },
+        { label: 'Annuelle', value: 'Annuelle' }
+    ];
+    proposition = { montantPropose: 0, dureeProposee: 0, periodiciteProposee: 'Mensuelle', tauxInteretPropose: 0 };
+    savingProposition = signal(false);
+
+    /** L'agent de crédit saisit sa proposition tant que le dossier est chez lui (page complète, pas en mode embarqué). */
+    peutSaisirProposition(): boolean {
+        const s = this.state().synthese;
+        return !this.embedded && this.isAgentCredit() && !!s && ResumeAnalyseFinanciereComponent.ETATS_AGENT.includes(s.validationState || 'NOUVEAU');
+    }
+
+    libelleSourceProposition(): string {
+        return this.state().synthese?.propositionSaisie ? "Proposition de l'agent" : 'Valeurs reprises de la demande (aucune proposition saisie)';
+    }
+
+    private initProposition(s: AnalyseSynthese): void {
+        this.proposition = {
+            montantPropose: s.propositionSaisie ? s.montantPropose : s.montantDemande,
+            dureeProposee: s.propositionSaisie ? s.dureeProposee : s.dureeDemande,
+            periodiciteProposee: (s.propositionSaisie && s.periodiciteProposee) || s.periodiciteRemboursement || 'Mensuelle',
+            tauxInteretPropose: (s.propositionSaisie && s.tauxInteretPropose != null ? s.tauxInteretPropose : s.tauxInteret) ?? 0
+        };
+    }
+
+    enregistrerProposition(): void {
+        if (!this.demandeId) return;
+        const p = this.proposition;
+        if (!p.montantPropose || p.montantPropose <= 0 || !p.dureeProposee || p.dureeProposee <= 0) {
+            this.messageService.add({ severity: 'warn', summary: 'Proposition', detail: 'Le montant et la durée proposés doivent être supérieurs à 0', life: 4000 });
+            return;
+        }
+        this.savingProposition.set(true);
+        this.userService
+            .enregistrerPropositionAnalyse$(this.demandeId, { montantPropose: p.montantPropose, dureeProposee: p.dureeProposee, periodiciteProposee: p.periodiciteProposee, tauxInteretPropose: p.tauxInteretPropose })
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    this.savingProposition.set(false);
+                    const prop = (response.data as any)?.proposition;
+                    const traite = prop?.echeanceProposee != null ? this.formatCurrency(prop.echeanceProposee) : '';
+                    this.messageService.add({ severity: 'success', summary: 'Proposition enregistrée', detail: traite ? `Traite proposée calculée : ${traite} (${prop.nombreEcheancePropose} échéances)` : 'Proposition enregistrée', life: 6000 });
+                    this.chargerSynthese();
+                },
+                error: (err: any) => {
+                    this.savingProposition.set(false);
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || "Impossible d'enregistrer la proposition", life: 6000 });
+                }
+            });
+    }
+
+    reprendreDemande(): void {
+        if (!this.demandeId) return;
+        this.savingProposition.set(true);
+        this.userService
+            .reprendreDemandePropositionAnalyse$(this.demandeId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.savingProposition.set(false);
+                    this.messageService.add({ severity: 'info', summary: 'Proposition', detail: 'Les valeurs proposées reprennent celles de la demande', life: 4000 });
+                    this.chargerSynthese();
+                },
+                error: (err: any) => {
+                    this.savingProposition.set(false);
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || 'Impossible de reprendre la demande', life: 6000 });
+                }
+            });
+    }
 
     /** Fournir l'ID directement (mode embarqué) au lieu de le lire dans la route. */
     @Input() demandeIdInput?: number;
@@ -338,6 +427,7 @@ export class ResumeAnalyseFinanciereComponent {
                 next: (response: IResponse) => {
                     const responseData = response.data as any;
                     if (responseData?.synthese) {
+                        this.initProposition(responseData.synthese);
                         this.state.update((s) => ({
                             ...s,
                             synthese: responseData.synthese,
@@ -777,7 +867,7 @@ export class ResumeAnalyseFinanciereComponent {
                         { label: '+ Autres revenus hors activité', valeur: fc(s.autresRevenusHorsActiviteN), source: RENT },
                         { label: '= CAPACITÉ DE REMBOURSEMENT', valeur: fc(capacite), source: 'Calculé', isTotal: true },
                         { label: 'Traite (échéance sollicitée)', valeur: fc(s.echeance), source: DEMANDE },
-                        ...(this.hasMontantPropose() ? [{ label: 'Traite (échéance proposée)', valeur: fc(s.echeanceProposee), source: "Proposition de l'agent" }] : [])
+                        ...(this.hasMontantPropose() ? [{ label: 'Traite (échéance proposée)', valeur: fc(s.echeanceProposee), source: this.libelleSourceProposition() }] : [])
                     ],
                     applications: [
                         this.application('Montant sollicité', `${fc(capacite)} / ${fc(s.echeance)}`, s.calcR1Sollicite, 2, true),
@@ -909,8 +999,8 @@ export class ResumeAnalyseFinanciereComponent {
         // R5 < 50% (0.5)
         if (s.calcR5 !== null && s.calcR5 !== undefined && s.calcR5 < 0.5) count++;
 
-        // R6 Sollicité > 150% (1.5)
-        if (s.calcR6Sollicite !== null && s.calcR6Sollicite !== undefined && s.calcR6Sollicite > 1.5) count++;
+        // R6 Sollicité >= 150% (1.5) - même seuil que l'étiquette CONFORME (getStatutRatio)
+        if (s.calcR6Sollicite !== null && s.calcR6Sollicite !== undefined && s.calcR6Sollicite >= 1.5) count++;
 
         return count;
     }
@@ -939,8 +1029,8 @@ export class ResumeAnalyseFinanciereComponent {
         // R5 < 50% (0.5) - statique
         if (s.calcR5 !== null && s.calcR5 !== undefined && s.calcR5 < 0.5) count++;
 
-        // R6 Proposé > 150% (1.5)
-        if (s.calcR6Propose !== null && s.calcR6Propose !== undefined && s.calcR6Propose > 1.5) count++;
+        // R6 Proposé >= 150% (1.5) - même seuil que l'étiquette CONFORME (getStatutRatio)
+        if (s.calcR6Propose !== null && s.calcR6Propose !== undefined && s.calcR6Propose >= 1.5) count++;
 
         return count;
     }

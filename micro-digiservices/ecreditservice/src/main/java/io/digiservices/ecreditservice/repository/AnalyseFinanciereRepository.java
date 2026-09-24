@@ -36,6 +36,9 @@ public interface AnalyseFinanciereRepository {
 
     // Proposition
     void updateProposition(Long demandeindividuelId, PropositionDto dto);
+
+    /** V152 : remet montant_propose a 0 (reprise de la demande a la soumission) si aucune proposition saisie. */
+    int reinitialiserPropositionNonSaisie(Long analyseId);
     PropositionDto getProposition(Long demandeindividuelId);
     void deleteProposition(Long demandeindividuelId);
 
