@@ -84,6 +84,9 @@ public interface WorkflowRepository {
     List<AgentAgenceDto> getAgentsAgence(Long agenceId);
     int upsertAgentFonction(Long userId, String fonction, boolean actif, Long affectePar);
     Long getAgenceOfUser(Long userId);
+
+    /** TRUE si le compte est actif (enabled et non verrouille) ; FALSE si inconnu. */
+    boolean isCompteActif(Long userId);
     List<String> getMesFonctions(Long userId);
     List<String> getRolesOfUser(Long userId);
 }

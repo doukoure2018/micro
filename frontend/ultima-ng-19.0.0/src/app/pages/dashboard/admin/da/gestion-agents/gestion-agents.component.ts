@@ -49,7 +49,11 @@ import { TooltipModule } from 'primeng/tooltip';
                 <ng-template pTemplate="body" let-a>
                     <tr>
                         <td>
-                            {{ a.firstName }} {{ a.lastName }}<br />
+                            {{ a.firstName }} {{ a.lastName }}
+                            @if (a.compteActif === false) {
+                            <p-tag value="Compte bloqué" severity="danger" class="ml-2" pTooltip="Compte désactivé ou verrouillé : non proposé à l'affectation"></p-tag>
+                            }
+                            <br />
                             <span class="text-xs text-gray-500">{{ a.email }}</span>
                         </td>
                         <td>

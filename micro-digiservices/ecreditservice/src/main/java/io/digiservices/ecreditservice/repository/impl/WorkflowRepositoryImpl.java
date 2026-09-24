@@ -669,6 +669,20 @@ public class WorkflowRepositoryImpl implements WorkflowRepository {
     }
 
     @Override
+    public boolean isCompteActif(Long userId) {
+        try {
+            return jdbcClient.sql(SELECT_COMPTE_ACTIF)
+                    .param("userId", userId)
+                    .query(Boolean.class)
+                    .optional()
+                    .orElse(false);
+        } catch (Exception e) {
+            log.error("Erreur lors du controle du compte de l'utilisateur: {}", e.getMessage());
+            throw new ApiException("Erreur lors du controle du compte: " + e.getMessage());
+        }
+    }
+
+    @Override
     public Long getAgenceOfUser(Long userId) {
         try {
             return jdbcClient.sql(SELECT_AGENCE_OF_USER)

@@ -1043,7 +1043,8 @@ public class WorkflowQuery {
                    u.pointvente_id AS "pointventeId",
                    pv.libele AS "pointventeLibele",
                    COALESCE(BOOL_OR(af.fonction = 'ACCUEIL' AND af.actif), FALSE) AS "fonctionAccueil",
-                   COALESCE(BOOL_OR(af.fonction = 'CREDIT' AND af.actif), FALSE) AS "fonctionCredit"
+                   COALESCE(BOOL_OR(af.fonction = 'CREDIT' AND af.actif), FALSE) AS "fonctionCredit",
+                   (COALESCE(u.enabled, TRUE) AND COALESCE(u.account_non_locked, TRUE)) AS "compteActif"
             FROM users u
             JOIN user_roles ur ON ur.user_id = u.user_id
             JOIN roles r ON r.role_id = ur.role_id
@@ -1051,8 +1052,14 @@ public class WorkflowQuery {
             LEFT JOIN agent_fonctions af ON af.user_id = u.user_id
             WHERE r.name IN ('AGENT_CREDIT', 'AGENT_ACCUEIL')
               AND u.agence_id = :agenceId
-            GROUP BY u.user_id, u.first_name, u.last_name, u.email, u.username, r.name, u.pointvente_id, pv.libele
+            GROUP BY u.user_id, u.first_name, u.last_name, u.email, u.username, r.name, u.pointvente_id, pv.libele, u.enabled, u.account_non_locked
             ORDER BY u.last_name, u.first_name
+            """;
+
+    /** Compte utilisable (ni desactive ni verrouille) : un compte bloque ne peut pas recevoir d'affectation (2026-09-24). */
+    public static final String SELECT_COMPTE_ACTIF = """
+            SELECT (COALESCE(u.enabled, TRUE) AND COALESCE(u.account_non_locked, TRUE))
+            FROM users u WHERE u.user_id = :userId
             """;
 
     /** Active/desactive une fonction pour un agent (upsert, horodate et nominatif). */
