@@ -364,8 +364,10 @@ public class WorkflowServiceImpl implements WorkflowService {
      */
     @Override
     public java.util.List<AgentAgenceDto> getAgentsCreditEligibles(Long agenceId) {
+        // 2026-09-24 : les comptes bloques (desactives ou verrouilles) ne sont plus proposes a l'affectation
         return workflowRepository.getAgentsAgence(agenceId).stream()
                 .filter(a -> "AGENT_CREDIT".equals(a.getRole()))
+                .filter(a -> !Boolean.FALSE.equals(a.getCompteActif()))
                 .toList();
     }
 
@@ -377,6 +379,9 @@ public class WorkflowServiceImpl implements WorkflowService {
         }
         if (!workflowRepository.getRolesOfUser(agentUserId).contains("AGENT_CREDIT")) {
             throw new ApiException("Seul un agent de credit peut recevoir une affectation");
+        }
+        if (!workflowRepository.isCompteActif(agentUserId)) {
+            throw new ApiException("Le compte de cet agent est bloqué : il ne peut pas recevoir d'affectation");
         }
     }
 

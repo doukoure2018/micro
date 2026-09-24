@@ -24,4 +24,6 @@ public class AgentAgenceDto {
     private String pointventeLibele;
     private Boolean fonctionAccueil;
     private Boolean fonctionCredit;
+    /** FALSE si le compte est desactive ou verrouille : exclu de l'affectation par le DA. */
+    private Boolean compteActif;
 }
