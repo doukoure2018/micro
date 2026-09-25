@@ -38,6 +38,7 @@ public class CongeServiceImpl implements CongeService {
     private static final String PARAM_DROIT_ANNUEL = "DROIT_CONGE_ANNUEL_JOURS";
 
     private final CongeRepository congeRepository;
+    private final io.digiservices.ecreditservice.drh.repository.PermissionRepository permissionRepository;
     private final DrhRepository drhRepository;
     private final DrhService drhService;
     private final SmsService smsService;
@@ -65,6 +66,9 @@ public class CongeServiceImpl implements CongeService {
                 .filter(p -> !periodesUtilisees.contains(p.getPeriodeId()))
                 .toList();
 
+        // V155 : report de l'exercice précédent, utilisable jusqu'à sa date limite
+        var report = congeRepository.reportActifDeUser(user.getUserId(), exercice);
+        int reportRestant = report.map(r -> Math.max(0, r.getJoursReportes() - r.getJoursConsommes())).orElse(0);
         return SoldeCongeDto.builder()
                 .exercice(exercice)
                 .droit(droit)
@@ -72,6 +76,12 @@ public class CongeServiceImpl implements CongeService {
                 .restant(Math.max(0, droit - pris))
                 .previsionValidee(prevision.isPresent())
                 .tranchesDisponibles(disponibles)
+                .reportExercice(report.map(ReportCongeDto::getExerciceOrigine).orElse(null))
+                .reportJours(report.map(ReportCongeDto::getJoursReportes).orElse(0))
+                .reportConsommes(report.map(ReportCongeDto::getJoursConsommes).orElse(0))
+                .reportRestant(reportRestant)
+                .reportDateLimite(report.map(ReportCongeDto::getDateLimite).orElse(null))
+                .restantTotal(Math.max(0, droit - pris) + reportRestant)
                 .build();
     }
 
@@ -123,10 +133,12 @@ public class CongeServiceImpl implements CongeService {
 
         int droit = drhRepository.parametreInt(PARAM_DROIT_ANNUEL, 30);
         int pris = congeRepository.joursConsommes(user.getUserId(), exercice);
-        int restant = droit - pris;
+        int reportRestant = reportRestant(user.getUserId(), exercice); // V155
+        int restant = droit - pris + reportRestant;
         if (nbJours > restant) {
             throw new ValidationException("Ce congé de " + nbJours
-                    + " jours dépasse votre solde restant (" + restant + " j sur " + droit + ")");
+                    + " jours dépasse votre solde restant (" + restant + " j : " + Math.max(0, droit - pris) + " j sur " + droit
+                    + (reportRestant > 0 ? " + " + reportRestant + " j de report" : "") + ")");
         }
 
         Long demandeId = congeRepository.creerDemande(user.getUserId(), membre.getDepartementId(),
@@ -178,31 +190,282 @@ public class CongeServiceImpl implements CongeService {
     @Override
     @Transactional
     public DemandeCongeDto interrompre(User acteur, Long demandeId, InterruptionRequest request) {
+        // V155 : plus d'interruption directe par le responsable — tout passe par la déclaration ;
+        // l'interruption directe reste possible pour l'administration DRH (cas d'urgence).
+        exigerDrh(acteur);
         exigerMotif(request.getMotif());
-        DemandeCongeDto d = exigerDemandeDeSonDepartement(acteur, demandeId, Set.of("VALIDEE_DRH"));
-        if (request.getDateReprise() == null) {
+        DemandeCongeDto d = exigerStatut(demandeId, Set.of("VALIDEE_DRH"));
+        executerInterruption(acteur, d, request.getDateReprise(), request.getMotif());
+        return congeRepository.demandeById(demandeId).orElseThrow();
+    }
+
+    /** Interruption effective d'un congé accordé : recrédit des jours non consommés (+ report), notifications. */
+    private int executerInterruption(User acteur, DemandeCongeDto d, LocalDate dateReprise, String motif) {
+        if (dateReprise == null) {
             throw new ValidationException("La date de reprise est obligatoire pour interrompre un congé");
         }
-        if (request.getDateReprise().isBefore(d.getDateDebut())
-                || request.getDateReprise().isAfter(d.getDateFin().plusDays(1))) {
+        if (dateReprise.isBefore(d.getDateDebut()) || dateReprise.isAfter(d.getDateFin().plusDays(1))) {
             throw new ValidationException("La date de reprise doit être comprise entre le début du congé et le lendemain de sa fin");
         }
         Set<LocalDate> feries = new HashSet<>(drhRepository.joursFeries(
                 LocalDate.of(d.getExercice(), 1, 1), LocalDate.of(d.getExercice(), 12, 31)));
-        int consommes = request.getDateReprise().isAfter(d.getDateDebut())
-                ? DrhServiceImpl.joursOuvrables(d.getDateDebut(), request.getDateReprise().minusDays(1), feries)
+        int consommes = dateReprise.isAfter(d.getDateDebut())
+                ? DrhServiceImpl.joursOuvrables(d.getDateDebut(), dateReprise.minusDays(1), feries)
                 : 0;
         int recredites = Math.max(0, d.getNbJours() - consommes);
-        congeRepository.interrompre(demandeId, "INTERROMPUE", acteur.getUserId(),
-                request.getDateReprise(), recredites, request.getMotif().trim());
+        congeRepository.interrompre(d.getDemandeId(), "INTERROMPUE", acteur.getUserId(),
+                dateReprise, recredites, motif.trim());
+        restituerReport(d, recredites);
         notifierUser(d.getUserId(), "CRG Congés : votre congé est interrompu à compter du "
-                + request.getDateReprise() + " — " + request.getMotif().trim()
+                + dateReprise + " — " + motif.trim()
                 + ". " + recredites + " jour(s) non consommé(s) recrédité(s).");
         notifier(drhRepository.telephonesDrh(),
                 "CRG Congés : congé de " + d.getNomComplet() + " interrompu (reprise "
-                        + request.getDateReprise() + ", " + recredites + " j recrédités).");
-        return congeRepository.demandeById(demandeId).orElseThrow();
+                        + dateReprise + ", " + recredites + " j recrédités).");
+        return recredites;
     }
+
+    // ===== V155 : report d'exercice (helpers) =====
+
+    private int reportRestant(Long userId, int exercice) {
+        return congeRepository.reportActifDeUser(userId, exercice)
+                .map(r -> Math.max(0, r.getJoursReportes() - r.getJoursConsommes())).orElse(0);
+    }
+
+    /** À la validation : impute d'abord le report de l'exercice précédent. */
+    private void imputerSurReport(DemandeCongeDto d) {
+        int restant = reportRestant(d.getUserId(), d.getExercice());
+        int jours = Math.min(restant, d.getNbJours() == null ? 0 : d.getNbJours());
+        if (jours > 0) {
+            congeRepository.majConsommationReport(d.getUserId(), d.getExercice(), jours);
+            congeRepository.majJoursSurReport(d.getDemandeId(), jours);
+        }
+    }
+
+    /** À l'annulation / interruption : rend au report la part recréditée qui en provenait. */
+    private void restituerReport(DemandeCongeDto d, int recredites) {
+        int surReport = d.getJoursSurReport() == null ? 0 : d.getJoursSurReport();
+        int rendu = Math.min(surReport, Math.max(0, recredites));
+        if (rendu > 0) {
+            congeRepository.majConsommationReport(d.getUserId(), d.getExercice(), -rendu);
+            congeRepository.majJoursSurReport(d.getDemandeId(), surReport - rendu);
+        }
+    }
+
+    // ===== V155 : interruption déclarée par le responsable, exécutée par la DRH =====
+
+    @Override
+    @Transactional
+    public InterruptionDto declarerInterruption(User responsable, Long demandeId, DeclarationInterruptionRequest r) {
+        exigerMotif(r.getMotif());
+        DemandeCongeDto d = exigerDemandeDeSonDepartement(responsable, demandeId, Set.of("VALIDEE_DRH"));
+        if (r.getDateRepriseSouhaitee() == null) {
+            throw new ValidationException("La date de reprise souhaitée est obligatoire");
+        }
+        if (r.getDateRepriseSouhaitee().isBefore(d.getDateDebut()) || r.getDateRepriseSouhaitee().isAfter(d.getDateFin().plusDays(1))) {
+            throw new ValidationException("La date de reprise doit être comprise entre le début du congé et le lendemain de sa fin");
+        }
+        if (congeRepository.interruptionDemandeeExiste(demandeId)) {
+            throw new ValidationException("Une déclaration d'interruption est déjà en attente de la DRH pour ce congé");
+        }
+        Long id = congeRepository.declarerInterruption(demandeId, responsable.getUserId(), r.getDateRepriseSouhaitee(), r.getMotif().trim());
+        notifier(drhRepository.telephonesDrh(), "CRG Congés : " + prenomNom(responsable) + " déclare l'interruption du congé de "
+                + d.getNomComplet() + " (reprise souhaitée le " + r.getDateRepriseSouhaitee() + ") — à valider dans Validation des congés.");
+        return congeRepository.interruptionById(id).orElseThrow();
+    }
+
+    @Override
+    public List<InterruptionDto> interruptionsDeMonDepartement(User responsable, int exercice) {
+        MembreDto membre = exigerResponsable(responsable);
+        return congeRepository.interruptionsDuDepartement(membre.getDepartementId(), exercice);
+    }
+
+    @Override
+    public List<InterruptionDto> interruptionsATraiter(User drh, int exercice) {
+        exigerDrh(drh);
+        return congeRepository.interruptionsATraiter(exercice);
+    }
+
+    @Override
+    @Transactional
+    public InterruptionDto validerInterruption(User drh, Long interruptionId, TraitementInterruptionRequest r) {
+        exigerDrh(drh);
+        InterruptionDto i = congeRepository.interruptionById(interruptionId)
+                .orElseThrow(() -> new ValidationException("Déclaration introuvable"));
+        if (!"DEMANDEE".equals(i.getStatut())) {
+            throw new ValidationException("Cette déclaration a déjà été traitée");
+        }
+        DemandeCongeDto d = exigerStatut(i.getDemandeId(), Set.of("VALIDEE_DRH"));
+        LocalDate dateRetenue = r != null && r.getDateReprise() != null ? r.getDateReprise() : i.getDateRepriseSouhaitee();
+        int recredites = executerInterruption(drh, d, dateRetenue, i.getMotif());
+        congeRepository.traiterInterruption(interruptionId, "VALIDEE", drh.getUserId(), dateRetenue, null);
+        notifierUser(i.getDeclareePar(), "CRG Congés : l'interruption du congé de " + d.getNomComplet()
+                + " est validée par la DRH (reprise le " + dateRetenue + ", " + recredites + " j recrédités).");
+        return congeRepository.interruptionById(interruptionId).orElseThrow();
+    }
+
+    @Override
+    @Transactional
+    public InterruptionDto refuserInterruption(User drh, Long interruptionId, String motif) {
+        exigerDrh(drh);
+        exigerMotif(motif);
+        InterruptionDto i = congeRepository.interruptionById(interruptionId)
+                .orElseThrow(() -> new ValidationException("Déclaration introuvable"));
+        if (congeRepository.traiterInterruption(interruptionId, "REFUSEE", drh.getUserId(), null, motif.trim()) == 0) {
+            throw new ValidationException("Cette déclaration a déjà été traitée");
+        }
+        notifierUser(i.getDeclareePar(), "CRG Congés : la DRH n'a pas retenu l'interruption du congé de "
+                + i.getNomComplet() + " — " + motif.trim() + ". Le congé se poursuit jusqu'au " + i.getDateFin() + ".");
+        return congeRepository.interruptionById(interruptionId).orElseThrow();
+    }
+
+    // ===== V155 : clôture d'exercice et reports =====
+
+    @Override
+    public List<ReportCongeDto> reportsExercice(User drh, int exerciceCible) {
+        exigerDrh(drh);
+        return congeRepository.reportsExerciceCible(exerciceCible);
+    }
+
+    @Override
+    @Transactional
+    public ClotureExerciceDto cloturerExercice(User drh, int exercice) {
+        exigerDrh(drh);
+        return executerCloture(exercice, drh.getUserId());
+    }
+
+    @Override
+    @Transactional
+    public ClotureExerciceDto cloturerExerciceSysteme(int exercice) {
+        return executerCloture(exercice, null);
+    }
+
+    private ClotureExerciceDto executerCloture(int exercice, Long creePar) {
+        if (!Boolean.parseBoolean(drhRepository.parametreTexte("CONGE_REPORT_AUTORISE", "true"))) {
+            throw new ValidationException("Le report des congés est désactivé (paramètre CONGE_REPORT_AUTORISE)");
+        }
+        if (exercice >= LocalDate.now().getYear()) {
+            throw new ValidationException("L'exercice " + exercice + " n'est pas terminé : la clôture n'est possible qu'à partir du 1er janvier " + (exercice + 1));
+        }
+        String limite = drhRepository.parametreTexte("CONGE_REPORT_DATE_LIMITE", "06-30");
+        LocalDate dateLimite;
+        try {
+            String[] mmjj = limite.split("-");
+            dateLimite = LocalDate.of(exercice + 1, Integer.parseInt(mmjj[0]), Integer.parseInt(mmjj[1]));
+        } catch (Exception e) {
+            dateLimite = LocalDate.of(exercice + 1, 6, 30);
+        }
+        int plafond = drhRepository.parametreInt("CONGE_REPORT_PLAFOND_JOURS", 0);
+        int droit = drhRepository.parametreInt(PARAM_DROIT_ANNUEL, 30);
+        int examines = 0, crees = 0, jours = 0;
+        for (Long userId : congeRepository.usersMembresActifs()) {
+            examines++;
+            int reliquat = droit - congeRepository.joursConsommes(userId, exercice);
+            if (plafond > 0) {
+                reliquat = Math.min(reliquat, plafond);
+            }
+            if (reliquat > 0 && congeRepository.creerReport(userId, exercice, exercice + 1, reliquat, dateLimite, creePar) > 0) {
+                crees++;
+                jours += reliquat;
+            }
+        }
+        log.info("Clôture congés {} : {} salarié(s) examiné(s), {} report(s) créé(s) ({} j), limite {}", exercice, examines, crees, jours, dateLimite);
+        return ClotureExerciceDto.builder().exercice(exercice).exerciceCible(exercice + 1)
+                .salariesExamines(examines).reportsCrees(crees).joursReportes(jours).dateLimite(dateLimite).build();
+    }
+
+    // ===== V155 : synthèse mensuelle / trimestrielle =====
+
+    @Override
+    public SyntheseCongesDto syntheseConges(User drh, int exercice, String periode, int valeur, Long departementId) {
+        exigerDrh(drh);
+        boolean trimestre = "T".equalsIgnoreCase(periode);
+        if (trimestre ? (valeur < 1 || valeur > 4) : (valeur < 1 || valeur > 12)) {
+            throw new ValidationException(trimestre ? "Le trimestre doit être compris entre 1 et 4" : "Le mois doit être compris entre 1 et 12");
+        }
+        LocalDate debut = trimestre ? LocalDate.of(exercice, (valeur - 1) * 3 + 1, 1) : LocalDate.of(exercice, valeur, 1);
+        LocalDate fin = (trimestre ? debut.plusMonths(3) : debut.plusMonths(1)).minusDays(1);
+        Set<LocalDate> feries = new HashSet<>(drhRepository.joursFeries(debut, fin));
+        int joursOuvrables = DrhServiceImpl.joursOuvrables(debut, fin, feries);
+
+        List<DemandeCongeDto> conges = congeRepository.demandesValideesDrh(exercice, departementId, null).stream()
+                .filter(d -> !finEffective(d).isBefore(debut) && !d.getDateDebut().isAfter(fin))
+                .toList();
+        List<io.digiservices.ecreditservice.drh.dto.PermissionDtos.PermissionDto> permissions =
+                permissionRepository.permissionsValideesDrh(exercice, departementId, null).stream()
+                .filter(p -> !p.getDateFin().isBefore(debut) && !p.getDateDebut().isAfter(fin))
+                .toList();
+
+        // Effectifs par direction
+        java.util.Map<String, LigneDirectionDto> lignes = new java.util.LinkedHashMap<>();
+        for (var dep : drhRepository.listeDepartements()) {
+            if (departementId != null && !departementId.equals(dep.getDepartementId())) continue;
+            int effectif = (int) drhRepository.listeMembres(dep.getDepartementId()).stream()
+                    .filter(m -> Boolean.TRUE.equals(m.getActif())).count();
+            lignes.put(dep.getCode(), LigneDirectionDto.builder().code(dep.getCode()).libelle(dep.getLibelle()).effectif(effectif).build());
+        }
+        int joursConges = 0, joursPermissions = 0, interruptions = 0;
+        Set<Long> salaries = new HashSet<>();
+        for (DemandeCongeDto d : conges) {
+            int j = DrhServiceImpl.joursOuvrables(max(d.getDateDebut(), debut), min(finEffective(d), fin), feries);
+            joursConges += j;
+            salaries.add(d.getUserId());
+            if ("INTERROMPUE".equals(d.getStatut())) interruptions++;
+            LigneDirectionDto l = lignes.computeIfAbsent(d.getDepartementCode(), c -> LigneDirectionDto.builder().code(c).libelle(d.getDepartementLibelle()).build());
+            l.setConges(l.getConges() + 1);
+            l.setJoursConges(l.getJoursConges() + j);
+        }
+        java.util.Map<String, LigneMotifDto> motifs = new java.util.LinkedHashMap<>();
+        for (var p : permissions) {
+            int j = DrhServiceImpl.joursOuvrables(max(p.getDateDebut(), debut), min(p.getDateFin(), fin), feries);
+            joursPermissions += j;
+            LigneDirectionDto l = lignes.computeIfAbsent(p.getDepartementCode(), c -> LigneDirectionDto.builder().code(c).libelle(p.getDepartementLibelle()).build());
+            l.setPermissions(l.getPermissions() + 1);
+            l.setJoursPermissions(l.getJoursPermissions() + j);
+            LigneMotifDto lm = motifs.computeIfAbsent(p.getMotif() == null ? "AUTRE" : p.getMotif(), mo -> LigneMotifDto.builder().motif(mo).build());
+            lm.setNombre(lm.getNombre() + 1);
+            lm.setJours(lm.getJours() + j);
+        }
+        int effectif = 0;
+        for (LigneDirectionDto l : lignes.values()) {
+            effectif += l.getEffectif();
+            int capacite = l.getEffectif() * joursOuvrables;
+            l.setTauxAbsence(capacite > 0 ? Math.round((l.getJoursConges() + l.getJoursPermissions()) * 10000.0 / capacite) / 100.0 : 0);
+        }
+        List<AbsenceJourDto> parJour = new java.util.ArrayList<>();
+        for (LocalDate j = debut; !j.isAfter(fin); j = j.plusDays(1)) {
+            final LocalDate jour = j;
+            List<String> noms = new java.util.ArrayList<>();
+            int c = 0, pm = 0;
+            for (DemandeCongeDto d : conges) {
+                if (!jour.isBefore(d.getDateDebut()) && !jour.isAfter(finEffective(d))) { c++; noms.add(d.getNomComplet()); }
+            }
+            for (var p : permissions) {
+                if (!jour.isBefore(p.getDateDebut()) && !jour.isAfter(p.getDateFin())) { pm++; noms.add(p.getNomComplet() + " (perm.)"); }
+            }
+            boolean ouvrable = jour.getDayOfWeek() != java.time.DayOfWeek.SUNDAY && !feries.contains(jour);
+            parJour.add(AbsenceJourDto.builder().jour(jour).ouvrable(ouvrable).conges(c).permissions(pm).noms(noms).build());
+        }
+        int capaciteTotale = effectif * joursOuvrables;
+        return SyntheseCongesDto.builder()
+                .exercice(exercice).periode(trimestre ? "T" : "M").valeur(valeur).debut(debut).fin(fin)
+                .joursOuvrables(joursOuvrables).effectif(effectif)
+                .congesAccordes(conges.size()).joursConges(joursConges).salariesEnConge(salaries.size())
+                .permissionsAccordees(permissions.size()).joursPermissions(joursPermissions).interruptions(interruptions)
+                .tauxAbsence(capaciteTotale > 0 ? Math.round((joursConges + joursPermissions) * 10000.0 / capaciteTotale) / 100.0 : 0)
+                .parDirection(new java.util.ArrayList<>(lignes.values()))
+                .parMotif(new java.util.ArrayList<>(motifs.values()))
+                .parJour(parJour)
+                .conges(conges).permissions(permissions)
+                .build();
+    }
+
+    private static LocalDate finEffective(DemandeCongeDto d) {
+        return "INTERROMPUE".equals(d.getStatut()) && d.getDateReprise() != null ? d.getDateReprise().minusDays(1) : d.getDateFin();
+    }
+
+    private static LocalDate max(LocalDate a, LocalDate b) { return a.isAfter(b) ? a : b; }
+    private static LocalDate min(LocalDate a, LocalDate b) { return a.isBefore(b) ? a : b; }
 
     @Override
     @Transactional
@@ -222,6 +485,7 @@ public class CongeServiceImpl implements CongeService {
         }
         congeRepository.interrompre(demandeId, "ANNULEE", acteur.getUserId(),
                 null, d.getNbJours(), motif.trim());
+        restituerReport(d, d.getNbJours()); // V155
         if (!proprietaire) {
             notifierUser(d.getUserId(), "CRG Congés : votre congé du " + d.getDateDebut()
                     + " a été annulé — " + motif.trim() + ". Vos jours sont recrédités.");
@@ -249,6 +513,7 @@ public class CongeServiceImpl implements CongeService {
         exigerDrh(drh);
         DemandeCongeDto d = exigerStatut(demandeId, Set.of("ACCEPTEE_RESP"));
         congeRepository.majStatut(demandeId, "VALIDEE_DRH", null, null, drh.getUserId());
+        imputerSurReport(d); // V155 : le report de l'exercice précédent est consommé en priorité
         notifierUser(d.getUserId(), "CRG Congés : votre congé du " + d.getDateDebut() + " au "
                 + d.getDateFin() + " (" + d.getNbJours() + " j) est validé par la DRH. Bon congé !");
         return congeRepository.demandeById(demandeId).orElseThrow();

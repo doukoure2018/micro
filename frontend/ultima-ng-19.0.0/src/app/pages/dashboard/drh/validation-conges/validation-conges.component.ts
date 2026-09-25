@@ -12,7 +12,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { DrhService, DemandeConge, PermissionSociale, ResultatLot } from '@/service/drh.service';
+import { DrhService, DemandeConge, PermissionSociale, ResultatLot, InterruptionConge } from '@/service/drh.service';
 import { statutConge, imprimerDemandeConge, imprimerPermission, libelleMotif, libelleLienParente, resumeLot } from '../conge-utils';
 
 /** Validation DRH des demandes de congé acceptées par les responsables. */
@@ -34,7 +34,7 @@ import { statutConge, imprimerDemandeConge, imprimerPermission, libelleMotif, li
                                     (onChange)="charger()" />
                     <label class="font-medium ml-2">Exercice</label>
                     <p-dropdown [options]="exercices" [(ngModel)]="exercice" (onChange)="charger()" />
-                    <button pButton icon="pi pi-check-square" class="p-button-sm ml-2" severity="success"
+                    <button *ngIf="typeActif !== 'interruptions'" pButton icon="pi pi-check-square" class="p-button-sm ml-2" severity="success"
                             [label]="'Valider la sélection (' + nbSelection() + ')'" [disabled]="nbSelection() === 0 || lotEnCours()"
                             [loading]="lotEnCours()" (click)="validerSelection()"></button>
                 </div>
@@ -106,9 +106,56 @@ import { statutConge, imprimerDemandeConge, imprimerPermission, libelleMotif, li
                     <tr><td colspan="10" class="text-center text-color-secondary">Aucune demande en attente pour {{ exercice }}</td></tr>
                 </ng-template>
             </p-table>
+
+            <!-- V155 : interruptions déclarées par les responsables -->
+            <p-table *ngIf="typeActif === 'interruptions'" [value]="interruptions()" responsiveLayout="scroll" [rowHover]="true">
+                <ng-template pTemplate="header">
+                    <tr><th>Salarié</th><th>Direction</th><th>Congé</th><th>Reprise souhaitée</th><th>Motif</th><th>Déclarée par</th><th>Actions</th></tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-i>
+                    <tr>
+                        <td>{{ i.nomComplet }}<div class="text-xs text-color-secondary" *ngIf="i.matricule">Mat. {{ i.matricule }}</div></td>
+                        <td>{{ i.departementCode }}</td>
+                        <td>{{ i.dateDebut | date: 'dd/MM/yyyy' }} → {{ i.dateFin | date: 'dd/MM/yyyy' }} ({{ i.nbJours }} j)</td>
+                        <td class="font-medium">{{ i.dateRepriseSouhaitee | date: 'dd/MM/yyyy' }}</td>
+                        <td>{{ i.motif }}</td>
+                        <td class="text-sm">{{ i.declareeParNom }}<br>{{ i.declareeLe | date: 'dd/MM/yyyy HH:mm' }}</td>
+                        <td>
+                            <div class="flex gap-1">
+                                <button pButton icon="pi pi-check" class="p-button-sm" severity="success" pTooltip="Valider (ajuster la date si besoin)" (click)="ouvrirValidationInterruption(i)"></button>
+                                <button pButton icon="pi pi-times" class="p-button-sm" severity="danger" pTooltip="Refuser" (click)="ouvrirRefusInterruption(i)"></button>
+                            </div>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr><td colspan="7" class="text-center text-color-secondary">Aucune interruption à traiter pour {{ exercice }}</td></tr>
+                </ng-template>
+            </p-table>
         </div>
 
 
+        <p-dialog header="Valider l'interruption" [(visible)]="interruptionVisible" [modal]="true" [style]="{ width: '520px' }">
+            <p class="text-sm text-color-secondary mb-3" *ngIf="interruptionCible as i">
+                Congé de {{ i.nomComplet }} du {{ i.dateDebut | date: 'dd/MM/yyyy' }} au {{ i.dateFin | date: 'dd/MM/yyyy' }} ({{ i.nbJours }} j).
+                Motif du responsable : {{ i.motif }}. Les jours ouvrables non consommés à compter de la reprise seront recrédités.
+            </p>
+            <label class="block mb-1 font-medium">Date de reprise retenue *</label>
+            <input type="date" class="p-inputtext w-full" [(ngModel)]="dateRepriseRetenue" />
+            <ng-template pTemplate="footer">
+                <button pButton label="Fermer" class="p-button-text" (click)="interruptionVisible = false"></button>
+                <button pButton label="Valider l'interruption" severity="warn" icon="pi pi-check" [disabled]="!dateRepriseRetenue" (click)="validerInterruption()"></button>
+            </ng-template>
+        </p-dialog>
+
+        <p-dialog header="Refuser l'interruption" [(visible)]="refusVisible" [modal]="true" [style]="{ width: '480px' }">
+            <p class="mb-2">Motif du refus (transmis au responsable) :</p>
+            <textarea pTextarea [(ngModel)]="motifRefus" rows="3" class="w-full"></textarea>
+            <ng-template pTemplate="footer">
+                <button pButton label="Annuler" class="p-button-text" (click)="refusVisible = false"></button>
+                <button pButton label="Refuser" severity="danger" [disabled]="!motifRefus.trim()" (click)="refuserInterruption()"></button>
+            </ng-template>
+        </p-dialog>
         <!-- V154 : résultats d'un traitement groupé -->
         <p-dialog header="Résultat du traitement groupé" [(visible)]="lotVisible" [modal]="true" [style]="{ width: '640px' }">
             <p class="mb-2">{{ resumeLotTexte() }}</p>
@@ -140,11 +187,49 @@ export class ValidationCongesComponent implements OnInit {
 
     demandes = signal<DemandeConge[]>([]);
     permissions = signal<PermissionSociale[]>([]);
-    typeActif: 'conges' | 'permissions' = 'conges';
+    typeActif: 'conges' | 'permissions' | 'interruptions' = 'conges';
     types = [
         { label: 'Congés', value: 'conges' },
-        { label: 'Permissions sociales', value: 'permissions' }
+        { label: 'Permissions sociales', value: 'permissions' },
+        { label: 'Interruptions', value: 'interruptions' }
     ];
+    // V155 : déclarations d'interruption à traiter
+    interruptions = signal<InterruptionConge[]>([]);
+    interruptionCible: InterruptionConge | null = null;
+    interruptionVisible = false;
+    refusVisible = false;
+    dateRepriseRetenue = '';
+    motifRefus = '';
+
+    ouvrirValidationInterruption(i: InterruptionConge): void {
+        this.interruptionCible = i;
+        this.dateRepriseRetenue = i.dateRepriseSouhaitee;
+        this.interruptionVisible = true;
+    }
+
+    validerInterruption(): void {
+        if (!this.interruptionCible) return;
+        this.drhService.validerInterruption$(this.interruptionCible.interruptionId, { dateReprise: this.dateRepriseRetenue || null })
+            .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+                next: () => { this.interruptionVisible = false; this.ok('Interruption validée — congé interrompu, jours recrédités, salarié et responsable notifiés'); },
+                error: (e) => this.erreur(e)
+            });
+    }
+
+    ouvrirRefusInterruption(i: InterruptionConge): void {
+        this.interruptionCible = i;
+        this.motifRefus = '';
+        this.refusVisible = true;
+    }
+
+    refuserInterruption(): void {
+        if (!this.interruptionCible || !this.motifRefus.trim()) return;
+        this.drhService.refuserInterruption$(this.interruptionCible.interruptionId, this.motifRefus.trim())
+            .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+                next: () => { this.refusVisible = false; this.ok('Interruption refusée — le responsable est notifié, le congé se poursuit'); },
+                error: (e) => this.erreur(e)
+            });
+    }
     motifLabel = libelleMotif;
     lienLabel = libelleLienParente;
     exercice = new Date().getFullYear();
@@ -214,6 +299,10 @@ export class ValidationCongesComponent implements OnInit {
         });
         this.drhService.permissionsAValider$(this.exercice).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (r) => this.permissions.set((r.data as any)?.permissions || []),
+            error: () => {}
+        });
+        this.drhService.interruptionsATraiter$(this.exercice).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: (r) => this.interruptions.set((r.data as any)?.interruptions || []),
             error: () => {}
         });
     }

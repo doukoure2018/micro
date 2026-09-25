@@ -13,7 +13,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { DrhService, DemandeConge, PermissionSociale, PrevisionConge, ContexteDrh, ResultatLot } from '@/service/drh.service';
+import { DrhService, DemandeConge, PermissionSociale, PrevisionConge, ContexteDrh, ResultatLot, InterruptionConge } from '@/service/drh.service';
 import { statutConge, libelleMotif, libelleLienParente, imprimerDemandeConge, imprimerPermission, resumeLot } from '../conge-utils';
 import { ApercuPrevisionsComponent } from '../apercu-previsions/apercu-previsions.component';
 
@@ -32,7 +32,7 @@ import { ApercuPrevisionsComponent } from '../apercu-previsions/apercu-prevision
             <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
                 <div>
                     <h4 class="m-0">Congés — {{ contexte()?.departementLibelle || (contexte()?.estDga ? 'demandes des responsables (DGA)' : '') }}</h4>
-                    <span class="text-sm text-color-secondary">Demandes de congé de vos salariés : accepter, rejeter, interrompre ou annuler.</span>
+                    <span class="text-sm text-color-secondary">Demandes de congé de vos salariés : accepter, rejeter, déclarer une interruption (validée par la DRH) ou annuler.</span>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <p-selectButton [options]="vuesOptions" [(ngModel)]="vueActive" optionLabel="label" optionValue="value" />
@@ -106,6 +106,7 @@ import { ApercuPrevisionsComponent } from '../apercu-previsions/apercu-prevision
                             <div class="text-xs" *ngIf="d.statut === 'INTERROMPUE'">
                                 Reprise le {{ d.dateReprise | date: 'dd/MM/yyyy' }} — {{ d.joursRecredites }} j recrédités
                             </div>
+                            <div class="text-xs text-orange-600" *ngIf="interruptionEnAttente(d)"><i class="pi pi-clock mr-1"></i>Interruption déclarée, en attente de la DRH</div>
                         </td>
                         <td>
                             <div class="flex gap-1">
@@ -117,7 +118,8 @@ import { ApercuPrevisionsComponent } from '../apercu-previsions/apercu-prevision
                                 </ng-container>
                                 <ng-container *ngIf="d.statut === 'VALIDEE_DRH'">
                                     <button pButton icon="pi pi-pause" class="p-button-sm p-button-outlined" severity="warn"
-                                            pTooltip="Interrompre le congé" (click)="ouvrirInterruption(d)"></button>
+                                            [pTooltip]="interruptionEnAttente(d) ? 'Interruption déclarée, en attente de la DRH' : 'Déclarer une interruption (validée par la DRH)'"
+                                            [disabled]="interruptionEnAttente(d)" (click)="ouvrirInterruption(d)"></button>
                                     <button pButton icon="pi pi-ban" class="p-button-sm p-button-outlined" severity="danger"
                                             pTooltip="Annuler le congé" (click)="ouvrirMotif(d, 'annulation')"></button>
                                 </ng-container>
@@ -158,21 +160,22 @@ import { ApercuPrevisionsComponent } from '../apercu-previsions/apercu-prevision
             </ng-template>
         </p-dialog>
 
-        <p-dialog header="Interrompre le congé" [(visible)]="interruptionVisible" [modal]="true" [style]="{ width: '520px' }">
+        <p-dialog header="Déclarer une interruption de congé" [(visible)]="interruptionVisible" [modal]="true" [style]="{ width: '520px' }">
             <p class="text-sm text-color-secondary mb-3" *ngIf="cible">
                 Congé de {{ cible.nomComplet }} du {{ cible.dateDebut | date: 'dd/MM/yyyy' }} au
                 {{ cible.dateFin | date: 'dd/MM/yyyy' }} ({{ cible.nbJours }} j).
-                Les jours ouvrables non consommés seront recrédités et le calendrier recalculé.
+                Votre déclaration est transmise à la DRH, qui valide l'interruption (elle peut ajuster la date de reprise)
+                ou la refuse. Le congé reste en cours jusqu'à sa décision ; les jours non consommés seront alors recrédités.
             </p>
             <div class="flex flex-col gap-3">
-                <div><label class="block mb-1 font-medium">Date de reprise du travail *</label>
+                <div><label class="block mb-1 font-medium">Date de reprise souhaitée *</label>
                     <p-calendar [(ngModel)]="dateReprise" dateFormat="dd/mm/yy" [showIcon]="true" appendTo="body" /></div>
                 <div><label class="block mb-1 font-medium">Motif *</label>
                     <textarea pTextarea [(ngModel)]="motif" rows="2" class="w-full"></textarea></div>
             </div>
             <ng-template pTemplate="footer">
                 <button pButton label="Fermer" class="p-button-text" (click)="interruptionVisible = false"></button>
-                <button pButton label="Interrompre" severity="warn"
+                <button pButton label="Déclarer l'interruption" severity="warn" icon="pi pi-send"
                         [disabled]="!dateReprise || !motif.trim()" (click)="interrompre()"></button>
             </ng-template>
         </p-dialog>
@@ -185,6 +188,12 @@ export class CongesDepartementComponent implements OnInit {
 
     contexte = signal<ContexteDrh | null>(null);
     demandes = signal<DemandeConge[]>([]);
+    /** V155 : déclarations d'interruption du département (pour signaler celles en attente). */
+    interruptions = signal<InterruptionConge[]>([]);
+
+    interruptionEnAttente(d: DemandeConge): boolean {
+        return this.interruptions().some((i) => i.demandeId === d.demandeId && i.statut === 'DEMANDEE');
+    }
     selectionConges: DemandeConge[] = [];
     selectionPermissions: PermissionSociale[] = [];
     /** Seules les demandes soumises (non encore traitées) sont sélectionnables. */
@@ -265,6 +274,10 @@ export class CongesDepartementComponent implements OnInit {
     }
 
     charger(): void {
+        this.drhService.interruptionsDepartement$(this.exercice).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: (r) => this.interruptions.set((r.data as any)?.interruptions || []),
+            error: () => {}
+        });
         this.drhService.congesDepartement$(this.exercice).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (r) => this.demandes.set((r.data as any)?.demandes || []),
             error: (e) => this.erreur(e)
@@ -372,11 +385,11 @@ export class CongesDepartementComponent implements OnInit {
     interrompre(): void {
         if (!this.cible || !this.dateReprise) return;
         const iso = `${this.dateReprise.getFullYear()}-${String(this.dateReprise.getMonth() + 1).padStart(2, '0')}-${String(this.dateReprise.getDate()).padStart(2, '0')}`;
-        this.drhService.interrompreConge$(this.cible.demandeId, { dateReprise: iso, motif: this.motif.trim() })
+        this.drhService.declarerInterruption$(this.cible.demandeId, { dateRepriseSouhaitee: iso, motif: this.motif.trim() })
             .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
                 next: () => {
                     this.interruptionVisible = false;
-                    this.ok('Congé interrompu — jours non consommés recrédités');
+                    this.ok("Interruption déclarée — la DRH est notifiée et validera la date de reprise");
                 },
                 error: (e) => this.erreur(e)
             });

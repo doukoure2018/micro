@@ -17,8 +17,9 @@ import { DrhService, SoldeConge, QuotaPermission } from '@/service/drh.service';
             <div class="pastille-solde conge" *ngIf="solde() as s">
                 <i class="pi pi-calendar"></i>
                 <div>
-                    <div class="valeur">{{ s.restant }} <small>/ {{ s.droit }} j</small></div>
+                    <div class="valeur">{{ s.restantTotal ?? s.restant }} <small>/ {{ s.droit + (s.reportJours || 0) }} j</small></div>
                     <div class="libelle">Congés restants {{ exercice }}</div>
+                    <div class="libelle" *ngIf="s.reportJours">dont report {{ s.reportExercice }} : {{ s.reportRestant }} j restant(s), à prendre avant le {{ s.reportDateLimite | date: 'dd/MM/yyyy' }}</div>
                 </div>
             </div>
             <div class="pastille-solde permission" *ngIf="quota() as q">

@@ -52,6 +52,8 @@ public interface DrhRepository {
     List<LocalDate> joursFeries(LocalDate debut, LocalDate fin);
     List<Map<String, Object>> joursFeriesExercice(int exercice);
     int parametreInt(String cle, int defaut);
+    /** V155 : paramètre texte (ex. CONGE_REPORT_DATE_LIMITE = 06-30). */
+    String parametreTexte(String cle, String defaut);
     List<String> telephonesResponsables(Long departementId);
     List<String> telephonesDrh();
     Optional<String> telephoneUser(Long userId);

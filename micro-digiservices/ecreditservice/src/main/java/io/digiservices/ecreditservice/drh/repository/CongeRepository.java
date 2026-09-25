@@ -1,6 +1,6 @@
 package io.digiservices.ecreditservice.drh.repository;
 
-import io.digiservices.ecreditservice.drh.dto.CongeDtos.DemandeCongeDto;
+import io.digiservices.ecreditservice.drh.dto.CongeDtos.*;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -38,4 +38,20 @@ public interface CongeRepository {
 
     List<Map<String, Object>> tranchesARappeler(LocalDate dateCible, String type);
     void enregistrerAlerte(String type, Long userId, Long referenceId);
+
+    // ===== V155 : interruptions déclarées =====
+    Long declarerInterruption(Long demandeId, Long declareePar, LocalDate dateRepriseSouhaitee, String motif);
+    boolean interruptionDemandeeExiste(Long demandeId);
+    Optional<InterruptionDto> interruptionById(Long interruptionId);
+    List<InterruptionDto> interruptionsATraiter(int exercice);
+    List<InterruptionDto> interruptionsDuDepartement(Long departementId, int exercice);
+    int traiterInterruption(Long interruptionId, String statut, Long traiteePar, LocalDate dateRepriseRetenue, String motifRefus);
+
+    // ===== V155 : report d'exercice =====
+    Optional<ReportCongeDto> reportActifDeUser(Long userId, int exerciceCible);
+    List<ReportCongeDto> reportsExerciceCible(int exerciceCible);
+    int creerReport(Long userId, int exerciceOrigine, int exerciceCible, int jours, LocalDate dateLimite, Long creePar);
+    void majConsommationReport(Long userId, int exerciceCible, int delta);
+    void majJoursSurReport(Long demandeId, int jours);
+    List<Long> usersMembresActifs();
 }
