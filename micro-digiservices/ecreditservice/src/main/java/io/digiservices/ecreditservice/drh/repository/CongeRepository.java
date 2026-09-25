@@ -14,6 +14,9 @@ public interface CongeRepository {
     List<DemandeCongeDto> demandesDuDepartement(Long departementId, int exercice);
     List<DemandeCongeDto> demandesAValiderDrh(int exercice);
 
+    /** V154 : demandes des responsables de département (DGA). */
+    List<DemandeCongeDto> demandesDesResponsables(int exercice);
+
     /** V153 : congés accordés (validés / interrompus), filtres optionnels direction et mois. */
     List<DemandeCongeDto> demandesValideesDrh(int exercice, Long departementId, Integer mois);
 

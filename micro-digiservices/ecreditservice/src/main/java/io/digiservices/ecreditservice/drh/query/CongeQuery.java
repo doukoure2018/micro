@@ -39,6 +39,15 @@ public final class CongeQuery {
              ORDER BY dc.statut, dc.date_debut
             """;
 
+    /** V154 : demandes des responsables de département (étape « responsable » traitée par le DGA). */
+    public static final String DEMANDES_DES_RESPONSABLES =
+            DEMANDE_SELECT + """
+             WHERE dc.exercice = :exercice
+               AND EXISTS (SELECT 1 FROM drh_departement_membre r
+                            WHERE r.user_id = dc.user_id AND r.actif AND r.est_responsable)
+             ORDER BY dc.statut, dc.date_debut
+            """;
+
     public static final String DEMANDES_A_VALIDER_DRH =
             DEMANDE_SELECT + """
              WHERE dc.statut = 'ACCEPTEE_RESP' AND dc.exercice = :exercice

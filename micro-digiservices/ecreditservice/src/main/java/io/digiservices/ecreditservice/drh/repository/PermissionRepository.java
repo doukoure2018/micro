@@ -14,6 +14,9 @@ public interface PermissionRepository {
     List<PermissionDto> permissionsDuDepartement(Long departementId, int exercice);
     List<PermissionDto> permissionsAValiderDrh(int exercice);
 
+    /** V154 : permissions des responsables de département (DGA). */
+    List<PermissionDto> permissionsDesResponsables(int exercice);
+
     /** V153 : permissions accordées, filtres optionnels direction et mois. */
     List<PermissionDto> permissionsValideesDrh(int exercice, Long departementId, Integer mois);
 

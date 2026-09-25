@@ -30,6 +30,21 @@ public class DrhServiceImpl implements DrhService {
 
     public static final String ROLE_DRH = "DRH";
     public static final String ROLE_SUPER_ADMIN = "SUPER_ADMIN";
+
+    // V154 : fonctions délégables
+    public static final String F_VALIDATION_CONGES = "VALIDATION_CONGES";
+    public static final String F_VALIDATION_PREVISIONS = "VALIDATION_PREVISIONS";
+    public static final String F_PRESENCES = "PRESENCES";
+    public static final String F_MOUVEMENTS = "MOUVEMENTS";
+    public static final String F_ORGANISATION = "ORGANISATION";
+    public static final String F_PERSONNEL = "PERSONNEL";
+    public static final String F_AVANCES = "AVANCES";
+    public static final String F_VALIDATION_FINALE = "VALIDATION_FINALE";
+    private static final Set<String> FONCTIONS = Set.of(F_VALIDATION_CONGES, F_VALIDATION_PREVISIONS, F_PRESENCES,
+            F_MOUVEMENTS, F_ORGANISATION, F_PERSONNEL, F_AVANCES, F_VALIDATION_FINALE);
+    /** Ce que porte l'habilitation DGA en écriture (étape DRH des circuits) et en lecture. */
+    private static final Set<String> DGA_ECRITURE = Set.of(F_VALIDATION_CONGES, F_VALIDATION_PREVISIONS, F_VALIDATION_FINALE);
+    private static final Set<String> DGA_LECTURE = Set.of(F_PRESENCES, F_MOUVEMENTS);
     private static final String PARAM_DROIT_ANNUEL = "DROIT_CONGE_ANNUEL_JOURS";
 
     /** Statuts dans lesquels l'agent peut encore modifier sa prévision. */
@@ -44,10 +59,14 @@ public class DrhServiceImpl implements DrhService {
     @Override
     public ContexteDrhDto contexteDe(User user) {
         var membre = drhRepository.membreActifDeUser(user.getUserId());
+        List<String> fonctions = drhRepository.fonctionsDelegueesDe(user.getUserId());
         return ContexteDrhDto.builder()
                 .estMembre(membre.isPresent())
                 .estResponsable(membre.map(MembreDto::getEstResponsable).orElse(false))
                 .estDrh(estDrh(user))
+                .fonctions(fonctions)
+                .estDga(fonctions.contains(F_VALIDATION_FINALE))
+                .estDelegue(!fonctions.isEmpty())
                 .departementId(membre.map(MembreDto::getDepartementId).orElse(null))
                 .departementCode(membre.map(MembreDto::getDepartementCode).orElse(null))
                 .departementLibelle(membre.map(m -> drhRepository.libelleDepartement(m.getDepartementId())).orElse(null))
@@ -192,6 +211,9 @@ public class DrhServiceImpl implements DrhService {
 
     @Override
     public List<PrevisionDto> previsionsDeMonDepartement(User responsable, int exercice) {
+        if (estDga(responsable) && !drhRepository.estResponsableActif(responsable.getUserId())) {
+            return drhRepository.previsionsDesResponsables(exercice); // V154 : file du DGA
+        }
         MembreDto membre = exigerResponsable(responsable);
         return drhRepository.previsionsDuDepartement(membre.getDepartementId(), exercice);
     }
@@ -353,16 +375,163 @@ public class DrhServiceImpl implements DrhService {
      *  casquettes : responsable de sa direction + validation finale DRH. */
     private boolean estDrh(User user) {
         return ROLE_DRH.equals(user.getRole()) || ROLE_SUPER_ADMIN.equals(user.getRole())
+                || ("MANAGER".equals(user.getRole()) && "DRH".equalsIgnoreCase(user.getService()))
                 || drhRepository.estMembreDepartementDrh(user.getUserId());
     }
 
+    /** Profil « Administration DRH » complet (V154) : rôle DRH, SUPER_ADMIN, MANAGER du service DRH
+     *  (transition) ou responsable du département DRH. */
     @Override
     public boolean estHabiliteDrh(User user) {
         return estDrh(user);
     }
 
-    private void exigerDrh(User user) {
+    @Override
+    public boolean aHabilitation(User user, String fonction) {
+        if (estDrh(user)) return true;
+        List<String> f = drhRepository.fonctionsDelegueesDe(user.getUserId());
+        return f.contains(fonction) || (f.contains(F_VALIDATION_FINALE) && DGA_ECRITURE.contains(fonction));
+    }
+
+    @Override
+    public boolean aHabilitationLecture(User user, String fonction) {
+        if (aHabilitation(user, fonction)) return true;
+        List<String> f = drhRepository.fonctionsDelegueesDe(user.getUserId());
+        return f.contains(F_VALIDATION_FINALE) && DGA_LECTURE.contains(fonction);
+    }
+
+    @Override
+    public boolean estDga(User user) {
+        return drhRepository.fonctionsDelegueesDe(user.getUserId()).contains(F_VALIDATION_FINALE);
+    }
+
+    private void exigerAdminDrh(User user) {
         if (!estDrh(user)) {
+            throw new ValidationException("Action réservée à l'administration DRH");
+        }
+    }
+
+    // ===== V154 : délégations =====
+
+    @Override
+    public List<DelegationDto> listeDelegations(User admin, boolean activesSeulement) {
+        exigerAdminDrh(admin);
+        return drhRepository.listeDelegations(activesSeulement);
+    }
+
+    @Override
+    @Transactional
+    public DelegationDto creerDelegation(User admin, DelegationRequest r) {
+        exigerAdminDrh(admin);
+        if (r.getDelegueUserId() == null) {
+            throw new ValidationException("Le salarié délégué est obligatoire");
+        }
+        if (r.getFonction() == null || !FONCTIONS.contains(r.getFonction())) {
+            throw new ValidationException("Fonction inconnue : " + r.getFonction());
+        }
+        if (r.getDateFin() != null && r.getDateFin().isBefore(LocalDate.now())) {
+            throw new ValidationException("La date de fin de délégation est déjà passée");
+        }
+        if (F_VALIDATION_FINALE.equals(r.getFonction())) {
+            // DGA : une seule personne en poste (décision du 2026-09-25)
+            drhRepository.dgaActif().ifPresent(id -> {
+                throw new ValidationException("Un DGA est déjà habilité : révoquez-le avant d'en désigner un autre");
+            });
+        } else {
+            // Délégation « dans son département » : le délégué doit être membre actif de la DRH
+            MembreDto membre = drhRepository.membreActifDeUser(r.getDelegueUserId())
+                    .orElseThrow(() -> new ValidationException("Ce salarié n'est affecté à aucun département : affectez-le d'abord à la DRH (Organisation)"));
+            if (!"DRH".equalsIgnoreCase(membre.getDepartementCode())) {
+                throw new ValidationException("Seul un salarié du département DRH peut recevoir cette délégation");
+            }
+        }
+        List<String> existantes = drhRepository.fonctionsDelegueesDe(r.getDelegueUserId());
+        if (existantes.contains(r.getFonction())) {
+            throw new ValidationException("Ce salarié détient déjà cette délégation");
+        }
+        Long id = drhRepository.creerDelegation(r.getDelegueUserId(), r.getFonction(), admin.getUserId(),
+                r.getDateFin(), r.getCommentaire() == null ? null : r.getCommentaire().trim());
+        DelegationDto d = drhRepository.delegationById(id).orElseThrow();
+        notifierUser(r.getDelegueUserId(), "CRG DRH : " + prenomNomAdmin(admin) + " vous délègue la fonction « "
+                + libelleFonction(r.getFonction()) + " »" + (r.getDateFin() != null ? " jusqu'au " + r.getDateFin() : "")
+                + ". Elle apparaît dans votre menu Administration DRH.");
+        log.info("Délégation {} attribuée à {} par {}", r.getFonction(), d.getDelegueNom(), admin.getUserId());
+        return d;
+    }
+
+    @Override
+    @Transactional
+    public void revoquerDelegation(User admin, Long delegationId) {
+        exigerAdminDrh(admin);
+        DelegationDto d = drhRepository.delegationById(delegationId)
+                .orElseThrow(() -> new ValidationException("Délégation introuvable"));
+        if (drhRepository.revoquerDelegation(delegationId, admin.getUserId()) == 0) {
+            throw new ValidationException("Cette délégation est déjà révoquée");
+        }
+        notifierUser(d.getDelegueUserId(), "CRG DRH : votre délégation « " + libelleFonction(d.getFonction())
+                + " » a été retirée par " + prenomNomAdmin(admin) + ".");
+    }
+
+    @Override
+    public List<CandidatDelegationDto> candidatsDelegation(User admin, String fonction) {
+        exigerAdminDrh(admin);
+        List<CandidatDelegationDto> tous = drhRepository.candidatsDelegation();
+        if (F_VALIDATION_FINALE.equals(fonction)) {
+            return tous;
+        }
+        return tous.stream().filter(c -> "DRH".equalsIgnoreCase(c.getDepartementCode())).toList();
+    }
+
+    public static String libelleFonction(String f) {
+        return switch (f == null ? "" : f) {
+            case F_VALIDATION_CONGES -> "Validation des congés et permissions";
+            case F_VALIDATION_PREVISIONS -> "Validation des prévisions";
+            case F_PRESENCES -> "Gestion des présences";
+            case F_MOUVEMENTS -> "Gestion des mouvements";
+            case F_ORGANISATION -> "Organisation (départements)";
+            case F_PERSONNEL -> "Gestion du personnel";
+            case F_AVANCES -> "Validation des avances sur salaire";
+            case F_VALIDATION_FINALE -> "Validation finale (DGA)";
+            default -> f;
+        };
+    }
+
+    private static String prenomNomAdmin(User user) {
+        return user.getFirstName() + " " + user.getLastName();
+    }
+
+    // ===== V154 : lots =====
+
+    @Override
+    public List<ResultatLotDto> validerPrevisionsLot(User drh, List<Long> ids) {
+        return traiterLot(ids, id -> validerDrh(drh, id).getNomComplet() + " : prévision validée");
+    }
+
+    @Override
+    public List<ResultatLotDto> accepterPrevisionsLot(User responsable, List<Long> ids) {
+        return traiterLot(ids, id -> accepter(responsable, id).getNomComplet() + " : prévision acceptée");
+    }
+
+    /** Chaque élément est traité séparément : un échec n'annule pas les autres. */
+    public static List<ResultatLotDto> traiterLot(List<Long> ids, java.util.function.Function<Long, String> action) {
+        List<ResultatLotDto> resultats = new java.util.ArrayList<>();
+        if (ids == null || ids.isEmpty()) {
+            throw new ValidationException("Aucune demande sélectionnée");
+        }
+        for (Long id : ids) {
+            try {
+                resultats.add(ResultatLotDto.builder().id(id).succes(true).message(action.apply(id)).build());
+            } catch (ValidationException e) {
+                resultats.add(ResultatLotDto.builder().id(id).succes(false).message(e.getMessage()).build());
+            } catch (RuntimeException e) {
+                resultats.add(ResultatLotDto.builder().id(id).succes(false).message("Erreur technique : " + e.getMessage()).build());
+            }
+        }
+        return resultats;
+    }
+
+    private void exigerDrh(User user) {
+        if (!aHabilitation(user, F_VALIDATION_PREVISIONS)) {
             throw new ValidationException("Action réservée à la DRH");
         }
     }
@@ -380,6 +549,9 @@ public class DrhServiceImpl implements DrhService {
         PrevisionDto p = exigerStatut(previsionId, Set.of(statutAttendu));
         if (estDrh(responsable)) {
             return p; // la DRH peut agir sur tous les départements
+        }
+        if (estDga(responsable) && drhRepository.estResponsableActif(p.getUserId())) {
+            return p; // V154 : le DGA traite l'étape responsable des demandes des responsables
         }
         MembreDto membre = exigerResponsable(responsable);
         if (!membre.getDepartementId().equals(p.getDepartementId())) {

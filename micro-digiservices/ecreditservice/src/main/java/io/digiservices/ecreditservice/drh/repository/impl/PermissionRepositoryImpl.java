@@ -74,6 +74,13 @@ public class PermissionRepositoryImpl implements PermissionRepository {
     }
 
     @Override
+    public List<PermissionDto> permissionsDesResponsables(int exercice) {
+        return jdbcClient.sql(PermissionQuery.PERMISSIONS_DES_RESPONSABLES)
+                .param("exercice", exercice)
+                .query(PERMISSION_MAPPER).list();
+    }
+
+    @Override
     public List<PermissionDto> permissionsValideesDrh(int exercice, Long departementId, Integer mois) {
         return jdbcClient.sql(PermissionQuery.PERMISSIONS_VALIDEES_DRH)
                 .param("exercice", exercice)

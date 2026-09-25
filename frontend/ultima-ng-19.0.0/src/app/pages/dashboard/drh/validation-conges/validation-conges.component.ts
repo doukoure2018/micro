@@ -12,8 +12,8 @@ import { TextareaModule } from 'primeng/textarea';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { DrhService, DemandeConge, PermissionSociale } from '@/service/drh.service';
-import { statutConge, imprimerDemandeConge, imprimerPermission, libelleMotif, libelleLienParente } from '../conge-utils';
+import { DrhService, DemandeConge, PermissionSociale, ResultatLot } from '@/service/drh.service';
+import { statutConge, imprimerDemandeConge, imprimerPermission, libelleMotif, libelleLienParente, resumeLot } from '../conge-utils';
 
 /** Validation DRH des demandes de congé acceptées par les responsables. */
 @Component({
@@ -34,15 +34,20 @@ import { statutConge, imprimerDemandeConge, imprimerPermission, libelleMotif, li
                                     (onChange)="charger()" />
                     <label class="font-medium ml-2">Exercice</label>
                     <p-dropdown [options]="exercices" [(ngModel)]="exercice" (onChange)="charger()" />
+                    <button pButton icon="pi pi-check-square" class="p-button-sm ml-2" severity="success"
+                            [label]="'Valider la sélection (' + nbSelection() + ')'" [disabled]="nbSelection() === 0 || lotEnCours()"
+                            [loading]="lotEnCours()" (click)="validerSelection()"></button>
                 </div>
             </div>
 
-            <p-table *ngIf="typeActif === 'permissions'" [value]="permissions()" responsiveLayout="scroll" [rowHover]="true">
+            <p-table *ngIf="typeActif === 'permissions'" [value]="permissions()" responsiveLayout="scroll" [rowHover]="true"
+                     [(selection)]="selectionPermissions" dataKey="permissionId">
                 <ng-template pTemplate="header">
-                    <tr><th>Salarié</th><th>Direction</th><th>Motif</th><th>Du</th><th>Au</th><th>Jours</th><th>Responsable</th><th>Actions</th></tr>
+                    <tr><th style="width:3rem"><p-tableHeaderCheckbox /></th><th>Salarié</th><th>Direction</th><th>Motif</th><th>Du</th><th>Au</th><th>Jours</th><th>Responsable</th><th>Actions</th></tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-p>
                     <tr>
+                        <td><p-tableCheckbox [value]="p" /></td>
                         <td>{{ p.nomComplet }}<div class="text-xs text-color-secondary" *ngIf="p.matricule">Mat. {{ p.matricule }}</div></td>
                         <td>{{ p.departementCode }}</td>
                         <td>{{ motifLabel(p.motif) }}
@@ -65,16 +70,18 @@ import { statutConge, imprimerDemandeConge, imprimerPermission, libelleMotif, li
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
-                    <tr><td colspan="8" class="text-center text-color-secondary">Aucune permission en attente pour {{ exercice }}</td></tr>
+                    <tr><td colspan="9" class="text-center text-color-secondary">Aucune permission en attente pour {{ exercice }}</td></tr>
                 </ng-template>
             </p-table>
 
-            <p-table *ngIf="typeActif === 'conges'" [value]="demandes()" responsiveLayout="scroll" [rowHover]="true">
+            <p-table *ngIf="typeActif === 'conges'" [value]="demandes()" responsiveLayout="scroll" [rowHover]="true"
+                     [(selection)]="selectionConges" dataKey="demandeId">
                 <ng-template pTemplate="header">
-                    <tr><th>Salarié</th><th>Direction</th><th>Du</th><th>Au</th><th>Jours</th><th>Déjà pris</th><th>Solde après</th><th>Responsable</th><th>Actions</th></tr>
+                    <tr><th style="width:3rem"><p-tableHeaderCheckbox /></th><th>Salarié</th><th>Direction</th><th>Du</th><th>Au</th><th>Jours</th><th>Déjà pris</th><th>Solde après</th><th>Responsable</th><th>Actions</th></tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-d>
                     <tr>
+                        <td><p-tableCheckbox [value]="d" /></td>
                         <td>{{ d.nomComplet }}<div class="text-xs text-color-secondary" *ngIf="d.matricule">Mat. {{ d.matricule }}</div></td>
                         <td>{{ d.departementCode }}</td>
                         <td>{{ d.dateDebut | date: 'dd/MM/yyyy' }}</td>
@@ -96,10 +103,25 @@ import { statutConge, imprimerDemandeConge, imprimerPermission, libelleMotif, li
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
-                    <tr><td colspan="9" class="text-center text-color-secondary">Aucune demande en attente pour {{ exercice }}</td></tr>
+                    <tr><td colspan="10" class="text-center text-color-secondary">Aucune demande en attente pour {{ exercice }}</td></tr>
                 </ng-template>
             </p-table>
         </div>
+
+
+        <!-- V154 : résultats d'un traitement groupé -->
+        <p-dialog header="Résultat du traitement groupé" [(visible)]="lotVisible" [modal]="true" [style]="{ width: '640px' }">
+            <p class="mb-2">{{ resumeLotTexte() }}</p>
+            <p-table [value]="resultatsLot()" responsiveLayout="scroll">
+                <ng-template pTemplate="header"><tr><th style="width:6rem">Résultat</th><th>Détail</th></tr></ng-template>
+                <ng-template pTemplate="body" let-r>
+                    <tr><td><p-tag [value]="r.succes ? 'OK' : 'Refusé'" [severity]="r.succes ? 'success' : 'danger'" /></td><td>{{ r.message }}</td></tr>
+                </ng-template>
+            </p-table>
+            <ng-template pTemplate="footer">
+                <button pButton label="Fermer" class="p-button-text" (click)="lotVisible = false"></button>
+            </ng-template>
+        </p-dialog>
 
         <p-dialog header="Renvoyer la demande" [(visible)]="renvoiVisible" [modal]="true" [style]="{ width: '480px' }">
             <p class="mb-2">Motif du renvoi (transmis au salarié) :</p>
@@ -134,6 +156,52 @@ export class ValidationCongesComponent implements OnInit {
     ciblePermission: PermissionSociale | null = null;
 
     statut = statutConge;
+    selectionConges: DemandeConge[] = [];
+    selectionPermissions: PermissionSociale[] = [];
+
+    // ===== V154 : traitement groupé =====
+    resultatsLot = signal<ResultatLot[]>([]);
+    lotVisible = false;
+    lotEnCours = signal(false);
+
+    resumeLotTexte(): string {
+        return resumeLot(this.resultatsLot()).detail;
+    }
+
+    private terminerLot(r: any): void {
+        const resultats: ResultatLot[] = (r.data as any)?.resultats || [];
+        this.resultatsLot.set(resultats);
+        this.lotEnCours.set(false);
+        const res = resumeLot(resultats);
+        this.messageService.add({ severity: res.ko ? 'warn' : 'success', summary: 'Traitement groupé', detail: res.detail });
+        this.lotVisible = res.ko > 0;
+        this.viderSelection();
+        this.recharger();
+    }
+
+    nbSelection(): number {
+        return this.typeActif === 'conges' ? this.selectionConges.length : this.selectionPermissions.length;
+    }
+
+    private viderSelection(): void {
+        this.selectionConges = [];
+        this.selectionPermissions = [];
+    }
+
+    private recharger(): void {
+        this.charger();
+    }
+
+    validerSelection(): void {
+        const obs = this.typeActif === 'conges'
+            ? this.drhService.validerCongesLot$(this.selectionConges.map((d) => d.demandeId))
+            : this.drhService.validerPermissionsLot$(this.selectionPermissions.map((p) => p.permissionId));
+        this.lotEnCours.set(true);
+        obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: (r) => this.terminerLot(r),
+            error: (e) => { this.lotEnCours.set(false); this.erreur(e); }
+        });
+    }
 
     ngOnInit(): void {
         this.charger();

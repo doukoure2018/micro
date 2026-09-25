@@ -58,6 +58,72 @@ public final class DrhQuery {
          WHERE membre_id = :membre_id
         """;
 
+    // ===== V154 : délégations de fonctions DRH =====
+
+    /** Fonctions déléguées actives (fenêtre de dates respectée) de l'utilisateur. */
+    public static final String FONCTIONS_DELEGUEES_DE_USER = """
+        SELECT dl.fonction FROM drh_delegation dl
+         WHERE dl.delegue_user_id = :user_id AND dl.actif
+           AND dl.date_debut <= CURRENT_DATE AND (dl.date_fin IS NULL OR dl.date_fin >= CURRENT_DATE)
+        """;
+
+    public static final String DELEGATION_SELECT = """
+        SELECT dl.delegation_id, dl.delegue_user_id, u.first_name || ' ' || u.last_name AS delegue_nom,
+               u.username AS delegue_username, m.departement_id, d.code AS departement_code,
+               dl.fonction, dl.attribuee_par, a.first_name || ' ' || a.last_name AS attribuee_par_nom,
+               dl.date_debut, dl.date_fin, dl.actif, dl.commentaire, dl.revoquee_le,
+               rv.first_name || ' ' || rv.last_name AS revoquee_par_nom
+          FROM drh_delegation dl
+          JOIN users u ON u.user_id = dl.delegue_user_id
+          JOIN users a ON a.user_id = dl.attribuee_par
+          LEFT JOIN users rv ON rv.user_id = dl.revoquee_par
+          LEFT JOIN drh_departement_membre m ON m.user_id = dl.delegue_user_id AND m.actif
+          LEFT JOIN drh_departement d ON d.departement_id = m.departement_id
+        """;
+
+    public static final String LISTE_DELEGATIONS = DELEGATION_SELECT + """
+         WHERE (:actives_seulement = FALSE OR dl.actif)
+         ORDER BY dl.actif DESC, dl.fonction, delegue_nom
+        """;
+
+    public static final String DELEGATION_BY_ID = DELEGATION_SELECT + " WHERE dl.delegation_id = :delegation_id";
+
+    public static final String INSERT_DELEGATION = """
+        INSERT INTO drh_delegation (delegue_user_id, fonction, attribuee_par, date_fin, commentaire)
+        VALUES (:delegue_user_id, :fonction, :attribuee_par, :date_fin, :commentaire)
+        RETURNING delegation_id
+        """;
+
+    public static final String REVOQUER_DELEGATION = """
+        UPDATE drh_delegation
+           SET actif = FALSE, revoquee_par = :revoquee_par, revoquee_le = CURRENT_TIMESTAMP
+         WHERE delegation_id = :delegation_id AND actif
+        """;
+
+    /** DGA en poste (habilitation VALIDATION_FINALE active). */
+    public static final String DGA_ACTIF = """
+        SELECT dl.delegue_user_id FROM drh_delegation dl
+         WHERE dl.fonction = 'VALIDATION_FINALE' AND dl.actif
+           AND dl.date_debut <= CURRENT_DATE AND (dl.date_fin IS NULL OR dl.date_fin >= CURRENT_DATE)
+         LIMIT 1
+        """;
+
+    public static final String EST_RESPONSABLE_ACTIF = """
+        SELECT EXISTS (SELECT 1 FROM drh_departement_membre m
+                        WHERE m.user_id = :user_id AND m.actif AND m.est_responsable)
+        """;
+
+    /** Candidats à une délégation : comptes actifs (le service filtre ensuite selon la fonction). */
+    public static final String CANDIDATS_DELEGATION = """
+        SELECT u.user_id, u.first_name || ' ' || u.last_name AS nom_complet, u.username, u.service,
+               d.code AS departement_code, COALESCE(m.est_responsable, FALSE) AS est_responsable
+          FROM users u
+          LEFT JOIN drh_departement_membre m ON m.user_id = u.user_id AND m.actif
+          LEFT JOIN drh_departement d ON d.departement_id = m.departement_id
+         WHERE COALESCE(u.enabled, TRUE) AND COALESCE(u.account_non_locked, TRUE)
+         ORDER BY nom_complet
+        """;
+
     /** Affectation active de l'utilisateur (contexte, contrôles workflow). */
     public static final String MEMBRE_ACTIF_DE_USER = """
         SELECT m.membre_id, m.departement_id, d.code AS departement_code, m.user_id,
@@ -145,6 +211,15 @@ public final class DrhQuery {
             PREVISION_SELECT + """
              WHERE p.statut IN ('ACCEPTEE_RESP','REAJUSTEE_RESP') AND p.exercice = :exercice
              ORDER BY p.traitee_resp_le
+            """;
+
+    /** Prévisions des responsables de département (étape « responsable » traitée par le DGA). */
+    public static final String PREVISIONS_DES_RESPONSABLES =
+            PREVISION_SELECT + """
+             WHERE p.exercice = :exercice
+               AND EXISTS (SELECT 1 FROM drh_departement_membre r
+                            WHERE r.user_id = p.user_id AND r.actif AND r.est_responsable)
+             ORDER BY p.statut, nom_complet
             """;
 
     public static final String INSERT_PREVISION = """

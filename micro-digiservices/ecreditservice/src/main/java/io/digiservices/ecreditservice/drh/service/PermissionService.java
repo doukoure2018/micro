@@ -1,6 +1,7 @@
 package io.digiservices.ecreditservice.drh.service;
 
 import io.digiservices.clients.domain.User;
+import io.digiservices.ecreditservice.drh.dto.DrhDtos;
 import io.digiservices.ecreditservice.drh.dto.PermissionDtos.*;
 
 import java.util.List;
@@ -20,6 +21,10 @@ public interface PermissionService {
 
     // DRH
     List<PermissionDto> permissionsAValider(User drh, int exercice);
+
+    /** V154 : validation / acceptation groupées (un résultat par permission). */
+    List<DrhDtos.ResultatLotDto> validerLot(User drh, List<Long> ids);
+    List<DrhDtos.ResultatLotDto> accepterLot(User responsable, List<Long> ids);
 
     /** V153 : toutes les permissions accordées — DRH. */
     List<PermissionDto> permissionsValidees(User drh, int exercice, Long departementId, Integer mois);

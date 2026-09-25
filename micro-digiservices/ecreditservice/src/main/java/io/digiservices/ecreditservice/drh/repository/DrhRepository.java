@@ -24,6 +24,17 @@ public interface DrhRepository {
     Optional<Map<String, Object>> personnelParMatricule(String matricule);
     boolean estMembreDepartementDrh(Long userId);
 
+    // ===== V154 : délégations =====
+    List<String> fonctionsDelegueesDe(Long userId);
+    List<DelegationDto> listeDelegations(boolean activesSeulement);
+    Optional<DelegationDto> delegationById(Long delegationId);
+    Long creerDelegation(Long delegueUserId, String fonction, Long attribueePar, LocalDate dateFin, String commentaire);
+    int revoquerDelegation(Long delegationId, Long revoqueePar);
+    Optional<Long> dgaActif();
+    boolean estResponsableActif(Long userId);
+    List<CandidatDelegationDto> candidatsDelegation();
+    List<PrevisionDto> previsionsDesResponsables(int exercice);
+
     // Prévisions
     Optional<PrevisionDto> previsionDeUser(Long userId, int exercice);
     Optional<PrevisionDto> previsionById(Long previsionId);

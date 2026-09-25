@@ -37,6 +37,9 @@ export class AppMenu {
     /** Contexte DRH (congés) : responsable de département / habilitation DRH -> menus supplémentaires. */
     private estResponsableDrh = false;
     private estHabiliteDrh = false;
+    /** V154 : fonctions déléguées (VALIDATION_CONGES, PRESENCES…) et habilitation DGA. */
+    private fonctionsDrh: string[] = [];
+    private estDgaDrh = false;
     private contexteDrhCharge = false;
 
     ngOnInit() {
@@ -57,9 +60,11 @@ export class AppMenu {
             .subscribe({
                 next: (response) => {
                     const contexte = (response.data as any)?.contexte;
-                    if (contexte?.estResponsable || contexte?.estDrh) {
+                    if (contexte?.estResponsable || contexte?.estDrh || contexte?.estDelegue || contexte?.estDga) {
                         this.estResponsableDrh = !!contexte?.estResponsable;
                         this.estHabiliteDrh = !!contexte?.estDrh;
+                        this.fonctionsDrh = contexte?.fonctions || [];
+                        this.estDgaDrh = !!contexte?.estDga;
                         this.initializeMenu();
                     }
                 },
@@ -418,9 +423,9 @@ export class AppMenu {
                 ]
             }
         ];
-        if (this.estResponsableDrh) {
+        if (this.estResponsableDrh || (this.estDgaDrh && !this.estHabiliteDrh)) {
             items.push({
-                label: 'Mon département',
+                label: this.estResponsableDrh ? 'Mon département' : 'Demandes des responsables (DGA)',
                 icon: 'pi pi-fw pi-users',
                 items: [
                     {
@@ -441,62 +446,35 @@ export class AppMenu {
                 ]
             });
         }
-        const managerDrh = this.estManager('DRH');
-        if (this.estHabiliteDrh || managerDrh) {
-            const admin: MenuItem[] = [];
-            if (this.role === 'SUPER_ADMIN') {
-                // Le SUPER_ADMIN ne fait que configurer l'organisation ; l'opérationnel reste à la DRH
-                admin.push({
-                    label: 'Organisation (départements)',
-                    icon: 'pi pi-fw pi-sitemap',
-                    routerLink: ['/dashboards/drh/organisation']
-                });
-            } else {
-                if (this.estHabiliteDrh) {
-                    admin.push(
-                        {
-                            label: 'Validation des prévisions',
-                            icon: 'pi pi-fw pi-check-square',
-                            routerLink: ['/dashboards/drh/validation-previsions']
-                        },
-                        {
-                            label: 'Validation des congés',
-                            icon: 'pi pi-fw pi-verified',
-                            routerLink: ['/dashboards/drh/validation-conges']
-                        },
-                        {
-                            label: 'Congés et permissions validés',
-                            icon: 'pi pi-fw pi-calendar-times',
-                            routerLink: ['/dashboards/drh/conges-valides']
-                        },
-                        {
-                            label: 'Organisation (départements)',
-                            icon: 'pi pi-fw pi-sitemap',
-                            routerLink: ['/dashboards/drh/organisation']
-                        },
-                        {
-                            label: 'Gestion des présences',
-                            icon: 'pi pi-fw pi-clock',
-                            routerLink: ['/dashboards/drh/presences']
-                        },
-                        {
-                            label: 'Gestion des mouvements',
-                            icon: 'pi pi-fw pi-arrow-right-arrow-left',
-                            routerLink: ['/dashboards/drh/mouvements']
-                        }
-                    );
-                }
-                // Habilitation DRH OU rôle MANAGER du service DRH
-                admin.push({
-                    label: 'Gestion du personnel',
-                    icon: 'pi pi-fw pi-address-book',
-                    routerLink: ['/dashboards/gestion-personnel']
-                });
+        // V154 : profil « Administration DRH » (rôle DRH, responsable du département DRH, MANAGER du
+        // service DRH) = tout le menu ; un délégué ne voit que les rubriques de ses fonctions ; le DGA
+        // voit les validations, présences et mouvements.
+        const admin = this.estHabiliteDrh || this.estManager('DRH');
+        const a = (f: string) => admin || this.fonctionsDrh.includes(f) || (this.estDgaDrh && ['VALIDATION_CONGES', 'VALIDATION_PREVISIONS', 'PRESENCES', 'MOUVEMENTS'].includes(f));
+        const rubriques: MenuItem[] = [];
+        if (this.role === 'SUPER_ADMIN') {
+            // Le SUPER_ADMIN ne fait que configurer l'organisation ; l'opérationnel reste à la DRH
+            rubriques.push({ label: 'Organisation (départements)', icon: 'pi pi-fw pi-sitemap', routerLink: ['/dashboards/drh/organisation'] });
+        } else {
+            if (a('VALIDATION_PREVISIONS')) rubriques.push({ label: 'Validation des prévisions', icon: 'pi pi-fw pi-check-square', routerLink: ['/dashboards/drh/validation-previsions'] });
+            if (a('VALIDATION_CONGES')) {
+                rubriques.push(
+                    { label: 'Validation des congés', icon: 'pi pi-fw pi-verified', routerLink: ['/dashboards/drh/validation-conges'] },
+                    { label: 'Congés et permissions validés', icon: 'pi pi-fw pi-calendar-times', routerLink: ['/dashboards/drh/conges-valides'] }
+                );
             }
+            if (a('ORGANISATION')) rubriques.push({ label: 'Organisation (départements)', icon: 'pi pi-fw pi-sitemap', routerLink: ['/dashboards/drh/organisation'] });
+            if (a('PRESENCES')) rubriques.push({ label: 'Gestion des présences', icon: 'pi pi-fw pi-clock', routerLink: ['/dashboards/drh/presences'] });
+            if (a('MOUVEMENTS')) rubriques.push({ label: 'Gestion des mouvements', icon: 'pi pi-fw pi-arrow-right-arrow-left', routerLink: ['/dashboards/drh/mouvements'] });
+            if (a('PERSONNEL')) rubriques.push({ label: 'Gestion du personnel', icon: 'pi pi-fw pi-address-book', routerLink: ['/dashboards/gestion-personnel'] });
+            if (a('AVANCES')) rubriques.push({ label: 'Validation des avances sur salaire', icon: 'pi pi-fw pi-wallet', routerLink: ['/dashboards/drh/validation-avances'] });
+            if (admin) rubriques.push({ label: 'Délégations de fonctions', icon: 'pi pi-fw pi-user-plus', routerLink: ['/dashboards/drh/delegations'] });
+        }
+        if (rubriques.length) {
             items.push({
                 label: 'Administration DRH',
                 icon: 'pi pi-fw pi-briefcase',
-                items: admin
+                items: rubriques
             });
         }
         return items;

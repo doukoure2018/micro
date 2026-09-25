@@ -79,12 +79,70 @@ public final class DrhDtos {
         private List<PeriodeDto> periodes;
     }
 
+    /** V154 : délégation d'une fonction DRH à un salarié. */
+    @Data @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class DelegationDto {
+        private Long delegationId;
+        private Long delegueUserId;
+        private String delegueNom;
+        private String delegueUsername;
+        private Long departementId;
+        private String departementCode;
+        private String fonction;
+        private Long attribueePar;
+        private String attribueeParNom;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+        private LocalDate dateDebut;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+        private LocalDate dateFin;
+        private Boolean actif;
+        private String commentaire;
+        private OffsetDateTime revoqueeLe;
+        private String revoqueeParNom;
+    }
+
+    @Data @NoArgsConstructor @AllArgsConstructor
+    public static class DelegationRequest {
+        private Long delegueUserId;
+        private String fonction;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+        private LocalDate dateFin;
+        private String commentaire;
+    }
+
+    @Data @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class CandidatDelegationDto {
+        private Long userId;
+        private String nomComplet;
+        private String username;
+        private String service;
+        private String departementCode;
+        private Boolean estResponsable;
+    }
+
+    /** Résultat d'un traitement en lot (validation / acceptation groupée). */
+    @Data @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class ResultatLotDto {
+        private Long id;
+        private boolean succes;
+        private String message;
+    }
+
+    @Data @NoArgsConstructor @AllArgsConstructor
+    public static class LotRequest {
+        private List<Long> ids;
+    }
+
     /** Contexte DRH de l'utilisateur connecté (pilote l'affichage des menus). */
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
     public static class ContexteDrhDto {
         private boolean estMembre;
         private boolean estResponsable;
         private boolean estDrh;
+        /** V154 : fonctions déléguées actives (VALIDATION_CONGES, PRESENCES…) ; VALIDATION_FINALE = DGA. */
+        private List<String> fonctions;
+        private boolean estDga;
+        private boolean estDelegue;
         private Long departementId;
         private String departementCode;
         private String departementLibelle;

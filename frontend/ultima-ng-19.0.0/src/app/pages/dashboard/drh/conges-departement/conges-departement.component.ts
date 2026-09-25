@@ -13,8 +13,8 @@ import { TextareaModule } from 'primeng/textarea';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { DrhService, DemandeConge, PermissionSociale, PrevisionConge, ContexteDrh } from '@/service/drh.service';
-import { statutConge, libelleMotif, libelleLienParente, imprimerDemandeConge, imprimerPermission } from '../conge-utils';
+import { DrhService, DemandeConge, PermissionSociale, PrevisionConge, ContexteDrh, ResultatLot } from '@/service/drh.service';
+import { statutConge, libelleMotif, libelleLienParente, imprimerDemandeConge, imprimerPermission, resumeLot } from '../conge-utils';
 import { ApercuPrevisionsComponent } from '../apercu-previsions/apercu-previsions.component';
 
 /**
@@ -31,13 +31,16 @@ import { ApercuPrevisionsComponent } from '../apercu-previsions/apercu-prevision
         <div class="card">
             <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
                 <div>
-                    <h4 class="m-0">Congés — {{ contexte()?.departementLibelle }}</h4>
+                    <h4 class="m-0">Congés — {{ contexte()?.departementLibelle || (contexte()?.estDga ? 'demandes des responsables (DGA)' : '') }}</h4>
                     <span class="text-sm text-color-secondary">Demandes de congé de vos salariés : accepter, rejeter, interrompre ou annuler.</span>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <p-selectButton [options]="vuesOptions" [(ngModel)]="vueActive" optionLabel="label" optionValue="value" />
                     <label class="font-medium ml-2">Exercice</label>
                     <p-dropdown [options]="exercices" [(ngModel)]="exercice" (onChange)="charger()" />
+                    <button *ngIf="vueActive === 'demandes' || vueActive === 'permissions'" pButton icon="pi pi-check-square" class="p-button-sm ml-2" severity="success"
+                            [label]="'Accepter la sélection (' + nbSelection() + ')'" [disabled]="nbSelection() === 0 || lotEnCours()"
+                            [loading]="lotEnCours()" (click)="accepterSelection()"></button>
                 </div>
             </div>
 
@@ -47,12 +50,14 @@ import { ApercuPrevisionsComponent } from '../apercu-previsions/apercu-prevision
                                    [vue]="vueActive === 'annuel' ? 'annuel' : 'calendrier'" />
 
             <!-- Permissions sociales du département -->
-            <p-table *ngIf="vueActive === 'permissions'" [value]="permissions()" responsiveLayout="scroll" [rowHover]="true">
+            <p-table *ngIf="vueActive === 'permissions'" [value]="permissions()" responsiveLayout="scroll" [rowHover]="true"
+                     [(selection)]="selectionPermissions" dataKey="permissionId" [rowSelectable]="selectionnable">
                 <ng-template pTemplate="header">
-                    <tr><th>Salarié</th><th>Motif</th><th>Du</th><th>Au</th><th>Jours</th><th>Statut</th><th>Actions</th></tr>
+                    <tr><th style="width:3rem"><p-tableHeaderCheckbox /></th><th>Salarié</th><th>Motif</th><th>Du</th><th>Au</th><th>Jours</th><th>Statut</th><th>Actions</th></tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-p>
                     <tr>
+                        <td><p-tableCheckbox [value]="p" [disabled]="p.statut !== 'SOUMISE'" /></td>
                         <td>{{ p.nomComplet }}<div class="text-xs text-color-secondary" *ngIf="p.matricule">Mat. {{ p.matricule }}</div></td>
                         <td>{{ motifLabel(p.motif) }}
                             <div class="text-xs text-color-secondary" *ngIf="p.lienParente">{{ lienLabel(p.lienParente) }}</div>
@@ -79,16 +84,18 @@ import { ApercuPrevisionsComponent } from '../apercu-previsions/apercu-prevision
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
-                    <tr><td colspan="7" class="text-center text-color-secondary">Aucune permission pour {{ exercice }}</td></tr>
+                    <tr><td colspan="8" class="text-center text-color-secondary">Aucune permission pour {{ exercice }}</td></tr>
                 </ng-template>
             </p-table>
 
-            <p-table *ngIf="vueActive === 'demandes'" [value]="demandes()" responsiveLayout="scroll" [rowHover]="true">
+            <p-table *ngIf="vueActive === 'demandes'" [value]="demandes()" responsiveLayout="scroll" [rowHover]="true"
+                     [(selection)]="selectionConges" dataKey="demandeId" [rowSelectable]="selectionnable">
                 <ng-template pTemplate="header">
-                    <tr><th>Salarié</th><th>Du</th><th>Au</th><th>Jours</th><th>Solde après</th><th>Statut</th><th>Actions</th></tr>
+                    <tr><th style="width:3rem"><p-tableHeaderCheckbox /></th><th>Salarié</th><th>Du</th><th>Au</th><th>Jours</th><th>Solde après</th><th>Statut</th><th>Actions</th></tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-d>
                     <tr>
+                        <td><p-tableCheckbox [value]="d" [disabled]="d.statut !== 'SOUMISE'" /></td>
                         <td>{{ d.nomComplet }}<div class="text-xs text-color-secondary" *ngIf="d.matricule">Mat. {{ d.matricule }}</div></td>
                         <td>{{ d.dateDebut | date: 'dd/MM/yyyy' }}</td>
                         <td>{{ d.dateFin | date: 'dd/MM/yyyy' }}</td>
@@ -121,10 +128,24 @@ import { ApercuPrevisionsComponent } from '../apercu-previsions/apercu-prevision
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
-                    <tr><td colspan="7" class="text-center text-color-secondary">Aucune demande de congé pour {{ exercice }}</td></tr>
+                    <tr><td colspan="8" class="text-center text-color-secondary">Aucune demande de congé pour {{ exercice }}</td></tr>
                 </ng-template>
             </p-table>
         </div>
+
+        <!-- V154 : résultats d'un traitement groupé -->
+        <p-dialog header="Résultat du traitement groupé" [(visible)]="lotVisible" [modal]="true" [style]="{ width: '640px' }">
+            <p class="mb-2">{{ resumeLotTexte() }}</p>
+            <p-table [value]="resultatsLot()" responsiveLayout="scroll">
+                <ng-template pTemplate="header"><tr><th style="width:6rem">Résultat</th><th>Détail</th></tr></ng-template>
+                <ng-template pTemplate="body" let-r>
+                    <tr><td><p-tag [value]="r.succes ? 'OK' : 'Refusé'" [severity]="r.succes ? 'success' : 'danger'" /></td><td>{{ r.message }}</td></tr>
+                </ng-template>
+            </p-table>
+            <ng-template pTemplate="footer">
+                <button pButton label="Fermer" class="p-button-text" (click)="lotVisible = false"></button>
+            </ng-template>
+        </p-dialog>
 
         <p-dialog [header]="modeMotif === 'rejet' ? 'Rejeter la demande' : 'Annuler le congé'"
                   [(visible)]="motifVisible" [modal]="true" [style]="{ width: '480px' }">
@@ -164,6 +185,55 @@ export class CongesDepartementComponent implements OnInit {
 
     contexte = signal<ContexteDrh | null>(null);
     demandes = signal<DemandeConge[]>([]);
+    selectionConges: DemandeConge[] = [];
+    selectionPermissions: PermissionSociale[] = [];
+    /** Seules les demandes soumises (non encore traitées) sont sélectionnables. */
+    selectionnable = (event: { data: { statut: string } }) => event.data?.statut === 'SOUMISE';
+
+    // ===== V154 : traitement groupé =====
+    resultatsLot = signal<ResultatLot[]>([]);
+    lotVisible = false;
+    lotEnCours = signal(false);
+
+    resumeLotTexte(): string {
+        return resumeLot(this.resultatsLot()).detail;
+    }
+
+    private terminerLot(r: any): void {
+        const resultats: ResultatLot[] = (r.data as any)?.resultats || [];
+        this.resultatsLot.set(resultats);
+        this.lotEnCours.set(false);
+        const res = resumeLot(resultats);
+        this.messageService.add({ severity: res.ko ? 'warn' : 'success', summary: 'Traitement groupé', detail: res.detail });
+        this.lotVisible = res.ko > 0;
+        this.viderSelection();
+        this.recharger();
+    }
+
+    nbSelection(): number {
+        return this.vueActive === 'demandes' ? this.selectionConges.length : this.selectionPermissions.length;
+    }
+
+    private viderSelection(): void {
+        this.selectionConges = [];
+        this.selectionPermissions = [];
+    }
+
+    private recharger(): void {
+        this.charger();
+    }
+
+    accepterSelection(): void {
+        const obs = this.vueActive === 'demandes'
+            ? this.drhService.accepterCongesLot$(this.selectionConges.map((d) => d.demandeId))
+            : this.drhService.accepterPermissionsLot$(this.selectionPermissions.map((p) => p.permissionId));
+        this.lotEnCours.set(true);
+        obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: (r) => this.terminerLot(r),
+            error: (e) => { this.lotEnCours.set(false); this.messageService.add({ severity: 'error', summary: 'Erreur', detail: e.error?.data?.error || e.error?.message || 'Opération impossible' }); }
+        });
+    }
+
     permissions = signal<PermissionSociale[]>([]);
     vueActive: 'demandes' | 'permissions' | 'calendrier' | 'annuel' = 'demandes';
     vuesOptions = [

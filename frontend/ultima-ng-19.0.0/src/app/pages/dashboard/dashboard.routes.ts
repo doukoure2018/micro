@@ -186,6 +186,14 @@ export default [
         loadComponent: () => import('./drh/conges-departement/conges-departement.component').then((c) => c.CongesDepartementComponent)
     },
     {
+        path: 'drh/delegations',
+        loadComponent: () => import('./drh/delegations/delegations.component').then((c) => c.DelegationsComponent)
+    },
+    {
+        path: 'drh/validation-avances',
+        loadComponent: () => import('./drh/validation-avances/validation-avances.component').then((c) => c.ValidationAvancesComponent)
+    },
+    {
         path: 'drh/conges-valides',
         loadComponent: () => import('./drh/conges-valides/conges-valides.component').then((c) => c.CongesValidesComponent)
     },

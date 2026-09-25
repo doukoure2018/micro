@@ -49,6 +49,33 @@ public class DrhRepositoryImpl implements DrhRepository {
             .dateAffectation(rs.getObject("date_affectation", LocalDate.class))
             .build();
 
+    private static final RowMapper<DelegationDto> DELEGATION_MAPPER = (rs, i) -> DelegationDto.builder()
+            .delegationId(rs.getLong("delegation_id"))
+            .delegueUserId(rs.getLong("delegue_user_id"))
+            .delegueNom(rs.getString("delegue_nom"))
+            .delegueUsername(rs.getString("delegue_username"))
+            .departementId(rs.getObject("departement_id") == null ? null : rs.getLong("departement_id"))
+            .departementCode(rs.getString("departement_code"))
+            .fonction(rs.getString("fonction"))
+            .attribueePar(rs.getLong("attribuee_par"))
+            .attribueeParNom(rs.getString("attribuee_par_nom"))
+            .dateDebut(rs.getObject("date_debut", LocalDate.class))
+            .dateFin(rs.getObject("date_fin", LocalDate.class))
+            .actif(rs.getBoolean("actif"))
+            .commentaire(rs.getString("commentaire"))
+            .revoqueeLe(rs.getObject("revoquee_le", java.time.OffsetDateTime.class))
+            .revoqueeParNom(rs.getString("revoquee_par_nom"))
+            .build();
+
+    private static final RowMapper<CandidatDelegationDto> CANDIDAT_MAPPER = (rs, i) -> CandidatDelegationDto.builder()
+            .userId(rs.getLong("user_id"))
+            .nomComplet(rs.getString("nom_complet"))
+            .username(rs.getString("username"))
+            .service(rs.getString("service"))
+            .departementCode(rs.getString("departement_code"))
+            .estResponsable(rs.getBoolean("est_responsable"))
+            .build();
+
     private static final RowMapper<PrevisionDto> PREVISION_MAPPER = (rs, i) -> PrevisionDto.builder()
             .previsionId(rs.getLong("prevision_id"))
             .userId(rs.getLong("user_id"))
@@ -181,6 +208,71 @@ public class DrhRepositoryImpl implements DrhRepository {
     public List<PrevisionDto> previsionsDuDepartement(Long departementId, int exercice) {
         return jdbcClient.sql(DrhQuery.PREVISIONS_DU_DEPARTEMENT)
                 .param("departement_id", departementId).param("exercice", exercice)
+                .query(PREVISION_MAPPER).list()
+                .stream().map(this::avecPeriodes).toList();
+    }
+
+    // ===== V154 : délégations =====
+
+    @Override
+    public List<String> fonctionsDelegueesDe(Long userId) {
+        return jdbcClient.sql(DrhQuery.FONCTIONS_DELEGUEES_DE_USER)
+                .param("user_id", userId).query(String.class).list();
+    }
+
+    @Override
+    public List<DelegationDto> listeDelegations(boolean activesSeulement) {
+        return jdbcClient.sql(DrhQuery.LISTE_DELEGATIONS)
+                .param("actives_seulement", activesSeulement)
+                .query(DELEGATION_MAPPER).list();
+    }
+
+    @Override
+    public Optional<DelegationDto> delegationById(Long delegationId) {
+        return jdbcClient.sql(DrhQuery.DELEGATION_BY_ID)
+                .param("delegation_id", delegationId)
+                .query(DELEGATION_MAPPER).optional();
+    }
+
+    @Override
+    public Long creerDelegation(Long delegueUserId, String fonction, Long attribueePar, LocalDate dateFin, String commentaire) {
+        return jdbcClient.sql(DrhQuery.INSERT_DELEGATION)
+                .param("delegue_user_id", delegueUserId)
+                .param("fonction", fonction)
+                .param("attribuee_par", attribueePar)
+                .param("date_fin", dateFin)
+                .param("commentaire", commentaire)
+                .query(Long.class).single();
+    }
+
+    @Override
+    public int revoquerDelegation(Long delegationId, Long revoqueePar) {
+        return jdbcClient.sql(DrhQuery.REVOQUER_DELEGATION)
+                .param("delegation_id", delegationId)
+                .param("revoquee_par", revoqueePar)
+                .update();
+    }
+
+    @Override
+    public Optional<Long> dgaActif() {
+        return jdbcClient.sql(DrhQuery.DGA_ACTIF).query(Long.class).optional();
+    }
+
+    @Override
+    public boolean estResponsableActif(Long userId) {
+        return Boolean.TRUE.equals(jdbcClient.sql(DrhQuery.EST_RESPONSABLE_ACTIF)
+                .param("user_id", userId).query(Boolean.class).single());
+    }
+
+    @Override
+    public List<CandidatDelegationDto> candidatsDelegation() {
+        return jdbcClient.sql(DrhQuery.CANDIDATS_DELEGATION).query(CANDIDAT_MAPPER).list();
+    }
+
+    @Override
+    public List<PrevisionDto> previsionsDesResponsables(int exercice) {
+        return jdbcClient.sql(DrhQuery.PREVISIONS_DES_RESPONSABLES)
+                .param("exercice", exercice)
                 .query(PREVISION_MAPPER).list()
                 .stream().map(this::avecPeriodes).toList();
     }
