@@ -41,6 +41,17 @@ public final class PermissionQuery {
              ORDER BY ps.traitee_resp_le
             """;
 
+    /** V153 : permissions accordées — vue DRH « Congés et permissions validés » (filtres direction / mois). */
+    public static final String PERMISSIONS_VALIDEES_DRH =
+            PERMISSION_SELECT + """
+             WHERE ps.statut = 'VALIDEE_DRH' AND ps.exercice = :exercice
+               AND (CAST(:departement_id AS BIGINT) IS NULL OR ps.departement_id = CAST(:departement_id AS BIGINT))
+               AND (CAST(:mois AS INTEGER) IS NULL
+                    OR (EXTRACT(MONTH FROM ps.date_debut) <= CAST(:mois AS INTEGER)
+                        AND EXTRACT(MONTH FROM ps.date_fin) >= CAST(:mois AS INTEGER)))
+             ORDER BY ps.date_debut DESC, ps.permission_id DESC
+            """;
+
     public static final String INSERT_PERMISSION = """
         INSERT INTO drh_permission_sociale (user_id, departement_id, exercice, motif, lien_parente,
                                             precision_motif, date_debut, date_fin, nb_jours)

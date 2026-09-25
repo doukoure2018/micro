@@ -14,7 +14,7 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DrhService, DepartementDrh, MembreDepartement } from '@/service/drh.service';
 
-/** Écran DRH « Organisation » : départements, affectation des agents, responsables. */
+/** Écran DRH « Organisation » : départements, affectation des salariés, responsables. */
 @Component({
     selector: 'app-drh-organisation',
     standalone: true,
@@ -52,11 +52,11 @@ import { DrhService, DepartementDrh, MembreDepartement } from '@/service/drh.ser
                 <div class="card" *ngIf="selection; else choisir">
                     <div class="flex items-center justify-between mb-3">
                         <h5 class="m-0">Membres — {{ selection.code }}</h5>
-                        <button pButton icon="pi pi-user-plus" label="Affecter un agent" class="p-button-sm" (click)="ouvrirAffectation()"></button>
+                        <button pButton icon="pi pi-user-plus" label="Affecter un salarié" class="p-button-sm" (click)="ouvrirAffectation()"></button>
                     </div>
                     <p-table [value]="membres()" responsiveLayout="scroll">
                         <ng-template pTemplate="header">
-                            <tr><th>Agent</th><th>Matricule</th><th>Fonction</th><th>Rôle</th><th></th></tr>
+                            <tr><th>Salarié</th><th>Matricule</th><th>Fonction</th><th>Rôle</th><th></th></tr>
                         </ng-template>
                         <ng-template pTemplate="body" let-m>
                             <tr>
@@ -97,11 +97,11 @@ import { DrhService, DepartementDrh, MembreDepartement } from '@/service/drh.ser
             </ng-template>
         </p-dialog>
 
-        <p-dialog header="Affecter un agent" [(visible)]="affectationVisible" [modal]="true" [style]="{ width: '480px' }">
+        <p-dialog header="Affecter un salarié" [(visible)]="affectationVisible" [modal]="true" [style]="{ width: '480px' }">
             <div class="flex flex-col gap-3">
-                <div><label class="block mb-1">Agent *</label>
+                <div><label class="block mb-1">Salarié *</label>
                     <p-dropdown [options]="usersNonAffectes()" optionLabel="nom_complet" [(ngModel)]="userChoisi"
-                                [filter]="true" filterBy="nom_complet,username" placeholder="Choisir un agent"
+                                [filter]="true" filterBy="nom_complet,username" placeholder="Choisir un salarié"
                                 class="w-full" appendTo="body" /></div>
                 <div><label class="block mb-1">Matricule (référence badgeuse / personnel)</label>
                     <input pInputText [(ngModel)]="affectation.matricule" (ngModelChange)="verifierMatricule($event)"
@@ -237,7 +237,7 @@ export class OrganisationComponent implements OnInit {
         }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: () => {
                 this.affectationVisible = false;
-                this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Agent affecté au département' });
+                this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Salarié affecté au département' });
                 this.chargerDepartements();
                 this.chargerMembres();
             },
@@ -260,7 +260,7 @@ export class OrganisationComponent implements OnInit {
     private executerRetrait(m: MembreDepartement): void {
         this.drhService.retirerMembre$(m.membreId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: () => {
-                this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Agent retiré du département' });
+                this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Salarié retiré du département' });
                 this.chargerDepartements();
                 this.chargerMembres();
             },

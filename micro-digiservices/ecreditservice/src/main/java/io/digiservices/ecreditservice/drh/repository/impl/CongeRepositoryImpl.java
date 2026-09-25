@@ -145,6 +145,23 @@ public class CongeRepositoryImpl implements CongeRepository {
     }
 
     @Override
+    public List<DemandeCongeDto> demandesValideesDrh(int exercice, Long departementId, Integer mois) {
+        return jdbcClient.sql(CongeQuery.DEMANDES_VALIDEES_DRH)
+                .param("exercice", exercice)
+                .param("departement_id", departementId)
+                .param("mois", mois)
+                .query(DEMANDE_MAPPER).list();
+    }
+
+    @Override
+    public List<Map<String, Object>> congesFinARappeler(LocalDate dateCible, String type) {
+        return jdbcClient.sql(CongeQuery.CONGES_FIN_A_RAPPELER)
+                .param("date_cible", dateCible)
+                .param("type", type)
+                .query().listOfRows();
+    }
+
+    @Override
     public List<Map<String, Object>> tranchesARappeler(LocalDate dateCible, String type) {
         return jdbcClient.sql(CongeQuery.TRANCHES_A_RAPPELER)
                 .param("date_cible", dateCible)

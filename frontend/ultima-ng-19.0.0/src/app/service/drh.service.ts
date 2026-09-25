@@ -249,6 +249,11 @@ export class DrhService {
     validerConge$ = (demandeId: number): Observable<IResponse> =>
         this.http.post<IResponse>(`${this.server}/ecredit/drh/conges/${demandeId}/valider`, {}).pipe(catchError(this.handleError));
 
+    /** V153 : congés accordés (validés / interrompus), filtres direction et mois — vue DRH. */
+    congesValidees$ = (exercice: number, departementId?: number | null, mois?: number | null): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/drh/conges/validees?exercice=${exercice}` +
+            (departementId ? `&departementId=${departementId}` : '') + (mois ? `&mois=${mois}` : '')).pipe(catchError(this.handleError));
+
     renvoyerConge$ = (demandeId: number, motif: string): Observable<IResponse> =>
         this.http.post<IResponse>(`${this.server}/ecredit/drh/conges/${demandeId}/renvoyer`, { motif }).pipe(catchError(this.handleError));
 
@@ -280,6 +285,11 @@ export class DrhService {
 
     validerPermission$ = (permissionId: number): Observable<IResponse> =>
         this.http.post<IResponse>(`${this.server}/ecredit/drh/permissions/${permissionId}/valider`, {}).pipe(catchError(this.handleError));
+
+    /** V153 : permissions accordées, filtres direction et mois — vue DRH. */
+    permissionsValidees$ = (exercice: number, departementId?: number | null, mois?: number | null): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/drh/permissions/validees?exercice=${exercice}` +
+            (departementId ? `&departementId=${departementId}` : '') + (mois ? `&mois=${mois}` : '')).pipe(catchError(this.handleError));
 
     renvoyerPermission$ = (permissionId: number, motif: string): Observable<IResponse> =>
         this.http.post<IResponse>(`${this.server}/ecredit/drh/permissions/${permissionId}/renvoyer`, { motif }).pipe(catchError(this.handleError));

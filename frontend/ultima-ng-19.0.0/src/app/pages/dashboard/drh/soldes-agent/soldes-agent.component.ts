@@ -4,7 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DrhService, SoldeConge, QuotaPermission } from '@/service/drh.service';
 
 /**
- * Bandeau « Mes soldes » de l'agent : jours de congé restants (droit 30 j)
+ * Bandeau « Mes soldes » du salarié : jours de congé restants (droit 30 j)
  * et jours de permission sociale restants (quota annuel), affiché sur
  * toutes les pages de l'espace Mes congés.
  */

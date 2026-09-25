@@ -233,6 +233,12 @@ public class CongeServiceImpl implements CongeService {
     }
 
     @Override
+    public List<DemandeCongeDto> demandesValidees(User drh, int exercice, Long departementId, Integer mois) {
+        exigerDrh(drh);
+        return congeRepository.demandesValideesDrh(exercice, departementId, mois);
+    }
+
+    @Override
     @Transactional
     public DemandeCongeDto validerDrh(User drh, Long demandeId) {
         exigerDrh(drh);

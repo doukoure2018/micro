@@ -91,7 +91,7 @@ public class DrhResource {
         exigerDrh(auth);
         Long membreId = drhService.affecterMembre(body);
         return ResponseEntity.status(CREATED).body(getResponse(req,
-                Map.of("membreId", membreId), "Agent affecté au département", CREATED));
+                Map.of("membreId", membreId), "Salarié affecté au département", CREATED));
     }
 
     @DeleteMapping("/membres/{membreId}")
@@ -100,7 +100,7 @@ public class DrhResource {
         exigerDrh(auth);
         drhService.retirerMembre(membreId);
         return ResponseEntity.ok(getResponse(req, Map.of("membreId", membreId),
-                "Agent retiré du département", OK));
+                "Salarié retiré du département", OK));
     }
 
     @GetMapping("/jours-feries")

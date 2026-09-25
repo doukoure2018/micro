@@ -21,6 +21,9 @@ public interface CongeService {
 
     // DRH
     List<DemandeCongeDto> demandesAValider(User drh, int exercice);
+
+    /** V153 : tous les congés accordés (validés / interrompus) — DRH. */
+    List<DemandeCongeDto> demandesValidees(User drh, int exercice, Long departementId, Integer mois);
     DemandeCongeDto validerDrh(User drh, Long demandeId);
     DemandeCongeDto renvoyerDrh(User drh, Long demandeId, String motif);
 }

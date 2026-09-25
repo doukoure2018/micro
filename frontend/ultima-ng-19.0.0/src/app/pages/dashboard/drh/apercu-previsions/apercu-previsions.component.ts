@@ -21,8 +21,8 @@ interface JourAnnuel {
 /**
  * Vues consolidées des prévisions de congés, partagées entre l'écran DRH
  * (toutes directions) et l'écran responsable (sa direction) :
- * - 'calendrier' : tableau agents x 12 mois façon fichier Excel
- * - 'annuel'     : calendrier 12 mois, points colorés par agent en congé chaque jour
+ * - 'calendrier' : tableau salariés x 12 mois façon fichier Excel
+ * - 'annuel'     : calendrier 12 mois, points colorés par salarié en congé chaque jour
  * Couleurs d'étape : orange = enregistrée/soumise, jaune = acceptée/réajustée
  * responsable, vert = validée DRH.
  */
@@ -35,10 +35,10 @@ interface JourAnnuel {
             <span><i class="pastille st-orange"></i> Enregistrée / soumise</span>
             <span><i class="pastille st-jaune"></i> Acceptée / réajustée (responsable)</span>
             <span><i class="pastille st-verte"></i> Validée DRH</span>
-            <span *ngIf="vue === 'annuel'" class="text-color-secondary">Survolez un jour pour voir les agents</span>
+            <span *ngIf="vue === 'annuel'" class="text-color-secondary">Survolez un jour pour voir les salariés</span>
         </div>
 
-        <!-- ===== Tableau agents x mois ===== -->
+        <!-- ===== Tableau salariés x mois ===== -->
         <div class="cal-wrap" *ngIf="vue === 'calendrier'">
             <table class="cal-table">
                 <thead>
@@ -104,7 +104,7 @@ interface JourAnnuel {
         .pastille.st-orange { background: #f97316; }
         .pastille.st-jaune { background: #eab308; }
         .pastille.st-verte { background: #16a34a; }
-        /* Tableau agents x mois */
+        /* Tableau salariés x mois */
         .cal-wrap { overflow-x: auto; border: 1px solid var(--surface-border); border-radius: 8px; }
         .cal-table { border-collapse: collapse; width: 100%; min-width: 1200px; font-size: 0.85rem; }
         .cal-table th, .cal-table td { border: 1px solid var(--surface-border); padding: 0.4rem 0.45rem; text-align: center; vertical-align: middle; }

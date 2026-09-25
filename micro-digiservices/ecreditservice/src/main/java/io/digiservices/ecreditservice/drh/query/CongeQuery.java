@@ -45,6 +45,31 @@ public final class CongeQuery {
              ORDER BY dc.traitee_resp_le
             """;
 
+    /** V153 : congés accordés (validés DRH ou interrompus) — vue DRH « Congés et permissions validés ».
+     *  Filtres optionnels : direction, mois (chevauchement avec le mois, l'interrompu s'arrête à la reprise). */
+    public static final String DEMANDES_VALIDEES_DRH =
+            DEMANDE_SELECT + """
+             WHERE dc.statut IN ('VALIDEE_DRH','INTERROMPUE') AND dc.exercice = :exercice
+               AND (CAST(:departement_id AS BIGINT) IS NULL OR dc.departement_id = CAST(:departement_id AS BIGINT))
+               AND (CAST(:mois AS INTEGER) IS NULL
+                    OR (EXTRACT(MONTH FROM dc.date_debut) <= CAST(:mois AS INTEGER)
+                        AND EXTRACT(MONTH FROM COALESCE(dc.date_reprise - 1, dc.date_fin)) >= CAST(:mois AS INTEGER)))
+             ORDER BY dc.date_debut DESC, dc.demande_id DESC
+            """;
+
+    /** V153 : congés accordés se terminant à la date cible, sans alerte de fin déjà envoyée (J-5). */
+    public static final String CONGES_FIN_A_RAPPELER = """
+        SELECT dc.demande_id, dc.user_id, u.first_name || ' ' || u.last_name AS nom_complet, u.phone,
+               dc.departement_id, dc.date_debut, dc.date_fin
+          FROM drh_demande_conge dc
+          JOIN users u ON u.user_id = dc.user_id
+         WHERE dc.statut = 'VALIDEE_DRH'
+           AND dc.date_fin = :date_cible
+           AND NOT EXISTS (SELECT 1 FROM drh_alerte a
+                            WHERE a.type = :type AND a.user_id = dc.user_id
+                              AND a.reference_id = dc.demande_id)
+        """;
+
     public static final String INSERT_DEMANDE = """
         INSERT INTO drh_demande_conge (user_id, departement_id, exercice, periode_id,
                                        date_debut, date_fin, nb_jours, deja_pris, solde_apres, commentaire)

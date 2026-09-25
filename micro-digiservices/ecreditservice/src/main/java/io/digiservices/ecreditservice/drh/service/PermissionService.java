@@ -20,6 +20,9 @@ public interface PermissionService {
 
     // DRH
     List<PermissionDto> permissionsAValider(User drh, int exercice);
+
+    /** V153 : toutes les permissions accordées — DRH. */
+    List<PermissionDto> permissionsValidees(User drh, int exercice, Long departementId, Integer mois);
     PermissionDto validerDrh(User drh, Long permissionId);
     PermissionDto renvoyerDrh(User drh, Long permissionId, String motif);
 }

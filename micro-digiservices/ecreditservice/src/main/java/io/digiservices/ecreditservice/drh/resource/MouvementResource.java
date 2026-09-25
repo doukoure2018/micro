@@ -70,7 +70,7 @@ public class MouvementResource {
             Authentication auth, HttpServletRequest req) {
         return ResponseEntity.ok(getResponse(req,
                 Map.of("synthese", mouvementService.synthese(user(auth), du, au)),
-                "Synthèse des mouvements par agent", OK));
+                "Synthèse des mouvements par salarié", OK));
     }
 
     @GetMapping("/details")
@@ -91,7 +91,7 @@ public class MouvementResource {
             Authentication auth, HttpServletRequest req) {
         return ResponseEntity.ok(getResponse(req,
                 Map.of("agent", mouvementService.personne(user(auth), matricule, du, au)),
-                "Mouvements de l'agent", OK));
+                "Mouvements du salarié", OK));
     }
 
     @GetMapping("/badges")

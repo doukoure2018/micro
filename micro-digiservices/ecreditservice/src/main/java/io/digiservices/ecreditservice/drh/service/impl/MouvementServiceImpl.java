@@ -311,7 +311,7 @@ public class MouvementServiceImpl implements MouvementService {
     public MouvementPersonneDto personne(User drh, String matricule, LocalDate du, LocalDate au) {
         Set<String> perimetre = perimetreMatricules(drh);
         if (perimetre != null && !perimetre.contains(matricule)) {
-            throw new ValidationException("Cet agent n'appartient pas à votre département");
+            throw new ValidationException("Ce salarié n'appartient pas à votre département");
         }
         MouvementPersonneDto agent = reconstituer(du, au, matricule).get(matricule);
         return agent != null ? agent
@@ -715,7 +715,7 @@ public class MouvementServiceImpl implements MouvementService {
             alertes++;
         }
         if (alertes > 0) {
-            log.info("Alerte mouvements semaine du {} : {} agent(s) au-dessus du seuil de {} min",
+            log.info("Alerte mouvements semaine du {} : {} salarié(s) au-dessus du seuil de {} min",
                     lundi, alertes, seuil);
         }
         return alertes;
@@ -908,7 +908,7 @@ public class MouvementServiceImpl implements MouvementService {
 
         String message = "CRG DRH - Mouvements du "
                 + jour.format(DateTimeFormatter.ofPattern("dd/MM")) + " : "
-                + depassements.size() + " agent(s) > " + seuil + " badgeages : "
+                + depassements.size() + " salarié(s) > " + seuil + " badgeages : "
                 + String.join(", ", depassements)
                 + ". Detail : digi > Mouvements > Tableau de bord";
         for (String tel : drhRepository.telephonesDrh()) {
@@ -918,7 +918,7 @@ public class MouvementServiceImpl implements MouvementService {
                 log.warn("Alerte mouvements jour non envoyée à {} : {}", tel, e.getMessage());
             }
         }
-        log.info("Alerte mouvements du {} : {} agent(s) au-dessus du seuil de {} badgeages",
+        log.info("Alerte mouvements du {} : {} salarié(s) au-dessus du seuil de {} badgeages",
                 jour, depassements.size(), seuil);
         return depassements.size();
     }

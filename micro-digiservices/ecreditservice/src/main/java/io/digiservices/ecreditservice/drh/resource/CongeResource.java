@@ -122,6 +122,17 @@ public class CongeResource {
                 "Demandes de congé en attente de validation DRH", OK));
     }
 
+    /** V153 : congés accordés (validés / interrompus) — vue DRH, filtres direction et mois. */
+    @GetMapping("/validees")
+    public ResponseEntity<Response> validees(@RequestParam(required = false) Integer exercice,
+                                             @RequestParam(required = false) Long departementId,
+                                             @RequestParam(required = false) Integer mois,
+                                             Authentication auth, HttpServletRequest req) {
+        return ResponseEntity.ok(getResponse(req,
+                Map.of("demandes", congeService.demandesValidees(user(auth), exercice(exercice), departementId, mois)),
+                "Congés accordés", OK));
+    }
+
     @PostMapping("/{demandeId}/valider")
     public ResponseEntity<Response> valider(@PathVariable Long demandeId,
                                             Authentication auth, HttpServletRequest req) {

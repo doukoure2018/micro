@@ -23,7 +23,7 @@ const MOIS_NOMS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juill
 /**
  * Calendrier annuel de sélection des tranches de congé (12 mois, grand format,
  * sélection en deux clics, dimanches et fériés exclus du comptage).
- * Réutilisable : « Ma prévision » côté agent, réajustement côté responsable.
+ * Réutilisable : « Ma prévision » côté salarié, réajustement côté responsable.
  * Le parent fournit [periodes] et reçoit (periodesChange) ; les contrôles
  * (chevauchement, plafond du droit annuel, tranche vide) sont faits ici.
  */

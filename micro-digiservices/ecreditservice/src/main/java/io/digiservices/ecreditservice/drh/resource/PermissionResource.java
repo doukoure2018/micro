@@ -107,6 +107,17 @@ public class PermissionResource {
                 "Permissions en attente de validation DRH", OK));
     }
 
+    /** V153 : permissions accordées — vue DRH, filtres direction et mois. */
+    @GetMapping("/validees")
+    public ResponseEntity<Response> validees(@RequestParam(required = false) Integer exercice,
+                                             @RequestParam(required = false) Long departementId,
+                                             @RequestParam(required = false) Integer mois,
+                                             Authentication auth, HttpServletRequest req) {
+        return ResponseEntity.ok(getResponse(req,
+                Map.of("permissions", permissionService.permissionsValidees(user(auth), exercice(exercice), departementId, mois)),
+                "Permissions accordées", OK));
+    }
+
     @PostMapping("/{permissionId}/valider")
     public ResponseEntity<Response> valider(@PathVariable Long permissionId,
                                             Authentication auth, HttpServletRequest req) {

@@ -39,7 +39,7 @@ import { statutConge, imprimerDemandeConge, imprimerPermission, libelleMotif, li
 
             <p-table *ngIf="typeActif === 'permissions'" [value]="permissions()" responsiveLayout="scroll" [rowHover]="true">
                 <ng-template pTemplate="header">
-                    <tr><th>Agent</th><th>Direction</th><th>Motif</th><th>Du</th><th>Au</th><th>Jours</th><th>Responsable</th><th>Actions</th></tr>
+                    <tr><th>Salarié</th><th>Direction</th><th>Motif</th><th>Du</th><th>Au</th><th>Jours</th><th>Responsable</th><th>Actions</th></tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-p>
                     <tr>
@@ -71,7 +71,7 @@ import { statutConge, imprimerDemandeConge, imprimerPermission, libelleMotif, li
 
             <p-table *ngIf="typeActif === 'conges'" [value]="demandes()" responsiveLayout="scroll" [rowHover]="true">
                 <ng-template pTemplate="header">
-                    <tr><th>Agent</th><th>Direction</th><th>Du</th><th>Au</th><th>Jours</th><th>Déjà pris</th><th>Solde après</th><th>Responsable</th><th>Actions</th></tr>
+                    <tr><th>Salarié</th><th>Direction</th><th>Du</th><th>Au</th><th>Jours</th><th>Déjà pris</th><th>Solde après</th><th>Responsable</th><th>Actions</th></tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-d>
                     <tr>
@@ -102,7 +102,7 @@ import { statutConge, imprimerDemandeConge, imprimerPermission, libelleMotif, li
         </div>
 
         <p-dialog header="Renvoyer la demande" [(visible)]="renvoiVisible" [modal]="true" [style]="{ width: '480px' }">
-            <p class="mb-2">Motif du renvoi (transmis à l'agent) :</p>
+            <p class="mb-2">Motif du renvoi (transmis au salarié) :</p>
             <textarea pTextarea [(ngModel)]="motif" rows="3" class="w-full"></textarea>
             <ng-template pTemplate="footer">
                 <button pButton label="Annuler" class="p-button-text" (click)="renvoiVisible = false"></button>
@@ -152,7 +152,7 @@ export class ValidationCongesComponent implements OnInit {
 
     validerPermission(p: PermissionSociale): void {
         this.drhService.validerPermission$(p.permissionId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-            next: () => this.ok('Permission validée — l’agent est notifié'),
+            next: () => this.ok('Permission validée — le salarié est notifié'),
             error: (e) => this.erreur(e)
         });
     }
@@ -170,7 +170,7 @@ export class ValidationCongesComponent implements OnInit {
 
     valider(d: DemandeConge): void {
         this.drhService.validerConge$(d.demandeId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-            next: () => this.ok("Congé validé — l'agent est notifié"),
+            next: () => this.ok("Congé validé — le salarié est notifié"),
             error: (e) => this.erreur(e)
         });
     }

@@ -17,7 +17,7 @@ import { DrhService, PrevisionConge, PeriodePrevision, ContexteDrh } from '@/ser
 import { STATUT_PREVISION_LABELS, StatutTag } from '../ma-prevision/ma-prevision.component';
 
 /**
- * Vue du responsable de département : prévisions de ses agents,
+ * Vue du responsable de département : prévisions de ses salariés,
  * acceptation / rejet motivé / réajustement des dates après entretien.
  */
 @Component({
@@ -46,7 +46,7 @@ import { STATUT_PREVISION_LABELS, StatutTag } from '../ma-prevision/ma-prevision
             <p-table *ngIf="vueActive === 'demandes'" [value]="previsions()" responsiveLayout="scroll" [rowHover]="true">
                 <ng-template pTemplate="header">
                     <tr>
-                        <th>Agent</th><th>Fonction</th><th>Périodes</th><th>Total</th><th>Statut</th><th>Actions</th>
+                        <th>Salarié</th><th>Fonction</th><th>Périodes</th><th>Total</th><th>Statut</th><th>Actions</th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-p>
@@ -79,7 +79,7 @@ import { STATUT_PREVISION_LABELS, StatutTag } from '../ma-prevision/ma-prevision
         </div>
 
         <p-dialog header="Rejeter la prévision" [(visible)]="rejetVisible" [modal]="true" [style]="{ width: '480px' }">
-            <p class="mb-2">Motif du rejet (transmis à l'agent pour réadaptation des dates) :</p>
+            <p class="mb-2">Motif du rejet (transmis au salarié pour réadaptation des dates) :</p>
             <textarea pTextarea [(ngModel)]="motifRejet" rows="3" class="w-full"></textarea>
             <ng-template pTemplate="footer">
                 <button pButton label="Annuler" class="p-button-text" (click)="rejetVisible = false"></button>
@@ -91,7 +91,7 @@ import { STATUT_PREVISION_LABELS, StatutTag } from '../ma-prevision/ma-prevision
                   [modal]="true" [maximizable]="true"
                   [style]="{ width: '95vw', maxWidth: '1500px' }" [contentStyle]="{ overflow: 'auto' }">
             <p class="text-sm text-color-secondary mb-3">
-                Après entretien avec l'agent, modifiez ses tranches directement dans le calendrier
+                Après entretien avec le salarié, modifiez ses tranches directement dans le calendrier
                 (cliquez sur le premier puis le dernier jour ; cliquez sur une tranche pour la retirer).
                 La prévision réajustée partira directement en validation DRH.
             </p>
@@ -175,7 +175,7 @@ export class DepartementPrevisionsComponent implements OnInit {
         if (!this.cible) return;
         this.drhService.rejeterPrevision$(this.cible.previsionId, this.motifRejet.trim())
             .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-                next: () => { this.rejetVisible = false; this.ok("Prévision rejetée — motif transmis à l'agent"); },
+                next: () => { this.rejetVisible = false; this.ok("Prévision rejetée — motif transmis au salarié"); },
                 error: (e) => this.erreur(e)
             });
     }

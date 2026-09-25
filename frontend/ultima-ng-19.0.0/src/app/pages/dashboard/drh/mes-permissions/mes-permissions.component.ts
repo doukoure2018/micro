@@ -244,7 +244,7 @@ export class MesPermissionsComponent implements OnInit {
             rejectLabel: 'Non',
             acceptButtonStyleClass: 'p-button-danger',
             accept: () => {
-                this.drhService.annulerPermission$(p.permissionId, 'Annulée par l’agent avant traitement')
+                this.drhService.annulerPermission$(p.permissionId, 'Annulée par le salarié avant traitement')
                     .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
                         next: () => {
                             this.messageService.add({ severity: 'success', summary: 'Annulée', detail: 'Demande annulée' });

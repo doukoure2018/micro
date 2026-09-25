@@ -255,7 +255,7 @@ export class MesCongesComponent implements OnInit {
             rejectLabel: 'Non',
             acceptButtonStyleClass: 'p-button-danger',
             accept: () => {
-                this.drhService.annulerConge$(d.demandeId, 'Annulée par l’agent avant traitement')
+                this.drhService.annulerConge$(d.demandeId, 'Annulée par le salarié avant traitement')
                     .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
                         next: () => {
                             this.messageService.add({ severity: 'success', summary: 'Annulée', detail: 'Demande annulée' });
