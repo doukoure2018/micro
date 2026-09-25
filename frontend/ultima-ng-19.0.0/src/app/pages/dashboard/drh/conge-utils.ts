@@ -84,7 +84,7 @@ export function imprimerPermission(p: PermissionSociale): void {
 <div class="champ"><b>Allant du</b> <span class="valeur">${fmt(p.dateDebut)}</span> <b style="min-width:auto">au</b> <span class="valeur">${fmt(p.dateFin)}</span> inclus</div>
 <div class="champ"><b>Motif :</b> <span class="valeur">${libelleMotif(p.motif)}${p.lienParente ? ' — ' + libelleLienParente(p.lienParente) : ''}${p.precisionMotif ? ' (' + p.precisionMotif + ')' : ''}</span></div>
 <div class="signatures">
-  <div><b>Signature de l'agent</b><div class="ligne">${p.nomComplet}</div></div>
+  <div><b>Signature du salarié</b><div class="ligne">${p.nomComplet}</div></div>
   <div><b>Le Responsable du département</b><div class="ligne">${p.traiteeRespNom || ''}</div></div>
   <div><b>Le chef de service GRH</b><div class="ligne">${p.valideeDrhNom || ''}</div></div>
 </div>
@@ -136,6 +136,46 @@ export function imprimerDemandeConge(d: DemandeConge, droit: number): void {
   <div><b>Le Chef de service GRH</b><div class="ligne">${d.valideeDrhNom || ''}</div></div>
 </div>
 <div class="cachet">Document généré par l'application — statut : ${statutConge(d.statut).label}${d.valideeDrhLe ? ' le ' + fmt(d.valideeDrhLe.slice(0, 10)) : ''}</div>
+<script>window.onload = function(){ window.print(); }<\/script>
+</body></html>`);
+    w.document.close();
+}
+
+/** V153 : impression d'un état de liste (congés ou permissions accordés), avec signature DRH. */
+export function imprimerListe(titre: string, sousTitre: string, colonnes: string[], lignes: (string | number)[][]): void {
+    const w = window.open('', '_blank', 'width=1100,height=900');
+    if (!w) return;
+    const esc = (v: string | number) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    const thead = colonnes.map((c) => `<th>${esc(c)}</th>`).join('');
+    const tbody = lignes.length
+        ? lignes.map((l) => `<tr>${l.map((v) => `<td>${esc(v)}</td>`).join('')}</tr>`).join('')
+        : `<tr><td colspan="${colonnes.length}" class="vide">Aucune ligne</td></tr>`;
+    const genere = new Date().toLocaleString('fr-FR');
+    w.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">
+<title>${esc(titre)}</title>
+<style>
+  body { font-family: Georgia, 'Times New Roman', serif; color: #111; max-width: 1000px; margin: 1.5rem auto; }
+  .entete { text-align: center; border-bottom: 2px solid #111; padding-bottom: .4rem; margin-bottom: 1rem; }
+  .entete h2 { margin: 0; }
+  h1 { text-align: center; font-size: 1.3rem; letter-spacing: .04em; margin: .8rem 0 .2rem; }
+  .sous-titre { text-align: center; font-style: italic; margin-bottom: 1rem; }
+  table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+  th, td { border: 1px solid #333; padding: 4px 6px; text-align: left; vertical-align: top; }
+  th { background: #eee; }
+  td.vide { text-align: center; color: #666; }
+  .pied { display: flex; justify-content: space-between; margin-top: 2rem; font-size: .85rem; }
+  .signature { text-align: center; width: 40%; }
+  .signature .ligne { border-top: 1px solid #111; margin-top: 3.5rem; padding-top: .3rem; }
+  @media print { body { margin: 0.5cm auto; } }
+</style></head><body>
+<div class="entete"><h2>CRÉDIT RURAL DE GUINÉE S.A</h2></div>
+<h1>${esc(titre)}</h1>
+<div class="sous-titre">${esc(sousTitre)} — ${lignes.length} ligne(s)</div>
+<table><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table>
+<div class="pied">
+  <div>Édité le ${esc(genere)}</div>
+  <div class="signature"><b>Le Chef de service GRH</b><div class="ligne">&nbsp;</div></div>
+</div>
 <script>window.onload = function(){ window.print(); }<\/script>
 </body></html>`);
     w.document.close();

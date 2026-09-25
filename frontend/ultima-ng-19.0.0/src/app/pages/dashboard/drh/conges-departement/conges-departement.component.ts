@@ -14,7 +14,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DrhService, DemandeConge, PermissionSociale, PrevisionConge, ContexteDrh } from '@/service/drh.service';
-import { statutConge, libelleMotif, libelleLienParente } from '../conge-utils';
+import { statutConge, libelleMotif, libelleLienParente, imprimerDemandeConge, imprimerPermission } from '../conge-utils';
 import { ApercuPrevisionsComponent } from '../apercu-previsions/apercu-previsions.component';
 
 /**
@@ -32,7 +32,7 @@ import { ApercuPrevisionsComponent } from '../apercu-previsions/apercu-prevision
             <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
                 <div>
                     <h4 class="m-0">Congés — {{ contexte()?.departementLibelle }}</h4>
-                    <span class="text-sm text-color-secondary">Demandes de congé de vos agents : accepter, rejeter, interrompre ou annuler.</span>
+                    <span class="text-sm text-color-secondary">Demandes de congé de vos salariés : accepter, rejeter, interrompre ou annuler.</span>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <p-selectButton [options]="vuesOptions" [(ngModel)]="vueActive" optionLabel="label" optionValue="value" />
@@ -49,7 +49,7 @@ import { ApercuPrevisionsComponent } from '../apercu-previsions/apercu-prevision
             <!-- Permissions sociales du département -->
             <p-table *ngIf="vueActive === 'permissions'" [value]="permissions()" responsiveLayout="scroll" [rowHover]="true">
                 <ng-template pTemplate="header">
-                    <tr><th>Agent</th><th>Motif</th><th>Du</th><th>Au</th><th>Jours</th><th>Statut</th><th>Actions</th></tr>
+                    <tr><th>Salarié</th><th>Motif</th><th>Du</th><th>Au</th><th>Jours</th><th>Statut</th><th>Actions</th></tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-p>
                     <tr>
@@ -65,11 +65,15 @@ import { ApercuPrevisionsComponent } from '../apercu-previsions/apercu-prevision
                             <div class="text-xs text-red-500" *ngIf="p.motifRejet">{{ p.motifRejet }}</div>
                         </td>
                         <td>
-                            <div class="flex gap-1" *ngIf="p.statut === 'SOUMISE'">
-                                <button pButton icon="pi pi-check" class="p-button-sm" severity="success"
-                                        pTooltip="Accepter" (click)="accepterPermission(p)"></button>
-                                <button pButton icon="pi pi-times" class="p-button-sm" severity="danger"
-                                        pTooltip="Rejeter" (click)="ouvrirMotifPermission(p)"></button>
+                            <div class="flex gap-1">
+                                <ng-container *ngIf="p.statut === 'SOUMISE'">
+                                    <button pButton icon="pi pi-check" class="p-button-sm" severity="success"
+                                            pTooltip="Accepter" (click)="accepterPermission(p)"></button>
+                                    <button pButton icon="pi pi-times" class="p-button-sm" severity="danger"
+                                            pTooltip="Rejeter" (click)="ouvrirMotifPermission(p)"></button>
+                                </ng-container>
+                                <button pButton icon="pi pi-print" class="p-button-text p-button-sm"
+                                        pTooltip="Imprimer la fiche" (click)="imprimerPerm(p)"></button>
                             </div>
                         </td>
                     </tr>
@@ -81,7 +85,7 @@ import { ApercuPrevisionsComponent } from '../apercu-previsions/apercu-prevision
 
             <p-table *ngIf="vueActive === 'demandes'" [value]="demandes()" responsiveLayout="scroll" [rowHover]="true">
                 <ng-template pTemplate="header">
-                    <tr><th>Agent</th><th>Du</th><th>Au</th><th>Jours</th><th>Solde après</th><th>Statut</th><th>Actions</th></tr>
+                    <tr><th>Salarié</th><th>Du</th><th>Au</th><th>Jours</th><th>Solde après</th><th>Statut</th><th>Actions</th></tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-d>
                     <tr>
@@ -110,6 +114,8 @@ import { ApercuPrevisionsComponent } from '../apercu-previsions/apercu-prevision
                                     <button pButton icon="pi pi-ban" class="p-button-sm p-button-outlined" severity="danger"
                                             pTooltip="Annuler le congé" (click)="ouvrirMotif(d, 'annulation')"></button>
                                 </ng-container>
+                                <button pButton icon="pi pi-print" class="p-button-text p-button-sm"
+                                        pTooltip="Imprimer la fiche" (click)="imprimerConge(d)"></button>
                             </div>
                         </td>
                     </tr>
@@ -122,7 +128,7 @@ import { ApercuPrevisionsComponent } from '../apercu-previsions/apercu-prevision
 
         <p-dialog [header]="modeMotif === 'rejet' ? 'Rejeter la demande' : 'Annuler le congé'"
                   [(visible)]="motifVisible" [modal]="true" [style]="{ width: '480px' }">
-            <p class="mb-2">Motif (transmis à l'agent{{ modeMotif === 'annulation' ? ', jours recrédités automatiquement' : '' }}) :</p>
+            <p class="mb-2">Motif (transmis au salarié{{ modeMotif === 'annulation' ? ', jours recrédités automatiquement' : '' }}) :</p>
             <textarea pTextarea [(ngModel)]="motif" rows="3" class="w-full"></textarea>
             <ng-template pTemplate="footer">
                 <button pButton label="Fermer" class="p-button-text" (click)="motifVisible = false"></button>
@@ -201,7 +207,7 @@ export class CongesDepartementComponent implements OnInit {
 
     /**
      * Congés du département projetés au format des vues consolidées : une ligne
-     * par agent, ses congés actifs en tranches (l'interrompu est tronqué à la
+     * par salarié, ses congés actifs en tranches (l'interrompu est tronqué à la
      * veille de la reprise). Couleurs : orange = soumis, jaune = accepté resp,
      * vert = validé DRH.
      */
@@ -228,7 +234,7 @@ export class CongesDepartementComponent implements OnInit {
                 } as PrevisionConge;
                 parAgent.set(d.userId, ligne);
             }
-            // La couleur de la ligne suit le statut le plus avancé de l'agent
+            // La couleur de la ligne suit le statut le plus avancé du salarié
             const statutLigne = ligne.statut in rangStatut ? ligne.statut : 'SOUMISE';
             const statutDemande = d.statut === 'INTERROMPUE' ? 'VALIDEE_DRH' : d.statut;
             if (rangStatut[statutDemande] > rangStatut[statutLigne]) {
@@ -316,5 +322,14 @@ export class CongesDepartementComponent implements OnInit {
             severity: 'error', summary: 'Erreur',
             detail: e.error?.data?.error || e.error?.message || 'Opération impossible'
         });
+    }
+
+    /** V153 : impression des fiches depuis la vue responsable. */
+    imprimerConge(d: DemandeConge): void {
+        imprimerDemandeConge(d, 30);
+    }
+
+    imprimerPerm(p: PermissionSociale): void {
+        imprimerPermission(p);
     }
 }

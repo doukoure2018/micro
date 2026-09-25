@@ -14,6 +14,12 @@ public interface CongeRepository {
     List<DemandeCongeDto> demandesDuDepartement(Long departementId, int exercice);
     List<DemandeCongeDto> demandesAValiderDrh(int exercice);
 
+    /** V153 : congés accordés (validés / interrompus), filtres optionnels direction et mois. */
+    List<DemandeCongeDto> demandesValideesDrh(int exercice, Long departementId, Integer mois);
+
+    /** V153 : congés accordés se terminant à la date cible, sans alerte du type donné. */
+    List<Map<String, Object>> congesFinARappeler(LocalDate dateCible, String type);
+
     Long creerDemande(Long userId, Long departementId, int exercice, Long periodeId,
                       LocalDate dateDebut, LocalDate dateFin, int nbJours,
                       int dejaPris, int soldeApres, String commentaire);

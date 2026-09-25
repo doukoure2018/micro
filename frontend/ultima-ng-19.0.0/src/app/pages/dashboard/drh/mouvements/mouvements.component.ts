@@ -20,7 +20,7 @@ import { UserService } from '@/service/user.service';
 
 /**
  * Gestion des mouvements (DRH) : import du journal de la porte (export access-log),
- * journal brut, synthèse par agent (sorties travail / dépassements de pause 13h-14h30,
+ * journal brut, synthèse par salarié (sorties travail / dépassements de pause 13h-14h30,
  * pause ignorée le vendredi et le samedi, journées continues), détail par personne et correspondances badge -> matricule.
  */
 /** Barre du graphique d'affluence : un créneau de 30 min, empilement sorties / entrées / sens inconnu. */
@@ -42,7 +42,7 @@ interface BarreAffluence {
                     <h4 class="m-0">{{ modeDepartement ? 'Mouvements de mon département' : 'Gestion des mouvements' }}</h4>
                     <span class="text-sm text-color-secondary">
                         {{ modeDepartement
-                            ? 'Entrées/sorties de la porte pour les agents de votre département : pause déjeuner 13h00–14h30 non comptée (ignorée le vendredi et le samedi).'
+                            ? 'Entrées/sorties de la porte pour les salariés de votre département : pause déjeuner 13h00–14h30 non comptée (ignorée le vendredi et le samedi).'
                             : 'Journal des entrées/sorties de la porte : pause déjeuner 13h00–14h30 non comptée (ignorée le vendredi et le samedi), sorties en heures de travail et dépassements mesurés.' }}
                     </span>
                 </div>
@@ -164,7 +164,7 @@ interface BarreAffluence {
                     </div>
                     <p-table [value]="tb.lignes" responsiveLayout="scroll" [paginator]="tb.lignes.length > 25" [rows]="25" [rowHover]="true">
                         <ng-template pTemplate="header">
-                            <tr><th>#</th><th>Agent</th><th>Mat.</th><th>Dept</th><th>Badgeages</th>
+                            <tr><th>#</th><th>Salarié</th><th>Mat.</th><th>Dept</th><th>Badgeages</th>
                                 <th>Sorties travail</th><th>Hors bureau</th><th>Dépass. pause</th><th>Dernier badge</th><th>Statut</th></tr>
                         </ng-template>
                         <ng-template pTemplate="body" let-l let-i="rowIndex">
@@ -202,7 +202,7 @@ interface BarreAffluence {
                         </div>
                         <p-table [value]="tb.recidivesRetard" responsiveLayout="scroll">
                             <ng-template pTemplate="header">
-                                <tr><th>Agent</th><th>Mat.</th><th>Retards</th><th>Minutes cumulées</th></tr>
+                                <tr><th>Salarié</th><th>Mat.</th><th>Retards</th><th>Minutes cumulées</th></tr>
                             </ng-template>
                             <ng-template pTemplate="body" let-r>
                                 <tr class="cursor-pointer" (click)="ouvrirPersonne(r.matricule)">
@@ -217,10 +217,10 @@ interface BarreAffluence {
 
                     <!-- Par département (mois en cours) -->
                     <div class="mt-4" *ngIf="tb.departements?.length > 0">
-                        <div class="text-sm font-medium mb-1">Par département — mois en cours (agents affectés uniquement)</div>
+                        <div class="text-sm font-medium mb-1">Par département — mois en cours (salariés affectés uniquement)</div>
                         <p-table [value]="tb.departements" responsiveLayout="scroll">
                             <ng-template pTemplate="header">
-                                <tr><th>Dept</th><th>Agents</th><th>Taux de présence</th><th>Retards</th>
+                                <tr><th>Dept</th><th>Salariés</th><th>Taux de présence</th><th>Retards</th>
                                     <th>Absents NON justifiés</th><th>Hors bureau</th></tr>
                             </ng-template>
                             <ng-template pTemplate="body" let-d>
@@ -237,7 +237,7 @@ interface BarreAffluence {
                             </ng-template>
                         </p-table>
                         <div class="text-xs text-color-secondary mt-1">
-                            Taux de présence = jours PRESENT / jours contrôlés du mois. Les agents non affectés à un département n'apparaissent pas ici.
+                            Taux de présence = jours PRESENT / jours contrôlés du mois. Les salariés non affectés à un département n'apparaissent pas ici.
                         </div>
                     </div>
                 </div>
@@ -294,7 +294,7 @@ interface BarreAffluence {
                 </p-table>
             </div>
 
-            <!-- ===== Synthèse par agent ===== -->
+            <!-- ===== Synthèse par salarié ===== -->
             <div *ngIf="vuePrincipale() === 'synthese'">
                 <div class="flex flex-wrap items-center gap-3 mb-3">
                     <span class="p-input-icon-left">
@@ -303,7 +303,7 @@ interface BarreAffluence {
                                placeholder="Rechercher par nom ou matricule…" [style]="{ width: '300px' }" />
                     </span>
                     <button pButton icon="pi pi-file-excel" label="Exporter Excel" class="p-button-outlined p-button-success p-button-sm"
-                            pTooltip="Deux feuilles : synthèse par agent + détail de chaque sortie de la période"
+                            pTooltip="Deux feuilles : synthèse par salarié + détail de chaque sortie de la période"
                             [loading]="exportEnCours()" (click)="exporterExcel()"></button>
                     <span class="text-sm text-color-secondary">
                         Tri : les plus grosses sorties (travail + dépassement de pause) en premier.
@@ -314,7 +314,7 @@ interface BarreAffluence {
                          [rowHover]="true" [loading]="chargement()">
                     <ng-template pTemplate="header">
                         <tr>
-                            <th>Agent</th><th>Mat.</th><th>Jours</th><th>Pauses</th>
+                            <th>Salarié</th><th>Mat.</th><th>Jours</th><th>Pauses</th>
                             <th>Sorties travail</th><th>Hors bureau</th><th>Dépassement pause</th><th>Retours non badgés</th>
                         </tr>
                     </ng-template>
@@ -341,7 +341,7 @@ interface BarreAffluence {
                 <div class="flex flex-wrap items-center gap-2 mb-3">
                     <p-dropdown [options]="optionsAgents()" optionLabel="label" optionValue="value"
                                 [ngModel]="matriculeChoisi()" (ngModelChange)="choisirAgent($event)"
-                                [filter]="true" filterBy="label" placeholder="Choisir un agent…" [style]="{ minWidth: '320px' }" />
+                                [filter]="true" filterBy="label" placeholder="Choisir un salarié…" [style]="{ minWidth: '320px' }" />
                     <span class="text-sm text-color-secondary" *ngIf="agent() as a">
                         {{ a.jours.length || 0 }} jour(s) avec mouvements sur la période
                     </span>
@@ -388,7 +388,7 @@ interface BarreAffluence {
                     </ng-template>
                     <ng-template pTemplate="emptymessage">
                         <tr><td colspan="6" class="text-center text-color-secondary">
-                            Choisissez un agent pour voir ses mouvements jour par jour
+                            Choisissez un salarié pour voir ses mouvements jour par jour
                         </td></tr>
                     </ng-template>
                 </p-table>
@@ -479,7 +479,7 @@ interface BarreAffluence {
                         </div>
                         <p-table [value]="correspondancesFiltrees()" responsiveLayout="scroll" [paginator]="true" [rows]="10">
                             <ng-template pTemplate="header">
-                                <tr><th>Agent</th><th>Mat.</th><th>Badge</th><th>Source</th></tr>
+                                <tr><th>Salarié</th><th>Mat.</th><th>Badge</th><th>Source</th></tr>
                             </ng-template>
                             <ng-template pTemplate="body" let-c>
                                 <tr>
@@ -583,7 +583,7 @@ export class MouvementsComponent implements OnInit {
         const vues = [
             { label: 'Tableau de bord', value: 'tableau-bord' },
             { label: 'Journal', value: 'journal' },
-            { label: 'Synthèse par agent', value: 'synthese' },
+            { label: 'Synthèse par salarié', value: 'synthese' },
             { label: 'Détail par personne', value: 'personne' },
             { label: 'Badges', value: 'badges' }
         ];
@@ -700,7 +700,7 @@ export class MouvementsComponent implements OnInit {
                 };
                 const feuilleSynthese = this.synthese().map((s: any) => ({
                     'Matricule': s.matricule,
-                    'Agent': s.nom,
+                    'Salarié': s.nom,
                     'Jours actifs': s.joursActifs,
                     'Pauses': s.nbPauses,
                     'Sorties travail': s.nbSortiesTravail,

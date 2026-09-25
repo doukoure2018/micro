@@ -305,7 +305,7 @@ export class MaPrevisionComponent implements OnInit {
 
     totalJours = computed(() => this.periodes().reduce((s, p) => s + (p.nbJours || 0), 0));
 
-    /** Message affiché quand l'agent n'est affecté à aucune direction (bandeau + clic sur le calendrier). */
+    /** Message affiché quand le salarié n'est affecté à aucune direction (bandeau + clic sur le calendrier). */
     readonly MESSAGE_NON_AFFECTE = "Vous devez être affecté(e) à une direction avant de pouvoir sélectionner une tranche de prévision.";
 
     modifiable = computed(() => {

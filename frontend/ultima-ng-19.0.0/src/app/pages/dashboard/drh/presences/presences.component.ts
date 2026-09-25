@@ -33,7 +33,7 @@ const STATUTS_PRESENCE: { [k: string]: StatutPresence } = {
 
 /**
  * Présences badgeuse (DRH) : import du CSV de la porte, synthèse quotidienne
- * type feuille « GESTION PORTE », détail par agent et pointages non rapprochés.
+ * type feuille « GESTION PORTE », détail par salarié et pointages non rapprochés.
  */
 @Component({
     selector: 'app-presences',
@@ -61,7 +61,7 @@ const STATUTS_PRESENCE: { [k: string]: StatutPresence } = {
                             pTooltip="Repasse le rapprochement sur la période affichée (personnel badgé uniquement)"
                             [loading]="recalculEnCours()" (click)="recalculer()"></button>
                     <button pButton icon="pi pi-file-excel" label="Exporter Excel" class="p-button-outlined p-button-success"
-                            pTooltip="Synthèse par jour, par semaine et détail par agent de la période affichée"
+                            pTooltip="Synthèse par jour, par semaine et détail par salarié de la période affichée"
                             [loading]="exportEnCours()" (click)="exporterExcel()"></button>
                     <p-calendar [(ngModel)]="du" dateFormat="dd/mm/yy" [showIcon]="true" placeholder="Du" (onSelect)="charger()" />
                     <p-calendar [(ngModel)]="au" dateFormat="dd/mm/yy" [showIcon]="true" placeholder="Au" (onSelect)="charger()" />
@@ -155,7 +155,7 @@ const STATUTS_PRESENCE: { [k: string]: StatutPresence } = {
                 </div>
                 <p-table [value]="declarations()" responsiveLayout="scroll" [paginator]="true" [rows]="25">
                     <ng-template pTemplate="header">
-                        <tr><th>Agent</th><th>Mat.</th><th>Du</th><th>Au</th><th>Motif</th><th>Commentaire</th><th>Déclarée par</th><th></th></tr>
+                        <tr><th>Salarié</th><th>Mat.</th><th>Du</th><th>Au</th><th>Motif</th><th>Commentaire</th><th>Déclarée par</th><th></th></tr>
                     </ng-template>
                     <ng-template pTemplate="body" let-d>
                         <tr>
@@ -176,7 +176,7 @@ const STATUTS_PRESENCE: { [k: string]: StatutPresence } = {
                 </p-table>
             </div>
 
-            <!-- ===== Détail par agent ===== -->
+            <!-- ===== Détail par salarié ===== -->
             <div *ngIf="vue === 'detail'">
                 <div class="mb-2 flex flex-wrap gap-2 items-center">
                     <p-dropdown [options]="statutsOptions" optionLabel="label" optionValue="value"
@@ -190,7 +190,7 @@ const STATUTS_PRESENCE: { [k: string]: StatutPresence } = {
                 </div>
                 <p-table [value]="presencesFiltrees()" responsiveLayout="scroll" [paginator]="true" [rows]="25" [rowHover]="true">
                     <ng-template pTemplate="header">
-                        <tr><th>Jour</th><th>Agent</th><th>Mat.</th><th>Dir.</th><th>Entrée</th><th>Sortie</th>
+                        <tr><th>Jour</th><th>Salarié</th><th>Mat.</th><th>Dir.</th><th>Entrée</th><th>Sortie</th>
                             <th pTooltip="Sorties en heures de travail reconstruites depuis le journal des mouvements (pause 13h-14h30 déduite)">Hors bureau</th>
                             <th pTooltip="Minutes au-delà de la pause d'une heure (fenêtre 13h00-14h30)">Dépass. pause</th>
                             <th>Statut</th>
@@ -299,7 +299,7 @@ export class PresencesComponent implements OnInit {
     vues = [
         { label: 'Synthèse par jour', value: 'synthese' },
         { label: 'Synthèse par semaine', value: 'semaine' },
-        { label: 'Détail par agent', value: 'detail' },
+        { label: 'Détail par salarié', value: 'detail' },
         { label: 'Déclarations DRH', value: 'declarations' },
         { label: 'Non rapprochés', value: 'non-rapproches' }
     ];
@@ -392,7 +392,7 @@ export class PresencesComponent implements OnInit {
         });
     }
 
-    /** Export Excel (V150) : synthèse par jour, par semaine et détail par agent sur la période affichée. */
+    /** Export Excel (V150) : synthèse par jour, par semaine et détail par salarié sur la période affichée. */
     exporterExcel(): void {
         if (!this.du || !this.au) return;
         const du = this.toIso(this.du), au = this.toIso(this.au);
@@ -415,7 +415,7 @@ export class PresencesComponent implements OnInit {
                     'Effectif contrôlé / jour': w.effectifMoyen, 'Taux de présence (%)': w.tauxPresence
                 }));
                 const feuilleDetail = details.map((p: any) => ({
-                    'Jour': p.jour, 'Agent': p.nom, 'Matricule': p.matricule, 'Direction': p.departementCode || '',
+                    'Jour': p.jour, 'Salarié': p.nom, 'Matricule': p.matricule, 'Direction': p.departementCode || '',
                     'Entrée': p.premiereEntree || '', 'Sortie': p.derniereSortie || '',
                     'Statut': this.statut(p.statut).label, 'Retard (min)': p.minutesRetard || 0,
                     'Départ anticipé (min)': p.minutesDepart || 0, 'Hors bureau (min)': p.minutesHorsBureau || 0,
@@ -426,7 +426,7 @@ export class PresencesComponent implements OnInit {
                 const classeur = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(classeur, XLSX.utils.json_to_sheet(feuilleJour), 'Synthèse par jour');
                 XLSX.utils.book_append_sheet(classeur, XLSX.utils.json_to_sheet(feuilleSemaine), 'Synthèse par semaine');
-                XLSX.utils.book_append_sheet(classeur, XLSX.utils.json_to_sheet(feuilleDetail), 'Détail par agent');
+                XLSX.utils.book_append_sheet(classeur, XLSX.utils.json_to_sheet(feuilleDetail), 'Détail par salarié');
                 XLSX.writeFile(classeur, `presences_${du}_${au}.xlsx`);
             },
             error: (e) => {

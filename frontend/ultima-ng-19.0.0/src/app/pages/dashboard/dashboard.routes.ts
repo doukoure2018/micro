@@ -186,6 +186,10 @@ export default [
         loadComponent: () => import('./drh/conges-departement/conges-departement.component').then((c) => c.CongesDepartementComponent)
     },
     {
+        path: 'drh/conges-valides',
+        loadComponent: () => import('./drh/conges-valides/conges-valides.component').then((c) => c.CongesValidesComponent)
+    },
+    {
         path: 'drh/validation-conges',
         data: { breadcrumb: 'Validation DRH des congés' },
         loadComponent: () => import('./drh/validation-conges/validation-conges.component').then((c) => c.ValidationCongesComponent)

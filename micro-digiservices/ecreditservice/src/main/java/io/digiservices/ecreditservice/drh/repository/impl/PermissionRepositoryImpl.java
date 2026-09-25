@@ -74,6 +74,15 @@ public class PermissionRepositoryImpl implements PermissionRepository {
     }
 
     @Override
+    public List<PermissionDto> permissionsValideesDrh(int exercice, Long departementId, Integer mois) {
+        return jdbcClient.sql(PermissionQuery.PERMISSIONS_VALIDEES_DRH)
+                .param("exercice", exercice)
+                .param("departement_id", departementId)
+                .param("mois", mois)
+                .query(PERMISSION_MAPPER).list();
+    }
+
+    @Override
     public Long creerPermission(Long userId, Long departementId, int exercice,
                                 PermissionRequest r, int nbJours) {
         return jdbcClient.sql(PermissionQuery.INSERT_PERMISSION)

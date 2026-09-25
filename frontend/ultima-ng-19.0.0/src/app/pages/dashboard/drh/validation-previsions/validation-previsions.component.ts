@@ -24,7 +24,7 @@ interface SegmentMois {
 
 /**
  * Écran DRH : validation finale des prévisions + calendrier consolidé
- * de tout le personnel (agents en lignes, 12 mois en colonnes — comme
+ * de tout le personnel (salariés en lignes, 12 mois en colonnes — comme
  * le fichier Excel de planification, avec la couleur de l'étape du circuit).
  */
 @Component({
@@ -55,7 +55,7 @@ interface SegmentMois {
             <p-table *ngIf="vue === 'validation'" [value]="previsions()" responsiveLayout="scroll" [rowHover]="true">
                 <ng-template pTemplate="header">
                     <tr>
-                        <th>Agent</th><th>Département</th><th>Périodes</th><th>Total</th><th>Responsable</th><th>Statut</th><th>Actions</th>
+                        <th>Salarié</th><th>Département</th><th>Périodes</th><th>Total</th><th>Responsable</th><th>Statut</th><th>Actions</th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-p>
@@ -127,13 +127,13 @@ interface SegmentMois {
                 </div>
             </div>
 
-            <!-- ===== Vue annuelle : tous les agents sur le calendrier 12 mois ===== -->
+            <!-- ===== Vue annuelle : tous les salariés sur le calendrier 12 mois ===== -->
             <div *ngIf="vue === 'annuel'">
                 <div class="legende mb-2">
                     <span><i class="pastille st-orange"></i> En cours / soumise</span>
                     <span><i class="pastille st-jaune"></i> Acceptée / réajustée (responsable)</span>
                     <span><i class="pastille st-verte"></i> Validée DRH</span>
-                    <span class="text-color-secondary">Survolez un jour pour voir les agents</span>
+                    <span class="text-color-secondary">Survolez un jour pour voir les salariés</span>
                 </div>
                 <div class="annee-grille">
                     <div class="mois-carte" *ngFor="let mois of moisAnnuel()">
@@ -161,7 +161,7 @@ interface SegmentMois {
         </div>
 
         <p-dialog header="Renvoyer la prévision" [(visible)]="renvoiVisible" [modal]="true" [style]="{ width: '480px' }">
-            <p class="mb-2">Motif du renvoi (transmis à l'agent et à son responsable) :</p>
+            <p class="mb-2">Motif du renvoi (transmis au salarié et à son responsable) :</p>
             <textarea pTextarea [(ngModel)]="motif" rows="3" class="w-full"></textarea>
             <ng-template pTemplate="footer">
                 <button pButton label="Annuler" class="p-button-text" (click)="renvoiVisible = false"></button>
@@ -235,7 +235,7 @@ export class ValidationPrevisionsComponent implements OnInit {
     indicesMois = Array.from({ length: 12 }, (_, i) => i);
     joursSemaine = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
     moisAnnuel = signal<{ nom: string; semaines: ({ iso: string; num: number; dimanche: boolean } | null)[][] }[]>([]);
-    /** iso -> agents en congé ce jour-là : classe d'étape + libellé. */
+    /** iso -> salariés en congé ce jour-là : classe d'étape + libellé. */
     private occupation = new Map<string, { classe: string; nom: string; statut: string }[]>();
 
     renvoiVisible = false;

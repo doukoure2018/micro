@@ -204,6 +204,12 @@ public class PermissionServiceImpl implements PermissionService {
     }
 
     @Override
+    public List<PermissionDto> permissionsValidees(User drh, int exercice, Long departementId, Integer mois) {
+        exigerDrh(drh);
+        return permissionRepository.permissionsValideesDrh(exercice, departementId, mois);
+    }
+
+    @Override
     @Transactional
     public PermissionDto validerDrh(User drh, Long permissionId) {
         exigerDrh(drh);

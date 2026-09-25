@@ -35,6 +35,46 @@ public class DrhAlerteScheduler {
     public void envoyerRappels() {
         rappeler(14, "RAPPEL_J14", false);
         rappeler(7, "RAPPEL_J7", true);
+        rappelerFinConge();
+    }
+
+    /**
+     * V153 (décision 2026-09-25) : alerte de fin de congé. CONGE_ALERTE_FIN_JOURS jours (5) avant la
+     * date de fin d'un congé accordé, SMS au salarié et à son responsable de département.
+     * Journalisée dans drh_alerte (RAPPEL_FIN_CONGE, référence = demande) : un seul envoi par congé.
+     */
+    private void rappelerFinConge() {
+        int jours = drhRepository.parametreInt("CONGE_ALERTE_FIN_JOURS", 5);
+        LocalDate cible = LocalDate.now().plusDays(jours);
+        List<Map<String, Object>> conges;
+        try {
+            conges = congeRepository.congesFinARappeler(cible, "RAPPEL_FIN_CONGE");
+        } catch (Exception e) {
+            log.warn("Alerte fin de congé : lecture impossible ({})", e.getMessage());
+            return;
+        }
+        for (Map<String, Object> c : conges) {
+            Long userId = ((Number) c.get("user_id")).longValue();
+            Long demandeId = ((Number) c.get("demande_id")).longValue();
+            String nom = String.valueOf(c.get("nom_complet"));
+            String phone = c.get("phone") == null ? null : String.valueOf(c.get("phone"));
+            Long departementId = ((Number) c.get("departement_id")).longValue();
+            String dateFin = String.valueOf(c.get("date_fin"));
+
+            if (phone != null && !phone.isBlank()) {
+                envoyer(phone, "CRG Congés : votre congé se termine le " + dateFin
+                        + " (dans " + jours + " jours). Reprise du service le lendemain.");
+            }
+            for (String telResp : drhRepository.telephonesResponsables(departementId)) {
+                envoyer(telResp, "CRG Congés : le congé de " + nom + " se termine le " + dateFin
+                        + " (dans " + jours + " jours).");
+            }
+            congeRepository.enregistrerAlerte("RAPPEL_FIN_CONGE", userId, demandeId);
+            log.info("Alerte fin de congé envoyée à {} (congé {})", nom, demandeId);
+        }
+        if (!conges.isEmpty()) {
+            log.info("Alertes fin de congé J-{} : {} salarié(s) notifié(s)", jours, conges.size());
+        }
     }
 
     /** Chaque lundi à 08h15 : dépassements de mouvements de la semaine écoulée -> SMS à la DRH. */
@@ -110,7 +150,7 @@ public class DrhAlerteScheduler {
             log.info("Rappel congés {} envoyé à {} (tranche {})", type, nom, periodeId);
         }
         if (!tranches.isEmpty()) {
-            log.info("Rappels congés {} : {} agent(s) notifié(s)", type, tranches.size());
+            log.info("Rappels congés {} : {} salarié(s) notifié(s)", type, tranches.size());
         }
     }
 
