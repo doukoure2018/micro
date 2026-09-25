@@ -156,6 +156,72 @@ export interface SoldeConge {
     restant: number;
     previsionValidee: boolean;
     tranchesDisponibles: PeriodePrevision[];
+    // V155 : report de l'exercice précédent
+    reportExercice?: number;
+    reportJours?: number;
+    reportConsommes?: number;
+    reportRestant?: number;
+    reportDateLimite?: string;
+    restantTotal?: number;
+}
+
+/** V155 : déclaration d'interruption de congé (responsable -> DRH). */
+export interface InterruptionConge {
+    interruptionId: number;
+    demandeId: number;
+    declareeParNom: string;
+    declareeLe: string;
+    dateRepriseSouhaitee: string;
+    motif: string;
+    statut: 'DEMANDEE' | 'VALIDEE' | 'REFUSEE';
+    traiteeParNom?: string;
+    traiteeLe?: string;
+    dateRepriseRetenue?: string;
+    motifRefus?: string;
+    userId: number;
+    nomComplet: string;
+    matricule?: string;
+    departementCode: string;
+    exercice: number;
+    dateDebut: string;
+    dateFin: string;
+    nbJours: number;
+    statutDemande: string;
+}
+
+export interface ReportConge {
+    reportId: number;
+    userId: number;
+    nomComplet: string;
+    matricule?: string;
+    departementCode?: string;
+    exerciceOrigine: number;
+    exerciceCible: number;
+    joursReportes: number;
+    joursConsommes: number;
+    dateLimite: string;
+}
+
+export interface SyntheseConges {
+    exercice: number;
+    periode: 'M' | 'T';
+    valeur: number;
+    debut: string;
+    fin: string;
+    joursOuvrables: number;
+    effectif: number;
+    congesAccordes: number;
+    joursConges: number;
+    salariesEnConge: number;
+    permissionsAccordees: number;
+    joursPermissions: number;
+    interruptions: number;
+    tauxAbsence: number;
+    parDirection: { code: string; libelle: string; effectif: number; conges: number; joursConges: number; permissions: number; joursPermissions: number; tauxAbsence: number }[];
+    parMotif: { motif: string; nombre: number; jours: number }[];
+    parJour: { jour: string; ouvrable: boolean; conges: number; permissions: number; noms: string[] }[];
+    conges: DemandeConge[];
+    permissions: PermissionSociale[];
 }
 
 export interface PermissionSociale {
@@ -326,6 +392,32 @@ export class DrhService {
 
     annulerConge$ = (demandeId: number, motif: string): Observable<IResponse> =>
         this.http.post<IResponse>(`${this.server}/ecredit/drh/conges/${demandeId}/annuler`, { motif }).pipe(catchError(this.handleError));
+
+    // ===== V155 : interruption déclarée, reports, synthèse =====
+    declarerInterruption$ = (demandeId: number, body: { dateRepriseSouhaitee: string; motif: string }): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/drh/conges/${demandeId}/declarer-interruption`, body).pipe(catchError(this.handleError));
+
+    interruptionsDepartement$ = (exercice: number): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/drh/conges/interruptions/departement?exercice=${exercice}`).pipe(catchError(this.handleError));
+
+    interruptionsATraiter$ = (exercice: number): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/drh/conges/interruptions/a-traiter?exercice=${exercice}`).pipe(catchError(this.handleError));
+
+    validerInterruption$ = (interruptionId: number, body: { dateReprise?: string | null }): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/drh/conges/interruptions/${interruptionId}/valider`, body).pipe(catchError(this.handleError));
+
+    refuserInterruption$ = (interruptionId: number, motif: string): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/drh/conges/interruptions/${interruptionId}/refuser`, { motif }).pipe(catchError(this.handleError));
+
+    reportsConges$ = (exerciceCible: number): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/drh/conges/reports?exercice=${exerciceCible}`).pipe(catchError(this.handleError));
+
+    cloturerExerciceConges$ = (exercice: number): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/drh/conges/reports/cloturer?exercice=${exercice}`, {}).pipe(catchError(this.handleError));
+
+    syntheseConges$ = (exercice: number, periode: 'M' | 'T', valeur: number, departementId?: number | null): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/drh/conges/synthese?exercice=${exercice}&periode=${periode}&valeur=${valeur}` +
+            (departementId ? `&departementId=${departementId}` : '')).pipe(catchError(this.handleError));
 
     congesAValider$ = (exercice: number): Observable<IResponse> =>
         this.http.get<IResponse>(`${this.server}/ecredit/drh/conges/a-valider?exercice=${exercice}`).pipe(catchError(this.handleError));

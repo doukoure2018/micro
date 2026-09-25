@@ -29,6 +29,19 @@ public class DrhAlerteScheduler {
     private final MouvementService mouvementService;
     private final PresenceService presenceService;
     private final SmsService smsService;
+    private final io.digiservices.ecreditservice.drh.service.CongeService congeService;
+
+    /** V155 : le 1er janvier à 00h30, clôture de l'exercice écoulé (reliquats reportés). */
+    @Scheduled(cron = "0 30 0 1 1 *")
+    public void cloturerExercicePrecedent() {
+        int exercice = LocalDate.now().getYear() - 1;
+        try {
+            var r = congeService.cloturerExerciceSysteme(exercice);
+            log.info("Clôture automatique des congés {} : {} report(s), {} jour(s)", exercice, r.getReportsCrees(), r.getJoursReportes());
+        } catch (Exception e) {
+            log.warn("Clôture automatique des congés {} non effectuée : {}", exercice, e.getMessage());
+        }
+    }
 
     /** Tous les jours à 08h00 (heure serveur). */
     @Scheduled(cron = "0 0 8 * * *")

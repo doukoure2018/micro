@@ -1,6 +1,6 @@
 package io.digiservices.ecreditservice.drh.repository.impl;
 
-import io.digiservices.ecreditservice.drh.dto.CongeDtos.DemandeCongeDto;
+import io.digiservices.ecreditservice.drh.dto.CongeDtos.*;
 import io.digiservices.ecreditservice.drh.query.CongeQuery;
 import io.digiservices.ecreditservice.drh.repository.CongeRepository;
 import lombok.RequiredArgsConstructor;
@@ -51,6 +51,7 @@ public class CongeRepositoryImpl implements CongeRepository {
             .dateReprise(rs.getObject("date_reprise", LocalDate.class))
             .joursRecredites(rs.getObject("jours_recredites") == null ? null : rs.getInt("jours_recredites"))
             .motifInterruption(rs.getString("motif_interruption"))
+            .joursSurReport(rs.getInt("jours_sur_report"))
             .build();
 
     @Override
@@ -174,6 +175,124 @@ public class CongeRepositoryImpl implements CongeRepository {
                 .param("date_cible", dateCible)
                 .param("type", type)
                 .query().listOfRows();
+    }
+
+    private static final RowMapper<InterruptionDto> INTERRUPTION_MAPPER = (rs, i) -> InterruptionDto.builder()
+            .interruptionId(rs.getLong("interruption_id"))
+            .demandeId(rs.getLong("demande_id"))
+            .declareePar(rs.getLong("declaree_par"))
+            .declareeParNom(rs.getString("declaree_par_nom"))
+            .declareeLe(rs.getObject("declaree_le", OffsetDateTime.class))
+            .dateRepriseSouhaitee(rs.getObject("date_reprise_souhaitee", LocalDate.class))
+            .motif(rs.getString("motif"))
+            .statut(rs.getString("statut"))
+            .traiteeParNom(rs.getString("traitee_par_nom"))
+            .traiteeLe(rs.getObject("traitee_le", OffsetDateTime.class))
+            .dateRepriseRetenue(rs.getObject("date_reprise_retenue", LocalDate.class))
+            .motifRefus(rs.getString("motif_refus"))
+            .userId(rs.getLong("user_id"))
+            .nomComplet(rs.getString("nom_complet"))
+            .matricule(rs.getString("matricule"))
+            .departementId(rs.getLong("departement_id"))
+            .departementCode(rs.getString("departement_code"))
+            .exercice(rs.getInt("exercice"))
+            .dateDebut(rs.getObject("date_debut", LocalDate.class))
+            .dateFin(rs.getObject("date_fin", LocalDate.class))
+            .nbJours(rs.getInt("nb_jours"))
+            .statutDemande(rs.getString("statut_demande"))
+            .build();
+
+    private static final RowMapper<ReportCongeDto> REPORT_MAPPER = (rs, i) -> ReportCongeDto.builder()
+            .reportId(rs.getLong("report_id"))
+            .userId(rs.getLong("user_id"))
+            .nomComplet(rs.getString("nom_complet"))
+            .matricule(rs.getString("matricule"))
+            .departementCode(rs.getString("departement_code"))
+            .exerciceOrigine(rs.getInt("exercice_origine"))
+            .exerciceCible(rs.getInt("exercice_cible"))
+            .joursReportes(rs.getInt("jours_reportes"))
+            .joursConsommes(rs.getInt("jours_consommes"))
+            .dateLimite(rs.getObject("date_limite", LocalDate.class))
+            .createdAt(rs.getObject("created_at", OffsetDateTime.class))
+            .build();
+
+    @Override
+    public Long declarerInterruption(Long demandeId, Long declareePar, LocalDate dateRepriseSouhaitee, String motif) {
+        return jdbcClient.sql(CongeQuery.INSERT_INTERRUPTION)
+                .param("demande_id", demandeId).param("declaree_par", declareePar)
+                .param("date_reprise_souhaitee", dateRepriseSouhaitee).param("motif", motif)
+                .query(Long.class).single();
+    }
+
+    @Override
+    public boolean interruptionDemandeeExiste(Long demandeId) {
+        return Boolean.TRUE.equals(jdbcClient.sql(CongeQuery.INTERRUPTION_DEMANDEE_EXISTE)
+                .param("demande_id", demandeId).query(Boolean.class).single());
+    }
+
+    @Override
+    public Optional<InterruptionDto> interruptionById(Long interruptionId) {
+        return jdbcClient.sql(CongeQuery.INTERRUPTION_BY_ID)
+                .param("interruption_id", interruptionId).query(INTERRUPTION_MAPPER).optional();
+    }
+
+    @Override
+    public List<InterruptionDto> interruptionsATraiter(int exercice) {
+        return jdbcClient.sql(CongeQuery.INTERRUPTIONS_A_TRAITER)
+                .param("exercice", exercice).query(INTERRUPTION_MAPPER).list();
+    }
+
+    @Override
+    public List<InterruptionDto> interruptionsDuDepartement(Long departementId, int exercice) {
+        return jdbcClient.sql(CongeQuery.INTERRUPTIONS_DU_DEPARTEMENT)
+                .param("departement_id", departementId).param("exercice", exercice)
+                .query(INTERRUPTION_MAPPER).list();
+    }
+
+    @Override
+    public int traiterInterruption(Long interruptionId, String statut, Long traiteePar, LocalDate dateRepriseRetenue, String motifRefus) {
+        return jdbcClient.sql(CongeQuery.TRAITER_INTERRUPTION)
+                .param("interruption_id", interruptionId).param("statut", statut)
+                .param("traitee_par", traiteePar).param("date_reprise_retenue", dateRepriseRetenue)
+                .param("motif_refus", motifRefus).update();
+    }
+
+    @Override
+    public Optional<ReportCongeDto> reportActifDeUser(Long userId, int exerciceCible) {
+        return jdbcClient.sql(CongeQuery.REPORT_ACTIF_DE_USER)
+                .param("user_id", userId).param("exercice", exerciceCible)
+                .query(REPORT_MAPPER).optional();
+    }
+
+    @Override
+    public List<ReportCongeDto> reportsExerciceCible(int exerciceCible) {
+        return jdbcClient.sql(CongeQuery.REPORTS_EXERCICE_CIBLE)
+                .param("exercice", exerciceCible).query(REPORT_MAPPER).list();
+    }
+
+    @Override
+    public int creerReport(Long userId, int exerciceOrigine, int exerciceCible, int jours, LocalDate dateLimite, Long creePar) {
+        return jdbcClient.sql(CongeQuery.INSERT_REPORT)
+                .param("user_id", userId).param("exercice_origine", exerciceOrigine)
+                .param("exercice_cible", exerciceCible).param("jours_reportes", jours)
+                .param("date_limite", dateLimite).param("cree_par", creePar).update();
+    }
+
+    @Override
+    public void majConsommationReport(Long userId, int exerciceCible, int delta) {
+        jdbcClient.sql(CongeQuery.MAJ_CONSOMMATION_REPORT)
+                .param("user_id", userId).param("exercice", exerciceCible).param("delta", delta).update();
+    }
+
+    @Override
+    public void majJoursSurReport(Long demandeId, int jours) {
+        jdbcClient.sql(CongeQuery.MAJ_JOURS_SUR_REPORT)
+                .param("demande_id", demandeId).param("jours", jours).update();
+    }
+
+    @Override
+    public List<Long> usersMembresActifs() {
+        return jdbcClient.sql(CongeQuery.USERS_MEMBRES_ACTIFS).query(Long.class).list();
     }
 
     @Override

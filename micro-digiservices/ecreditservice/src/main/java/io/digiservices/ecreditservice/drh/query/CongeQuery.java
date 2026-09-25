@@ -15,7 +15,8 @@ public final class CongeQuery {
                tr.first_name || ' ' || tr.last_name AS traitee_resp_nom, dc.traitee_resp_le,
                vd.first_name || ' ' || vd.last_name AS validee_drh_nom, dc.validee_drh_le,
                ip.first_name || ' ' || ip.last_name AS interrompue_par_nom, dc.interrompue_le,
-               dc.date_reprise, dc.jours_recredites, dc.motif_interruption
+               dc.date_reprise, dc.jours_recredites, dc.motif_interruption,
+               COALESCE(dc.jours_sur_report, 0) AS jours_sur_report
           FROM drh_demande_conge dc
           JOIN users u ON u.user_id = dc.user_id
           JOIN drh_departement d ON d.departement_id = dc.departement_id
@@ -144,6 +145,98 @@ public final class CongeQuery {
            AND NOT EXISTS (SELECT 1 FROM drh_alerte a
                             WHERE a.type = :type AND a.user_id = p.user_id
                               AND a.reference_id = pp.periode_id)
+        """;
+
+    // ===== V155 : interruptions déclarées =====
+
+    public static final String INTERRUPTION_SELECT = """
+        SELECT i.interruption_id, i.demande_id, i.declaree_par,
+               dp.first_name || ' ' || dp.last_name AS declaree_par_nom, i.declaree_le,
+               i.date_reprise_souhaitee, i.motif, i.statut, i.traitee_par,
+               tp.first_name || ' ' || tp.last_name AS traitee_par_nom, i.traitee_le,
+               i.date_reprise_retenue, i.motif_refus,
+               dc.user_id, u.first_name || ' ' || u.last_name AS nom_complet, m.matricule,
+               dc.departement_id, d.code AS departement_code, dc.exercice,
+               dc.date_debut, dc.date_fin, dc.nb_jours, dc.statut AS statut_demande
+          FROM drh_interruption i
+          JOIN drh_demande_conge dc ON dc.demande_id = i.demande_id
+          JOIN users u ON u.user_id = dc.user_id
+          JOIN users dp ON dp.user_id = i.declaree_par
+          LEFT JOIN users tp ON tp.user_id = i.traitee_par
+          JOIN drh_departement d ON d.departement_id = dc.departement_id
+          LEFT JOIN drh_departement_membre m ON m.user_id = dc.user_id AND m.actif
+        """;
+
+    public static final String INTERRUPTION_BY_ID = INTERRUPTION_SELECT + " WHERE i.interruption_id = :interruption_id";
+
+    public static final String INTERRUPTIONS_A_TRAITER = INTERRUPTION_SELECT + """
+         WHERE i.statut = 'DEMANDEE' AND dc.exercice = :exercice
+         ORDER BY i.declaree_le
+        """;
+
+    public static final String INTERRUPTIONS_DU_DEPARTEMENT = INTERRUPTION_SELECT + """
+         WHERE dc.departement_id = :departement_id AND dc.exercice = :exercice
+         ORDER BY i.declaree_le DESC
+        """;
+
+    public static final String INTERRUPTION_DEMANDEE_EXISTE = """
+        SELECT EXISTS (SELECT 1 FROM drh_interruption WHERE demande_id = :demande_id AND statut = 'DEMANDEE')
+        """;
+
+    public static final String INSERT_INTERRUPTION = """
+        INSERT INTO drh_interruption (demande_id, declaree_par, date_reprise_souhaitee, motif)
+        VALUES (:demande_id, :declaree_par, :date_reprise_souhaitee, :motif)
+        RETURNING interruption_id
+        """;
+
+    public static final String TRAITER_INTERRUPTION = """
+        UPDATE drh_interruption
+           SET statut = :statut, traitee_par = :traitee_par, traitee_le = CURRENT_TIMESTAMP,
+               date_reprise_retenue = :date_reprise_retenue, motif_refus = :motif_refus
+         WHERE interruption_id = :interruption_id AND statut = 'DEMANDEE'
+        """;
+
+    // ===== V155 : report d'exercice =====
+
+    public static final String REPORT_SELECT = """
+        SELECT r.report_id, r.user_id, u.first_name || ' ' || u.last_name AS nom_complet, m.matricule,
+               d.code AS departement_code,
+               r.exercice_origine, r.exercice_cible, r.jours_reportes, r.jours_consommes, r.date_limite, r.created_at
+          FROM drh_report_conge r
+          JOIN users u ON u.user_id = r.user_id
+          LEFT JOIN drh_departement_membre m ON m.user_id = r.user_id AND m.actif
+          LEFT JOIN drh_departement d ON d.departement_id = m.departement_id
+        """;
+
+    /** Report utilisable par le salarié sur l'exercice cible (date limite non dépassée). */
+    public static final String REPORT_ACTIF_DE_USER = REPORT_SELECT + """
+         WHERE r.user_id = :user_id AND r.exercice_cible = :exercice AND r.date_limite >= CURRENT_DATE
+        """;
+
+    public static final String REPORTS_EXERCICE_CIBLE = REPORT_SELECT + """
+         WHERE r.exercice_cible = :exercice
+         ORDER BY d.code NULLS LAST, nom_complet
+        """;
+
+    public static final String INSERT_REPORT = """
+        INSERT INTO drh_report_conge (user_id, exercice_origine, exercice_cible, jours_reportes, date_limite, cree_par)
+        VALUES (:user_id, :exercice_origine, :exercice_cible, :jours_reportes, :date_limite, :cree_par)
+        ON CONFLICT (user_id, exercice_origine) DO NOTHING
+        """;
+
+    public static final String MAJ_CONSOMMATION_REPORT = """
+        UPDATE drh_report_conge
+           SET jours_consommes = GREATEST(0, LEAST(jours_reportes, jours_consommes + :delta))
+         WHERE user_id = :user_id AND exercice_cible = :exercice
+        """;
+
+    public static final String MAJ_JOURS_SUR_REPORT = """
+        UPDATE drh_demande_conge SET jours_sur_report = :jours WHERE demande_id = :demande_id
+        """;
+
+    /** Salariés concernés par une clôture : membres actifs de l'organisation. */
+    public static final String USERS_MEMBRES_ACTIFS = """
+        SELECT DISTINCT m.user_id FROM drh_departement_membre m WHERE m.actif
         """;
 
     public static final String INSERT_ALERTE = """

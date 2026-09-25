@@ -103,6 +103,81 @@ public class CongeResource {
                 "Demande rejetée", OK));
     }
 
+    // ===== V155 : interruption déclarée par le responsable, traitée par la DRH =====
+
+    @PostMapping("/{demandeId}/declarer-interruption")
+    public ResponseEntity<Response> declarerInterruption(@PathVariable Long demandeId,
+                                                         @RequestBody DeclarationInterruptionRequest body,
+                                                         Authentication auth, HttpServletRequest req) {
+        return ResponseEntity.status(CREATED).body(getResponse(req,
+                Map.of("interruption", congeService.declarerInterruption(user(auth), demandeId, body)),
+                "Interruption déclarée — en attente de validation DRH", CREATED));
+    }
+
+    @GetMapping("/interruptions/departement")
+    public ResponseEntity<Response> interruptionsDepartement(@RequestParam(required = false) Integer exercice,
+                                                             Authentication auth, HttpServletRequest req) {
+        return ResponseEntity.ok(getResponse(req,
+                Map.of("interruptions", congeService.interruptionsDeMonDepartement(user(auth), exercice(exercice))),
+                "Interruptions déclarées du département", OK));
+    }
+
+    @GetMapping("/interruptions/a-traiter")
+    public ResponseEntity<Response> interruptionsATraiter(@RequestParam(required = false) Integer exercice,
+                                                          Authentication auth, HttpServletRequest req) {
+        return ResponseEntity.ok(getResponse(req,
+                Map.of("interruptions", congeService.interruptionsATraiter(user(auth), exercice(exercice))),
+                "Interruptions à traiter", OK));
+    }
+
+    @PostMapping("/interruptions/{interruptionId}/valider")
+    public ResponseEntity<Response> validerInterruption(@PathVariable Long interruptionId,
+                                                        @RequestBody(required = false) TraitementInterruptionRequest body,
+                                                        Authentication auth, HttpServletRequest req) {
+        return ResponseEntity.ok(getResponse(req,
+                Map.of("interruption", congeService.validerInterruption(user(auth), interruptionId, body)),
+                "Interruption validée — congé interrompu, jours recrédités", OK));
+    }
+
+    @PostMapping("/interruptions/{interruptionId}/refuser")
+    public ResponseEntity<Response> refuserInterruption(@PathVariable Long interruptionId,
+                                                        @RequestBody MotifRequest body,
+                                                        Authentication auth, HttpServletRequest req) {
+        return ResponseEntity.ok(getResponse(req,
+                Map.of("interruption", congeService.refuserInterruption(user(auth), interruptionId, body.getMotif())),
+                "Interruption refusée", OK));
+    }
+
+    // ===== V155 : report d'exercice =====
+
+    @GetMapping("/reports")
+    public ResponseEntity<Response> reports(@RequestParam(required = false) Integer exercice,
+                                            Authentication auth, HttpServletRequest req) {
+        return ResponseEntity.ok(getResponse(req,
+                Map.of("reports", congeService.reportsExercice(user(auth), exercice(exercice))),
+                "Reports de congés", OK));
+    }
+
+    @PostMapping("/reports/cloturer")
+    public ResponseEntity<Response> cloturer(@RequestParam Integer exercice, Authentication auth, HttpServletRequest req) {
+        return ResponseEntity.ok(getResponse(req,
+                Map.of("cloture", congeService.cloturerExercice(user(auth), exercice)),
+                "Exercice clôturé — reliquats reportés", OK));
+    }
+
+    // ===== V155 : synthèse mensuelle / trimestrielle =====
+
+    @GetMapping("/synthese")
+    public ResponseEntity<Response> synthese(@RequestParam(required = false) Integer exercice,
+                                             @RequestParam(defaultValue = "M") String periode,
+                                             @RequestParam Integer valeur,
+                                             @RequestParam(required = false) Long departementId,
+                                             Authentication auth, HttpServletRequest req) {
+        return ResponseEntity.ok(getResponse(req,
+                Map.of("synthese", congeService.syntheseConges(user(auth), exercice(exercice), periode, valeur, departementId)),
+                "Synthèse des congés", OK));
+    }
+
     @PostMapping("/{demandeId}/interrompre")
     public ResponseEntity<Response> interrompre(@PathVariable Long demandeId,
                                                 @Valid @RequestBody InterruptionRequest body,

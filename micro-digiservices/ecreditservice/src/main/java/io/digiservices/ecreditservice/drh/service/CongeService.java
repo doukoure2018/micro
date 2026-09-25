@@ -25,6 +25,22 @@ public interface CongeService {
 
     /** V154 : validation / acceptation groupées (un résultat par demande). */
     List<DrhDtos.ResultatLotDto> validerLot(User drh, List<Long> ids);
+
+    // ===== V155 : interruption déclarée =====
+    InterruptionDto declarerInterruption(User responsable, Long demandeId, DeclarationInterruptionRequest request);
+    List<InterruptionDto> interruptionsDeMonDepartement(User responsable, int exercice);
+    List<InterruptionDto> interruptionsATraiter(User drh, int exercice);
+    InterruptionDto validerInterruption(User drh, Long interruptionId, TraitementInterruptionRequest request);
+    InterruptionDto refuserInterruption(User drh, Long interruptionId, String motif);
+
+    // ===== V155 : report d'exercice =====
+    List<ReportCongeDto> reportsExercice(User drh, int exerciceCible);
+    ClotureExerciceDto cloturerExercice(User drh, int exercice);
+    /** Clôture automatique (tâche du 1er janvier) — sans acteur. */
+    ClotureExerciceDto cloturerExerciceSysteme(int exercice);
+
+    // ===== V155 : synthèse =====
+    SyntheseCongesDto syntheseConges(User drh, int exercice, String periode, int valeur, Long departementId);
     List<DrhDtos.ResultatLotDto> accepterLot(User responsable, List<Long> ids);
 
     /** V153 : tous les congés accordés (validés / interrompus) — DRH. */

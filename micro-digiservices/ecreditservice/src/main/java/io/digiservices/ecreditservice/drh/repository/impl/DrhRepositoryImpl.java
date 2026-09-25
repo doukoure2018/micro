@@ -376,6 +376,16 @@ public class DrhRepositoryImpl implements DrhRepository {
     }
 
     @Override
+    public String parametreTexte(String cle, String defaut) {
+        try {
+            return jdbcClient.sql(DrhQuery.PARAMETRE).param("cle", cle).query(String.class).optional()
+                    .filter(v -> v != null && !v.isBlank()).orElse(defaut);
+        } catch (Exception e) {
+            return defaut;
+        }
+    }
+
+    @Override
     public List<String> telephonesResponsables(Long departementId) {
         return jdbcClient.sql(DrhQuery.TELEPHONES_RESPONSABLES)
                 .param("departement_id", departementId)

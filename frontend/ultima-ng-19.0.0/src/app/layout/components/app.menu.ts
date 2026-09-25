@@ -460,7 +460,9 @@ export class AppMenu {
             if (a('VALIDATION_CONGES')) {
                 rubriques.push(
                     { label: 'Validation des congés', icon: 'pi pi-fw pi-verified', routerLink: ['/dashboards/drh/validation-conges'] },
-                    { label: 'Congés et permissions validés', icon: 'pi pi-fw pi-calendar-times', routerLink: ['/dashboards/drh/conges-valides'] }
+                    { label: 'Congés et permissions validés', icon: 'pi pi-fw pi-calendar-times', routerLink: ['/dashboards/drh/conges-valides'] },
+                    { label: 'Synthèse des congés', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/dashboards/drh/synthese-conges'] },
+                    { label: 'Reports de congés', icon: 'pi pi-fw pi-forward', routerLink: ['/dashboards/drh/reports-conges'] }
                 );
             }
             if (a('ORGANISATION')) rubriques.push({ label: 'Organisation (départements)', icon: 'pi pi-fw pi-sitemap', routerLink: ['/dashboards/drh/organisation'] });
