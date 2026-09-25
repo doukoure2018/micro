@@ -35,6 +35,15 @@ public final class PermissionQuery {
              ORDER BY ps.statut, ps.date_debut
             """;
 
+    /** V154 : permissions des responsables de département (étape « responsable » traitée par le DGA). */
+    public static final String PERMISSIONS_DES_RESPONSABLES =
+            PERMISSION_SELECT + """
+             WHERE ps.exercice = :exercice
+               AND EXISTS (SELECT 1 FROM drh_departement_membre r
+                            WHERE r.user_id = ps.user_id AND r.actif AND r.est_responsable)
+             ORDER BY ps.statut, ps.date_debut
+            """;
+
     public static final String PERMISSIONS_A_VALIDER_DRH =
             PERMISSION_SELECT + """
              WHERE ps.statut = 'ACCEPTEE_RESP' AND ps.exercice = :exercice

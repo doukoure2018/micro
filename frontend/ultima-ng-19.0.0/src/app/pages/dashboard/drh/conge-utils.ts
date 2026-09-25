@@ -1,4 +1,4 @@
-import { DemandeConge, PermissionSociale } from '@/service/drh.service';
+import { DemandeConge, PermissionSociale, ResultatLot } from '@/service/drh.service';
 
 export interface CongeStatutTag {
     label: string;
@@ -179,4 +179,11 @@ export function imprimerListe(titre: string, sousTitre: string, colonnes: string
 <script>window.onload = function(){ window.print(); }<\/script>
 </body></html>`);
     w.document.close();
+}
+
+/** V154 : synthèse d'un traitement groupé pour le toast et le dialogue de résultats. */
+export function resumeLot(resultats: ResultatLot[]): { ok: number; ko: number; detail: string } {
+    const ok = resultats.filter((r) => r.succes).length;
+    const ko = resultats.length - ok;
+    return { ok, ko, detail: ko === 0 ? `${ok} demande(s) traitée(s)` : `${ok} traitée(s), ${ko} refusée(s) — voir le détail` };
 }

@@ -2,6 +2,7 @@ package io.digiservices.ecreditservice.drh.resource;
 
 import io.digiservices.clients.UserClient;
 import io.digiservices.clients.domain.User;
+import io.digiservices.ecreditservice.drh.dto.DrhDtos.LotRequest;
 import io.digiservices.ecreditservice.domain.Response;
 import io.digiservices.ecreditservice.drh.dto.DrhDtos.MotifRequest;
 import io.digiservices.ecreditservice.drh.dto.PermissionDtos.*;
@@ -82,6 +83,13 @@ public class PermissionResource {
                 "Permissions du département", OK));
     }
 
+    @PostMapping("/accepter-lot")
+    public ResponseEntity<Response> accepterLot(@RequestBody LotRequest body, Authentication auth, HttpServletRequest req) {
+        return ResponseEntity.ok(getResponse(req,
+                Map.of("resultats", permissionService.accepterLot(user(auth), body.getIds())),
+                "Acceptation groupée traitée", OK));
+    }
+
     @PostMapping("/{permissionId}/accepter")
     public ResponseEntity<Response> accepter(@PathVariable Long permissionId,
                                              Authentication auth, HttpServletRequest req) {
@@ -116,6 +124,13 @@ public class PermissionResource {
         return ResponseEntity.ok(getResponse(req,
                 Map.of("permissions", permissionService.permissionsValidees(user(auth), exercice(exercice), departementId, mois)),
                 "Permissions accordées", OK));
+    }
+
+    @PostMapping("/valider-lot")
+    public ResponseEntity<Response> validerLot(@RequestBody LotRequest body, Authentication auth, HttpServletRequest req) {
+        return ResponseEntity.ok(getResponse(req,
+                Map.of("resultats", permissionService.validerLot(user(auth), body.getIds())),
+                "Validation groupée traitée", OK));
     }
 
     @PostMapping("/{permissionId}/valider")

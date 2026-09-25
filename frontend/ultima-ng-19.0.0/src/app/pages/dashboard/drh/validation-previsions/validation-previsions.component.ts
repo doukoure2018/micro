@@ -11,8 +11,9 @@ import { ToastModule } from 'primeng/toast';
 import { TextareaModule } from 'primeng/textarea';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
+import { resumeLot } from '../conge-utils';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { DrhService, PrevisionConge, PeriodePrevision, DepartementDrh } from '@/service/drh.service';
+import { DrhService, PrevisionConge, PeriodePrevision, DepartementDrh, ResultatLot } from '@/service/drh.service';
 import { STATUT_PREVISION_LABELS, StatutTag } from '../ma-prevision/ma-prevision.component';
 
 const MOIS_COURTS = ['Janv', 'Févr', 'Mars', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'];
@@ -52,14 +53,21 @@ interface SegmentMois {
             </div>
 
             <!-- ===== Vue validation ===== -->
-            <p-table *ngIf="vue === 'validation'" [value]="previsions()" responsiveLayout="scroll" [rowHover]="true">
+            <div *ngIf="vue === 'validation'" class="flex justify-end mb-2">
+                <button pButton icon="pi pi-check-square" class="p-button-sm" severity="success"
+                        [label]="'Valider la sélection (' + selection.length + ')'" [disabled]="selection.length === 0 || lotEnCours()"
+                        [loading]="lotEnCours()" (click)="validerSelection()"></button>
+            </div>
+            <p-table *ngIf="vue === 'validation'" [value]="previsions()" responsiveLayout="scroll" [rowHover]="true"
+                     [(selection)]="selection" dataKey="previsionId">
                 <ng-template pTemplate="header">
                     <tr>
-                        <th>Salarié</th><th>Département</th><th>Périodes</th><th>Total</th><th>Responsable</th><th>Statut</th><th>Actions</th>
+                        <th style="width:3rem"><p-tableHeaderCheckbox /></th><th>Salarié</th><th>Département</th><th>Périodes</th><th>Total</th><th>Responsable</th><th>Statut</th><th>Actions</th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-p>
                     <tr>
+                        <td><p-tableCheckbox [value]="p" /></td>
                         <td>{{ p.nomComplet }}<div class="text-xs text-color-secondary" *ngIf="p.matricule">Mat. {{ p.matricule }}</div></td>
                         <td>{{ p.departementCode }}</td>
                         <td>
@@ -81,7 +89,7 @@ interface SegmentMois {
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
-                    <tr><td colspan="7" class="text-center text-color-secondary">Aucune prévision en attente pour {{ exercice }}</td></tr>
+                    <tr><td colspan="8" class="text-center text-color-secondary">Aucune prévision en attente pour {{ exercice }}</td></tr>
                 </ng-template>
             </p-table>
 
@@ -160,6 +168,20 @@ interface SegmentMois {
             </div>
         </div>
 
+        <!-- V154 : résultats d'un traitement groupé -->
+        <p-dialog header="Résultat du traitement groupé" [(visible)]="lotVisible" [modal]="true" [style]="{ width: '640px' }">
+            <p class="mb-2">{{ resumeLotTexte() }}</p>
+            <p-table [value]="resultatsLot()" responsiveLayout="scroll">
+                <ng-template pTemplate="header"><tr><th style="width:6rem">Résultat</th><th>Détail</th></tr></ng-template>
+                <ng-template pTemplate="body" let-r>
+                    <tr><td><p-tag [value]="r.succes ? 'OK' : 'Refusé'" [severity]="r.succes ? 'success' : 'danger'" /></td><td>{{ r.message }}</td></tr>
+                </ng-template>
+            </p-table>
+            <ng-template pTemplate="footer">
+                <button pButton label="Fermer" class="p-button-text" (click)="lotVisible = false"></button>
+            </ng-template>
+        </p-dialog>
+
         <p-dialog header="Renvoyer la prévision" [(visible)]="renvoiVisible" [modal]="true" [style]="{ width: '480px' }">
             <p class="mb-2">Motif du renvoi (transmis au salarié et à son responsable) :</p>
             <textarea pTextarea [(ngModel)]="motif" rows="3" class="w-full"></textarea>
@@ -217,6 +239,43 @@ export class ValidationPrevisionsComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
 
     previsions = signal<PrevisionConge[]>([]);
+    selection: PrevisionConge[] = [];
+    // ===== V154 : traitement groupé =====
+    resultatsLot = signal<ResultatLot[]>([]);
+    lotVisible = false;
+    lotEnCours = signal(false);
+
+    resumeLotTexte(): string {
+        return resumeLot(this.resultatsLot()).detail;
+    }
+
+    private terminerLot(r: any): void {
+        const resultats: ResultatLot[] = (r.data as any)?.resultats || [];
+        this.resultatsLot.set(resultats);
+        this.lotEnCours.set(false);
+        const res = resumeLot(resultats);
+        this.messageService.add({ severity: res.ko ? 'warn' : 'success', summary: 'Traitement groupé', detail: res.detail });
+        this.lotVisible = res.ko > 0;
+        this.viderSelection();
+        this.recharger();
+    }
+
+    private viderSelection(): void {
+        this.selection = [];
+    }
+
+    private recharger(): void {
+        this.chargerVue();
+    }
+
+    validerSelection(): void {
+        this.lotEnCours.set(true);
+        this.drhService.validerPrevisionsLot$(this.selection.map((p) => p.previsionId)).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: (r) => this.terminerLot(r),
+            error: (e) => { this.lotEnCours.set(false); this.messageService.add({ severity: 'error', summary: 'Erreur', detail: e.error?.data?.error || e.error?.message || 'Opération impossible' }); }
+        });
+    }
+
     toutes = signal<PrevisionConge[]>([]);
     optionsDepartements = signal<DepartementDrh[]>([]);
 

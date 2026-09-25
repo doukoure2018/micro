@@ -57,7 +57,7 @@ public class PresenceServiceImpl implements PresenceService {
     @Override
     @Transactional
     public ImportResultDto importerFichier(User drh, MultipartFile fichier) {
-        exigerDrh(drh);
+        exigerDrhEcriture(drh);
         if (fichier == null || fichier.isEmpty()) {
             throw new ValidationException("Choisissez un fichier CSV de la badgeuse");
         }
@@ -368,7 +368,7 @@ public class PresenceServiceImpl implements PresenceService {
     @Override
     @Transactional
     public DeclarationDto declarer(User drh, DeclarationRequest request) {
-        exigerDrh(drh);
+        exigerDrhEcriture(drh);
         if (request == null || request.getMatricule() == null || request.getMatricule().isBlank()) {
             throw new ValidationException("Le matricule est obligatoire");
         }
@@ -412,7 +412,7 @@ public class PresenceServiceImpl implements PresenceService {
     @Override
     @Transactional
     public void supprimerDeclaration(User drh, long declarationId) {
-        exigerDrh(drh);
+        exigerDrhEcriture(drh);
         DeclarationDto d = presenceRepository.declarationParId(declarationId);
         if (d == null || !d.isActif()) {
             throw new ValidationException("Déclaration introuvable ou déjà retirée");
@@ -436,7 +436,7 @@ public class PresenceServiceImpl implements PresenceService {
     @Override
     @Transactional
     public int recalculer(User drh, LocalDate du, LocalDate au) {
-        exigerDrh(drh);
+        exigerDrhEcriture(drh);
         return recalculerInterne(du, au);
     }
 
@@ -451,8 +451,16 @@ public class PresenceServiceImpl implements PresenceService {
         return rapprocherJours(jours);
     }
 
+    /** V154 : lecture — profil DRH, délégué PRESENCES ou DGA. */
     private void exigerDrh(User user) {
-        if (!drhService.estHabiliteDrh(user)) {
+        if (!drhService.aHabilitationLecture(user, DrhServiceImpl.F_PRESENCES)) {
+            throw new ValidationException("Action réservée à la DRH");
+        }
+    }
+
+    /** V154 : écriture (import, corrections, déclarations) — profil DRH ou délégué PRESENCES, pas le DGA. */
+    private void exigerDrhEcriture(User user) {
+        if (!drhService.aHabilitation(user, DrhServiceImpl.F_PRESENCES)) {
             throw new ValidationException("Action réservée à la DRH");
         }
     }

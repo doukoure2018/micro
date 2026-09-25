@@ -145,6 +145,13 @@ public class CongeRepositoryImpl implements CongeRepository {
     }
 
     @Override
+    public List<DemandeCongeDto> demandesDesResponsables(int exercice) {
+        return jdbcClient.sql(CongeQuery.DEMANDES_DES_RESPONSABLES)
+                .param("exercice", exercice)
+                .query(DEMANDE_MAPPER).list();
+    }
+
+    @Override
     public List<DemandeCongeDto> demandesValideesDrh(int exercice, Long departementId, Integer mois) {
         return jdbcClient.sql(CongeQuery.DEMANDES_VALIDEES_DRH)
                 .param("exercice", exercice)

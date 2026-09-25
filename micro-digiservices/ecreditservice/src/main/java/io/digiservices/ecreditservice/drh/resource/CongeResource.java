@@ -2,6 +2,7 @@ package io.digiservices.ecreditservice.drh.resource;
 
 import io.digiservices.clients.UserClient;
 import io.digiservices.clients.domain.User;
+import io.digiservices.ecreditservice.drh.dto.DrhDtos.LotRequest;
 import io.digiservices.ecreditservice.domain.Response;
 import io.digiservices.ecreditservice.drh.dto.CongeDtos.*;
 import io.digiservices.ecreditservice.drh.dto.DrhDtos.MotifRequest;
@@ -77,6 +78,14 @@ public class CongeResource {
                 "Demandes de congé du département", OK));
     }
 
+    /** V154 : acceptation groupée par le responsable (ou le DGA pour les responsables). */
+    @PostMapping("/accepter-lot")
+    public ResponseEntity<Response> accepterLot(@RequestBody LotRequest body, Authentication auth, HttpServletRequest req) {
+        return ResponseEntity.ok(getResponse(req,
+                Map.of("resultats", congeService.accepterLot(user(auth), body.getIds())),
+                "Acceptation groupée traitée", OK));
+    }
+
     @PostMapping("/{demandeId}/accepter")
     public ResponseEntity<Response> accepter(@PathVariable Long demandeId,
                                              Authentication auth, HttpServletRequest req) {
@@ -131,6 +140,14 @@ public class CongeResource {
         return ResponseEntity.ok(getResponse(req,
                 Map.of("demandes", congeService.demandesValidees(user(auth), exercice(exercice), departementId, mois)),
                 "Congés accordés", OK));
+    }
+
+    /** V154 : validation groupée DRH (délégués VALIDATION_CONGES et DGA inclus). */
+    @PostMapping("/valider-lot")
+    public ResponseEntity<Response> validerLot(@RequestBody LotRequest body, Authentication auth, HttpServletRequest req) {
+        return ResponseEntity.ok(getResponse(req,
+                Map.of("resultats", congeService.validerLot(user(auth), body.getIds())),
+                "Validation groupée traitée", OK));
     }
 
     @PostMapping("/{demandeId}/valider")

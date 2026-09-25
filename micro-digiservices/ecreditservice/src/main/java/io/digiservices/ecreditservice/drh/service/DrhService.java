@@ -11,6 +11,19 @@ public interface DrhService {
     // Organisation
     ContexteDrhDto contexteDe(User user);
     boolean estHabiliteDrh(User user);
+
+    // ===== V154 : habilitations par fonction (profil DRH, délégués, DGA) =====
+    /** Fonctions : VALIDATION_CONGES, VALIDATION_PREVISIONS, PRESENCES, MOUVEMENTS, ORGANISATION, PERSONNEL, AVANCES, VALIDATION_FINALE. */
+    boolean aHabilitation(User user, String fonction);
+    /** Lecture seule : comme aHabilitation, plus le DGA sur PRESENCES et MOUVEMENTS. */
+    boolean aHabilitationLecture(User user, String fonction);
+    boolean estDga(User user);
+    List<DelegationDto> listeDelegations(User admin, boolean activesSeulement);
+    DelegationDto creerDelegation(User admin, DelegationRequest request);
+    void revoquerDelegation(User admin, Long delegationId);
+    List<CandidatDelegationDto> candidatsDelegation(User admin, String fonction);
+    List<ResultatLotDto> validerPrevisionsLot(User drh, List<Long> ids);
+    List<ResultatLotDto> accepterPrevisionsLot(User responsable, List<Long> ids);
     List<DepartementDto> listeDepartements();
     Long creerDepartement(DepartementRequest request);
     void modifierDepartement(Long departementId, DepartementRequest request);

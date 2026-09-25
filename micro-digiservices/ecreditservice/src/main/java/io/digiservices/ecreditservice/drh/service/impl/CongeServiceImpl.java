@@ -1,6 +1,8 @@
 package io.digiservices.ecreditservice.drh.service.impl;
 
 import io.digiservices.clients.domain.User;
+import io.digiservices.ecreditservice.drh.service.impl.DrhServiceImpl;
+import io.digiservices.ecreditservice.drh.dto.DrhDtos;
 import io.digiservices.ecreditservice.drh.dto.CongeDtos.*;
 import io.digiservices.ecreditservice.drh.dto.DrhDtos.MembreDto;
 import io.digiservices.ecreditservice.drh.dto.DrhDtos.PeriodeDto;
@@ -142,6 +144,9 @@ public class CongeServiceImpl implements CongeService {
 
     @Override
     public List<DemandeCongeDto> demandesDeMonDepartement(User responsable, int exercice) {
+        if (drhService.estDga(responsable) && !drhRepository.estResponsableActif(responsable.getUserId())) {
+            return congeRepository.demandesDesResponsables(exercice); // V154 : file du DGA
+        }
         MembreDto membre = exigerResponsable(responsable);
         return congeRepository.demandesDuDepartement(membre.getDepartementId(), exercice);
     }
@@ -264,9 +269,21 @@ public class CongeServiceImpl implements CongeService {
     // ==================== Garde-fous ====================
 
     private void exigerDrh(User user) {
-        if (!drhService.estHabiliteDrh(user)) {
+        if (!drhService.aHabilitation(user, DrhServiceImpl.F_VALIDATION_CONGES)) {
             throw new ValidationException("Action réservée à la DRH");
         }
+    }
+
+    // ===== V154 : lots =====
+
+    @Override
+    public List<DrhDtos.ResultatLotDto> validerLot(User drh, List<Long> ids) {
+        return DrhServiceImpl.traiterLot(ids, id -> validerDrh(drh, id).getNomComplet() + " : congé validé");
+    }
+
+    @Override
+    public List<DrhDtos.ResultatLotDto> accepterLot(User responsable, List<Long> ids) {
+        return DrhServiceImpl.traiterLot(ids, id -> accepter(responsable, id).getNomComplet() + " : demande acceptée");
     }
 
     private static void exigerMotif(String motif) {
@@ -288,6 +305,9 @@ public class CongeServiceImpl implements CongeService {
         DemandeCongeDto d = exigerStatut(demandeId, statuts);
         if (drhService.estHabiliteDrh(acteur)) {
             return d;
+        }
+        if (drhService.estDga(acteur) && drhRepository.estResponsableActif(d.getUserId())) {
+            return d; // V154 : le DGA traite l'étape responsable des demandes des responsables
         }
         MembreDto membre = exigerResponsable(acteur);
         if (!membre.getDepartementId().equals(d.getDepartementId())) {

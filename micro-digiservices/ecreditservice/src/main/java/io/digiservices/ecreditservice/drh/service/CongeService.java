@@ -1,6 +1,7 @@
 package io.digiservices.ecreditservice.drh.service;
 
 import io.digiservices.clients.domain.User;
+import io.digiservices.ecreditservice.drh.dto.DrhDtos;
 import io.digiservices.ecreditservice.drh.dto.CongeDtos.*;
 
 import java.util.List;
@@ -21,6 +22,10 @@ public interface CongeService {
 
     // DRH
     List<DemandeCongeDto> demandesAValider(User drh, int exercice);
+
+    /** V154 : validation / acceptation groupées (un résultat par demande). */
+    List<DrhDtos.ResultatLotDto> validerLot(User drh, List<Long> ids);
+    List<DrhDtos.ResultatLotDto> accepterLot(User responsable, List<Long> ids);
 
     /** V153 : tous les congés accordés (validés / interrompus) — DRH. */
     List<DemandeCongeDto> demandesValidees(User drh, int exercice, Long departementId, Integer mois);

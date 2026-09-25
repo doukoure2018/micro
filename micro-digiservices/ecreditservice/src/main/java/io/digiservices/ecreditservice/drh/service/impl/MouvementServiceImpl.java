@@ -85,7 +85,7 @@ public class MouvementServiceImpl implements MouvementService {
     @Override
     @Transactional
     public ImportMouvementsResultDto importerFichier(User drh, MultipartFile fichier) {
-        exigerDrh(drh);
+        exigerDrhEcriture(drh);
         if (fichier == null || fichier.isEmpty()) {
             throw new ValidationException("Choisissez un fichier CSV du journal de la porte (access-log)");
         }
@@ -335,7 +335,7 @@ public class MouvementServiceImpl implements MouvementService {
      * de département actif voit les matricules de son département ; sinon refus.
      */
     private Set<String> perimetreMatricules(User user) {
-        if (drhService.estHabiliteDrh(user)) return null;
+        if (drhService.aHabilitationLecture(user, DrhServiceImpl.F_MOUVEMENTS)) return null; // V154 : DRH, délégué, DGA
         var membre = drhRepository.membreActifDeUser(user.getUserId())
                 .filter(m -> Boolean.TRUE.equals(m.getEstResponsable()))
                 .orElseThrow(() -> new ValidationException(
@@ -940,7 +940,7 @@ public class MouvementServiceImpl implements MouvementService {
     @Override
     @Transactional
     public Map<String, Object> creerPersonneEtAssocier(User drh, String badgeNo, String nom, String prenom) {
-        exigerDrh(drh);
+        exigerDrhEcriture(drh);
         if (badgeNo == null || badgeNo.isBlank()) {
             throw new ValidationException("Numéro de badge manquant");
         }
@@ -972,7 +972,7 @@ public class MouvementServiceImpl implements MouvementService {
     @Override
     @Transactional
     public int associerBadge(User drh, String badgeNo, String matricule) {
-        exigerDrh(drh);
+        exigerDrhEcriture(drh);
         if (badgeNo == null || badgeNo.isBlank()) {
             throw new ValidationException("Numéro de badge manquant");
         }
@@ -985,8 +985,16 @@ public class MouvementServiceImpl implements MouvementService {
         return reidentifies;
     }
 
+    /** V154 : lecture — profil DRH, délégué MOUVEMENTS ou DGA. */
     private void exigerDrh(User user) {
-        if (!drhService.estHabiliteDrh(user)) {
+        if (!drhService.aHabilitationLecture(user, DrhServiceImpl.F_MOUVEMENTS)) {
+            throw new ValidationException("Action réservée à la DRH");
+        }
+    }
+
+    /** V154 : écriture (import, badges) — profil DRH ou délégué MOUVEMENTS, pas le DGA. */
+    private void exigerDrhEcriture(User user) {
+        if (!drhService.aHabilitation(user, DrhServiceImpl.F_MOUVEMENTS)) {
             throw new ValidationException("Action réservée à la DRH");
         }
     }

@@ -13,7 +13,8 @@ import { ToastModule } from 'primeng/toast';
 import { TextareaModule } from 'primeng/textarea';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { DrhService, PrevisionConge, PeriodePrevision, ContexteDrh } from '@/service/drh.service';
+import { DrhService, PrevisionConge, PeriodePrevision, ContexteDrh, ResultatLot } from '@/service/drh.service';
+import { resumeLot } from '../conge-utils';
 import { STATUT_PREVISION_LABELS, StatutTag } from '../ma-prevision/ma-prevision.component';
 
 /**
@@ -30,27 +31,32 @@ import { STATUT_PREVISION_LABELS, StatutTag } from '../ma-prevision/ma-prevision
         <div class="card">
             <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
                 <div>
-                    <h4 class="m-0">Prévisions de congés — {{ contexte()?.departementLibelle }}</h4>
+                    <h4 class="m-0">Prévisions de congés — {{ contexte()?.departementLibelle || (contexte()?.estDga ? 'demandes des responsables (DGA)' : '') }}</h4>
                     <span class="text-sm text-color-secondary">Acceptez, rejetez (avec motif) ou réajustez les dates après entretien.</span>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <p-selectButton [options]="vuesOptions" [(ngModel)]="vueActive" optionLabel="label" optionValue="value" />
                     <label class="font-medium ml-2">Exercice</label>
                     <p-dropdown [options]="exercices" [(ngModel)]="exercice" (onChange)="charger()" />
+                    <button *ngIf="vueActive === 'demandes'" pButton icon="pi pi-check-square" class="p-button-sm ml-2" severity="success"
+                            [label]="'Accepter la sélection (' + selection.length + ')'" [disabled]="selection.length === 0 || lotEnCours()"
+                            [loading]="lotEnCours()" (click)="accepterSelection()"></button>
                 </div>
             </div>
 
             <app-apercu-previsions *ngIf="vueActive !== 'demandes'" [previsions]="previsions()"
                                    [exercice]="exercice" [vue]="vueActive === 'annuel' ? 'annuel' : 'calendrier'" />
 
-            <p-table *ngIf="vueActive === 'demandes'" [value]="previsions()" responsiveLayout="scroll" [rowHover]="true">
+            <p-table *ngIf="vueActive === 'demandes'" [value]="previsions()" responsiveLayout="scroll" [rowHover]="true"
+                     [(selection)]="selection" dataKey="previsionId" [rowSelectable]="selectionnable">
                 <ng-template pTemplate="header">
                     <tr>
-                        <th>Salarié</th><th>Fonction</th><th>Périodes</th><th>Total</th><th>Statut</th><th>Actions</th>
+                        <th style="width:3rem"><p-tableHeaderCheckbox /></th><th>Salarié</th><th>Fonction</th><th>Périodes</th><th>Total</th><th>Statut</th><th>Actions</th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-p>
                     <tr>
+                        <td><p-tableCheckbox [value]="p" [disabled]="p.statut !== 'SOUMISE'" /></td>
                         <td>{{ p.nomComplet }}<div class="text-xs text-color-secondary" *ngIf="p.matricule">Mat. {{ p.matricule }}</div></td>
                         <td>{{ p.fonction || '-' }}</td>
                         <td>
@@ -73,10 +79,24 @@ import { STATUT_PREVISION_LABELS, StatutTag } from '../ma-prevision/ma-prevision
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
-                    <tr><td colspan="6" class="text-center text-color-secondary">Aucune prévision pour {{ exercice }}</td></tr>
+                    <tr><td colspan="7" class="text-center text-color-secondary">Aucune prévision pour {{ exercice }}</td></tr>
                 </ng-template>
             </p-table>
         </div>
+
+        <!-- V154 : résultats d'un traitement groupé -->
+        <p-dialog header="Résultat du traitement groupé" [(visible)]="lotVisible" [modal]="true" [style]="{ width: '640px' }">
+            <p class="mb-2">{{ resumeLotTexte() }}</p>
+            <p-table [value]="resultatsLot()" responsiveLayout="scroll">
+                <ng-template pTemplate="header"><tr><th style="width:6rem">Résultat</th><th>Détail</th></tr></ng-template>
+                <ng-template pTemplate="body" let-r>
+                    <tr><td><p-tag [value]="r.succes ? 'OK' : 'Refusé'" [severity]="r.succes ? 'success' : 'danger'" /></td><td>{{ r.message }}</td></tr>
+                </ng-template>
+            </p-table>
+            <ng-template pTemplate="footer">
+                <button pButton label="Fermer" class="p-button-text" (click)="lotVisible = false"></button>
+            </ng-template>
+        </p-dialog>
 
         <p-dialog header="Rejeter la prévision" [(visible)]="rejetVisible" [modal]="true" [style]="{ width: '480px' }">
             <p class="mb-2">Motif du rejet (transmis au salarié pour réadaptation des dates) :</p>
@@ -120,6 +140,45 @@ export class DepartementPrevisionsComponent implements OnInit {
 
     contexte = signal<ContexteDrh | null>(null);
     previsions = signal<PrevisionConge[]>([]);
+    selection: PrevisionConge[] = [];
+    selectionnable = (event: { data: { statut: string } }) => event.data?.statut === 'SOUMISE';
+
+    // ===== V154 : traitement groupé =====
+    resultatsLot = signal<ResultatLot[]>([]);
+    lotVisible = false;
+    lotEnCours = signal(false);
+
+    resumeLotTexte(): string {
+        return resumeLot(this.resultatsLot()).detail;
+    }
+
+    private terminerLot(r: any): void {
+        const resultats: ResultatLot[] = (r.data as any)?.resultats || [];
+        this.resultatsLot.set(resultats);
+        this.lotEnCours.set(false);
+        const res = resumeLot(resultats);
+        this.messageService.add({ severity: res.ko ? 'warn' : 'success', summary: 'Traitement groupé', detail: res.detail });
+        this.lotVisible = res.ko > 0;
+        this.viderSelection();
+        this.recharger();
+    }
+
+    private viderSelection(): void {
+        this.selection = [];
+    }
+
+    private recharger(): void {
+        this.charger();
+    }
+
+    accepterSelection(): void {
+        this.lotEnCours.set(true);
+        this.drhService.accepterPrevisionsLot$(this.selection.map((p) => p.previsionId)).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: (r) => this.terminerLot(r),
+            error: (e) => this.erreur(e)
+        });
+    }
+
     exercice = new Date().getFullYear();
     exercices = [new Date().getFullYear(), new Date().getFullYear() + 1];
 

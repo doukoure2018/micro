@@ -164,6 +164,13 @@ public class DrhResource {
                 "Prévisions du département", OK));
     }
 
+    @PostMapping("/previsions/accepter-lot")
+    public ResponseEntity<Response> accepterPrevisionsLot(@RequestBody LotRequest body, Authentication auth, HttpServletRequest req) {
+        return ResponseEntity.ok(getResponse(req,
+                Map.of("resultats", drhService.accepterPrevisionsLot(user(auth), body.getIds())),
+                "Acceptation groupée traitée", OK));
+    }
+
     @PostMapping("/previsions/{previsionId}/accepter")
     public ResponseEntity<Response> accepter(@PathVariable Long previsionId,
                                              Authentication auth, HttpServletRequest req) {
@@ -207,6 +214,43 @@ public class DrhResource {
         return ResponseEntity.ok(getResponse(req,
                 Map.of("previsions", drhService.previsionsToutes(user(auth), exercice(exercice), departementId)),
                 "Calendrier des prévisions du personnel", OK));
+    }
+
+    @PostMapping("/previsions/valider-lot")
+    public ResponseEntity<Response> validerPrevisionsLot(@RequestBody LotRequest body, Authentication auth, HttpServletRequest req) {
+        return ResponseEntity.ok(getResponse(req,
+                Map.of("resultats", drhService.validerPrevisionsLot(user(auth), body.getIds())),
+                "Validation groupée traitée", OK));
+    }
+
+    // ==================== V154 : délégations de fonctions DRH ====================
+
+    @GetMapping("/delegations")
+    public ResponseEntity<Response> delegations(@RequestParam(required = false, defaultValue = "false") boolean historique,
+                                                Authentication auth, HttpServletRequest req) {
+        return ResponseEntity.ok(getResponse(req,
+                Map.of("delegations", drhService.listeDelegations(user(auth), !historique)),
+                "Délégations", OK));
+    }
+
+    @GetMapping("/delegations/candidats")
+    public ResponseEntity<Response> candidatsDelegation(@RequestParam String fonction, Authentication auth, HttpServletRequest req) {
+        return ResponseEntity.ok(getResponse(req,
+                Map.of("candidats", drhService.candidatsDelegation(user(auth), fonction)),
+                "Candidats", OK));
+    }
+
+    @PostMapping("/delegations")
+    public ResponseEntity<Response> creerDelegation(@RequestBody DelegationRequest body, Authentication auth, HttpServletRequest req) {
+        return ResponseEntity.status(CREATED).body(getResponse(req,
+                Map.of("delegation", drhService.creerDelegation(user(auth), body)),
+                "Délégation attribuée — le salarié est notifié", CREATED));
+    }
+
+    @DeleteMapping("/delegations/{delegationId}")
+    public ResponseEntity<Response> revoquerDelegation(@PathVariable Long delegationId, Authentication auth, HttpServletRequest req) {
+        drhService.revoquerDelegation(user(auth), delegationId);
+        return ResponseEntity.ok(getResponse(req, Map.of("delegationId", delegationId), "Délégation révoquée", OK));
     }
 
     @PostMapping("/previsions/{previsionId}/valider")

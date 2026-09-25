@@ -36,10 +36,62 @@ export interface ContexteDrh {
     estMembre: boolean;
     estResponsable: boolean;
     estDrh: boolean;
+    /** V154 : fonctions déléguées actives ; VALIDATION_FINALE = DGA. */
+    fonctions?: string[];
+    estDga?: boolean;
+    estDelegue?: boolean;
     departementId?: number;
     departementCode?: string;
     departementLibelle?: string;
     droitAnnuelJours: number;
+}
+
+/** V154 : délégation d'une fonction DRH. */
+export interface DelegationDrh {
+    delegationId: number;
+    delegueUserId: number;
+    delegueNom: string;
+    delegueUsername?: string;
+    departementCode?: string;
+    fonction: string;
+    attribueeParNom?: string;
+    dateDebut: string;
+    dateFin?: string;
+    actif: boolean;
+    commentaire?: string;
+    revoqueeLe?: string;
+    revoqueeParNom?: string;
+}
+
+export interface CandidatDelegation {
+    userId: number;
+    nomComplet: string;
+    username?: string;
+    service?: string;
+    departementCode?: string;
+    estResponsable?: boolean;
+}
+
+/** V154 : résultat unitaire d'un traitement en lot. */
+export interface ResultatLot {
+    id: number;
+    succes: boolean;
+    message: string;
+}
+
+export const FONCTIONS_DRH: { value: string; label: string; description: string }[] = [
+    { value: 'VALIDATION_CONGES', label: 'Validation des congés et permissions', description: 'Files à valider, congés et permissions validés, validation groupée' },
+    { value: 'VALIDATION_PREVISIONS', label: 'Validation des prévisions', description: 'Prévisions annuelles et calendrier officiel' },
+    { value: 'PRESENCES', label: 'Gestion des présences', description: 'Import, recalcul, déclarations, synthèses' },
+    { value: 'MOUVEMENTS', label: 'Gestion des mouvements', description: 'Tableau de bord, journal, badges' },
+    { value: 'ORGANISATION', label: 'Organisation (départements)', description: 'Départements, membres, responsables' },
+    { value: 'PERSONNEL', label: 'Gestion du personnel', description: 'Fichier du personnel, badges siège' },
+    { value: 'AVANCES', label: 'Validation des avances sur salaire', description: 'Étape de validation DRH des avances (la confirmation DF est inchangée)' },
+    { value: 'VALIDATION_FINALE', label: 'Validation finale (DGA)', description: 'Une seule personne : valide à la place du DRH, traite les demandes des responsables, consulte présences et mouvements' }
+];
+
+export function libelleFonctionDrh(f: string): string {
+    return FONCTIONS_DRH.find((x) => x.value === f)?.label || f;
 }
 
 export interface DepartementDrh {
@@ -179,6 +231,38 @@ export class DrhService {
 
     usersNonAffectes$ = (): Observable<IResponse> =>
         this.http.get<IResponse>(`${this.server}/ecredit/drh/users-non-affectes`).pipe(catchError(this.handleError));
+
+    // ===== V154 : délégations =====
+    delegations$ = (historique = false): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/drh/delegations?historique=${historique}`).pipe(catchError(this.handleError));
+
+    candidatsDelegation$ = (fonction: string): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/drh/delegations/candidats?fonction=${fonction}`).pipe(catchError(this.handleError));
+
+    creerDelegation$ = (body: { delegueUserId: number; fonction: string; dateFin?: string | null; commentaire?: string }): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/drh/delegations`, body).pipe(catchError(this.handleError));
+
+    revoquerDelegation$ = (delegationId: number): Observable<IResponse> =>
+        this.http.delete<IResponse>(`${this.server}/ecredit/drh/delegations/${delegationId}`).pipe(catchError(this.handleError));
+
+    // ===== V154 : traitements groupés =====
+    validerPrevisionsLot$ = (ids: number[]): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/drh/previsions/valider-lot`, { ids }).pipe(catchError(this.handleError));
+
+    accepterPrevisionsLot$ = (ids: number[]): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/drh/previsions/accepter-lot`, { ids }).pipe(catchError(this.handleError));
+
+    validerCongesLot$ = (ids: number[]): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/drh/conges/valider-lot`, { ids }).pipe(catchError(this.handleError));
+
+    accepterCongesLot$ = (ids: number[]): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/drh/conges/accepter-lot`, { ids }).pipe(catchError(this.handleError));
+
+    validerPermissionsLot$ = (ids: number[]): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/drh/permissions/valider-lot`, { ids }).pipe(catchError(this.handleError));
+
+    accepterPermissionsLot$ = (ids: number[]): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/drh/permissions/accepter-lot`, { ids }).pipe(catchError(this.handleError));
 
     // Prévision — agent
     maPrevision$ = (exercice: number): Observable<IResponse> =>
