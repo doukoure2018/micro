@@ -1644,6 +1644,32 @@ export class UserService {
             observe: 'response'
         });
 
+    // TT1 (lot 1) : echeances de la periode sur le perimetre (codAgencia null = tous mes points de service)
+    getPortefeuilleEcheances$ = (du: string, au: string, codAgencia: string | null, etat: string, recherche: string | null, page: number, size: number) =>
+        <Observable<IResponse>>(
+            this.http
+                .get<IResponse>(`${this.server}/ecredit/portefeuille/echeances`, {
+                    params: { du, au, etat, page, size, ...(codAgencia ? { codAgencia } : {}), ...(recherche ? { recherche } : {}) }
+                })
+                .pipe(catchError(this.handleError))
+        );
+
+    getPortefeuilleEcheancesIndicateurs$ = (du: string, au: string, codAgencia: string | null, etat: string, recherche: string | null) =>
+        <Observable<IResponse>>(
+            this.http
+                .get<IResponse>(`${this.server}/ecredit/portefeuille/echeances/indicateurs`, {
+                    params: { du, au, etat, ...(codAgencia ? { codAgencia } : {}), ...(recherche ? { recherche } : {}) }
+                })
+                .pipe(catchError(this.handleError))
+        );
+
+    exportPortefeuilleEcheances$ = (du: string, au: string, codAgencia: string | null, etat: string, recherche: string | null) =>
+        this.http.get(`${this.server}/ecredit/portefeuille/echeances/export`, {
+            params: { du, au, etat, ...(codAgencia ? { codAgencia } : {}), ...(recherche ? { recherche } : {}) },
+            responseType: 'blob',
+            observe: 'response'
+        });
+
     getPortefeuilleEcheancier$ = (codAgencia: string, numCredito: number) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/credits/${codAgencia}/${numCredito}/echeancier`).pipe(catchError(this.handleError));
 

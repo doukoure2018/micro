@@ -1,5 +1,7 @@
 package io.digiservices.ecreditservice.utils;
 
+import io.digiservices.clients.portefeuille.EcheancePeriodeDto;
+import io.digiservices.clients.portefeuille.EcheancesIndicateursDto;
 import io.digiservices.clients.portefeuille.PortefeuilleCreditDto;
 import io.digiservices.clients.portefeuille.PortefeuilleIndicateursDto;
 import org.apache.poi.ss.usermodel.BorderStyle;
@@ -116,6 +118,113 @@ public final class PortefeuilleExcelUtils {
             wb.write(out);
             return out.toByteArray();
         }
+    }
+
+    // ==================== TT1 (lot 1) : echeances de la periode ====================
+
+    /**
+     * Classeur de l'etat TT1 : feuille « Synthese » (totaux de la periode) + feuille
+     * « Echeances » (une ligne par echeance, montants en nombres exploitables).
+     */
+    public static byte[] construireClasseurEcheances(String perimetre, LocalDate du, LocalDate au, String etat,
+                                                     String recherche, EcheancesIndicateursDto indicateurs,
+                                                     List<EcheancePeriodeDto> echeances) throws IOException {
+        try (Workbook wb = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            CellStyle titre = styleTitre(wb);
+            CellStyle entete = styleEntete(wb);
+            CellStyle montant = styleMontant(wb);
+            CellStyle pourcent = stylePourcent(wb);
+
+            Sheet synthese = wb.createSheet("Synthèse");
+            int r = 0;
+            Row rt = synthese.createRow(r++);
+            Cell ct = rt.createCell(0);
+            ct.setCellValue("Échéances de la période (TT1) — " + perimetre);
+            ct.setCellStyle(titre);
+            ligne(synthese, r++, "Période", du.format(FMT_DATE) + " au " + au.format(FMT_DATE));
+            ligne(synthese, r++, "Exporté le", LocalDateTime.now().format(FMT_HORODATAGE));
+            ligne(synthese, r++, "État des échéances", libelleEtat(etat));
+            if (recherche != null && !recherche.isBlank()) {
+                ligne(synthese, r++, "Recherche", recherche);
+            }
+            r++;
+            if (indicateurs != null) {
+                ligneNombre(synthese, r++, "Échéances", indicateurs.getNbEcheances(), null);
+                ligneNombre(synthese, r++, "Crédits concernés", indicateurs.getNbCredits(), null);
+                ligneNombre(synthese, r++, "Clients concernés", indicateurs.getNbClients(), null);
+                ligneNombre(synthese, r++, "Montant attendu (GNF)", indicateurs.getMontantAttendu(), montant);
+                ligneNombre(synthese, r++, "dont capital (GNF)", indicateurs.getCapitalAttendu(), montant);
+                ligneNombre(synthese, r++, "dont intérêts (GNF)", indicateurs.getInteretsAttendus(), montant);
+                ligneNombre(synthese, r++, "Réglé (GNF)", indicateurs.getMontantRegle(), montant);
+                ligneNombre(synthese, r++, "Reste à encaisser (GNF)", indicateurs.getResteAEncaisser(), montant);
+                ligneNombre(synthese, r++, "Taux de recouvrement", ratio(indicateurs.getMontantRegle(), indicateurs.getMontantAttendu()), pourcent);
+                ligneNombre(synthese, r++, "Échéances réglées", indicateurs.getNbReglees(), null);
+                ligneNombre(synthese, r++, "Échéances à échoir", indicateurs.getNbAEchoir(), null);
+                ligneNombre(synthese, r, "Échéances impayées", indicateurs.getNbImpayees(), null);
+            }
+            synthese.setColumnWidth(0, 34 * 256);
+            synthese.setColumnWidth(1, 22 * 256);
+
+            Sheet feuille = wb.createSheet("Échéances");
+            String[] colonnes = {"Date d'échéance", "Point de service", "Code PS", "Client", "Code client", "N° crédit",
+                    "Type de crédit", "N° éch.", "Montant (GNF)", "Capital (GNF)", "Intérêts (GNF)",
+                    "Reste à payer (GNF)", "État", "Jours de retard", "Réglée le"};
+            Row head = feuille.createRow(0);
+            for (int c = 0; c < colonnes.length; c++) {
+                Cell cell = head.createCell(c);
+                cell.setCellValue(colonnes[c]);
+                cell.setCellStyle(entete);
+            }
+            int lig = 1;
+            for (EcheancePeriodeDto e : echeances) {
+                Row row = feuille.createRow(lig++);
+                int c = 0;
+                row.createCell(c++).setCellValue(date(e.getFecCuota()));
+                row.createCell(c++).setCellValue(nvl(e.getDesAgencia()));
+                row.createCell(c++).setCellValue(nvl(e.getCodAgencia()));
+                row.createCell(c++).setCellValue(nvl(e.getNomCliente()));
+                row.createCell(c++).setCellValue(nvl(e.getCodCliente()));
+                row.createCell(c++).setCellValue(e.getNumCredito() != null ? e.getNumCredito() : 0);
+                row.createCell(c++).setCellValue(nvl(e.getDesTipCredito()));
+                row.createCell(c++).setCellValue(e.getNumCuota() != null ? e.getNumCuota() : 0);
+                cellMontant(row, c++, e.getMonCuota(), montant);
+                cellMontant(row, c++, e.getMonPrincipal(), montant);
+                cellMontant(row, c++, e.getMonInt(), montant);
+                cellMontant(row, c++, e.getResteAPayer(), montant);
+                row.createCell(c++).setCellValue(libelleEtatLigne(e));
+                if (e.getJoursRetard() != null) {
+                    row.createCell(c).setCellValue(e.getJoursRetard());
+                }
+                c++;
+                row.createCell(c).setCellValue(date(e.getFecCancelacion()));
+            }
+            int[] largeurs = {14, 24, 9, 30, 14, 12, 22, 8, 16, 16, 16, 18, 20, 14, 12};
+            for (int c = 0; c < largeurs.length; c++) {
+                feuille.setColumnWidth(c, largeurs[c] * 256);
+            }
+            feuille.createFreezePane(0, 1);
+            wb.write(out);
+            return out.toByteArray();
+        }
+    }
+
+    private static String libelleEtat(String etat) {
+        return switch (etat == null ? "toutes" : etat) {
+            case "reglees" -> "Réglées";
+            case "aechoir" -> "À échoir";
+            case "impayees" -> "Impayées";
+            default -> "Toutes";
+        };
+    }
+
+    private static String libelleEtatLigne(EcheancePeriodeDto e) {
+        String base = switch (e.getEtat() == null ? "" : e.getEtat()) {
+            case "REGLEE" -> "Réglée";
+            case "IMPAYEE" -> "Impayée";
+            case "A_ECHOIR" -> "À échoir";
+            default -> "";
+        };
+        return Boolean.TRUE.equals(e.getPartielle()) ? base + " (partiellement réglée)" : base;
     }
 
     private static void ligne(Sheet s, int r, String label, String valeur) {

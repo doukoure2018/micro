@@ -32,6 +32,9 @@ import { TooltipModule } from 'primeng/tooltip';
                 <h2 class="text-xl font-bold m-0">Portefeuille crédits SAF</h2>
                 <button pButton icon="pi pi-refresh" class="p-button-text" (click)="recharger()" [loading]="state().loading"></button>
             </div>
+            <p-selectButton [options]="vueOptions" [(ngModel)]="vue" optionLabel="label" optionValue="value" class="block mb-3" (onChange)="changerVue()"></p-selectButton>
+
+            @if (vue === 'credits') {
             <p class="text-sm text-gray-500 mb-4">
                 Crédits <strong>mis en place dans SAF2000</strong> (capital restant dû &gt; 0), calculés à la date du jour. Les crédits en retard apparaissent en tête, du plus ancien impayé au plus récent. Lecture
                 seule.
@@ -160,6 +163,125 @@ import { TooltipModule } from 'primeng/tooltip';
                     <button pButton icon="pi pi-chevron-right" class="p-button-sm p-button-outlined" [disabled]="!p.hasNext" (click)="chargerPortefeuille(p.page + 1)"></button>
                 </div>
             </div>
+            } @else {
+            <!-- ═══════ TT1 (lot 1) : échéances de la période ═══════ -->
+            <p class="text-sm text-gray-500 mb-4">
+                Toutes les <strong>échéances du plan de paiement SAF</strong> tombant dans la période, sur les crédits en cours ou en contentieux. Une ligne par échéance : capital, intérêts, reste à payer, état
+                calculé à la date du jour. Lecture seule.
+            </p>
+
+            <div class="flex flex-wrap gap-3 items-center mb-4">
+                <p-dropdown
+                    *ngIf="state().agences.length > 1"
+                    [options]="state().agences"
+                    [(ngModel)]="psEcheances"
+                    optionLabel="desAgencia"
+                    optionValue="codAgencia"
+                    placeholder="Tous mes points de service"
+                    [showClear]="true"
+                    [filter]="state().agences.length > 8"
+                    filterBy="desAgencia,codAgencia"
+                    styleClass="w-72"
+                    appendTo="body"
+                    (onChange)="chargerEcheances(0)"
+                ></p-dropdown>
+                <span *ngIf="state().agences.length === 1" class="font-semibold text-lg"><i class="pi pi-building mr-1"></i>{{ state().agences[0]?.desAgencia }}</span>
+                <p-selectButton [options]="raccourcisPeriode" [(ngModel)]="raccourci" optionLabel="label" optionValue="value" (onChange)="appliquerRaccourci()"></p-selectButton>
+                <input pInputText type="date" [(ngModel)]="du" class="w-40" (change)="raccourci = null" />
+                <span class="text-gray-500">au</span>
+                <input pInputText type="date" [(ngModel)]="au" class="w-40" (change)="raccourci = null" />
+                <p-dropdown [options]="etatOptions" [(ngModel)]="etatEch" optionLabel="label" optionValue="value" styleClass="w-44" appendTo="body" (onChange)="chargerEcheances(0)"></p-dropdown>
+                <input pInputText type="text" [(ngModel)]="rechercheEch" placeholder="Client, code, n° crédit…" class="w-56" (keyup.enter)="chargerEcheances(0)" />
+                <button pButton icon="pi pi-search" class="p-button-outlined" (click)="chargerEcheances(0)" [disabled]="!du || !au"></button>
+                <button
+                    pButton
+                    icon="pi pi-file-excel"
+                    label="Exporter Excel"
+                    class="p-button-success p-button-outlined ml-auto"
+                    pTooltip="Exporte toutes les échéances de la période (synthèse + détail), pas seulement la page affichée"
+                    [loading]="exportEchEnCours()"
+                    [disabled]="!du || !au"
+                    (click)="exporterEcheances()"
+                ></button>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-4" *ngIf="state().indEch as i">
+                <div class="border rounded p-3">
+                    <div class="text-xs text-gray-500 uppercase">Échéances</div>
+                    <div class="text-xl font-bold">{{ i.nbEcheances }}</div>
+                    <div class="text-xs text-gray-500">{{ i.nbCredits }} crédit(s), {{ i.nbClients }} client(s)</div>
+                </div>
+                <div class="border rounded p-3">
+                    <div class="text-xs text-gray-500 uppercase">Attendu</div>
+                    <div class="text-xl font-bold">{{ i.montantAttendu | number: '1.0-0' }} <span class="text-xs font-normal">GNF</span></div>
+                </div>
+                <div class="border rounded p-3">
+                    <div class="text-xs text-gray-500 uppercase">dont capital</div>
+                    <div class="text-xl font-bold">{{ i.capitalAttendu | number: '1.0-0' }} <span class="text-xs font-normal">GNF</span></div>
+                </div>
+                <div class="border rounded p-3">
+                    <div class="text-xs text-gray-500 uppercase">dont intérêts</div>
+                    <div class="text-xl font-bold">{{ i.interetsAttendus | number: '1.0-0' }} <span class="text-xs font-normal">GNF</span></div>
+                </div>
+                <div class="border rounded p-3">
+                    <div class="text-xs text-gray-500 uppercase">Réglé</div>
+                    <div class="text-xl font-bold text-green-700">{{ i.montantRegle | number: '1.0-0' }} <span class="text-xs font-normal">GNF</span></div>
+                    <div class="text-xs text-gray-500">taux de recouvrement {{ i.tauxRecouvrement | number: '1.1-1' }} %</div>
+                </div>
+                <div class="border rounded p-3">
+                    <div class="text-xs text-gray-500 uppercase">Reste à encaisser</div>
+                    <div class="text-xl font-bold" [class.text-red-600]="i.nbImpayees > 0">{{ i.resteAEncaisser | number: '1.0-0' }} <span class="text-xs font-normal">GNF</span></div>
+                    <div class="text-xs text-gray-500">{{ i.nbImpayees }} impayée(s), {{ i.nbAEchoir }} à échoir</div>
+                </div>
+            </div>
+
+            <p-table [value]="state().echeances" [loading]="state().loadingEch" responsiveLayout="scroll" [rowHover]="true">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Date</th>
+                        <th *ngIf="!psEcheances && state().agences.length > 1">Point de service</th>
+                        <th>Client</th>
+                        <th>N° crédit</th>
+                        <th class="text-center">Éch.</th>
+                        <th class="text-right">Montant</th>
+                        <th class="text-right">Capital</th>
+                        <th class="text-right">Intérêts</th>
+                        <th class="text-right">Reste à payer</th>
+                        <th>État</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-e>
+                    <tr>
+                        <td class="whitespace-nowrap">{{ e.fecCuota | date: 'dd/MM/yyyy' }}</td>
+                        <td *ngIf="!psEcheances && state().agences.length > 1">{{ e.desAgencia }}<div class="text-xs text-gray-500">{{ e.codAgencia }}</div></td>
+                        <td><span class="font-medium">{{ e.nomCliente }}</span><div class="text-xs text-gray-500">{{ e.codCliente }}</div></td>
+                        <td>{{ e.numCredito }}<div class="text-xs text-gray-500">{{ e.desTipCredito }}</div></td>
+                        <td class="text-center">{{ e.numCuota }}</td>
+                        <td class="text-right">{{ e.monCuota | number: '1.0-0' }}</td>
+                        <td class="text-right">{{ e.monPrincipal | number: '1.0-0' }}</td>
+                        <td class="text-right">{{ e.monInt | number: '1.0-0' }}</td>
+                        <td class="text-right" [class.font-semibold]="e.resteAPayer > 0">{{ e.resteAPayer | number: '1.0-0' }}</td>
+                        <td>
+                            <p-tag [value]="libelleEtatEch(e)" [severity]="severiteEtatEch(e)"></p-tag>
+                            <div class="text-xs text-gray-500" *ngIf="e.fecCancelacion">réglée le {{ e.fecCancelacion | date: 'dd/MM/yyyy' }}</div>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="10" class="text-center text-gray-500 py-6">Aucune échéance sur cette période pour ces critères.</td>
+                    </tr>
+                </ng-template>
+            </p-table>
+
+            <div class="flex justify-between items-center mt-3" *ngIf="state().pageEch as p">
+                <span class="text-sm text-gray-500">{{ p.totalElements }} échéance(s) — page {{ p.page + 1 }} / {{ p.totalPages || 1 }}</span>
+                <div class="flex gap-2">
+                    <button pButton icon="pi pi-chevron-left" class="p-button-sm p-button-outlined" [disabled]="!p.hasPrevious" (click)="chargerEcheances(p.page - 1)"></button>
+                    <button pButton icon="pi pi-chevron-right" class="p-button-sm p-button-outlined" [disabled]="!p.hasNext" (click)="chargerEcheances(p.page + 1)"></button>
+                </div>
+            </div>
+            }
         </div>
 
         <!-- Dialog echeancier -->
@@ -237,7 +359,134 @@ export class PortefeuilleSafComponent implements OnInit {
         creditSelectionne: any | null;
         echeancier: any[];
         loadingEcheancier: boolean;
-    }>({ agences: [], credits: [], indicateurs: null, page: null, loading: false, showEcheancier: false, creditSelectionne: null, echeancier: [], loadingEcheancier: false });
+        // TT1 (lot 1)
+        echeances: any[];
+        indEch: any | null;
+        pageEch: any | null;
+        loadingEch: boolean;
+    }>({ agences: [], credits: [], indicateurs: null, page: null, loading: false, showEcheancier: false, creditSelectionne: null, echeancier: [], loadingEcheancier: false,
+         echeances: [], indEch: null, pageEch: null, loadingEch: false });
+
+    // ── TT1 (lot 1) : échéances de la période ──
+    vue: 'credits' | 'echeances' = 'credits';
+    vueOptions = [
+        { label: 'Crédits', value: 'credits' },
+        { label: 'Échéances de la période (TT1)', value: 'echeances' }
+    ];
+    psEcheances: string | null = null;
+    du = '';
+    au = '';
+    raccourci: string | null = 'mois';
+    raccourcisPeriode = [
+        { label: 'Semaine', value: 'semaine' },
+        { label: 'Mois en cours', value: 'mois' },
+        { label: 'Mois prochain', value: 'moisSuivant' }
+    ];
+    etatEch: 'toutes' | 'aechoir' | 'impayees' | 'reglees' = 'toutes';
+    etatOptions = [
+        { label: 'Toutes les échéances', value: 'toutes' },
+        { label: 'À échoir', value: 'aechoir' },
+        { label: 'Impayées', value: 'impayees' },
+        { label: 'Réglées', value: 'reglees' }
+    ];
+    rechercheEch = '';
+    exportEchEnCours = signal(false);
+
+    changerVue(): void {
+        if (this.vue === 'echeances' && !this.state().indEch) {
+            this.appliquerRaccourci();
+        }
+    }
+
+    private iso(d: Date): string {
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    appliquerRaccourci(): void {
+        const auj = new Date();
+        let d: Date, a: Date;
+        if (this.raccourci === 'semaine') {
+            const jour = (auj.getDay() + 6) % 7; // lundi = 0
+            d = new Date(auj); d.setDate(auj.getDate() - jour);
+            a = new Date(d); a.setDate(d.getDate() + 6);
+        } else if (this.raccourci === 'moisSuivant') {
+            d = new Date(auj.getFullYear(), auj.getMonth() + 1, 1);
+            a = new Date(auj.getFullYear(), auj.getMonth() + 2, 0);
+        } else {
+            this.raccourci = 'mois';
+            d = new Date(auj.getFullYear(), auj.getMonth(), 1);
+            a = new Date(auj.getFullYear(), auj.getMonth() + 1, 0);
+        }
+        this.du = this.iso(d);
+        this.au = this.iso(a);
+        this.chargerEcheances(0);
+    }
+
+    chargerEcheances(page: number): void {
+        if (!this.du || !this.au) return;
+        if (this.au < this.du) {
+            this.messageService.add({ severity: 'warn', summary: 'Période', detail: 'La date de fin doit être postérieure à la date de début', life: 4000 });
+            return;
+        }
+        const recherche = this.rechercheEch.trim() || null;
+        this.state.update((s) => ({ ...s, loadingEch: true }));
+        this.userService
+            .getPortefeuilleEcheancesIndicateurs$(this.du, this.au, this.psEcheances, this.etatEch, recherche)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => this.state.update((s) => ({ ...s, indEch: (r.data as any)?.indicateurs || null })),
+                error: () => {}
+            });
+        this.userService
+            .getPortefeuilleEcheances$(this.du, this.au, this.psEcheances, this.etatEch, recherche, page, this.pageSize)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => {
+                    const p = (r.data as any)?.echeances;
+                    this.state.update((s) => ({ ...s, echeances: p?.content || [], pageEch: p || null, loadingEch: false }));
+                },
+                error: (err) => {
+                    this.state.update((s) => ({ ...s, loadingEch: false }));
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || 'Base SAF momentanément indisponible', life: 6000 });
+                }
+            });
+    }
+
+    exporterEcheances(): void {
+        if (!this.du || !this.au) return;
+        this.exportEchEnCours.set(true);
+        this.userService
+            .exportPortefeuilleEcheances$(this.du, this.au, this.psEcheances, this.etatEch, this.rechercheEch.trim() || null)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (reponse) => {
+                    this.exportEchEnCours.set(false);
+                    const disposition = reponse.headers.get('Content-Disposition') || '';
+                    const nom = /filename="?([^";]+)"?/.exec(disposition)?.[1] || `echeances_TT1_${this.du}_${this.au}.xlsx`;
+                    const url = URL.createObjectURL(reponse.body as Blob);
+                    const lien = document.createElement('a');
+                    lien.href = url;
+                    lien.download = nom;
+                    lien.click();
+                    URL.revokeObjectURL(url);
+                },
+                error: () => {
+                    this.exportEchEnCours.set(false);
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: "Échec de l'export Excel — réessayez (base SAF indisponible ?)", life: 6000 });
+                }
+            });
+    }
+
+    libelleEtatEch(e: any): string {
+        const base = e.etat === 'REGLEE' ? 'Réglée' : e.etat === 'IMPAYEE' ? `Impayée, ${e.joursRetard} j` : 'À échoir';
+        return e.partielle ? base + ' (partielle)' : base;
+    }
+
+    severiteEtatEch(e: any): 'success' | 'warn' | 'danger' | 'info' {
+        if (e.etat === 'REGLEE') return 'success';
+        if (e.etat === 'IMPAYEE') return e.joursRetard > 30 ? 'danger' : 'warn';
+        return 'info';
+    }
 
     ngOnInit(): void {
         this.userService

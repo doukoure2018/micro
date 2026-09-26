@@ -1,6 +1,8 @@
 package io.digiservices.ebanking.repository;
 
 import io.digiservices.clients.portefeuille.AgenceSafDto;
+import io.digiservices.clients.portefeuille.EcheancePeriodeDto;
+import io.digiservices.clients.portefeuille.EcheancesIndicateursDto;
 import io.digiservices.clients.portefeuille.PortefeuilleCreditDto;
 import io.digiservices.clients.portefeuille.PortefeuilleEcheanceDto;
 import io.digiservices.clients.portefeuille.PortefeuilleIndicateursDto;
@@ -339,6 +341,146 @@ public class PortefeuilleRepository {
         d.setNbEchRestantes(rs.getLong("NB_RESTANTES"));
         d.setJoursRetard(d.getDatPremiereImpayee() != null
                 ? ChronoUnit.DAYS.between(d.getDatPremiereImpayee(), LocalDate.now()) : null);
+        return d;
+    };
+
+    // ==================== TT1 (lot 1) : echeances de la periode ====================
+
+    /**
+     * Base de l'etat TT1 : une ligne par echeance du plan de paiement tombant dans la
+     * periode, sur une liste de codes agence SAF (= points de service digi). Regle reprise
+     * de l'ancien point d'entree TT1 jamais active : ligne 0 (deboursement) exclue, credits
+     * en etat D (en cours) ou J (contentieux). La part capital est derivee (montant - interets)
+     * pour ne dependre que de colonnes deja utilisees en production.
+     */
+    private static final String ECHEANCES_BASE = """
+            FROM PR.PR_PLAN_PAGOS pp
+            INNER JOIN PR.PR_CREDITOS cr
+                ON pp.COD_EMPRESA = cr.COD_EMPRESA AND pp.COD_AGENCIA = cr.COD_AGENCIA
+               AND pp.NUM_CREDITO = cr.NUM_CREDITO
+            INNER JOIN CL.CL_CLIENTES c
+                ON cr.COD_EMPRESA = c.COD_EMPRESA AND cr.COD_CLIENTE = c.COD_CLIENTE
+            LEFT JOIN PR.PR_TIPO_CREDITO tc
+                ON cr.COD_EMPRESA = tc.COD_EMPRESA AND cr.TIP_CREDITO = tc.TIP_CREDITO
+            LEFT JOIN CF.CF_AGENCIAS ag
+                ON cr.COD_EMPRESA = ag.COD_EMPRESA AND cr.COD_AGENCIA = ag.COD_AGENCIA
+            WHERE pp.COD_EMPRESA = '00000'
+              AND pp.COD_AGENCIA IN (:codes)
+              AND pp.NUM_CUOTA <> 0
+              AND pp.FEC_CUOTA BETWEEN :du AND :au
+              AND cr.IND_ESTADO IN ('D', 'J')
+              AND (:recherche IS NULL
+                   OR c.NOM_CLIENTE LIKE :recherche
+                   OR cr.COD_CLIENTE LIKE :recherche
+                   OR CAST(cr.NUM_CREDITO AS VARCHAR(20)) LIKE :recherche)
+              AND (:etat = 'toutes'
+                   OR (:etat = 'reglees'  AND (COALESCE(pp.SAL_PRINCIPAL, 0) + COALESCE(pp.SAL_INT, 0)) <= 0)
+                   OR (:etat = 'aechoir'  AND (COALESCE(pp.SAL_PRINCIPAL, 0) + COALESCE(pp.SAL_INT, 0)) > 0 AND pp.FEC_CUOTA >= :aujourdhui)
+                   OR (:etat = 'impayees' AND (COALESCE(pp.SAL_PRINCIPAL, 0) + COALESCE(pp.SAL_INT, 0)) > 0 AND pp.FEC_CUOTA < :aujourdhui))
+            """;
+
+    private static final String SQL_ECHEANCES_PERIODE = """
+            SELECT cr.COD_AGENCIA, ag.DES_AGENCIA, cr.NUM_CREDITO, cr.COD_CLIENTE, c.NOM_CLIENTE,
+                   tc.DES_TIP_CREDITO, cr.IND_ESTADO,
+                   pp.NUM_CUOTA, pp.FEC_CUOTA, pp.MON_CUOTA, COALESCE(pp.MON_INT, 0) AS MON_INT,
+                   COALESCE(pp.SAL_PRINCIPAL, 0) AS SAL_PRINCIPAL, COALESCE(pp.SAL_INT, 0) AS SAL_INT,
+                   pp.FEC_CANCELACION
+            """ + ECHEANCES_BASE + """
+            ORDER BY pp.FEC_CUOTA, c.NOM_CLIENTE, cr.NUM_CREDITO, pp.NUM_CUOTA
+            OFFSET :offset ROWS FETCH NEXT :size ROWS ONLY
+            """;
+
+    private static final String SQL_COUNT_ECHEANCES_PERIODE = "SELECT COUNT(*) " + ECHEANCES_BASE;
+
+    private static final String SQL_INDICATEURS_ECHEANCES = """
+            SELECT COUNT(*) AS NB,
+                   COUNT(DISTINCT cr.NUM_CREDITO) AS NB_CREDITS,
+                   COUNT(DISTINCT cr.COD_CLIENTE) AS NB_CLIENTS,
+                   COALESCE(SUM(pp.MON_CUOTA), 0) AS ATTENDU,
+                   COALESCE(SUM(COALESCE(pp.MON_INT, 0)), 0) AS INTERETS,
+                   COALESCE(SUM(COALESCE(pp.SAL_PRINCIPAL, 0) + COALESCE(pp.SAL_INT, 0)), 0) AS RESTE,
+                   SUM(CASE WHEN (COALESCE(pp.SAL_PRINCIPAL, 0) + COALESCE(pp.SAL_INT, 0)) <= 0 THEN 1 ELSE 0 END) AS NB_REGLEES,
+                   SUM(CASE WHEN (COALESCE(pp.SAL_PRINCIPAL, 0) + COALESCE(pp.SAL_INT, 0)) > 0 AND pp.FEC_CUOTA >= :aujourdhui THEN 1 ELSE 0 END) AS NB_A_ECHOIR,
+                   SUM(CASE WHEN (COALESCE(pp.SAL_PRINCIPAL, 0) + COALESCE(pp.SAL_INT, 0)) > 0 AND pp.FEC_CUOTA < :aujourdhui THEN 1 ELSE 0 END) AS NB_IMPAYEES
+            """ + ECHEANCES_BASE;
+
+    private static MapSqlParameterSource paramsEcheances(List<String> codes, LocalDate du, LocalDate au,
+                                                         String etat, String recherche) {
+        String filtre = (recherche == null || recherche.isBlank()) ? null : "%" + recherche.trim() + "%";
+        return new MapSqlParameterSource()
+                .addValue("codes", codes)
+                .addValue("du", java.sql.Date.valueOf(du))
+                .addValue("au", java.sql.Date.valueOf(au))
+                .addValue("etat", etat == null || etat.isBlank() ? "toutes" : etat.trim().toLowerCase())
+                .addValue("recherche", filtre, java.sql.Types.VARCHAR)
+                .addValue("aujourdhui", java.sql.Date.valueOf(LocalDate.now()));
+    }
+
+    public List<EcheancePeriodeDto> findEcheancesPeriode(List<String> codes, LocalDate du, LocalDate au,
+                                                          String etat, String recherche, int offset, int size) {
+        MapSqlParameterSource p = paramsEcheances(codes, du, au, etat, recherche)
+                .addValue("offset", offset).addValue("size", size);
+        return execute("portefeuille.echeancesPeriode", () -> primary.query(SQL_ECHEANCES_PERIODE, p, ECHEANCE_PERIODE_MAPPER));
+    }
+
+    public long countEcheancesPeriode(List<String> codes, LocalDate du, LocalDate au, String etat, String recherche) {
+        MapSqlParameterSource p = paramsEcheances(codes, du, au, etat, recherche);
+        Long total = execute("portefeuille.echeancesPeriode.count",
+                () -> primary.queryForObject(SQL_COUNT_ECHEANCES_PERIODE, p, Long.class));
+        return total != null ? total : 0L;
+    }
+
+    public EcheancesIndicateursDto indicateursEcheancesPeriode(List<String> codes, LocalDate du, LocalDate au,
+                                                               String etat, String recherche) {
+        MapSqlParameterSource p = paramsEcheances(codes, du, au, etat, recherche);
+        return execute("portefeuille.echeancesPeriode.indicateurs", () -> primary.queryForObject(SQL_INDICATEURS_ECHEANCES, p, (rs, n) -> {
+            BigDecimal attendu = nvl(rs.getBigDecimal("ATTENDU"));
+            BigDecimal interets = nvl(rs.getBigDecimal("INTERETS"));
+            BigDecimal reste = nvl(rs.getBigDecimal("RESTE"));
+            BigDecimal regle = attendu.subtract(reste).max(BigDecimal.ZERO);
+            BigDecimal taux = attendu.signum() > 0
+                    ? regle.multiply(BigDecimal.valueOf(100)).divide(attendu, 1, java.math.RoundingMode.HALF_UP)
+                    : BigDecimal.ZERO;
+            return new EcheancesIndicateursDto(
+                    rs.getLong("NB"), rs.getLong("NB_CREDITS"), rs.getLong("NB_CLIENTS"),
+                    attendu, attendu.subtract(interets), interets, regle, reste,
+                    rs.getLong("NB_REGLEES"), rs.getLong("NB_A_ECHOIR"), rs.getLong("NB_IMPAYEES"), taux);
+        }));
+    }
+
+    private static final RowMapper<EcheancePeriodeDto> ECHEANCE_PERIODE_MAPPER = (rs, n) -> {
+        EcheancePeriodeDto d = new EcheancePeriodeDto();
+        d.setCodAgencia(str(rs, "COD_AGENCIA"));
+        d.setDesAgencia(str(rs, "DES_AGENCIA"));
+        d.setNumCredito(rs.getLong("NUM_CREDITO"));
+        d.setCodCliente(str(rs, "COD_CLIENTE"));
+        d.setNomCliente(str(rs, "NOM_CLIENTE"));
+        d.setDesTipCredito(str(rs, "DES_TIP_CREDITO"));
+        d.setIndEstado(str(rs, "IND_ESTADO"));
+        d.setNumCuota(rs.getLong("NUM_CUOTA"));
+        d.setFecCuota(dt(rs, "FEC_CUOTA"));
+        BigDecimal montant = nvl(rs.getBigDecimal("MON_CUOTA"));
+        BigDecimal interets = nvl(rs.getBigDecimal("MON_INT"));
+        BigDecimal salP = nvl(rs.getBigDecimal("SAL_PRINCIPAL"));
+        BigDecimal salI = nvl(rs.getBigDecimal("SAL_INT"));
+        BigDecimal reste = salP.add(salI);
+        d.setMonCuota(montant);
+        d.setMonInt(interets);
+        d.setMonPrincipal(montant.subtract(interets));
+        d.setSalPrincipal(salP);
+        d.setSalInt(salI);
+        d.setResteAPayer(reste);
+        d.setFecCancelacion(dt(rs, "FEC_CANCELACION"));
+        LocalDate aujourdhui = LocalDate.now();
+        if (reste.signum() <= 0) {
+            d.setEtat("REGLEE");
+            d.setPartielle(false);
+        } else {
+            boolean echue = d.getFecCuota() != null && d.getFecCuota().isBefore(aujourdhui);
+            d.setEtat(echue ? "IMPAYEE" : "A_ECHOIR");
+            d.setPartielle(reste.compareTo(montant) < 0);
+            d.setJoursRetard(echue ? ChronoUnit.DAYS.between(d.getFecCuota(), aujourdhui) : null);
+        }
         return d;
     };
 

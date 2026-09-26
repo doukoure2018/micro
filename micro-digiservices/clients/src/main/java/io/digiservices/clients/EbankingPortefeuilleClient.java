@@ -50,6 +50,27 @@ public interface EbankingPortefeuilleClient {
     @GetMapping("/ebanking/portefeuille/indicateurs-reseau")
     List<io.digiservices.clients.portefeuille.IndicateursAgenceDto> getIndicateursReseau();
 
+    // ==================== TT1 (lot 1) : echeances de la periode ====================
+
+    /** Echeances tombant entre du et au (ISO yyyy-MM-dd) sur une liste de codes agence SAF. */
+    @GetMapping("/ebanking/portefeuille/echeances-periode")
+    io.digiservices.clients.agri.PageDto<io.digiservices.clients.portefeuille.EcheancePeriodeDto> getEcheancesPeriode(
+            @RequestParam(value = "codes") List<String> codes,
+            @RequestParam(value = "du") String du,
+            @RequestParam(value = "au") String au,
+            @RequestParam(value = "etat", defaultValue = "toutes") String etat,
+            @RequestParam(value = "recherche", required = false) String recherche,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "50") int size);
+
+    @GetMapping("/ebanking/portefeuille/echeances-periode/indicateurs")
+    io.digiservices.clients.portefeuille.EcheancesIndicateursDto getEcheancesPeriodeIndicateurs(
+            @RequestParam(value = "codes") List<String> codes,
+            @RequestParam(value = "du") String du,
+            @RequestParam(value = "au") String au,
+            @RequestParam(value = "etat", defaultValue = "toutes") String etat,
+            @RequestParam(value = "recherche", required = false) String recherche);
+
     @GetMapping("/ebanking/portefeuille/credits/{codAgencia}/{numCredito}/echeancier")
     List<PortefeuilleEcheanceDto> getEcheancier(@PathVariable("codAgencia") String codAgencia,
                                                 @PathVariable("numCredito") Long numCredito);
