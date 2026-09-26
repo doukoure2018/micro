@@ -63,6 +63,15 @@ public interface EbankingPortefeuilleClient {
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "50") int size);
 
+    /** Synthese TT1 par code agence SAF (une ligne par point de service, niveau PS). */
+    @GetMapping("/ebanking/portefeuille/echeances-periode/synthese")
+    List<io.digiservices.clients.portefeuille.EcheancesSyntheseDto> getEcheancesPeriodeSynthese(
+            @RequestParam(value = "codes") List<String> codes,
+            @RequestParam(value = "du") String du,
+            @RequestParam(value = "au") String au,
+            @RequestParam(value = "etat", defaultValue = "toutes") String etat,
+            @RequestParam(value = "recherche", required = false) String recherche);
+
     @GetMapping("/ebanking/portefeuille/echeances-periode/indicateurs")
     io.digiservices.clients.portefeuille.EcheancesIndicateursDto getEcheancesPeriodeIndicateurs(
             @RequestParam(value = "codes") List<String> codes,

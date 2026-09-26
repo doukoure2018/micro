@@ -392,6 +392,27 @@ public class PortefeuilleRepository {
 
     private static final String SQL_COUNT_ECHEANCES_PERIODE = "SELECT COUNT(*) " + ECHEANCES_BASE;
 
+    /** Colonnes d'agregation communes aux indicateurs globaux et a la synthese par agence. */
+    private static final String AGREGATS_ECHEANCES = """
+                   COUNT(*) AS NB,
+                   COUNT(DISTINCT cr.NUM_CREDITO) AS NB_CREDITS,
+                   COUNT(DISTINCT cr.COD_CLIENTE) AS NB_CLIENTS,
+                   COALESCE(SUM(pp.MON_CUOTA), 0) AS ATTENDU,
+                   COALESCE(SUM(COALESCE(pp.MON_INT, 0)), 0) AS INTERETS,
+                   COALESCE(SUM(COALESCE(pp.SAL_PRINCIPAL, 0) + COALESCE(pp.SAL_INT, 0)), 0) AS RESTE,
+                   SUM(CASE WHEN (COALESCE(pp.SAL_PRINCIPAL, 0) + COALESCE(pp.SAL_INT, 0)) <= 0 THEN 1 ELSE 0 END) AS NB_REGLEES,
+                   SUM(CASE WHEN (COALESCE(pp.SAL_PRINCIPAL, 0) + COALESCE(pp.SAL_INT, 0)) > 0 AND pp.FEC_CUOTA >= :aujourdhui THEN 1 ELSE 0 END) AS NB_A_ECHOIR,
+                   SUM(CASE WHEN (COALESCE(pp.SAL_PRINCIPAL, 0) + COALESCE(pp.SAL_INT, 0)) > 0 AND pp.FEC_CUOTA < :aujourdhui THEN 1 ELSE 0 END) AS NB_IMPAYEES
+            """;
+
+    /** Synthese TT1 (lot 2) : une ligne d'agregats par code agence SAF du perimetre. */
+    private static final String SQL_SYNTHESE_ECHEANCES_PAR_AGENCE = """
+            SELECT pp.COD_AGENCIA, MAX(ag.DES_AGENCIA) AS DES_AGENCIA,
+            """ + AGREGATS_ECHEANCES + ECHEANCES_BASE + """
+            GROUP BY pp.COD_AGENCIA
+            ORDER BY pp.COD_AGENCIA
+            """;
+
     private static final String SQL_INDICATEURS_ECHEANCES = """
             SELECT COUNT(*) AS NB,
                    COUNT(DISTINCT cr.NUM_CREDITO) AS NB_CREDITS,
@@ -433,19 +454,32 @@ public class PortefeuilleRepository {
     public EcheancesIndicateursDto indicateursEcheancesPeriode(List<String> codes, LocalDate du, LocalDate au,
                                                                String etat, String recherche) {
         MapSqlParameterSource p = paramsEcheances(codes, du, au, etat, recherche);
-        return execute("portefeuille.echeancesPeriode.indicateurs", () -> primary.queryForObject(SQL_INDICATEURS_ECHEANCES, p, (rs, n) -> {
-            BigDecimal attendu = nvl(rs.getBigDecimal("ATTENDU"));
-            BigDecimal interets = nvl(rs.getBigDecimal("INTERETS"));
-            BigDecimal reste = nvl(rs.getBigDecimal("RESTE"));
-            BigDecimal regle = attendu.subtract(reste).max(BigDecimal.ZERO);
-            BigDecimal taux = attendu.signum() > 0
-                    ? regle.multiply(BigDecimal.valueOf(100)).divide(attendu, 1, java.math.RoundingMode.HALF_UP)
-                    : BigDecimal.ZERO;
-            return new EcheancesIndicateursDto(
-                    rs.getLong("NB"), rs.getLong("NB_CREDITS"), rs.getLong("NB_CLIENTS"),
-                    attendu, attendu.subtract(interets), interets, regle, reste,
-                    rs.getLong("NB_REGLEES"), rs.getLong("NB_A_ECHOIR"), rs.getLong("NB_IMPAYEES"), taux);
-        }));
+        return execute("portefeuille.echeancesPeriode.indicateurs",
+                () -> primary.queryForObject(SQL_INDICATEURS_ECHEANCES, p, (rs, n) -> indicateursDepuis(rs)));
+    }
+
+    /** Synthese TT1 (lot 2) : agregats par code agence SAF, niveau PS. */
+    public List<io.digiservices.clients.portefeuille.EcheancesSyntheseDto> syntheseEcheancesParAgence(
+            List<String> codes, LocalDate du, LocalDate au, String etat, String recherche) {
+        MapSqlParameterSource p = paramsEcheances(codes, du, au, etat, recherche);
+        return execute("portefeuille.echeancesPeriode.synthese",
+                () -> primary.query(SQL_SYNTHESE_ECHEANCES_PAR_AGENCE, p, (rs, n) ->
+                        new io.digiservices.clients.portefeuille.EcheancesSyntheseDto(
+                                "PS", null, str(rs, "COD_AGENCIA"), str(rs, "DES_AGENCIA"), null, 1, indicateursDepuis(rs))));
+    }
+
+    private static EcheancesIndicateursDto indicateursDepuis(java.sql.ResultSet rs) throws java.sql.SQLException {
+        BigDecimal attendu = nvl(rs.getBigDecimal("ATTENDU"));
+        BigDecimal interets = nvl(rs.getBigDecimal("INTERETS"));
+        BigDecimal reste = nvl(rs.getBigDecimal("RESTE"));
+        BigDecimal regle = attendu.subtract(reste).max(BigDecimal.ZERO);
+        BigDecimal taux = attendu.signum() > 0
+                ? regle.multiply(BigDecimal.valueOf(100)).divide(attendu, 1, java.math.RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+        return new EcheancesIndicateursDto(
+                rs.getLong("NB"), rs.getLong("NB_CREDITS"), rs.getLong("NB_CLIENTS"),
+                attendu, attendu.subtract(interets), interets, regle, reste,
+                rs.getLong("NB_REGLEES"), rs.getLong("NB_A_ECHOIR"), rs.getLong("NB_IMPAYEES"), taux);
     }
 
     private static final RowMapper<EcheancePeriodeDto> ECHEANCE_PERIODE_MAPPER = (rs, n) -> {

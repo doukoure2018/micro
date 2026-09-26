@@ -1,8 +1,9 @@
 import { IResponse } from '@/interface/response';
-import { UserService } from '@/service/user.service';
+import { FiltresTT1, UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { lastValueFrom } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
@@ -171,8 +172,17 @@ import { TooltipModule } from 'primeng/tooltip';
             </p>
 
             <div class="flex flex-wrap gap-3 items-center mb-4">
+                <p-selectButton *ngIf="state().agences.length > 1" [options]="modeOptions" [(ngModel)]="modeEch" optionLabel="label" optionValue="value" (onChange)="changerMode()"></p-selectButton>
+                <p-selectButton
+                    *ngIf="modeEch === 'synthese' && niveauOptions.length > 1"
+                    [options]="niveauOptions"
+                    [(ngModel)]="niveauSyn"
+                    optionLabel="label"
+                    optionValue="value"
+                    (onChange)="chargerEcheances(0)"
+                ></p-selectButton>
                 <p-dropdown
-                    *ngIf="state().agences.length > 1"
+                    *ngIf="state().agences.length > 1 && modeEch === 'detail'"
                     [options]="state().agences"
                     [(ngModel)]="psEcheances"
                     optionLabel="desAgencia"
@@ -195,10 +205,20 @@ import { TooltipModule } from 'primeng/tooltip';
                 <button pButton icon="pi pi-search" class="p-button-outlined" (click)="chargerEcheances(0)" [disabled]="!du || !au"></button>
                 <button
                     pButton
+                    icon="pi pi-print"
+                    label="Imprimer"
+                    class="p-button-outlined ml-auto"
+                    pTooltip="Imprime l'état TT1 : en-tête, période, totaux, tableau et emplacement de signature"
+                    [loading]="impressionEnCours()"
+                    [disabled]="!du || !au"
+                    (click)="imprimer()"
+                ></button>
+                <button
+                    pButton
                     icon="pi pi-file-excel"
                     label="Exporter Excel"
-                    class="p-button-success p-button-outlined ml-auto"
-                    pTooltip="Exporte toutes les échéances de la période (synthèse + détail), pas seulement la page affichée"
+                    class="p-button-success p-button-outlined"
+                    pTooltip="Exporte toutes les échéances de la période (synthèse + répartition par point de service + détail), pas seulement la page affichée"
                     [loading]="exportEchEnCours()"
                     [disabled]="!du || !au"
                     (click)="exporterEcheances()"
@@ -235,6 +255,60 @@ import { TooltipModule } from 'primeng/tooltip';
                 </div>
             </div>
 
+            <div class="flex flex-wrap items-center gap-2 mb-3 text-sm" *ngIf="filtreDelegation || filtreAgence">
+                <span class="text-gray-500">Périmètre :</span>
+                <a class="cursor-pointer text-primary hover:underline" (click)="remonter(null)">Tout mon périmètre</a>
+                <ng-container *ngIf="filtreDelegation">
+                    <i class="pi pi-angle-right text-gray-400"></i>
+                    <a class="cursor-pointer text-primary hover:underline" (click)="remonter('delegation')">{{ filtreDelegation.libelle }}</a>
+                </ng-container>
+                <ng-container *ngIf="filtreAgence">
+                    <i class="pi pi-angle-right text-gray-400"></i>
+                    <span class="font-semibold">{{ filtreAgence.libelle }}</span>
+                </ng-container>
+            </div>
+
+            @if (modeEch === 'synthese') {
+            <p-table [value]="state().synthese" [loading]="state().loadingSyn" responsiveLayout="scroll" [rowHover]="true" sortMode="single">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th pSortableColumn="libelle">{{ libelleNiveau(niveauSyn) }} <p-sortIcon field="libelle"></p-sortIcon></th>
+                        <th class="text-center" *ngIf="niveauSyn !== 'ps'">Points de service</th>
+                        <th class="text-right" pSortableColumn="indicateurs.nbEcheances">Échéances <p-sortIcon field="indicateurs.nbEcheances"></p-sortIcon></th>
+                        <th class="text-right" pSortableColumn="indicateurs.montantAttendu">Attendu <p-sortIcon field="indicateurs.montantAttendu"></p-sortIcon></th>
+                        <th class="text-right" pSortableColumn="indicateurs.montantRegle">Réglé <p-sortIcon field="indicateurs.montantRegle"></p-sortIcon></th>
+                        <th class="text-right" pSortableColumn="indicateurs.resteAEncaisser">Reste à encaisser <p-sortIcon field="indicateurs.resteAEncaisser"></p-sortIcon></th>
+                        <th class="text-right" pSortableColumn="indicateurs.tauxRecouvrement">Taux <p-sortIcon field="indicateurs.tauxRecouvrement"></p-sortIcon></th>
+                        <th class="text-center" pSortableColumn="indicateurs.nbImpayees">Impayées <p-sortIcon field="indicateurs.nbImpayees"></p-sortIcon></th>
+                        <th></th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-s>
+                    <tr class="cursor-pointer" (click)="descendre(s)" [title]="s.niveau === 'PS' ? 'Voir les échéances de ce point de service' : 'Voir le détail'">
+                        <td>
+                            <span class="font-medium">{{ s.libelle }}</span>
+                            <div class="text-xs text-gray-500" *ngIf="s.rattachement || s.code">{{ s.rattachement }}<span *ngIf="s.code"> · {{ s.code }}</span></div>
+                        </td>
+                        <td class="text-center" *ngIf="niveauSyn !== 'ps'">{{ s.nbPointsService }}</td>
+                        <td class="text-right">{{ s.indicateurs?.nbEcheances }}</td>
+                        <td class="text-right">{{ s.indicateurs?.montantAttendu | number: '1.0-0' }}</td>
+                        <td class="text-right text-green-700">{{ s.indicateurs?.montantRegle | number: '1.0-0' }}</td>
+                        <td class="text-right font-semibold" [class.text-red-600]="s.indicateurs?.nbImpayees > 0">{{ s.indicateurs?.resteAEncaisser | number: '1.0-0' }}</td>
+                        <td class="text-right"><p-tag [value]="(s.indicateurs?.tauxRecouvrement | number: '1.1-1') + ' %'" [severity]="severiteTaux(s.indicateurs?.tauxRecouvrement)"></p-tag></td>
+                        <td class="text-center">{{ s.indicateurs?.nbImpayees }}</td>
+                        <td class="text-right"><i class="pi pi-angle-right text-gray-400"></i></td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="9" class="text-center text-gray-500 py-6">Aucune échéance sur cette période pour ces critères.</td>
+                    </tr>
+                </ng-template>
+            </p-table>
+            <p class="text-xs text-gray-500 mt-2" *ngIf="state().synthese.length">
+                Lignes triées par reste à encaisser décroissant. Cliquez sur une ligne pour descendre d'un niveau, jusqu'aux échéances du point de service.
+            </p>
+            } @else {
             <p-table [value]="state().echeances" [loading]="state().loadingEch" responsiveLayout="scroll" [rowHover]="true">
                 <ng-template pTemplate="header">
                     <tr>
@@ -281,6 +355,7 @@ import { TooltipModule } from 'primeng/tooltip';
                     <button pButton icon="pi pi-chevron-right" class="p-button-sm p-button-outlined" [disabled]="!p.hasNext" (click)="chargerEcheances(p.page + 1)"></button>
                 </div>
             </div>
+            }
             }
         </div>
 
@@ -364,8 +439,11 @@ export class PortefeuilleSafComponent implements OnInit {
         indEch: any | null;
         pageEch: any | null;
         loadingEch: boolean;
+        // TT1 (lot 2)
+        synthese: any[];
+        loadingSyn: boolean;
     }>({ agences: [], credits: [], indicateurs: null, page: null, loading: false, showEcheancier: false, creditSelectionne: null, echeancier: [], loadingEcheancier: false,
-         echeances: [], indEch: null, pageEch: null, loadingEch: false });
+         echeances: [], indEch: null, pageEch: null, loadingEch: false, synthese: [], loadingSyn: false });
 
     // ── TT1 (lot 1) : échéances de la période ──
     vue: 'credits' | 'echeances' = 'credits';
@@ -392,10 +470,253 @@ export class PortefeuilleSafComponent implements OnInit {
     rechercheEch = '';
     exportEchEnCours = signal(false);
 
+    // ── TT1 (lot 2) : synthèse hiérarchique + impression ──
+    modeEch: 'detail' | 'synthese' = 'detail';
+    modeOptions = [
+        { label: 'Synthèse', value: 'synthese' },
+        { label: 'Détail', value: 'detail' }
+    ];
+    niveauSyn: string = 'auto';
+    niveauOptions: { label: string; value: string }[] = [];
+    filtreAgence: { id: number; libelle: string } | null = null;
+    filtreDelegation: { id: number; libelle: string } | null = null;
+    impressionEnCours = signal(false);
+    private static readonly IMPRESSION_MAX_LIGNES = 3000;
+
     changerVue(): void {
         if (this.vue === 'echeances' && !this.state().indEch) {
+            // DA / DR / DE : synthèse par défaut ; agent (un seul PS) : détail
+            this.modeEch = this.state().agences.length > 1 ? 'synthese' : 'detail';
             this.appliquerRaccourci();
         }
+    }
+
+    changerMode(): void {
+        if (this.modeEch === 'synthese') {
+            this.psEcheances = null;
+        }
+        this.chargerEcheances(0);
+    }
+
+    private filtresTT1(): FiltresTT1 {
+        return {
+            du: this.du,
+            au: this.au,
+            etat: this.etatEch,
+            codAgencia: this.modeEch === 'detail' ? this.psEcheances : null,
+            agenceId: this.filtreAgence?.id ?? null,
+            delegationId: this.filtreAgence ? null : (this.filtreDelegation?.id ?? null),
+            recherche: this.rechercheEch.trim() || null
+        };
+    }
+
+    libelleNiveau(niveau: string): string {
+        return niveau === 'delegation' ? 'Délégation' : niveau === 'agence' ? 'Agence' : 'Point de service';
+    }
+
+    severiteTaux(taux: number | null | undefined): 'success' | 'warn' | 'danger' | 'info' {
+        if (taux === null || taux === undefined) return 'info';
+        return taux >= 80 ? 'success' : taux >= 50 ? 'warn' : 'danger';
+    }
+
+    chargerSynthese(): void {
+        this.state.update((s) => ({ ...s, loadingSyn: true }));
+        this.userService
+            .getPortefeuilleEcheancesSynthese$(this.filtresTT1(), this.niveauSyn)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => {
+                    const d: any = r.data || {};
+                    const niveaux: string[] = d.niveaux || ['ps'];
+                    this.niveauOptions = niveaux.map((n) => ({ label: this.libelleNiveau(n), value: n }));
+                    this.niveauSyn = d.niveau || this.niveauSyn;
+                    this.state.update((s) => ({ ...s, synthese: d.synthese || [], loadingSyn: false }));
+                },
+                error: (err) => {
+                    this.state.update((s) => ({ ...s, loadingSyn: false }));
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || 'Base SAF momentanément indisponible', life: 6000 });
+                }
+            });
+    }
+
+    /** Descente d'un niveau depuis une ligne de synthèse, jusqu'aux échéances du point de service. */
+    descendre(s: any): void {
+        if (s.niveau === 'PS') {
+            this.psEcheances = s.code;
+            this.modeEch = 'detail';
+        } else if (s.id === null || s.id === undefined) {
+            this.messageService.add({ severity: 'info', summary: 'Non rattaché', detail: 'Ces points de service ne sont pas rattachés dans la plateforme : passez en détail pour les consulter', life: 5000 });
+            return;
+        } else if (s.niveau === 'DELEGATION') {
+            this.filtreDelegation = { id: s.id, libelle: s.libelle };
+            this.filtreAgence = null;
+            this.niveauSyn = 'agence';
+        } else if (s.niveau === 'AGENCE') {
+            this.filtreAgence = { id: s.id, libelle: s.libelle };
+            this.niveauSyn = 'ps';
+        }
+        this.chargerEcheances(0);
+    }
+
+    remonter(jusqua: 'delegation' | null): void {
+        if (jusqua === 'delegation') {
+            this.filtreAgence = null;
+            this.niveauSyn = 'agence';
+        } else {
+            this.filtreAgence = null;
+            this.filtreDelegation = null;
+            this.niveauSyn = this.niveauOptions[0]?.value || 'auto';
+        }
+        this.psEcheances = null;
+        this.modeEch = 'synthese';
+        this.chargerEcheances(0);
+    }
+
+    private libellePerimetre(): string {
+        const ag = this.state().agences;
+        if (this.modeEch === 'detail' && this.psEcheances) {
+            return ag.find((a) => a.codAgencia === this.psEcheances)?.desAgencia || this.psEcheances;
+        }
+        if (ag.length === 1) return ag[0].desAgencia;
+        if (this.filtreAgence) return 'Agence ' + this.filtreAgence.libelle;
+        if (this.filtreDelegation) return 'Délégation ' + this.filtreDelegation.libelle;
+        return 'Tout mon périmètre (' + ag.length + ' points de service)';
+    }
+
+    /** Impression de l'état TT1 : en-tête CRG, période, périmètre, totaux, tableau et signatures. */
+    async imprimer(): Promise<void> {
+        if (!this.du || !this.au) return;
+        this.impressionEnCours.set(true);
+        const nb = (v: any) => (v === null || v === undefined ? '' : new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(Number(v)));
+        const pct = (v: any) => (v === null || v === undefined ? '' : new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(Number(v)) + ' %');
+        const dt = (v: any) => (v ? new Date(v).toLocaleDateString('fr-FR') : '');
+        try {
+            let colonnes: string[];
+            let lignes: (string | number)[][];
+            let tronque = false;
+            if (this.modeEch === 'synthese') {
+                const parNiveau = this.niveauSyn !== 'ps';
+                colonnes = [this.libelleNiveau(this.niveauSyn), ...(parNiveau ? ['PS'] : ['Code']), 'Échéances', 'Attendu (GNF)', 'Réglé (GNF)', 'Reste à encaisser (GNF)', 'Taux', 'Impayées', 'À échoir'];
+                lignes = this.state().synthese.map((s: any) => [
+                    s.libelle + (s.rattachement ? ' (' + s.rattachement + ')' : ''),
+                    parNiveau ? s.nbPointsService : s.code || '',
+                    s.indicateurs?.nbEcheances ?? 0,
+                    nb(s.indicateurs?.montantAttendu),
+                    nb(s.indicateurs?.montantRegle),
+                    nb(s.indicateurs?.resteAEncaisser),
+                    pct(s.indicateurs?.tauxRecouvrement),
+                    s.indicateurs?.nbImpayees ?? 0,
+                    s.indicateurs?.nbAEchoir ?? 0
+                ]);
+            } else {
+                colonnes = ['Date', 'Point de service', 'Client', 'N° crédit', 'Éch.', 'Montant (GNF)', 'Capital (GNF)', 'Intérêts (GNF)', 'Reste à payer (GNF)', 'État'];
+                const toutes: any[] = [];
+                let page = 0;
+                while (toutes.length < PortefeuilleSafComponent.IMPRESSION_MAX_LIGNES) {
+                    const r: IResponse = await lastValueFrom(this.userService.getPortefeuilleEcheances$(this.filtresTT1(), page, 100));
+                    const p = (r.data as any)?.echeances;
+                    toutes.push(...(p?.content || []));
+                    if (!p?.hasNext) break;
+                    page++;
+                }
+                tronque = toutes.length >= PortefeuilleSafComponent.IMPRESSION_MAX_LIGNES;
+                lignes = toutes.slice(0, PortefeuilleSafComponent.IMPRESSION_MAX_LIGNES).map((e: any) => [
+                    dt(e.fecCuota),
+                    e.desAgencia || e.codAgencia || '',
+                    (e.nomCliente || '') + (e.codCliente ? ' (' + e.codCliente + ')' : ''),
+                    e.numCredito,
+                    e.numCuota,
+                    nb(e.monCuota),
+                    nb(e.monPrincipal),
+                    nb(e.monInt),
+                    nb(e.resteAPayer),
+                    this.libelleEtatEch(e)
+                ]);
+            }
+            const i = this.state().indEch;
+            const totaux: [string, string][] = i
+                ? [
+                      ['Échéances', String(i.nbEcheances) + ' (' + i.nbCredits + ' crédits, ' + i.nbClients + ' clients)'],
+                      ['Montant attendu', nb(i.montantAttendu) + ' GNF'],
+                      ['dont capital', nb(i.capitalAttendu) + ' GNF'],
+                      ['dont intérêts', nb(i.interetsAttendus) + ' GNF'],
+                      ['Réglé', nb(i.montantRegle) + ' GNF (' + pct(i.tauxRecouvrement) + ')'],
+                      ['Reste à encaisser', nb(i.resteAEncaisser) + ' GNF'],
+                      ['Réglées / à échoir / impayées', i.nbReglees + ' / ' + i.nbAEchoir + ' / ' + i.nbImpayees]
+                  ]
+                : [];
+            const etat = this.etatOptions.find((o) => o.value === this.etatEch)?.label || '';
+            this.ouvrirImpression(
+                'État TT1 — Échéances de la période',
+                [
+                    ['Périmètre', this.libellePerimetre()],
+                    ['Période', dt(this.du) + ' au ' + dt(this.au)],
+                    ['État des échéances', etat + (this.rechercheEch.trim() ? ' — recherche « ' + this.rechercheEch.trim() + ' »' : '')],
+                    ['Vue', this.modeEch === 'synthese' ? 'Synthèse par ' + this.libelleNiveau(this.niveauSyn).toLowerCase() : 'Détail des échéances']
+                ],
+                totaux,
+                colonnes,
+                lignes,
+                tronque ? 'Liste limitée aux ' + PortefeuilleSafComponent.IMPRESSION_MAX_LIGNES + ' premières échéances : utilisez l’export Excel pour la liste complète.' : ''
+            );
+        } catch (err: any) {
+            this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || "Échec de la préparation de l'impression", life: 6000 });
+        } finally {
+            this.impressionEnCours.set(false);
+        }
+    }
+
+    private ouvrirImpression(titre: string, meta: [string, string][], totaux: [string, string][], colonnes: string[], lignes: (string | number)[][], avertissement: string): void {
+        const w = window.open('', '_blank', 'width=1100,height=900');
+        if (!w) {
+            this.messageService.add({ severity: 'warn', summary: 'Impression', detail: 'Autorisez les fenêtres surgissantes pour imprimer', life: 5000 });
+            return;
+        }
+        const esc = (v: string | number) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
+        const num = (v: string | number) => typeof v === 'number' || /^[\d\s\u202f\u00a0,.]+( %)?$/.test(String(v));
+        const thead = colonnes.map((c) => `<th>${esc(c)}</th>`).join('');
+        const tbody = lignes.length
+            ? lignes.map((l) => `<tr>${l.map((v) => `<td class="${num(v) ? 'num' : ''}">${esc(v)}</td>`).join('')}</tr>`).join('')
+            : `<tr><td colspan="${colonnes.length}" class="vide">Aucune échéance</td></tr>`;
+        const metaHtml = meta.map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join('');
+        const totauxHtml = totaux.map(([k, v]) => `<tr><th>${esc(k)}</th><td class="num">${esc(v)}</td></tr>`).join('');
+        const genere = new Date().toLocaleString('fr-FR');
+        w.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">
+<title>${esc(titre)}</title>
+<style>
+  body { font-family: Georgia, 'Times New Roman', serif; color: #111; max-width: 1050px; margin: 1.5rem auto; }
+  .entete { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #111; padding-bottom: .4rem; margin-bottom: 1rem; }
+  .entete h2 { margin: 0; font-size: 1.1rem; } .entete small { color: #444; }
+  h1 { text-align: center; font-size: 1.3rem; letter-spacing: .04em; margin: .6rem 0 .8rem; }
+  .cartouche { display: flex; gap: 2rem; margin-bottom: 1rem; }
+  .cartouche table { font-size: .85rem; border-collapse: collapse; }
+  .cartouche th { text-align: left; padding: 2px 10px 2px 0; color: #444; font-weight: normal; white-space: nowrap; }
+  .cartouche td { padding: 2px 0; }
+  .cartouche td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.liste { width: 100%; border-collapse: collapse; font-size: .78rem; }
+  table.liste th, table.liste td { border: 1px solid #333; padding: 3px 5px; text-align: left; vertical-align: top; }
+  table.liste th { background: #eee; }
+  table.liste td.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  td.vide { text-align: center; color: #666; }
+  .avert { font-size: .8rem; color: #8a4b00; margin-top: .5rem; }
+  .pied { display: flex; justify-content: space-between; margin-top: 2rem; font-size: .85rem; }
+  .signature { text-align: center; width: 30%; }
+  .signature .ligne { border-top: 1px solid #111; margin-top: 3.5rem; padding-top: .3rem; }
+  @media print { body { margin: 0.5cm auto; } thead { display: table-header-group; } tr { page-break-inside: avoid; } }
+</style></head><body>
+<div class="entete"><div><h2>CRÉDIT RURAL DE GUINÉE S.A</h2><small>Suivi du portefeuille crédits</small></div><small>Édité le ${esc(genere)}</small></div>
+<h1>${esc(titre)}</h1>
+<div class="cartouche"><table>${metaHtml}</table><table>${totauxHtml}</table></div>
+<table class="liste"><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table>
+${avertissement ? `<div class="avert">${esc(avertissement)}</div>` : ''}
+<div class="pied">
+  <div class="signature"><b>Établi par</b><div class="ligne">&nbsp;</div></div>
+  <div class="signature"><b>Le Directeur d'agence</b><div class="ligne">&nbsp;</div></div>
+  <div class="signature"><b>Visa</b><div class="ligne">&nbsp;</div></div>
+</div>
+<script>window.onload = function(){ window.print(); }<\/script>
+</body></html>`);
+        w.document.close();
     }
 
     private iso(d: Date): string {
@@ -428,17 +749,21 @@ export class PortefeuilleSafComponent implements OnInit {
             this.messageService.add({ severity: 'warn', summary: 'Période', detail: 'La date de fin doit être postérieure à la date de début', life: 4000 });
             return;
         }
-        const recherche = this.rechercheEch.trim() || null;
-        this.state.update((s) => ({ ...s, loadingEch: true }));
+        const filtres = this.filtresTT1();
         this.userService
-            .getPortefeuilleEcheancesIndicateurs$(this.du, this.au, this.psEcheances, this.etatEch, recherche)
+            .getPortefeuilleEcheancesIndicateurs$(filtres)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (r: IResponse) => this.state.update((s) => ({ ...s, indEch: (r.data as any)?.indicateurs || null })),
                 error: () => {}
             });
+        if (this.modeEch === 'synthese') {
+            this.chargerSynthese();
+            return;
+        }
+        this.state.update((s) => ({ ...s, loadingEch: true }));
         this.userService
-            .getPortefeuilleEcheances$(this.du, this.au, this.psEcheances, this.etatEch, recherche, page, this.pageSize)
+            .getPortefeuilleEcheances$(filtres, page, this.pageSize)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (r: IResponse) => {
@@ -456,7 +781,7 @@ export class PortefeuilleSafComponent implements OnInit {
         if (!this.du || !this.au) return;
         this.exportEchEnCours.set(true);
         this.userService
-            .exportPortefeuilleEcheances$(this.du, this.au, this.psEcheances, this.etatEch, this.rechercheEch.trim() || null)
+            .exportPortefeuilleEcheances$(this.filtresTT1())
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (reponse) => {

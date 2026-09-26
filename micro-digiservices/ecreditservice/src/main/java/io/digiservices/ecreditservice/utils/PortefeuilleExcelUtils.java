@@ -2,6 +2,7 @@ package io.digiservices.ecreditservice.utils;
 
 import io.digiservices.clients.portefeuille.EcheancePeriodeDto;
 import io.digiservices.clients.portefeuille.EcheancesIndicateursDto;
+import io.digiservices.clients.portefeuille.EcheancesSyntheseDto;
 import io.digiservices.clients.portefeuille.PortefeuilleCreditDto;
 import io.digiservices.clients.portefeuille.PortefeuilleIndicateursDto;
 import org.apache.poi.ss.usermodel.BorderStyle;
@@ -128,6 +129,7 @@ public final class PortefeuilleExcelUtils {
      */
     public static byte[] construireClasseurEcheances(String perimetre, LocalDate du, LocalDate au, String etat,
                                                      String recherche, EcheancesIndicateursDto indicateurs,
+                                                     List<EcheancesSyntheseDto> repartition,
                                                      List<EcheancePeriodeDto> echeances) throws IOException {
         try (Workbook wb = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             CellStyle titre = styleTitre(wb);
@@ -160,10 +162,48 @@ public final class PortefeuilleExcelUtils {
                 ligneNombre(synthese, r++, "Taux de recouvrement", ratio(indicateurs.getMontantRegle(), indicateurs.getMontantAttendu()), pourcent);
                 ligneNombre(synthese, r++, "Échéances réglées", indicateurs.getNbReglees(), null);
                 ligneNombre(synthese, r++, "Échéances à échoir", indicateurs.getNbAEchoir(), null);
-                ligneNombre(synthese, r, "Échéances impayées", indicateurs.getNbImpayees(), null);
+                ligneNombre(synthese, r++, "Échéances impayées", indicateurs.getNbImpayees(), null);
             }
             synthese.setColumnWidth(0, 34 * 256);
             synthese.setColumnWidth(1, 22 * 256);
+
+            // Repartition par point de service (lot 2) quand le perimetre en compte plusieurs
+            if (repartition != null && repartition.size() > 1) {
+                r++;
+                Row rr = synthese.createRow(r++);
+                Cell cr = rr.createCell(0);
+                cr.setCellValue("Répartition par point de service");
+                cr.setCellStyle(titre);
+                String[] colsRep = {"Point de service", "Code", "Agence", "Échéances", "Attendu (GNF)", "Réglé (GNF)",
+                        "Reste à encaisser (GNF)", "Taux de recouvrement", "Impayées", "À échoir"};
+                Row hr = synthese.createRow(r++);
+                for (int c = 0; c < colsRep.length; c++) {
+                    Cell cell = hr.createCell(c);
+                    cell.setCellValue(colsRep[c]);
+                    cell.setCellStyle(entete);
+                }
+                for (EcheancesSyntheseDto s : repartition) {
+                    EcheancesIndicateursDto i = s.getIndicateurs();
+                    Row row = synthese.createRow(r++);
+                    int c = 0;
+                    row.createCell(c++).setCellValue(nvl(s.getLibelle()));
+                    row.createCell(c++).setCellValue(nvl(s.getCode()));
+                    row.createCell(c++).setCellValue(nvl(s.getRattachement()));
+                    row.createCell(c++).setCellValue(i == null ? 0 : i.getNbEcheances());
+                    cellMontant(row, c++, i == null ? null : i.getMontantAttendu(), montant);
+                    cellMontant(row, c++, i == null ? null : i.getMontantRegle(), montant);
+                    cellMontant(row, c++, i == null ? null : i.getResteAEncaisser(), montant);
+                    Cell ct2 = row.createCell(c++);
+                    ct2.setCellValue(i == null ? 0 : ratio(i.getMontantRegle(), i.getMontantAttendu()));
+                    ct2.setCellStyle(pourcent);
+                    row.createCell(c++).setCellValue(i == null ? 0 : i.getNbImpayees());
+                    row.createCell(c).setCellValue(i == null ? 0 : i.getNbAEchoir());
+                }
+                int[] largeursRep = {34, 22, 24, 12, 18, 18, 22, 20, 12, 12};
+                for (int c = 2; c < largeursRep.length; c++) {
+                    synthese.setColumnWidth(c, largeursRep[c] * 256);
+                }
+            }
 
             Sheet feuille = wb.createSheet("Échéances");
             String[] colonnes = {"Date d'échéance", "Point de service", "Code PS", "Client", "Code client", "N° crédit",

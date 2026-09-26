@@ -126,6 +126,18 @@ public class PortefeuilleController {
         return ResponseEntity.ok(PageDto.of(content, page, size, total));
     }
 
+    /** Synthese TT1 (lot 2) : agregats par code agence SAF. */
+    @GetMapping("/echeances-periode/synthese")
+    public ResponseEntity<List<io.digiservices.clients.portefeuille.EcheancesSyntheseDto>> getEcheancesPeriodeSynthese(
+            @RequestParam(name = "codes") List<String> codes,
+            @RequestParam(name = "du") String du,
+            @RequestParam(name = "au") String au,
+            @RequestParam(name = "etat", defaultValue = "toutes") String etat,
+            @RequestParam(name = "recherche", required = false) String recherche) {
+        java.time.LocalDate[] bornes = bornesPeriode(du, au);
+        return ResponseEntity.ok(repository.syntheseEcheancesParAgence(codes, bornes[0], bornes[1], etatEcheance(etat), recherche));
+    }
+
     @GetMapping("/echeances-periode/indicateurs")
     public ResponseEntity<io.digiservices.clients.portefeuille.EcheancesIndicateursDto> getEcheancesPeriodeIndicateurs(
             @RequestParam(name = "codes") List<String> codes,

@@ -6,6 +6,8 @@ import io.digiservices.clients.domain.User;
 import io.digiservices.clients.portefeuille.AgenceSafDto;
 import io.digiservices.clients.portefeuille.EcheancePeriodeDto;
 import io.digiservices.clients.portefeuille.EcheancesIndicateursDto;
+import io.digiservices.clients.portefeuille.EcheancesSyntheseDto;
+import io.digiservices.ecreditservice.utils.PortefeuilleSyntheseUtils;
 import io.digiservices.clients.portefeuille.PortefeuilleCreditDto;
 import io.digiservices.ecreditservice.utils.PortefeuilleExcelUtils;
 import org.springframework.http.HttpHeaders;
@@ -181,12 +183,14 @@ public class PortefeuilleResource {
             @RequestParam(name = "du") String du,
             @RequestParam(name = "au") String au,
             @RequestParam(name = "codAgencia", required = false) String codAgencia,
+            @RequestParam(name = "agenceId", required = false) Long agenceId,
+            @RequestParam(name = "delegationId", required = false) Long delegationId,
             @RequestParam(name = "etat", defaultValue = "toutes") String etat,
             @RequestParam(name = "recherche", required = false) String recherche,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "50") int size,
             HttpServletRequest request) {
-        List<String> codes = codesDuPerimetre(authentication, codAgencia);
+        List<String> codes = codesDuPerimetre(authentication, codAgencia, agenceId, delegationId);
         return ResponseEntity.ok(getResponse(request,
                 Map.of("echeances", portefeuilleClient.getEcheancesPeriode(codes, du, au, etat, recherche, page, size)),
                 "Echeances de la periode", OK));
@@ -198,13 +202,60 @@ public class PortefeuilleResource {
             @RequestParam(name = "du") String du,
             @RequestParam(name = "au") String au,
             @RequestParam(name = "codAgencia", required = false) String codAgencia,
+            @RequestParam(name = "agenceId", required = false) Long agenceId,
+            @RequestParam(name = "delegationId", required = false) Long delegationId,
             @RequestParam(name = "etat", defaultValue = "toutes") String etat,
             @RequestParam(name = "recherche", required = false) String recherche,
             HttpServletRequest request) {
-        List<String> codes = codesDuPerimetre(authentication, codAgencia);
+        List<String> codes = codesDuPerimetre(authentication, codAgencia, agenceId, delegationId);
         return ResponseEntity.ok(getResponse(request,
                 Map.of("indicateurs", portefeuilleClient.getEcheancesPeriodeIndicateurs(codes, du, au, etat, recherche)),
                 "Indicateurs des echeances de la periode", OK));
+    }
+
+    // ==================== TT1 (lot 2) : synthese hierarchique ====================
+
+    /**
+     * Synthese de la periode au niveau demande (ps, agence, delegation), sur le perimetre de
+     * l'utilisateur, eventuellement restreint a une delegation ou une agence (descente au clic).
+     * Renvoie aussi les niveaux consultables selon le role : DA = ps ; DR = agence, ps ;
+     * DE / DG = delegation, agence, ps.
+     */
+    @GetMapping("/echeances/synthese")
+    public ResponseEntity<Response> getEcheancesSynthese(
+            @NotNull Authentication authentication,
+            @RequestParam(name = "du") String du,
+            @RequestParam(name = "au") String au,
+            @RequestParam(name = "niveau", defaultValue = "ps") String niveau,
+            @RequestParam(name = "agenceId", required = false) Long agenceId,
+            @RequestParam(name = "delegationId", required = false) Long delegationId,
+            @RequestParam(name = "etat", defaultValue = "toutes") String etat,
+            @RequestParam(name = "recherche", required = false) String recherche,
+            HttpServletRequest request) {
+        Perimetre perimetre = perimetreDe(authentication);
+        List<String> niveaux = niveauxDisponibles(perimetre);
+        String niveauNorme = niveau == null ? PortefeuilleSyntheseUtils.NIVEAU_PS : niveau.trim().toLowerCase();
+        if ("auto".equals(niveauNorme)) {
+            niveauNorme = niveaux.get(0);   // niveau le plus haut consultable par le profil
+        }
+        if (!niveaux.contains(niveauNorme)) {
+            throw new ApiException("Niveau de synthese non disponible pour votre profil : " + niveau);
+        }
+        List<String> codes = codesDuPerimetre(authentication, null, agenceId, delegationId);
+        List<EcheancesSyntheseDto> parCode = portefeuilleClient.getEcheancesPeriodeSynthese(codes, du, au, etat, recherche);
+        List<EcheancesSyntheseDto> synthese = PortefeuilleSyntheseUtils.agreger(
+                parCode, perimetreRepository.hierarchie(perimetre.toutReseau() ? List.of() : codes), niveauNorme);
+        return ResponseEntity.ok(getResponse(request,
+                Map.of("synthese", synthese, "niveaux", niveaux, "niveau", niveauNorme),
+                "Synthese des echeances de la periode", OK));
+    }
+
+    private static List<String> niveauxDisponibles(Perimetre perimetre) {
+        return switch (perimetre.niveau()) {
+            case "RESEAU" -> List.of(PortefeuilleSyntheseUtils.NIVEAU_DELEGATION, PortefeuilleSyntheseUtils.NIVEAU_AGENCE, PortefeuilleSyntheseUtils.NIVEAU_PS);
+            case "DELEGATION" -> List.of(PortefeuilleSyntheseUtils.NIVEAU_AGENCE, PortefeuilleSyntheseUtils.NIVEAU_PS);
+            default -> List.of(PortefeuilleSyntheseUtils.NIVEAU_PS);
+        };
     }
 
     /** Export Excel de l'etat TT1 : synthese + toutes les echeances (borne a EXPORT_MAX_LIGNES). */
@@ -214,17 +265,22 @@ public class PortefeuilleResource {
             @RequestParam(name = "du") String du,
             @RequestParam(name = "au") String au,
             @RequestParam(name = "codAgencia", required = false) String codAgencia,
+            @RequestParam(name = "agenceId", required = false) Long agenceId,
+            @RequestParam(name = "delegationId", required = false) Long delegationId,
             @RequestParam(name = "etat", defaultValue = "toutes") String etat,
             @RequestParam(name = "recherche", required = false) String recherche) {
-        List<String> codes = codesDuPerimetre(authentication, codAgencia);
+        List<String> codes = codesDuPerimetre(authentication, codAgencia, agenceId, delegationId);
         try {
             String perimetre;
+            List<EcheancesSyntheseDto> repartition = List.of();
             if (codAgencia != null && !codAgencia.isBlank()) {
                 perimetre = portefeuilleClient.getAgences().stream()
                         .filter(a -> codAgencia.equals(a.getCodAgencia()))
                         .map(AgenceSafDto::getDesAgencia).findFirst().orElse(codAgencia);
             } else {
                 perimetre = codes.size() + " point(s) de service";
+                List<EcheancesSyntheseDto> parCode = portefeuilleClient.getEcheancesPeriodeSynthese(codes, du, au, etat, recherche);
+                repartition = PortefeuilleSyntheseUtils.agreger(parCode, perimetreRepository.hierarchie(codes), PortefeuilleSyntheseUtils.NIVEAU_PS);
             }
             EcheancesIndicateursDto indicateurs = portefeuilleClient.getEcheancesPeriodeIndicateurs(codes, du, au, etat, recherche);
             java.util.List<EcheancePeriodeDto> lignes = new java.util.ArrayList<>();
@@ -242,7 +298,7 @@ public class PortefeuilleResource {
             }
             java.time.LocalDate dDu = java.time.LocalDate.parse(du);
             java.time.LocalDate dAu = java.time.LocalDate.parse(au);
-            byte[] contenu = PortefeuilleExcelUtils.construireClasseurEcheances(perimetre, dDu, dAu, etat, recherche, indicateurs, lignes);
+            byte[] contenu = PortefeuilleExcelUtils.construireClasseurEcheances(perimetre, dDu, dAu, etat, recherche, indicateurs, repartition, lignes);
             String nomFichier = "echeances_TT1_" + du + "_" + au
                     + (codAgencia != null && !codAgencia.isBlank() ? "_" + codAgencia : "") + ".xlsx";
             HttpHeaders headers = new HttpHeaders();
@@ -258,14 +314,30 @@ public class PortefeuilleResource {
         }
     }
 
-    /** Codes SAF interrogeables : un code verifie, ou tout le perimetre de l'utilisateur. */
-    private List<String> codesDuPerimetre(Authentication authentication, String codAgencia) {
+    /**
+     * Codes SAF interrogeables : un code verifie ; sinon les PS d'une agence ou d'une delegation
+     * digi (descente au clic, intersection avec le perimetre) ; sinon tout le perimetre.
+     */
+    private List<String> codesDuPerimetre(Authentication authentication, String codAgencia, Long agenceId, Long delegationId) {
         Perimetre perimetre = perimetreDe(authentication);
         if (codAgencia != null && !codAgencia.isBlank()) {
             if (!perimetre.toutReseau() && !perimetre.codes().contains(codAgencia)) {
                 throw new ApiException("Cette agence SAF est hors de votre perimetre");
             }
             return List.of(codAgencia);
+        }
+        if (agenceId != null || delegationId != null) {
+            Set<String> cibles = agenceId != null
+                    ? perimetreRepository.codesParAgence(agenceId)
+                    : perimetreRepository.codesParDelegation(delegationId);
+            List<String> codes = perimetre.toutReseau()
+                    ? List.copyOf(cibles)
+                    : cibles.stream().filter(perimetre.codes()::contains).toList();
+            if (codes.isEmpty()) {
+                throw new ApiException((agenceId != null ? "Cette agence" : "Cette delegation")
+                        + " est hors de votre perimetre ou n'a aucun point de service relie a SAF");
+            }
+            return codes;
         }
         if (perimetre.toutReseau()) {
             List<String> tous = portefeuilleClient.getAgences().stream().map(AgenceSafDto::getCodAgencia).toList();
@@ -279,7 +351,8 @@ public class PortefeuilleResource {
 
     // ==================== Perimetre ====================
 
-    private record Perimetre(boolean toutReseau, Set<String> codes) {
+    /** niveau : RESEAU, DELEGATION, AGENCE ou PS — determine les niveaux de synthese consultables. */
+    private record Perimetre(boolean toutReseau, Set<String> codes, String niveau) {
     }
 
     private void verifierAcces(Authentication authentication, String codAgencia) {
@@ -302,19 +375,23 @@ public class PortefeuilleResource {
         String role = user.getRole();
         if ("DG".equals(role) || "SUPER_ADMIN".equals(role)
                 || ("MANAGER".equals(role) && "DE".equalsIgnoreCase(user.getService()))) {
-            return new Perimetre(true, Set.of());
+            return new Perimetre(true, Set.of(), "RESEAU");
         }
         Set<String> codes;
         String rattachement;
+        String niveau;
         if ("DR".equals(role)) {
             codes = perimetreRepository.codesParDelegation(user.getDelegationId());
             rattachement = "votre delegation";
+            niveau = "DELEGATION";
         } else if ("DA".equals(role)) {
             codes = perimetreRepository.codesParAgence(user.getAgenceId());
             rattachement = "votre agence";
+            niveau = "AGENCE";
         } else if ("AGENT_CREDIT".equals(role)) {
             codes = perimetreRepository.codesParPointVente(user.getPointventeId());
             rattachement = "votre point de service";
+            niveau = "PS";
         } else {
             throw new ApiException("Acces reserve aux agents de credit et niveaux de direction");
         }
@@ -324,6 +401,6 @@ public class PortefeuilleResource {
             throw new ApiException("Aucun point de service de " + rattachement
                     + " n'est encore relie a SAF — contactez l'administrateur");
         }
-        return new Perimetre(false, codes);
+        return new Perimetre(false, codes, niveau);
     }
 }
