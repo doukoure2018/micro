@@ -21,6 +21,17 @@ import { Avis } from '@/interface/avis';
 import { PersonnePhysique } from '@/interface/personnePhysique';
 import { ArreteCaisse } from '@/interface/arrete-caisse';
 
+/** Filtres de l'etat TT1 (echeances de la periode). */
+export interface FiltresTT1 {
+    du: string;
+    au: string;
+    etat: string;
+    codAgencia?: string | null;
+    agenceId?: number | null;
+    delegationId?: number | null;
+    recherche?: string | null;
+}
+
 @Injectable()
 export class UserService {
     private readonly server: string = environment.apiBaseUrl;
@@ -1644,28 +1655,42 @@ export class UserService {
             observe: 'response'
         });
 
-    // TT1 (lot 1) : echeances de la periode sur le perimetre (codAgencia null = tous mes points de service)
-    getPortefeuilleEcheances$ = (du: string, au: string, codAgencia: string | null, etat: string, recherche: string | null, page: number, size: number) =>
+    // TT1 (lots 1-2) : echeances de la periode sur le perimetre de l'utilisateur.
+    // codAgencia = un point de service precis ; agenceId / delegationId = descente depuis la synthese ; sinon tout le perimetre.
+    private paramsTT1(f: FiltresTT1): { [k: string]: string | number } {
+        const p: { [k: string]: string | number } = { du: f.du, au: f.au, etat: f.etat };
+        if (f.codAgencia) p['codAgencia'] = f.codAgencia;
+        if (f.agenceId) p['agenceId'] = f.agenceId;
+        if (f.delegationId) p['delegationId'] = f.delegationId;
+        if (f.recherche) p['recherche'] = f.recherche;
+        return p;
+    }
+
+    getPortefeuilleEcheances$ = (f: FiltresTT1, page: number, size: number) =>
         <Observable<IResponse>>(
             this.http
-                .get<IResponse>(`${this.server}/ecredit/portefeuille/echeances`, {
-                    params: { du, au, etat, page, size, ...(codAgencia ? { codAgencia } : {}), ...(recherche ? { recherche } : {}) }
-                })
+                .get<IResponse>(`${this.server}/ecredit/portefeuille/echeances`, { params: { ...this.paramsTT1(f), page, size } })
                 .pipe(catchError(this.handleError))
         );
 
-    getPortefeuilleEcheancesIndicateurs$ = (du: string, au: string, codAgencia: string | null, etat: string, recherche: string | null) =>
+    getPortefeuilleEcheancesIndicateurs$ = (f: FiltresTT1) =>
         <Observable<IResponse>>(
             this.http
-                .get<IResponse>(`${this.server}/ecredit/portefeuille/echeances/indicateurs`, {
-                    params: { du, au, etat, ...(codAgencia ? { codAgencia } : {}), ...(recherche ? { recherche } : {}) }
-                })
+                .get<IResponse>(`${this.server}/ecredit/portefeuille/echeances/indicateurs`, { params: this.paramsTT1(f) })
                 .pipe(catchError(this.handleError))
         );
 
-    exportPortefeuilleEcheances$ = (du: string, au: string, codAgencia: string | null, etat: string, recherche: string | null) =>
+    /** Synthese par niveau (ps, agence, delegation, ou 'auto' = le plus haut niveau du profil). */
+    getPortefeuilleEcheancesSynthese$ = (f: FiltresTT1, niveau: string) =>
+        <Observable<IResponse>>(
+            this.http
+                .get<IResponse>(`${this.server}/ecredit/portefeuille/echeances/synthese`, { params: { ...this.paramsTT1(f), niveau } })
+                .pipe(catchError(this.handleError))
+        );
+
+    exportPortefeuilleEcheances$ = (f: FiltresTT1) =>
         this.http.get(`${this.server}/ecredit/portefeuille/echeances/export`, {
-            params: { du, au, etat, ...(codAgencia ? { codAgencia } : {}), ...(recherche ? { recherche } : {}) },
+            params: this.paramsTT1(f),
             responseType: 'blob',
             observe: 'response'
         });
