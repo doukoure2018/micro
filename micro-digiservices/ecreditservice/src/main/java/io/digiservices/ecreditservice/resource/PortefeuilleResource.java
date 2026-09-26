@@ -4,6 +4,8 @@ import io.digiservices.clients.EbankingPortefeuilleClient;
 import io.digiservices.clients.UserClient;
 import io.digiservices.clients.domain.User;
 import io.digiservices.clients.portefeuille.AgenceSafDto;
+import io.digiservices.clients.portefeuille.EcheancePeriodeDto;
+import io.digiservices.clients.portefeuille.EcheancesIndicateursDto;
 import io.digiservices.clients.portefeuille.PortefeuilleCreditDto;
 import io.digiservices.ecreditservice.utils.PortefeuilleExcelUtils;
 import org.springframework.http.HttpHeaders;
@@ -165,6 +167,115 @@ public class PortefeuilleResource {
     }
 
     private static final int EXPORT_MAX_LIGNES = 10000;
+
+    // ==================== TT1 (lot 1) : echeances de la periode ====================
+
+    /**
+     * Echeances tombant dans [du, au] sur le perimetre de l'utilisateur : un code agence SAF
+     * precis (verifie), ou, sans codAgencia, tous les points de service de son perimetre
+     * (agent = son PS, DA = son agence, DR = sa delegation, DE / DG = tout le reseau).
+     */
+    @GetMapping("/echeances")
+    public ResponseEntity<Response> getEcheances(
+            @NotNull Authentication authentication,
+            @RequestParam(name = "du") String du,
+            @RequestParam(name = "au") String au,
+            @RequestParam(name = "codAgencia", required = false) String codAgencia,
+            @RequestParam(name = "etat", defaultValue = "toutes") String etat,
+            @RequestParam(name = "recherche", required = false) String recherche,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "50") int size,
+            HttpServletRequest request) {
+        List<String> codes = codesDuPerimetre(authentication, codAgencia);
+        return ResponseEntity.ok(getResponse(request,
+                Map.of("echeances", portefeuilleClient.getEcheancesPeriode(codes, du, au, etat, recherche, page, size)),
+                "Echeances de la periode", OK));
+    }
+
+    @GetMapping("/echeances/indicateurs")
+    public ResponseEntity<Response> getEcheancesIndicateurs(
+            @NotNull Authentication authentication,
+            @RequestParam(name = "du") String du,
+            @RequestParam(name = "au") String au,
+            @RequestParam(name = "codAgencia", required = false) String codAgencia,
+            @RequestParam(name = "etat", defaultValue = "toutes") String etat,
+            @RequestParam(name = "recherche", required = false) String recherche,
+            HttpServletRequest request) {
+        List<String> codes = codesDuPerimetre(authentication, codAgencia);
+        return ResponseEntity.ok(getResponse(request,
+                Map.of("indicateurs", portefeuilleClient.getEcheancesPeriodeIndicateurs(codes, du, au, etat, recherche)),
+                "Indicateurs des echeances de la periode", OK));
+    }
+
+    /** Export Excel de l'etat TT1 : synthese + toutes les echeances (borne a EXPORT_MAX_LIGNES). */
+    @GetMapping("/echeances/export")
+    public ResponseEntity<byte[]> exporterEcheances(
+            @NotNull Authentication authentication,
+            @RequestParam(name = "du") String du,
+            @RequestParam(name = "au") String au,
+            @RequestParam(name = "codAgencia", required = false) String codAgencia,
+            @RequestParam(name = "etat", defaultValue = "toutes") String etat,
+            @RequestParam(name = "recherche", required = false) String recherche) {
+        List<String> codes = codesDuPerimetre(authentication, codAgencia);
+        try {
+            String perimetre;
+            if (codAgencia != null && !codAgencia.isBlank()) {
+                perimetre = portefeuilleClient.getAgences().stream()
+                        .filter(a -> codAgencia.equals(a.getCodAgencia()))
+                        .map(AgenceSafDto::getDesAgencia).findFirst().orElse(codAgencia);
+            } else {
+                perimetre = codes.size() + " point(s) de service";
+            }
+            EcheancesIndicateursDto indicateurs = portefeuilleClient.getEcheancesPeriodeIndicateurs(codes, du, au, etat, recherche);
+            java.util.List<EcheancePeriodeDto> lignes = new java.util.ArrayList<>();
+            int page = 0;
+            while (lignes.size() < EXPORT_MAX_LIGNES) {
+                var lot = portefeuilleClient.getEcheancesPeriode(codes, du, au, etat, recherche, page, 100);
+                if (lot.getContent() == null || lot.getContent().isEmpty()) break;
+                lignes.addAll(lot.getContent());
+                if (!lot.isHasNext()) break;
+                page++;
+            }
+            if (lignes.size() > EXPORT_MAX_LIGNES) {
+                lignes = lignes.subList(0, EXPORT_MAX_LIGNES);
+                log.warn("[PORTEFEUILLE] Export TT1 tronque a {} lignes", EXPORT_MAX_LIGNES);
+            }
+            java.time.LocalDate dDu = java.time.LocalDate.parse(du);
+            java.time.LocalDate dAu = java.time.LocalDate.parse(au);
+            byte[] contenu = PortefeuilleExcelUtils.construireClasseurEcheances(perimetre, dDu, dAu, etat, recherche, indicateurs, lignes);
+            String nomFichier = "echeances_TT1_" + du + "_" + au
+                    + (codAgencia != null && !codAgencia.isBlank() ? "_" + codAgencia : "") + ".xlsx";
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+            headers.setContentDispositionFormData("attachment", nomFichier);
+            headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
+            headers.setContentLength(contenu.length);
+            log.info("[PORTEFEUILLE] Export TT1 {} : {} echeances, {} octets", nomFichier, lignes.size(), contenu.length);
+            return ResponseEntity.ok().headers(headers).body(contenu);
+        } catch (java.io.IOException e) {
+            log.error("[PORTEFEUILLE] Echec de generation Excel TT1 : {}", e.getMessage(), e);
+            throw new ApiException("Echec de la generation du fichier Excel");
+        }
+    }
+
+    /** Codes SAF interrogeables : un code verifie, ou tout le perimetre de l'utilisateur. */
+    private List<String> codesDuPerimetre(Authentication authentication, String codAgencia) {
+        Perimetre perimetre = perimetreDe(authentication);
+        if (codAgencia != null && !codAgencia.isBlank()) {
+            if (!perimetre.toutReseau() && !perimetre.codes().contains(codAgencia)) {
+                throw new ApiException("Cette agence SAF est hors de votre perimetre");
+            }
+            return List.of(codAgencia);
+        }
+        if (perimetre.toutReseau()) {
+            List<String> tous = portefeuilleClient.getAgences().stream().map(AgenceSafDto::getCodAgencia).toList();
+            if (tous.isEmpty()) {
+                throw new ApiException("Aucune agence SAF disponible");
+            }
+            return tous;
+        }
+        return List.copyOf(perimetre.codes());
+    }
 
     // ==================== Perimetre ====================
 

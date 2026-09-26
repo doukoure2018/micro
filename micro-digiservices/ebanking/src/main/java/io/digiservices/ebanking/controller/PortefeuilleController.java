@@ -100,6 +100,71 @@ public class PortefeuilleController {
         return ResponseEntity.ok(repository.indicateurs(codAgencia, seulementRetard, retardMin, retardMax, recherche));
     }
 
+    // ==================== TT1 (lot 1) : echeances de la periode ====================
+
+    /**
+     * Echeances du plan de paiement tombant dans [du, au] sur les codes agence SAF donnes.
+     * La securite (perimetre par role) est assuree par ecreditservice, jamais ici.
+     */
+    @GetMapping("/echeances-periode")
+    public ResponseEntity<PageDto<io.digiservices.clients.portefeuille.EcheancePeriodeDto>> getEcheancesPeriode(
+            @RequestParam(name = "codes") List<String> codes,
+            @RequestParam(name = "du") String du,
+            @RequestParam(name = "au") String au,
+            @RequestParam(name = "etat", defaultValue = "toutes") String etat,
+            @RequestParam(name = "recherche", required = false) String recherche,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "50") int size) {
+        if (page < 0 || size < 1 || size > MAX_PAGE_SIZE) {
+            throw new BlogAPIException(HttpStatus.BAD_REQUEST,
+                    "Pagination invalide (page >= 0, 1 <= size <= " + MAX_PAGE_SIZE + ")");
+        }
+        java.time.LocalDate[] bornes = bornesPeriode(du, au);
+        String etatNorme = etatEcheance(etat);
+        long total = repository.countEcheancesPeriode(codes, bornes[0], bornes[1], etatNorme, recherche);
+        var content = repository.findEcheancesPeriode(codes, bornes[0], bornes[1], etatNorme, recherche, page * size, size);
+        return ResponseEntity.ok(PageDto.of(content, page, size, total));
+    }
+
+    @GetMapping("/echeances-periode/indicateurs")
+    public ResponseEntity<io.digiservices.clients.portefeuille.EcheancesIndicateursDto> getEcheancesPeriodeIndicateurs(
+            @RequestParam(name = "codes") List<String> codes,
+            @RequestParam(name = "du") String du,
+            @RequestParam(name = "au") String au,
+            @RequestParam(name = "etat", defaultValue = "toutes") String etat,
+            @RequestParam(name = "recherche", required = false) String recherche) {
+        java.time.LocalDate[] bornes = bornesPeriode(du, au);
+        return ResponseEntity.ok(repository.indicateursEcheancesPeriode(codes, bornes[0], bornes[1], etatEcheance(etat), recherche));
+    }
+
+    /** Periode ISO bornee a 366 jours pour proteger la base SAF. */
+    private static java.time.LocalDate[] bornesPeriode(String du, String au) {
+        java.time.LocalDate d, a;
+        try {
+            d = java.time.LocalDate.parse(du);
+            a = java.time.LocalDate.parse(au);
+        } catch (Exception e) {
+            throw new BlogAPIException(HttpStatus.BAD_REQUEST, "Dates attendues au format yyyy-MM-dd");
+        }
+        if (a.isBefore(d)) {
+            throw new BlogAPIException(HttpStatus.BAD_REQUEST, "La date de fin doit etre posterieure a la date de debut");
+        }
+        if (java.time.temporal.ChronoUnit.DAYS.between(d, a) > 366) {
+            throw new BlogAPIException(HttpStatus.BAD_REQUEST, "La periode ne peut pas depasser un an");
+        }
+        return new java.time.LocalDate[]{d, a};
+    }
+
+    private static String etatEcheance(String etat) {
+        String e = etat == null ? "toutes" : etat.trim().toLowerCase();
+        return switch (e) {
+            case "", "toutes" -> "toutes";
+            case "reglees", "aechoir", "impayees" -> e;
+            default -> throw new BlogAPIException(HttpStatus.BAD_REQUEST,
+                    "Le parametre 'etat' doit valoir toutes, reglees, aechoir ou impayees");
+        };
+    }
+
     // ==================== Alertes (phase 3) ====================
 
     @GetMapping("/echeances-avenir")
