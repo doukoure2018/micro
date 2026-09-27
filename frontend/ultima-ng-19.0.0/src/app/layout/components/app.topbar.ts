@@ -17,6 +17,8 @@ import { DemandeIndividuel } from '@/interface/demande-individuel.interface';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Agence } from '@/interface/agence';
 import { PointVente } from '@/interface/point.vente';
+import { SignalementTelephoneService } from '@/service/signalement-telephone.service';
+import { SignalementTelephone, libelleMotifSignalement } from '@/interface/signalement-telephone';
 
 @Component({
     selector: '[app-topbar]',
@@ -160,6 +162,53 @@ import { PointVente } from '@/interface/point.vente';
                                 </a>
                             </li>
                         }
+                    }
+                    @if (user?.role === 'AGENT_CREDIT') {
+                        <li>
+                            <a (click)="toggleSignalementMenu()">
+                                @if (signalements().length > 0) {
+                                    <p-overlay-badge severity="danger" [value]="signalements().length.toString()">
+                                        <i class="pi pi-bell !align-middle"></i>
+                                    </p-overlay-badge>
+                                } @else {
+                                    <i class="pi pi-bell !align-middle"></i>
+                                }
+                            </a>
+                            @if (signalementMenuVisible()) {
+                                <div class="notification-dropdown" (clickOutside)="closeSignalementMenu()">
+                                    <div class="notification-header px-4 py-3 border-b border-surface">
+                                        <span class="font-semibold">
+                                            @if (signalements().length > 0) {
+                                                <b class="text-primary">{{ signalements().length }}</b> numéro(s) à vérifier
+                                            } @else {
+                                                Aucun numéro à vérifier
+                                            }
+                                        </span>
+                                    </div>
+                                    <ul class="list-none p-0 m-0 notification-list">
+                                        @for (sig of signalements().slice(0, 10); track sig.id) {
+                                            <li class="notification-item p-3 hover:bg-emphasis cursor-pointer transition-colors duration-150 border-b border-surface" (click)="voirSignalements()">
+                                                <div class="flex items-center gap-3">
+                                                    <div class="flex-shrink-0 w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
+                                                        <i class="pi pi-phone text-orange-600"></i>
+                                                    </div>
+                                                    <div class="flex flex-col flex-1 min-w-0">
+                                                        <span class="font-semibold text-sm truncate">{{ sig.nomClient || sig.codCliente }}</span>
+                                                        <small class="text-muted-color text-xs">
+                                                            {{ libelleMotifSignalement(sig.motif) }} · {{ sig.signalePar }}
+                                                        </small>
+                                                    </div>
+                                                    <i class="pi pi-chevron-right text-muted-color text-xs"></i>
+                                                </div>
+                                            </li>
+                                        }
+                                    </ul>
+                                    <div class="notification-footer p-3 border-t border-surface bg-surface-ground">
+                                        <p-button label="Voir les signalements" icon="pi pi-external-link" styleClass="w-full" severity="secondary" [outlined]="true" (onClick)="voirSignalements()" />
+                                    </div>
+                                </div>
+                            }
+                        </li>
                     }
 
                     <li>
@@ -432,6 +481,7 @@ export class AppTopbar {
         error: undefined
     });
     private userService = inject(UserService);
+    private signalementService = inject(SignalementTelephoneService);
     private router = inject(Router);
     private destroyRef = inject(DestroyRef);
     layoutService = inject(LayoutService);
@@ -465,6 +515,35 @@ export class AppTopbar {
     viewDetailDemandeAttente(demandeIndividuelId: number): void {
         this.closeNotificationMenu();
         this.router.navigate(['/dashboards/credit/individuel/attente/detail/', demandeIndividuelId]);
+    }
+
+    // ── Signalements de numéro reçus par l'agent de crédit (V156) ──
+    signalements = signal<SignalementTelephone[]>([]);
+    signalementMenuVisible = signal(false);
+    libelleMotifSignalement = libelleMotifSignalement;
+
+    toggleSignalementMenu(): void {
+        this.signalementMenuVisible.update((v) => !v);
+    }
+
+    closeSignalementMenu(): void {
+        this.signalementMenuVisible.set(false);
+    }
+
+    voirSignalements(): void {
+        this.closeSignalementMenu();
+        this.signalementService.marquerVus().subscribe({ next: () => this.signalements.set([]), error: () => {} });
+        this.router.navigate(['/dashboards/changement-telephone/agent']);
+    }
+
+    private loadSignalements(): void {
+        this.signalementService
+            .listRecus('NOUVEAU')
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r) => this.signalements.set(((r.data as any)?.signalements ?? []) as SignalementTelephone[]),
+                error: () => {}
+            });
     }
 
     viewAllDemandes(): void {
@@ -504,6 +583,9 @@ export class AppTopbar {
         // Only load if user role is DA
         if (this.user?.role === 'DA') {
             this.loadDemandeAttente();
+        }
+        if (this.user?.role === 'AGENT_CREDIT') {
+            this.loadSignalements();
         }
     }
     model: MegaMenuItem[] = [

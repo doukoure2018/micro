@@ -75,7 +75,8 @@ public final class PortefeuilleExcelUtils {
 
             // ==================== Feuille Credits ====================
             Sheet feuille = wb.createSheet("Crédits");
-            String[] colonnes = {"Client", "Code client", "N° crédit", "Type de crédit", "État SAF",
+            String[] colonnes = {"Client", "Code client", "Tél. principal", "Tél. secondaire", "Tél. autre",
+                    "N° crédit", "Type de crédit", "État SAF",
                     "Montant accordé", "Capital restant dû", "Éch. payées", "Éch. impayées", "Éch. restantes",
                     "Prochaine échéance", "Jours de retard", "Capital impayé", "Intérêts impayés",
                     "Qualité", "Ouverture", "Échéance finale"};
@@ -91,6 +92,9 @@ public final class PortefeuilleExcelUtils {
                 int col = 0;
                 row.createCell(col++).setCellValue(nvl(cr.getNomCliente()));
                 row.createCell(col++).setCellValue(nvl(cr.getCodCliente()));
+                row.createCell(col++).setCellValue(tel(cr.getTelPrincipal()));
+                row.createCell(col++).setCellValue(tel(cr.getTelSecundario()));
+                row.createCell(col++).setCellValue(tel(cr.getTelOtro()));
                 row.createCell(col++).setCellValue(cr.getNumCredito() != null ? cr.getNumCredito() : 0);
                 row.createCell(col++).setCellValue(nvl(cr.getDesTipCredito()));
                 row.createCell(col++).setCellValue(nvl(cr.getIndEstado()));
@@ -206,7 +210,8 @@ public final class PortefeuilleExcelUtils {
             }
 
             Sheet feuille = wb.createSheet("Échéances");
-            String[] colonnes = {"Date d'échéance", "Point de service", "Code PS", "Client", "Code client", "N° crédit",
+            String[] colonnes = {"Date d'échéance", "Point de service", "Code PS", "Client", "Code client",
+                    "Tél. principal", "Tél. secondaire", "Tél. autre", "N° crédit",
                     "Type de crédit", "N° éch.", "Montant (GNF)", "Capital (GNF)", "Intérêts (GNF)",
                     "Reste à payer (GNF)", "État", "Jours de retard", "Réglée le"};
             Row head = feuille.createRow(0);
@@ -224,6 +229,9 @@ public final class PortefeuilleExcelUtils {
                 row.createCell(c++).setCellValue(nvl(e.getCodAgencia()));
                 row.createCell(c++).setCellValue(nvl(e.getNomCliente()));
                 row.createCell(c++).setCellValue(nvl(e.getCodCliente()));
+                row.createCell(c++).setCellValue(tel(e.getTelPrincipal()));
+                row.createCell(c++).setCellValue(tel(e.getTelSecundario()));
+                row.createCell(c++).setCellValue(tel(e.getTelOtro()));
                 row.createCell(c++).setCellValue(e.getNumCredito() != null ? e.getNumCredito() : 0);
                 row.createCell(c++).setCellValue(nvl(e.getDesTipCredito()));
                 row.createCell(c++).setCellValue(e.getNumCuota() != null ? e.getNumCuota() : 0);
@@ -238,7 +246,7 @@ public final class PortefeuilleExcelUtils {
                 c++;
                 row.createCell(c).setCellValue(date(e.getFecCancelacion()));
             }
-            int[] largeurs = {14, 24, 9, 30, 14, 12, 22, 8, 16, 16, 16, 18, 20, 14, 12};
+            int[] largeurs = {14, 24, 9, 30, 14, 15, 15, 15, 12, 22, 8, 16, 16, 16, 18, 20, 14, 12};
             for (int c = 0; c < largeurs.length; c++) {
                 feuille.setColumnWidth(c, largeurs[c] * 256);
             }
@@ -294,6 +302,11 @@ public final class PortefeuilleExcelUtils {
 
     private static String date(LocalDate d) {
         return d != null ? d.format(FMT_DATE) : "";
+    }
+
+    /** Numero de telephone pour l'export : tiret quand SAF n'a rien (arbitrage DSIG du 2026-09-27). */
+    private static String tel(String s) {
+        return s == null || s.isBlank() ? "—" : s;
     }
 
     private static String nvl(String s) {

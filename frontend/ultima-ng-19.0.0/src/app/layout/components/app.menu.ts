@@ -361,7 +361,8 @@ export class AppMenu {
                 {
                     label: 'Changement téléphone',
                     icon: 'pi pi-fw pi-phone',
-                    routerLink: ['/dashboards/changement-telephone/agent']
+                    routerLink: ['/dashboards/changement-telephone/agent'],
+                    // l'onglet « Signalements reçus » de cette page porte les numéros signalés par la hiérarchie
                 }
             );
         }

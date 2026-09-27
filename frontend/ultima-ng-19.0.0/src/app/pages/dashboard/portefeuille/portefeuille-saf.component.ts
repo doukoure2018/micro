@@ -1,4 +1,6 @@
 import { IResponse } from '@/interface/response';
+import { CapacitesSignalement, MOTIFS_SIGNALEMENT, MotifSignalementTelephone, SignalementTelephone, libelleMotifSignalement, libelleStatutSignalement, severiteStatutSignalement } from '@/interface/signalement-telephone';
+import { SignalementTelephoneService } from '@/service/signalement-telephone.service';
 import { FiltresTT1, UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
@@ -14,7 +16,9 @@ import { SelectButtonModule } from 'primeng/selectbutton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
+import { TextareaModule } from 'primeng/textarea';
 import { TooltipModule } from 'primeng/tooltip';
+import { Router } from '@angular/router';
 
 /**
  * Suivi du portefeuille crédits SAF (phase 1) : crédits actifs d'une agence SAF,
@@ -24,7 +28,7 @@ import { TooltipModule } from 'primeng/tooltip';
 @Component({
     selector: 'app-portefeuille-saf',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, DialogModule, DropdownModule, InputTextModule, SelectButtonModule, TableModule, TagModule, ToastModule, TooltipModule],
+    imports: [CommonModule, FormsModule, ButtonModule, DialogModule, DropdownModule, InputTextModule, SelectButtonModule, TableModule, TagModule, TextareaModule, ToastModule, TooltipModule],
     providers: [MessageService],
     template: `
         <p-toast></p-toast>
@@ -115,6 +119,7 @@ import { TooltipModule } from 'primeng/tooltip';
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Client</th>
+                        <th>Téléphones</th>
                         <th>N° crédit</th>
                         <th>Type</th>
                         <th class="text-right">Montant</th>
@@ -130,6 +135,23 @@ import { TooltipModule } from 'primeng/tooltip';
                         <td>
                             {{ c.nomCliente }}<br />
                             <span class="text-xs text-gray-500">{{ c.codCliente }}</span>
+                        </td>
+                        <td class="whitespace-nowrap text-sm" style="font-variant-numeric: tabular-nums">
+                            <div [class.text-gray-400]="!c.telPrincipal">
+                                {{ c.telPrincipal || '—' }}
+                                <i class="pi pi-exclamation-triangle text-orange-500 text-xs ml-1" *ngIf="formatDouteux(c.telPrincipal)" title="Ce numéro n'a pas 9 chiffres"></i>
+                            </div>
+                            <div [class.text-gray-400]="!c.telSecundario">{{ c.telSecundario || '—' }}</div>
+                            <div [class.text-gray-400]="!c.telOtro">{{ c.telOtro || '—' }}</div>
+                            <div class="mt-1" *ngIf="signalementDe(c.codCliente) as sig">
+                                <p-tag [value]="libelleStatutSig(sig.statut)" [severity]="severiteStatutSig(sig.statut)" styleClass="text-xs"></p-tag>
+                            </div>
+                            <a class="text-xs text-primary cursor-pointer hover:underline" *ngIf="!signalementDe(c.codCliente) && capacites().estAgent" (click)="modifierNumero(c)">
+                                <i class="pi pi-pencil text-xs mr-1"></i>Modifier le numéro
+                            </a>
+                            <a class="text-xs text-orange-600 cursor-pointer hover:underline" *ngIf="!signalementDe(c.codCliente) && capacites().peutSignaler" (click)="ouvrirSignalement(c)">
+                                <i class="pi pi-flag text-xs mr-1"></i>Signaler le numéro
+                            </a>
                         </td>
                         <td>{{ c.numCredito }}</td>
                         <td>{{ c.desTipCredito || c.tipCredito }}</td>
@@ -149,7 +171,7 @@ import { TooltipModule } from 'primeng/tooltip';
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
                     <tr>
-                        <td colspan="9" class="text-center py-6 text-gray-500">
+                        <td colspan="10" class="text-center py-6 text-gray-500">
                             {{ agenceSelectionnee ? 'Aucun crédit pour ces critères.' : 'Choisissez une agence SAF pour afficher son portefeuille.' }}
                         </td>
                     </tr>
@@ -203,6 +225,15 @@ import { TooltipModule } from 'primeng/tooltip';
                 <p-dropdown [options]="etatOptions" [(ngModel)]="etatEch" optionLabel="label" optionValue="value" styleClass="w-44" appendTo="body" (onChange)="chargerEcheances(0)"></p-dropdown>
                 <input pInputText type="text" [(ngModel)]="rechercheEch" placeholder="Client, code, n° crédit…" class="w-56" (keyup.enter)="chargerEcheances(0)" />
                 <button pButton icon="pi pi-search" class="p-button-outlined" (click)="chargerEcheances(0)" [disabled]="!du || !au"></button>
+                <button
+                    pButton
+                    icon="pi pi-flag"
+                    [label]="nbSignalementsOuverts() ? 'Signalements (' + nbSignalementsOuverts() + ')' : 'Signalements'"
+                    class="p-button-outlined"
+                    [class.p-button-warning]="nbSignalementsOuverts() > 0"
+                    pTooltip="Numéros signalés au point de service et leur suivi"
+                    (click)="ouvrirListeSignalements()"
+                ></button>
                 <button
                     pButton
                     icon="pi pi-print"
@@ -315,6 +346,7 @@ import { TooltipModule } from 'primeng/tooltip';
                         <th>Date</th>
                         <th *ngIf="!psEcheances && state().agences.length > 1">Point de service</th>
                         <th>Client</th>
+                        <th>Téléphones</th>
                         <th>N° crédit</th>
                         <th class="text-center">Éch.</th>
                         <th class="text-right">Montant</th>
@@ -329,6 +361,23 @@ import { TooltipModule } from 'primeng/tooltip';
                         <td class="whitespace-nowrap">{{ e.fecCuota | date: 'dd/MM/yyyy' }}</td>
                         <td *ngIf="!psEcheances && state().agences.length > 1">{{ e.desAgencia }}<div class="text-xs text-gray-500">{{ e.codAgencia }}</div></td>
                         <td><span class="font-medium">{{ e.nomCliente }}</span><div class="text-xs text-gray-500">{{ e.codCliente }}</div></td>
+                        <td class="whitespace-nowrap text-sm" style="font-variant-numeric: tabular-nums">
+                            <div [class.text-gray-400]="!e.telPrincipal">
+                                {{ e.telPrincipal || '—' }}
+                                <i class="pi pi-exclamation-triangle text-orange-500 text-xs ml-1" *ngIf="formatDouteux(e.telPrincipal)" title="Ce numéro n'a pas 9 chiffres"></i>
+                            </div>
+                            <div [class.text-gray-400]="!e.telSecundario">{{ e.telSecundario || '—' }}</div>
+                            <div [class.text-gray-400]="!e.telOtro">{{ e.telOtro || '—' }}</div>
+                            <div class="mt-1" *ngIf="signalementDe(e.codCliente) as sig">
+                                <p-tag [value]="libelleStatutSig(sig.statut)" [severity]="severiteStatutSig(sig.statut)" styleClass="text-xs"></p-tag>
+                            </div>
+                            <a class="text-xs text-primary cursor-pointer hover:underline" *ngIf="!signalementDe(e.codCliente) && capacites().estAgent" (click)="modifierNumero(e)">
+                                <i class="pi pi-pencil text-xs mr-1"></i>Modifier le numéro
+                            </a>
+                            <a class="text-xs text-orange-600 cursor-pointer hover:underline" *ngIf="!signalementDe(e.codCliente) && capacites().peutSignaler" (click)="ouvrirSignalement(e)">
+                                <i class="pi pi-flag text-xs mr-1"></i>Signaler le numéro
+                            </a>
+                        </td>
                         <td>{{ e.numCredito }}<div class="text-xs text-gray-500">{{ e.desTipCredito }}</div></td>
                         <td class="text-center">{{ e.numCuota }}</td>
                         <td class="text-right">{{ e.monCuota | number: '1.0-0' }}</td>
@@ -343,7 +392,7 @@ import { TooltipModule } from 'primeng/tooltip';
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
                     <tr>
-                        <td colspan="10" class="text-center text-gray-500 py-6">Aucune échéance sur cette période pour ces critères.</td>
+                        <td colspan="11" class="text-center text-gray-500 py-6">Aucune échéance sur cette période pour ces critères.</td>
                     </tr>
                 </ng-template>
             </p-table>
@@ -358,6 +407,65 @@ import { TooltipModule } from 'primeng/tooltip';
             }
             }
         </div>
+
+        <!-- Dialog : signaler un numéro (DA, DR, DE) -->
+        <p-dialog header="Signaler le numéro de téléphone" [visible]="showSignalement()" (visibleChange)="!$event && fermerSignalement()" [modal]="true" [style]="{ width: '560px' }">
+            <div *ngIf="ligneSignalee as e">
+                <p class="m-0 mb-3 text-sm">
+                    <strong>{{ e.nomCliente }}</strong> ({{ e.codCliente }})<span *ngIf="e.numCredito"> — crédit {{ e.numCredito }}</span><span *ngIf="e.desAgencia"> — {{ e.desAgencia }}</span>
+                </p>
+                <div class="border rounded p-2 mb-3 text-sm" style="font-variant-numeric: tabular-nums">
+                    <div class="text-xs text-gray-500 uppercase mb-1">Numéros constatés dans SAF</div>
+                    <div [class.text-gray-400]="!e.telPrincipal">Principal : {{ e.telPrincipal || '—' }}</div>
+                    <div [class.text-gray-400]="!e.telSecundario">Secondaire : {{ e.telSecundario || '—' }}</div>
+                    <div [class.text-gray-400]="!e.telOtro">Autre : {{ e.telOtro || '—' }}</div>
+                </div>
+                <label class="block text-sm font-medium mb-1">Motif <span class="text-red-500">*</span></label>
+                <p-dropdown [options]="motifsSignalement" [(ngModel)]="motifSignalement" optionLabel="label" optionValue="value" styleClass="w-full mb-3" appendTo="body" placeholder="Choisir un motif"></p-dropdown>
+                <label class="block text-sm font-medium mb-1">Commentaire</label>
+                <textarea pTextarea [(ngModel)]="commentaireSignalement" rows="3" class="w-full" maxlength="2000" placeholder="Ce que le client ou l'agent vous a indiqué"></textarea>
+                <p class="text-xs text-gray-500 mt-2">
+                    Le point de service reçoit une notification et un courriel. C'est l'agent de crédit qui saisira le nouveau numéro et suivra le circuit habituel de validation par le directeur d'agence.
+                </p>
+            </div>
+            <ng-template pTemplate="footer">
+                <button pButton label="Annuler" class="p-button-text" (click)="fermerSignalement()"></button>
+                <button pButton label="Envoyer le signalement" icon="pi pi-send" [loading]="envoiSignalement()" [disabled]="!motifSignalement" (click)="envoyerSignalement()"></button>
+            </ng-template>
+        </p-dialog>
+
+        <!-- Dialog : suivi des signalements du périmètre -->
+        <p-dialog header="Signalements de numéros" [visible]="showListeSignalements()" (visibleChange)="!$event && showListeSignalements.set(false)" [modal]="true" [style]="{ width: '900px' }">
+            <p-table [value]="listeSignalements()" [loading]="loadingSignalements()" responsiveLayout="scroll">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Signalé le</th>
+                        <th>Client</th>
+                        <th>Point de service</th>
+                        <th>Motif</th>
+                        <th>Statut</th>
+                        <th>Suivi</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-sig>
+                    <tr>
+                        <td class="whitespace-nowrap">{{ sig.signaleAt | date: 'dd/MM/yyyy HH:mm' }}<div class="text-xs text-gray-500">{{ sig.signalePar }} ({{ sig.signaleParRole }})</div></td>
+                        <td><span class="font-medium">{{ sig.nomClient || sig.codCliente }}</span><div class="text-xs text-gray-500">{{ sig.codCliente }}<span *ngIf="sig.numCredito"> · crédit {{ sig.numCredito }}</span></div></td>
+                        <td>{{ sig.pointVente || sig.codAgencia }}</td>
+                        <td>{{ libelleMotifSig(sig.motif) }}<div class="text-xs text-gray-500" *ngIf="sig.commentaire">{{ sig.commentaire }}</div></td>
+                        <td><p-tag [value]="libelleStatutSig(sig.statut)" [severity]="severiteStatutSig(sig.statut)"></p-tag></td>
+                        <td class="text-sm">
+                            <div *ngIf="sig.prisPar">Pris par {{ sig.prisPar }} le {{ sig.prisAt | date: 'dd/MM/yyyy' }}</div>
+                            <div *ngIf="sig.demandeId">Demande {{ sig.demandeId }} — {{ sig.demandeStatut }}</div>
+                            <div *ngIf="sig.motifClassement" class="text-gray-500">Classé : {{ sig.motifClassement }}</div>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr><td colspan="6" class="text-center text-gray-500 py-6">Aucun signalement sur votre périmètre.</td></tr>
+                </ng-template>
+            </p-table>
+        </p-dialog>
 
         <!-- Dialog echeancier -->
         <p-dialog
@@ -404,6 +512,8 @@ import { TooltipModule } from 'primeng/tooltip';
 })
 export class PortefeuilleSafComponent implements OnInit {
     private userService = inject(UserService);
+    private signalementService = inject(SignalementTelephoneService);
+    private router = inject(Router);
     private messageService = inject(MessageService);
     private destroyRef = inject(DestroyRef);
 
@@ -469,6 +579,118 @@ export class PortefeuilleSafComponent implements OnInit {
     ];
     rechercheEch = '';
     exportEchEnCours = signal(false);
+
+    // ── Téléphones clients et signalement (V156) ──
+    capacites = signal<CapacitesSignalement>({ peutSignaler: false, estAgent: false, niveau: 'PS', ouverts: {} });
+    motifsSignalement = MOTIFS_SIGNALEMENT;
+    motifSignalement: MotifSignalementTelephone | null = null;
+    commentaireSignalement = '';
+    ligneSignalee: any | null = null;
+    showSignalement = signal(false);
+    envoiSignalement = signal(false);
+    showListeSignalements = signal(false);
+    listeSignalements = signal<SignalementTelephone[]>([]);
+    loadingSignalements = signal(false);
+
+    libelleMotifSig = libelleMotifSignalement;
+    libelleStatutSig = libelleStatutSignalement;
+    severiteStatutSig = severiteStatutSignalement;
+
+    nbSignalementsOuverts(): number {
+        return Object.keys(this.capacites().ouverts || {}).length;
+    }
+
+    /** Signalement ouvert pour ce client, s'il y en a un (étiquette sur la ligne). */
+    signalementDe(codCliente: string): SignalementTelephone | null {
+        return this.capacites().ouverts?.[codCliente] || null;
+    }
+
+    /** Un numéro guinéen a neuf chiffres : au-delà ou en deçà, on le signale à l'œil. */
+    formatDouteux(numero?: string | null): boolean {
+        if (!numero) return false;
+        return numero.replace(/\D/g, '').length !== 9;
+    }
+
+    private chargerCapacites(): void {
+        this.signalementService
+            .capacitesEtOuverts()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => {
+                    const d: any = r.data || {};
+                    this.capacites.set({
+                        peutSignaler: !!d.peutSignaler,
+                        estAgent: !!d.estAgent,
+                        niveau: d.niveau || 'PS',
+                        ouverts: d.ouverts || {}
+                    });
+                },
+                error: () => {}
+            });
+    }
+
+    /** Agent de crédit : le formulaire de changement de numéro s'ouvre pré-rempli. */
+    modifierNumero(ligne: any): void {
+        this.router.navigate(['/dashboards/changement-telephone/agent'], { queryParams: { codCliente: ligne.codCliente } });
+    }
+
+    ouvrirSignalement(ligne: any): void {
+        this.ligneSignalee = ligne;
+        this.motifSignalement = ligne.telPrincipal ? null : 'ABSENT';
+        this.commentaireSignalement = '';
+        this.showSignalement.set(true);
+    }
+
+    fermerSignalement(): void {
+        this.showSignalement.set(false);
+        this.ligneSignalee = null;
+    }
+
+    envoyerSignalement(): void {
+        const e = this.ligneSignalee;
+        if (!e || !this.motifSignalement) return;
+        this.envoiSignalement.set(true);
+        this.signalementService
+            .signaler({
+                codCliente: e.codCliente,
+                nomClient: e.nomCliente,
+                numCredito: e.numCredito,
+                codAgencia: e.codAgencia,
+                motif: this.motifSignalement,
+                commentaire: this.commentaireSignalement.trim() || undefined
+            })
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.envoiSignalement.set(false);
+                    this.fermerSignalement();
+                    this.messageService.add({ severity: 'success', summary: 'Signalement transmis', detail: 'Le point de service a été notifié', life: 5000 });
+                    this.chargerCapacites();
+                },
+                error: (err) => {
+                    this.envoiSignalement.set(false);
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || "Le signalement n'a pas pu être enregistré", life: 6000 });
+                }
+            });
+    }
+
+    ouvrirListeSignalements(): void {
+        this.showListeSignalements.set(true);
+        this.loadingSignalements.set(true);
+        this.signalementService
+            .listPerimetre()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => {
+                    this.listeSignalements.set((r.data as any)?.signalements || []);
+                    this.loadingSignalements.set(false);
+                },
+                error: (err) => {
+                    this.loadingSignalements.set(false);
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || 'Liste indisponible', life: 6000 });
+                }
+            });
+    }
 
     // ── TT1 (lot 2) : synthèse hiérarchique + impression ──
     modeEch: 'detail' | 'synthese' = 'detail';
@@ -609,7 +831,7 @@ export class PortefeuilleSafComponent implements OnInit {
                     s.indicateurs?.nbAEchoir ?? 0
                 ]);
             } else {
-                colonnes = ['Date', 'Point de service', 'Client', 'N° crédit', 'Éch.', 'Montant (GNF)', 'Capital (GNF)', 'Intérêts (GNF)', 'Reste à payer (GNF)', 'État'];
+                colonnes = ['Date', 'Point de service', 'Client', 'Téléphones', 'N° crédit', 'Éch.', 'Montant (GNF)', 'Capital (GNF)', 'Intérêts (GNF)', 'Reste à payer (GNF)', 'État'];
                 const toutes: any[] = [];
                 let page = 0;
                 while (toutes.length < PortefeuilleSafComponent.IMPRESSION_MAX_LIGNES) {
@@ -624,6 +846,7 @@ export class PortefeuilleSafComponent implements OnInit {
                     dt(e.fecCuota),
                     e.desAgencia || e.codAgencia || '',
                     (e.nomCliente || '') + (e.codCliente ? ' (' + e.codCliente + ')' : ''),
+                    [e.telPrincipal || '—', e.telSecundario || '—', e.telOtro || '—'].join(' / '),
                     e.numCredito,
                     e.numCuota,
                     nb(e.monCuota),
@@ -814,6 +1037,7 @@ ${avertissement ? `<div class="avert">${esc(avertissement)}</div>` : ''}
     }
 
     ngOnInit(): void {
+        this.chargerCapacites();
         this.userService
             .getPortefeuilleAgences$()
             .pipe(takeUntilDestroyed(this.destroyRef))
