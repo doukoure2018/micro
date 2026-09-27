@@ -35,7 +35,7 @@ public class SignalementTelephoneNotifier {
     private final ApplicationEventPublisher publisher;
     private final SmsService smsService;
 
-    @Value("${signalement.telephone.sms-actif:false}")
+    @Value("${signalement.telephone.sms.actif:false}")
     private boolean smsActif;
 
     /** Nouveau signalement : courriel aux agents du point de service, copie au DA. */

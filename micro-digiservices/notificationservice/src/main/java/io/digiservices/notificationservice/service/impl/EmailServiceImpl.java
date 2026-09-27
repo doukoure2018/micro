@@ -50,6 +50,32 @@ public class EmailServiceImpl implements EmailService {
 
     @Override
     @Async
+    public void sendPortefeuilleAlerteEmailAvecPiece(String to, String sujet, String corpsHtml,
+                                                     String nomFichier, String contenuBase64, String typeMime) {
+        if (contenuBase64 == null || contenuBase64.isBlank()) {
+            sendPortefeuilleAlerteEmail(to, sujet, corpsHtml);
+            return;
+        }
+        try {
+            var message = mailSender.createMimeMessage();
+            var helper = new org.springframework.mail.javamail.MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(fromEmail);
+            helper.setTo(to);
+            helper.setSubject(sujet);
+            helper.setText(corpsHtml, true);
+            byte[] contenu = java.util.Base64.getDecoder().decode(contenuBase64);
+            String type = typeMime == null || typeMime.isBlank()
+                    ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : typeMime;
+            helper.addAttachment(nomFichier == null || nomFichier.isBlank() ? "etat.xlsx" : nomFichier,
+                    new org.springframework.core.io.ByteArrayResource(contenu), type);
+            mailSender.send(message);
+            log.info("Etat portefeuille envoye a {} : {} ({} octets joints)", to, sujet, contenu.length);
+        } catch (Exception e) {
+            log.error("Echec envoi etat portefeuille a {} : {}", to, e.getMessage());
+        }
+    }
+
+    @Override
     public void sendPortefeuilleAlerteEmail(String to, String sujet, String corpsHtml) {
         try {
             var message = mailSender.createMimeMessage();

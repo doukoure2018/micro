@@ -47,6 +47,18 @@ public class NotificationListener {
                         String.valueOf(data.get("sujet")),
                         String.valueOf(data.get("corpsHtml")));
             }
+            case PORTEFEUILLE_TT1_MENSUEL -> {
+                @SuppressWarnings("unchecked")
+                var data = (java.util.Map<String, Object>) mapper.convertValue(
+                        notification.getPayload().getData(), java.util.Map.class);
+                emailService.sendPortefeuilleAlerteEmailAvecPiece(
+                        String.valueOf(data.get("email")),
+                        String.valueOf(data.get("sujet")),
+                        String.valueOf(data.get("corpsHtml")),
+                        data.get("nomFichier") == null ? null : String.valueOf(data.get("nomFichier")),
+                        data.get("contenuBase64") == null ? null : String.valueOf(data.get("contenuBase64")),
+                        data.get("typeMime") == null ? null : String.valueOf(data.get("typeMime")));
+            }
             case STOCK_REJECTED -> {
                 var data = mapper.convertValue(notification.getPayload().getData(), StockNotificationData.class);
                 emailService.sendStockRejectionEmail(data);

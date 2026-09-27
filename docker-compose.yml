@@ -277,6 +277,10 @@ services:
     environment:
       # Alertes portefeuille SAF (phase 3) : digests quotidiens + synthese PAR hebdo
       PORTEFEUILLE_ALERTES_ACTIVES: "true"
+      # Etat TT1 mensuel (lot 3) : envoi aux DA et DR le premier jour ouvre du mois, piece jointe Excel
+      PORTEFEUILLE_TT1_ENVOI_MENSUEL_ACTIF: "true"
+      # Signalement de numero de telephone : SMS aux agents en plus du courriel et de la cloche
+      SIGNALEMENT_TELEPHONE_SMS_ACTIF: "false"
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       SPRING_DATASOURCE_URL: "jdbc:postgresql://postgresdb:5432/localdb"
       SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
