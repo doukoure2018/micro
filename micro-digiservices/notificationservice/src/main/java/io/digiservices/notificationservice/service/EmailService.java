@@ -12,4 +12,11 @@ public interface EmailService {
 
     /** Envoi generique HTML (alertes du portefeuille credits SAF). */
     void sendPortefeuilleAlerteEmail(String to, String sujet, String corpsHtml);
+
+    /**
+     * Envoi generique HTML avec une piece jointe (etat TT1 mensuel).
+     * contenuBase64 vide ou null : le message part sans piece jointe.
+     */
+    void sendPortefeuilleAlerteEmailAvecPiece(String to, String sujet, String corpsHtml,
+                                              String nomFichier, String contenuBase64, String typeMime);
 }

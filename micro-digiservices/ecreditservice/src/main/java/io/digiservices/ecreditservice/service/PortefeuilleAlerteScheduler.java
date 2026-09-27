@@ -60,7 +60,7 @@ public class PortefeuilleAlerteScheduler {
     private int joursAvantEcheance;
 
     /** Jours ouvres avant de relancer un signalement de numero reste sans prise en charge. */
-    @Value("${signalement.telephone.jours-relance:5}")
+    @Value("${signalement.telephone.jours.relance:5}")
     private int joursRelanceSignalement;
 
     // ==================== Relance des signalements de numero (V156) ====================
