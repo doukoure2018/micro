@@ -50,12 +50,49 @@ public class PortefeuilleAlerteScheduler {
     private final EbankingPortefeuilleClient portefeuilleClient;
     private final AlerteDestinatairesRepository destinataires;
     private final ApplicationEventPublisher publisher;
+    private final io.digiservices.ecreditservice.repository.SignalementTelephoneRepository signalementRepository;
+    private final SignalementTelephoneNotifier signalementNotifier;
 
     @Value("${portefeuille.alertes.actives:false}")
     private boolean actives;
 
     @Value("${portefeuille.alertes.jours-avant-echeance:3}")
     private int joursAvantEcheance;
+
+    /** Jours ouvres avant de relancer un signalement de numero reste sans prise en charge. */
+    @Value("${signalement.telephone.jours-relance:5}")
+    private int joursRelanceSignalement;
+
+    // ==================== Relance des signalements de numero (V156) ====================
+
+    /**
+     * Chaque jour a 07h15 GMT : rappel aux agents de credit et au DA pour les signalements de
+     * numero restes sans prise en charge au-dela du delai. Une relance par signalement et par jour.
+     */
+    @Scheduled(cron = "0 15 7 * * *", zone = "GMT")
+    public void relancerSignalementsTelephone() {
+        if (!actives) {
+            return;
+        }
+        List<io.digiservices.ecreditservice.dto.SignalementTelephoneDto> aRelancer =
+                signalementRepository.findARelancer(joursRelanceSignalement);
+        if (aRelancer.isEmpty()) {
+            log.info("[SIGNALEMENT TEL] aucune relance a envoyer");
+            return;
+        }
+        List<Long> relances = new java.util.ArrayList<>();
+        for (var s : aRelancer) {
+            try {
+                long jours = java.time.temporal.ChronoUnit.DAYS.between(s.getSignaleAt().toLocalDate(), LocalDate.now());
+                signalementNotifier.notifierRelance(s, (int) jours);
+                relances.add(s.getId());
+            } catch (Exception e) {
+                log.warn("[SIGNALEMENT TEL] relance impossible pour le signalement {} : {}", s.getId(), e.getMessage());
+            }
+        }
+        signalementRepository.marquerRelances(relances);
+        log.info("[SIGNALEMENT TEL] {} relance(s) envoyee(s)", relances.size());
+    }
 
     // ==================== Digest quotidien ====================
 

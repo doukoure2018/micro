@@ -26,6 +26,11 @@ public class EcheancePeriodeDto {
     private String desTipCredito;
     private String indEstado;
 
+    /** Numeros de telephone du client dans SAF (CL.CL_CLIENTES) ; null si absent ou vide. */
+    private String telPrincipal;
+    private String telSecundario;
+    private String telOtro;
+
     private Long numCuota;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate fecCuota;

@@ -53,6 +53,7 @@ public class PortefeuilleRepository {
     private static final String CREDIT_BASE = """
             SELECT cr.COD_AGENCIA, ag.DES_AGENCIA, cr.NUM_CREDITO, cr.COD_CLIENTE,
                    c.NOM_CLIENTE, cr.TIP_CREDITO, tc.DES_TIP_CREDITO, cr.IND_ESTADO,
+                   c.TEL_PRINCIPAL, c.TEL_SECUNDARIO, c.TEL_OTRO,
                    cr.MON_CREDITO, cr.MON_SALDO, cr.MON_CUOTA, cr.CANT_CUOTAS,
                    cr.FEC_APERTURA, cr.FEC_VENCIMIENTO,
                    (SELECT MIN(pp.FEC_CUOTA) FROM PR.PR_PLAN_PAGOS pp
@@ -325,6 +326,9 @@ public class PortefeuilleRepository {
         d.setTipCredito(tip instanceof Number num ? num.longValue() : null);
         d.setDesTipCredito(str(rs, "DES_TIP_CREDITO"));
         d.setIndEstado(str(rs, "IND_ESTADO"));
+        d.setTelPrincipal(tel(rs, "TEL_PRINCIPAL"));
+        d.setTelSecundario(tel(rs, "TEL_SECUNDARIO"));
+        d.setTelOtro(tel(rs, "TEL_OTRO"));
         d.setMonCredito(rs.getBigDecimal("MON_CREDITO"));
         d.setMonSaldo(rs.getBigDecimal("MON_SALDO"));
         d.setMonCuota(rs.getBigDecimal("MON_CUOTA"));
@@ -382,6 +386,7 @@ public class PortefeuilleRepository {
     private static final String SQL_ECHEANCES_PERIODE = """
             SELECT cr.COD_AGENCIA, ag.DES_AGENCIA, cr.NUM_CREDITO, cr.COD_CLIENTE, c.NOM_CLIENTE,
                    tc.DES_TIP_CREDITO, cr.IND_ESTADO,
+                   c.TEL_PRINCIPAL, c.TEL_SECUNDARIO, c.TEL_OTRO,
                    pp.NUM_CUOTA, pp.FEC_CUOTA, pp.MON_CUOTA, COALESCE(pp.MON_INT, 0) AS MON_INT,
                    COALESCE(pp.SAL_PRINCIPAL, 0) AS SAL_PRINCIPAL, COALESCE(pp.SAL_INT, 0) AS SAL_INT,
                    pp.FEC_CANCELACION
@@ -491,6 +496,9 @@ public class PortefeuilleRepository {
         d.setNomCliente(str(rs, "NOM_CLIENTE"));
         d.setDesTipCredito(str(rs, "DES_TIP_CREDITO"));
         d.setIndEstado(str(rs, "IND_ESTADO"));
+        d.setTelPrincipal(tel(rs, "TEL_PRINCIPAL"));
+        d.setTelSecundario(tel(rs, "TEL_SECUNDARIO"));
+        d.setTelOtro(tel(rs, "TEL_OTRO"));
         d.setNumCuota(rs.getLong("NUM_CUOTA"));
         d.setFecCuota(dt(rs, "FEC_CUOTA"));
         BigDecimal montant = nvl(rs.getBigDecimal("MON_CUOTA"));
@@ -540,6 +548,14 @@ public class PortefeuilleRepository {
     private static String str(ResultSet rs, String col) throws SQLException {
         String v = rs.getString(col);
         return v != null ? v.trim() : null;
+    }
+
+    /** Numero de telephone SAF : espaces retires, chaine vide ramenee a null. Aucune autre transformation. */
+    private static String tel(ResultSet rs, String col) throws SQLException {
+        String v = rs.getString(col);
+        if (v == null) return null;
+        String t = v.replace("\u00a0", " ").trim();
+        return t.isEmpty() ? null : t;
     }
 
     private static LocalDate dt(ResultSet rs, String col) throws SQLException {

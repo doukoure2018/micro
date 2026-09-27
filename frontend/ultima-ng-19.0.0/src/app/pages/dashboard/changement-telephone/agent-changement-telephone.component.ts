@@ -18,6 +18,9 @@ import { TabViewModule } from 'primeng/tabview';
 import { BadgeModule } from 'primeng/badge';
 
 import { ChangementTelephoneService } from '@/service/changement-telephone.service';
+import { SignalementTelephoneService } from '@/service/signalement-telephone.service';
+import { SignalementTelephone, libelleMotifSignalement, libelleStatutSignalement, severiteStatutSignalement } from '@/interface/signalement-telephone';
+import { ActivatedRoute } from '@angular/router';
 import { CreateDemandeTelephoneRequest, DemandeChangementTelephone, ResoumissionTelephoneRequest, StatutChangementTelephone } from '@/interface/demande-changement-telephone';
 
 @Component({
@@ -48,6 +51,8 @@ export class AgentChangementTelephoneComponent implements OnInit {
     private service = inject(ChangementTelephoneService);
     private toast = inject(MessageService);
     private confirm = inject(ConfirmationService);
+    private signalementService = inject(SignalementTelephoneService);
+    private route = inject(ActivatedRoute);
 
     demandes = signal<DemandeChangementTelephone[]>([]);
     loading = signal(false);
@@ -77,12 +82,90 @@ export class AgentChangementTelephoneComponent implements OnInit {
     /** Périmètre de l'agent : demande possible uniquement pour les membres de son point de service. */
     perimetre = signal<{ restreint: boolean; pointventeCode?: string; libelle?: string } | null>(null);
 
+    // ── Signalements reçus de la hiérarchie (V156) ──
+    signalements = signal<SignalementTelephone[]>([]);
+    loadingSignalements = signal(false);
+    signalementEnCours = signal<SignalementTelephone | null>(null);
+    showClassementDialog = signal(false);
+    motifClassement = '';
+
+    libelleMotifSig = libelleMotifSignalement;
+    libelleStatutSig = libelleStatutSignalement;
+    severiteStatutSig = severiteStatutSignalement;
+
+    signalementsATraiter = computed(() => this.signalements().filter((s) => s.statut === 'NOUVEAU'));
+    signalementsSuivis = computed(() => this.signalements().filter((s) => s.statut !== 'NOUVEAU'));
+
     ngOnInit() {
         this.refresh();
         this.service.getPerimetreAgent().subscribe({
             next: (r) => this.perimetre.set((r.data as any)?.perimetre || null),
             error: () => {}
         });
+        this.chargerSignalements();
+        // Lien depuis l'état TT1 : ?codCliente=... ouvre le formulaire pré-rempli
+        this.route.queryParams.subscribe((p) => {
+            const code = p['codCliente'];
+            if (code) {
+                this.ouvrirDepuisSignalement(String(code), p['signalementId'] ? Number(p['signalementId']) : null);
+            }
+        });
+    }
+
+    /** Formulaire pré-rempli depuis le TT1 ou un signalement : la fiche SAF est chargée d'emblée. */
+    ouvrirDepuisSignalement(codCliente: string, signalementId: number | null): void {
+        this.form = this.emptyForm();
+        this.form.codCliente = codCliente;
+        this.signalementLieId = signalementId;
+        this.showCreateDialog.set(true);
+        this.voirFicheClient();
+    }
+
+    /** Signalement à rattacher à la demande dès sa création. */
+    signalementLieId: number | null = null;
+
+    chargerSignalements(): void {
+        this.loadingSignalements.set(true);
+        this.signalementService.listRecus('TOUS').subscribe({
+            next: (r) => {
+                this.signalements.set(((r.data as any)?.signalements ?? []) as SignalementTelephone[]);
+                this.loadingSignalements.set(false);
+            },
+            error: () => this.loadingSignalements.set(false)
+        });
+    }
+
+    /** « Créer la demande » depuis un signalement : formulaire pré-rempli et lien conservé. */
+    traiterSignalement(sig: SignalementTelephone): void {
+        this.ouvrirDepuisSignalement(sig.codCliente, sig.id);
+    }
+
+    ouvrirClassement(sig: SignalementTelephone): void {
+        this.signalementEnCours.set(sig);
+        this.motifClassement = '';
+        this.showClassementDialog.set(true);
+    }
+
+    classerSignalement(): void {
+        const sig = this.signalementEnCours();
+        if (!sig || !this.motifClassement.trim()) return;
+        this.submitting.set(true);
+        this.signalementService.classer(sig.id, this.motifClassement.trim()).subscribe({
+            next: () => {
+                this.submitting.set(false);
+                this.showClassementDialog.set(false);
+                this.toast.add({ severity: 'success', summary: 'Signalement classé', detail: 'Le signaleur en est informé' });
+                this.chargerSignalements();
+            },
+            error: (err) => {
+                this.submitting.set(false);
+                this.toast.add({ severity: 'error', summary: 'Echec', detail: err?.message || err });
+            }
+        });
+    }
+
+    marquerSignalementsVus(): void {
+        this.signalementService.marquerVus().subscribe({ next: () => {}, error: () => {} });
     }
 
     /** Vrai tant que le numéro saisi est vide ou commence par le code du point de service de l'agent. */
@@ -171,11 +254,25 @@ export class AgentChangementTelephoneComponent implements OnInit {
         if (!this.validateForm()) return;
         this.submitting.set(true);
         this.service.creer(this.form).subscribe({
-            next: () => {
+            next: (res) => {
                 this.toast.add({ severity: 'success', summary: 'Demande envoyee au DA', detail: '' });
                 this.showCreateDialog.set(false);
                 this.submitting.set(false);
                 this.refresh();
+                // Signalement de la hiérarchie à l'origine de la demande : il passe en « pris en charge »
+                const demandeId = (res.data as any)?.demande?.id;
+                if (this.signalementLieId && demandeId) {
+                    this.signalementService.prendreEnCharge(this.signalementLieId, demandeId).subscribe({
+                        next: () => {
+                            this.signalementLieId = null;
+                            this.chargerSignalements();
+                        },
+                        error: () => {
+                            this.signalementLieId = null;
+                            this.chargerSignalements();
+                        }
+                    });
+                }
             },
             error: (err) => {
                 this.toast.add({ severity: 'error', summary: 'Echec', detail: err.message });

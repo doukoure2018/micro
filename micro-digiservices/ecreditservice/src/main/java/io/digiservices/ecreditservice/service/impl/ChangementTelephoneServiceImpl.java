@@ -38,6 +38,8 @@ public class ChangementTelephoneServiceImpl implements ChangementTelephoneServic
     private final UserClient userClient;
     private final EbankingClient ebankingClient;
     private final ObjectMapper objectMapper;
+    /** Signalements TT1 (V156) : la demande liee fait avancer le signalement. */
+    private final io.digiservices.ecreditservice.repository.SignalementTelephoneRepository signalementRepository;
 
     @Override
     @Transactional
@@ -65,6 +67,13 @@ public class ChangementTelephoneServiceImpl implements ChangementTelephoneServic
     @Transactional
     public DemandeChangementTelephoneDto rejeter(Long id, RejetTelephoneRequest request, Long daUserId) {
         repository.rejeter(id, daUserId, request.getMotif(), request.isDefinitif());
+        if (request.isDefinitif()) {
+            // rejet definitif : le signalement rattache revient a traiter par le point de service
+            int reouverts = signalementRepository.reouvrirParDemande(id);
+            if (reouverts > 0) {
+                log.info("{} signalement(s) de numero reouvert(s) apres rejet definitif de la demande {}", reouverts, id);
+            }
+        }
         log.info("Demande {} rejetee par DA {} (definitif: {})", id, daUserId, request.isDefinitif());
         return repository.findById(id);
     }
@@ -119,6 +128,11 @@ public class ChangementTelephoneServiceImpl implements ChangementTelephoneServic
         }
 
         repository.marquerValideSaf(id, userId, code, message);
+        // Un signalement de la hierarchie rattache a cette demande est desormais traite
+        int traites = signalementRepository.marquerTraiteParDemande(id);
+        if (traites > 0) {
+            log.info("{} signalement(s) de numero marque(s) traite(s) par la demande {}", traites, id);
+        }
         log.info("Demande {} validee dans SAF par utilisateur {}", id, userId);
         return repository.findById(id);
     }

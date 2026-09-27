@@ -48,9 +48,84 @@
                 </ng-template>
                 <ng-container *ngTemplateOutlet="demandesTable; context: { $implicit: demandesValidees(), emptyMsg: 'Aucune demande validee dans SAF' }"></ng-container>
             </p-tabPanel>
+            <!-- Signalements reçus de la hiérarchie (V156) -->
+            <p-tabPanel>
+                <ng-template pTemplate="header">
+                    <i class="pi pi-flag mr-2"></i>Signalements recus
+                    @if (signalementsATraiter().length > 0) {
+                        <p-badge [value]="signalementsATraiter().length" severity="danger" styleClass="ml-2"></p-badge>
+                    }
+                </ng-template>
+
+                <p class="text-gray-500 text-sm mb-3">
+                    Numeros signales par votre directeur d'agence, votre delegue regional ou la Direction de l'Exploitation.
+                    Creez la demande de changement, ou classez le signalement si le numero est en realite joignable.
+                </p>
+
+                <p-table [value]="signalements()" [loading]="loadingSignalements()" responsiveLayout="scroll" [rowHover]="true" (onPage)="marquerSignalementsVus()">
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th>Recu le</th>
+                            <th>Client</th>
+                            <th>Motif</th>
+                            <th>Numeros constates</th>
+                            <th>Signale par</th>
+                            <th>Statut</th>
+                            <th></th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-sig>
+                        <tr>
+                            <td class="whitespace-nowrap">{{ sig.signaleAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                            <td>
+                                <span class="font-medium">{{ sig.nomClient || sig.codCliente }}</span>
+                                <div class="text-xs text-gray-500">{{ sig.codCliente }}<span *ngIf="sig.numCredito"> · credit {{ sig.numCredito }}</span></div>
+                            </td>
+                            <td>
+                                {{ libelleMotifSig(sig.motif) }}
+                                <div class="text-xs text-gray-500" *ngIf="sig.commentaire">{{ sig.commentaire }}</div>
+                            </td>
+                            <td class="whitespace-nowrap text-sm" style="font-variant-numeric: tabular-nums">
+                                {{ sig.telPrincipalConstate || '—' }} / {{ sig.telSecundarioConstate || '—' }} / {{ sig.telOtroConstate || '—' }}
+                            </td>
+                            <td>{{ sig.signalePar }}<div class="text-xs text-gray-500">{{ sig.signaleParRole }}</div></td>
+                            <td>
+                                <p-tag [value]="libelleStatutSig(sig.statut)" [severity]="severiteStatutSig(sig.statut)"></p-tag>
+                                <div class="text-xs text-gray-500 mt-1" *ngIf="sig.demandeId">Demande {{ sig.demandeId }} — {{ sig.demandeStatut }}</div>
+                                <div class="text-xs text-gray-500 mt-1" *ngIf="sig.motifClassement">{{ sig.motifClassement }}</div>
+                            </td>
+                            <td class="whitespace-nowrap">
+                                @if (sig.statut === 'NOUVEAU') {
+                                    <p-button label="Creer la demande" icon="pi pi-pencil" size="small" (onClick)="traiterSignalement(sig)"></p-button>
+                                    <p-button label="Classer" icon="pi pi-inbox" size="small" [text]="true" severity="secondary" (onClick)="ouvrirClassement(sig)"></p-button>
+                                }
+                            </td>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="emptymessage">
+                        <tr><td colspan="7" class="text-center text-gray-500 py-6">Aucun signalement pour votre point de service.</td></tr>
+                    </ng-template>
+                </p-table>
+            </p-tabPanel>
         </p-tabView>
     }
 </div>
+
+<!-- Classement sans suite d'un signalement -->
+<p-dialog header="Classer le signalement sans suite" [(visible)]="showClassementDialog" [modal]="true" [style]="{ width: '480px' }" [closable]="!submitting()">
+    <div *ngIf="signalementEnCours() as sig">
+        <p class="m-0 mb-3 text-sm">
+            Client <strong>{{ sig.nomClient || sig.codCliente }}</strong> ({{ sig.codCliente }}), signale par {{ sig.signalePar }} ({{ sig.signaleParRole }}).
+        </p>
+        <label class="block text-sm font-medium mb-1">Motif du classement <span class="text-red-500">*</span></label>
+        <textarea pTextarea [(ngModel)]="motifClassement" rows="3" class="w-full" maxlength="1000" placeholder="Exemple : numero verifie avec le client, joignable"></textarea>
+        <p class="text-xs text-gray-500 mt-2">Le signaleur recoit votre motif par courriel.</p>
+    </div>
+    <ng-template pTemplate="footer">
+        <p-button label="Annuler" [text]="true" (onClick)="showClassementDialog.set(false)"></p-button>
+        <p-button label="Classer" icon="pi pi-check" [loading]="submitting()" [disabled]="!motifClassement.trim()" (onClick)="classerSignalement()"></p-button>
+    </ng-template>
+</p-dialog>
 
 <!-- Template reutilisable pour la table de demandes (utilise dans chaque onglet) -->
 <ng-template #demandesTable let-list let-empty="emptyMsg">

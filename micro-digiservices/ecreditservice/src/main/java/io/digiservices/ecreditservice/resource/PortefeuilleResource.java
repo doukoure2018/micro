@@ -15,6 +15,8 @@ import org.springframework.http.MediaType;
 import io.digiservices.ecreditservice.domain.Response;
 import io.digiservices.ecreditservice.exception.ApiException;
 import io.digiservices.ecreditservice.repository.PortefeuillePerimetreRepository;
+import io.digiservices.ecreditservice.service.PerimetreSafService;
+import io.digiservices.ecreditservice.service.PerimetreSafService.Perimetre;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -53,6 +55,7 @@ public class PortefeuilleResource {
     private final EbankingPortefeuilleClient portefeuilleClient;
     private final UserClient userClient;
     private final PortefeuillePerimetreRepository perimetreRepository;
+    private final PerimetreSafService perimetreSafService;
 
     @GetMapping("/agences")
     public ResponseEntity<Response> getAgences(@NotNull Authentication authentication, HttpServletRequest request) {
@@ -351,56 +354,14 @@ public class PortefeuilleResource {
 
     // ==================== Perimetre ====================
 
-    /** niveau : RESEAU, DELEGATION, AGENCE ou PS — determine les niveaux de synthese consultables. */
-    private record Perimetre(boolean toutReseau, Set<String> codes, String niveau) {
-    }
-
     private void verifierAcces(Authentication authentication, String codAgencia) {
-        Perimetre perimetre = perimetreDe(authentication);
-        if (!perimetre.toutReseau() && !perimetre.codes().contains(codAgencia)) {
+        if (!perimetreDe(authentication).couvre(codAgencia)) {
             throw new ApiException("Cette agence SAF est hors de votre perimetre");
         }
     }
 
-    /**
-     * Perimetre de l'utilisateur connecte : DG / MANAGER-DE / SUPER_ADMIN = tout le
-     * reseau ; DR = PS de sa delegation ; DA = PS de son agence ; AGENT_CREDIT = son PS.
-     * Un rattachement sans code SAF (colonne V129 non renseignee) est signale clairement.
-     */
+    /** Perimetre de l'utilisateur connecte, resolu par le service partage (cf. PerimetreSafService). */
     private Perimetre perimetreDe(Authentication authentication) {
-        User user = userClient.getUserByUuid(authentication.getName());
-        if (user == null) {
-            throw new ApiException("Utilisateur non identifie");
-        }
-        String role = user.getRole();
-        if ("DG".equals(role) || "SUPER_ADMIN".equals(role)
-                || ("MANAGER".equals(role) && "DE".equalsIgnoreCase(user.getService()))) {
-            return new Perimetre(true, Set.of(), "RESEAU");
-        }
-        Set<String> codes;
-        String rattachement;
-        String niveau;
-        if ("DR".equals(role)) {
-            codes = perimetreRepository.codesParDelegation(user.getDelegationId());
-            rattachement = "votre delegation";
-            niveau = "DELEGATION";
-        } else if ("DA".equals(role)) {
-            codes = perimetreRepository.codesParAgence(user.getAgenceId());
-            rattachement = "votre agence";
-            niveau = "AGENCE";
-        } else if ("AGENT_CREDIT".equals(role)) {
-            codes = perimetreRepository.codesParPointVente(user.getPointventeId());
-            rattachement = "votre point de service";
-            niveau = "PS";
-        } else {
-            throw new ApiException("Acces reserve aux agents de credit et niveaux de direction");
-        }
-        if (codes.isEmpty()) {
-            log.warn("[PORTEFEUILLE] Perimetre vide pour user={} role={} (pointvente.code non renseigne)",
-                    user.getUserId(), role);
-            throw new ApiException("Aucun point de service de " + rattachement
-                    + " n'est encore relie a SAF — contactez l'administrateur");
-        }
-        return new Perimetre(false, codes, niveau);
+        return perimetreSafService.perimetreDe(authentication.getName());
     }
 }
