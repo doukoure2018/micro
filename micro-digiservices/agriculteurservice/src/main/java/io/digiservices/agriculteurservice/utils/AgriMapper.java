@@ -168,7 +168,47 @@ public class AgriMapper {
                 .codeMembre(src.getCodeMembre())
                 .nomMembre(src.getNomMembre())
                 .comptes(comptes)
+                .creditsEnCours(src.getCreditsEnCours() == null ? java.util.List.of()
+                        : src.getCreditsEnCours().stream().map(this::toCreditRemboursement).toList())
                 .message(src.getMessage())
+                .build();
+    }
+
+    public io.digiservices.agriculteurservice.dto.CreditRemboursementDto toCreditRemboursement(
+            io.digiservices.clients.agri.CreditEnCoursDto src) {
+        if (src == null) return null;
+        return io.digiservices.agriculteurservice.dto.CreditRemboursementDto.builder()
+                .numeroCredit(src.getNumeroCredit())
+                .codeAgence(src.getCodeAgence())
+                .typeCredit(src.getTypeCredit())
+                .libelleTypeCredit(src.getLibelleTypeCredit())
+                .montantAccorde(src.getMontantAccorde())
+                .capitalRestantDu(src.getCapitalRestantDu())
+                .montantEcheance(src.getMontantEcheance())
+                .nombreEcheances(src.getNombreEcheances())
+                .dateOuverture(src.getDateOuverture())
+                .dateEcheanceFinale(src.getDateEcheanceFinale())
+                .statut(src.getLibelleStatut() != null ? src.getLibelleStatut() : src.getStatut())
+                .compteRemboursement(src.getCompteRemboursement())
+                .prochainesEcheances(src.getProchainesEcheances() == null ? java.util.List.of()
+                        : src.getProchainesEcheances().stream().map(this::toEcheanceCredit).toList())
+                .nbEcheancesRestantes(src.getNbEcheancesRestantes())
+                .resteTotalAPayer(src.getResteTotalAPayer())
+                .build();
+    }
+
+    public io.digiservices.agriculteurservice.dto.EcheanceCreditDto toEcheanceCredit(
+            io.digiservices.clients.agri.EcheanceCourteDto src) {
+        if (src == null) return null;
+        return io.digiservices.agriculteurservice.dto.EcheanceCreditDto.builder()
+                .numeroEcheance(src.getNumeroEcheance())
+                .dateEcheance(src.getDateEcheance())
+                .montant(src.getMontant())
+                .capital(src.getCapital())
+                .interets(src.getInterets())
+                .resteAPayer(src.getResteAPayer())
+                .etat(src.getEtat())
+                .joursRetard(src.getJoursRetard())
                 .build();
     }
 

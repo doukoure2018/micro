@@ -196,6 +196,10 @@ public class AgriculteurServiceImpl implements AgriculteurService {
     @org.springframework.beans.factory.annotation.Value("${agri.comptes.produit-remboursement:CC014}")
     private String produitRemboursement;
 
+    /** Echeances restant a payer servies avec les comptes (demande DSIG du 2026-09-29). */
+    @org.springframework.beans.factory.annotation.Value("${agri.comptes.nb-echeances:5}")
+    private int nbEcheancesParCredit;
+
     @Override
     public io.digiservices.clients.agri.ComptesMembreDto getComptesMembre(String codCliente) {
         List<String> produits = List.of(produitCredit, produitRemboursement);
@@ -225,13 +229,85 @@ public class AgriculteurServiceImpl implements AgriculteurService {
                     .incoherenceNumero(numeroIncoherent(numero, produit))
                     .build());
         }
-        log.info("[AGRI] comptes du membre {} : {} compte(s)", codCliente, comptes.size());
+        List<io.digiservices.clients.agri.CreditEnCoursDto> credits = creditsEnCours(codCliente, comptes);
+        log.info("[AGRI] membre {} : {} compte(s), {} credit(s) en cours", codCliente, comptes.size(), credits.size());
         return io.digiservices.clients.agri.ComptesMembreDto.builder()
                 .codeMembre(codCliente)
                 .nomMembre(nomMembre)
                 .comptes(comptes)
-                .message(comptes.isEmpty() ? "Compte non disponible" : null)
+                .creditsEnCours(credits)
+                .message(comptes.isEmpty() && credits.isEmpty() ? "Compte non disponible" : null)
                 .build();
+    }
+
+    /**
+     * Credits en cours de remboursement et, pour chacun, ses premieres echeances restant a payer.
+     * Deux requetes seulement, quel que soit le nombre de credits : la seconde ramene les
+     * echeances de tous les credits d'un coup, bornees par credit.
+     */
+    private List<io.digiservices.clients.agri.CreditEnCoursDto> creditsEnCours(
+            String codCliente, List<io.digiservices.clients.agri.CompteMembreDto> comptes) {
+        List<java.util.Map<String, Object>> lignes = agriculteurRepository.findCreditsEnCours(codCliente);
+        if (lignes.isEmpty()) {
+            return List.of();
+        }
+        java.util.Map<Long, List<io.digiservices.clients.agri.EcheanceCourteDto>> parCredit = new java.util.HashMap<>();
+        LocalDate aujourdhui = LocalDate.now();
+        for (java.util.Map<String, Object> r : agriculteurRepository.findProchainesEcheances(codCliente, nbEcheancesParCredit)) {
+            Long numCredit = nombre(r.get("NUM_CREDITO")) == null ? null : nombre(r.get("NUM_CREDITO")).longValue();
+            if (numCredit == null) continue;
+            LocalDate echeance = date(r.get("FEC_CUOTA"));
+            boolean impayee = echeance != null && echeance.isBefore(aujourdhui);
+            BigDecimal montant = montant(r.get("MON_CUOTA"));
+            BigDecimal interets = montant(r.get("MON_INT"));
+            parCredit.computeIfAbsent(numCredit, k -> new java.util.ArrayList<>())
+                    .add(io.digiservices.clients.agri.EcheanceCourteDto.builder()
+                            .numeroEcheance(nombre(r.get("NUM_CUOTA")) == null ? null : nombre(r.get("NUM_CUOTA")).longValue())
+                            .dateEcheance(echeance)
+                            .montant(montant)
+                            .capital(montant == null || interets == null ? null : montant.subtract(interets))
+                            .interets(interets)
+                            .resteAPayer(montant(r.get("RESTE")))
+                            .etat(impayee ? "IMPAYEE" : "A_ECHOIR")
+                            .joursRetard(impayee ? ChronoUnit.DAYS.between(echeance, aujourdhui) : 0)
+                            .build());
+        }
+
+        // Compte de remboursement du membre, rattache a chaque credit pour information
+        String compteRemboursement = comptes.stream()
+                .filter(c -> "REMBOURSEMENT".equals(c.getType()))
+                .map(io.digiservices.clients.agri.CompteMembreDto::getNumeroCompte)
+                .findFirst().orElse(null);
+
+        List<io.digiservices.clients.agri.CreditEnCoursDto> credits = new java.util.ArrayList<>();
+        for (java.util.Map<String, Object> r : lignes) {
+            Number num = nombre(r.get("NUM_CREDITO"));
+            Long numCredit = num == null ? null : num.longValue();
+            String etat = txt(r.get("IND_ESTADO"));
+            credits.add(io.digiservices.clients.agri.CreditEnCoursDto.builder()
+                    .numeroCredit(numCredit)
+                    .codeAgence(txt(r.get("COD_AGENCIA")))
+                    .typeCredit(txt(r.get("TIP_CREDITO")))
+                    .libelleTypeCredit(txt(r.get("DES_TIP_CREDITO")))
+                    .montantAccorde(montant(r.get("MON_CREDITO")))
+                    .capitalRestantDu(montant(r.get("MON_SALDO")))
+                    .montantEcheance(montant(r.get("MON_CUOTA")))
+                    .nombreEcheances(nombre(r.get("CANT_CUOTAS")) == null ? null : nombre(r.get("CANT_CUOTAS")).longValue())
+                    .dateOuverture(date(r.get("FEC_APERTURA")))
+                    .dateEcheanceFinale(date(r.get("FEC_VENCIMIENTO")))
+                    .statut(etat)
+                    .libelleStatut("J".equals(etat) ? "Contentieux" : "En cours de remboursement")
+                    .compteRemboursement(compteRemboursement)
+                    .prochainesEcheances(parCredit.getOrDefault(numCredit, List.of()))
+                    .nbEcheancesRestantes(nombre(r.get("NB_RESTANTES")) == null ? 0 : nombre(r.get("NB_RESTANTES")).longValue())
+                    .resteTotalAPayer(montant(r.get("RESTE_TOTAL")))
+                    .build());
+        }
+        return credits;
+    }
+
+    private static Number nombre(Object v) {
+        return v instanceof Number n ? n : null;
     }
 
     private String typeDeProduit(String produit) {

@@ -17,6 +17,8 @@ public class ComptesMembreDto {
     private String codeMembre;
     private String nomMembre;
     private List<CompteMembreDto> comptes;
+    /** Credits en cours de remboursement, avec leurs prochaines echeances. */
+    private List<CreditEnCoursDto> creditsEnCours;
     /** Renseigne uniquement quand aucun compte n'est trouve : « Compte non disponible ». */
     private String message;
 }
