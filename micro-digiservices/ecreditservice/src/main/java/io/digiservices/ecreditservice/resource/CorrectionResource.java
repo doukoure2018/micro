@@ -46,6 +46,7 @@ public class CorrectionResource {
     private final EbankingClient ebankingClient;
 
     private final CorrectionService correctionService;
+    private final io.digiservices.ecreditservice.service.AssainissementService assainissementService;
 
     private final UserClient userClient;
 
@@ -1393,5 +1394,40 @@ public class CorrectionResource {
     @SuppressWarnings("unchecked")
     private static Map<String, Object> castMap(Map<?, ?> m) {
         return (Map<String, Object>) m;
+    }
+
+    // ==================== Assainissement : semaine x delegation (2026-09-29) ====================
+
+    /**
+     * Pilotage de l'assainissement : courbe sur la <b>date de traitement</b>, encours par
+     * delegation avec anciennete, et points de service en retard. Une seule periode et un seul
+     * filtre valent pour tout l'ecran.
+     *
+     * @param granularite  week (defaut) ou day
+     * @param nbPeriodes   fenetre, 12 par defaut
+     * @param delegationId restreint la courbe et les points de service ; absent = tout le reseau
+     * @param seuilJours   au-dela, une fiche en attente est comptee en retard (30 par defaut)
+     */
+    @GetMapping("/corrections/assainissement")
+    public ResponseEntity<Response> getTableauAssainissement(
+            @RequestParam(name = "granularite", defaultValue = "week") String granularite,
+            @RequestParam(name = "nbPeriodes", defaultValue = "12") int nbPeriodes,
+            @RequestParam(name = "delegationId", required = false) Long delegationId,
+            @RequestParam(name = "seuilJours", defaultValue = "30") int seuilJours,
+            HttpServletRequest request) {
+        try {
+            var tableau = assainissementService.tableau(granularite, nbPeriodes, delegationId, seuilJours);
+            return ResponseEntity.ok(getResponse(request,
+                    Map.of("assainissement", tableau),
+                    "Tableau de pilotage de l'assainissement",
+                    OK));
+        } catch (Exception e) {
+            log.error("Erreur lors de la construction du tableau d'assainissement", e);
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR)
+                    .body(getResponse(request,
+                            Map.of("error", "Erreur lors de la récupération du tableau d'assainissement"),
+                            "Erreur interne du serveur",
+                            INTERNAL_SERVER_ERROR));
+        }
     }
 }

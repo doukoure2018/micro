@@ -822,6 +822,17 @@ export class UserService {
         return <Observable<IResponse>>this.http.get<IResponse>(url).pipe(tap(console.log), catchError(this.handleError));
     };
 
+    /**
+     * Pilotage de l'assainissement (2026-09-29) : courbe sur la DATE DE TRAITEMENT, encours par
+     * délégation avec ancienneté, et points de service en retard — une seule période pour tout l'écran.
+     */
+    getAssainissement$ = (granularite: string, nbPeriodes: number, delegationId: number | null, seuilJours: number) =>
+        <Observable<IResponse>>this.http
+            .get<IResponse>(`${this.server}/ecredit/corrections/assainissement`, {
+                params: { granularite, nbPeriodes, seuilJours, ...(delegationId ? { delegationId } : {}) }
+            })
+            .pipe(catchError(this.handleError));
+
     getCorrectionEvolutionByDay$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/corrections/evolution/by-day`).pipe(tap(console.log), catchError(this.handleError));
 
     getCorrectionEvolutionByWeek$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/corrections/evolution/by-week`).pipe(tap(console.log), catchError(this.handleError));
