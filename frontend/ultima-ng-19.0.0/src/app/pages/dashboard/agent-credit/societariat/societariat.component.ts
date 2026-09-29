@@ -523,6 +523,19 @@ export class SocietariatComponent implements OnInit {
         }
     }
 
+    /**
+     * Période appliquée au tableau des délégations, à propager aux agences et aux points de
+     * service : sans cela les trois niveaux ne portaient pas sur la même fenêtre et leurs totaux
+     * ne se recoupaient pas.
+     */
+    debutApi(): string | null {
+        return this.usePeriodFilter && this.dateDebut ? this.formatDateForApi(this.dateDebut) : null;
+    }
+
+    finApi(): string | null {
+        return this.usePeriodFilter && this.dateFin ? this.formatDateForApi(this.dateFin) : null;
+    }
+
     formatDateForApi(date: Date): string {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -629,7 +642,7 @@ export class SocietariatComponent implements OnInit {
             loadingAgences: true
         }));
 
-        this.userService.getCorrectionStatsByAgence$(row.delegationId).subscribe({
+        this.userService.getCorrectionStatsByAgence$(row.delegationId, this.debutApi(), this.finApi()).subscribe({
             next: (response) => {
                 const agences = response.data?.correctionAgenceStats || [];
                 this.state.update((s) => ({ ...s, agences, loadingAgences: false }));
@@ -660,7 +673,7 @@ export class SocietariatComponent implements OnInit {
             loadingPoints: true
         }));
 
-        this.userService.getCorrectionStatsByPointVente$(row.agenceId).subscribe({
+        this.userService.getCorrectionStatsByPointVente$(row.agenceId, this.debutApi(), this.finApi()).subscribe({
             next: (response) => {
                 const points = response.data?.correctionPointVenteStats || [];
                 this.state.update((s) => ({ ...s, points, loadingPoints: false }));

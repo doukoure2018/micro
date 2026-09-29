@@ -1027,9 +1027,15 @@ public class CorrectionResource {
     @GetMapping("/corrections/stats/delegations/{delegationId}/by-agency")
     public ResponseEntity<Response> getCorrectionStatsByAgence(
             @PathVariable(name = "delegationId") Long delegationId,
+            @RequestParam(name = "dateDebut", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            java.time.LocalDate dateDebut,
+            @RequestParam(name = "dateFin", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            java.time.LocalDate dateFin,
             HttpServletRequest request) {
         try {
-            List<CorrectionAgenceStat> stats = correctionService.getCorrectionStatsByAgence(delegationId);
+            List<CorrectionAgenceStat> stats = correctionService.getCorrectionStatsByAgence(delegationId, dateDebut, dateFin);
             return ResponseEntity.ok(
                     getResponse(request,
                             Map.of("correctionAgenceStats", stats),
@@ -1051,9 +1057,15 @@ public class CorrectionResource {
     @GetMapping("/corrections/stats/by-agency/{agenceId}/by-point")
     public ResponseEntity<Response> getCorrectionStatsByPointVente(
             @PathVariable(name = "agenceId") Long agenceId,
+            @RequestParam(name = "dateDebut", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            java.time.LocalDate dateDebut,
+            @RequestParam(name = "dateFin", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            java.time.LocalDate dateFin,
             HttpServletRequest request) {
         try {
-            List<CorrectionPointVenteStat> stats = correctionService.getCorrectionStatsByPointVente(agenceId);
+            List<CorrectionPointVenteStat> stats = correctionService.getCorrectionStatsByPointVente(agenceId, dateDebut, dateFin);
             return ResponseEntity.ok(
                     getResponse(request,
                             Map.of("correctionPointVenteStats", stats),

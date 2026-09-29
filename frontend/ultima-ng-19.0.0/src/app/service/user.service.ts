@@ -813,9 +813,19 @@ export class UserService {
     getCorrectionStatsByDelegationWithPeriod$ = (dateDebut: string, dateFin: string) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/corrections/stats/delegations/period?dateDebut=${dateDebut}&dateFin=${dateFin}`).pipe(tap(console.log), catchError(this.handleError));
 
-    getCorrectionStatsByAgence$ = (delegationId: number) => this.http.get<IResponse>(`${this.server}/ecredit/corrections/stats/delegations/${delegationId}/by-agency`).pipe(tap(console.log), catchError(this.handleError));
+    getCorrectionStatsByAgence$ = (delegationId: number, dateDebut?: string | null, dateFin?: string | null) =>
+        this.http
+            .get<IResponse>(`${this.server}/ecredit/corrections/stats/delegations/${delegationId}/by-agency`, {
+                params: { ...(dateDebut ? { dateDebut } : {}), ...(dateFin ? { dateFin } : {}) }
+            })
+            .pipe(catchError(this.handleError));
 
-    getCorrectionStatsByPointVente$ = (agenceId: number) => this.http.get<IResponse>(`${this.server}/ecredit/corrections/stats/by-agency/${agenceId}/by-point`).pipe(tap(console.log), catchError(this.handleError));
+    getCorrectionStatsByPointVente$ = (agenceId: number, dateDebut?: string | null, dateFin?: string | null) =>
+        this.http
+            .get<IResponse>(`${this.server}/ecredit/corrections/stats/by-agency/${agenceId}/by-point`, {
+                params: { ...(dateDebut ? { dateDebut } : {}), ...(dateFin ? { dateFin } : {}) }
+            })
+            .pipe(catchError(this.handleError));
 
     getCorrectionsByPointVente$ = (codeAgence: string, statut?: string) => {
         const url = `${this.server}/ecredit/corrections/pointvente/${codeAgence}/personnes${statut ? `?statut=${statut}` : ''}`;

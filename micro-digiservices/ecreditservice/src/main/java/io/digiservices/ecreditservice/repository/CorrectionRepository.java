@@ -40,9 +40,9 @@ public interface CorrectionRepository {
 
     List<CorrectionDelegationStat> getCorrectionStatsByDelegationWithPeriod(LocalDate dateDebut, LocalDate dateFin);
 
-    List<CorrectionAgenceStat> getCorrectionStatsByAgence(Long delegationId);
+    List<CorrectionAgenceStat> getCorrectionStatsByAgence(Long delegationId, java.time.LocalDate dateDebut, java.time.LocalDate dateFin);
 
-    List<CorrectionPointVenteStat> getCorrectionStatsByPointVente(Long agenceId);
+    List<CorrectionPointVenteStat> getCorrectionStatsByPointVente(Long agenceId, java.time.LocalDate dateDebut, java.time.LocalDate dateFin);
 
     List<PersonnePhysique> getCorrectionsByPointVente(String codeAgence, String statut);
 
