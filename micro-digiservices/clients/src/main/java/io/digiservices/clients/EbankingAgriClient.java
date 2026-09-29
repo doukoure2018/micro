@@ -63,4 +63,9 @@ public interface EbankingAgriClient {
             @PathVariable("codGrupo") String codGrupo,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size);
+
+    /** Comptes de credit (CC008) et de remboursement (CC014) d'un membre. */
+    @GetMapping("/ebanking/agri/comptes/{codCliente}")
+    io.digiservices.clients.agri.ComptesMembreDto getComptesMembre(
+            @PathVariable("codCliente") String codCliente);
 }

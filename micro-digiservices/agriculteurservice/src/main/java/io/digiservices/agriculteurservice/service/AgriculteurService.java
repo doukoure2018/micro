@@ -56,4 +56,7 @@ public interface AgriculteurService {
 
     /** Perimetre de toute la structure (meme reponse qu'un agent NATIONAL, sans agent). */
     AgentPerimetreDto getStructurePerimetre();
+
+    /** Comptes de crédit et de remboursement d'un membre. */
+    io.digiservices.agriculteurservice.dto.ComptesMembreDto getComptes(String codeClient);
 }

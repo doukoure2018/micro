@@ -182,4 +182,107 @@ public class AgriculteurServiceImpl implements AgriculteurService {
         member.setPersonType(safTranslator.translatePersonType(member.getIndPersona()));
         member.setGroupRole(safTranslator.translateGroupRole(member.getIndGrado()));
     }
+
+    // ==================== Comptes du membre ====================
+
+    /**
+     * Produits retenus, parametrables : le compte de credit porte le montant debourse,
+     * le compte de remboursement recoit les versements et supporte le prelevement des
+     * echeances (ecran SAF « Ouverture d'un credit », onglet Debourse).
+     */
+    @org.springframework.beans.factory.annotation.Value("${agri.comptes.produit-credit:CC008}")
+    private String produitCredit;
+
+    @org.springframework.beans.factory.annotation.Value("${agri.comptes.produit-remboursement:CC014}")
+    private String produitRemboursement;
+
+    @Override
+    public io.digiservices.clients.agri.ComptesMembreDto getComptesMembre(String codCliente) {
+        List<String> produits = List.of(produitCredit, produitRemboursement);
+        List<java.util.Map<String, Object>> lignes = agriculteurRepository.findComptesMembre(codCliente, produits);
+
+        List<io.digiservices.clients.agri.CompteMembreDto> comptes = new java.util.ArrayList<>();
+        String nomMembre = null;
+        for (java.util.Map<String, Object> r : lignes) {
+            if (nomMembre == null) nomMembre = txt(r.get("NOM_CLIENTE"));
+            String numero = txt(r.get("NUM_CUENTA"));
+            String produit = txt(r.get("COD_PRODUCTO"));
+            comptes.add(io.digiservices.clients.agri.CompteMembreDto.builder()
+                    .numeroCompte(numero)
+                    .type(typeDeProduit(produit))
+                    .produit(produit)
+                    .libelleProduit(premierNonVide(txt(r.get("NOM_PRODUCTO")), txt(r.get("DES_PRODUCTO"))))
+                    .codeAgence(txt(r.get("COD_AGENCIA")))
+                    .libelleAgence(txt(r.get("DES_AGENCIA")))
+                    .devise(txt(r.get("COD_MONEDA")))
+                    .statut(txt(r.get("IND_ESTADO")))
+                    .libelleStatut(libelleStatutCompte(txt(r.get("IND_ESTADO"))))
+                    .dateOuverture(date(r.get("FEC_APERTURA")))
+                    .dernierMouvement(date(r.get("FEC_ULT_MOVIMIENTO")))
+                    .soldeDisponible(montant(r.get("SAL_DISPONIBLE")))
+                    .soldeReserve(montant(r.get("SAL_RESERVA")))
+                    .soldeBloque(montant(r.get("SAL_CONGELADO")))
+                    .incoherenceNumero(numeroIncoherent(numero, produit))
+                    .build());
+        }
+        log.info("[AGRI] comptes du membre {} : {} compte(s)", codCliente, comptes.size());
+        return io.digiservices.clients.agri.ComptesMembreDto.builder()
+                .codeMembre(codCliente)
+                .nomMembre(nomMembre)
+                .comptes(comptes)
+                .message(comptes.isEmpty() ? "Compte non disponible" : null)
+                .build();
+    }
+
+    private String typeDeProduit(String produit) {
+        if (produit == null) return "AUTRE";
+        if (produit.equalsIgnoreCase(produitCredit)) return "CREDIT";
+        if (produit.equalsIgnoreCase(produitRemboursement)) return "REMBOURSEMENT";
+        return "AUTRE";
+    }
+
+    /**
+     * Controle de coherence : le numero se lit [3 agence][3 produit][8 sequence], et le
+     * triplet produit doit correspondre au code produit stocke. Une discordance est signalee,
+     * jamais masquee.
+     */
+    private static Boolean numeroIncoherent(String numero, String produit) {
+        if (numero == null || produit == null || numero.length() < 6 || produit.length() < 3) return null;
+        return !numero.substring(3, 6).equals(produit.substring(produit.length() - 3));
+    }
+
+    private static String libelleStatutCompte(String indEstado) {
+        if (indEstado == null) return null;
+        return switch (indEstado.trim().toUpperCase()) {
+            case "A" -> "Actif";
+            case "I" -> "Inactif";
+            case "B" -> "Bloque";
+            case "C" -> "Cloture";
+            default -> indEstado;
+        };
+    }
+
+    private static String premierNonVide(String a, String b) {
+        if (a != null && !a.isBlank()) return a;
+        return b == null || b.isBlank() ? null : b;
+    }
+
+    private static String txt(Object v) {
+        if (v == null) return null;
+        String s = v.toString().trim();
+        return s.isEmpty() ? null : s;
+    }
+
+    private static BigDecimal montant(Object v) {
+        return v instanceof java.math.BigDecimal b ? b
+                : v instanceof Number n ? BigDecimal.valueOf(n.doubleValue()) : null;
+    }
+
+    private static LocalDate date(Object v) {
+        if (v instanceof java.sql.Timestamp t) return t.toLocalDateTime().toLocalDate();
+        if (v instanceof java.sql.Date d) return d.toLocalDate();
+        if (v instanceof LocalDateTime dt) return dt.toLocalDate();
+        if (v instanceof LocalDate d) return d;
+        return null;
+    }
 }

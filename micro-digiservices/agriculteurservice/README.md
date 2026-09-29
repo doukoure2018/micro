@@ -53,6 +53,7 @@ X-API-Key: <cle-publique>
 | GET | `/agriculteurs/farmers` | Agriculteurs (clients ayant un crédit agricole) | oui |
 | GET | `/agriculteurs/farmers/{clientId}` | Détail d'un agriculteur | non |
 | GET | `/agriculteurs/farmers/{clientId}/credits` | Crédits agricoles d'un agriculteur | non |
+| GET | `/agriculteurs/farmers/{clientId}/comptes` | **Comptes du membre** : compte de crédit (produit `CC008`, sur lequel le crédit est déboursé) et compte de remboursement (produit `CC014`, sur lequel les échéances sont prélevées), avec leurs soldes | non |
 | GET | `/agriculteurs/credits/{creditId}` | Détail d'un crédit agricole | non |
 | GET | `/agriculteurs/credits/{creditId}/repayment-schedule` | Échéancier d'un crédit (statut `pending`/`paid`/`late`/`missed`, jours de retard) | non |
 | GET | `/agriculteurs/cooperatives` | Coopératives / groupements | oui |
@@ -64,6 +65,45 @@ X-API-Key: <cle-publique>
 | GET | `/agriculteurs/structure/delegations/{delegationId}/points-de-vente` | Points de service d'une délégation | non |
 | GET | `/agriculteurs/agents/{agentId}/perimetre` | **Périmètre d'un agent** (ce qu'il a le droit de voir), voir ci-dessous | non |
 | GET | `/agriculteurs/structure/perimetre` | **Périmètre de toute la structure** (même forme, niveau `NATIONAL`, sans agent) — administration/maintenance AgriScore | non |
+
+### Comptes d'un membre
+
+`GET /agriculteurs/farmers/{clientId}/comptes` renvoie les deux comptes qui portent la vie d'un
+crédit chez le Crédit Rural :
+
+| Produit | Type renvoyé | Rôle |
+|---|---|---|
+| `CC008` | `CREDIT` | Compte sur lequel le montant du crédit a été déboursé |
+| `CC014` | `REMBOURSEMENT` | Compte alimenté par le membre, sur lequel SAF prélève les échéances |
+
+Le numéro de compte se lit en trois blocs : **trois chiffres d'agence, trois de produit, huit de
+séquence**. Ainsi `32200800202659` est le compte de crédit de l'agence 322 et `32201400202660`
+le compte de remboursement du même membre.
+
+Quand le membre n'a aucun de ces deux comptes, la réponse reste un **200** avec une liste vide et
+le message « Compte non disponible » ; ce n'est pas une erreur.
+
+```json
+{
+  "codeMembre": "0322000202659",
+  "nomMembre": "DIALLO MAMADOU SALIOU",
+  "comptes": [
+    { "numeroCompte": "32200800202659", "type": "CREDIT", "produit": "CC008",
+      "codeAgence": "322", "libelleAgence": "COYAH", "devise": "4", "statut": "Actif",
+      "dateOuverture": "2026-09-23", "dernierMouvement": "2026-09-23",
+      "soldeDisponible": 0, "soldeReserve": 0, "soldeBloque": 0 },
+    { "numeroCompte": "32201400202660", "type": "REMBOURSEMENT", "produit": "CC014",
+      "codeAgence": "322", "libelleAgence": "COYAH", "devise": "4", "statut": "Actif",
+      "dateOuverture": "2026-09-23", "dernierMouvement": "2026-09-28",
+      "soldeDisponible": 250000, "soldeReserve": 0, "soldeBloque": 0 }
+  ],
+  "message": null
+}
+```
+
+Les deux codes produits sont **paramétrables** côté service bancaire
+(`agri.comptes.produit-credit`, `agri.comptes.produit-remboursement`) : si le core banking
+retenait d'autres codes, il suffit de les changer en configuration.
 
 ### Périmètre d'un agent (cloisonnement)
 

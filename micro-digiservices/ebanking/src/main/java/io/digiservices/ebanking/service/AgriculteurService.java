@@ -35,4 +35,7 @@ public interface AgriculteurService {
     CooperativeDto getCooperativeById(String codGrupo);
 
     PageDto<CooperativeMemberDto> getCooperativeMembers(String codGrupo, int page, int size);
+
+    /** Comptes de credit et de remboursement d'un membre (produits parametres). */
+    io.digiservices.clients.agri.ComptesMembreDto getComptesMembre(String codCliente);
 }

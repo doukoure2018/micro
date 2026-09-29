@@ -449,4 +449,38 @@ public class AgriculteurRepository {
     private static long lng(ResultSet rs, String col) throws SQLException {
         return rs.getLong(col);
     }
+
+    // ==================== Comptes du membre (credit CC008 / remboursement CC014) ====================
+
+    /**
+     * Comptes d'un membre limites aux produits demandes. Le libelle de l'agence et celui du
+     * produit sont joints depuis les referentiels SAF ; le nom du client sert d'en-tete de reponse.
+     */
+    private static final String SQL_COMPTES_MEMBRE = """
+            SELECT c.NUM_CUENTA, c.COD_PRODUCTO, c.COD_AGENCIA, c.COD_MONEDA, c.IND_ESTADO,
+                   c.FEC_APERTURA, c.FEC_ULT_MOVIMIENTO,
+                   c.SAL_DISPONIBLE, c.SAL_RESERVA, c.SAL_CONGELADO,
+                   ag.DES_AGENCIA, p.NOM_PRODUCTO, p.DES_PRODUCTO, cl.NOM_CLIENTE
+            FROM CC.CC_CUENTA_EFECTIVO c
+            LEFT JOIN CF.CF_AGENCIAS ag
+                ON ag.COD_EMPRESA = c.COD_EMPRESA AND ag.COD_AGENCIA = c.COD_AGENCIA
+            LEFT JOIN CF.CF_PRODUCTOS p
+                ON p.COD_EMPRESA = c.COD_EMPRESA AND p.COD_SISTEMA = c.COD_SISTEMA
+               AND p.COD_PRODUCTO = c.COD_PRODUCTO
+            LEFT JOIN CL.CL_CLIENTES cl
+                ON cl.COD_EMPRESA = c.COD_EMPRESA AND cl.COD_CLIENTE = c.COD_CLIENTE
+            WHERE c.COD_EMPRESA = '00000'
+              AND c.COD_CLIENTE = :codCliente
+              AND c.COD_PRODUCTO IN (:produits)
+            ORDER BY c.COD_PRODUCTO, c.NUM_CUENTA
+            """;
+
+    /** Une ligne par compte ; la liste est vide si le membre n'a aucun de ces comptes. */
+    public List<java.util.Map<String, Object>> findComptesMembre(String codCliente, List<String> produits) {
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("codCliente", codCliente)
+                .addValue("produits", produits);
+        return execute("agri.comptesMembre",
+                () -> tertiary.queryForList(SQL_COMPTES_MEMBRE, params));
+    }
 }
