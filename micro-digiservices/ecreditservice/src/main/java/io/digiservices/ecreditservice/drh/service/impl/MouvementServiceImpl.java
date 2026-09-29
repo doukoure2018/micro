@@ -281,7 +281,12 @@ public class MouvementServiceImpl implements MouvementService {
         for (MouvementPersonneDto agent : reconstituer(du, au, null).values()) {
             if (perimetre != null && !perimetre.contains(agent.getMatricule())) continue;
             int pauses = 0, sortiesTravail = 0, horsBureau = 0, depassement = 0, nonCloturees = 0;
+            int joursDepassement = 0;
+            double mouvements = 0, maxJour = 0;
             for (MouvementJourDto j : agent.getJours()) {
+                mouvements += j.getMouvements();
+                maxJour = Math.max(maxJour, j.getMouvements());
+                if (j.isDepasseSeuil()) joursDepassement++;
                 sortiesTravail += j.getNbSortiesTravail();
                 horsBureau += j.getMinutesHorsBureau();
                 depassement += j.getMinutesDepassementPause();
@@ -299,11 +304,19 @@ public class MouvementServiceImpl implements MouvementService {
                     .minutesHorsBureau(horsBureau)
                     .minutesDepassementPause(depassement)
                     .nonCloturees(nonCloturees)
+                    .mouvements(arrondi(mouvements))
+                    .joursDepassement(joursDepassement)
+                    .maxMouvementsJour(arrondi(maxJour))
                     .build());
         }
-        lignes.sort((a, b) -> Integer.compare(
-                b.getMinutesDepassementPause() + b.getMinutesHorsBureau(),
-                a.getMinutesDepassementPause() + a.getMinutesHorsBureau()));
+        // V158 : priorité aux salariés qui dépassent le seuil, classés par nombre de JOURS en
+        // dépassement (et non par cumul de la période, qui favoriserait les plus assidus) ;
+        // à égalité, le cumul de mouvements départage, puis l'ancien critère de temps.
+        lignes.sort(java.util.Comparator
+                .comparingInt(SyntheseMouvementDto::getJoursDepassement).reversed()
+                .thenComparing(java.util.Comparator.comparingDouble(SyntheseMouvementDto::getMouvements).reversed())
+                .thenComparing(java.util.Comparator.comparingInt(
+                        (SyntheseMouvementDto s) -> s.getMinutesDepassementPause() + s.getMinutesHorsBureau()).reversed()));
         return lignes;
     }
 
@@ -366,6 +379,7 @@ public class MouvementServiceImpl implements MouvementService {
         LocalTime finVendredi = LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE_VENDREDI", "14:00")).minusMinutes(tolDepart);
         LocalTime finSamedi = LocalTime.parse(presenceRepository.parametreTexte("PRESENCE_HEURE_SORTIE_SAMEDI", "14:00")).minusMinutes(tolDepart);
         LocalTime[] fins = {finTravail, finVendredi, finSamedi};
+        seuilMouvements = seuilMouvements();
 
         Map<String, MouvementPersonneDto> agents = new LinkedHashMap<>();
         String matCourant = null;
@@ -396,6 +410,9 @@ public class MouvementServiceImpl implements MouvementService {
         LocalTime fin = PresenceServiceImpl.heureSortieDuJour(jour, fins[0], fins[1], fins[2]);
         agents.get(matricule).getJours().add(analyserJour(jour, evts, pauseDebut, pauseFin, debutTravail, fin));
     }
+
+    /** V158 : mouvements par jour au-delà desquels la ligne est signalée (1 mouvement = 2 badgeages). */
+    private double seuilMouvements = 2;
 
     private MouvementJourDto analyserJour(LocalDate jour, List<Evt> evts,
                                           LocalTime pauseDebut, LocalTime pauseFin,
@@ -434,8 +451,15 @@ public class MouvementServiceImpl implements MouvementService {
             }
             sorties.add(classer(e.heure(), suivant.heure(), journeeContinue, pauseDebut, pauseFin, debutTravail, finTravail));
         }
+        // V158 : les badgeages antérieurs à l'heure d'arrivée majorée de la tolérance (08:35) ne
+        // comptent pas — même borne que le temps hors bureau. Le départ final compte, lui.
+        int badgeagesComptes = (int) nets.stream().filter(e -> !e.heure().isBefore(debutTravail)).count();
+        double mouvements = badgeagesComptes / 2.0;
         return MouvementJourDto.builder()
                 .jour(jour)
+                .badgeagesComptes(badgeagesComptes)
+                .mouvements(mouvements)
+                .depasseSeuil(mouvements > seuilMouvements)
                 .premiereEntree(entreeNonBadgee ? null : premiereEntree)
                 .derniereSortie(departNonBadge ? null : derniereSortie)
                 .entreeNonBadgee(entreeNonBadgee)
@@ -452,6 +476,26 @@ public class MouvementServiceImpl implements MouvementService {
 
     /** V150 : durée réglementaire de la pause (minutes), lue à chaque reconstitution. */
     private int pauseDuree = 60;
+
+    /** Arrondi au demi-mouvement près, pour un affichage stable (2 ; 2,5 ; 3). */
+    private static double arrondi(double v) {
+        return Math.round(v * 2) / 2.0;
+    }
+
+    /** « 2 » ou « 2,5 » selon que le nombre de mouvements est entier ou non. */
+    private static String formatMouvements(double v) {
+        return v == Math.floor(v) ? String.valueOf((long) v) : String.valueOf(v).replace('.', ',');
+    }
+
+    @Override
+    public double seuilMouvementsJour() {
+        return seuilMouvements();
+    }
+
+    /** V158 : seuil de mouvements par jour, commun à la synthèse, au détail, au tableau de bord et à l'alerte. */
+    private double seuilMouvements() {
+        return Double.parseDouble(mouvementRepository.parametreTexte("MOUVEMENT_SEUIL_MOUVEMENTS_JOUR", "2"));
+    }
 
     /**
      * Un intervalle qui chevauche la fenêtre de pause 13:00-14:30 est une pause. V150 : la pause
@@ -727,7 +771,9 @@ public class MouvementServiceImpl implements MouvementService {
     public TableauBordDto tableauBord(User drh, LocalDate jour) {
         Set<String> perimetre = perimetreMatricules(drh);
         if (jour == null) jour = LocalDate.now();
-        int seuil = Integer.parseInt(mouvementRepository.parametreTexte("MOUVEMENT_TOP_SEUIL_JOUR", "8"));
+        // V158 : le tableau de bord lit le MEME chiffre et le MEME seuil que la synthèse par
+        // salarié — badgeages comptés à partir de 08:35, exprimés en mouvements.
+        double seuil = seuilMouvements();
 
         // Noms propres du personnel + affectations
         Map<String, String> noms = new HashMap<>();
@@ -757,7 +803,8 @@ public class MouvementServiceImpl implements MouvementService {
                     .matricule(matricule)
                     .nom(noms.getOrDefault(matricule, matricule))
                     .departementCode(departements.get(matricule))
-                    .badgeages(((Number) c.get("badgeages")).intValue())
+                    .badgeages(jourAgent == null ? 0 : jourAgent.getBadgeagesComptes())
+                    .mouvements(jourAgent == null ? 0 : jourAgent.getMouvements())
                     .nbSortiesTravail(jourAgent == null ? 0 : jourAgent.getNbSortiesTravail())
                     .minutesHorsBureau(horsBureau)
                     .minutesDepassementPause(jourAgent == null ? 0 : jourAgent.getMinutesDepassementPause())
@@ -857,7 +904,7 @@ public class MouvementServiceImpl implements MouvementService {
                 .retoursNonBadges(retoursNonBadges)
                 .accesRefuses(((Number) bloques.get("total")).intValue())
                 .accesRefusesMemeBadge(((Number) bloques.get("max_meme_badge")).intValue())
-                .seuilBadgeages(seuil)
+                .seuilMouvements(seuil)
                 .lignes(lignes)
                 .affluenceParDemiHeure(affluence)
                 .entreesParDemiHeure(entrees)
@@ -870,11 +917,11 @@ public class MouvementServiceImpl implements MouvementService {
                 .build();
     }
 
-    /** Synthèse SMS quotidienne : agents au-dessus du seuil de badgeages, anti-doublon par jour. */
+    /** Synthèse SMS quotidienne : salariés au-dessus du seuil de mouvements, anti-doublon par jour. */
     @Override
     public int alerterMouvementsJour() {
         LocalDate jour = LocalDate.now();
-        int seuil = Integer.parseInt(mouvementRepository.parametreTexte("MOUVEMENT_TOP_SEUIL_JOUR", "8"));
+        double seuil = seuilMouvements();
         long reference = jour.getYear() * 1000L + jour.getDayOfYear();
 
         Map<String, String> noms = new HashMap<>();
@@ -885,10 +932,13 @@ public class MouvementServiceImpl implements MouvementService {
         Map<String, MouvementPersonneDto> reconstruits = reconstituer(jour, jour, null);
 
         List<String> depassements = new ArrayList<>();
-        for (Map<String, Object> c : mouvementRepository.comptagesBadgeagesJour(jour)) {
-            int badgeages = ((Number) c.get("badgeages")).intValue();
-            if (badgeages <= seuil) continue;
-            String matricule = String.valueOf(c.get("matricule"));
+        // V158 : on part des journées reconstruites (dédoublonnage et borne de 08:35 appliqués),
+        // et non du comptage brut de la badgeuse.
+        for (Map.Entry<String, MouvementPersonneDto> entree : reconstruits.entrySet()) {
+            if (entree.getValue().getJours().isEmpty()) continue;
+            MouvementJourDto jourAgent = entree.getValue().getJours().get(0);
+            if (!jourAgent.isDepasseSeuil()) continue;
+            String matricule = entree.getKey();
             long matriculeKey;
             try {
                 matriculeKey = Long.parseLong(matricule);
@@ -898,17 +948,16 @@ public class MouvementServiceImpl implements MouvementService {
             if (mouvementRepository.enregistrerAlerte("MOUVEMENT_JOUR", matriculeKey, reference) == 0) {
                 continue; // déjà signalé aujourd'hui
             }
-            MouvementPersonneDto agent = reconstruits.get(matricule);
-            int horsBureau = (agent == null || agent.getJours().isEmpty())
-                    ? 0 : agent.getJours().get(0).getMinutesHorsBureau();
-            depassements.add(noms.getOrDefault(matricule, matricule) + " (" + badgeages + " badgeages"
+            int horsBureau = jourAgent.getMinutesHorsBureau();
+            depassements.add(noms.getOrDefault(matricule, matricule)
+                    + " (" + formatMouvements(jourAgent.getMouvements()) + " mouvements"
                     + (horsBureau > 0 ? ", " + horsBureau + " min hors bureau" : "") + ")");
         }
         if (depassements.isEmpty()) return 0;
 
         String message = "CRG DRH - Mouvements du "
                 + jour.format(DateTimeFormatter.ofPattern("dd/MM")) + " : "
-                + depassements.size() + " salarié(s) > " + seuil + " badgeages : "
+                + depassements.size() + " salarié(s) > " + formatMouvements(seuil) + " mouvements : "
                 + String.join(", ", depassements)
                 + ". Detail : digi > Mouvements > Tableau de bord";
         for (String tel : drhRepository.telephonesDrh()) {
@@ -918,7 +967,7 @@ public class MouvementServiceImpl implements MouvementService {
                 log.warn("Alerte mouvements jour non envoyée à {} : {}", tel, e.getMessage());
             }
         }
-        log.info("Alerte mouvements du {} : {} salarié(s) au-dessus du seuil de {} badgeages",
+        log.info("Alerte mouvements du {} : {} salarié(s) au-dessus du seuil de {} mouvements",
                 jour, depassements.size(), seuil);
         return depassements.size();
     }

@@ -87,16 +87,6 @@ public class PresenceResource {
 
     // ==================== V150 ====================
 
-    @GetMapping("/synthese-semaine")
-    public ResponseEntity<Response> syntheseSemaine(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate du,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate au,
-            Authentication auth, HttpServletRequest req) {
-        return ResponseEntity.ok(getResponse(req,
-                Map.of("semaines", presenceService.syntheseSemaine(user(auth), du, au)),
-                "Synthèse hebdomadaire des présences", OK));
-    }
-
     @GetMapping("/declarations")
     public ResponseEntity<Response> declarations(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate du,

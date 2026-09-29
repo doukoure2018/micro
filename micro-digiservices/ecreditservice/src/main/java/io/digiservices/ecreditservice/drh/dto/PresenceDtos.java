@@ -59,26 +59,6 @@ public final class PresenceDtos {
         private boolean enCours;
     }
 
-    /** V150 : moyenne par jour ouvré d'une semaine (lundi -> samedi). */
-    @Data @NoArgsConstructor @AllArgsConstructor @Builder
-    public static class SyntheseSemaineDto {
-        private String semaine;
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
-        private LocalDate du;
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
-        private LocalDate au;
-        private int joursOuvres;
-        private double presentsTotalMoyen;
-        private double retardsMoyen;
-        private double departsAnticipesMoyen;
-        private double absentsJustifiesMoyen;
-        private double absentsNonJustifiesMoyen;
-        private double effectifMoyen;
-        /** Somme des présents / somme des effectifs contrôlés, en %. */
-        private double tauxPresence;
-        private boolean enCours;
-    }
-
     /** V150 : déclaration manuelle DRH (oubli de badge, mission, formation, maladie, autre). */
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
     public static class DeclarationDto {

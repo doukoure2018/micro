@@ -12,6 +12,7 @@ import { SelectButtonModule } from 'primeng/selectbutton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
+import { CheckboxModule } from 'primeng/checkbox';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -32,7 +33,7 @@ interface BarreAffluence {
 @Component({
     selector: 'app-mouvements',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, CalendarModule, DialogModule, DropdownModule, InputTextModule, SelectButtonModule, TableModule, TagModule, ToastModule, TooltipModule],
+    imports: [CommonModule, FormsModule, ButtonModule, CalendarModule, CheckboxModule, DialogModule, DropdownModule, InputTextModule, SelectButtonModule, TableModule, TagModule, ToastModule, TooltipModule],
     providers: [MessageService],
     template: `
         <p-toast />
@@ -159,12 +160,13 @@ interface BarreAffluence {
 
                     <!-- Classement par badgeages -->
                     <div class="text-sm text-color-secondary mb-2">
-                        Classement du jour par nombre de badgeages — seuil d'alerte : {{ tb.seuilBadgeages }}
-                        (une journée type ≈ 4 : arrivée, pause aller-retour, départ). Alerte SMS DRH à 17h15 (13h15 le vendredi, 14h15 le samedi).
+                        Classement du jour par nombre de mouvements — seuil d'alerte : {{ fmtMouv(tb.seuilMouvements) }}
+                        (1 mouvement = 1 entrée + 1 sortie ; les badgeages avant {{ heureDebutComptage }} ne comptent pas ; une journée type = 2 :
+                        arrivée, pause aller-retour, départ). Alerte SMS DRH à 17h15 (13h15 le vendredi, 14h15 le samedi).
                     </div>
                     <p-table [value]="tb.lignes" responsiveLayout="scroll" [paginator]="tb.lignes.length > 25" [rows]="25" [rowHover]="true">
                         <ng-template pTemplate="header">
-                            <tr><th>#</th><th>Salarié</th><th>Mat.</th><th>Dept</th><th>Badgeages</th>
+                            <tr><th>#</th><th>Salarié</th><th>Mat.</th><th>Dept</th><th>Mouvements</th>
                                 <th>Sorties travail</th><th>Hors bureau</th><th>Dépass. pause</th><th>Dernier badge</th><th>Statut</th></tr>
                         </ng-template>
                         <ng-template pTemplate="body" let-l let-i="rowIndex">
@@ -173,7 +175,8 @@ interface BarreAffluence {
                                 <td class="font-medium">{{ l.nom }}</td>
                                 <td>{{ l.matricule }}</td>
                                 <td>{{ l.departementCode || '—' }}</td>
-                                <td class="font-bold" [class.text-red-500]="l.badgeages > tb.seuilBadgeages">{{ l.badgeages }}</td>
+                                <td class="font-bold" [class.text-red-500]="l.mouvements > tb.seuilMouvements"
+                                    [pTooltip]="l.badgeages + ' badgeages comptés'">{{ fmtMouv(l.mouvements) }}</td>
                                 <td>{{ l.nbSortiesTravail || '—' }}</td>
                                 <td [class.text-orange-500]="l.minutesHorsBureau > 0">{{ l.minutesHorsBureau > 0 ? duree(l.minutesHorsBureau) : '—' }}</td>
                                 <td [class.text-red-500]="l.minutesDepassementPause > 0">{{ l.minutesDepassementPause > 0 ? '+' + l.minutesDepassementPause + ' min' : '—' }}</td>
@@ -305,24 +308,38 @@ interface BarreAffluence {
                     <button pButton icon="pi pi-file-excel" label="Exporter Excel" class="p-button-outlined p-button-success p-button-sm"
                             pTooltip="Deux feuilles : synthèse par salarié + détail de chaque sortie de la période"
                             [loading]="exportEnCours()" (click)="exporterExcel()"></button>
+                    <p-checkbox [ngModel]="seulementDepassements()" (ngModelChange)="seulementDepassements.set($event)"
+                                [binary]="true" inputId="filtreDep" />
+                    <label for="filtreDep" class="text-sm cursor-pointer">Plus de {{ fmtMouv(seuilMouvements()) }} mouvements seulement</label>
                     <span class="text-sm text-color-secondary">
-                        Tri : les plus grosses sorties (travail + dépassement de pause) en premier.
-                        Cliquez sur une ligne pour le détail jour par jour.
+                        1 mouvement = 1 entrée + 1 sortie ; les badgeages avant {{ heureDebutComptage }} ne comptent pas.
+                        Les salariés qui dépassent le seuil sont en tête. Cliquez sur une ligne pour le détail jour par jour.
                     </span>
                 </div>
                 <p-table [value]="syntheseFiltree()" responsiveLayout="scroll" [paginator]="true" [rows]="25"
                          [rowHover]="true" [loading]="chargement()">
                     <ng-template pTemplate="header">
                         <tr>
-                            <th>Salarié</th><th>Mat.</th><th>Jours</th><th>Pauses</th>
+                            <th>Salarié</th><th>Mat.</th><th>Jours</th>
+                            <th pTooltip="Mouvements cumulés sur la période">Mouvements</th>
+                            <th pTooltip="Nombre de jours au-dessus du seuil — critère de classement">Jours &gt; seuil</th>
+                            <th pTooltip="Plus fort total sur une seule journée">Max / jour</th>
+                            <th>Pauses</th>
                             <th>Sorties travail</th><th>Hors bureau</th><th>Dépassement pause</th><th>Retours non badgés</th>
                         </tr>
                     </ng-template>
                     <ng-template pTemplate="body" let-s>
-                        <tr class="cursor-pointer" (click)="ouvrirPersonne(s.matricule)">
+                        <tr class="cursor-pointer" [class.surface-100]="s.joursDepassement > 0" (click)="ouvrirPersonne(s.matricule)">
                             <td class="font-medium">{{ s.nom }}</td>
                             <td>{{ s.matricule }}</td>
                             <td>{{ s.joursActifs }}</td>
+                            <td class="font-medium">{{ fmtMouv(s.mouvements) }}</td>
+                            <td>
+                                <p-tag *ngIf="s.joursDepassement > 0; else aucunDep"
+                                       [value]="s.joursDepassement + (s.joursDepassement > 1 ? ' jours' : ' jour')" severity="danger" />
+                                <ng-template #aucunDep><span class="text-color-secondary">—</span></ng-template>
+                            </td>
+                            <td [class.text-red-500]="s.maxMouvementsJour > seuilMouvements()" class="font-medium">{{ fmtMouv(s.maxMouvementsJour) }}</td>
                             <td>{{ s.nbPauses }}</td>
                             <td [class.text-orange-500]="s.nbSortiesTravail > 0">{{ s.nbSortiesTravail }}</td>
                             <td [class.text-orange-500]="s.minutesHorsBureau > 0" class="font-medium">{{ duree(s.minutesHorsBureau) }}</td>
@@ -331,7 +348,9 @@ interface BarreAffluence {
                         </tr>
                     </ng-template>
                     <ng-template pTemplate="emptymessage">
-                        <tr><td colspan="8" class="text-center text-color-secondary">Aucun mouvement identifié sur la période</td></tr>
+                        <tr><td colspan="11" class="text-center text-color-secondary">
+                            {{ seulementDepassements() ? 'Aucun salarié au-dessus du seuil sur la période' : 'Aucun mouvement identifié sur la période' }}
+                        </td></tr>
                     </ng-template>
                 </p-table>
             </div>
@@ -349,7 +368,9 @@ interface BarreAffluence {
                 <p-table [value]="agent()?.jours || []" responsiveLayout="scroll" [loading]="chargement()">
                     <ng-template pTemplate="header">
                         <tr>
-                            <th>Jour</th><th>Arrivée</th><th>Départ</th><th>Sorties de la journée</th>
+                            <th>Jour</th><th>Arrivée</th><th>Départ</th>
+                            <th pTooltip="Badgeages comptés à partir de 08:35, divisés par 2">Mouvements</th>
+                            <th>Sorties de la journée</th>
                             <th>Hors bureau</th><th>Dépassement pause</th>
                         </tr>
                     </ng-template>
@@ -375,6 +396,11 @@ interface BarreAffluence {
                                 </ng-template>
                             </td>
                             <td>
+                                <span class="font-medium">{{ fmtMouv(j.mouvements) }}</span>
+                                <p-tag *ngIf="j.depasseSeuil" value="&gt; seuil" severity="danger" styleClass="ml-1"
+                                       [pTooltip]="'Plus de ' + fmtMouv(seuilMouvements()) + ' mouvements ce jour-là (' + j.badgeagesComptes + ' badgeages après ' + heureDebutComptage + ')'" />
+                            </td>
+                            <td>
                                 <span *ngIf="j.sorties.length === 0" class="text-color-secondary text-sm">Aucune sortie intermédiaire</span>
                                 <div class="flex flex-wrap gap-1">
                                     <p-tag *ngFor="let s of j.sorties"
@@ -387,7 +413,7 @@ interface BarreAffluence {
                         </tr>
                     </ng-template>
                     <ng-template pTemplate="emptymessage">
-                        <tr><td colspan="6" class="text-center text-color-secondary">
+                        <tr><td colspan="7" class="text-center text-color-secondary">
                             Choisissez un salarié pour voir ses mouvements jour par jour
                         </td></tr>
                     </ng-template>
@@ -511,6 +537,17 @@ export class MouvementsComponent implements OnInit {
 
     mouvements = signal<any[]>([]);
     synthese = signal<any[]>([]);
+    /** V158 : seuil de mouvements par jour, donné par le serveur (paramètre MOUVEMENT_SEUIL_MOUVEMENTS_JOUR). */
+    seuilMouvements = signal(2);
+    seulementDepassements = signal(false);
+    /** Borne de comptage : heure d'arrivée + tolérance, alignée sur le calcul du hors-bureau. */
+    readonly heureDebutComptage = '08h35';
+
+    /** « 2 » ou « 2,5 » : un demi-mouvement reste lisible. */
+    fmtMouv(v: number | null | undefined): string {
+        if (v === null || v === undefined) return '—';
+        return Number.isInteger(v) ? String(v) : String(v).replace('.', ',');
+    }
     agent = signal<any | null>(null);
     matriculeChoisi = signal<string | null>(null);
     correspondances = signal<any[]>([]);
@@ -559,8 +596,11 @@ export class MouvementsComponent implements OnInit {
 
     syntheseFiltree = computed(() => {
         const q = this.recherche().trim().toLowerCase();
-        if (!q) return this.synthese();
-        return this.synthese().filter((s: any) =>
+        const base = this.seulementDepassements()
+            ? this.synthese().filter((s: any) => s.joursDepassement > 0)
+            : this.synthese();
+        if (!q) return base;
+        return base.filter((s: any) =>
             (s.nom || '').toLowerCase().includes(q) || String(s.matricule || '').includes(q));
     });
 
@@ -698,10 +738,13 @@ export class MouvementsComponent implements OnInit {
                     APRES_TRAVAIL: 'Après la fin du travail',
                     NON_CLOTUREE: 'Retour non badgé'
                 };
-                const feuilleSynthese = this.synthese().map((s: any) => ({
+                const feuilleSynthese = this.syntheseFiltree().map((s: any) => ({
                     'Matricule': s.matricule,
                     'Salarié': s.nom,
                     'Jours actifs': s.joursActifs,
+                    'Mouvements': s.mouvements,
+                    'Jours au-dessus du seuil': s.joursDepassement,
+                    'Max mouvements / jour': s.maxMouvementsJour,
                     'Pauses': s.nbPauses,
                     'Sorties travail': s.nbSortiesTravail,
                     'Hors bureau (min)': s.minutesHorsBureau,
@@ -716,6 +759,7 @@ export class MouvementsComponent implements OnInit {
                                 'Matricule': agent.matricule, 'Agent': agent.nom, 'Jour': j.jour,
                                 'Arrivée': j.entreeNonBadgee ? 'non badgée' : j.premiereEntree,
                                 'Départ': j.departNonBadge ? 'non badgé' : j.derniereSortie,
+                                'Mouvements': j.mouvements, 'Au-dessus du seuil': j.depasseSeuil ? 'oui' : 'non',
                                 'Sortie': '', 'Retour': '', 'Durée (min)': '', 'Type': 'Aucune sortie', 'Minutes comptées': 0
                             });
                         }
@@ -724,6 +768,7 @@ export class MouvementsComponent implements OnInit {
                                 'Matricule': agent.matricule, 'Agent': agent.nom, 'Jour': j.jour,
                                 'Arrivée': j.entreeNonBadgee ? 'non badgée' : j.premiereEntree,
                                 'Départ': j.departNonBadge ? 'non badgé' : j.derniereSortie,
+                                'Mouvements': j.mouvements, 'Au-dessus du seuil': j.depasseSeuil ? 'oui' : 'non',
                                 'Sortie': s.heureSortie, 'Retour': s.heureRetour || '',
                                 'Durée (min)': s.dureeMinutes ?? '', 'Type': libelleType[s.classement] || s.classement,
                                 'Minutes comptées': s.minutesComptees
@@ -832,6 +877,8 @@ export class MouvementsComponent implements OnInit {
                 next: (r) => {
                     this.chargement.set(false);
                     this.synthese.set((r.data as any)?.synthese || []);
+                    const seuil = (r.data as any)?.seuilMouvements;
+                    if (seuil !== null && seuil !== undefined) this.seuilMouvements.set(Number(seuil));
                     if (vue === 'personne' && this.matriculeChoisi()) this.choisirAgent(this.matriculeChoisi()!);
                 },
                 error: (e) => {

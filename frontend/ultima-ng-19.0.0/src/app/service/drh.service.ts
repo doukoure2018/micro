@@ -491,10 +491,7 @@ export class DrhService {
     recalculerPresences$ = (du: string, au: string): Observable<IResponse> =>
         this.http.post<IResponse>(`${this.server}/ecredit/drh/presences/recalculer?du=${du}&au=${au}`, {}).pipe(catchError(this.handleError));
 
-    // V150 : synthèse hebdomadaire, déclarations DRH (oubli de badge, mission…), badgés sans pointage
-    syntheseSemainePresences$ = (du: string, au: string): Observable<IResponse> =>
-        this.http.get<IResponse>(`${this.server}/ecredit/drh/presences/synthese-semaine?du=${du}&au=${au}`).pipe(catchError(this.handleError));
-
+    // V150 : déclarations DRH (oubli de badge, mission…), badgés sans pointage
     declarationsPresence$ = (du: string, au: string, matricule?: string): Observable<IResponse> =>
         this.http.get<IResponse>(`${this.server}/ecredit/drh/presences/declarations?du=${du}&au=${au}` +
             (matricule ? `&matricule=${encodeURIComponent(matricule)}` : '')).pipe(catchError(this.handleError));

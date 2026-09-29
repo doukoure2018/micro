@@ -323,42 +323,6 @@ public class PresenceServiceImpl implements PresenceService {
         return synthese;
     }
 
-    /** V150 : moyennes par jour ouvré, semaine par semaine (lundi -> samedi), à partir de la synthèse quotidienne. */
-    @Override
-    public List<SyntheseSemaineDto> syntheseSemaine(User drh, LocalDate du, LocalDate au) {
-        exigerDrh(drh);
-        List<SyntheseJourDto> jours = presenceRepository.synthesePeriode(du, au);
-        Map<LocalDate, List<SyntheseJourDto>> parSemaine = new java.util.TreeMap<>();
-        for (SyntheseJourDto j : jours) {
-            if (j.getTotal() == 0) continue;
-            LocalDate lundi = j.getJour().with(java.time.temporal.TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-            parSemaine.computeIfAbsent(lundi, k -> new ArrayList<>()).add(j);
-        }
-        List<SyntheseSemaineDto> resultat = new ArrayList<>();
-        java.time.format.DateTimeFormatter fmt = java.time.format.DateTimeFormatter.ofPattern("dd/MM");
-        for (var e : parSemaine.entrySet()) {
-            List<SyntheseJourDto> s = e.getValue();
-            int n = s.size();
-            long presentsTotal = s.stream().mapToLong(SyntheseJourDto::getPresentsTotal).sum();
-            long effectif = s.stream().mapToLong(SyntheseJourDto::getTotal).sum();
-            LocalDate samedi = e.getKey().plusDays(5);
-            resultat.add(SyntheseSemaineDto.builder()
-                    .semaine("Semaine du " + e.getKey().format(fmt) + " au " + samedi.format(fmt))
-                    .du(e.getKey()).au(samedi)
-                    .joursOuvres(n)
-                    .presentsTotalMoyen(arrondi((double) presentsTotal / n))
-                    .retardsMoyen(arrondi(s.stream().mapToLong(SyntheseJourDto::getRetards).sum() / (double) n))
-                    .departsAnticipesMoyen(arrondi(s.stream().mapToLong(SyntheseJourDto::getDepartsAnticipes).sum() / (double) n))
-                    .absentsJustifiesMoyen(arrondi(s.stream().mapToLong(SyntheseJourDto::getAbsentsJustifies).sum() / (double) n))
-                    .absentsNonJustifiesMoyen(arrondi(s.stream().mapToLong(SyntheseJourDto::getAbsentsNonJustifies).sum() / (double) n))
-                    .effectifMoyen(arrondi((double) effectif / n))
-                    .tauxPresence(effectif == 0 ? 0 : arrondi(100.0 * presentsTotal / effectif))
-                    .enCours(s.stream().anyMatch(j -> jourEnCours(j.getJour())))
-                    .build());
-        }
-        return resultat;
-    }
-
     private static double arrondi(double v) {
         return Math.round(v * 10.0) / 10.0;
     }
