@@ -76,6 +76,13 @@ public class AgriculteurResource {
         return ResponseEntity.ok(agriculteurService.getCreditsByFarmer(clientId));
     }
 
+    @GetMapping("/farmers/{clientId}/comptes")
+    public ResponseEntity<io.digiservices.agriculteurservice.dto.ComptesMembreDto> getComptesByFarmer(
+            @PathVariable("clientId") String clientId) {
+        log.info("[AGRI] GET /agriculteurs/farmers/{}/comptes", clientId);
+        return ResponseEntity.ok(agriculteurService.getComptes(clientId));
+    }
+
     @GetMapping("/credits/{creditId}")
     public ResponseEntity<CreditAgricoleDto> getCredit(@PathVariable("creditId") Long creditId) {
         log.info("[AGRI] GET /agriculteurs/credits/{}", creditId);

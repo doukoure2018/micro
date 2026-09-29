@@ -156,4 +156,39 @@ public class AgriMapper {
         return new PageDto<>(content, src.getPage(), src.getSize(),
                 src.getTotalElements(), src.getTotalPages(), src.isHasNext(), src.isHasPrevious());
     }
+
+    /** Comptes d'un membre : traduction du contrat interne vers le contrat partenaire. */
+    public io.digiservices.agriculteurservice.dto.ComptesMembreDto toComptesMembre(
+            io.digiservices.clients.agri.ComptesMembreDto src) {
+        if (src == null) return null;
+        java.util.List<io.digiservices.agriculteurservice.dto.CompteDto> comptes =
+                src.getComptes() == null ? java.util.List.of()
+                        : src.getComptes().stream().map(this::toCompte).toList();
+        return io.digiservices.agriculteurservice.dto.ComptesMembreDto.builder()
+                .codeMembre(src.getCodeMembre())
+                .nomMembre(src.getNomMembre())
+                .comptes(comptes)
+                .message(src.getMessage())
+                .build();
+    }
+
+    public io.digiservices.agriculteurservice.dto.CompteDto toCompte(
+            io.digiservices.clients.agri.CompteMembreDto src) {
+        if (src == null) return null;
+        return io.digiservices.agriculteurservice.dto.CompteDto.builder()
+                .numeroCompte(src.getNumeroCompte())
+                .type(src.getType())
+                .produit(src.getProduit())
+                .libelleProduit(src.getLibelleProduit())
+                .codeAgence(src.getCodeAgence())
+                .libelleAgence(src.getLibelleAgence())
+                .devise(src.getDevise())
+                .statut(src.getLibelleStatut() != null ? src.getLibelleStatut() : src.getStatut())
+                .dateOuverture(src.getDateOuverture())
+                .dernierMouvement(src.getDernierMouvement())
+                .soldeDisponible(src.getSoldeDisponible())
+                .soldeReserve(src.getSoldeReserve())
+                .soldeBloque(src.getSoldeBloque())
+                .build();
+    }
 }

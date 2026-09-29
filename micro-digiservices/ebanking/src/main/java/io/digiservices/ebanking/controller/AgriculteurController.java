@@ -126,4 +126,12 @@ public class AgriculteurController {
                     "Le parametre 'size' doit etre compris entre 1 et " + MAX_PAGE_SIZE);
         }
     }
+
+    /** Comptes de credit et de remboursement d'un membre. */
+    @GetMapping("/comptes/{codCliente}")
+    public ResponseEntity<io.digiservices.clients.agri.ComptesMembreDto> getComptesMembre(
+            @PathVariable("codCliente") String codCliente) {
+        log.info("[AGRI] GET /comptes/{}", codCliente);
+        return ResponseEntity.ok(agriculteurService.getComptesMembre(codCliente));
+    }
 }

@@ -129,4 +129,9 @@ public class AgriculteurServiceImpl implements AgriculteurService {
     public AgentPerimetreDto getStructurePerimetre() {
         return userAgentsClient.getStructurePerimetre();
     }
+
+    @Override
+    public io.digiservices.agriculteurservice.dto.ComptesMembreDto getComptes(String codeClient) {
+        return mapper.toComptesMembre(ebankingAgriClient.getComptesMembre(codeClient));
+    }
 }
