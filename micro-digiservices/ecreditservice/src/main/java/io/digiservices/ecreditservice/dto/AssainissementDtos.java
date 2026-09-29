@@ -89,6 +89,11 @@ public final class AssainissementDtos {
         private int nbPeriodes;
         private Long delegationId;
         private int seuilJours;
+        /** Bornes réellement appliquées, que la période vienne de la fenêtre ou d'un choix de dates. */
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+        private LocalDate du;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+        private LocalDate au;
         /** Libellés des périodes, dans l'ordre : entêtes de colonnes du tableau. */
         private List<String> periodes;
         private List<PointEvolutionDto> evolution;

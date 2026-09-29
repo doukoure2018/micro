@@ -233,15 +233,15 @@ public class CorrectionServiceImpl implements CorrectionService {
     }
 
     @Override
-    public List<CorrectionAgenceStat> getCorrectionStatsByAgence(Long delegationId) {
+    public List<CorrectionAgenceStat> getCorrectionStatsByAgence(Long delegationId, java.time.LocalDate dateDebut, java.time.LocalDate dateFin) {
         log.info("Service - Récupération des statistiques de correction par agence pour la délégation {}", delegationId);
-        return correctionRepository.getCorrectionStatsByAgence(delegationId);
+        return correctionRepository.getCorrectionStatsByAgence(delegationId, dateDebut, dateFin);
     }
 
     @Override
-    public List<CorrectionPointVenteStat> getCorrectionStatsByPointVente(Long agenceId) {
+    public List<CorrectionPointVenteStat> getCorrectionStatsByPointVente(Long agenceId, java.time.LocalDate dateDebut, java.time.LocalDate dateFin) {
         log.info("Service - Récupération des statistiques de correction par point de vente pour l'agence {}", agenceId);
-        return correctionRepository.getCorrectionStatsByPointVente(agenceId);
+        return correctionRepository.getCorrectionStatsByPointVente(agenceId, dateDebut, dateFin);
     }
 
     @Override

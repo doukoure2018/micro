@@ -581,11 +581,15 @@ public class CorrectionRepositoryImpl implements CorrectionRepository {
     }
 
     @Override
-    public List<CorrectionAgenceStat> getCorrectionStatsByAgence(Long delegationId) {
-        log.debug("Récupération des statistiques de correction par agence pour la délégation {}", delegationId);
+    public List<CorrectionAgenceStat> getCorrectionStatsByAgence(Long delegationId,
+                                                                 java.time.LocalDate dateDebut,
+                                                                 java.time.LocalDate dateFin) {
+        log.debug("Statistiques par agence, délégation {} du {} au {}", delegationId, dateDebut, dateFin);
         try {
             return jdbcClient.sql(CORRECTION_STATS_BY_AGENCE)
                     .param("delegationId", delegationId)
+                    .param("dateDebut", dateDebut == null ? null : java.sql.Date.valueOf(dateDebut))
+                    .param("dateFin", dateFin == null ? null : java.sql.Date.valueOf(dateFin))
                     .query(CORRECTION_AGENCE_ROW_MAPPER)
                     .list();
         } catch (DataAccessException e) {
@@ -595,11 +599,15 @@ public class CorrectionRepositoryImpl implements CorrectionRepository {
     }
 
     @Override
-    public List<CorrectionPointVenteStat> getCorrectionStatsByPointVente(Long agenceId) {
-        log.debug("Récupération des statistiques de correction par point de vente pour l'agence {}", agenceId);
+    public List<CorrectionPointVenteStat> getCorrectionStatsByPointVente(Long agenceId,
+                                                                        java.time.LocalDate dateDebut,
+                                                                        java.time.LocalDate dateFin) {
+        log.debug("Statistiques par point de vente, agence {} du {} au {}", agenceId, dateDebut, dateFin);
         try {
             return jdbcClient.sql(CORRECTION_STATS_BY_POINTVENTE)
                     .param("agenceId", agenceId)
+                    .param("dateDebut", dateDebut == null ? null : java.sql.Date.valueOf(dateDebut))
+                    .param("dateFin", dateFin == null ? null : java.sql.Date.valueOf(dateFin))
                     .query(CORRECTION_PV_ROW_MAPPER)
                     .list();
         } catch (DataAccessException e) {

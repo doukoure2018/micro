@@ -217,6 +217,28 @@ public class CorrectionQuery {
     WHERE id = :id
     """;
 
+    /**
+     * Un point de vente par code SAF, les noms joints sur une seule ligne.
+     *
+     * <p>Trois codes sont partages par deux points de vente : 962 (nono et kobayah),
+     * 958 (tanene et tondon), 337 (Balandougouba et Sidikila). Comme le core banking ne
+     * distingue pas leurs fiches, joindre directement sur {@code pointvente.code} comptait
+     * chaque fiche deux fois — 287 fiches en trop a Conakry et 74 en Basse Guinee au
+     * 2026-09-29. Ce bloc dedoublonne : le rattachement suit le point de vente le plus
+     * ancien, et le libelle porte les deux noms (« nono / kobayah »).</p>
+     */
+    private static final String PV_PAR_CODE = """
+        SELECT pv.code,
+               MIN(pv.id) AS id,
+               STRING_AGG(pv.libele, ' / ' ORDER BY pv.id) AS libele,
+               (ARRAY_AGG(pv.agence_id ORDER BY pv.id))[1] AS agence_id,
+               (ARRAY_AGG(pv.delegation_id ORDER BY pv.id))[1] AS delegation_id,
+               COUNT(*) AS nb_points_vente
+        FROM pointvente pv
+        WHERE pv.code IS NOT NULL
+        GROUP BY pv.code
+        """;
+
     public static final String CORRECTION_STATS_BY_DELEGATION = """
         SELECT
             d.id AS delegation_id,
@@ -226,7 +248,8 @@ public class CorrectionQuery {
             COALESCE(SUM(CASE WHEN pp.correction_statut = 'VALIDE' THEN 1 ELSE 0 END), 0) AS valide,
             COUNT(pp.id) AS total
         FROM personne_physique pp
-        LEFT JOIN pointvente pv ON pv.code = pp.code_agence
+        LEFT JOIN (""" + PV_PAR_CODE + """
+        ) pv ON pv.code = pp.code_agence
         LEFT JOIN delegation d ON d.id = pv.delegation_id
         GROUP BY d.id, d.libele
         ORDER BY delegation_libele NULLS LAST
@@ -244,7 +267,8 @@ public class CorrectionQuery {
             COALESCE(SUM(CASE WHEN pp.correction_statut = 'VALIDE' THEN 1 ELSE 0 END), 0) AS valide,
             COUNT(pp.id) AS total
         FROM personne_physique pp
-        LEFT JOIN pointvente pv ON pv.code = pp.code_agence
+        LEFT JOIN (""" + PV_PAR_CODE + """
+        ) pv ON pv.code = pp.code_agence
         LEFT JOIN delegation d ON d.id = pv.delegation_id
         WHERE pp.created_at >= :dateDebut AND pp.created_at < :dateFin + INTERVAL '1 day'
         GROUP BY d.id, d.libele
@@ -261,9 +285,12 @@ public class CorrectionQuery {
             COALESCE(SUM(CASE WHEN pp.correction_statut = 'VALIDE' THEN 1 ELSE 0 END), 0) AS valide,
             COUNT(pp.id) AS total
         FROM personne_physique pp
-        LEFT JOIN pointvente pv ON pv.code = pp.code_agence
+        LEFT JOIN (""" + PV_PAR_CODE + """
+        ) pv ON pv.code = pp.code_agence
         LEFT JOIN agence a ON a.id = pv.agence_id
-        WHERE (pv.delegation_id = :delegationId OR a.delegation_id = :delegationId)
+        WHERE pv.delegation_id = :delegationId
+          AND (CAST(:dateDebut AS DATE) IS NULL OR pp.created_at >= CAST(:dateDebut AS DATE))
+          AND (CAST(:dateFin AS DATE) IS NULL OR pp.created_at < CAST(:dateFin AS DATE) + INTERVAL '1 day')
         GROUP BY a.id, a.libele, pv.code
         ORDER BY a.libele
         """;
@@ -278,8 +305,11 @@ public class CorrectionQuery {
             COALESCE(SUM(CASE WHEN pp.correction_statut = 'VALIDE' THEN 1 ELSE 0 END), 0) AS valide,
             COUNT(pp.id) AS total
         FROM personne_physique pp
-        LEFT JOIN pointvente pv ON pv.code = pp.code_agence
+        LEFT JOIN (""" + PV_PAR_CODE + """
+        ) pv ON pv.code = pp.code_agence
         WHERE pv.agence_id = :agenceId
+          AND (CAST(:dateDebut AS DATE) IS NULL OR pp.created_at >= CAST(:dateDebut AS DATE))
+          AND (CAST(:dateFin AS DATE) IS NULL OR pp.created_at < CAST(:dateFin AS DATE) + INTERVAL '1 day')
         GROUP BY pv.id, pv.code, pv.libele
         ORDER BY pv.libele
         """;
@@ -466,24 +496,29 @@ public class CorrectionQuery {
      * moment ou le travail a ete fait ; les fiches <b>nouvelles</b> sont datees de leur creation.
      * Comparer les deux courbes dit si le reseau traite plus vite qu'il ne recoit.</p>
      *
-     * <p>Parametres : {@code granularite} ('week' ou 'day'), {@code nbPeriodes} (fenetre),
-     * {@code delegationId} (NULL = tout le reseau).</p>
+     * <p>Parametres : {@code granularite} ('week' ou 'day'), {@code nbPeriodes} (fenetre
+     * glissante utilisee quand aucune borne n'est donnee), {@code du} et {@code au} (bornes
+     * explicites, NULL = fenetre glissante), {@code delegationId} (NULL = tout le reseau).</p>
      */
     public static final String CORRECTION_EVOLUTION_TRAITEMENT = """
     WITH bornes AS (
-        SELECT CASE WHEN CAST(:granularite AS TEXT) = 'week'
-                    THEN DATE_TRUNC('week', CURRENT_DATE) - make_interval(weeks => CAST(:nbPeriodes AS INT))
-                    ELSE DATE_TRUNC('day', CURRENT_DATE) - make_interval(days => CAST(:nbPeriodes AS INT))
-               END AS debut
+        SELECT COALESCE(CAST(:du AS DATE),
+                        CASE WHEN CAST(:granularite AS TEXT) = 'week'
+                             THEN DATE_TRUNC('week', CURRENT_DATE) - make_interval(weeks => CAST(:nbPeriodes AS INT))
+                             ELSE DATE_TRUNC('day', CURRENT_DATE) - make_interval(days => CAST(:nbPeriodes AS INT))
+                        END)::DATE AS debut,
+               COALESCE(CAST(:au AS DATE), CURRENT_DATE)::DATE AS fin
     ),
     traitees AS (
         SELECT DATE_TRUNC(CAST(:granularite AS TEXT), COALESCE(pp.updated_at, pp.created_at))::DATE AS cle,
                SUM(CASE WHEN pp.correction_statut = 'VALIDE' THEN 1 ELSE 0 END) AS valide,
                SUM(CASE WHEN pp.correction_statut = 'REJETE' THEN 1 ELSE 0 END) AS rejete
         FROM personne_physique pp
-        LEFT JOIN pointvente pv ON pv.code = pp.code_agence
+        LEFT JOIN (""" + PV_PAR_CODE + """
+        ) pv ON pv.code = pp.code_agence
         WHERE pp.correction_statut IN ('VALIDE', 'REJETE')
           AND COALESCE(pp.updated_at, pp.created_at) >= (SELECT debut FROM bornes)
+          AND COALESCE(pp.updated_at, pp.created_at) < (SELECT fin FROM bornes) + 1
           AND (CAST(:delegationId AS BIGINT) IS NULL OR pv.delegation_id = CAST(:delegationId AS BIGINT))
         GROUP BY 1
     ),
@@ -492,8 +527,10 @@ public class CorrectionQuery {
                COUNT(*) AS nouvelles,
                SUM(CASE WHEN pp.correction_statut = 'EN_ATTENTE' THEN 1 ELSE 0 END) AS en_attente
         FROM personne_physique pp
-        LEFT JOIN pointvente pv ON pv.code = pp.code_agence
+        LEFT JOIN (""" + PV_PAR_CODE + """
+        ) pv ON pv.code = pp.code_agence
         WHERE pp.created_at >= (SELECT debut FROM bornes)
+          AND pp.created_at < (SELECT fin FROM bornes) + 1
           AND (CAST(:delegationId AS BIGINT) IS NULL OR pv.delegation_id = CAST(:delegationId AS BIGINT))
         GROUP BY 1
     ),
@@ -526,14 +563,16 @@ public class CorrectionQuery {
            COUNT(*) AS traitees,
            SUM(CASE WHEN pp.correction_statut = 'REJETE' THEN 1 ELSE 0 END) AS rejete
     FROM personne_physique pp
-    LEFT JOIN pointvente pv ON pv.code = pp.code_agence
+    LEFT JOIN (""" + PV_PAR_CODE + """
+        ) pv ON pv.code = pp.code_agence
     LEFT JOIN delegation d ON d.id = pv.delegation_id
     WHERE pp.correction_statut IN ('VALIDE', 'REJETE')
-      AND COALESCE(pp.updated_at, pp.created_at) >= (
+      AND COALESCE(pp.updated_at, pp.created_at) >= COALESCE(CAST(:du AS DATE),
             CASE WHEN CAST(:granularite AS TEXT) = 'week'
                  THEN DATE_TRUNC('week', CURRENT_DATE) - make_interval(weeks => CAST(:nbPeriodes AS INT))
                  ELSE DATE_TRUNC('day', CURRENT_DATE) - make_interval(days => CAST(:nbPeriodes AS INT))
             END)
+      AND COALESCE(pp.updated_at, pp.created_at) < COALESCE(CAST(:au AS DATE), CURRENT_DATE) + 1
     GROUP BY 1, 2, 3, 4
     ORDER BY 1, 3
     """;
@@ -557,7 +596,8 @@ public class CorrectionQuery {
                     / NULLIF(COUNT(*) FILTER (WHERE pp.correction_statut IN ('VALIDE', 'REJETE')), 0), 1), 0) AS taux_rejet,
            COUNT(DISTINCT pp.code_agence) AS nb_points_service
     FROM personne_physique pp
-    LEFT JOIN pointvente pv ON pv.code = pp.code_agence
+    LEFT JOIN (""" + PV_PAR_CODE + """
+        ) pv ON pv.code = pp.code_agence
     LEFT JOIN delegation d ON d.id = pv.delegation_id
     GROUP BY 1, 2
     ORDER BY 3 DESC
@@ -574,7 +614,8 @@ public class CorrectionQuery {
            COALESCE(MAX(CASE WHEN pp.correction_statut = 'EN_ATTENTE'
                              THEN EXTRACT(DAY FROM now() - pp.created_at) END), 0)::INT AS plus_ancienne_jours
     FROM personne_physique pp
-    JOIN pointvente pv ON pv.code = pp.code_agence
+    JOIN (""" + PV_PAR_CODE + """
+        ) pv ON pv.code = pp.code_agence
     LEFT JOIN agence a ON a.id = pv.agence_id
     LEFT JOIN delegation d ON d.id = pv.delegation_id
     WHERE (CAST(:delegationId AS BIGINT) IS NULL OR pv.delegation_id = CAST(:delegationId AS BIGINT))

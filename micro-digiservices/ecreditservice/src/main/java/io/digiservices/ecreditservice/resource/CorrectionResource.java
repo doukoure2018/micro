@@ -1027,9 +1027,15 @@ public class CorrectionResource {
     @GetMapping("/corrections/stats/delegations/{delegationId}/by-agency")
     public ResponseEntity<Response> getCorrectionStatsByAgence(
             @PathVariable(name = "delegationId") Long delegationId,
+            @RequestParam(name = "dateDebut", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            java.time.LocalDate dateDebut,
+            @RequestParam(name = "dateFin", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            java.time.LocalDate dateFin,
             HttpServletRequest request) {
         try {
-            List<CorrectionAgenceStat> stats = correctionService.getCorrectionStatsByAgence(delegationId);
+            List<CorrectionAgenceStat> stats = correctionService.getCorrectionStatsByAgence(delegationId, dateDebut, dateFin);
             return ResponseEntity.ok(
                     getResponse(request,
                             Map.of("correctionAgenceStats", stats),
@@ -1051,9 +1057,15 @@ public class CorrectionResource {
     @GetMapping("/corrections/stats/by-agency/{agenceId}/by-point")
     public ResponseEntity<Response> getCorrectionStatsByPointVente(
             @PathVariable(name = "agenceId") Long agenceId,
+            @RequestParam(name = "dateDebut", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            java.time.LocalDate dateDebut,
+            @RequestParam(name = "dateFin", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            java.time.LocalDate dateFin,
             HttpServletRequest request) {
         try {
-            List<CorrectionPointVenteStat> stats = correctionService.getCorrectionStatsByPointVente(agenceId);
+            List<CorrectionPointVenteStat> stats = correctionService.getCorrectionStatsByPointVente(agenceId, dateDebut, dateFin);
             return ResponseEntity.ok(
                     getResponse(request,
                             Map.of("correctionPointVenteStats", stats),
@@ -1407,6 +1419,7 @@ public class CorrectionResource {
      * @param nbPeriodes   fenetre, 12 par defaut
      * @param delegationId restreint la courbe et les points de service ; absent = tout le reseau
      * @param seuilJours   au-dela, une fiche en attente est comptee en retard (30 par defaut)
+     * @param du, au       bornes de periode ; absentes, la fenetre glissante s'applique
      */
     @GetMapping("/corrections/assainissement")
     public ResponseEntity<Response> getTableauAssainissement(
@@ -1414,9 +1427,15 @@ public class CorrectionResource {
             @RequestParam(name = "nbPeriodes", defaultValue = "12") int nbPeriodes,
             @RequestParam(name = "delegationId", required = false) Long delegationId,
             @RequestParam(name = "seuilJours", defaultValue = "30") int seuilJours,
+            @RequestParam(name = "du", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            java.time.LocalDate du,
+            @RequestParam(name = "au", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            java.time.LocalDate au,
             HttpServletRequest request) {
         try {
-            var tableau = assainissementService.tableau(granularite, nbPeriodes, delegationId, seuilJours);
+            var tableau = assainissementService.tableau(granularite, nbPeriodes, delegationId, seuilJours, du, au);
             return ResponseEntity.ok(getResponse(request,
                     Map.of("assainissement", tableau),
                     "Tableau de pilotage de l'assainissement",
