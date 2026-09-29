@@ -466,15 +466,18 @@ public class CorrectionQuery {
      * moment ou le travail a ete fait ; les fiches <b>nouvelles</b> sont datees de leur creation.
      * Comparer les deux courbes dit si le reseau traite plus vite qu'il ne recoit.</p>
      *
-     * <p>Parametres : {@code granularite} ('week' ou 'day'), {@code nbPeriodes} (fenetre),
-     * {@code delegationId} (NULL = tout le reseau).</p>
+     * <p>Parametres : {@code granularite} ('week' ou 'day'), {@code nbPeriodes} (fenetre
+     * glissante utilisee quand aucune borne n'est donnee), {@code du} et {@code au} (bornes
+     * explicites, NULL = fenetre glissante), {@code delegationId} (NULL = tout le reseau).</p>
      */
     public static final String CORRECTION_EVOLUTION_TRAITEMENT = """
     WITH bornes AS (
-        SELECT CASE WHEN CAST(:granularite AS TEXT) = 'week'
-                    THEN DATE_TRUNC('week', CURRENT_DATE) - make_interval(weeks => CAST(:nbPeriodes AS INT))
-                    ELSE DATE_TRUNC('day', CURRENT_DATE) - make_interval(days => CAST(:nbPeriodes AS INT))
-               END AS debut
+        SELECT COALESCE(CAST(:du AS DATE),
+                        CASE WHEN CAST(:granularite AS TEXT) = 'week'
+                             THEN DATE_TRUNC('week', CURRENT_DATE) - make_interval(weeks => CAST(:nbPeriodes AS INT))
+                             ELSE DATE_TRUNC('day', CURRENT_DATE) - make_interval(days => CAST(:nbPeriodes AS INT))
+                        END)::DATE AS debut,
+               COALESCE(CAST(:au AS DATE), CURRENT_DATE)::DATE AS fin
     ),
     traitees AS (
         SELECT DATE_TRUNC(CAST(:granularite AS TEXT), COALESCE(pp.updated_at, pp.created_at))::DATE AS cle,
@@ -484,6 +487,7 @@ public class CorrectionQuery {
         LEFT JOIN pointvente pv ON pv.code = pp.code_agence
         WHERE pp.correction_statut IN ('VALIDE', 'REJETE')
           AND COALESCE(pp.updated_at, pp.created_at) >= (SELECT debut FROM bornes)
+          AND COALESCE(pp.updated_at, pp.created_at) < (SELECT fin FROM bornes) + 1
           AND (CAST(:delegationId AS BIGINT) IS NULL OR pv.delegation_id = CAST(:delegationId AS BIGINT))
         GROUP BY 1
     ),
@@ -494,6 +498,7 @@ public class CorrectionQuery {
         FROM personne_physique pp
         LEFT JOIN pointvente pv ON pv.code = pp.code_agence
         WHERE pp.created_at >= (SELECT debut FROM bornes)
+          AND pp.created_at < (SELECT fin FROM bornes) + 1
           AND (CAST(:delegationId AS BIGINT) IS NULL OR pv.delegation_id = CAST(:delegationId AS BIGINT))
         GROUP BY 1
     ),
@@ -529,11 +534,12 @@ public class CorrectionQuery {
     LEFT JOIN pointvente pv ON pv.code = pp.code_agence
     LEFT JOIN delegation d ON d.id = pv.delegation_id
     WHERE pp.correction_statut IN ('VALIDE', 'REJETE')
-      AND COALESCE(pp.updated_at, pp.created_at) >= (
+      AND COALESCE(pp.updated_at, pp.created_at) >= COALESCE(CAST(:du AS DATE),
             CASE WHEN CAST(:granularite AS TEXT) = 'week'
                  THEN DATE_TRUNC('week', CURRENT_DATE) - make_interval(weeks => CAST(:nbPeriodes AS INT))
                  ELSE DATE_TRUNC('day', CURRENT_DATE) - make_interval(days => CAST(:nbPeriodes AS INT))
             END)
+      AND COALESCE(pp.updated_at, pp.created_at) < COALESCE(CAST(:au AS DATE), CURRENT_DATE) + 1
     GROUP BY 1, 2, 3, 4
     ORDER BY 1, 3
     """;

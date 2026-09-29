@@ -826,10 +826,17 @@ export class UserService {
      * Pilotage de l'assainissement (2026-09-29) : courbe sur la DATE DE TRAITEMENT, encours par
      * délégation avec ancienneté, et points de service en retard — une seule période pour tout l'écran.
      */
-    getAssainissement$ = (granularite: string, nbPeriodes: number, delegationId: number | null, seuilJours: number) =>
+    getAssainissement$ = (granularite: string, nbPeriodes: number, delegationId: number | null, seuilJours: number, du?: string | null, au?: string | null) =>
         <Observable<IResponse>>this.http
             .get<IResponse>(`${this.server}/ecredit/corrections/assainissement`, {
-                params: { granularite, nbPeriodes, seuilJours, ...(delegationId ? { delegationId } : {}) }
+                params: {
+                    granularite,
+                    nbPeriodes,
+                    seuilJours,
+                    ...(delegationId ? { delegationId } : {}),
+                    ...(du ? { du } : {}),
+                    ...(au ? { au } : {})
+                }
             })
             .pipe(catchError(this.handleError));
 

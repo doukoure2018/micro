@@ -223,8 +223,19 @@
         <p-select [options]="optionsDelegation()" [(ngModel)]="delegationFiltre" optionLabel="label" optionValue="value"
             placeholder="Toutes les délégations" [showClear]="true" styleClass="w-60" appendTo="body"
             (onChange)="chargerAssainissement()"></p-select>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3 mb-3">
+        <p-select [options]="optionsRaccourci" [(ngModel)]="raccourci" optionLabel="label" optionValue="value"
+            styleClass="w-52" appendTo="body" (onChange)="appliquerRaccourci()"></p-select>
+        <p-datePicker [(ngModel)]="du" dateFormat="dd/mm/yy" placeholder="Du" [showIcon]="true"
+            styleClass="w-44" appendTo="body" (onSelect)="surChangementDate()"></p-datePicker>
+        <p-datePicker [(ngModel)]="au" dateFormat="dd/mm/yy" placeholder="Au" [showIcon]="true"
+            styleClass="w-44" appendTo="body" (onSelect)="surChangementDate()"></p-datePicker>
         <span class="text-sm text-color-secondary">
-            Une fiche en attente au-delà de {{ seuilJours }} jours est comptée en retard.
+            Période affichée : <strong>{{ libellePeriode() }}</strong>. Une fiche en attente au-delà de
+            {{ seuilJours }} jours est comptée en retard. L'encours et les points de service en retard sont
+            toujours arrêtés à aujourd'hui.
         </span>
     </div>
 

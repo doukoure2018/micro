@@ -10,6 +10,8 @@ public interface AssainissementService {
      * @param nbPeriodes   fenetre (12 semaines par defaut)
      * @param delegationId null = tout le reseau
      * @param seuilJours   au-dela, une fiche en attente est consideree en retard
+     * @param du, au       bornes explicites ; absentes, la fenetre glissante s'applique
      */
-    TableauAssainissementDto tableau(String granularite, int nbPeriodes, Long delegationId, int seuilJours);
+    TableauAssainissementDto tableau(String granularite, int nbPeriodes, Long delegationId, int seuilJours,
+                                     java.time.LocalDate du, java.time.LocalDate au);
 }

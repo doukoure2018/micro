@@ -31,16 +31,31 @@ public class AssainissementServiceImpl implements AssainissementService {
     private final AssainissementRepository repository;
 
     @Override
-    public TableauAssainissementDto tableau(String granularite, int nbPeriodes, Long delegationId, int seuilJours) {
+    public TableauAssainissementDto tableau(String granularite, int nbPeriodes, Long delegationId, int seuilJours,
+                                           java.time.LocalDate du, java.time.LocalDate au) {
         String granu = "day".equalsIgnoreCase(granularite) ? "day" : "week";
         int fenetre = Math.max(1, Math.min(nbPeriodes, MAX_PERIODES));
         int seuil = Math.max(1, seuilJours);
 
-        List<PointEvolutionDto> evolution = repository.evolution(granu, fenetre, delegationId);
+        // Bornes explicites : elles priment sur la fenetre glissante. Une seule borne suffit,
+        // l'autre est completee (debut de l'historique ou aujourd'hui).
+        java.time.LocalDate debut = du;
+        java.time.LocalDate fin = au;
+        if (debut != null && fin != null && fin.isBefore(debut)) {
+            java.time.LocalDate tmp = debut;
+            debut = fin;
+            fin = tmp;
+        }
+        if (fin == null && debut != null) {
+            fin = java.time.LocalDate.now();
+        }
+
+        List<PointEvolutionDto> evolution = repository.evolution(granu, fenetre, delegationId, debut, fin);
         List<String> periodes = evolution.stream().map(PointEvolutionDto::getPeriode).toList();
 
         List<StockDelegationDto> delegations = repository.stockParDelegation(seuil);
-        remplirTraiteesParPeriode(delegations, periodes, repository.traiteesParDelegationEtPeriode(granu, fenetre));
+        remplirTraiteesParPeriode(delegations, periodes,
+                repository.traiteesParDelegationEtPeriode(granu, fenetre, debut, fin));
 
         List<PointServiceRetardDto> retards = repository.pointsServiceEnRetard(delegationId, TOP_POINTS_SERVICE);
 
@@ -52,14 +67,16 @@ public class AssainissementServiceImpl implements AssainissementService {
         double tauxRejet = totalValide + totalRejete == 0 ? 0
                 : Math.round(1000.0 * totalRejete / (totalValide + totalRejete)) / 10.0;
 
-        log.info("[ASSAINISSEMENT] {} periodes ({}), delegation={} : {} a traiter, plus ancienne {} j",
-                periodes.size(), granu, delegationId, resteATraiter, plusAncienne);
+        log.info("[ASSAINISSEMENT] {} periodes ({}) du {} au {}, delegation={} : {} a traiter, plus ancienne {} j",
+                periodes.size(), granu, debut, fin, delegationId, resteATraiter, plusAncienne);
 
         return TableauAssainissementDto.builder()
                 .granularite(granu)
                 .nbPeriodes(fenetre)
                 .delegationId(delegationId)
                 .seuilJours(seuil)
+                .du(debut)
+                .au(fin)
                 .periodes(periodes)
                 .evolution(evolution)
                 .delegations(delegations)

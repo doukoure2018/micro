@@ -59,6 +59,89 @@ export class SocietariatComponent implements OnInit {
         { label: '52 périodes', value: 52 }
     ];
 
+    /** Raccourcis de période : le plus utilisé est « la semaine passée ». */
+    optionsRaccourci = [
+        { label: 'Fenêtre glissante', value: 'fenetre' },
+        { label: 'Semaine en cours', value: 'semaine' },
+        { label: 'Semaine passée', value: 'semainePassee' },
+        { label: 'Mois en cours', value: 'mois' },
+        { label: 'Mois passé', value: 'moisPasse' },
+        { label: 'Période au choix', value: 'libre' }
+    ];
+    raccourci: string = 'fenetre';
+    du: Date | null = null;
+    au: Date | null = null;
+
+    private iso(d: Date | null): string | null {
+        if (!d) return null;
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    /** Lundi de la semaine contenant la date donnée. */
+    private lundiDe(d: Date): Date {
+        const j = new Date(d);
+        const decalage = (j.getDay() + 6) % 7;
+        j.setDate(j.getDate() - decalage);
+        j.setHours(0, 0, 0, 0);
+        return j;
+    }
+
+    appliquerRaccourci(): void {
+        const auj = new Date();
+        switch (this.raccourci) {
+            case 'semaine': {
+                const lundi = this.lundiDe(auj);
+                this.du = lundi;
+                this.au = new Date(lundi.getTime() + 6 * 86400000);
+                break;
+            }
+            case 'semainePassee': {
+                const lundi = this.lundiDe(auj);
+                const lundiPrec = new Date(lundi.getTime() - 7 * 86400000);
+                this.du = lundiPrec;
+                this.au = new Date(lundiPrec.getTime() + 6 * 86400000);
+                break;
+            }
+            case 'mois':
+                this.du = new Date(auj.getFullYear(), auj.getMonth(), 1);
+                this.au = new Date(auj.getFullYear(), auj.getMonth() + 1, 0);
+                break;
+            case 'moisPasse':
+                this.du = new Date(auj.getFullYear(), auj.getMonth() - 1, 1);
+                this.au = new Date(auj.getFullYear(), auj.getMonth(), 0);
+                break;
+            case 'fenetre':
+                this.du = null;
+                this.au = null;
+                break;
+            case 'libre':
+            default:
+                break;
+        }
+        if (this.raccourci !== 'libre') {
+            this.chargerAssainissement();
+        }
+    }
+
+    /** Les dates saisies à la main basculent le sélecteur sur « Période au choix ». */
+    surChangementDate(): void {
+        this.raccourci = 'libre';
+        if (this.du && this.au) {
+            this.chargerAssainissement();
+        }
+    }
+
+    /** Libellé de la période réellement appliquée, affiché sous les filtres. */
+    libellePeriode(): string {
+        const a = this.assainissement();
+        if (!a) return '';
+        const fmt = (v: string | null) => (v ? v.split('-').reverse().join('/') : null);
+        const d = fmt(a.du);
+        const f = fmt(a.au);
+        if (d && f) return `du ${d} au ${f}`;
+        return `${a.nbPeriodes} dernières ${a.granularite === 'week' ? 'semaines' : 'journées'}`;
+    }
+
     /** Liste des délégations, construite à partir des données déjà chargées. */
     optionsDelegation = computed(() => {
         const a = this.assainissement();
@@ -70,7 +153,9 @@ export class SocietariatComponent implements OnInit {
 
     chargerAssainissement(): void {
         this.chargementAssainissement.set(true);
-        this.userService.getAssainissement$(this.granularite, this.nbPeriodes, this.delegationFiltre, this.seuilJours).subscribe({
+        this.userService
+            .getAssainissement$(this.granularite, this.nbPeriodes, this.delegationFiltre, this.seuilJours, this.iso(this.du), this.iso(this.au))
+            .subscribe({
             next: (r) => {
                 this.assainissement.set((r.data as any)?.assainissement || null);
                 this.chargementAssainissement.set(false);

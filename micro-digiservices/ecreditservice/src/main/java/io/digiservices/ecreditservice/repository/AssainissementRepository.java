@@ -8,11 +8,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
+import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.time.LocalDate;
 
 import static io.digiservices.ecreditservice.query.CorrectionQuery.CORRECTION_EVOLUTION_TRAITEMENT;
 import static io.digiservices.ecreditservice.query.CorrectionQuery.CORRECTION_POINTS_SERVICE_EN_RETARD;
@@ -32,11 +34,14 @@ public class AssainissementRepository {
     private final JdbcClient jdbcClient;
 
     /** Courbe : traitees (date de traitement) et nouvelles (date de creation), meme periode. */
-    public List<PointEvolutionDto> evolution(String granularite, int nbPeriodes, Long delegationId) {
+    public List<PointEvolutionDto> evolution(String granularite, int nbPeriodes, Long delegationId,
+                                             LocalDate du, LocalDate au) {
         return jdbcClient.sql(CORRECTION_EVOLUTION_TRAITEMENT)
                 .param("granularite", granularite)
                 .param("nbPeriodes", nbPeriodes)
                 .param("delegationId", delegationId)
+                .param("du", du == null ? null : Date.valueOf(du))
+                .param("au", au == null ? null : Date.valueOf(au))
                 .query((ResultSet rs, int n) -> PointEvolutionDto.builder()
                         .date(rs.getDate("date_jour") == null ? null : rs.getDate("date_jour").toLocalDate())
                         .periode(rs.getString("periode"))
@@ -69,10 +74,13 @@ public class AssainissementRepository {
     }
 
     /** Traitees par (delegation, periode) : l'ecran pivote ces lignes en colonnes. */
-    public List<Map<String, Object>> traiteesParDelegationEtPeriode(String granularite, int nbPeriodes) {
+    public List<Map<String, Object>> traiteesParDelegationEtPeriode(String granularite, int nbPeriodes,
+                                                                    LocalDate du, LocalDate au) {
         return jdbcClient.sql(CORRECTION_TRAITEES_PAR_DELEGATION_PERIODE)
                 .param("granularite", granularite)
                 .param("nbPeriodes", nbPeriodes)
+                .param("du", du == null ? null : Date.valueOf(du))
+                .param("au", au == null ? null : Date.valueOf(au))
                 .query()
                 .listOfRows();
     }
