@@ -52,7 +52,7 @@ GET {{baseUrl}}/agriculteurs/credits/{{creditId}}/repayment-schedule
 X-API-Key: {{apiKey}}
 
 
-### Comptes du membre : compte de crédit (CC008) et compte de remboursement (CC014)
+### Comptes du membre : comptes CC008 et CC014, credits en cours et 5 prochaines echeances
 GET {{baseUrl}}/agriculteurs/farmers/{{clientId}}/comptes
 X-API-Key: {{apiKey}}
 

@@ -483,4 +483,72 @@ public class AgriculteurRepository {
         return execute("agri.comptesMembre",
                 () -> tertiary.queryForList(SQL_COMPTES_MEMBRE, params));
     }
+
+    /**
+     * Credits en cours de remboursement d'un membre : etat D (decaisse) ou J (judiciaire),
+     * les seuls qui donnent lieu a un prelevement sur le compte de remboursement.
+     */
+    private static final String SQL_CREDITS_EN_COURS = """
+            SELECT cr.NUM_CREDITO, cr.COD_AGENCIA, cr.TIP_CREDITO, tc.DES_TIP_CREDITO,
+                   cr.MON_CREDITO, cr.MON_SALDO, cr.MON_CUOTA, cr.CANT_CUOTAS,
+                   cr.FEC_APERTURA, cr.FEC_VENCIMIENTO, cr.IND_ESTADO, cr.ID_CUENTA,
+                   (SELECT COUNT(*) FROM PR.PR_PLAN_PAGOS p2
+                     WHERE p2.COD_EMPRESA = cr.COD_EMPRESA AND p2.COD_AGENCIA = cr.COD_AGENCIA
+                       AND p2.NUM_CREDITO = cr.NUM_CREDITO AND p2.NUM_CUOTA <> 0
+                       AND COALESCE(p2.SAL_PRINCIPAL, 0) + COALESCE(p2.SAL_INT, 0) > 0) AS NB_RESTANTES,
+                   (SELECT COALESCE(SUM(COALESCE(p3.SAL_PRINCIPAL, 0) + COALESCE(p3.SAL_INT, 0)), 0)
+                      FROM PR.PR_PLAN_PAGOS p3
+                     WHERE p3.COD_EMPRESA = cr.COD_EMPRESA AND p3.COD_AGENCIA = cr.COD_AGENCIA
+                       AND p3.NUM_CREDITO = cr.NUM_CREDITO AND p3.NUM_CUOTA <> 0) AS RESTE_TOTAL
+            FROM PR.PR_CREDITOS cr
+            LEFT JOIN PR.PR_TIPO_CREDITO tc
+                ON tc.COD_EMPRESA = cr.COD_EMPRESA AND tc.TIP_CREDITO = cr.TIP_CREDITO
+            WHERE cr.COD_EMPRESA = '00000'
+              AND cr.COD_CLIENTE = :codCliente
+              AND cr.IND_ESTADO IN ('D', 'J')
+            ORDER BY cr.FEC_APERTURA DESC, cr.NUM_CREDITO DESC
+            """;
+
+    /**
+     * Les {@code nbEcheances} premieres echeances restant a payer de chaque credit en cours,
+     * les plus proches d'abord. Le rang est calcule par credit, pas globalement.
+     */
+    private static final String SQL_PROCHAINES_ECHEANCES = """
+            SELECT x.NUM_CREDITO, x.NUM_CUOTA, x.FEC_CUOTA, x.MON_CUOTA, x.MON_INT,
+                   x.SAL_PRINCIPAL, x.SAL_INT, x.RESTE
+            FROM (
+                SELECT pp.NUM_CREDITO, pp.NUM_CUOTA, pp.FEC_CUOTA, pp.MON_CUOTA,
+                       COALESCE(pp.MON_INT, 0) AS MON_INT,
+                       COALESCE(pp.SAL_PRINCIPAL, 0) AS SAL_PRINCIPAL,
+                       COALESCE(pp.SAL_INT, 0) AS SAL_INT,
+                       COALESCE(pp.SAL_PRINCIPAL, 0) + COALESCE(pp.SAL_INT, 0) AS RESTE,
+                       ROW_NUMBER() OVER (PARTITION BY pp.NUM_CREDITO
+                                          ORDER BY pp.FEC_CUOTA, pp.NUM_CUOTA) AS RANG
+                FROM PR.PR_PLAN_PAGOS pp
+                INNER JOIN PR.PR_CREDITOS cr
+                    ON cr.COD_EMPRESA = pp.COD_EMPRESA AND cr.COD_AGENCIA = pp.COD_AGENCIA
+                   AND cr.NUM_CREDITO = pp.NUM_CREDITO
+                WHERE pp.COD_EMPRESA = '00000'
+                  AND cr.COD_CLIENTE = :codCliente
+                  AND cr.IND_ESTADO IN ('D', 'J')
+                  AND pp.NUM_CUOTA <> 0
+                  AND COALESCE(pp.SAL_PRINCIPAL, 0) + COALESCE(pp.SAL_INT, 0) > 0
+            ) x
+            WHERE x.RANG <= :nbEcheances
+            ORDER BY x.NUM_CREDITO, x.FEC_CUOTA, x.NUM_CUOTA
+            """;
+
+    /** Credits en cours du membre (lignes brutes, assemblees par le service). */
+    public List<java.util.Map<String, Object>> findCreditsEnCours(String codCliente) {
+        MapSqlParameterSource params = new MapSqlParameterSource().addValue("codCliente", codCliente);
+        return execute("agri.creditsEnCours", () -> tertiary.queryForList(SQL_CREDITS_EN_COURS, params));
+    }
+
+    /** Prochaines echeances restant a payer, tous credits en cours confondus. */
+    public List<java.util.Map<String, Object>> findProchainesEcheances(String codCliente, int nbEcheances) {
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("codCliente", codCliente)
+                .addValue("nbEcheances", nbEcheances);
+        return execute("agri.prochainesEcheances", () -> tertiary.queryForList(SQL_PROCHAINES_ECHEANCES, params));
+    }
 }

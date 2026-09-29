@@ -53,7 +53,7 @@ X-API-Key: <cle-publique>
 | GET | `/agriculteurs/farmers` | Agriculteurs (clients ayant un crédit agricole) | oui |
 | GET | `/agriculteurs/farmers/{clientId}` | Détail d'un agriculteur | non |
 | GET | `/agriculteurs/farmers/{clientId}/credits` | Crédits agricoles d'un agriculteur | non |
-| GET | `/agriculteurs/farmers/{clientId}/comptes` | **Comptes du membre** : compte de crédit (produit `CC008`, sur lequel le crédit est déboursé) et compte de remboursement (produit `CC014`, sur lequel les échéances sont prélevées), avec leurs soldes | non |
+| GET | `/agriculteurs/farmers/{clientId}/comptes` | **Comptes du membre** : compte de crédit (`CC008`) et compte de remboursement (`CC014`) avec leurs soldes, **plus les crédits en cours et leurs prochaines échéances** | non |
 | GET | `/agriculteurs/credits/{creditId}` | Détail d'un crédit agricole | non |
 | GET | `/agriculteurs/credits/{creditId}/repayment-schedule` | Échéancier d'un crédit (statut `pending`/`paid`/`late`/`missed`, jours de retard) | non |
 | GET | `/agriculteurs/cooperatives` | Coopératives / groupements | oui |
@@ -101,9 +101,47 @@ le message « Compte non disponible » ; ce n'est pas une erreur.
 }
 ```
 
-Les deux codes produits sont **paramétrables** côté service bancaire
-(`agri.comptes.produit-credit`, `agri.comptes.produit-remboursement`) : si le core banking
-retenait d'autres codes, il suffit de les changer en configuration.
+### Crédits en cours et prochaines échéances
+
+La même réponse porte, sous `creditsEnCours`, les crédits du membre encore en remboursement
+(états SAF `D` décaissé et `J` contentieux) et, pour chacun, ses **cinq premières échéances
+restant à payer**, les plus proches d'abord. Une échéance déjà soldée n'apparaît pas.
+
+| Champ | Sens |
+|---|---|
+| `capitalRestantDu` | capital restant dû sur le crédit |
+| `compteRemboursement` | compte `CC014` sur lequel SAF prélève les échéances |
+| `prochainesEcheances[].etat` | `A_ECHOIR` si la date est à venir, `IMPAYEE` si elle est passée |
+| `prochainesEcheances[].resteAPayer` | solde restant dû sur cette échéance |
+| `nbEcheancesRestantes` | nombre total d'échéances non soldées, au-delà de celles listées |
+| `resteTotalAPayer` | somme des soldes restant dus sur tout le plan |
+
+```json
+"creditsEnCours": [
+  {
+    "numeroCredit": 541437,
+    "libelleTypeCredit": "CREDIT AGRICOLE",
+    "montantAccorde": 5000000,
+    "capitalRestantDu": 4250000,
+    "montantEcheance": 1480000,
+    "dateOuverture": "2026-09-23",
+    "dateEcheanceFinale": "2027-03-22",
+    "statut": "En cours de remboursement",
+    "compteRemboursement": "32201400202660",
+    "prochainesEcheances": [
+      { "numeroEcheance": 1, "dateEcheance": "2026-10-22", "montant": 1480000,
+        "capital": 1000000, "interets": 480000, "resteAPayer": 1480000,
+        "etat": "A_ECHOIR", "joursRetard": 0 }
+    ],
+    "nbEcheancesRestantes": 5,
+    "resteTotalAPayer": 7400000
+  }
+]
+```
+
+Les codes produits et le nombre d'échéances servies sont **paramétrables** côté service bancaire
+(`agri.comptes.produit-credit`, `agri.comptes.produit-remboursement`, `agri.comptes.nb-echeances`) :
+si le core banking retenait d'autres codes, il suffit de les changer en configuration.
 
 ### Périmètre d'un agent (cloisonnement)
 

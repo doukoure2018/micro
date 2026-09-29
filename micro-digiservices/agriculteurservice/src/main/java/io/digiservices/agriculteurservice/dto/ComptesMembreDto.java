@@ -21,5 +21,7 @@ public class ComptesMembreDto {
     private String codeMembre;
     private String nomMembre;
     private List<CompteDto> comptes;
+    /** Crédits en cours de remboursement, avec leurs prochaines échéances. */
+    private List<CreditRemboursementDto> creditsEnCours;
     private String message;
 }
