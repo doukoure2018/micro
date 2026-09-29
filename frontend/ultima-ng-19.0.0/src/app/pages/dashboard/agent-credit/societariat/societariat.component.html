@@ -201,6 +201,118 @@
     }
 </p-card>
 
+<!-- ===== Pilotage de l'assainissement : semaine x délégation (2026-09-29) ===== -->
+<p-card class="societariat-card">
+    <div class="header">
+        <div>
+            <h3>Pilotage de l'assainissement</h3>
+            <p class="subtitle">
+                Fiches <strong>traitées</strong> à leur date de traitement, comparées aux fiches
+                <strong>nouvelles</strong> arrivées sur la même période. Encours et ancienneté par délégation.
+            </p>
+        </div>
+        <button pButton type="button" icon="pi pi-refresh" label="Actualiser" (click)="chargerAssainissement()"
+            [disabled]="chargementAssainissement()" class="p-button-outlined"></button>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3 mb-3">
+        <p-selectButton [options]="optionsGranularite" [(ngModel)]="granularite" optionLabel="label" optionValue="value"
+            (onChange)="chargerAssainissement()"></p-selectButton>
+        <p-select [options]="optionsFenetre" [(ngModel)]="nbPeriodes" optionLabel="label" optionValue="value"
+            styleClass="w-48" appendTo="body" (onChange)="chargerAssainissement()"></p-select>
+        <p-select [options]="optionsDelegation()" [(ngModel)]="delegationFiltre" optionLabel="label" optionValue="value"
+            placeholder="Toutes les délégations" [showClear]="true" styleClass="w-60" appendTo="body"
+            (onChange)="chargerAssainissement()"></p-select>
+        <span class="text-sm text-color-secondary">
+            Une fiche en attente au-delà de {{ seuilJours }} jours est comptée en retard.
+        </span>
+    </div>
+
+    @if (chargementAssainissement()) {
+    <div class="flex justify-center p-6"><p-progressSpinner></p-progressSpinner></div>
+    } @else if (assainissement()) {
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <div class="border rounded p-3">
+            <div class="text-xs text-color-secondary uppercase">Traitées, dernière période</div>
+            <div class="text-2xl font-bold text-green-600">{{ assainissement()!.traiteesDernierePeriode | number }}</div>
+        </div>
+        <div class="border rounded p-3">
+            <div class="text-xs text-color-secondary uppercase">Reste à traiter</div>
+            <div class="text-2xl font-bold text-orange-500">{{ assainissement()!.resteATraiter | number }}</div>
+        </div>
+        <div class="border rounded p-3">
+            <div class="text-xs text-color-secondary uppercase">Taux de rejet</div>
+            <div class="text-2xl font-bold">{{ assainissement()!.tauxRejetGlobal | number: '1.0-1' }} %</div>
+        </div>
+        <div class="border rounded p-3">
+            <div class="text-xs text-color-secondary uppercase">Plus ancienne en attente</div>
+            <div class="text-2xl font-bold" [class.text-red-500]="assainissement()!.plusAncienneJours > seuilJours">
+                {{ assainissement()!.plusAncienneJours }} j
+            </div>
+        </div>
+    </div>
+
+    <p-chart type="line" [data]="donneesCourbeAssainissement()" [options]="optionsCourbeAssainissement" height="320px"></p-chart>
+
+    <h4 class="mt-5 mb-2">Par délégation</h4>
+    <p-table [value]="assainissement()!.delegations" responsiveLayout="scroll" [rowHover]="true">
+        <ng-template pTemplate="header">
+            <tr>
+                <th>Délégation</th>
+                @for (p of assainissement()!.periodes; track p) { <th class="text-right">{{ p }}</th> }
+                <th class="text-right">Reste</th>
+                <th class="text-right">Âge moyen</th>
+                <th class="text-right">Au-delà du seuil</th>
+                <th class="text-right">Taux de rejet</th>
+                <th>Signalement</th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-d>
+            <tr class="cursor-pointer" [class.surface-100]="d.auDelaSeuil > 0" (click)="filtrerSurDelegation(d)">
+                <td class="font-medium">{{ d.delegation }}<div class="text-xs text-color-secondary">{{ d.nbPointsService }} point(s) de service</div></td>
+                @for (v of d.traiteesParPeriode; track $index) { <td class="text-right">{{ v || '—' }}</td> }
+                <td class="text-right font-bold" [class.text-orange-500]="d.enAttente > 0">{{ d.enAttente | number }}</td>
+                <td class="text-right" [class.text-red-500]="d.ageMoyenJours > seuilJours">{{ d.ageMoyenJours }} j</td>
+                <td class="text-right">{{ d.auDelaSeuil | number }}</td>
+                <td class="text-right">{{ d.tauxRejet | number: '1.0-1' }} %</td>
+                <td>
+                    @if (d.auDelaSeuil > 0) {
+                    <p-tag severity="danger" [value]="'stock ancien'"
+                        [pTooltip]="d.auDelaSeuil + ' fiche(s) en attente depuis plus de ' + seuilJours + ' jours, la plus ancienne depuis ' + d.ageMaxJours + ' jours'"></p-tag>
+                    }
+                    @if (d.tauxRejet > assainissement()!.tauxRejetGlobal) {
+                    <p-tag severity="warn" value="rejets élevés" styleClass="ml-1"
+                        pTooltip="Taux de rejet au-dessus de la moyenne du réseau"></p-tag>
+                    }
+                </td>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr><td [attr.colspan]="assainissement()!.periodes.length + 6" class="text-center text-color-secondary py-4">Aucune donnée sur la période</td></tr>
+        </ng-template>
+    </p-table>
+
+    <h4 class="mt-5 mb-2">Points de service les plus en retard</h4>
+    <p-table [value]="assainissement()!.pointsServiceEnRetard" responsiveLayout="scroll" [rowHover]="true">
+        <ng-template pTemplate="header">
+            <tr><th>Point de service</th><th>Agence</th><th>Délégation</th><th class="text-right">En attente</th><th class="text-right">Plus ancienne</th></tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-ps>
+            <tr>
+                <td class="font-medium">{{ ps.pointService }}<div class="text-xs text-color-secondary">{{ ps.code }}</div></td>
+                <td>{{ ps.agence }}</td>
+                <td>{{ ps.delegation }}</td>
+                <td class="text-right font-bold">{{ ps.enAttente | number }}</td>
+                <td class="text-right" [class.text-red-500]="ps.plusAncienneJours > seuilJours">{{ ps.plusAncienneJours }} j</td>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr><td colspan="5" class="text-center text-color-secondary py-4">Aucun point de service en retard</td></tr>
+        </ng-template>
+    </p-table>
+    }
+</p-card>
+
 <!-- Stats Table Section -->
 <p-card class="societariat-card">
     <div class="header">

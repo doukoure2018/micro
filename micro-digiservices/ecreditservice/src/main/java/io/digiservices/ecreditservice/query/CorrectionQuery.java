@@ -455,4 +455,132 @@ public class CorrectionQuery {
     FROM weekly_data
     ORDER BY year DESC, week_number DESC, day_of_week ASC
     """;
+
+    // ==================== Assainissement : semaine x delegation (2026-09-29) ====================
+
+    /**
+     * Evolution de l'assainissement, sur la DATE DE TRAITEMENT (arbitrage DSIG du 2026-09-29).
+     *
+     * <p>Deux mesures de nature differente, volontairement cote a cote : les fiches
+     * <b>traitees</b> (validees ou rejetees) sont datees de leur derniere mise a jour, donc du
+     * moment ou le travail a ete fait ; les fiches <b>nouvelles</b> sont datees de leur creation.
+     * Comparer les deux courbes dit si le reseau traite plus vite qu'il ne recoit.</p>
+     *
+     * <p>Parametres : {@code granularite} ('week' ou 'day'), {@code nbPeriodes} (fenetre),
+     * {@code delegationId} (NULL = tout le reseau).</p>
+     */
+    public static final String CORRECTION_EVOLUTION_TRAITEMENT = """
+    WITH bornes AS (
+        SELECT CASE WHEN CAST(:granularite AS TEXT) = 'week'
+                    THEN DATE_TRUNC('week', CURRENT_DATE) - make_interval(weeks => CAST(:nbPeriodes AS INT))
+                    ELSE DATE_TRUNC('day', CURRENT_DATE) - make_interval(days => CAST(:nbPeriodes AS INT))
+               END AS debut
+    ),
+    traitees AS (
+        SELECT DATE_TRUNC(CAST(:granularite AS TEXT), COALESCE(pp.updated_at, pp.created_at))::DATE AS cle,
+               SUM(CASE WHEN pp.correction_statut = 'VALIDE' THEN 1 ELSE 0 END) AS valide,
+               SUM(CASE WHEN pp.correction_statut = 'REJETE' THEN 1 ELSE 0 END) AS rejete
+        FROM personne_physique pp
+        LEFT JOIN pointvente pv ON pv.code = pp.code_agence
+        WHERE pp.correction_statut IN ('VALIDE', 'REJETE')
+          AND COALESCE(pp.updated_at, pp.created_at) >= (SELECT debut FROM bornes)
+          AND (CAST(:delegationId AS BIGINT) IS NULL OR pv.delegation_id = CAST(:delegationId AS BIGINT))
+        GROUP BY 1
+    ),
+    nouvelles AS (
+        SELECT DATE_TRUNC(CAST(:granularite AS TEXT), pp.created_at)::DATE AS cle,
+               COUNT(*) AS nouvelles,
+               SUM(CASE WHEN pp.correction_statut = 'EN_ATTENTE' THEN 1 ELSE 0 END) AS en_attente
+        FROM personne_physique pp
+        LEFT JOIN pointvente pv ON pv.code = pp.code_agence
+        WHERE pp.created_at >= (SELECT debut FROM bornes)
+          AND (CAST(:delegationId AS BIGINT) IS NULL OR pv.delegation_id = CAST(:delegationId AS BIGINT))
+        GROUP BY 1
+    ),
+    periodes AS (SELECT cle FROM traitees UNION SELECT cle FROM nouvelles)
+    SELECT p.cle AS date_jour,
+           CASE WHEN CAST(:granularite AS TEXT) = 'week'
+                THEN TO_CHAR(p.cle, 'IYYY-"S"IW')
+                ELSE TO_CHAR(p.cle, 'DD/MM')
+           END AS periode,
+           COALESCE(t.valide, 0) AS valide,
+           COALESCE(t.rejete, 0) AS rejete,
+           COALESCE(t.valide, 0) + COALESCE(t.rejete, 0) AS traitees,
+           COALESCE(n.nouvelles, 0) AS nouvelles,
+           COALESCE(n.en_attente, 0) AS en_attente
+    FROM periodes p
+    LEFT JOIN traitees t ON t.cle = p.cle
+    LEFT JOIN nouvelles n ON n.cle = p.cle
+    ORDER BY p.cle ASC
+    """;
+
+    /** Fiches traitees par delegation et par periode : une ligne par couple, l'ecran pivote. */
+    public static final String CORRECTION_TRAITEES_PAR_DELEGATION_PERIODE = """
+    SELECT COALESCE(d.libele, 'Non renseignée') AS delegation,
+           d.id AS delegation_id,
+           DATE_TRUNC(CAST(:granularite AS TEXT), COALESCE(pp.updated_at, pp.created_at))::DATE AS cle,
+           CASE WHEN CAST(:granularite AS TEXT) = 'week'
+                THEN TO_CHAR(DATE_TRUNC('week', COALESCE(pp.updated_at, pp.created_at)), 'IYYY-"S"IW')
+                ELSE TO_CHAR(DATE_TRUNC('day', COALESCE(pp.updated_at, pp.created_at)), 'DD/MM')
+           END AS periode,
+           COUNT(*) AS traitees,
+           SUM(CASE WHEN pp.correction_statut = 'REJETE' THEN 1 ELSE 0 END) AS rejete
+    FROM personne_physique pp
+    LEFT JOIN pointvente pv ON pv.code = pp.code_agence
+    LEFT JOIN delegation d ON d.id = pv.delegation_id
+    WHERE pp.correction_statut IN ('VALIDE', 'REJETE')
+      AND COALESCE(pp.updated_at, pp.created_at) >= (
+            CASE WHEN CAST(:granularite AS TEXT) = 'week'
+                 THEN DATE_TRUNC('week', CURRENT_DATE) - make_interval(weeks => CAST(:nbPeriodes AS INT))
+                 ELSE DATE_TRUNC('day', CURRENT_DATE) - make_interval(days => CAST(:nbPeriodes AS INT))
+            END)
+    GROUP BY 1, 2, 3, 4
+    ORDER BY 1, 3
+    """;
+
+    /**
+     * Encours d'assainissement par delegation : ce qui reste a traiter, son anciennete, et la
+     * part au-dela du seuil d'alerte. C'est la mesure de stock, absente du tableau de bord.
+     */
+    public static final String CORRECTION_STOCK_PAR_DELEGATION = """
+    SELECT COALESCE(d.libele, 'Non renseignée') AS delegation,
+           d.id AS delegation_id,
+           COUNT(*) FILTER (WHERE pp.correction_statut = 'EN_ATTENTE') AS en_attente,
+           COALESCE(ROUND(AVG(CASE WHEN pp.correction_statut = 'EN_ATTENTE'
+                                   THEN EXTRACT(DAY FROM now() - pp.created_at) END)), 0) AS age_moyen_jours,
+           COALESCE(MAX(CASE WHEN pp.correction_statut = 'EN_ATTENTE'
+                             THEN EXTRACT(DAY FROM now() - pp.created_at) END), 0)::INT AS age_max_jours,
+           COUNT(*) FILTER (WHERE pp.correction_statut = 'EN_ATTENTE'
+                              AND pp.created_at < now() - make_interval(days => CAST(:seuilJours AS INT))) AS au_dela_seuil,
+           COUNT(*) AS total_fiches,
+           COALESCE(ROUND(100.0 * COUNT(*) FILTER (WHERE pp.correction_statut = 'REJETE')
+                    / NULLIF(COUNT(*) FILTER (WHERE pp.correction_statut IN ('VALIDE', 'REJETE')), 0), 1), 0) AS taux_rejet,
+           COUNT(DISTINCT pp.code_agence) AS nb_points_service
+    FROM personne_physique pp
+    LEFT JOIN pointvente pv ON pv.code = pp.code_agence
+    LEFT JOIN delegation d ON d.id = pv.delegation_id
+    GROUP BY 1, 2
+    ORDER BY 3 DESC
+    """;
+
+    /** Points de service dont l'encours est le plus lourd : la liste d'appels du delegue regional. */
+    public static final String CORRECTION_POINTS_SERVICE_EN_RETARD = """
+    SELECT pv.libele AS point_service,
+           pv.code,
+           COALESCE(a.libele, '—') AS agence,
+           COALESCE(d.libele, 'Non renseignée') AS delegation,
+           d.id AS delegation_id,
+           COUNT(*) FILTER (WHERE pp.correction_statut = 'EN_ATTENTE') AS en_attente,
+           COALESCE(MAX(CASE WHEN pp.correction_statut = 'EN_ATTENTE'
+                             THEN EXTRACT(DAY FROM now() - pp.created_at) END), 0)::INT AS plus_ancienne_jours
+    FROM personne_physique pp
+    JOIN pointvente pv ON pv.code = pp.code_agence
+    LEFT JOIN agence a ON a.id = pv.agence_id
+    LEFT JOIN delegation d ON d.id = pv.delegation_id
+    WHERE (CAST(:delegationId AS BIGINT) IS NULL OR pv.delegation_id = CAST(:delegationId AS BIGINT))
+    GROUP BY 1, 2, 3, 4, 5
+    HAVING COUNT(*) FILTER (WHERE pp.correction_statut = 'EN_ATTENTE') > 0
+    ORDER BY 6 DESC
+    LIMIT CAST(:limite AS INT)
+    """;
 }

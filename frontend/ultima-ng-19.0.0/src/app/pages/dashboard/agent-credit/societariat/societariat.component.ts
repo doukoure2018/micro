@@ -11,6 +11,7 @@ import { FormsModule } from '@angular/forms';
 import { TooltipModule } from 'primeng/tooltip';
 import { TagModule } from 'primeng/tag';
 import { DatePickerModule } from 'primeng/datepicker';
+import { SelectModule } from 'primeng/select';
 import { UserService } from '@/service/user.service';
 import { CorrectionDelegationStats } from '@/interface/correction-delegation-stats';
 import { CorrectionAgenceStats } from '@/interface/correction-agence-stats';
@@ -22,7 +23,7 @@ import { SocietariatByPsComponent } from './societariat-by-ps/societariat-by-ps.
 
 @Component({
     selector: 'app-societariat',
-    imports: [CommonModule, CardModule, TableModule, ProgressSpinnerModule, ButtonModule, ChartModule, SelectButtonModule, FormsModule, TooltipModule, TagModule, DatePickerModule, SocietariatByAgenceComponent, SocietariatByPsComponent],
+    imports: [CommonModule, CardModule, TableModule, ProgressSpinnerModule, ButtonModule, ChartModule, SelectButtonModule, FormsModule, TooltipModule, TagModule, DatePickerModule, SelectModule, SocietariatByAgenceComponent, SocietariatByPsComponent],
     templateUrl: './societariat.component.html',
     styleUrl: './societariat.component.scss'
 })
@@ -38,6 +39,98 @@ export class SocietariatComponent implements OnInit {
     usePeriodFilter = false;
 
     // Chart period options
+    // ── Pilotage de l'assainissement : semaine × délégation (2026-09-29) ──
+    assainissement = signal<any | null>(null);
+    chargementAssainissement = signal(false);
+    granularite: 'week' | 'day' = 'week';
+    nbPeriodes = 12;
+    delegationFiltre: number | null = null;
+    /** Au-delà, une fiche en attente est comptée en retard. Réglable côté serveur. */
+    seuilJours = 30;
+
+    optionsGranularite = [
+        { label: 'Par semaine', value: 'week' },
+        { label: 'Par jour', value: 'day' }
+    ];
+    optionsFenetre = [
+        { label: '8 périodes', value: 8 },
+        { label: '12 périodes', value: 12 },
+        { label: '26 périodes', value: 26 },
+        { label: '52 périodes', value: 52 }
+    ];
+
+    /** Liste des délégations, construite à partir des données déjà chargées. */
+    optionsDelegation = computed(() => {
+        const a = this.assainissement();
+        if (!a) return [];
+        return (a.delegations || [])
+            .filter((d: any) => d.delegationId !== null && d.delegationId !== undefined)
+            .map((d: any) => ({ label: d.delegation, value: d.delegationId }));
+    });
+
+    chargerAssainissement(): void {
+        this.chargementAssainissement.set(true);
+        this.userService.getAssainissement$(this.granularite, this.nbPeriodes, this.delegationFiltre, this.seuilJours).subscribe({
+            next: (r) => {
+                this.assainissement.set((r.data as any)?.assainissement || null);
+                this.chargementAssainissement.set(false);
+            },
+            error: () => this.chargementAssainissement.set(false)
+        });
+    }
+
+    /** Clic sur une ligne : la courbe et les points de service suivent la délégation choisie. */
+    filtrerSurDelegation(d: any): void {
+        if (!d?.delegationId) return;
+        this.delegationFiltre = this.delegationFiltre === d.delegationId ? null : d.delegationId;
+        this.chargerAssainissement();
+    }
+
+    /** Deux séries : ce qui est traité, ce qui arrive. L'écart entre les deux est le message. */
+    donneesCourbeAssainissement = computed(() => {
+        const a = this.assainissement();
+        const points: any[] = a?.evolution || [];
+        return {
+            labels: points.map((p) => p.periode),
+            datasets: [
+                {
+                    label: 'Traitées',
+                    data: points.map((p) => p.traitees),
+                    borderColor: '#22c55e',
+                    backgroundColor: 'rgba(34,197,94,0.12)',
+                    fill: true,
+                    tension: 0.3
+                },
+                {
+                    label: 'Nouvelles fiches',
+                    data: points.map((p) => p.nouvelles),
+                    borderColor: '#6366f1',
+                    borderDash: [6, 4],
+                    fill: false,
+                    tension: 0.3
+                },
+                {
+                    label: 'dont rejetées',
+                    data: points.map((p) => p.rejete),
+                    borderColor: '#ef4444',
+                    fill: false,
+                    tension: 0.3
+                }
+            ]
+        };
+    });
+
+    optionsCourbeAssainissement = {
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'bottom' },
+            tooltip: { mode: 'index', intersect: false }
+        },
+        scales: {
+            y: { beginAtZero: true, ticks: { precision: 0 } }
+        }
+    };
+
     chartPeriodOptions = [
         { label: 'Par jour', value: 'day' },
         { label: 'Par semaine', value: 'week' }
@@ -294,6 +387,7 @@ export class SocietariatComponent implements OnInit {
     ngOnInit(): void {
         this.loadStats();
         this.loadChartData();
+        this.chargerAssainissement();
     }
 
     loadStats(): void {
