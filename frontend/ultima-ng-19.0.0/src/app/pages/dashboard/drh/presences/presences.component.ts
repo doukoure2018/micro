@@ -112,37 +112,27 @@ const STATUTS_PRESENCE: { [k: string]: StatutPresence } = {
                         Aucune donnée sur la période — importez un fichier badgeuse
                     </td></tr>
                 </ng-template>
-            </p-table>
-
-            <!-- ===== Synthèse par semaine (V150) : moyennes par jour ouvré ===== -->
-            <p-table *ngIf="vue === 'semaine'" [value]="semaines()" responsiveLayout="scroll">
-                <ng-template pTemplate="header">
-                    <tr>
-                        <th>Semaine</th><th>Jours ouvrés</th>
-                        <th pTooltip="Moyenne par jour des personnes effectivement venues">Total présents / jour</th>
-                        <th>Retards / jour</th><th>Départs avant l'heure / jour</th>
-                        <th>Absents justifiés / jour</th><th>Absents NON justifiés / jour</th>
-                        <th>Effectif contrôlé / jour</th>
-                        <th pTooltip="Somme des présents sur la semaine / somme des effectifs contrôlés">Taux de présence</th>
+                <!-- V158 : moyenne des jours contrôlés, journée en cours exclue -->
+                <ng-template pTemplate="footer" *ngIf="moyenne() as m">
+                    <tr class="surface-100 font-bold">
+                        <td>Moyenne par jour contrôlé ({{ m.jours }} j)</td>
+                        <td class="text-green-700">{{ m.presentsTotal | number: '1.0-1' }}</td>
+                        <td class="text-green-600">{{ m.presents | number: '1.0-1' }}</td>
+                        <td>{{ m.retards | number: '1.0-1' }}</td>
+                        <td>{{ m.departsAnticipes | number: '1.0-1' }}</td>
+                        <td>{{ m.absentsJustifies | number: '1.0-1' }}</td>
+                        <td>{{ m.absentsNonJustifies | number: '1.0-1' }}</td>
+                        <td>{{ m.total | number: '1.0-1' }}</td>
                     </tr>
-                </ng-template>
-                <ng-template pTemplate="body" let-w>
-                    <tr>
-                        <td class="font-medium">{{ w.semaine }}
-                            <p-tag *ngIf="w.enCours" value="En cours" severity="info" class="ml-2" pTooltip="Semaine non terminée : moyennes provisoires" />
+                    <tr class="surface-100">
+                        <td colspan="8" class="text-sm">
+                            Taux de présence sur la période :
+                            <b [class.text-green-700]="m.taux >= 80" [class.text-orange-500]="m.taux < 80">{{ m.taux | number: '1.0-1' }} %</b>
+                            <span class="text-color-secondary ml-2">
+                                Moyenne calculée sur les jours contrôlés{{ m.enCoursExclue ? ', journée en cours exclue' : '' }}.
+                            </span>
                         </td>
-                        <td>{{ w.joursOuvres }}</td>
-                        <td class="text-green-700 font-bold">{{ w.presentsTotalMoyen | number: '1.0-1' }}</td>
-                        <td [class.text-orange-500]="w.retardsMoyen > 0">{{ w.retardsMoyen | number: '1.0-1' }}</td>
-                        <td [class.text-orange-500]="w.departsAnticipesMoyen > 0">{{ w.departsAnticipesMoyen | number: '1.0-1' }}</td>
-                        <td>{{ w.absentsJustifiesMoyen | number: '1.0-1' }}</td>
-                        <td [class.text-red-500]="w.absentsNonJustifiesMoyen > 0">{{ w.absentsNonJustifiesMoyen | number: '1.0-1' }}</td>
-                        <td>{{ w.effectifMoyen | number: '1.0-1' }}</td>
-                        <td class="font-medium" [class.text-green-700]="w.tauxPresence >= 80" [class.text-orange-500]="w.tauxPresence < 80">{{ w.tauxPresence | number: '1.0-1' }} %</td>
                     </tr>
-                </ng-template>
-                <ng-template pTemplate="emptymessage">
-                    <tr><td colspan="9" class="text-center text-color-secondary">Aucune semaine contrôlée sur la période</td></tr>
                 </ng-template>
             </p-table>
 
@@ -269,7 +259,6 @@ export class PresencesComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
 
     synthese = signal<any[]>([]);
-    semaines = signal<any[]>([]);
     declarations = signal<any[]>([]);
     exportEnCours = signal(false);
     presences = signal<any[]>([]);
@@ -295,10 +284,9 @@ export class PresencesComponent implements OnInit {
             });
     }
 
-    vue: 'synthese' | 'semaine' | 'detail' | 'declarations' | 'non-rapproches' = 'synthese';
+    vue: 'synthese' | 'detail' | 'declarations' | 'non-rapproches' = 'synthese';
     vues = [
         { label: 'Synthèse par jour', value: 'synthese' },
-        { label: 'Synthèse par semaine', value: 'semaine' },
         { label: 'Détail par salarié', value: 'detail' },
         { label: 'Déclarations DRH', value: 'declarations' },
         { label: 'Non rapprochés', value: 'non-rapproches' }
@@ -355,6 +343,32 @@ export class PresencesComponent implements OnInit {
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
 
+    /**
+     * V158 : moyenne des jours contrôlés affichés. Un jour compte s'il a un effectif contrôlé ;
+     * la journée en cours est exclue, ses chiffres étant provisoires jusqu'à l'heure de sortie.
+     */
+    moyenne = computed(() => {
+        const lignes = this.synthese().filter((s: any) => (s.total || 0) > 0);
+        const retenues = lignes.filter((s: any) => !s.enCours);
+        if (retenues.length === 0) return null;
+        const somme = (f: (s: any) => number) => retenues.reduce((t: number, s: any) => t + (f(s) || 0), 0);
+        const n = retenues.length;
+        const presentsTotal = somme((s) => s.presentsTotal);
+        const total = somme((s) => s.total);
+        return {
+            jours: n,
+            presentsTotal: presentsTotal / n,
+            presents: somme((s) => s.presents) / n,
+            retards: somme((s) => s.retards) / n,
+            departsAnticipes: somme((s) => s.departsAnticipes) / n,
+            absentsJustifies: somme((s) => s.absentsJustifies) / n,
+            absentsNonJustifies: somme((s) => s.absentsNonJustifies) / n,
+            total: total / n,
+            taux: total > 0 ? (presentsTotal * 100) / total : 0,
+            enCoursExclue: lignes.length > retenues.length
+        };
+    });
+
     charger(): void {
         if (!this.du || !this.au) return;
         const du = this.toIso(this.du), au = this.toIso(this.au);
@@ -367,9 +381,6 @@ export class PresencesComponent implements OnInit {
         });
         this.drhService.pointagesNonRapproches$(du, au).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (r) => this.nonRapproches.set((r.data as any)?.pointages || [])
-        });
-        this.drhService.syntheseSemainePresences$(du, au).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-            next: (r) => this.semaines.set((r.data as any)?.semaines || [])
         });
         this.drhService.declarationsPresence$(du, au).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (r) => this.declarations.set((r.data as any)?.declarations || [])
@@ -392,7 +403,7 @@ export class PresencesComponent implements OnInit {
         });
     }
 
-    /** Export Excel (V150) : synthèse par jour, par semaine et détail par salarié sur la période affichée. */
+    /** Export Excel : synthèse par jour (moyenne comprise) et détail par salarié sur la période affichée. */
     exporterExcel(): void {
         if (!this.du || !this.au) return;
         const du = this.toIso(this.du), au = this.toIso(this.au);
@@ -408,12 +419,21 @@ export class PresencesComponent implements OnInit {
                     'Absents justifiés': s.absentsJustifies, 'Absents non justifiés': s.absentsNonJustifies,
                     'Effectif contrôlé': s.total
                 }));
-                const feuilleSemaine = this.semaines().map((w: any) => ({
-                    'Semaine': w.semaine, 'Jours ouvrés': w.joursOuvres, 'Total présents / jour': w.presentsTotalMoyen,
-                    'Retards / jour': w.retardsMoyen, "Départs avant l'heure / jour": w.departsAnticipesMoyen,
-                    'Absents justifiés / jour': w.absentsJustifiesMoyen, 'Absents non justifiés / jour': w.absentsNonJustifiesMoyen,
-                    'Effectif contrôlé / jour': w.effectifMoyen, 'Taux de présence (%)': w.tauxPresence
-                }));
+                // V158 : la moyenne des jours contrôlés clôt la feuille, à la place de l'ancienne feuille hebdomadaire
+                const m = this.moyenne();
+                if (m) {
+                    feuilleJour.push({
+                        'Jour': `Moyenne par jour contrôlé (${m.jours} j)`,
+                        'Total présents': Math.round(m.presentsTotal * 10) / 10,
+                        "Présents à l'heure": Math.round(m.presents * 10) / 10,
+                        'Retards': Math.round(m.retards * 10) / 10,
+                        "Départs avant l'heure": Math.round(m.departsAnticipes * 10) / 10,
+                        'Absents justifiés': Math.round(m.absentsJustifies * 10) / 10,
+                        'Absents non justifiés': Math.round(m.absentsNonJustifies * 10) / 10,
+                        'Effectif contrôlé': Math.round(m.total * 10) / 10
+                    } as any);
+                    feuilleJour.push({ 'Jour': `Taux de présence : ${Math.round(m.taux * 10) / 10} %` } as any);
+                }
                 const feuilleDetail = details.map((p: any) => ({
                     'Jour': p.jour, 'Salarié': p.nom, 'Matricule': p.matricule, 'Direction': p.departementCode || '',
                     'Entrée': p.premiereEntree || '', 'Sortie': p.derniereSortie || '',
@@ -425,7 +445,6 @@ export class PresencesComponent implements OnInit {
                 }));
                 const classeur = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(classeur, XLSX.utils.json_to_sheet(feuilleJour), 'Synthèse par jour');
-                XLSX.utils.book_append_sheet(classeur, XLSX.utils.json_to_sheet(feuilleSemaine), 'Synthèse par semaine');
                 XLSX.utils.book_append_sheet(classeur, XLSX.utils.json_to_sheet(feuilleDetail), 'Détail par salarié');
                 XLSX.writeFile(classeur, `presences_${du}_${au}.xlsx`);
             },

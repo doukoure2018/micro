@@ -22,6 +22,9 @@ public interface MouvementService {
     /** Synthèse par agent : sorties en heures de travail, dépassements de pause, non clôturées. */
     List<SyntheseMouvementDto> synthese(User drh, LocalDate du, LocalDate au);
 
+    /** V158 : seuil de mouvements par jour, pour l'affichage et le filtre de l'écran. */
+    double seuilMouvementsJour();
+
     /** Détail jour par jour d'un agent avec les intervalles sortie -> retour classés. */
     MouvementPersonneDto personne(User drh, String matricule, LocalDate du, LocalDate au);
 

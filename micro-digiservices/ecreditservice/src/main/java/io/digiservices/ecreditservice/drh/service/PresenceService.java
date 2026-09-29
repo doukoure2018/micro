@@ -16,7 +16,6 @@ public interface PresenceService {
     int recalculer(User drh, LocalDate du, LocalDate au);
 
     // V150
-    List<SyntheseSemaineDto> syntheseSemaine(User drh, LocalDate du, LocalDate au);
     DeclarationDto declarer(User drh, DeclarationRequest request);
     List<DeclarationDto> declarations(User drh, LocalDate du, LocalDate au, String matricule);
     void supprimerDeclaration(User drh, long declarationId);

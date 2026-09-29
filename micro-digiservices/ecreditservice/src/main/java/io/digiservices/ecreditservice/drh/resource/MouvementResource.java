@@ -69,7 +69,8 @@ public class MouvementResource {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate au,
             Authentication auth, HttpServletRequest req) {
         return ResponseEntity.ok(getResponse(req,
-                Map.of("synthese", mouvementService.synthese(user(auth), du, au)),
+                Map.of("synthese", mouvementService.synthese(user(auth), du, au),
+                        "seuilMouvements", mouvementService.seuilMouvementsJour()),
                 "Synthèse des mouvements par salarié", OK));
     }
 

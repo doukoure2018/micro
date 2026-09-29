@@ -62,6 +62,12 @@ public final class MouvementDtos {
         private int minutesHorsBureau;        // sorties travail
         private int minutesDepassementPause;
         private int nonCloturees;
+        /** V158 : badgeages du jour comptés à partir de 08:35 (départ final compris). */
+        private int badgeagesComptes;
+        /** V158 : {@code badgeagesComptes / 2} — 1 mouvement = 1 entrée + 1 sortie. */
+        private double mouvements;
+        /** V158 : {@code mouvements} au-delà de MOUVEMENT_SEUIL_MOUVEMENTS_JOUR. */
+        private boolean depasseSeuil;
     }
 
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
@@ -82,6 +88,12 @@ public final class MouvementDtos {
         private int minutesHorsBureau;
         private int minutesDepassementPause;
         private int nonCloturees;
+        /** V158 : mouvements cumulés sur la période. */
+        private double mouvements;
+        /** V158 : nombre de jours au-dessus du seuil — critère de priorité de la liste. */
+        private int joursDepassement;
+        /** V158 : plus fort total de mouvements sur une seule journée de la période. */
+        private double maxMouvementsJour;
     }
 
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
@@ -138,7 +150,7 @@ public final class MouvementDtos {
         private int retoursNonBadges;           // sorties jamais clôturées
         private int accesRefuses;               // BLOCKED du jour
         private int accesRefusesMemeBadge;      // pire répétition d'un même badge refusé
-        private int seuilBadgeages;             // MOUVEMENT_TOP_SEUIL_JOUR
+        private double seuilMouvements;         // V158 : MOUVEMENT_SEUIL_MOUVEMENTS_JOUR (même seuil que la synthèse)
         private List<LigneTableauBordDto> lignes;
         // ===== Phase 2 =====
         private List<Integer> affluenceParDemiHeure;    // 48 créneaux de 30 min : badgeages ACCESS (tous sens)
@@ -178,7 +190,10 @@ public final class MouvementDtos {
         private String matricule;
         private String nom;
         private String departementCode;
+        /** V158 : badgeages du jour comptés à partir de 08:35. */
         private int badgeages;
+        /** V158 : {@code badgeages / 2} — même règle que la synthèse par salarié. */
+        private double mouvements;
         private int nbSortiesTravail;
         private int minutesHorsBureau;
         private int minutesDepassementPause;
