@@ -152,14 +152,16 @@
         <p-selectButton [options]="statuts" [(ngModel)]="statutFiche" optionLabel="label" optionValue="value"
             (onChange)="chargerFiches()"></p-selectButton>
         <span class="p-input-icon-left">
-            <input pInputText type="text" [ngModel]="rechercheFiche()" (ngModelChange)="rechercheFiche.set($event)"
+            <input pInputText type="text" [ngModel]="rechercheFiche()" (ngModelChange)="surRechercheFiche($event)"
                 placeholder="Nom, prénom ou code client…" class="w-72" />
         </span>
         <span class="text-sm text-color-secondary">{{ fichesFiltrees().length }} fiche(s)</span>
     </div>
 
     <p-table [value]="fichesFiltrees()" responsiveLayout="scroll" [rowHover]="true"
-             [paginator]="fichesFiltrees().length > 25" [rows]="25">
+             [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25, 50, 100]" [first]="premiereLigne()"
+             currentPageReportTemplate="{first} à {last} sur {totalRecords} fiches"
+             [showCurrentPageReport]="true">
         <ng-template pTemplate="header">
             <tr>
                 <th>Code client</th>
@@ -177,7 +179,7 @@
                 <td>{{ f.telPrincipal || '—' }}</td>
                 <td>{{ f.numId || '—' }}<div class="text-xs text-color-secondary" *ngIf="f.typePiece">{{ f.typePiece }}</div></td>
                 <td><p-tag [value]="libelleStatut(f.correctionStatut)" [severity]="severiteStatut(f.correctionStatut)"></p-tag></td>
-                <td class="whitespace-nowrap">{{ f.createdAt | date: 'dd/MM/yyyy' }}</td>
+                <td class="whitespace-nowrap">{{ dateFiche(f) }}</td>
             </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">
