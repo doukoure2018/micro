@@ -344,6 +344,14 @@ export class AppMenu {
                 routerLink: ['/dashboards/suivi-societariat']
             });
         }
+        // Assainissement des fiches : même écran pour les directions que pour le sociétariat
+        if (['DA', 'DR', 'DG'].includes(this.role || '') || this.estManager('DE') || this.estManager('Societariat')) {
+            items.push({
+                label: 'Assainissement',
+                icon: 'pi pi-fw pi-check-square',
+                routerLink: ['/dashboards/assainissement']
+            });
+        }
         if (this.role === 'AGENT_CREDIT') {
             if (this.user?.authorized) {
                 items.push({
