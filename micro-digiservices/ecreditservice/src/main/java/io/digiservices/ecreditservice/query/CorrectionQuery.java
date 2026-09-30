@@ -251,6 +251,9 @@ public class CorrectionQuery {
         LEFT JOIN (""" + PV_PAR_CODE + """
         ) pv ON pv.code = pp.code_agence
         LEFT JOIN delegation d ON d.id = pv.delegation_id
+        WHERE 1 = 1
+          AND (CAST(:perimetreDelegationId AS BIGINT) IS NULL OR pv.delegation_id = CAST(:perimetreDelegationId AS BIGINT))
+          AND (CAST(:perimetreAgenceId AS BIGINT) IS NULL OR pv.agence_id = CAST(:perimetreAgenceId AS BIGINT))
         GROUP BY d.id, d.libele
         ORDER BY delegation_libele NULLS LAST
         """;
@@ -271,6 +274,8 @@ public class CorrectionQuery {
         ) pv ON pv.code = pp.code_agence
         LEFT JOIN delegation d ON d.id = pv.delegation_id
         WHERE pp.created_at >= :dateDebut AND pp.created_at < :dateFin + INTERVAL '1 day'
+          AND (CAST(:perimetreDelegationId AS BIGINT) IS NULL OR pv.delegation_id = CAST(:perimetreDelegationId AS BIGINT))
+          AND (CAST(:perimetreAgenceId AS BIGINT) IS NULL OR pv.agence_id = CAST(:perimetreAgenceId AS BIGINT))
         GROUP BY d.id, d.libele
         ORDER BY delegation_libele NULLS LAST
         """;
@@ -289,6 +294,8 @@ public class CorrectionQuery {
         ) pv ON pv.code = pp.code_agence
         LEFT JOIN agence a ON a.id = pv.agence_id
         WHERE pv.delegation_id = :delegationId
+          AND (CAST(:perimetreDelegationId AS BIGINT) IS NULL OR pv.delegation_id = CAST(:perimetreDelegationId AS BIGINT))
+          AND (CAST(:perimetreAgenceId AS BIGINT) IS NULL OR pv.agence_id = CAST(:perimetreAgenceId AS BIGINT))
           AND (CAST(:dateDebut AS DATE) IS NULL OR pp.created_at >= CAST(:dateDebut AS DATE))
           AND (CAST(:dateFin AS DATE) IS NULL OR pp.created_at < CAST(:dateFin AS DATE) + INTERVAL '1 day')
         GROUP BY a.id, a.libele, pv.code
@@ -308,6 +315,8 @@ public class CorrectionQuery {
         LEFT JOIN (""" + PV_PAR_CODE + """
         ) pv ON pv.code = pp.code_agence
         WHERE pv.agence_id = :agenceId
+          AND (CAST(:perimetreDelegationId AS BIGINT) IS NULL OR pv.delegation_id = CAST(:perimetreDelegationId AS BIGINT))
+          AND (CAST(:perimetreAgenceId AS BIGINT) IS NULL OR pv.agence_id = CAST(:perimetreAgenceId AS BIGINT))
           AND (CAST(:dateDebut AS DATE) IS NULL OR pp.created_at >= CAST(:dateDebut AS DATE))
           AND (CAST(:dateFin AS DATE) IS NULL OR pp.created_at < CAST(:dateFin AS DATE) + INTERVAL '1 day')
         GROUP BY pv.id, pv.code, pv.libele
@@ -315,9 +324,14 @@ public class CorrectionQuery {
         """;
 
     public static final String CORRECTION_DETAIL_BY_POINTVENTE = """
-        SELECT *
+        SELECT pp.*
         FROM personne_physique pp
+        LEFT JOIN (""" + PV_PAR_CODE + """
+        ) pv ON pv.code = pp.code_agence
         WHERE pp.code_agence = :codeAgence
+          AND (CAST(:perimetreDelegationId AS BIGINT) IS NULL OR pv.delegation_id = CAST(:perimetreDelegationId AS BIGINT))
+          AND (CAST(:perimetreAgenceId AS BIGINT) IS NULL OR pv.agence_id = CAST(:perimetreAgenceId AS BIGINT))
+
           AND (COALESCE(:statut, '') = '' OR pp.correction_statut = :statut)
           AND (CAST(:dateDebut AS DATE) IS NULL OR pp.created_at >= CAST(:dateDebut AS DATE))
           AND (CAST(:dateFin AS DATE) IS NULL OR pp.created_at < CAST(:dateFin AS DATE) + INTERVAL '1 day')

@@ -221,33 +221,33 @@ public class CorrectionServiceImpl implements CorrectionService {
     }
 
     @Override
-    public List<CorrectionDelegationStat> getCorrectionStatsByDelegation() {
+    public List<CorrectionDelegationStat> getCorrectionStatsByDelegation(Long perimetreDelegationId, Long perimetreAgenceId) {
         log.info("Service - Récupération des statistiques de correction par délégation");
-        return correctionRepository.getCorrectionStatsByDelegation();
+        return correctionRepository.getCorrectionStatsByDelegation(perimetreDelegationId, perimetreAgenceId);
     }
 
     @Override
-    public List<CorrectionDelegationStat> getCorrectionStatsByDelegationWithPeriod(LocalDate dateDebut, LocalDate dateFin) {
+    public List<CorrectionDelegationStat> getCorrectionStatsByDelegationWithPeriod(LocalDate dateDebut, LocalDate dateFin, Long perimetreDelegationId, Long perimetreAgenceId) {
         log.info("Service - Récupération des statistiques de correction par délégation pour la période du {} au {}", dateDebut, dateFin);
-        return correctionRepository.getCorrectionStatsByDelegationWithPeriod(dateDebut, dateFin);
+        return correctionRepository.getCorrectionStatsByDelegationWithPeriod(dateDebut, dateFin, perimetreDelegationId, perimetreAgenceId);
     }
 
     @Override
-    public List<CorrectionAgenceStat> getCorrectionStatsByAgence(Long delegationId, java.time.LocalDate dateDebut, java.time.LocalDate dateFin) {
+    public List<CorrectionAgenceStat> getCorrectionStatsByAgence(Long delegationId, java.time.LocalDate dateDebut, java.time.LocalDate dateFin, Long perimetreDelegationId, Long perimetreAgenceId) {
         log.info("Service - Récupération des statistiques de correction par agence pour la délégation {}", delegationId);
-        return correctionRepository.getCorrectionStatsByAgence(delegationId, dateDebut, dateFin);
+        return correctionRepository.getCorrectionStatsByAgence(delegationId, dateDebut, dateFin, perimetreDelegationId, perimetreAgenceId);
     }
 
     @Override
-    public List<CorrectionPointVenteStat> getCorrectionStatsByPointVente(Long agenceId, java.time.LocalDate dateDebut, java.time.LocalDate dateFin) {
+    public List<CorrectionPointVenteStat> getCorrectionStatsByPointVente(Long agenceId, java.time.LocalDate dateDebut, java.time.LocalDate dateFin, Long perimetreDelegationId, Long perimetreAgenceId) {
         log.info("Service - Récupération des statistiques de correction par point de vente pour l'agence {}", agenceId);
-        return correctionRepository.getCorrectionStatsByPointVente(agenceId, dateDebut, dateFin);
+        return correctionRepository.getCorrectionStatsByPointVente(agenceId, dateDebut, dateFin, perimetreDelegationId, perimetreAgenceId);
     }
 
     @Override
-    public List<PersonnePhysique> getCorrectionsByPointVente(String codeAgence, String statut, java.time.LocalDate dateDebut, java.time.LocalDate dateFin) {
+    public List<PersonnePhysique> getCorrectionsByPointVente(String codeAgence, String statut, java.time.LocalDate dateDebut, java.time.LocalDate dateFin, Long perimetreDelegationId, Long perimetreAgenceId) {
         log.info("Service - Récupération des corrections pour le point de vente {} avec statut {}", codeAgence, statut);
-        return correctionRepository.getCorrectionsByPointVente(codeAgence, statut, dateDebut, dateFin);
+        return correctionRepository.getCorrectionsByPointVente(codeAgence, statut, dateDebut, dateFin, perimetreDelegationId, perimetreAgenceId);
     }
 
     @Override
