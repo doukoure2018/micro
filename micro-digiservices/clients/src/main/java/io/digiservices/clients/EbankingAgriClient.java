@@ -68,4 +68,9 @@ public interface EbankingAgriClient {
     @GetMapping("/ebanking/agri/comptes/{codCliente}")
     io.digiservices.clients.agri.ComptesMembreDto getComptesMembre(
             @PathVariable("codCliente") String codCliente);
+
+    /** Identite et contacts d'un membre. */
+    @GetMapping("/ebanking/agri/identite/{codCliente}")
+    io.digiservices.clients.agri.IdentiteMembreDto getIdentiteMembre(
+            @PathVariable("codCliente") String codCliente);
 }

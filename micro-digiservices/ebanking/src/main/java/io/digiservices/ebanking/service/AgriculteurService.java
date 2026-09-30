@@ -38,4 +38,7 @@ public interface AgriculteurService {
 
     /** Comptes de credit et de remboursement d'un membre (produits parametres). */
     io.digiservices.clients.agri.ComptesMembreDto getComptesMembre(String codCliente);
+
+    /** Identite et contacts d'un membre. */
+    io.digiservices.clients.agri.IdentiteMembreDto getIdentiteMembre(String codCliente);
 }

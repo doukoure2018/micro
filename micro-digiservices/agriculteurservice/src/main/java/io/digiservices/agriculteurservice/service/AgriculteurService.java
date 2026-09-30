@@ -59,4 +59,7 @@ public interface AgriculteurService {
 
     /** Comptes de crédit et de remboursement d'un membre. */
     io.digiservices.agriculteurservice.dto.ComptesMembreDto getComptes(String codeClient);
+
+    /** Identité et contacts d'un membre. */
+    io.digiservices.agriculteurservice.dto.IdentiteMembreDto getIdentite(String codeClient);
 }

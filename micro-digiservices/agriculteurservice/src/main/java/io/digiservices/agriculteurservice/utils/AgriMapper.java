@@ -231,4 +231,44 @@ public class AgriMapper {
                 .soldeBloque(src.getSoldeBloque())
                 .build();
     }
+
+    /** Identité et contacts d'un membre : traduction du contrat interne vers le contrat partenaire. */
+    public io.digiservices.agriculteurservice.dto.IdentiteMembreDto toIdentiteMembre(
+            io.digiservices.clients.agri.IdentiteMembreDto src) {
+        if (src == null) return null;
+        return io.digiservices.agriculteurservice.dto.IdentiteMembreDto.builder()
+                .codeMembre(src.getCodeMembre())
+                .nomComplet(src.getNomComplet())
+                .nom(src.getNom())
+                .prenom(src.getPrenom())
+                .typePersonne(src.getLibelleTypePersonne() != null ? src.getLibelleTypePersonne() : src.getTypePersonne())
+                .raisonSociale(src.getRaisonSociale())
+                .sexe(src.getSexe())
+                .nationalite(src.getNationalite())
+                .profession(src.getProfession())
+                .codeAgence(src.getCodeAgence())
+                .libelleAgence(src.getLibelleAgence())
+                .dateAdhesion(src.getDateAdhesion())
+                .telephonePrincipal(src.getTelephonePrincipal())
+                .telephoneSecondaire(src.getTelephoneSecondaire())
+                .telephoneAutre(src.getTelephoneAutre())
+                .telephones(src.getTelephones() == null ? java.util.List.of() : src.getTelephones())
+                .sansTelephone(src.isSansTelephone())
+                .adresses(src.getAdresses() == null ? java.util.List.of()
+                        : src.getAdresses().stream().map(this::toAdresse).toList())
+                .message(src.getMessage())
+                .build();
+    }
+
+    public io.digiservices.agriculteurservice.dto.AdresseDto toAdresse(
+            io.digiservices.clients.agri.AdresseMembreDto src) {
+        if (src == null) return null;
+        return io.digiservices.agriculteurservice.dto.AdresseDto.builder()
+                .type(src.getType())
+                .detail(src.getDetail())
+                .province(src.getProvince())
+                .prefecture(src.getPrefecture())
+                .district(src.getDistrict())
+                .build();
+    }
 }

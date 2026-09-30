@@ -52,6 +52,10 @@ GET {{baseUrl}}/agriculteurs/credits/{{creditId}}/repayment-schedule
 X-API-Key: {{apiKey}}
 
 
+### Identite et contacts du membre : nom, prenom, telephones, adresses
+GET {{baseUrl}}/agriculteurs/farmers/{{clientId}}/identite
+X-API-Key: {{apiKey}}
+
 ### Comptes du membre : comptes CC008 et CC014, credits en cours et 5 prochaines echeances
 GET {{baseUrl}}/agriculteurs/farmers/{{clientId}}/comptes
 X-API-Key: {{apiKey}}
