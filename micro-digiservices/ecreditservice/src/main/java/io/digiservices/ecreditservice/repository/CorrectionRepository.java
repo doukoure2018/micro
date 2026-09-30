@@ -44,7 +44,7 @@ public interface CorrectionRepository {
 
     List<CorrectionPointVenteStat> getCorrectionStatsByPointVente(Long agenceId, java.time.LocalDate dateDebut, java.time.LocalDate dateFin);
 
-    List<PersonnePhysique> getCorrectionsByPointVente(String codeAgence, String statut);
+    List<PersonnePhysique> getCorrectionsByPointVente(String codeAgence, String statut, java.time.LocalDate dateDebut, java.time.LocalDate dateFin);
 
     List<CorrectionEvolutionStat> getCorrectionEvolutionByDay();
 

@@ -827,10 +827,17 @@ export class UserService {
             })
             .pipe(catchError(this.handleError));
 
-    getCorrectionsByPointVente$ = (codeAgence: string, statut?: string) => {
-        const url = `${this.server}/ecredit/corrections/pointvente/${codeAgence}/personnes${statut ? `?statut=${statut}` : ''}`;
-        return <Observable<IResponse>>this.http.get<IResponse>(url).pipe(tap(console.log), catchError(this.handleError));
-    };
+    /** Fiches d'un point de service, filtrables par statut et par période. */
+    getCorrectionsByPointVente$ = (codeAgence: string, statut?: string | null, dateDebut?: string | null, dateFin?: string | null) =>
+        <Observable<IResponse>>this.http
+            .get<IResponse>(`${this.server}/ecredit/corrections/pointvente/${codeAgence}/personnes`, {
+                params: {
+                    ...(statut ? { statut } : {}),
+                    ...(dateDebut ? { dateDebut } : {}),
+                    ...(dateFin ? { dateFin } : {})
+                }
+            })
+            .pipe(catchError(this.handleError));
 
     getCorrectionEvolutionByDay$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/corrections/evolution/by-day`).pipe(tap(console.log), catchError(this.handleError));
 

@@ -245,9 +245,9 @@ public class CorrectionServiceImpl implements CorrectionService {
     }
 
     @Override
-    public List<PersonnePhysique> getCorrectionsByPointVente(String codeAgence, String statut) {
+    public List<PersonnePhysique> getCorrectionsByPointVente(String codeAgence, String statut, java.time.LocalDate dateDebut, java.time.LocalDate dateFin) {
         log.info("Service - Récupération des corrections pour le point de vente {} avec statut {}", codeAgence, statut);
-        return correctionRepository.getCorrectionsByPointVente(codeAgence, statut);
+        return correctionRepository.getCorrectionsByPointVente(codeAgence, statut, dateDebut, dateFin);
     }
 
     @Override

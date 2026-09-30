@@ -11,7 +11,10 @@ import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { DatePickerModule } from 'primeng/datepicker';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { InputTextModule } from 'primeng/inputtext';
+import { SelectButtonModule } from 'primeng/selectbutton';
 import { SelectModule } from 'primeng/select';
+import { TagModule } from 'primeng/tag';
 import { TableModule } from 'primeng/table';
 import { ToastModule } from 'primeng/toast';
 
@@ -23,7 +26,7 @@ import { ToastModule } from 'primeng/toast';
 @Component({
     selector: 'app-societariat',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, CardModule, DatePickerModule, ProgressSpinnerModule, SelectModule, TableModule, ToastModule],
+    imports: [CommonModule, FormsModule, ButtonModule, CardModule, DatePickerModule, InputTextModule, ProgressSpinnerModule, SelectButtonModule, SelectModule, TableModule, TagModule, ToastModule],
     providers: [MessageService],
     templateUrl: './societariat.component.html'
 })
@@ -39,6 +42,37 @@ export class SocietariatComponent implements OnInit {
     pointsDeService = signal<CorrectionPointVenteStats[]>([]);
     delegationChoisie = signal<CorrectionDelegationStats | null>(null);
     agenceChoisie = signal<CorrectionAgenceStats | null>(null);
+    pointChoisi = signal<CorrectionPointVenteStats | null>(null);
+    fiches = signal<any[]>([]);
+    rechercheFiche = signal('');
+    statutFiche = '';
+    statuts = [
+        { label: 'Toutes', value: '' },
+        { label: 'Validées', value: 'VALIDE' },
+        { label: 'Rejetées', value: 'REJETE' },
+        { label: 'En cours', value: 'EN_ATTENTE' }
+    ];
+
+    /** Recherche libre sur les fiches affichées, sans repasser par le serveur. */
+    fichesFiltrees = computed(() => {
+        const q = this.rechercheFiche().trim().toLowerCase();
+        if (!q) return this.fiches();
+        return this.fiches().filter(
+            (f: any) =>
+                String(f.codCliente || '').toLowerCase().includes(q) ||
+                String(f.nomClient || '').toLowerCase().includes(q) ||
+                String(f.prenomClient || '').toLowerCase().includes(q) ||
+                String(f.nomCliente || '').toLowerCase().includes(q)
+        );
+    });
+
+    libelleStatut(statut: string): string {
+        return statut === 'VALIDE' ? 'Validée' : statut === 'REJETE' ? 'Rejetée' : statut === 'EN_ATTENTE' ? 'En cours' : '—';
+    }
+
+    severiteStatut(statut: string): 'success' | 'danger' | 'warn' | 'secondary' {
+        return statut === 'VALIDE' ? 'success' : statut === 'REJETE' ? 'danger' : statut === 'EN_ATTENTE' ? 'warn' : 'secondary';
+    }
     chargement = signal(false);
 
     // ── Période ──
@@ -137,7 +171,9 @@ export class SocietariatComponent implements OnInit {
 
     /** Recharge le niveau affiché, en conservant la période et la position dans la hiérarchie. */
     charger(): void {
-        if (this.agenceChoisie()) {
+        if (this.pointChoisi()) {
+            this.chargerFiches();
+        } else if (this.agenceChoisie()) {
             this.chargerPointsDeService(this.agenceChoisie()!);
         } else if (this.delegationChoisie()) {
             this.chargerAgences(this.delegationChoisie()!);
@@ -209,23 +245,57 @@ export class SocietariatComponent implements OnInit {
         }
         this.delegationChoisie.set(d);
         this.agenceChoisie.set(null);
+        this.pointChoisi.set(null);
         this.chargerAgences(d);
     }
 
     choisirAgence(a: CorrectionAgenceStats): void {
         if (!a.agenceId) return;
         this.agenceChoisie.set(a);
+        this.pointChoisi.set(null);
         this.chargerPointsDeService(a);
+    }
+
+    /** Quatrième niveau : les fiches elles-mêmes, pour un point de service. */
+    choisirPoint(p: CorrectionPointVenteStats): void {
+        this.pointChoisi.set(p);
+        this.rechercheFiche.set('');
+        this.chargerFiches();
+    }
+
+    chargerFiches(): void {
+        const p = this.pointChoisi();
+        if (!p?.pointVenteCode) return;
+        this.chargement.set(true);
+        this.userService
+            .getCorrectionsByPointVente$(p.pointVenteCode, this.statutFiche || null, this.iso(this.du), this.iso(this.au))
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r) => {
+                    this.fiches.set(((r.data as any)?.corrections || []) as any[]);
+                    this.chargement.set(false);
+                },
+                error: (e) => this.erreur(e)
+            });
+    }
+
+    revenirAuxPointsDeService(): void {
+        this.pointChoisi.set(null);
+        if (this.agenceChoisie()) {
+            this.chargerPointsDeService(this.agenceChoisie()!);
+        }
     }
 
     revenirAuxDelegations(): void {
         this.delegationChoisie.set(null);
         this.agenceChoisie.set(null);
+        this.pointChoisi.set(null);
         this.chargerDelegations();
     }
 
     revenirAuxAgences(): void {
         this.agenceChoisie.set(null);
+        this.pointChoisi.set(null);
         if (this.delegationChoisie()) {
             this.chargerAgences(this.delegationChoisie()!);
         }

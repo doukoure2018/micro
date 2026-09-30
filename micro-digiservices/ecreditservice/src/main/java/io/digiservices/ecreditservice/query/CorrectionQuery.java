@@ -319,6 +319,8 @@ public class CorrectionQuery {
         FROM personne_physique pp
         WHERE pp.code_agence = :codeAgence
           AND (COALESCE(:statut, '') = '' OR pp.correction_statut = :statut)
+          AND (CAST(:dateDebut AS DATE) IS NULL OR pp.created_at >= CAST(:dateDebut AS DATE))
+          AND (CAST(:dateFin AS DATE) IS NULL OR pp.created_at < CAST(:dateFin AS DATE) + INTERVAL '1 day')
         ORDER BY pp.created_at DESC
         """;
 
