@@ -134,4 +134,9 @@ public class AgriculteurServiceImpl implements AgriculteurService {
     public io.digiservices.agriculteurservice.dto.ComptesMembreDto getComptes(String codeClient) {
         return mapper.toComptesMembre(ebankingAgriClient.getComptesMembre(codeClient));
     }
+
+    @Override
+    public io.digiservices.agriculteurservice.dto.IdentiteMembreDto getIdentite(String codeClient) {
+        return mapper.toIdentiteMembre(ebankingAgriClient.getIdentiteMembre(codeClient));
+    }
 }

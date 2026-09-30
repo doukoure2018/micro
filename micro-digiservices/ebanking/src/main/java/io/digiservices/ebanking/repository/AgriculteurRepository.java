@@ -551,4 +551,64 @@ public class AgriculteurRepository {
                 .addValue("nbEcheances", nbEcheances);
         return execute("agri.prochainesEcheances", () -> tertiary.queryForList(SQL_PROCHAINES_ECHEANCES, params));
     }
+
+    // ==================== Identite et contacts d'un membre ====================
+
+    /**
+     * Identite d'un membre : le nom complet et les telephones viennent de la fiche client,
+     * le nom et le prenom separes de la fiche personne physique quand il y en a une.
+     */
+    private static final String SQL_IDENTITE_MEMBRE = """
+            SELECT c.COD_CLIENTE, c.NOM_CLIENTE, c.IND_PERSONA, c.FEC_INGRESO,
+                   c.TEL_PRINCIPAL, c.TEL_SECUNDARIO, c.TEL_OTRO,
+                   c.COD_AGENCIA, ag.DES_AGENCIA,
+                   pf.PRIMER_NOMBRE, pf.PRIMER_APELLIDO, pf.IND_SEXO, pf.NACIONALIDAD,
+                   prof.DES_PROFESION, pj.RAZON_SOCIAL
+            FROM CL.CL_CLIENTES c
+            LEFT JOIN CL.CL_PERSONAS_FISICAS pf
+                ON pf.COD_EMPRESA = c.COD_EMPRESA AND pf.COD_CLIENTE = c.COD_CLIENTE
+            LEFT JOIN CL.CL_PERSONAS_JURIDICAS pj
+                ON pj.COD_EMPRESA = c.COD_EMPRESA AND pj.COD_CLIENTE = c.COD_CLIENTE
+            LEFT JOIN CL.CL_CAT_PROFESIONES prof
+                ON prof.COD_EMPRESA = pf.COD_EMPRESA AND prof.COD_PROFESION = pf.COD_PROFESION
+            LEFT JOIN CF.CF_AGENCIAS ag
+                ON ag.COD_EMPRESA = c.COD_EMPRESA AND ag.COD_AGENCIA = c.COD_AGENCIA
+            WHERE c.COD_EMPRESA = '00000' AND c.COD_CLIENTE = :codCliente
+            """;
+
+    /** Adresses declarees du membre. */
+    private static final String SQL_ADRESSES_MEMBRE = """
+            SELECT d.TIP_DIRECCION, d.DET_DIRECCION,
+                   pr.DES_PROVINCIA, ca.DES_CANTON, di.DES_DISTRITO
+            FROM CL.CL_DIR_CLIENTES d
+            LEFT JOIN CF.CF_PROVINCIAS pr
+                ON pr.COD_EMPRESA = d.COD_EMPRESA AND pr.COD_PAIS = d.COD_PAIS
+               AND pr.COD_PROVINCIA = d.COD_PROVINCIA
+            LEFT JOIN CF.CF_CANTONES ca
+                ON ca.COD_EMPRESA = d.COD_EMPRESA AND ca.COD_PAIS = d.COD_PAIS
+               AND ca.COD_PROVINCIA = d.COD_PROVINCIA AND ca.COD_CANTON = d.COD_CANTON
+            LEFT JOIN CF.CF_DISTRITOS di
+                ON di.COD_EMPRESA = d.COD_EMPRESA AND di.COD_PAIS = d.COD_PAIS
+               AND di.COD_PROVINCIA = d.COD_PROVINCIA AND di.COD_CANTON = d.COD_CANTON
+               AND di.COD_DISTRITO = d.COD_DISTRITO
+            WHERE d.COD_EMPRESA = '00000' AND d.COD_CLIENTE = :codCliente
+            ORDER BY d.TIP_DIRECCION
+            """;
+
+    /** Identite du membre, ou liste vide s'il est introuvable. */
+    public List<java.util.Map<String, Object>> findIdentiteMembre(String codCliente) {
+        MapSqlParameterSource params = new MapSqlParameterSource().addValue("codCliente", codCliente);
+        return execute("agri.identiteMembre", () -> tertiary.queryForList(SQL_IDENTITE_MEMBRE, params));
+    }
+
+    /** Adresses du membre ; l'absence de referentiel geographique ne fait pas echouer l'appel. */
+    public List<java.util.Map<String, Object>> findAdressesMembre(String codCliente) {
+        MapSqlParameterSource params = new MapSqlParameterSource().addValue("codCliente", codCliente);
+        try {
+            return execute("agri.adressesMembre", () -> tertiary.queryForList(SQL_ADRESSES_MEMBRE, params));
+        } catch (org.springframework.dao.DataAccessException e) {
+            log.warn("[AGRI] adresses indisponibles pour {} : {}", codCliente, e.getMessage());
+            return List.of();
+        }
+    }
 }

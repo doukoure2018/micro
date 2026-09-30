@@ -361,4 +361,70 @@ public class AgriculteurServiceImpl implements AgriculteurService {
         if (v instanceof LocalDate d) return d;
         return null;
     }
+
+    // ==================== Identite et contacts ====================
+
+    @Override
+    public io.digiservices.clients.agri.IdentiteMembreDto getIdentiteMembre(String codCliente) {
+        List<java.util.Map<String, Object>> lignes = agriculteurRepository.findIdentiteMembre(codCliente);
+        if (lignes.isEmpty()) {
+            log.info("[AGRI] identite : membre {} introuvable", codCliente);
+            return io.digiservices.clients.agri.IdentiteMembreDto.builder()
+                    .codeMembre(codCliente)
+                    .telephones(List.of())
+                    .adresses(List.of())
+                    .sansTelephone(true)
+                    .message("Membre introuvable")
+                    .build();
+        }
+        java.util.Map<String, Object> r = lignes.get(0);
+        String typePersonne = txt(r.get("IND_PERSONA"));
+        String principal = tel(r.get("TEL_PRINCIPAL"));
+        String secondaire = tel(r.get("TEL_SECUNDARIO"));
+        String autre = tel(r.get("TEL_OTRO"));
+        List<String> numeros = java.util.stream.Stream.of(principal, secondaire, autre)
+                .filter(java.util.Objects::nonNull).toList();
+
+        List<io.digiservices.clients.agri.AdresseMembreDto> adresses = new java.util.ArrayList<>();
+        for (java.util.Map<String, Object> a : agriculteurRepository.findAdressesMembre(codCliente)) {
+            adresses.add(io.digiservices.clients.agri.AdresseMembreDto.builder()
+                    .type(txt(a.get("TIP_DIRECCION")))
+                    .detail(txt(a.get("DET_DIRECCION")))
+                    .province(txt(a.get("DES_PROVINCIA")))
+                    .prefecture(txt(a.get("DES_CANTON")))
+                    .district(txt(a.get("DES_DISTRITO")))
+                    .build());
+        }
+
+        log.info("[AGRI] identite du membre {} : {} numero(s), {} adresse(s)",
+                codCliente, numeros.size(), adresses.size());
+        return io.digiservices.clients.agri.IdentiteMembreDto.builder()
+                .codeMembre(txt(r.get("COD_CLIENTE")))
+                .nomComplet(txt(r.get("NOM_CLIENTE")))
+                .nom(txt(r.get("PRIMER_APELLIDO")))
+                .prenom(txt(r.get("PRIMER_NOMBRE")))
+                .typePersonne(typePersonne)
+                .libelleTypePersonne("J".equalsIgnoreCase(typePersonne) ? "Personne morale" : "Personne physique")
+                .raisonSociale(txt(r.get("RAZON_SOCIAL")))
+                .sexe(txt(r.get("IND_SEXO")))
+                .nationalite(txt(r.get("NACIONALIDAD")))
+                .profession(txt(r.get("DES_PROFESION")))
+                .codeAgence(txt(r.get("COD_AGENCIA")))
+                .libelleAgence(txt(r.get("DES_AGENCIA")))
+                .dateAdhesion(date(r.get("FEC_INGRESO")))
+                .telephonePrincipal(principal)
+                .telephoneSecondaire(secondaire)
+                .telephoneAutre(autre)
+                .telephones(numeros)
+                .sansTelephone(numeros.isEmpty())
+                .adresses(adresses)
+                .build();
+    }
+
+    /** Numero SAF : espaces retires, chaine vide ramenee a null. */
+    private static String tel(Object v) {
+        if (v == null) return null;
+        String t = v.toString().replace("\u00a0", " ").trim();
+        return t.isEmpty() ? null : t;
+    }
 }

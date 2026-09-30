@@ -134,4 +134,12 @@ public class AgriculteurController {
         log.info("[AGRI] GET /comptes/{}", codCliente);
         return ResponseEntity.ok(agriculteurService.getComptesMembre(codCliente));
     }
+
+    /** Identite et contacts d'un membre. */
+    @GetMapping("/identite/{codCliente}")
+    public ResponseEntity<io.digiservices.clients.agri.IdentiteMembreDto> getIdentiteMembre(
+            @PathVariable("codCliente") String codCliente) {
+        log.info("[AGRI] GET /identite/{}", codCliente);
+        return ResponseEntity.ok(agriculteurService.getIdentiteMembre(codCliente));
+    }
 }

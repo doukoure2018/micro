@@ -53,6 +53,7 @@ X-API-Key: <cle-publique>
 | GET | `/agriculteurs/farmers` | Agriculteurs (clients ayant un crédit agricole) | oui |
 | GET | `/agriculteurs/farmers/{clientId}` | Détail d'un agriculteur | non |
 | GET | `/agriculteurs/farmers/{clientId}/credits` | Crédits agricoles d'un agriculteur | non |
+| GET | `/agriculteurs/farmers/{clientId}/identite` | **Identité et contacts d'un membre** : nom, prénom, type de personne, agence, téléphones et adresses | non |
 | GET | `/agriculteurs/farmers/{clientId}/comptes` | **Comptes du membre** : compte de crédit (`CC008`) et compte de remboursement (`CC014`) avec leurs soldes, **plus les crédits en cours et leurs prochaines échéances** | non |
 | GET | `/agriculteurs/credits/{creditId}` | Détail d'un crédit agricole | non |
 | GET | `/agriculteurs/credits/{creditId}/repayment-schedule` | Échéancier d'un crédit (statut `pending`/`paid`/`late`/`missed`, jours de retard) | non |
@@ -65,6 +66,45 @@ X-API-Key: <cle-publique>
 | GET | `/agriculteurs/structure/delegations/{delegationId}/points-de-vente` | Points de service d'une délégation | non |
 | GET | `/agriculteurs/agents/{agentId}/perimetre` | **Périmètre d'un agent** (ce qu'il a le droit de voir), voir ci-dessous | non |
 | GET | `/agriculteurs/structure/perimetre` | **Périmètre de toute la structure** (même forme, niveau `NATIONAL`, sans agent) — administration/maintenance AgriScore | non |
+
+### Identité et contacts d'un membre
+
+`GET /agriculteurs/farmers/{clientId}/identite` renvoie l'identité du membre et ses moyens de
+contact. Le nom complet et les trois numéros viennent de la fiche client du core banking ; le
+**nom et le prénom séparés** de la fiche personne physique, quand le membre en est une. Une
+personne morale porte à la place sa raison sociale.
+
+Le champ `telephones` ne contient que les numéros réellement renseignés, dans l'ordre principal,
+secondaire, autre. Quand il est vide, `sansTelephone` vaut `true` : le membre est injoignable,
+ce qui est l'information utile pour une campagne de rappel.
+
+Un membre introuvable ne provoque pas d'erreur : la réponse porte le message « Membre introuvable ».
+
+```json
+{
+  "codeMembre": "0322000202659",
+  "nomComplet": "DIALLO MAMADOU SALIOU",
+  "nom": "DIALLO",
+  "prenom": "MAMADOU SALIOU",
+  "typePersonne": "Personne physique",
+  "sexe": "M",
+  "nationalite": "GUINEENNE",
+  "profession": "AGRICULTEUR",
+  "codeAgence": "322",
+  "libelleAgence": "COYAH",
+  "dateAdhesion": "2024-03-12",
+  "telephonePrincipal": "622451230",
+  "telephoneSecondaire": null,
+  "telephoneAutre": null,
+  "telephones": ["622451230"],
+  "sansTelephone": false,
+  "adresses": [
+    { "type": "1", "detail": "Quartier Kagbelen", "province": "Kindia",
+      "prefecture": "Coyah", "district": "Kagbelen" }
+  ],
+  "message": null
+}
+```
 
 ### Comptes d'un membre
 
