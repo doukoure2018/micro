@@ -156,7 +156,9 @@ export class SocietariatComponent implements OnInit {
                 : this.userService.getCorrectionStatsByDelegation$();
         appel$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (r) => {
-                this.delegations.set(((r.data as any)?.correctionDelegationStats || []) as CorrectionDelegationStats[]);
+                // Les deux routes de délégations renvoient la clé « correctionStats », pas « correctionDelegationStats »
+                const data = r.data as any;
+                this.delegations.set((data?.correctionStats || data?.correctionDelegationStats || []) as CorrectionDelegationStats[]);
                 this.chargement.set(false);
             },
             error: (e) => this.erreur(e)
