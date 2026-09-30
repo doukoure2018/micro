@@ -371,6 +371,11 @@ export default [
         loadComponent: () => import('./saas/dashboardsaas').then((c) => c.DashboardSaas)
     },
     {
+        path: 'assainissement',
+        data: { breadcrumb: 'Assainissement des fiches clients' },
+        loadComponent: () => import('./agent-credit/societariat/societariat.component').then((c) => c.SocietariatComponent)
+    },
+    {
         path: 'agent-credit/societariat/detail-ps',
         data: { breadcrumb: 'Détails corrections par point de service' },
         loadComponent: () => import('./agent-credit/societariat/societariat-detail-ps/societariat-detail-ps.component').then((c) => c.SocietariatDetailPsComponent)
