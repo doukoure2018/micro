@@ -25,7 +25,7 @@
     </div>
 
     <!-- ===== Fil d'Ariane ===== -->
-    <div class="flex flex-wrap items-center gap-2 mb-3 text-sm" *ngIf="delegationChoisie() || agenceChoisie()">
+    <div class="flex flex-wrap items-center gap-2 mb-3 text-sm" *ngIf="delegationChoisie() || agenceChoisie() || pointChoisi()">
         <a class="cursor-pointer text-primary hover:underline" (click)="revenirAuxDelegations()">Toutes les délégations</a>
         <ng-container *ngIf="delegationChoisie() as d">
             <i class="pi pi-angle-right text-color-secondary"></i>
@@ -33,7 +33,11 @@
         </ng-container>
         <ng-container *ngIf="agenceChoisie() as a">
             <i class="pi pi-angle-right text-color-secondary"></i>
-            <span class="font-semibold">{{ a.agenceLibele }}</span>
+            <a class="cursor-pointer text-primary hover:underline" (click)="revenirAuxPointsDeService()">{{ a.agenceLibele }}</a>
+        </ng-container>
+        <ng-container *ngIf="pointChoisi() as p">
+            <i class="pi pi-angle-right text-color-secondary"></i>
+            <span class="font-semibold">{{ p.pointVenteLibele }}</span>
         </ng-container>
     </div>
 
@@ -112,7 +116,7 @@
     }
 
     <!-- ===== Niveau 3 : points de service ===== -->
-    @if (agenceChoisie()) {
+    @if (agenceChoisie() && !pointChoisi()) {
     <p-table [value]="pointsDeService()" responsiveLayout="scroll" [rowHover]="true">
         <ng-template pTemplate="header">
             <tr>
@@ -122,20 +126,62 @@
                 <th class="text-right">Rejeté</th>
                 <th class="text-right">En cours</th>
                 <th class="text-right">Total</th>
+                <th></th>
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-p>
-            <tr>
+            <tr class="cursor-pointer" (click)="choisirPoint(p)">
                 <td class="font-medium">{{ p.pointVenteLibele }}</td>
                 <td>{{ p.pointVenteCode }}</td>
                 <td class="text-right text-green-600 font-medium">{{ p.valide | number }}</td>
                 <td class="text-right" [class.text-red-500]="p.rejete > 0">{{ p.rejete | number }}</td>
                 <td class="text-right" [class.text-orange-500]="p.enAttente > 0">{{ p.enAttente | number }}</td>
                 <td class="text-right font-bold">{{ p.total | number }}</td>
+                <td class="text-right"><i class="pi pi-angle-right text-color-secondary"></i></td>
             </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">
-            <tr><td colspan="6" class="text-center text-color-secondary py-4">Aucune correction sur cette période</td></tr>
+            <tr><td colspan="7" class="text-center text-color-secondary py-4">Aucune correction sur cette période</td></tr>
+        </ng-template>
+    </p-table>
+    }
+
+    <!-- ===== Niveau 4 : les fiches du point de service ===== -->
+    @if (pointChoisi()) {
+    <div class="flex flex-wrap items-center gap-3 mb-3">
+        <p-selectButton [options]="statuts" [(ngModel)]="statutFiche" optionLabel="label" optionValue="value"
+            (onChange)="chargerFiches()"></p-selectButton>
+        <span class="p-input-icon-left">
+            <input pInputText type="text" [ngModel]="rechercheFiche()" (ngModelChange)="rechercheFiche.set($event)"
+                placeholder="Nom, prénom ou code client…" class="w-72" />
+        </span>
+        <span class="text-sm text-color-secondary">{{ fichesFiltrees().length }} fiche(s)</span>
+    </div>
+
+    <p-table [value]="fichesFiltrees()" responsiveLayout="scroll" [rowHover]="true"
+             [paginator]="fichesFiltrees().length > 25" [rows]="25">
+        <ng-template pTemplate="header">
+            <tr>
+                <th>Code client</th>
+                <th>Nom et prénom</th>
+                <th>Téléphone</th>
+                <th>Pièce</th>
+                <th>Statut</th>
+                <th>Enregistrée le</th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-f>
+            <tr>
+                <td>{{ f.codCliente }}</td>
+                <td class="font-medium">{{ f.nomClient }} {{ f.prenomClient }}<div class="text-xs text-color-secondary" *ngIf="f.nomCliente">{{ f.nomCliente }}</div></td>
+                <td>{{ f.telPrincipal || '—' }}</td>
+                <td>{{ f.numId || '—' }}<div class="text-xs text-color-secondary" *ngIf="f.typePiece">{{ f.typePiece }}</div></td>
+                <td><p-tag [value]="libelleStatut(f.correctionStatut)" [severity]="severiteStatut(f.correctionStatut)"></p-tag></td>
+                <td class="whitespace-nowrap">{{ f.createdAt | date: 'dd/MM/yyyy' }}</td>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr><td colspan="6" class="text-center text-color-secondary py-4">Aucune fiche pour ce filtre</td></tr>
         </ng-template>
     </p-table>
     }

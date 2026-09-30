@@ -1087,9 +1087,15 @@ public class CorrectionResource {
     public ResponseEntity<Response> getCorrectionsByPointVente(
             @PathVariable("codeAgence") String codeAgence,
             @RequestParam(name = "statut", required = false) String statut,
+            @RequestParam(name = "dateDebut", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            java.time.LocalDate dateDebut,
+            @RequestParam(name = "dateFin", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            java.time.LocalDate dateFin,
             HttpServletRequest request) {
         try {
-            List<PersonnePhysique> personnes = correctionService.getCorrectionsByPointVente(codeAgence, statut);
+            List<PersonnePhysique> personnes = correctionService.getCorrectionsByPointVente(codeAgence, statut, dateDebut, dateFin);
             return ResponseEntity.ok(
                     getResponse(request,
                             Map.of("corrections", personnes),

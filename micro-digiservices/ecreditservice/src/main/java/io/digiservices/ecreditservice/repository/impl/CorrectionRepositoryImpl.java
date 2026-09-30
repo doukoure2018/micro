@@ -617,12 +617,16 @@ public class CorrectionRepositoryImpl implements CorrectionRepository {
     }
 
     @Override
-    public List<PersonnePhysique> getCorrectionsByPointVente(String codeAgence, String statut) {
+    public List<PersonnePhysique> getCorrectionsByPointVente(String codeAgence, String statut,
+                                                             java.time.LocalDate dateDebut,
+                                                             java.time.LocalDate dateFin) {
         log.debug("Récupération des corrections pour le point de vente {} avec filtre statut {}", codeAgence, statut);
         try {
             return jdbcClient.sql(CORRECTION_DETAIL_BY_POINTVENTE)
                     .param("codeAgence", codeAgence)
                     .param("statut", statut)
+                    .param("dateDebut", dateDebut == null ? null : java.sql.Date.valueOf(dateDebut))
+                    .param("dateFin", dateFin == null ? null : java.sql.Date.valueOf(dateFin))
                     .query(PERSONNE_PHYSIQUE_ROW_MAPPER)
                     .list();
         } catch (DataAccessException e) {
