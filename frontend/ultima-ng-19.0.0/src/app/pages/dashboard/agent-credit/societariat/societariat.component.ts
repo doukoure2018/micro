@@ -54,6 +54,12 @@ export class SocietariatComponent implements OnInit {
     ];
 
     /** Recherche libre sur les fiches affichées, sans repasser par le serveur. */
+    /** La recherche ramène la table à sa première page, sinon elle paraît vide. */
+    surRechercheFiche(valeur: string): void {
+        this.rechercheFiche.set(valeur);
+        this.premiereLigne.set(0);
+    }
+
     fichesFiltrees = computed(() => {
         const q = this.rechercheFiche().trim().toLowerCase();
         if (!q) return this.fiches();
@@ -65,6 +71,29 @@ export class SocietariatComponent implements OnInit {
                 String(f.nomCliente || '').toLowerCase().includes(q)
         );
     });
+
+    /** Page courante du tableau des fiches, remise à zéro à chaque changement de filtre. */
+    premiereLigne = signal(0);
+
+    /**
+     * Date d'enregistrement d'une fiche, quel que soit le format renvoyé : chaîne ISO, tableau
+     * de composants, horodatage numérique, ou champ nommé différemment selon la source.
+     */
+    dateFiche(f: any): string {
+        const brut = f?.createdAt ?? f?.created_at ?? f?.dateCreation ?? null;
+        if (!brut) return '—';
+        let d: Date;
+        if (Array.isArray(brut)) {
+            const [a, m, j, h = 0, mi = 0, se = 0] = brut;
+            d = new Date(a, (m || 1) - 1, j || 1, h, mi, se);
+        } else if (typeof brut === 'number') {
+            d = new Date(brut);
+        } else {
+            // une chaîne ISO peut porter jusqu'à six décimales : on les ramène à trois
+            d = new Date(String(brut).replace(/(\.\d{3})\d+/, '$1'));
+        }
+        return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('fr-FR');
+    }
 
     libelleStatut(statut: string): string {
         return statut === 'VALIDE' ? 'Validée' : statut === 'REJETE' ? 'Rejetée' : statut === 'EN_ATTENTE' ? 'En cours' : '—';
@@ -266,6 +295,7 @@ export class SocietariatComponent implements OnInit {
     chargerFiches(): void {
         const p = this.pointChoisi();
         if (!p?.pointVenteCode) return;
+        this.premiereLigne.set(0);
         this.chargement.set(true);
         this.userService
             .getCorrectionsByPointVente$(p.pointVenteCode, this.statutFiche || null, this.iso(this.du), this.iso(this.au))
