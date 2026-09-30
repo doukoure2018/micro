@@ -46,6 +46,7 @@ public class CorrectionResource {
     private final EbankingClient ebankingClient;
 
     private final CorrectionService correctionService;
+    private final io.digiservices.ecreditservice.service.PerimetreCorrectionService perimetreCorrectionService;
 
     private final UserClient userClient;
 
@@ -960,9 +961,11 @@ public class CorrectionResource {
      */
     @GetMapping("/corrections/stats/delegations")
     public ResponseEntity<Response> getCorrectionStatsByDelegation(
-            HttpServletRequest request) {
+            org.springframework.security.core.Authentication auth, HttpServletRequest request) {
         try {
-            List<CorrectionDelegationStat> stats = correctionService.getCorrectionStatsByDelegation();
+            var perimetre = perimetreCorrectionService.perimetreDe(auth.getName());
+            List<CorrectionDelegationStat> stats = correctionService.getCorrectionStatsByDelegation(
+                    perimetre.delegationId(), perimetre.agenceId());
             return ResponseEntity.ok(
                     getResponse(request,
                             Map.of("correctionStats", stats),
@@ -987,7 +990,7 @@ public class CorrectionResource {
     public ResponseEntity<Response> getCorrectionStatsByDelegationWithPeriod(
             @RequestParam("dateDebut") LocalDate dateDebut,
             @RequestParam("dateFin") LocalDate dateFin,
-            HttpServletRequest request)
+            org.springframework.security.core.Authentication auth, HttpServletRequest request)
     {
         try {
             log.info("Récupération des statistiques de correction par délégation pour la période du {} au {}", dateDebut, dateFin);
@@ -1001,7 +1004,9 @@ public class CorrectionResource {
                                 BAD_REQUEST));
             }
             
-            List<CorrectionDelegationStat> stats = correctionService.getCorrectionStatsByDelegationWithPeriod(dateDebut, dateFin);
+            var perimetre = perimetreCorrectionService.perimetreDe(auth.getName());
+            List<CorrectionDelegationStat> stats = correctionService.getCorrectionStatsByDelegationWithPeriod(
+                    dateDebut, dateFin, perimetre.delegationId(), perimetre.agenceId());
             
             return ResponseEntity.ok(
                     getResponse(request,
@@ -1032,9 +1037,11 @@ public class CorrectionResource {
             @RequestParam(name = "dateFin", required = false)
             @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
             java.time.LocalDate dateFin,
-            HttpServletRequest request) {
+            org.springframework.security.core.Authentication auth, HttpServletRequest request) {
         try {
-            List<CorrectionAgenceStat> stats = correctionService.getCorrectionStatsByAgence(delegationId, dateDebut, dateFin);
+            var perimetre = perimetreCorrectionService.perimetreDe(auth.getName());
+            List<CorrectionAgenceStat> stats = correctionService.getCorrectionStatsByAgence(
+                    delegationId, dateDebut, dateFin, perimetre.delegationId(), perimetre.agenceId());
             return ResponseEntity.ok(
                     getResponse(request,
                             Map.of("correctionAgenceStats", stats),
@@ -1062,9 +1069,11 @@ public class CorrectionResource {
             @RequestParam(name = "dateFin", required = false)
             @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
             java.time.LocalDate dateFin,
-            HttpServletRequest request) {
+            org.springframework.security.core.Authentication auth, HttpServletRequest request) {
         try {
-            List<CorrectionPointVenteStat> stats = correctionService.getCorrectionStatsByPointVente(agenceId, dateDebut, dateFin);
+            var perimetre = perimetreCorrectionService.perimetreDe(auth.getName());
+            List<CorrectionPointVenteStat> stats = correctionService.getCorrectionStatsByPointVente(
+                    agenceId, dateDebut, dateFin, perimetre.delegationId(), perimetre.agenceId());
             return ResponseEntity.ok(
                     getResponse(request,
                             Map.of("correctionPointVenteStats", stats),
@@ -1093,9 +1102,11 @@ public class CorrectionResource {
             @RequestParam(name = "dateFin", required = false)
             @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
             java.time.LocalDate dateFin,
-            HttpServletRequest request) {
+            org.springframework.security.core.Authentication auth, HttpServletRequest request) {
         try {
-            List<PersonnePhysique> personnes = correctionService.getCorrectionsByPointVente(codeAgence, statut, dateDebut, dateFin);
+            var perimetre = perimetreCorrectionService.perimetreDe(auth.getName());
+            List<PersonnePhysique> personnes = correctionService.getCorrectionsByPointVente(
+                    codeAgence, statut, dateDebut, dateFin, perimetre.delegationId(), perimetre.agenceId());
             return ResponseEntity.ok(
                     getResponse(request,
                             Map.of("corrections", personnes),

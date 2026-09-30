@@ -33,15 +33,15 @@ public interface CorrectionService {
 
     Optional<MotifCorrection> getMotifCorrectionByPersonneLast(Long personnePhysiqueId);
 
-    List<CorrectionDelegationStat> getCorrectionStatsByDelegation();
+    List<CorrectionDelegationStat> getCorrectionStatsByDelegation(Long perimetreDelegationId, Long perimetreAgenceId);
 
-    List<CorrectionDelegationStat> getCorrectionStatsByDelegationWithPeriod(LocalDate dateDebut, LocalDate dateFin);
+    List<CorrectionDelegationStat> getCorrectionStatsByDelegationWithPeriod(LocalDate dateDebut, LocalDate dateFin, Long perimetreDelegationId, Long perimetreAgenceId);
 
-    List<CorrectionAgenceStat> getCorrectionStatsByAgence(Long delegationId, java.time.LocalDate dateDebut, java.time.LocalDate dateFin);
+    List<CorrectionAgenceStat> getCorrectionStatsByAgence(Long delegationId, java.time.LocalDate dateDebut, java.time.LocalDate dateFin, Long perimetreDelegationId, Long perimetreAgenceId);
 
-    List<CorrectionPointVenteStat> getCorrectionStatsByPointVente(Long agenceId, java.time.LocalDate dateDebut, java.time.LocalDate dateFin);
+    List<CorrectionPointVenteStat> getCorrectionStatsByPointVente(Long agenceId, java.time.LocalDate dateDebut, java.time.LocalDate dateFin, Long perimetreDelegationId, Long perimetreAgenceId);
 
-    List<PersonnePhysique> getCorrectionsByPointVente(String codeAgence, String statut, java.time.LocalDate dateDebut, java.time.LocalDate dateFin);
+    List<PersonnePhysique> getCorrectionsByPointVente(String codeAgence, String statut, java.time.LocalDate dateDebut, java.time.LocalDate dateFin, Long perimetreDelegationId, Long perimetreAgenceId);
 
     List<CorrectionEvolutionStat> getCorrectionEvolutionByDay();
 

@@ -553,10 +553,12 @@ public class CorrectionRepositoryImpl implements CorrectionRepository {
     }
 
     @Override
-    public List<CorrectionDelegationStat> getCorrectionStatsByDelegation() {
+    public List<CorrectionDelegationStat> getCorrectionStatsByDelegation(Long perimetreDelegationId, Long perimetreAgenceId) {
         log.debug("Récupération des statistiques de correction par délégation");
         try {
             return jdbcClient.sql(CORRECTION_STATS_BY_DELEGATION)
+                    .param("perimetreDelegationId", perimetreDelegationId)
+                    .param("perimetreAgenceId", perimetreAgenceId)
                     .query(CORRECTION_STATS_ROW_MAPPER)
                     .list();
         } catch (DataAccessException e) {
@@ -566,12 +568,14 @@ public class CorrectionRepositoryImpl implements CorrectionRepository {
     }
 
     @Override
-    public List<CorrectionDelegationStat> getCorrectionStatsByDelegationWithPeriod(LocalDate dateDebut, LocalDate dateFin) {
+    public List<CorrectionDelegationStat> getCorrectionStatsByDelegationWithPeriod(LocalDate dateDebut, LocalDate dateFin, Long perimetreDelegationId, Long perimetreAgenceId) {
         log.debug("Récupération des statistiques de correction par délégation pour la période du {} au {}", dateDebut, dateFin);
         try {
             return jdbcClient.sql(CORRECTION_STATS_BY_DELEGATION_WITH_PERIOD)
                     .param("dateDebut", dateDebut)
                     .param("dateFin", dateFin)
+                    .param("perimetreDelegationId", perimetreDelegationId)
+                    .param("perimetreAgenceId", perimetreAgenceId)
                     .query(CORRECTION_STATS_ROW_MAPPER)
                     .list();
         } catch (DataAccessException e) {
@@ -583,13 +587,17 @@ public class CorrectionRepositoryImpl implements CorrectionRepository {
     @Override
     public List<CorrectionAgenceStat> getCorrectionStatsByAgence(Long delegationId,
                                                                  java.time.LocalDate dateDebut,
-                                                                 java.time.LocalDate dateFin) {
+                                                                 java.time.LocalDate dateFin,
+                                                                 Long perimetreDelegationId,
+                                                                 Long perimetreAgenceId) {
         log.debug("Statistiques par agence, délégation {} du {} au {}", delegationId, dateDebut, dateFin);
         try {
             return jdbcClient.sql(CORRECTION_STATS_BY_AGENCE)
                     .param("delegationId", delegationId)
                     .param("dateDebut", dateDebut == null ? null : java.sql.Date.valueOf(dateDebut))
                     .param("dateFin", dateFin == null ? null : java.sql.Date.valueOf(dateFin))
+                    .param("perimetreDelegationId", perimetreDelegationId)
+                    .param("perimetreAgenceId", perimetreAgenceId)
                     .query(CORRECTION_AGENCE_ROW_MAPPER)
                     .list();
         } catch (DataAccessException e) {
@@ -601,13 +609,17 @@ public class CorrectionRepositoryImpl implements CorrectionRepository {
     @Override
     public List<CorrectionPointVenteStat> getCorrectionStatsByPointVente(Long agenceId,
                                                                         java.time.LocalDate dateDebut,
-                                                                        java.time.LocalDate dateFin) {
+                                                                        java.time.LocalDate dateFin,
+                                                                        Long perimetreDelegationId,
+                                                                        Long perimetreAgenceId) {
         log.debug("Statistiques par point de vente, agence {} du {} au {}", agenceId, dateDebut, dateFin);
         try {
             return jdbcClient.sql(CORRECTION_STATS_BY_POINTVENTE)
                     .param("agenceId", agenceId)
                     .param("dateDebut", dateDebut == null ? null : java.sql.Date.valueOf(dateDebut))
                     .param("dateFin", dateFin == null ? null : java.sql.Date.valueOf(dateFin))
+                    .param("perimetreDelegationId", perimetreDelegationId)
+                    .param("perimetreAgenceId", perimetreAgenceId)
                     .query(CORRECTION_PV_ROW_MAPPER)
                     .list();
         } catch (DataAccessException e) {
@@ -619,7 +631,9 @@ public class CorrectionRepositoryImpl implements CorrectionRepository {
     @Override
     public List<PersonnePhysique> getCorrectionsByPointVente(String codeAgence, String statut,
                                                              java.time.LocalDate dateDebut,
-                                                             java.time.LocalDate dateFin) {
+                                                             java.time.LocalDate dateFin,
+                                                             Long perimetreDelegationId,
+                                                             Long perimetreAgenceId) {
         log.debug("Récupération des corrections pour le point de vente {} avec filtre statut {}", codeAgence, statut);
         try {
             return jdbcClient.sql(CORRECTION_DETAIL_BY_POINTVENTE)
@@ -627,6 +641,8 @@ public class CorrectionRepositoryImpl implements CorrectionRepository {
                     .param("statut", statut)
                     .param("dateDebut", dateDebut == null ? null : java.sql.Date.valueOf(dateDebut))
                     .param("dateFin", dateFin == null ? null : java.sql.Date.valueOf(dateFin))
+                    .param("perimetreDelegationId", perimetreDelegationId)
+                    .param("perimetreAgenceId", perimetreAgenceId)
                     .query(PERSONNE_PHYSIQUE_ROW_MAPPER)
                     .list();
         } catch (DataAccessException e) {
