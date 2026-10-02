@@ -1,4 +1,6 @@
-import { AgentPortefeuille, CreditAffecte, PortefeuilleAffectation, Affectation } from '@/interface/portefeuille-affectation';
+import { CreditAffecte, PortefeuilleAffectation, Affectation, SynthesePointService } from '@/interface/portefeuille-affectation';
+import { HttpResponse } from '@angular/common/http';
+import { Observable } from 'rxjs';
 import { IResponse } from '@/interface/response';
 import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
@@ -39,8 +41,61 @@ type Filtre = 'tous' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent';
         <div class="card">
             <div class="flex flex-wrap justify-between items-center gap-3 mb-2">
                 <h2 class="text-xl font-bold m-0">{{ titre() }}</h2>
-                <button pButton icon="pi pi-refresh" class="p-button-text" (click)="charger()" [loading]="loading()" [disabled]="!agence"></button>
+                <button pButton icon="pi pi-refresh" class="p-button-text" (click)="vue() === 'synthese' ? chargerSynthese() : charger()" [loading]="loading() || loadingSynthese()"></button>
             </div>
+            <p-selectButton *ngIf="agences().length > 1" [options]="vueOptions" [ngModel]="vue()" (ngModelChange)="changerVue($event)" optionLabel="label" optionValue="value" [allowEmpty]="false" class="block mb-3"></p-selectButton>
+
+            @if (vue() === 'synthese') {
+            <p class="text-sm text-gray-500 mb-4">Une ligne par point de service de votre périmètre : encours et retards lus dans SAF, affectations digi en face. Cliquez une ligne pour descendre sur ses crédits et ses agents.</p>
+            <div class="flex flex-wrap gap-3 items-center mb-3">
+                <input pInputText type="text" [ngModel]="rechercheSynthese()" (ngModelChange)="rechercheSynthese.set($event)" placeholder="Délégation, agence, point de service…" class="w-72" />
+                <button pButton icon="pi pi-file-excel" label="Exporter Excel" class="p-button-success p-button-outlined ml-auto" [loading]="exportEnCours()" (click)="exporterSynthese()"></button>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4" *ngIf="totauxSynthese() as t">
+                <div class="border rounded p-3"><div class="text-xs text-gray-500 uppercase">Points de service</div><div class="text-xl font-bold">{{ t.nbPs }}</div></div>
+                <div class="border rounded p-3"><div class="text-xs text-gray-500 uppercase">Crédits vivants</div><div class="text-xl font-bold">{{ t.nbCredits }}</div><div class="text-xs text-gray-500">{{ t.encours | number: '1.0-0' }} GNF</div></div>
+                <div class="border rounded p-3"><div class="text-xs text-gray-500 uppercase">Affectés</div><div class="text-xl font-bold text-green-700">{{ t.nbAffectes }}</div><div class="text-xs text-gray-500">{{ t.nbCredits ? ((100 * t.nbAffectes) / t.nbCredits | number: '1.0-0') : 0 }} %</div></div>
+                <div class="border rounded p-3"><div class="text-xs text-gray-500 uppercase">Non affectés</div><div class="text-xl font-bold" [class.text-red-600]="t.nbNonAffectes > 0">{{ t.nbNonAffectes }}</div></div>
+                <div class="border rounded p-3"><div class="text-xs text-gray-500 uppercase">À réaffecter</div><div class="text-xl font-bold" [class.text-orange-600]="t.nbAReaffecter > 0">{{ t.nbAReaffecter }}</div></div>
+            </div>
+            <p-table [value]="syntheseFiltree()" [loading]="loadingSynthese()" styleClass="p-datatable-sm" [rowHover]="true" selectionMode="single" (onRowSelect)="ouvrirPointService($event.data)" [paginator]="syntheseFiltree().length > 30" [rows]="30" sortMode="single" sortField="tauxAffectation" [sortOrder]="1">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th pSortableColumn="delegation">Délégation <p-sortIcon field="delegation"></p-sortIcon></th>
+                        <th pSortableColumn="agence">Agence <p-sortIcon field="agence"></p-sortIcon></th>
+                        <th pSortableColumn="pointVente">Point de service <p-sortIcon field="pointVente"></p-sortIcon></th>
+                        <th class="text-right" pSortableColumn="nbCredits">Crédits <p-sortIcon field="nbCredits"></p-sortIcon></th>
+                        <th class="text-right" pSortableColumn="encours">Encours <p-sortIcon field="encours"></p-sortIcon></th>
+                        <th class="text-right" pSortableColumn="nbEnRetard">En retard <p-sortIcon field="nbEnRetard"></p-sortIcon></th>
+                        <th class="text-right">PAR 30</th>
+                        <th class="text-right" pSortableColumn="nbAffectes">Affectés <p-sortIcon field="nbAffectes"></p-sortIcon></th>
+                        <th class="text-right" pSortableColumn="nbNonAffectes">Non affectés <p-sortIcon field="nbNonAffectes"></p-sortIcon></th>
+                        <th class="text-right" pSortableColumn="nbAReaffecter">À réaffecter <p-sortIcon field="nbAReaffecter"></p-sortIcon></th>
+                        <th class="text-right" pSortableColumn="nbAgents">Agents <p-sortIcon field="nbAgents"></p-sortIcon></th>
+                        <th class="text-right" pSortableColumn="tauxAffectation">Taux <p-sortIcon field="tauxAffectation"></p-sortIcon></th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-s>
+                    <tr [pSelectableRow]="s" class="cursor-pointer" [class.bg-orange-50]="s.nbAgents === 0 && s.nbCredits > 0">
+                        <td class="text-sm">{{ s.delegation || '—' }}</td>
+                        <td class="text-sm">{{ s.agence || '—' }}</td>
+                        <td class="font-semibold">{{ s.pointVente }} <span class="text-xs text-gray-400 font-mono">{{ s.codAgencia }}</span></td>
+                        <td class="text-right">{{ s.nbCredits }}</td>
+                        <td class="text-right">{{ s.encours | number: '1.0-0' }}</td>
+                        <td class="text-right" [class.text-red-600]="s.nbEnRetard > 0">{{ s.nbEnRetard }}</td>
+                        <td class="text-right" [class.text-red-600]="pct(s.encoursPar30, s.encours) >= 5">{{ pct(s.encoursPar30, s.encours) | number: '1.1-1' }} %</td>
+                        <td class="text-right text-green-700">{{ s.nbAffectes }}</td>
+                        <td class="text-right" [class.text-red-600]="s.nbNonAffectes > 0">{{ s.nbNonAffectes }}</td>
+                        <td class="text-right" [class.text-orange-600]="s.nbAReaffecter > 0">{{ s.nbAReaffecter }}</td>
+                        <td class="text-right"><span [class.text-orange-600]="s.nbAgents === 0" [pTooltip]="s.nbAgents === 0 ? 'Aucun agent de crédit rattaché : rien ne peut être affecté' : ''">{{ s.nbAgents }}</span></td>
+                        <td class="text-right font-semibold">{{ s.tauxAffectation * 100 | number: '1.0-0' }} %</td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr><td colspan="12" class="text-center text-gray-500 py-6">Aucun point de service dans votre périmètre.</td></tr>
+                </ng-template>
+            </p-table>
+            } @else {
             <p class="text-sm text-gray-500 mb-4">
                 Crédits vivants <strong>lus dans SAF2000</strong> (capital restant dû &gt; 0), chacun avec l'agent de crédit digi qui en répond.
                 @if (data()?.peutAffecter) {
@@ -77,6 +132,7 @@ type Filtre = 'tous' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent';
                     appendTo="body"
                 ></p-select>
                 <input pInputText type="text" [ngModel]="recherche()" (ngModelChange)="recherche.set($event)" placeholder="Client, code, n° crédit…" class="w-64" />
+                <button pButton icon="pi pi-file-excel" label="Exporter Excel" class="p-button-success p-button-outlined ml-auto" pTooltip="Tous les crédits du point de service, au format DR / Agence / PS / crédit… + agent digi" [loading]="exportEnCours()" [disabled]="!agence || !data()" (click)="exporterPointService()"></button>
             </div>
 
             <!-- Indicateurs -->
@@ -221,6 +277,7 @@ type Filtre = 'tous' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent';
                     </ng-template>
                 </p-table>
             </div>
+            }
         </div>
 
         <!-- Dialogue d'affectation -->
@@ -307,6 +364,40 @@ export class PortefeuilleAffectationComponent implements OnInit {
     showAffectation = signal(false);
     showDesaffectation = signal(false);
 
+    // Vue synthese (perimetre a plusieurs points de service : DA, DR, DE, DG)
+    vueOptions = [
+        { label: 'Synthèse par point de service', value: 'synthese' },
+        { label: "Crédits d'un point de service", value: 'credits' }
+    ];
+    vue = signal<'credits' | 'synthese'>('credits');
+    synthese = signal<SynthesePointService[]>([]);
+    loadingSynthese = signal(false);
+    rechercheSynthese = signal('');
+    exportEnCours = signal(false);
+
+    syntheseFiltree = computed(() => {
+        const q = this.rechercheSynthese().trim().toLowerCase();
+        const l = this.synthese();
+        if (!q) return l;
+        return l.filter((s) => [s.delegation, s.agence, s.pointVente, s.codAgencia].some((v) => (v || '').toLowerCase().includes(q)));
+    });
+
+    totauxSynthese = computed(() => {
+        const l = this.syntheseFiltree();
+        if (!l.length) return null;
+        return l.reduce(
+            (t, s) => ({
+                nbPs: t.nbPs + 1,
+                nbCredits: t.nbCredits + s.nbCredits,
+                encours: t.encours + (s.encours || 0),
+                nbAffectes: t.nbAffectes + s.nbAffectes,
+                nbNonAffectes: t.nbNonAffectes + s.nbNonAffectes,
+                nbAReaffecter: t.nbAReaffecter + s.nbAReaffecter
+            }),
+            { nbPs: 0, nbCredits: 0, encours: 0, nbAffectes: 0, nbNonAffectes: 0, nbAReaffecter: 0 }
+        );
+    });
+
     showHistorique = signal(false);
     loadingHistorique = signal(false);
     historique = signal<Affectation[]>([]);
@@ -374,6 +465,9 @@ export class PortefeuilleAffectationComponent implements OnInit {
                     if (agences.length === 1) {
                         this.agence = agences[0];
                         this.charger();
+                    } else if (agences.length > 1) {
+                        this.vue.set('synthese');
+                        this.chargerSynthese();
                     }
                 },
                 error: (err) => this.erreur('Points de service indisponibles', err)
@@ -416,6 +510,71 @@ export class PortefeuilleAffectationComponent implements OnInit {
     filtrerParAgent(userId: number | null): void {
         this.agentFiltre.set(userId);
         this.filtre.set(userId === null ? 'tous' : 'agent');
+    }
+
+    changerVue(v: 'credits' | 'synthese'): void {
+        this.vue.set(v);
+        if (v === 'synthese' && !this.synthese().length) this.chargerSynthese();
+    }
+
+    chargerSynthese(): void {
+        this.loadingSynthese.set(true);
+        this.userService
+            .getSyntheseAffectations$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => {
+                    this.synthese.set((r.data?.synthese || []) as SynthesePointService[]);
+                    this.loadingSynthese.set(false);
+                },
+                error: (err) => {
+                    this.loadingSynthese.set(false);
+                    this.erreur('Synthèse indisponible', err);
+                }
+            });
+    }
+
+    /** Descente depuis la synthèse : le point de service cliqué devient la vue crédits. */
+    ouvrirPointService(s: SynthesePointService): void {
+        this.agence = this.agences().find((x) => x.codAgencia === s.codAgencia) || { codAgencia: s.codAgencia, desAgencia: s.pointVente || s.codAgencia };
+        this.filtre.set('tous');
+        this.agentFiltre.set(null);
+        this.vue.set('credits');
+        this.charger();
+    }
+
+    pct(part: number, total: number): number {
+        return total > 0 ? (100 * (part || 0)) / total : 0;
+    }
+
+    exporterPointService(): void {
+        if (!this.agence) return;
+        this.telecharger(this.userService.exportAffectations$(this.agence.codAgencia), `portefeuille_agents_${this.agence.codAgencia}.xlsx`);
+    }
+
+    exporterSynthese(): void {
+        this.telecharger(this.userService.exportSyntheseAffectations$(), 'portefeuille_agents_synthese.xlsx');
+    }
+
+    private telecharger(flux: Observable<HttpResponse<Blob>>, nomParDefaut: string): void {
+        this.exportEnCours.set(true);
+        flux.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: (reponse) => {
+                this.exportEnCours.set(false);
+                const disposition = reponse.headers.get('Content-Disposition') || '';
+                const nom = /filename="?([^";]+)"?/.exec(disposition)?.[1] || nomParDefaut;
+                const url = URL.createObjectURL(reponse.body as Blob);
+                const lien = document.createElement('a');
+                lien.href = url;
+                lien.download = nom;
+                lien.click();
+                URL.revokeObjectURL(url);
+            },
+            error: () => {
+                this.exportEnCours.set(false);
+                this.messageService.add({ severity: 'error', summary: 'Export', detail: "Échec de l'export Excel — réessayez (base SAF indisponible ?)", life: 6000 });
+            }
+        });
     }
 
     selectionAffectee(): CreditAffecte[] {

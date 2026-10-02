@@ -10,7 +10,10 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /** Acces a portefeuille_affectation (V159) : qui repond de chaque credit SAF. */
 @Repository
@@ -79,6 +82,53 @@ public class PortefeuilleAffectationRepository {
             VALUES (:codAgencia, :numCredito, :codCliente, :agentUserId, :affecteParUserId, :motif)
             RETURNING id
             """;
+
+    // Synthese : affectations actives par point de service, dont celles a reaffecter
+    // (agent desactive, ou dont le point de service actuel n'est plus celui du credit).
+    private static final String STATS_PS = """
+            SELECT a.cod_agencia,
+                   COUNT(*) AS nb_affectes,
+                   COUNT(*) FILTER (WHERE NOT u.enabled OR pv.code IS NULL OR pv.code <> a.cod_agencia) AS nb_a_reaffecter
+            FROM portefeuille_affectation a
+            JOIN users u ON u.user_id = a.agent_user_id
+            LEFT JOIN pointvente pv ON pv.id = u.pointvente_id
+            WHERE a.actif AND a.cod_agencia IN (:codes)
+            GROUP BY a.cod_agencia
+            """;
+
+    private static final String AGENTS_PAR_PS = """
+            SELECT pv.code AS cod_agencia, COUNT(DISTINCT u.user_id) AS nb_agents
+            FROM users u
+            JOIN user_roles ur ON ur.user_id = u.user_id
+            JOIN roles r ON r.role_id = ur.role_id
+            JOIN pointvente pv ON pv.id = u.pointvente_id
+            WHERE r.name = 'AGENT_CREDIT' AND u.enabled AND pv.code IN (:codes)
+            GROUP BY pv.code
+            """;
+
+    public record StatsPointService(long nbAffectes, long nbAReaffecter) {
+    }
+
+    /** Affectations actives et a reaffecter par code SAF, pour les codes donnes. */
+    public Map<String, StatsPointService> statsParPointService(Collection<String> codes) {
+        if (codes == null || codes.isEmpty()) return Map.of();
+        Map<String, StatsPointService> m = new HashMap<>();
+        jdbcClient.sql(STATS_PS).param("codes", List.copyOf(codes))
+                .query((rs, n) -> Map.entry(rs.getString("cod_agencia"),
+                        new StatsPointService(rs.getLong("nb_affectes"), rs.getLong("nb_a_reaffecter"))))
+                .list().forEach(e -> m.put(e.getKey(), e.getValue()));
+        return m;
+    }
+
+    /** Nombre d'agents de credit actifs par code SAF, pour les codes donnes. */
+    public Map<String, Long> nbAgentsParPointService(Collection<String> codes) {
+        if (codes == null || codes.isEmpty()) return Map.of();
+        Map<String, Long> m = new HashMap<>();
+        jdbcClient.sql(AGENTS_PAR_PS).param("codes", List.copyOf(codes))
+                .query((rs, n) -> Map.entry(rs.getString("cod_agencia"), rs.getLong("nb_agents")))
+                .list().forEach(e -> m.put(e.getKey(), e.getValue()));
+        return m;
+    }
 
     private static final RowMapper<AffectationDto> MAPPER = (rs, n) -> AffectationDto.builder()
             .id(rs.getLong("id"))
