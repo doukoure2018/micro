@@ -281,6 +281,27 @@ export class AppMenu {
                 routerLink: ['/dashboards/portefeuille-saf']
             });
         }
+        // Affectation des credits SAF aux agents (V159) : le DA affecte, l'agent voit son
+        // portefeuille, DR / DE / DG consultent par point de service et par agent.
+        if (this.role === 'DA') {
+            items.push({
+                label: 'Affectation du portefeuille',
+                icon: 'pi pi-fw pi-users',
+                routerLink: ['/dashboards/portefeuille-affectation']
+            });
+        } else if (this.role === 'AGENT_CREDIT') {
+            items.push({
+                label: 'Mon portefeuille',
+                icon: 'pi pi-fw pi-briefcase',
+                routerLink: ['/dashboards/portefeuille-affectation']
+            });
+        } else if (['DR', 'DG'].includes(this.role || '') || this.estManager('DE')) {
+            items.push({
+                label: 'Portefeuille par agent',
+                icon: 'pi pi-fw pi-users',
+                routerLink: ['/dashboards/portefeuille-affectation']
+            });
+        }
         return items;
     }
 

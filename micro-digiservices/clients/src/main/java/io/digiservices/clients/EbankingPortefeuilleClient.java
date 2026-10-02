@@ -31,6 +31,10 @@ public interface EbankingPortefeuilleClient {
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size);
 
+    /** Tous les credits vivants d'un point de service, sans pagination (affectation aux agents, V159). */
+    @GetMapping("/ebanking/portefeuille/credits-complets")
+    List<PortefeuilleCreditDto> getTousCredits(@RequestParam(value = "codAgencia") String codAgencia);
+
     @GetMapping("/ebanking/portefeuille/indicateurs")
     PortefeuilleIndicateursDto getIndicateurs(@RequestParam(value = "codAgencia") String codAgencia,
                                               @RequestParam(value = "statut", defaultValue = "actifs") String statut,

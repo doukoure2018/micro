@@ -92,6 +92,11 @@ export default [
         loadComponent: () => import('./portefeuille/portefeuille-saf.component').then((c) => c.PortefeuilleSafComponent)
     },
     {
+        path: 'portefeuille-affectation',
+        data: { breadcrumb: 'Portefeuille par agent' },
+        loadComponent: () => import('./portefeuille/portefeuille-affectation.component').then((c) => c.PortefeuilleAffectationComponent)
+    },
+    {
         path: 'verification-client',
         data: { breadcrumb: 'Verification Client' },
         loadComponent: () => import('./agent-credit/digital-verification/digital-verification.component').then((c) => c.DigitalVerificationComponent)
