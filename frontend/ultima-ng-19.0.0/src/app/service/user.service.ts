@@ -1712,6 +1712,20 @@ export class UserService {
             observe: 'response'
         });
 
+    // ==================== Affectation des credits aux agents (V159) ====================
+
+    getPortefeuilleAffectations$ = (codAgencia: string) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/affectations`, { params: { codAgencia } }).pipe(catchError(this.handleError));
+
+    affecterCredits$ = (body: { codAgencia: string; numCreditos: number[]; agentUserId: number; motif?: string }) =>
+        <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/portefeuille/affectations`, body).pipe(catchError(this.handleError));
+
+    desaffecterCredits$ = (body: { codAgencia: string; numCreditos: number[]; motif?: string }) =>
+        <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/portefeuille/affectations/desaffecter`, body).pipe(catchError(this.handleError));
+
+    getHistoriqueAffectation$ = (codAgencia: string, numCredito: number) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/affectations/${codAgencia}/${numCredito}/historique`).pipe(catchError(this.handleError));
+
     getPortefeuilleEcheancier$ = (codAgencia: string, numCredito: number) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/credits/${codAgencia}/${numCredito}/echeancier`).pipe(catchError(this.handleError));
 

@@ -54,6 +54,8 @@ public class PortefeuilleRepository {
             SELECT cr.COD_AGENCIA, ag.DES_AGENCIA, cr.NUM_CREDITO, cr.COD_CLIENTE,
                    c.NOM_CLIENTE, cr.TIP_CREDITO, tc.DES_TIP_CREDITO, cr.IND_ESTADO,
                    c.TEL_PRINCIPAL, c.TEL_SECUNDARIO, c.TEL_OTRO,
+                   cr.COD_USUARIO, cr.COD_EJECUTIVO,
+                   ug.NOM_USUARIO AS NOM_GESTIONNAIRE, ug.IND_ACTIVO AS ACT_GESTIONNAIRE,
                    cr.MON_CREDITO, cr.MON_SALDO, cr.MON_CUOTA, cr.CANT_CUOTAS,
                    cr.FEC_APERTURA, cr.FEC_VENCIMIENTO,
                    (SELECT MIN(pp.FEC_CUOTA) FROM PR.PR_PLAN_PAGOS pp
@@ -91,6 +93,9 @@ public class PortefeuilleRepository {
                 ON cr.COD_EMPRESA = tc.COD_EMPRESA AND cr.TIP_CREDITO = tc.TIP_CREDITO
             LEFT JOIN CF.CF_AGENCIAS ag
                 ON cr.COD_EMPRESA = ag.COD_EMPRESA AND cr.COD_AGENCIA = ag.COD_AGENCIA
+            LEFT JOIN SG.SG_USUARIOS ug
+                ON ug.COD_EMPRESA = cr.COD_EMPRESA AND ug.COD_AGENCIA = cr.COD_AGENCIA
+               AND ug.COD_USUARIO = cr.COD_EJECUTIVO
             WHERE cr.COD_AGENCIA = :codAgencia
               AND cr.IND_ESTADO NOT IN ('C', 'T', 'X')
               AND cr.MON_SALDO > 0
@@ -114,6 +119,13 @@ public class PortefeuilleRepository {
             """ + FILTRE_RETARD + """
             ORDER BY CASE WHEN t.DAT_PREM_IMP IS NULL THEN 1 ELSE 0 END, t.DAT_PREM_IMP, t.NUM_CREDITO
             OFFSET :offset ROWS FETCH NEXT :size ROWS ONLY
+            """;
+
+    // Tous les credits vivants du point de service, sans filtre ni pagination : sert a
+    // l'affectation aux agents (V159), qui rapproche la liste SAF des affectations digi.
+    private static final String SQL_TOUS_CREDITS = "SELECT * FROM (" + CREDIT_BASE + """
+            ) t
+            ORDER BY CASE WHEN t.DAT_PREM_IMP IS NULL THEN 1 ELSE 0 END, t.DAT_PREM_IMP, t.NUM_CREDITO
             """;
 
     private static final String SQL_COUNT_CREDITS = "SELECT COUNT(*) FROM (" + CREDIT_BASE + """
@@ -253,6 +265,12 @@ public class PortefeuilleRepository {
         return execute("portefeuille.credits", () -> primary.query(SQL_FIND_CREDITS, p, CREDIT_MAPPER));
     }
 
+    /** Tous les credits vivants d'un point de service (une seule requete, pas de pagination). */
+    public List<PortefeuilleCreditDto> findTousCredits(String codAgencia) {
+        MapSqlParameterSource p = paramsBase(codAgencia, null);
+        return execute("portefeuille.creditsComplets", () -> primary.query(SQL_TOUS_CREDITS, p, CREDIT_MAPPER));
+    }
+
     public long countCredits(String codAgencia, boolean seulementRetard,
                              Integer retardMin, Integer retardMax, String recherche) {
         MapSqlParameterSource p = paramsBase(codAgencia, recherche)
@@ -343,6 +361,10 @@ public class PortefeuilleRepository {
         d.setNbEchPayees(rs.getLong("NB_PAYEES"));
         d.setNbEchImpayees(rs.getLong("NB_IMPAYEES"));
         d.setNbEchRestantes(rs.getLong("NB_RESTANTES"));
+        d.setUsagerMiseEnPlace(str(rs, "COD_USUARIO"));
+        d.setCodGestionnaireSaf(str(rs, "COD_EJECUTIVO"));
+        d.setNomGestionnaireSaf(str(rs, "NOM_GESTIONNAIRE"));
+        d.setStatutGestionnaireSaf(str(rs, "ACT_GESTIONNAIRE"));
         d.setJoursRetard(d.getDatPremiereImpayee() != null
                 ? ChronoUnit.DAYS.between(d.getDatPremiereImpayee(), LocalDate.now()) : null);
         return d;

@@ -291,5 +291,8 @@ export interface IResponse {
         repertoires?: any[];
         repertoire?: any;
         numeros?: string[];
+        // Affectation des credits SAF aux agents (V159)
+        portefeuille?: any;
+        historique?: any[];
     };
 }

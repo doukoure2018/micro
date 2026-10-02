@@ -87,6 +87,13 @@ public class PortefeuilleController {
         };
     }
 
+    /** Tous les credits vivants d'un point de service, sans pagination (affectation aux agents, V159). */
+    @GetMapping("/credits-complets")
+    public ResponseEntity<List<PortefeuilleCreditDto>> getTousCredits(
+            @RequestParam(name = "codAgencia") String codAgencia) {
+        return ResponseEntity.ok(repository.findTousCredits(codAgencia));
+    }
+
     @GetMapping("/indicateurs")
     public ResponseEntity<PortefeuilleIndicateursDto> getIndicateurs(
             @RequestParam(name = "codAgencia") String codAgencia,

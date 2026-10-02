@@ -45,4 +45,11 @@ public class PortefeuilleCreditDto {
     private Long nbEchRestantes;
 
     private Long joursRetard;                 // calcule cote ebanking (aujourd'hui - premiere impayee)
+
+    // Usager SAF ayant mis le credit en place et gestionnaire SAF (V159, affichage seul :
+    // SAF ne cree jamais d'affectation digi, c'est le DA qui affecte)
+    private String usagerMiseEnPlace;         // PR_CREDITOS.COD_USUARIO
+    private String codGestionnaireSaf;        // PR_CREDITOS.COD_EJECUTIVO
+    private String nomGestionnaireSaf;        // SG_USUARIOS.NOM_USUARIO (meme agence)
+    private String statutGestionnaireSaf;     // SG_USUARIOS.IND_ACTIVO : A actif, I inactif
 }
