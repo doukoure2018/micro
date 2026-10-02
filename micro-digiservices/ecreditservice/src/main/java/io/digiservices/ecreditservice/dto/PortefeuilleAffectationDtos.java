@@ -88,6 +88,27 @@ public final class PortefeuilleAffectationDtos {
         private List<CreditAffecteDto> credits;
     }
 
+    /** Une ligne de la synthese par point de service (DA, DR, DE, DG) : SAF + affectations digi. */
+    @Data @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class SynthesePointServiceDto {
+        private String codAgencia;
+        private String pointVente;
+        private Long agenceId;
+        private String agence;
+        private Long delegationId;
+        private String delegation;
+        private long nbCredits;              // SAF : credits vivants
+        private BigDecimal encours;
+        private long nbEnRetard;
+        private BigDecimal encoursPar30;
+        private BigDecimal encoursPar90;
+        private long nbAffectes;             // digi : affectations actives
+        private long nbNonAffectes;
+        private long nbAReaffecter;          // agent desactive ou parti
+        private long nbAgents;               // AGENT_CREDIT actifs rattaches au PS
+        private double tauxAffectation;      // nbAffectes / nbCredits
+    }
+
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class AffectationRequest {
         @NotBlank private String codAgencia;

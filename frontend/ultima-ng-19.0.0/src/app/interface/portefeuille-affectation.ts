@@ -90,6 +90,26 @@ export interface PortefeuilleAffectation {
     credits: CreditAffecte[];
 }
 
+/** Une ligne de la synthèse par point de service (DA, DR, DE, DG). */
+export interface SynthesePointService {
+    codAgencia: string;
+    pointVente?: string;
+    agenceId?: number;
+    agence?: string;
+    delegationId?: number;
+    delegation?: string;
+    nbCredits: number;
+    encours: number;
+    nbEnRetard: number;
+    encoursPar30: number;
+    encoursPar90: number;
+    nbAffectes: number;
+    nbNonAffectes: number;
+    nbAReaffecter: number;
+    nbAgents: number;
+    tauxAffectation: number;
+}
+
 export interface AffectationRequest {
     codAgencia: string;
     numCreditos: number[];

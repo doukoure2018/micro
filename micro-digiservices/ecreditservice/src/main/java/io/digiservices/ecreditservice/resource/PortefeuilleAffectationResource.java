@@ -9,6 +9,8 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -65,6 +67,40 @@ public class PortefeuilleAffectationResource {
         int n = service.desaffecter(authentication.getName(), body);
         return ResponseEntity.ok(getResponse(request, Map.of("nbDesaffectes", n),
                 n + " credit(s) desaffecte(s)", OK));
+    }
+
+    /** Synthese du perimetre : une ligne par point de service (SAF + affectations digi). */
+    @GetMapping("/synthese")
+    public ResponseEntity<Response> synthese(@NotNull Authentication authentication, HttpServletRequest request) {
+        return ResponseEntity.ok(getResponse(request,
+                Map.of("synthese", service.synthese(authentication.getName())),
+                "Synthese du portefeuille par point de service", OK));
+    }
+
+    /** Export Excel d'un point de service au format DSIG (13 colonnes + agent digi). */
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> exporter(@NotNull Authentication authentication,
+                                           @RequestParam(name = "codAgencia") String codAgencia) {
+        byte[] contenu = service.exporterPointService(authentication.getName(), codAgencia);
+        return fichier(contenu, "portefeuille_agents_" + codAgencia);
+    }
+
+    /** Export Excel de la synthese du perimetre. */
+    @GetMapping("/synthese/export")
+    public ResponseEntity<byte[]> exporterSynthese(@NotNull Authentication authentication) {
+        byte[] contenu = service.exporterSynthese(authentication.getName());
+        return fichier(contenu, "portefeuille_agents_synthese");
+    }
+
+    private static ResponseEntity<byte[]> fichier(byte[] contenu, String prefixe) {
+        String nom = prefixe + "_" + java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.BASIC_ISO_DATE) + ".xlsx";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+        headers.setContentDispositionFormData("attachment", nom);
+        headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
+        headers.setContentLength(contenu.length);
+        log.info("[AFFECTATION] Export Excel {} : {} octets", nom, contenu.length);
+        return ResponseEntity.ok().headers(headers).body(contenu);
     }
 
     /** Historique des responsables d'un credit, du plus recent au plus ancien. */

@@ -294,5 +294,6 @@ export interface IResponse {
         // Affectation des credits SAF aux agents (V159)
         portefeuille?: any;
         historique?: any[];
+        synthese?: any[];
     };
 }

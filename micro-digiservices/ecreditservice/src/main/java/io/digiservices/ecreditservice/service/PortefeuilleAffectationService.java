@@ -9,16 +9,23 @@ import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.CreditAffe
 import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.DesaffectationRequest;
 import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.IndicateursDto;
 import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.PortefeuilleAffectationDto;
+import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.SynthesePointServiceDto;
 import io.digiservices.ecreditservice.exception.ApiException;
 import io.digiservices.ecreditservice.repository.PortefeuilleAffectationRepository;
+import io.digiservices.ecreditservice.repository.PortefeuilleAffectationRepository.StatsPointService;
+import io.digiservices.ecreditservice.repository.PortefeuillePerimetreRepository;
+import io.digiservices.ecreditservice.repository.PortefeuillePerimetreRepository.PointVenteHierarchie;
+import io.digiservices.ecreditservice.utils.PortefeuilleAffectationExcelUtils;
 import io.digiservices.ecreditservice.service.PerimetreSafService.Perimetre;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -44,6 +51,7 @@ public class PortefeuilleAffectationService {
     private final EbankingPortefeuilleClient portefeuilleClient;
     private final PerimetreSafService perimetreSafService;
     private final PortefeuilleAffectationRepository repository;
+    private final PortefeuillePerimetreRepository perimetreRepository;
 
     /** Liste SAF du point de service rapprochee des affectations digi, avec agents et indicateurs. */
     public PortefeuilleAffectationDto charger(String uuid, String codAgencia) {
@@ -153,6 +161,86 @@ public class PortefeuilleAffectationService {
         }
         log.info("[AFFECTATION] {} credit(s) du PS {} desaffecte(s) par user {}", n, req.getCodAgencia(), auteur);
         return n;
+    }
+
+    /**
+     * Synthese du perimetre, une ligne par point de service : indicateurs SAF (une seule requete
+     * reseau) rapproches des affectations digi. Le detail par agent se lit en descendant sur un
+     * point de service (charger).
+     */
+    public List<SynthesePointServiceDto> synthese(String uuid) {
+        Perimetre perimetre = perimetreSafService.perimetreDe(uuid);
+        List<io.digiservices.clients.portefeuille.IndicateursAgenceDto> saf = portefeuilleClient.getIndicateursReseau();
+        if (!perimetre.toutReseau()) {
+            saf = saf.stream().filter(i -> perimetre.codes().contains(i.getCodAgencia())).toList();
+        }
+        List<String> codes = saf.stream().map(io.digiservices.clients.portefeuille.IndicateursAgenceDto::getCodAgencia).toList();
+        Map<String, PointVenteHierarchie> hierarchie = new LinkedHashMap<>();
+        perimetreRepository.hierarchie(codes).forEach(h -> hierarchie.putIfAbsent(h.code(), h));
+        Map<String, StatsPointService> stats = repository.statsParPointService(codes);
+        Map<String, Long> agents = repository.nbAgentsParPointService(codes);
+
+        List<SynthesePointServiceDto> lignes = new ArrayList<>(saf.size());
+        for (var i : saf) {
+            PointVenteHierarchie h = hierarchie.get(i.getCodAgencia());
+            StatsPointService s = stats.getOrDefault(i.getCodAgencia(), new StatsPointService(0, 0));
+            long nbAffectes = Math.min(s.nbAffectes(), i.getNbCredits()); // affectations de credits clos depuis : ignorees
+            lignes.add(SynthesePointServiceDto.builder()
+                    .codAgencia(i.getCodAgencia())
+                    .pointVente(h != null ? h.libelle() : i.getDesAgencia())
+                    .agenceId(h != null ? h.agenceId() : null).agence(h != null ? h.agence() : null)
+                    .delegationId(h != null ? h.delegationId() : null).delegation(h != null ? h.delegation() : null)
+                    .nbCredits(i.getNbCredits()).encours(nvl(i.getEncoursTotal())).nbEnRetard(i.getNbEnRetard())
+                    .encoursPar30(nvl(i.getEncoursPar30())).encoursPar90(nvl(i.getEncoursPar90()))
+                    .nbAffectes(nbAffectes).nbNonAffectes(i.getNbCredits() - nbAffectes)
+                    .nbAReaffecter(s.nbAReaffecter())
+                    .nbAgents(agents.getOrDefault(i.getCodAgencia(), 0L))
+                    .tauxAffectation(i.getNbCredits() == 0 ? 0 : (double) nbAffectes / i.getNbCredits())
+                    .build());
+        }
+        lignes.sort(Comparator.comparing((SynthesePointServiceDto l) -> nvl(l.getDelegation()))
+                .thenComparing(l -> nvl(l.getAgence())).thenComparing(l -> nvl(l.getPointVente())));
+        return lignes;
+    }
+
+    /** Export Excel d'un point de service : synthese, charge par agent, puis les credits au format DSIG. */
+    public byte[] exporterPointService(String uuid, String codAgencia) {
+        PortefeuilleAffectationDto p = charger(uuid, codAgencia);
+        PointVenteHierarchie h = perimetreRepository.hierarchie(List.of(codAgencia)).stream().findFirst().orElse(null);
+        try {
+            return PortefeuilleAffectationExcelUtils.classeurPointService(p, h);
+        } catch (IOException e) {
+            log.error("[AFFECTATION] Echec export Excel PS {} : {}", codAgencia, e.getMessage(), e);
+            throw new ApiException("Echec de la generation du fichier Excel");
+        }
+    }
+
+    /** Export Excel de la synthese du perimetre. */
+    public byte[] exporterSynthese(String uuid) {
+        Perimetre perimetre = perimetreSafService.perimetreDe(uuid);
+        try {
+            return PortefeuilleAffectationExcelUtils.classeurSynthese(libellePerimetre(perimetre), synthese(uuid));
+        } catch (IOException e) {
+            log.error("[AFFECTATION] Echec export Excel synthese : {}", e.getMessage(), e);
+            throw new ApiException("Echec de la generation du fichier Excel");
+        }
+    }
+
+    private static String libellePerimetre(Perimetre p) {
+        return switch (p.niveau()) {
+            case "RESEAU" -> "réseau";
+            case "DELEGATION" -> "délégation";
+            case "AGENCE" -> "agence";
+            default -> "point de service";
+        };
+    }
+
+    private static BigDecimal nvl(BigDecimal v) {
+        return v == null ? BigDecimal.ZERO : v;
+    }
+
+    private static String nvl(String s) {
+        return s == null ? "" : s;
     }
 
     public List<AffectationDto> historique(String uuid, String codAgencia, Long numCredito) {
