@@ -42,10 +42,37 @@ export class AppMenu {
     private estDgaDrh = false;
     private contexteDrhCharge = false;
 
+    /** V159 lot 3 : crédits sans responsable sur le périmètre du DA, affiché dans le libellé du menu. */
+    private aTraiterAffectation = 0;
+    private compteurAffectationCharge = false;
+
     ngOnInit() {
         this.initializeMenu();
         this.chargerFonctions();
         this.chargerContexteDrh();
+        this.chargerCompteurAffectation();
+    }
+
+    /** Le DA voit combien de crédits attendent une affectation (non affectés + à réaffecter). */
+    private chargerCompteurAffectation() {
+        if (this.user?.role !== 'DA' || this.compteurAffectationCharge) {
+            return;
+        }
+        this.compteurAffectationCharge = true;
+        this.userService
+            .getCompteurAffectations$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    const c = (response.data as any)?.compteur;
+                    const n = (c?.nbNonAffectes || 0) + (c?.nbAReaffecter || 0);
+                    if (n > 0) {
+                        this.aTraiterAffectation = n;
+                        this.initializeMenu();
+                    }
+                },
+                error: () => {}
+            });
     }
 
     /** Tout agent peut être responsable de département (congés) : on interroge le backend une fois. */
@@ -285,7 +312,7 @@ export class AppMenu {
         // portefeuille, DR / DE / DG consultent par point de service et par agent.
         if (this.role === 'DA') {
             items.push({
-                label: 'Affectation du portefeuille',
+                label: this.aTraiterAffectation > 0 ? `Affectation du portefeuille (${this.aTraiterAffectation})` : 'Affectation du portefeuille',
                 icon: 'pi pi-fw pi-users',
                 routerLink: ['/dashboards/portefeuille-affectation']
             });

@@ -295,5 +295,6 @@ export interface IResponse {
         portefeuille?: any;
         historique?: any[];
         synthese?: any[];
+        compteur?: any;
     };
 }
