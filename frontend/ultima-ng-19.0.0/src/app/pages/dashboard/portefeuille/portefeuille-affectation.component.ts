@@ -48,7 +48,19 @@ type Filtre = 'tous' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent';
             @if (vue() === 'synthese') {
             <p class="text-sm text-gray-500 mb-4">Une ligne par point de service de votre périmètre : encours et retards lus dans SAF, affectations digi en face. Cliquez une ligne pour descendre sur ses crédits et ses agents.</p>
             <div class="flex flex-wrap gap-3 items-center mb-3">
-                <input pInputText type="text" [ngModel]="rechercheSynthese()" (ngModelChange)="rechercheSynthese.set($event)" placeholder="Délégation, agence, point de service…" class="w-72" />
+                <p-select
+                    *ngIf="delegations().length > 1"
+                    [options]="delegations()"
+                    [ngModel]="delegationFiltre()"
+                    (ngModelChange)="delegationFiltre.set($event)"
+                    optionLabel="libelle"
+                    optionValue="id"
+                    placeholder="Toutes les délégations"
+                    [showClear]="true"
+                    styleClass="w-64"
+                    appendTo="body"
+                ></p-select>
+                <input pInputText type="text" [ngModel]="rechercheSynthese()" (ngModelChange)="rechercheSynthese.set($event)" placeholder="Agence, point de service…" class="w-72" />
                 <button pButton icon="pi pi-file-excel" label="Exporter Excel" class="p-button-success p-button-outlined ml-auto" [loading]="exportEnCours()" (click)="exporterSynthese()"></button>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4" *ngIf="totauxSynthese() as t">
@@ -108,8 +120,20 @@ type Filtre = 'tous' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent';
             <div class="flex flex-wrap gap-3 items-center mb-4">
                 <span *ngIf="agences().length === 1" class="font-semibold text-lg"><i class="pi pi-building mr-1"></i>{{ agence?.desAgencia }}</span>
                 <p-select
+                    *ngIf="delegations().length > 1"
+                    [options]="delegations()"
+                    [ngModel]="delegationFiltre()"
+                    (ngModelChange)="delegationFiltre.set($event)"
+                    optionLabel="libelle"
+                    optionValue="id"
+                    placeholder="Toutes les délégations"
+                    [showClear]="true"
+                    styleClass="w-64"
+                    appendTo="body"
+                ></p-select>
+                <p-select
                     *ngIf="agences().length !== 1"
-                    [options]="agences()"
+                    [options]="agencesOptions()"
                     [(ngModel)]="agence"
                     optionLabel="desAgencia"
                     placeholder="Choisir un point de service"
@@ -375,11 +399,31 @@ export class PortefeuilleAffectationComponent implements OnInit {
     rechercheSynthese = signal('');
     exportEnCours = signal(false);
 
+    // Délégation choisie (DE, DG : Conakry, Basse, Moyenne, Haute Guinée, Guinée Forestière)
+    delegationFiltre = signal<number | null>(null);
+
+    delegations = computed(() => {
+        const m = new Map<number, string>();
+        for (const s of this.synthese()) {
+            if (s.delegationId != null && s.delegation) m.set(s.delegationId, s.delegation);
+        }
+        return [...m.entries()].map(([id, libelle]) => ({ id, libelle })).sort((a, b) => a.libelle.localeCompare(b.libelle));
+    });
+
     syntheseFiltree = computed(() => {
         const q = this.rechercheSynthese().trim().toLowerCase();
-        const l = this.synthese();
-        if (!q) return l;
-        return l.filter((s) => [s.delegation, s.agence, s.pointVente, s.codAgencia].some((v) => (v || '').toLowerCase().includes(q)));
+        const d = this.delegationFiltre();
+        return this.synthese()
+            .filter((s) => d === null || s.delegationId === d)
+            .filter((s) => !q || [s.delegation, s.agence, s.pointVente, s.codAgencia].some((v) => (v || '').toLowerCase().includes(q)));
+    });
+
+    /** Points de service proposés dans la vue crédits, restreints à la délégation choisie. */
+    agencesOptions = computed(() => {
+        const d = this.delegationFiltre();
+        if (d === null) return this.agences();
+        const codes = new Set(this.synthese().filter((s) => s.delegationId === d).map((s) => s.codAgencia));
+        return this.agences().filter((a) => codes.has(a.codAgencia));
     });
 
     totauxSynthese = computed(() => {
