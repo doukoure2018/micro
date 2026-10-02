@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -170,9 +171,33 @@ public class PortefeuilleAffectationService {
      */
     public List<SynthesePointServiceDto> synthese(String uuid) {
         Perimetre perimetre = perimetreSafService.perimetreDe(uuid);
+        return syntheseParCodes(perimetre.toutReseau() ? null : perimetre.codes());
+    }
+
+    /** Compteur du perimetre pour le menu du DA : ce qui attend une decision. */
+    public CompteurDto compteur(String uuid) {
+        List<SynthesePointServiceDto> lignes = synthese(uuid);
+        return new CompteurDto(
+                lignes.stream().mapToLong(SynthesePointServiceDto::getNbNonAffectes).sum(),
+                lignes.stream().mapToLong(SynthesePointServiceDto::getNbAReaffecter).sum(),
+                lignes.stream().filter(l -> l.getNbAgents() == 0 && l.getNbCredits() > 0).count());
+    }
+
+    public record CompteurDto(long nbNonAffectes, long nbAReaffecter, long nbPointsServiceSansAgent) {
+        public long aTraiter() {
+            return nbNonAffectes + nbAReaffecter;
+        }
+    }
+
+    /**
+     * Synthese pour une liste de codes SAF (null = tout le reseau). Partagee par l'ecran, les
+     * exports, le compteur du menu et le rappel hebdomadaire aux DA.
+     */
+    public List<SynthesePointServiceDto> syntheseParCodes(Collection<String> codesPerimetre) {
         List<io.digiservices.clients.portefeuille.IndicateursAgenceDto> saf = portefeuilleClient.getIndicateursReseau();
-        if (!perimetre.toutReseau()) {
-            saf = saf.stream().filter(i -> perimetre.codes().contains(i.getCodAgencia())).toList();
+        if (codesPerimetre != null) {
+            Set<String> set = Set.copyOf(codesPerimetre);
+            saf = saf.stream().filter(i -> set.contains(i.getCodAgencia())).toList();
         }
         List<String> codes = saf.stream().map(io.digiservices.clients.portefeuille.IndicateursAgenceDto::getCodAgencia).toList();
         Map<String, PointVenteHierarchie> hierarchie = new LinkedHashMap<>();

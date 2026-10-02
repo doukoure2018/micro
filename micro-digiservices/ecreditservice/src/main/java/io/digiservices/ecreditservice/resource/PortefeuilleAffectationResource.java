@@ -77,6 +77,14 @@ public class PortefeuilleAffectationResource {
                 "Synthese du portefeuille par point de service", OK));
     }
 
+    /** Compteur pour le menu : credits non affectes et a reaffecter sur le perimetre. */
+    @GetMapping("/compteur")
+    public ResponseEntity<Response> compteur(@NotNull Authentication authentication, HttpServletRequest request) {
+        return ResponseEntity.ok(getResponse(request,
+                Map.of("compteur", service.compteur(authentication.getName())),
+                "Compteur du portefeuille par agent", OK));
+    }
+
     /** Export Excel d'un point de service au format DSIG (13 colonnes + agent digi). */
     @GetMapping("/export")
     public ResponseEntity<byte[]> exporter(@NotNull Authentication authentication,

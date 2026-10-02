@@ -1723,6 +1723,8 @@ export class UserService {
     desaffecterCredits$ = (body: { codAgencia: string; numCreditos: number[]; motif?: string }) =>
         <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/portefeuille/affectations/desaffecter`, body).pipe(catchError(this.handleError));
 
+    getCompteurAffectations$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/affectations/compteur`).pipe(catchError(this.handleError));
+
     getSyntheseAffectations$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/affectations/synthese`).pipe(catchError(this.handleError));
 
     exportAffectations$ = (codAgencia: string) =>
