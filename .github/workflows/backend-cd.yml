@@ -12,6 +12,7 @@ on:
       - micro-digiservices/**
       - docker-compose.yml
       - .env.prod
+      - .github/workflows/backend-cd.yml
       - '!micro-digiservices/frontend/**'
 
 jobs:
