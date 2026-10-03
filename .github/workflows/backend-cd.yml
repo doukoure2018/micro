@@ -180,10 +180,16 @@ jobs:
       # Deploy to OVH server - Version optimisée
       - name: Deploy to OVH server
         uses: appleboy/ssh-action@v1.0.3
+        # Expéditeur des courriels (notificationservice) : repris des secrets GitHub
+        # MAIL_USERNAME / MAIL_PASSWORD et écrit dans .env.prod à chaque déploiement.
+        env:
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
         with:
           host: ${{ secrets.OVH_HOST }}
           username: ${{ secrets.OVH_USER }}
           key: ${{ secrets.PROD_SSH_KEY }}
+          envs: MAIL_USERNAME,MAIL_PASSWORD
           script: |
             set -e
 
@@ -211,6 +217,23 @@ jobs:
             if [ ! -f .env.prod ]; then
               echo "⚠️ .env.prod not found, using .env.docker as template..."
               cp .env.docker .env.prod || { echo "❌ No .env.docker found!"; exit 1; }
+            fi
+
+            # Expéditeur des courriels : si les secrets GitHub MAIL_USERNAME / MAIL_PASSWORD sont
+            # définis, ils remplacent (ou ajoutent) les lignes correspondantes de .env.prod.
+            # Sans secrets, le fichier du serveur reste la référence.
+            if [ -n "$MAIL_USERNAME" ] && [ -n "$MAIL_PASSWORD" ]; then
+              for k in MAIL_USERNAME MAIL_PASSWORD; do
+                v=$(eval echo "\$$k" | tr -d ' \r\n')
+                if grep -qE "^[[:space:]]*$k=" .env.prod; then
+                  sed -i -E "s|^[[:space:]]*$k=.*|$k=$v|" .env.prod
+                else
+                  echo "$k=$v" >> .env.prod
+                fi
+              done
+              echo "✉️ Expéditeur des courriels repris des secrets GitHub ($MAIL_USERNAME)"
+            else
+              echo "ℹ️ Secrets MAIL_USERNAME / MAIL_PASSWORD absents : .env.prod inchangé"
             fi
 
             # Load only DB variables needed by the script (docker-compose reads .env.prod directly)
