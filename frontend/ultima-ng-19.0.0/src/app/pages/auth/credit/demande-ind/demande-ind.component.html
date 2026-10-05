@@ -481,6 +481,19 @@
                     </tr>
                     }
 
+                    <!-- Le fonctionnaire n'a pas d'activité commerciale à décrire : on lui demande
+                         la nature de son emploi, enregistrée dans le même champ. -->
+                    @if (isFonctionnaire()) {
+                    <tr>
+                        <td class="label-cell">Nature de l'emploi</td>
+                        <td colspan="5">
+                            <textarea pTextarea [(ngModel)]="formData.descriptionActivite" name="descriptionActivite"
+                                rows="2" class="w-full" [disabled]="state().submitting"
+                                placeholder="Fonction occupée, service d'affectation, nature des responsabilités…"></textarea>
+                        </td>
+                    </tr>
+                    }
+
                     @if (!isFonctionnaire()) {
                     <!-- Description de l'activité -->
                     <tr>
@@ -624,13 +637,15 @@
                                 }
                             }
                         </td>
-                        @if (!isFonctionnaire()) {
-                        <td class="label-cell" colspan="3">Object du crédit *</td>
+                        <!-- Objet du crédit : saisi pour TOUS les types, fonctionnaires compris.
+                             Il était masqué pour eux et recopié automatiquement depuis la liste
+                             déroulante, ce qui donnait un champ rempli mais vide de sens. -->
+                        <td class="label-cell" colspan="3">Objet du crédit *</td>
                         <td colspan="2">
                             <input pInputText [(ngModel)]="formData.detailObjectCredit" name="detailObjectCredit"
-                                class="w-full" [disabled]="state().submitting" required>
+                                class="w-full" [disabled]="state().submitting" required
+                                placeholder="Ce que le crédit finance concrètement">
                         </td>
-                        }
                     </tr>
 
                     <!-- Statut du crédit, Rang, Type de crédit -->

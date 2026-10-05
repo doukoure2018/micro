@@ -605,8 +605,8 @@
                                 <i class="pi pi-sitemap mr-1"></i>{{ filiereActivite() }}</td>
                         </tr>
                         <tr class="border-b border-gray-200">
-                            <td class="py-3 px-4 text-gray-600 font-medium">Description</td>
-                            <td class="py-3 px-4" colspan="3">{{ state().demandeIndividuel?.descriptionActivite }}</td>
+                            <td class="py-3 px-4 text-gray-600 font-medium">{{ estFonctionnaire() ? "Nature de l'emploi" : "Description de l'activité" }}</td>
+                            <td class="py-3 px-4" colspan="3">{{ state().demandeIndividuel?.descriptionActivite || '—' }}</td>
                         </tr>
                         <tr class="border-b border-gray-200">
                             <td class="py-3 px-4 text-gray-600 font-medium">Lieu d'activité</td>

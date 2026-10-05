@@ -943,7 +943,7 @@ export class DemandeIndComponent implements OnInit {
             demandeFonctionnaire: this.isFonctionnaire() ? { ...this.fonctionnaire } : undefined,
             periodiciteRemboursement: this.isFonctionnaire() ? 'Mensuelle' : this.formData.periodiciteRemboursement!,
             nombreEcheance: this.isFonctionnaire() ? this.formData.dureeDemande || 1 : this.formData.nombreEcheance!,
-            detailObjectCredit: this.isFonctionnaire() ? this.formData.detailObjectCredit || this.formData.objectCredit || '' : this.formData.detailObjectCredit!,
+            detailObjectCredit: this.formData.detailObjectCredit!,
             sernom: this.formData.sernom || '',
             // Champs activite: vides pour Particulier
             categorie: this.isParticulier() ? '' : this.formData.categorie || '',

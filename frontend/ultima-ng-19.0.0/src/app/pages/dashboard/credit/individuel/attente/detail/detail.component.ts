@@ -279,6 +279,11 @@ export class DetailComponent {
         });
     }
 
+    /** Un fonctionnaire n'a pas d'activite commerciale : le libelle du champ s'adapte. */
+    estFonctionnaire(): boolean {
+        return (this.state().demandeIndividuel?.natureClient || '').toLowerCase().includes('fonctionnaire');
+    }
+
     ngOnInit(): void {
         this.loadDemandeWithGaranties();
     }
