@@ -90,7 +90,7 @@
         <ng-template pTemplate="header">
             <tr>
                 <th>Agence</th>
-                <th>Code</th>
+                <th class="text-center">Points de service</th>
                 <th class="text-right">Validé</th>
                 <th class="text-right">Rejeté</th>
                 <th class="text-right">En cours</th>
@@ -101,7 +101,7 @@
         <ng-template pTemplate="body" let-a>
             <tr class="cursor-pointer" (click)="choisirAgence(a)">
                 <td class="font-medium">{{ a.agenceLibele }}</td>
-                <td>{{ a.agenceCode }}</td>
+                <td class="text-center text-color-secondary">{{ a.agenceCode }}</td>
                 <td class="text-right text-green-600 font-medium">{{ a.valide | number }}</td>
                 <td class="text-right" [class.text-red-500]="a.rejete > 0">{{ a.rejete | number }}</td>
                 <td class="text-right" [class.text-orange-500]="a.enAttente > 0">{{ a.enAttente | number }}</td>
