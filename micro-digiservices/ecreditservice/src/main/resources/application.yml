@@ -44,6 +44,12 @@ spring:
 
 file:
   upload-dir: C:/Users/DELL/IdeaProjects/micro/uploads
+  # V160 : redimensionnement des photos au depot (DSIG, 2026-10-05)
+  image:
+    redimension-active: true
+    dimension-max: 1600
+    qualite: 0.82
+    taille-min-octets: 300000
   base-url: http://localhost:8087/ecredit/files
 
   jpa:

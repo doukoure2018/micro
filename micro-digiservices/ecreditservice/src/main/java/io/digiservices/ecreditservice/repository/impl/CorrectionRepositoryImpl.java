@@ -117,7 +117,8 @@ public class CorrectionRepositoryImpl implements CorrectionRepository {
             CorrectionAgenceStat.builder()
                     .agenceId(rs.getObject("agence_id", Long.class))
                     .agenceLibele(rs.getString("agence_libele"))
-                    .agenceCode(rs.getString("agence_code"))
+                    // V160 : porte desormais le nombre de points de service de l'agence
+                    .agenceCode(String.valueOf(rs.getLong("agence_code")))
                     .enAttente(rs.getLong("en_attente"))
                     .rejete(rs.getLong("rejete"))
                     .valide(rs.getLong("valide"))

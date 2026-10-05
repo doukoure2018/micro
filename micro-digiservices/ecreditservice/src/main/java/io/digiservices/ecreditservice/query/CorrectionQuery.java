@@ -284,7 +284,10 @@ public class CorrectionQuery {
         SELECT
             a.id AS agence_id,
             a.libele AS agence_libele,
-            pv.code AS agence_code,
+            -- V160 : nombre de points de service de l'agence sur la periode, et non le code de
+            -- l'un d'eux : regrouper par code faisait apparaitre l'agence autant de fois qu'elle
+            -- compte de points de service (KALOUM s'affichait cinq fois).
+            COUNT(DISTINCT pv.code) AS agence_code,
             COALESCE(SUM(CASE WHEN pp.correction_statut = 'EN_ATTENTE' THEN 1 ELSE 0 END), 0) AS en_attente,
             COALESCE(SUM(CASE WHEN pp.correction_statut = 'REJETE' THEN 1 ELSE 0 END), 0) AS rejete,
             COALESCE(SUM(CASE WHEN pp.correction_statut = 'VALIDE' THEN 1 ELSE 0 END), 0) AS valide,
@@ -298,7 +301,7 @@ public class CorrectionQuery {
           AND (CAST(:perimetreAgenceId AS BIGINT) IS NULL OR pv.agence_id = CAST(:perimetreAgenceId AS BIGINT))
           AND (CAST(:dateDebut AS DATE) IS NULL OR pp.created_at >= CAST(:dateDebut AS DATE))
           AND (CAST(:dateFin AS DATE) IS NULL OR pp.created_at < CAST(:dateFin AS DATE) + INTERVAL '1 day')
-        GROUP BY a.id, a.libele, pv.code
+        GROUP BY a.id, a.libele
         ORDER BY a.libele
         """;
 
