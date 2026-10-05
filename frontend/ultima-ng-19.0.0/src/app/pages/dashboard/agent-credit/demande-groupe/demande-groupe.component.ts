@@ -89,7 +89,7 @@ export class DemandeGroupeComponent implements OnInit {
         numeroMembreGroupe: '',
         objectCredit: 'Fond de roulement',
         detailObjectCredit: '',
-        autreAPreciser: '',
+        descriptionActivite: '',
         montantDemande: 0,
         dureeDemande: 6,
         nombreEcheance: 2,
@@ -223,6 +223,7 @@ export class DemandeGroupeComponent implements OnInit {
                     this.pret.numeroMembreGroupe = demande.numeroMembre || '';
                     this.pret.objectCredit = demande.objectCredit || 'Fond de roulement';
                     this.pret.detailObjectCredit = demande.detailObjectCredit || '';
+                    this.pret.descriptionActivite = demande.descriptionActivite || '';
                     this.pret.montantDemande = Number(demande.montantDemande) || 0;
                     this.pret.dureeDemande = Number(demande.dureeDemande) || 6;
                     this.pret.nombreEcheance = Number(demande.nombreEcheance) || 2;
@@ -504,7 +505,7 @@ export class DemandeGroupeComponent implements OnInit {
             typeActivite: this.pret.selectedTypeActivite ? String(this.pret.selectedTypeActivite) : '',
             sousActivite: this.pret.selectedSousActivite ? String(this.pret.selectedSousActivite) : '',
             sousSousActivite: this.pret.selectedSousSousActivite ? String(this.pret.selectedSousSousActivite) : '',
-            descriptionActivite: this.pret.autreAPreciser || '',
+            descriptionActivite: this.pret.descriptionActivite || '',
             nombreAnneeActivite: this.pret.nombreAnneeActivite,
             adresseLieuActivite: [this.groupe.districtQuartier, this.groupe.secteur].filter(Boolean).join(' / '),
             montantDemande: this.pret.montantDemande,
@@ -517,7 +518,8 @@ export class DemandeGroupeComponent implements OnInit {
             // CAS / CAS-R : le backend recalcule l'échéance (1re ligne de l'échéancier) ; valeur indicative ici
             echeance: this.isAgricole() ? this.echeancierPrevisionnel()?.echeanceMax ?? 0 : this.pret.echeance,
             objectCredit: this.pret.objectCredit,
-            detailObjectCredit: this.pret.detailObjectCredit || this.pret.objectCredit,
+            // Plus de recopie de l'objet : un détail vide doit rester vide et se voir.
+            detailObjectCredit: this.pret.detailObjectCredit || '',
             statutCredit: 'Nouveau',
             rangCredit: 1,
             tipCredito: type?.tipCredito,
