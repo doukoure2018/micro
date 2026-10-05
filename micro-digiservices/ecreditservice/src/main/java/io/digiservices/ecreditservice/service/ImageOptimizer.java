@@ -60,7 +60,16 @@ public class ImageOptimizer {
             log.warn("[IMAGE] Lecture impossible, fichier stocke tel quel : {}", e.getMessage());
             return null;
         }
-        if (!actif || extension == null || !FORMATS.contains(extension.toLowerCase(Locale.ROOT))
+        return optimiser(origine, extension, fichier.getOriginalFilename());
+    }
+
+    /**
+     * Meme traitement a partir des octets, pour que la reprise du stock existant applique
+     * exactement la regle des depots neufs — un seul code, un seul resultat possible.
+     */
+    public byte[] optimiser(byte[] origine, String extension, String nom) {
+        if (!actif || origine == null || extension == null
+                || !FORMATS.contains(extension.toLowerCase(Locale.ROOT))
                 || origine.length <= tailleMin) {
             return origine;
         }
@@ -78,12 +87,12 @@ public class ImageOptimizer {
                 return origine;   // deja optimale : on ne degrade pas
             }
             log.info("[IMAGE] {} : {} Ko -> {} Ko ({} % economises)",
-                    fichier.getOriginalFilename(), origine.length / 1024, reduite.length / 1024,
+                    nom, origine.length / 1024, reduite.length / 1024,
                     100 - (reduite.length * 100 / origine.length));
             return reduite;
         } catch (Exception e) {
             log.warn("[IMAGE] Redimensionnement impossible ({}), fichier stocke tel quel : {}",
-                    fichier.getOriginalFilename(), e.getMessage());
+                    nom, e.getMessage());
             return origine;
         }
     }
