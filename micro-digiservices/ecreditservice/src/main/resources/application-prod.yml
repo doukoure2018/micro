@@ -164,4 +164,12 @@ file:
     dimension-max: 1600
     qualite: 0.82
     taille-min-octets: 300000
+  # Recompression des PDF deposes (DSIG, 2026-10-05) : photos encapsulees
+  pdf:
+    recompression-active: true
+    dimension-max: 1600
+    qualite: 0.82
+    taille-min-octets: 800000
+    taille-max-octets: 30000000
+    pages-max: 30
   base-url: https://digi-creditrural-io.com/ecredit/files

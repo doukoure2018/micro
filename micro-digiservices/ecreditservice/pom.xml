@@ -135,6 +135,15 @@
             <artifactId>poi</artifactId>
             <version>5.2.5</version>
         </dependency>
+        <!-- Recompression des PDF deposes (2026-10-05) : ce sont des photos encapsulees,
+             100 % de l'echantillon contient des images JPEG. PDFBox permet de les reduire
+             sans ajouter d'outil systeme a l'image Docker. -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>3.0.3</version>
+        </dependency>
+
         <!-- Redimensionnement des photos deposees (V160) : respecte l'orientation EXIF,
              ce que ImageIO seul ne fait pas. Bibliotheque autonome, sans dependance transitive. -->
         <dependency>

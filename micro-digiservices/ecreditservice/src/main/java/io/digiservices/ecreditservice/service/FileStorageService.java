@@ -23,6 +23,7 @@ import java.util.*;
 public class FileStorageService {
 
     private final ImageOptimizer imageOptimizer;
+    private final PdfOptimizer pdfOptimizer;
 
     @Value("${file.upload-dir:C:/Users/DELL/IdeaProjects/micro/uploads}")
     private String uploadDir;
@@ -79,6 +80,11 @@ public class FileStorageService {
             // formats, et toute image que l'optimiseur n'a pas su traiter, sont copiés tels quels.
             byte[] contenu = imageOptimizer.optimiser(file, fileExtension);
             if (contenu != null) {
+                // Les PDF deposes sont des photographies encapsulees : leurs images internes
+                // sont reduites de la meme facon (voir PdfOptimizer).
+                if ("pdf".equalsIgnoreCase(fileExtension)) {
+                    contenu = pdfOptimizer.optimiser(contenu, originalFileName);
+                }
                 Files.write(targetLocation, contenu);
             } else {
                 Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
