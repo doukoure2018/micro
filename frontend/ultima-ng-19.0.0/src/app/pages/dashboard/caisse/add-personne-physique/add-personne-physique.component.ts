@@ -539,6 +539,18 @@ export class AddPersonnePhysiqueComponent implements OnInit {
         });
     }
 
+    /**
+     * Vrai quand le champ a atteint la longueur maximale acceptee par la fiche SAF.
+     *
+     * <p>L'attribut maxlength du navigateur empeche de depasser la limite : le validateur
+     * Angular ne se declenche donc jamais et le message d'erreur rouge restait invisible.
+     * Ce qui se produit reellement, c'est une coupure silencieuse du nom saisi. On signale
+     * donc l'atteinte de la limite, et non son depassement.</p>
+     */
+    limiteAtteinte(champ: string, max: number): boolean {
+        return (this.f[champ]?.value?.length || 0) >= max;
+    }
+
     get f() {
         return this.personneForm.controls;
     }

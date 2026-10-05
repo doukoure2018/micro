@@ -547,6 +547,15 @@ export class UpdateCorrectionRejetComponent implements OnInit {
         });
     }
 
+    /**
+     * Vrai quand le champ a atteint la longueur maximale acceptee par la fiche SAF.
+     * L'attribut maxlength du navigateur empechant tout depassement, le validateur Angular
+     * ne se declenchait jamais : ce qui se produit reellement est une coupure silencieuse.
+     */
+    limiteAtteinte(champ: string, max: number): boolean {
+        return (this.f[champ]?.value?.length || 0) >= max;
+    }
+
     get f() {
         return this.personneForm.controls;
     }

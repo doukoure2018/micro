@@ -221,8 +221,13 @@
                         <label for="conjoint">Conjoint</label>
                         <input id="conjoint" type="text" pInputText formControlName="conjoint" maxlength="15"
                             class="w-full" />
-                        <small class="text-muted" *ngIf="!f['conjoint'].errors">
-                            {{ f['conjoint'].value?.length || 0 }}/15 caractères
+                        <small [class.text-muted]="!limiteAtteinte('conjoint', 15)"
+                                   [class.p-error]="limiteAtteinte('conjoint', 15)"
+                                   [class.font-semibold]="limiteAtteinte('conjoint', 15)">
+                            {{ f['conjoint'].value?.length || 0 }}/15 caractères (limite de la fiche SAF)
+                        </small>
+                        <small class="p-error block font-semibold" *ngIf="limiteAtteinte('conjoint', 15)">
+                            Limite atteinte : le nom a pu être coupé. Vérifiez qu'il est complet, sinon abrégez les prénoms — la fiche SAF n'accepte pas plus de 15 caractères.
                         </small>
                         <small class="p-error" *ngIf="f['conjoint'].errors?.['maxlength']">
                             Le nom du conjoint ne doit pas dépasser 15 caractères (limite de la fiche SAF)
@@ -399,8 +404,13 @@
                         <label for="nomBeneficiario">Nom du Bénéficiaire</label>
                         <input id="nomBeneficiario" type="text" pInputText formControlName="nomBeneficiario"
                             class="w-full" maxlength="15" />
-                        <small class="text-muted" *ngIf="!f['nomBeneficiario'].errors">
+                        <small [class.text-muted]="!limiteAtteinte('nomBeneficiario', 15)"
+                                   [class.p-error]="limiteAtteinte('nomBeneficiario', 15)"
+                                   [class.font-semibold]="limiteAtteinte('nomBeneficiario', 15)">
                             {{ f['nomBeneficiario'].value?.length || 0 }}/15 caractères (limite de la fiche SAF)
+                        </small>
+                        <small class="p-error block font-semibold" *ngIf="limiteAtteinte('nomBeneficiario', 15)">
+                            Limite atteinte : le nom a pu être coupé. Vérifiez qu'il est complet, sinon abrégez les prénoms — la fiche SAF n'accepte pas plus de 15 caractères.
                         </small>
                         <small class="p-error" *ngIf="f['nomBeneficiario'].errors?.['maxlength']">
                             Le nom du bénéficiaire ne doit pas dépasser 15 caractères (limite de la fiche SAF)
@@ -411,8 +421,13 @@
                         <label for="relacBeneficiario">Relation avec Bénéficiaire</label>
                         <input id="relacBeneficiario" type="text" pInputText formControlName="relacBeneficiario"
                             class="w-full" maxlength="20" />
-                        <small class="text-muted" *ngIf="!f['relacBeneficiario'].errors">
-                            {{ f['relacBeneficiario'].value?.length || 0 }}/20 caractères
+                        <small [class.text-muted]="!limiteAtteinte('relacBeneficiario', 20)"
+                                   [class.p-error]="limiteAtteinte('relacBeneficiario', 20)"
+                                   [class.font-semibold]="limiteAtteinte('relacBeneficiario', 20)">
+                            {{ f['relacBeneficiario'].value?.length || 0 }}/20 caractères (limite de la fiche SAF)
+                        </small>
+                        <small class="p-error block font-semibold" *ngIf="limiteAtteinte('relacBeneficiario', 20)">
+                            Limite atteinte : la relation a pu être coupée. Vérifiez qu'elle est complète — la fiche SAF n'accepte pas plus de 20 caractères.
                         </small>
                         <small class="p-error" *ngIf="f['relacBeneficiario'].errors?.['maxlength']">
                             La relation ne doit pas dépasser 20 caractères (limite de la fiche SAF)
