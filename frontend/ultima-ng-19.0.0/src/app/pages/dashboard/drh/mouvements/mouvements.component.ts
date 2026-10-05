@@ -161,7 +161,7 @@ interface BarreAffluence {
                     <!-- Classement par badgeages -->
                     <div class="text-sm text-color-secondary mb-2">
                         Classement du jour par nombre de mouvements — seuil d'alerte : {{ fmtMouv(tb.seuilMouvements) }}
-                        (1 mouvement = 1 sortie suivie d'un retour, entre {{ heureDebutComptage }} et {{ heureFinComptage }}, pause déjeuner exclue ; une journée type = 0 :
+                        (1 mouvement = 1 aller-retour complet, entre {{ heureDebutComptage }} et {{ heureFinComptage }}, pause déjeuner exclue ; une journée type = 0 :
                         arrivée, pause aller-retour, départ). Alerte SMS DRH à 17h15 (13h15 le vendredi, 14h15 le samedi).
                     </div>
                     <p-table [value]="tb.lignes" responsiveLayout="scroll" [paginator]="tb.lignes.length > 25" [rows]="25" [rowHover]="true">
@@ -176,7 +176,7 @@ interface BarreAffluence {
                                 <td>{{ l.matricule }}</td>
                                 <td>{{ l.departementCode || '—' }}</td>
                                 <td class="font-bold" [class.text-red-500]="l.mouvements > tb.seuilMouvements"
-                                    [pTooltip]="'Sorties effectuées pendant les heures de travail (' + l.badgeages + ' badgeages ce jour-là)'">{{ fmtMouv(l.mouvements) }}</td>
+                                    [pTooltip]="'Allers-retours complets pendant les heures de travail (' + l.badgeages + ' badgeages ce jour-là)'">{{ fmtMouv(l.mouvements) }}</td>
                                 <td>{{ l.nbSortiesTravail || '—' }}</td>
                                 <td [class.text-orange-500]="l.minutesHorsBureau > 0">{{ l.minutesHorsBureau > 0 ? duree(l.minutesHorsBureau) : '—' }}</td>
                                 <td [class.text-red-500]="l.minutesDepassementPause > 0">{{ l.minutesDepassementPause > 0 ? '+' + l.minutesDepassementPause + ' min' : '—' }}</td>
@@ -312,7 +312,7 @@ interface BarreAffluence {
                                 [binary]="true" inputId="filtreDep" />
                     <label for="filtreDep" class="text-sm cursor-pointer">Plus de {{ fmtMouv(seuilMouvements()) }} mouvements seulement</label>
                     <span class="text-sm text-color-secondary">
-                        1 mouvement = 1 sortie suivie d'un retour pendant les heures de travail ({{ heureDebutComptage }} – {{ heureFinComptage }}). L'arrivée, le départ du soir, la pause déjeuner et les allées et venues hors de ces heures ne sont pas comptées.
+                        1 mouvement = 1 aller-retour complet pendant les heures de travail ({{ heureDebutComptage }} – {{ heureFinComptage }}). L'arrivée, le départ du soir, la pause déjeuner, les allées et venues hors de ces heures et les sorties dont le retour n'a pas été badgé ne sont pas comptées.
                         Les salariés qui dépassent le seuil sont en tête. Cliquez sur une ligne pour le détail jour par jour.
                     </span>
                 </div>
@@ -321,7 +321,7 @@ interface BarreAffluence {
                     <ng-template pTemplate="header">
                         <tr>
                             <th>Salarié</th><th>Mat.</th><th>Jours</th>
-                            <th pTooltip="Sorties effectuées pendant les heures de travail, cumulées sur la période">Mouvements</th>
+                            <th pTooltip="Allers-retours complets pendant les heures de travail, cumulés sur la période">Mouvements</th>
                             <th pTooltip="Nombre de jours au-dessus du seuil — critère de classement">Jours &gt; seuil</th>
                             <th pTooltip="Plus fort total sur une seule journée">Max / jour</th>
                             <th>Pauses</th>
@@ -369,7 +369,7 @@ interface BarreAffluence {
                     <ng-template pTemplate="header">
                         <tr>
                             <th>Jour</th><th>Arrivée</th><th>Départ</th>
-                            <th pTooltip="Sorties effectuées pendant les heures de travail (08h35 – 16h24), pause déjeuner exclue">Mouvements</th>
+                            <th pTooltip="Allers-retours complets pendant les heures de travail (08h35 – 16h24), pause déjeuner exclue">Mouvements</th>
                             <th>Sorties de la journée</th>
                             <th>Hors bureau</th><th>Dépassement pause</th>
                         </tr>
@@ -398,7 +398,7 @@ interface BarreAffluence {
                             <td>
                                 <span class="font-medium">{{ fmtMouv(j.mouvements) }}</span>
                                 <p-tag *ngIf="j.depasseSeuil" value="&gt; seuil" severity="danger" styleClass="ml-1"
-                                       [pTooltip]="'Plus de ' + fmtMouv(seuilMouvements()) + ' sorties pendant les heures de travail ce jour-là'" />
+                                       [pTooltip]="'Plus de ' + fmtMouv(seuilMouvements()) + ' allers-retours complets pendant les heures de travail ce jour-là'" />
                             </td>
                             <td>
                                 <span *ngIf="j.sorties.length === 0" class="text-color-secondary text-sm">Aucune sortie intermédiaire</span>

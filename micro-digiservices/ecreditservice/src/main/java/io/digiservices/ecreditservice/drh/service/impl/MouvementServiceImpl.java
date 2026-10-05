@@ -459,8 +459,11 @@ public class MouvementServiceImpl implements MouvementService {
         // allées et venues avant 08:35 ou après la fin de journée, ni la pause déjeuner. La
         // classification est déjà faite par classer() : on s'y appuie au lieu de diviser les
         // badgeages par deux, qui comptait la pause et le départ final comme des mouvements.
+        // Arbitrage DRH du 2026-10-05 : seuls les ALLERS-RETOURS COMPLETS comptent. Une sortie
+        // dont le retour n'a pas été badgé (NON_CLOTUREE) ne compte pas ; elle reste visible
+        // dans le détail du jour et dans le compteur « retours non badgés » du tableau de bord.
         double mouvements = sorties.stream()
-                .filter(s -> compteCommeMouvement(s, journeeContinue, pauseDebut, pauseFin, debutTravail, finTravail))
+                .filter(s -> "SORTIE_TRAVAIL".equals(s.getClassement()))
                 .count();
         return MouvementJourDto.builder()
                 .jour(jour)
@@ -479,30 +482,6 @@ public class MouvementServiceImpl implements MouvementService {
                         .mapToInt(SortieDto::getMinutesComptees).sum())
                 .nonCloturees((int) sorties.stream().filter(s -> "NON_CLOTUREE".equals(s.getClassement())).count())
                 .build();
-    }
-
-    /**
-     * Une sortie compte comme mouvement si elle s'est produite pendant les heures de travail.
-     *
-     * <p>SORTIE_TRAVAIL compte par construction. Une sortie dont le retour n'a pas été badgé
-     * (NON_CLOTUREE) compte également si l'heure de sortie tombe dans les heures réglementaires
-     * et hors pause : sinon, ne pas badger son retour suffirait à échapper au comptage.
-     * PAUSE, PAUSE_DEPASSEE, AVANT_TRAVAIL et APRES_TRAVAIL ne comptent jamais.</p>
-     */
-    private static boolean compteCommeMouvement(SortieDto s, boolean journeeContinue,
-                                                LocalTime pauseDebut, LocalTime pauseFin,
-                                                LocalTime debutTravail, LocalTime finTravail) {
-        if ("SORTIE_TRAVAIL".equals(s.getClassement())) {
-            return true;
-        }
-        if (!"NON_CLOTUREE".equals(s.getClassement())) {
-            return false;
-        }
-        LocalTime h = s.getHeureSortie();
-        if (h.isBefore(debutTravail) || !h.isBefore(finTravail)) {
-            return false;
-        }
-        return journeeContinue || h.isBefore(pauseDebut) || h.isAfter(pauseFin);
     }
 
     /** V150 : durée réglementaire de la pause (minutes), lue à chaque reconstitution. */
