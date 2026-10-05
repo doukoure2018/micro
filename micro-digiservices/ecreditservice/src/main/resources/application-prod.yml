@@ -158,4 +158,10 @@ cache:
 
 file:
   upload-dir: /app/uploads
+  # V160 : redimensionnement des photos au depot (DSIG, 2026-10-05)
+  image:
+    redimension-active: true
+    dimension-max: 1600
+    qualite: 0.82
+    taille-min-octets: 300000
   base-url: https://digi-creditrural-io.com/ecredit/files

@@ -1,5 +1,6 @@
 package io.digiservices.ecreditservice.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -18,7 +19,10 @@ import java.util.*;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class FileStorageService {
+
+    private final ImageOptimizer imageOptimizer;
 
     @Value("${file.upload-dir:C:/Users/DELL/IdeaProjects/micro/uploads}")
     private String uploadDir;
@@ -71,7 +75,14 @@ public class FileStorageService {
 
         try {
             Path targetLocation = this.fileStorageLocation.resolve(uniqueFileName);
-            Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+            // V160 : les photos sont redimensionnées au dépôt (voir ImageOptimizer). Les autres
+            // formats, et toute image que l'optimiseur n'a pas su traiter, sont copiés tels quels.
+            byte[] contenu = imageOptimizer.optimiser(file, fileExtension);
+            if (contenu != null) {
+                Files.write(targetLocation, contenu);
+            } else {
+                Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+            }
 
             log.info("Fichier stocké: {}", uniqueFileName);
 
