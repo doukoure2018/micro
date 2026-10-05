@@ -411,7 +411,7 @@ public class MouvementServiceImpl implements MouvementService {
         agents.get(matricule).getJours().add(analyserJour(jour, evts, pauseDebut, pauseFin, debutTravail, fin));
     }
 
-    /** V158 : mouvements par jour au-delà desquels la ligne est signalée (1 mouvement = 2 badgeages). */
+    /** V158 : mouvements par jour au-delà desquels la ligne est signalée (1 mouvement = 1 sortie + 1 retour). */
     private double seuilMouvements = 2;
 
     private MouvementJourDto analyserJour(LocalDate jour, List<Evt> evts,
@@ -451,10 +451,17 @@ public class MouvementServiceImpl implements MouvementService {
             }
             sorties.add(classer(e.heure(), suivant.heure(), journeeContinue, pauseDebut, pauseFin, debutTravail, finTravail));
         }
-        // V158 : les badgeages antérieurs à l'heure d'arrivée majorée de la tolérance (08:35) ne
-        // comptent pas — même borne que le temps hors bureau. Le départ final compte, lui.
+        // V158 : badgeages à partir de l'heure d'arrivée majorée de la tolérance (08:35),
+        // conservés pour information et pour le tableau de bord du jour.
         int badgeagesComptes = (int) nets.stream().filter(e -> !e.heure().isBefore(debutTravail)).count();
-        double mouvements = badgeagesComptes / 2.0;
+        // Demande DRH du 2026-10-05 : un mouvement est une SORTIE SUIVIE D'UN RETOUR pendant les
+        // heures réglementaires. Ne comptent donc pas l'arrivée du matin ni le départ du soir, les
+        // allées et venues avant 08:35 ou après la fin de journée, ni la pause déjeuner. La
+        // classification est déjà faite par classer() : on s'y appuie au lieu de diviser les
+        // badgeages par deux, qui comptait la pause et le départ final comme des mouvements.
+        double mouvements = sorties.stream()
+                .filter(s -> compteCommeMouvement(s, journeeContinue, pauseDebut, pauseFin, debutTravail, finTravail))
+                .count();
         return MouvementJourDto.builder()
                 .jour(jour)
                 .badgeagesComptes(badgeagesComptes)
@@ -472,6 +479,30 @@ public class MouvementServiceImpl implements MouvementService {
                         .mapToInt(SortieDto::getMinutesComptees).sum())
                 .nonCloturees((int) sorties.stream().filter(s -> "NON_CLOTUREE".equals(s.getClassement())).count())
                 .build();
+    }
+
+    /**
+     * Une sortie compte comme mouvement si elle s'est produite pendant les heures de travail.
+     *
+     * <p>SORTIE_TRAVAIL compte par construction. Une sortie dont le retour n'a pas été badgé
+     * (NON_CLOTUREE) compte également si l'heure de sortie tombe dans les heures réglementaires
+     * et hors pause : sinon, ne pas badger son retour suffirait à échapper au comptage.
+     * PAUSE, PAUSE_DEPASSEE, AVANT_TRAVAIL et APRES_TRAVAIL ne comptent jamais.</p>
+     */
+    private static boolean compteCommeMouvement(SortieDto s, boolean journeeContinue,
+                                                LocalTime pauseDebut, LocalTime pauseFin,
+                                                LocalTime debutTravail, LocalTime finTravail) {
+        if ("SORTIE_TRAVAIL".equals(s.getClassement())) {
+            return true;
+        }
+        if (!"NON_CLOTUREE".equals(s.getClassement())) {
+            return false;
+        }
+        LocalTime h = s.getHeureSortie();
+        if (h.isBefore(debutTravail) || !h.isBefore(finTravail)) {
+            return false;
+        }
+        return journeeContinue || h.isBefore(pauseDebut) || h.isAfter(pauseFin);
     }
 
     /** V150 : durée réglementaire de la pause (minutes), lue à chaque reconstitution. */
@@ -772,7 +803,7 @@ public class MouvementServiceImpl implements MouvementService {
         Set<String> perimetre = perimetreMatricules(drh);
         if (jour == null) jour = LocalDate.now();
         // V158 : le tableau de bord lit le MEME chiffre et le MEME seuil que la synthèse par
-        // salarié — badgeages comptés à partir de 08:35, exprimés en mouvements.
+        // salarié — sorties effectuées pendant les heures réglementaires (demande DRH 2026-10-05).
         double seuil = seuilMouvements();
 
         // Noms propres du personnel + affectations
