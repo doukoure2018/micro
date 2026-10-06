@@ -92,17 +92,20 @@ public class RepriseUploadsRunner implements ApplicationRunner {
                 lus.incrementAndGet();
                 try {
                     traiter(f, traites, inchanges, avant, apres);
-                } catch (Exception e) {
+                } catch (Throwable t) {
+                    // Throwable et non Exception : un seul fichier pathologique ne doit jamais
+                    // interrompre la reprise des 36 000 autres.
                     echecs.incrementAndGet();
-                    log.warn("[REPRISE] {} : echec, fichier laisse intact ({})", f.getFileName(), e.getMessage());
+                    log.warn("[REPRISE] {} : echec, fichier laisse intact ({})",
+                            f.getFileName(), t.toString());
                 }
                 if (lus.get() % 500 == 0) {
                     log.info("[REPRISE] {} fichiers parcourus, {} allegis, {} Mo economises",
                             lus.get(), traites.get(), (avant.get() - apres.get()) / 1048576);
                 }
             }
-        } catch (Exception e) {
-            log.error("[REPRISE] Interrompue : {}", e.getMessage(), e);
+        } catch (Throwable t) {
+            log.error("[REPRISE] Interrompue : {}", t.toString(), t);
         }
 
         long gain = avant.get() - apres.get();
