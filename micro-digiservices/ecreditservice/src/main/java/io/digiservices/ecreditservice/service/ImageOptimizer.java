@@ -90,9 +90,11 @@ public class ImageOptimizer {
                     nom, origine.length / 1024, reduite.length / 1024,
                     100 - (reduite.length * 100 / origine.length));
             return reduite;
-        } catch (Exception e) {
+        } catch (Throwable t) {
+            // Throwable et non Exception : decoder une photographie demesuree peut lever un
+            // OutOfMemoryError, qui ne doit ni faire echouer un depot ni interrompre une reprise.
             log.warn("[IMAGE] Redimensionnement impossible ({}), fichier stocke tel quel : {}",
-                    nom, e.getMessage());
+                    nom, t.toString());
             return origine;
         }
     }

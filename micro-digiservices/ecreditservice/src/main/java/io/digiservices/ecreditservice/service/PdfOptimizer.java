@@ -61,6 +61,15 @@ public class PdfOptimizer {
     private int pagesMax;
 
     /**
+     * Garde-fou memoire. Decoder une image encapsulee alloue un tableau de 4 octets par
+     * pixel : une image de 50 Mpx demande 200 Mo d'un seul bloc. Au-dela de cette limite,
+     * l'image est laissee telle quelle plutot que de risquer d'epuiser le tas de la JVM
+     * et, avec lui, le service entier.
+     */
+    @Value("${file.pdf.megapixels-max:50}")
+    private int megapixelsMax;
+
+    /**
      * Renvoie les octets a stocker : le document recompresse s'il est plus leger ET valide,
      * sinon l'original inchange. Ne leve jamais d'exception : en cas de doute, on garde
      * l'original — un depot de piece ne doit jamais echouer a cause d'une optimisation.
@@ -87,8 +96,11 @@ public class PdfOptimizer {
             ByteArrayOutputStream sortie = new ByteArrayOutputStream();
             doc.save(sortie);
             reduit = sortie.toByteArray();
-        } catch (Exception e) {
-            log.warn("[PDF] Recompression impossible ({}), document stocke tel quel : {}", nom, e.getMessage());
+        } catch (Throwable t) {
+            // Throwable et non Exception : un OutOfMemoryError sur une image encapsulee
+            // demesuree ne doit ni faire echouer un depot ni interrompre une reprise de stock.
+            log.warn("[PDF] Recompression impossible ({}), document stocke tel quel : {}",
+                    nom, t.toString());
             return origine;
         }
 
@@ -135,19 +147,29 @@ public class PdfOptimizer {
                 if (plusGrandCote <= dimensionMax) {
                     continue;
                 }
+                long pixels = (long) image.getWidth() * image.getHeight();
+                if (pixels > megapixelsMax * 1_000_000L) {
+                    log.info("[PDF] image {} de {} Mpx laissee telle quelle (limite {} Mpx)",
+                            nom.getName(), pixels / 1_000_000L, megapixelsMax);
+                    continue;
+                }
                 BufferedImage source = image.getImage();
                 if (source == null) {
                     continue;
                 }
-                BufferedImage reduite = Thumbnails.of(sansTransparence(source))
+                // La reduction vient AVANT l'aplatissement de la transparence : aplatir
+                // l'original allouerait un second tableau pleine taille, soit le double de
+                // memoire sur les images justement les plus lourdes.
+                BufferedImage reduite = Thumbnails.of(source)
                         .size(dimensionMax, dimensionMax)
                         .keepAspectRatio(true)
                         .asBufferedImage();
-                ressources.put(nom, JPEGFactory.createFromImage(doc, reduite, qualite));
+                ressources.put(nom, JPEGFactory.createFromImage(doc, sansTransparence(reduite), qualite));
                 traitees++;
-            } catch (Exception e) {
-                // Une image illisible ou dans un format exotique est laissee telle quelle.
-                log.debug("[PDF] image {} ignoree : {}", nom.getName(), e.getMessage());
+            } catch (Throwable t) {
+                // Une image illisible, exotique, ou trop lourde pour le tas disponible est
+                // laissee telle quelle : le document reste valide, seul le gain est perdu.
+                log.debug("[PDF] image {} ignoree : {}", nom.getName(), t.toString());
             }
         }
         return traitees;
