@@ -147,11 +147,14 @@ export class CorrectionDemandeComponent implements OnInit {
     sousSousActiviteOptions: { label: string; value: number; data: SousSousActivite }[] = [];
     typeCreditOptions: { label: string; value: number; data: TypeCredit }[] = [];
 
+    // Les valeurs doivent reprendre A L'IDENTIQUE la liste autorisee en base : la
+    // forme « Possession d'etat », sans accent, etait refusee et bloquait toute
+    // correction portant cette piece (incident du 2026-10-06, demande 2894).
     typePieceOptions = [
-        { label: "Carte nationale d'identite", value: "Carte nationale d'identite" },
-        { label: "Carte d'identite Biometrique", value: "Carte d'identite Biometrique" },
-        { label: "Possession d'etat", value: "Possession d'etat" },
-        { label: "Carte d'identite personnelle", value: "Carte d'identite personnelle" },
+        { label: "Carte nationale d'identité", value: "Carte nationale d'identite" },
+        { label: "Carte d'identité Biométrique", value: "Carte d'identite Biometrique" },
+        { label: "Possession d'état", value: "Possession d'état" },
+        { label: "Carte d'identité personnelle", value: "Carte d'identite personnelle" },
         { label: 'Passeport', value: 'Passeport' }
     ];
 
