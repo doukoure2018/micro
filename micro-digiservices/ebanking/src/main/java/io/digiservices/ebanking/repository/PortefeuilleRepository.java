@@ -194,12 +194,34 @@ public class PortefeuilleRepository {
             ORDER BY cr.COD_AGENCIA, t.PREM_IMP
             """;
 
-    private static final String SQL_INDICATEURS_RESEAU = "SELECT cr.COD_AGENCIA, ag.DES_AGENCIA, COUNT(*) AS NB, " + """
-                   COALESCE(SUM(cr.MON_SALDO), 0) AS ENCOURS,
-                   SUM(CASE WHEN t.PREM_IMP IS NOT NULL THEN 1 ELSE 0 END) AS NB_RETARD,
-                   COALESCE(SUM(COALESCE(t.CAP_IMP, 0) + COALESCE(t.INT_IMP, 0)), 0) AS IMPAYE,
-                   COALESCE(SUM(CASE WHEN t.PREM_IMP <= :date30 THEN cr.MON_SALDO ELSE 0 END), 0) AS ENCOURS_PAR30,
-                   COALESCE(SUM(CASE WHEN t.PREM_IMP <= :date90 THEN cr.MON_SALDO ELSE 0 END), 0) AS ENCOURS_PAR90
+    // Predicats de categorie, derives UNE seule fois de CategorieCredit pour que la regle
+    // appliquee ligne a ligne par ecreditservice et celle agregee ici ne puissent pas diverger.
+    private static final String EST_EN_COURS = "(cr.IND_ESTADO IS NULL OR cr.IND_ESTADO NOT IN ("
+            + io.digiservices.clients.portefeuille.CategorieCredit.codesNonAffectablesSql() + "))";
+    private static final String EST_CONTENTIEUX = "cr.IND_ESTADO IN ("
+            + io.digiservices.clients.portefeuille.CategorieCredit.CONTENTIEUX.codesSql() + ")";
+    private static final String EST_APURE = "cr.IND_ESTADO IN ("
+            + io.digiservices.clients.portefeuille.CategorieCredit.APURE.codesSql() + ")";
+
+    /**
+     * Synthese reseau par agence. Depuis le 2026-10-07 les indicateurs de charge ne portent que
+     * sur les credits EN COURS, seuls affectables a un agent ; les credits au contentieux et les
+     * credits apures sont denombres a part. Melanger les trois faussait le taux d'affectation
+     * d'environ un tiers et pouvait afficher un encours PAR90 superieur a l'encours lui-meme.
+     */
+    private static final String SQL_INDICATEURS_RESEAU = "SELECT cr.COD_AGENCIA, ag.DES_AGENCIA, "
+            + "SUM(CASE WHEN " + EST_EN_COURS + " THEN 1 ELSE 0 END) AS NB, "
+            + "COALESCE(SUM(CASE WHEN " + EST_EN_COURS + " THEN cr.MON_SALDO ELSE 0 END), 0) AS ENCOURS, "
+            + "SUM(CASE WHEN " + EST_EN_COURS + " AND t.PREM_IMP IS NOT NULL THEN 1 ELSE 0 END) AS NB_RETARD, "
+            + "COALESCE(SUM(CASE WHEN " + EST_EN_COURS + " THEN COALESCE(t.CAP_IMP, 0) + COALESCE(t.INT_IMP, 0) ELSE 0 END), 0) AS IMPAYE, "
+            + "SUM(CASE WHEN " + EST_CONTENTIEUX + " THEN 1 ELSE 0 END) AS NB_CONTENTIEUX, "
+            + "COALESCE(SUM(CASE WHEN " + EST_CONTENTIEUX + " THEN cr.MON_SALDO ELSE 0 END), 0) AS ENCOURS_CONTENTIEUX, "
+            + "SUM(CASE WHEN " + EST_APURE + " THEN 1 ELSE 0 END) AS NB_APURE, "
+            + "COALESCE(SUM(CASE WHEN " + EST_APURE + " THEN cr.MON_SALDO ELSE 0 END), 0) AS ENCOURS_APURE, "
+            + "COALESCE(SUM(CASE WHEN t.PREM_IMP <= :date30 AND " + EST_EN_COURS
+            + " THEN cr.MON_SALDO ELSE 0 END), 0) AS ENCOURS_PAR30, "
+            + "COALESCE(SUM(CASE WHEN t.PREM_IMP <= :date90 AND " + EST_EN_COURS
+            + " THEN cr.MON_SALDO ELSE 0 END), 0) AS ENCOURS_PAR90 " + """
             FROM PR.PR_CREDITOS cr
             LEFT JOIN """ + IMPAYES_PAR_CREDIT + """
                 ON t.COD_EMPRESA = cr.COD_EMPRESA AND t.COD_AGENCIA = cr.COD_AGENCIA
@@ -246,7 +268,9 @@ public class PortefeuilleRepository {
                 (rs, n) -> new io.digiservices.clients.portefeuille.IndicateursAgenceDto(
                         str(rs, "COD_AGENCIA"), str(rs, "DES_AGENCIA"), rs.getLong("NB"),
                         rs.getBigDecimal("ENCOURS"), rs.getLong("NB_RETARD"), rs.getBigDecimal("IMPAYE"),
-                        rs.getBigDecimal("ENCOURS_PAR30"), rs.getBigDecimal("ENCOURS_PAR90"))));
+                        rs.getBigDecimal("ENCOURS_PAR30"), rs.getBigDecimal("ENCOURS_PAR90"),
+                        rs.getLong("NB_CONTENTIEUX"), rs.getBigDecimal("ENCOURS_CONTENTIEUX"),
+                        rs.getLong("NB_APURE"), rs.getBigDecimal("ENCOURS_APURE"))));
     }
 
     public List<AgenceSafDto> findAgences() {

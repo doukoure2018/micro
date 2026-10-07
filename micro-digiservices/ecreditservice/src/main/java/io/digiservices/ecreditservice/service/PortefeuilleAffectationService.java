@@ -1,6 +1,7 @@
 package io.digiservices.ecreditservice.service;
 
 import io.digiservices.clients.EbankingPortefeuilleClient;
+import io.digiservices.clients.portefeuille.CategorieCredit;
 import io.digiservices.clients.portefeuille.PortefeuilleCreditDto;
 import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.AffectationDto;
 import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.AffectationRequest;
@@ -43,6 +44,13 @@ import java.util.stream.Collectors;
  * d'affectation ; le DA affecte et desaffecte sur les points de service de son agence ;
  * l'agent doit etre un AGENT_CREDIT actif du point de service du credit ; le DR, le DE
  * et le DG consultent ; l'agent voit son portefeuille.</p>
+ *
+ * <p>Regle DSIG du 2026-10-07 : <b>seuls les credits qui courent encore sont affectables</b>.
+ * Les credits apures (irrecouvrables, radies) et ceux passes au judiciaire restent visibles
+ * au filtre, pour la tracabilite, mais ne sont la charge de personne et ne comptent dans
+ * aucun indicateur d'affectation. Voir {@link CategorieCredit}. Le refus est pose ici, cote
+ * serveur, et non seulement dans l'ecran. Une affectation qui se retrouve posee sur un credit
+ * sorti du cycle est fermee d'office au chargement suivant.</p>
  */
 @Service
 @RequiredArgsConstructor
@@ -69,28 +77,58 @@ public class PortefeuilleAffectationService {
         repository.agentsDuPointService(codAgencia).forEach(a -> agents.put(a.getUserId(), a));
 
         List<CreditAffecteDto> lignes = new ArrayList<>(credits.size());
-        long nbAffectes = 0, nbAReaffecter = 0;
-        BigDecimal encours = BigDecimal.ZERO, encoursNonAffecte = BigDecimal.ZERO;
+        long nbEnCours = 0, nbAffectes = 0, nbAReaffecter = 0, nbApures = 0, nbContentieux = 0;
+        BigDecimal encours = BigDecimal.ZERO, encoursNonAffecte = BigDecimal.ZERO,
+                encoursApure = BigDecimal.ZERO, encoursContentieux = BigDecimal.ZERO;
         for (PortefeuilleCreditDto credit : credits) {
             BigDecimal solde = credit.getMonSaldo() == null ? BigDecimal.ZERO : credit.getMonSaldo();
-            encours = encours.add(solde);
+            CategorieCredit categorie = CategorieCredit.depuis(credit.getIndEstado());
             AffectationDto aff = actives.get(credit.getNumCredito());
-            String motif = aff == null ? null : motifReaffectation(aff, codAgencia);
-            if (aff == null) {
-                encoursNonAffecte = encoursNonAffecte.add(solde);
+
+            if (!categorie.isAffectable()) {
+                // Le credit est sorti du cycle : il n'est la charge de personne. S'il portait
+                // encore une affectation, elle est fermee d'office pour ne pas laisser un agent
+                // responsable d'un dossier que le recouvrement ordinaire ne peut plus faire avancer.
+                if (aff != null) {
+                    repository.fermer(codAgencia, credit.getNumCredito(),
+                            perimetre.user().getUserId(), "Credit " + categorie.getLibelle().toLowerCase());
+                    log.info("[AFFECTATION] PS {} credit {} : affectation fermee, credit {}",
+                            codAgencia, credit.getNumCredito(), categorie);
+                    aff = null;
+                }
+                if (categorie == CategorieCredit.APURE) {
+                    nbApures++;
+                    encoursApure = encoursApure.add(solde);
+                } else {
+                    nbContentieux++;
+                    encoursContentieux = encoursContentieux.add(solde);
+                }
             } else {
-                nbAffectes++;
-                if (motif != null) nbAReaffecter++;
-                AgentDto agent = agents.computeIfAbsent(aff.getAgentUserId(), id -> AgentDto.builder()
-                        .userId(id).nom(aff.getAgentNom()).disponible(false)
-                        .nbCredits(0).encours(BigDecimal.ZERO).nbEnRetard(0).build());
-                agent.setNbCredits(agent.getNbCredits() + 1);
-                agent.setEncours(agent.getEncours().add(solde));
-                if (credit.getDatPremiereImpayee() != null) agent.setNbEnRetard(agent.getNbEnRetard() + 1);
+                nbEnCours++;
+                encours = encours.add(solde);
+                if (aff == null) {
+                    encoursNonAffecte = encoursNonAffecte.add(solde);
+                } else {
+                    nbAffectes++;
+                    String m = motifReaffectation(aff, codAgencia);
+                    if (m != null) nbAReaffecter++;
+                    AffectationDto porteur = aff;
+                    AgentDto agent = agents.computeIfAbsent(aff.getAgentUserId(), id -> AgentDto.builder()
+                            .userId(id).nom(porteur.getAgentNom()).disponible(false)
+                            .nbCredits(0).encours(BigDecimal.ZERO).nbEnRetard(0).build());
+                    agent.setNbCredits(agent.getNbCredits() + 1);
+                    agent.setEncours(agent.getEncours().add(solde));
+                    if (credit.getDatPremiereImpayee() != null) agent.setNbEnRetard(agent.getNbEnRetard() + 1);
+                }
             }
+
+            String motif = aff == null ? null : motifReaffectation(aff, codAgencia);
             lignes.add(CreditAffecteDto.builder()
                     .credit(credit).affectation(aff)
                     .aReaffecter(motif != null).motifReaffectation(motif)
+                    .categorie(categorie)
+                    .categorieLibelle(categorie.getLibelle())
+                    .affectable(categorie.isAffectable())
                     .build());
         }
 
@@ -102,9 +140,11 @@ public class PortefeuilleAffectationService {
                 .utilisateurId(perimetre.user().getUserId())
                 .role(perimetre.role())
                 .indicateurs(IndicateursDto.builder()
-                        .nbCredits(credits.size()).encours(encours)
-                        .nbAffectes(nbAffectes).nbNonAffectes(credits.size() - nbAffectes)
+                        .nbCredits(nbEnCours).encours(encours)
+                        .nbAffectes(nbAffectes).nbNonAffectes(nbEnCours - nbAffectes)
                         .encoursNonAffecte(encoursNonAffecte).nbAReaffecter(nbAReaffecter)
+                        .nbApures(nbApures).encoursApure(encoursApure)
+                        .nbContentieux(nbContentieux).encoursContentieux(encoursContentieux)
                         .build())
                 .agents(new ArrayList<>(agents.values()))
                 .credits(lignes)
@@ -124,6 +164,7 @@ public class PortefeuilleAffectationService {
                         "L'agent choisi n'est pas un agent de credit actif de ce point de service"));
 
         Map<Long, PortefeuilleCreditDto> creditsSaf = creditsSafParNumero(req.getCodAgencia(), req.getNumCreditos());
+        verifierAffectables(creditsSaf, req.getNumCreditos());
         Map<Long, AffectationDto> actives = repository.findActivesParPointService(req.getCodAgencia()).stream()
                 .collect(Collectors.toMap(AffectationDto::getNumCredito, Function.identity(), (a, b) -> a));
 
@@ -209,7 +250,10 @@ public class PortefeuilleAffectationService {
         for (var i : saf) {
             PointVenteHierarchie h = hierarchie.get(i.getCodAgencia());
             StatsPointService s = stats.getOrDefault(i.getCodAgencia(), new StatsPointService(0, 0));
-            long nbAffectes = Math.min(s.nbAffectes(), i.getNbCredits()); // affectations de credits clos depuis : ignorees
+            // i.getNbCredits() ne compte que les credits EN COURS depuis le 2026-10-07. Les
+            // affectations posees sur un credit sorti du cycle sont fermees au chargement du
+            // point de service ; ce plafond couvre l'intervalle avant ce passage.
+            long nbAffectes = Math.min(s.nbAffectes(), i.getNbCredits());
             lignes.add(SynthesePointServiceDto.builder()
                     .codAgencia(i.getCodAgencia())
                     .pointVente(h != null ? h.libelle() : i.getDesAgencia())
@@ -221,6 +265,8 @@ public class PortefeuilleAffectationService {
                     .nbAReaffecter(s.nbAReaffecter())
                     .nbAgents(agents.getOrDefault(i.getCodAgencia(), 0L))
                     .tauxAffectation(i.getNbCredits() == 0 ? 0 : (double) nbAffectes / i.getNbCredits())
+                    .nbApures(i.getNbApures()).encoursApure(nvl(i.getEncoursApure()))
+                    .nbContentieux(i.getNbContentieux()).encoursContentieux(nvl(i.getEncoursContentieux()))
                     .build());
         }
         lignes.sort(Comparator.comparing((SynthesePointServiceDto l) -> nvl(l.getDelegation()))
@@ -305,6 +351,31 @@ public class PortefeuilleAffectationService {
         if (codAgencia == null || codAgencia.isBlank() || !perimetre.couvre(codAgencia)) {
             throw new ApiException("Ce point de service est hors de votre perimetre");
         }
+    }
+
+    /**
+     * Refuse l'affectation d'un credit sorti du cycle. Pose ici, cote serveur, pour qu'un appel
+     * direct ne contourne pas ce que l'ecran interdit deja (regle DSIG du 2026-10-07).
+     */
+    private static void verifierAffectables(Map<Long, PortefeuilleCreditDto> creditsSaf, List<Long> demandes) {
+        Map<CategorieCredit, List<Long>> refuses = new LinkedHashMap<>();
+        for (Long num : new LinkedHashSet<>(demandes)) {
+            PortefeuilleCreditDto credit = creditsSaf.get(num);
+            if (credit == null) continue;
+            CategorieCredit categorie = CategorieCredit.depuis(credit.getIndEstado());
+            if (!categorie.isAffectable()) {
+                refuses.computeIfAbsent(categorie, c -> new ArrayList<>()).add(num);
+            }
+        }
+        if (refuses.isEmpty()) {
+            return;
+        }
+        String detail = refuses.entrySet().stream()
+                .map(e -> e.getValue().size() + " " + e.getKey().getLibelle().toLowerCase()
+                        + " (" + e.getValue().stream().map(String::valueOf).collect(Collectors.joining(", ")) + ")")
+                .collect(Collectors.joining(" ; "));
+        throw new ApiException("Ces credits ne sont plus dans le cycle de remboursement et ne peuvent "
+                + "pas etre confies a un agent : " + detail);
     }
 
     /** Les credits demandes, lus dans SAF ; un numero inconnu ou clos est refuse. */

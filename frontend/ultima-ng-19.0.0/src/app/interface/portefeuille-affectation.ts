@@ -53,11 +53,17 @@ export interface Affectation {
     actif: boolean;
 }
 
+/** Catégorie de gestion dérivée de IND_ESTADO (règle DSIG du 07/10/2026). */
+export type CategorieCredit = 'EN_COURS' | 'CONTENTIEUX' | 'APURE';
+
 export interface CreditAffecte {
     credit: CreditSaf;
     affectation?: Affectation | null;
     aReaffecter: boolean;
     motifReaffectation?: string;
+    categorie: CategorieCredit;
+    categorieLibelle: string; // « En cours », « Contentieux », « Apuré »
+    affectable: boolean; // seuls les crédits en cours peuvent être confiés à un agent
 }
 
 export interface AgentPortefeuille {
@@ -70,6 +76,7 @@ export interface AgentPortefeuille {
     nbEnRetard: number;
 }
 
+/** nbCredits, encours et les compteurs d'affectation ne portent que sur les crédits EN COURS. */
 export interface IndicateursAffectation {
     nbCredits: number;
     encours: number;
@@ -77,6 +84,10 @@ export interface IndicateursAffectation {
     nbNonAffectes: number;
     encoursNonAffecte: number;
     nbAReaffecter: number;
+    nbApures: number;
+    encoursApure: number;
+    nbContentieux: number;
+    encoursContentieux: number;
 }
 
 export interface PortefeuilleAffectation {
@@ -108,6 +119,10 @@ export interface SynthesePointService {
     nbAReaffecter: number;
     nbAgents: number;
     tauxAffectation: number;
+    nbApures: number;
+    encoursApure: number;
+    nbContentieux: number;
+    encoursContentieux: number;
 }
 
 export interface AffectationRequest {
