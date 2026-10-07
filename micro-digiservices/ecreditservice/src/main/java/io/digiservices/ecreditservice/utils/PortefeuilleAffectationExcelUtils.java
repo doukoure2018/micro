@@ -42,7 +42,7 @@ public final class PortefeuilleAffectationExcelUtils {
     private static final DateTimeFormatter FMT_HORODATAGE = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     private static final String[] ENTETES_CREDITS = {
-            "DR", "Agence", "Point de service", "N° crédit", "Client", "Code client", "Type",
+            "DR", "Agence", "Point de service", "N° crédit", "Client", "Code client", "Type", "État",
             "Date octroi", "Montant octroyé", "Encours", "Retard (jours)",
             "Usager de mise en place", "Gestionnaire SAF", "Usager du gestionnaire", "Statut du gestionnaire",
             "Agent digi affecté", "Affecté le", "Affecté par", "À réaffecter"
@@ -109,9 +109,10 @@ public final class PortefeuilleAffectationExcelUtils {
             Cell ct = s.createRow(0).createCell(0);
             ct.setCellValue("Portefeuille par agent — synthèse " + nvl(perimetre) + " — exporté le " + LocalDateTime.now().format(FMT_HORODATAGE));
             ct.setCellStyle(titre);
-            String[] e = {"DR", "Agence", "Point de service", "Code SAF", "Crédits vivants", "Encours (GNF)", "En retard",
+            String[] e = {"DR", "Agence", "Point de service", "Code SAF", "Crédits en cours", "Encours (GNF)", "En retard",
                     "Encours PAR 30 (GNF)", "PAR 30", "Encours PAR 90 (GNF)", "PAR 90",
-                    "Affectés", "Non affectés", "À réaffecter", "Agents de crédit", "Taux d'affectation"};
+                    "Affectés", "Non affectés", "À réaffecter", "Agents de crédit", "Taux d'affectation",
+                    "Apurés", "Encours apuré (GNF)", "Contentieux", "Encours contentieux (GNF)"};
             Row re = s.createRow(2);
             for (int i = 0; i < e.length; i++) { Cell c = re.createCell(i); c.setCellValue(e[i]); c.setCellStyle(entete); }
             int r = 3;
@@ -133,6 +134,10 @@ public final class PortefeuilleAffectationExcelUtils {
                 row.createCell(13).setCellValue(l.getNbAReaffecter());
                 row.createCell(14).setCellValue(l.getNbAgents());
                 Cell tx = row.createCell(15); tx.setCellValue(l.getTauxAffectation()); tx.setCellStyle(pourcent);
+                row.createCell(16).setCellValue(l.getNbApures());
+                cellMontant(row, 17, l.getEncoursApure(), montant);
+                row.createCell(18).setCellValue(l.getNbContentieux());
+                cellMontant(row, 19, l.getEncoursContentieux(), montant);
             }
             s.createFreezePane(0, 3);
             int[] largeurs = {18, 22, 26, 10, 14, 18, 10, 18, 9, 18, 9, 10, 12, 12, 14, 16};
@@ -153,6 +158,7 @@ public final class PortefeuilleAffectationExcelUtils {
         row.createCell(i++).setCellValue(nvl(c.getNomCliente()));
         row.createCell(i++).setCellValue(nvl(c.getCodCliente()));
         row.createCell(i++).setCellValue(c.getDesTipCredito() != null ? c.getDesTipCredito() : String.valueOf(c.getTipCredito()));
+        row.createCell(i++).setCellValue(nvl(l.getCategorieLibelle()));
         row.createCell(i++).setCellValue(date(c.getFecApertura()));
         cellMontant(row, i++, c.getMonCredito(), montant);
         cellMontant(row, i++, c.getMonSaldo(), montant);

@@ -24,7 +24,9 @@ interface AgenceSaf {
     desAgencia: string;
 }
 
-type Filtre = 'tous' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent';
+// « enCours » remplace « tous » : depuis la regle DSIG du 07/10/2026 la liste de travail ne
+// montre que les credits qui courent. Les apures et les contentieux ont chacun leur filtre.
+type Filtre = 'enCours' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent' | 'apures' | 'contentieux';
 
 /**
  * Affectation des crédits SAF aux agents de crédit (V159).
@@ -65,7 +67,7 @@ type Filtre = 'tous' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent';
             </div>
             <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4" *ngIf="totauxSynthese() as t">
                 <div class="border rounded p-3"><div class="text-xs text-gray-500 uppercase">Points de service</div><div class="text-xl font-bold">{{ t.nbPs }}</div></div>
-                <div class="border rounded p-3"><div class="text-xs text-gray-500 uppercase">Crédits vivants</div><div class="text-xl font-bold">{{ t.nbCredits }}</div><div class="text-xs text-gray-500">{{ t.encours | number: '1.0-0' }} GNF</div></div>
+                <div class="border rounded p-3"><div class="text-xs text-gray-500 uppercase">Crédits en cours</div><div class="text-xl font-bold">{{ t.nbCredits }}</div><div class="text-xs text-gray-500">{{ t.encours | number: '1.0-0' }} GNF</div></div>
                 <div class="border rounded p-3"><div class="text-xs text-gray-500 uppercase">Affectés</div><div class="text-xl font-bold text-green-700">{{ t.nbAffectes }}</div><div class="text-xs text-gray-500">{{ t.nbCredits ? ((100 * t.nbAffectes) / t.nbCredits | number: '1.0-0') : 0 }} %</div></div>
                 <div class="border rounded p-3"><div class="text-xs text-gray-500 uppercase">Non affectés</div><div class="text-xl font-bold" [class.text-red-600]="t.nbNonAffectes > 0">{{ t.nbNonAffectes }}</div></div>
                 <div class="border rounded p-3"><div class="text-xs text-gray-500 uppercase">À réaffecter</div><div class="text-xl font-bold" [class.text-orange-600]="t.nbAReaffecter > 0">{{ t.nbAReaffecter }}</div></div>
@@ -85,6 +87,8 @@ type Filtre = 'tous' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent';
                         <th class="text-right" pSortableColumn="nbAReaffecter">À réaffecter <p-sortIcon field="nbAReaffecter"></p-sortIcon></th>
                         <th class="text-right" pSortableColumn="nbAgents">Agents <p-sortIcon field="nbAgents"></p-sortIcon></th>
                         <th class="text-right" pSortableColumn="tauxAffectation">Taux <p-sortIcon field="tauxAffectation"></p-sortIcon></th>
+                        <th class="text-right" pSortableColumn="nbApures">Apurés <p-sortIcon field="nbApures"></p-sortIcon></th>
+                        <th class="text-right" pSortableColumn="nbContentieux">Contentieux <p-sortIcon field="nbContentieux"></p-sortIcon></th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-s>
@@ -101,10 +105,12 @@ type Filtre = 'tous' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent';
                         <td class="text-right" [class.text-orange-600]="s.nbAReaffecter > 0">{{ s.nbAReaffecter }}</td>
                         <td class="text-right"><span [class.text-orange-600]="s.nbAgents === 0" [pTooltip]="s.nbAgents === 0 ? 'Aucun agent de crédit rattaché : rien ne peut être affecté' : ''">{{ s.nbAgents }}</span></td>
                         <td class="text-right font-semibold">{{ s.tauxAffectation * 100 | number: '1.0-0' }} %</td>
+                        <td class="text-right text-gray-500" [pTooltip]="s.encoursApure ? (s.encoursApure | number: '1.0-0') + ' GNF' : ''">{{ s.nbApures }}</td>
+                        <td class="text-right text-gray-500" [pTooltip]="s.encoursContentieux ? (s.encoursContentieux | number: '1.0-0') + ' GNF' : ''">{{ s.nbContentieux }}</td>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
-                    <tr><td colspan="12" class="text-center text-gray-500 py-6">Aucun point de service dans votre périmètre.</td></tr>
+                    <tr><td colspan="14" class="text-center text-gray-500 py-6">Aucun point de service dans votre périmètre.</td></tr>
                 </ng-template>
             </p-table>
             } @else {
@@ -162,8 +168,9 @@ type Filtre = 'tous' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent';
             <!-- Indicateurs -->
             <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4" *ngIf="data()?.indicateurs as ind">
                 <div class="border rounded p-3">
-                    <div class="text-xs text-gray-500 uppercase">Crédits vivants</div>
+                    <div class="text-xs text-gray-500 uppercase">Crédits en cours</div>
                     <div class="text-xl font-bold">{{ ind.nbCredits }}</div>
+                    <div class="text-xs text-gray-500">seuls affectables</div>
                 </div>
                 <div class="border rounded p-3">
                     <div class="text-xs text-gray-500 uppercase">Encours</div>
@@ -186,11 +193,25 @@ type Filtre = 'tous' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent';
                 </div>
             </div>
 
+            <!-- Hors charge d'agent : visibles au filtre, jamais affectables -->
+            <div class="flex flex-wrap gap-x-8 gap-y-2 items-baseline mb-4 px-3 py-2 border rounded bg-surface-50 text-sm" *ngIf="data()?.indicateurs as ind">
+                <span class="text-xs text-gray-500 uppercase">Hors charge d'agent</span>
+                <span>
+                    <b>{{ ind.nbApures }}</b> apuré(s)
+                    <span class="text-gray-500">— {{ ind.encoursApure | number: '1.0-0' }} GNF</span>
+                </span>
+                <span>
+                    <b>{{ ind.nbContentieux }}</b> au contentieux
+                    <span class="text-gray-500">— {{ ind.encoursContentieux | number: '1.0-0' }} GNF</span>
+                </span>
+                <span class="text-xs text-gray-500">sortis du cycle de remboursement, non affectables</span>
+            </div>
+
             <!-- Barre d'action sur la selection (DA) -->
             <div class="flex flex-wrap gap-2 items-center mb-3 p-3 border rounded bg-surface-50" *ngIf="data()?.peutAffecter">
                 <span class="font-semibold">{{ selection.length }} crédit(s) sélectionné(s)</span>
                 <span class="text-sm text-gray-500" *ngIf="selection.length">— {{ encoursSelection() | number: '1.0-0' }} GNF</span>
-                <button pButton icon="pi pi-user-plus" label="Affecter la sélection" class="ml-auto" [disabled]="!selection.length || !agentsDisponibles().length" (click)="ouvrirAffectation(selection)"></button>
+                <button pButton icon="pi pi-user-plus" label="Affecter la sélection" class="ml-auto" [disabled]="!selectionAffectable().length || !agentsDisponibles().length" (click)="ouvrirAffectation(selection)"></button>
                 <button pButton icon="pi pi-user-minus" label="Désaffecter" class="p-button-outlined p-button-warning" [disabled]="!selectionAffectee().length" (click)="ouvrirDesaffectation(selectionAffectee())"></button>
                 <button pButton icon="pi pi-times" class="p-button-text" [disabled]="!selection.length" (click)="selection = []" pTooltip="Vider la sélection"></button>
             </div>
@@ -215,6 +236,7 @@ type Filtre = 'tous' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent';
                         <th>N° crédit</th>
                         <th>Client</th>
                         <th>Type</th>
+                        <th>État</th>
                         <th>Octroi</th>
                         <th class="text-right">Octroyé</th>
                         <th class="text-right">Encours</th>
@@ -226,14 +248,17 @@ type Filtre = 'tous' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent';
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-l>
-                    <tr [class.bg-orange-50]="l.aReaffecter" [class.bg-red-50]="!l.affectation && !l.aReaffecter && data()?.peutAffecter">
-                        <td *ngIf="data()?.peutAffecter"><p-tableCheckbox [value]="l"></p-tableCheckbox></td>
+                    <tr [class.bg-orange-50]="l.aReaffecter" [class.bg-red-50]="l.affectable && !l.affectation && !l.aReaffecter && data()?.peutAffecter" [class.opacity-60]="!l.affectable">
+                        <td *ngIf="data()?.peutAffecter"><p-tableCheckbox [value]="l" [disabled]="!l.affectable" [pTooltip]="l.affectable ? '' : 'Crédit ' + l.categorieLibelle.toLowerCase() + ' : hors cycle de remboursement, non affectable'"></p-tableCheckbox></td>
                         <td class="font-mono text-sm">{{ l.credit.numCredito }}</td>
                         <td>
                             <div class="font-semibold">{{ l.credit.nomCliente }}</div>
                             <div class="text-xs text-gray-500">{{ l.credit.codCliente }}</div>
                         </td>
                         <td class="text-sm">{{ l.credit.desTipCredito || l.credit.tipCredito }}</td>
+                        <td>
+                            <p-tag [severity]="l.categorie === 'EN_COURS' ? 'success' : l.categorie === 'CONTENTIEUX' ? 'warn' : 'secondary'" [value]="l.categorieLibelle"></p-tag>
+                        </td>
                         <td class="text-sm">{{ l.credit.fecApertura | date: 'dd/MM/yyyy' }}</td>
                         <td class="text-right">{{ l.credit.monCredito | number: '1.0-0' }}</td>
                         <td class="text-right font-semibold">{{ l.credit.monSaldo | number: '1.0-0' }}</td>
@@ -254,12 +279,14 @@ type Filtre = 'tous' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent';
                                 <div class="font-semibold">{{ l.affectation.agentNom }}</div>
                                 <div class="text-xs text-gray-500">depuis le {{ l.affectation.dateAffectation | date: 'dd/MM/yyyy' }}</div>
                                 <p-tag *ngIf="l.aReaffecter" severity="warn" value="à réaffecter" [pTooltip]="l.motifReaffectation"></p-tag>
-                            } @else {
+                            } @else if (l.affectable) {
                                 <p-tag severity="danger" value="non affecté"></p-tag>
+                            } @else {
+                                <span class="text-gray-400">—</span>
                             }
                         </td>
                         <td class="whitespace-nowrap">
-                            <button *ngIf="data()?.peutAffecter" pButton icon="pi pi-user-plus" class="p-button-text p-button-sm" pTooltip="Affecter ce crédit" (click)="ouvrirAffectation([l])"></button>
+                            <button *ngIf="data()?.peutAffecter && l.affectable" pButton icon="pi pi-user-plus" class="p-button-text p-button-sm" pTooltip="Affecter ce crédit" (click)="ouvrirAffectation([l])"></button>
                             <button *ngIf="data()?.peutAffecter && l.affectation" pButton icon="pi pi-user-minus" class="p-button-text p-button-sm p-button-warning" pTooltip="Désaffecter" (click)="ouvrirDesaffectation([l])"></button>
                             <button pButton icon="pi pi-history" class="p-button-text p-button-sm" pTooltip="Historique des responsables" (click)="ouvrirHistorique(l)"></button>
                         </td>
@@ -267,7 +294,7 @@ type Filtre = 'tous' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent';
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
                     <tr>
-                        <td [attr.colspan]="data()?.peutAffecter ? 12 : 11" class="text-center text-gray-500 py-6">
+                        <td [attr.colspan]="data()?.peutAffecter ? 13 : 12" class="text-center text-gray-500 py-6">
                             {{ agence ? 'Aucun crédit pour ce filtre.' : 'Choisissez un point de service.' }}
                         </td>
                     </tr>
@@ -376,7 +403,7 @@ export class PortefeuilleAffectationComponent implements OnInit {
     data = signal<PortefeuilleAffectation | null>(null);
     loading = signal(false);
 
-    filtre = signal<Filtre>('tous');
+    filtre = signal<Filtre>('enCours');
     agentFiltre = signal<number | null>(null);
     recherche = signal('');
 
@@ -449,11 +476,14 @@ export class PortefeuilleAffectationComponent implements OnInit {
 
     /** L'agent voit « Mes crédits » à la place du filtre par agent. */
     filtreOptions = computed(() => {
+        const ind = this.data()?.indicateurs;
         const base = [
-            { label: 'Tous', value: 'tous' },
+            { label: 'En cours', value: 'enCours' },
             { label: 'Non affectés', value: 'nonAffectes' },
             { label: 'À réaffecter', value: 'aReaffecter' },
-            { label: 'Affectés', value: 'affectes' }
+            { label: 'Affectés', value: 'affectes' },
+            { label: 'Apurés (' + (ind?.nbApures ?? 0) + ')', value: 'apures' },
+            { label: 'Contentieux (' + (ind?.nbContentieux ?? 0) + ')', value: 'contentieux' }
         ];
         return this.data()?.role === 'AGENT_CREDIT' ? [{ label: 'Mes crédits', value: 'agent' }, ...base] : base;
     });
@@ -478,16 +508,22 @@ export class PortefeuilleAffectationComponent implements OnInit {
         return d.credits
             .filter((l) => {
                 switch (f) {
+                    // Sans le test d'affectable, « Non affectés » remonterait aussi les milliers
+                    // de crédits apurés, qui n'ont par construction aucun responsable.
                     case 'nonAffectes':
-                        return !l.affectation;
+                        return l.affectable && !l.affectation;
                     case 'aReaffecter':
-                        return l.aReaffecter;
+                        return l.affectable && l.aReaffecter;
                     case 'affectes':
-                        return !!l.affectation;
+                        return l.affectable && !!l.affectation;
                     case 'agent':
                         return !!l.affectation && l.affectation.agentUserId === agentId;
+                    case 'apures':
+                        return l.categorie === 'APURE';
+                    case 'contentieux':
+                        return l.categorie === 'CONTENTIEUX';
                     default:
-                        return true;
+                        return l.affectable;
                 }
             })
             .filter((l) => {
@@ -530,7 +566,7 @@ export class PortefeuilleAffectationComponent implements OnInit {
                     const d: PortefeuilleAffectation = r.data?.portefeuille;
                     this.data.set(d);
                     // L'agent arrive directement sur ses crédits
-                    if (d?.role === 'AGENT_CREDIT' && this.filtre() === 'tous' && this.agentFiltre() === null) {
+                    if (d?.role === 'AGENT_CREDIT' && this.filtre() === 'enCours' && this.agentFiltre() === null) {
                         this.agentFiltre.set(d.utilisateurId);
                         this.filtre.set('agent');
                     }
@@ -553,7 +589,7 @@ export class PortefeuilleAffectationComponent implements OnInit {
 
     filtrerParAgent(userId: number | null): void {
         this.agentFiltre.set(userId);
-        this.filtre.set(userId === null ? 'tous' : 'agent');
+        this.filtre.set(userId === null ? 'enCours' : 'agent');
     }
 
     changerVue(v: 'credits' | 'synthese'): void {
@@ -581,7 +617,7 @@ export class PortefeuilleAffectationComponent implements OnInit {
     /** Descente depuis la synthèse : le point de service cliqué devient la vue crédits. */
     ouvrirPointService(s: SynthesePointService): void {
         this.agence = this.agences().find((x) => x.codAgencia === s.codAgencia) || { codAgencia: s.codAgencia, desAgencia: s.pointVente || s.codAgencia };
-        this.filtre.set('tous');
+        this.filtre.set('enCours');
         this.agentFiltre.set(null);
         this.vue.set('credits');
         this.charger();
@@ -625,6 +661,11 @@ export class PortefeuilleAffectationComponent implements OnInit {
         return this.selection.filter((l) => !!l.affectation);
     }
 
+    /** Les crédits sélectionnés qui peuvent effectivement être confiés à un agent. */
+    selectionAffectable(): CreditAffecte[] {
+        return this.selection.filter((l) => l.affectable);
+    }
+
     encoursSelection(): number {
         return this.selection.reduce((s, l) => s + (l.credit.monSaldo || 0), 0);
     }
@@ -634,7 +675,26 @@ export class PortefeuilleAffectationComponent implements OnInit {
     }
 
     ouvrirAffectation(lignes: CreditAffecte[]): void {
-        this.cibles = lignes;
+        // La case a cocher est deja desactivee sur les credits hors cycle, mais la case d'en-tete
+        // selectionne tout le filtre courant : on filtre donc ici aussi, avant d'ouvrir.
+        const affectables = lignes.filter((l) => l.affectable);
+        const ecartes = lignes.length - affectables.length;
+        if (!affectables.length) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Aucun crédit affectable',
+                detail: "Les crédits apurés ou au contentieux sont sortis du cycle de remboursement et ne peuvent pas être confiés à un agent."
+            });
+            return;
+        }
+        if (ecartes > 0) {
+            this.messageService.add({
+                severity: 'info',
+                summary: ecartes + ' crédit(s) écarté(s)',
+                detail: 'Apurés ou au contentieux : ils ne sont la charge de personne.'
+            });
+        }
+        this.cibles = affectables;
         this.agentChoisi = null;
         this.motif = '';
         this.showAffectation.set(true);

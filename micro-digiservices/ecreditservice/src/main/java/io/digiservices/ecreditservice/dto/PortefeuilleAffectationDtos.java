@@ -1,5 +1,6 @@
 package io.digiservices.ecreditservice.dto;
 
+import io.digiservices.clients.portefeuille.CategorieCredit;
 import io.digiservices.clients.portefeuille.PortefeuilleCreditDto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -51,6 +52,9 @@ public final class PortefeuilleAffectationDtos {
         private AffectationDto affectation;
         private boolean aReaffecter;         // agent desactive ou parti vers un autre point de service
         private String motifReaffectation;
+        private CategorieCredit categorie;   // EN_COURS, CONTENTIEUX ou APURE (derivee d'IND_ESTADO)
+        private String categorieLibelle;     // « En cours », « Contentieux », « Apuré »
+        private boolean affectable;          // seuls les credits en cours peuvent etre confies
     }
 
     /** Agent de credit du point de service, avec sa charge. */
@@ -65,14 +69,23 @@ public final class PortefeuilleAffectationDtos {
         private long nbEnRetard;
     }
 
+    /**
+     * Indicateurs du point de service. Depuis le 2026-10-07 nbCredits, encours, nbAffectes,
+     * nbNonAffectes et encoursNonAffecte ne portent QUE sur les credits en cours, seuls
+     * affectables ; les credits apures et au contentieux sont denombres a part.
+     */
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
     public static class IndicateursDto {
-        private long nbCredits;
-        private BigDecimal encours;
+        private long nbCredits;              // credits en cours
+        private BigDecimal encours;          // encours des credits en cours
         private long nbAffectes;
         private long nbNonAffectes;
         private BigDecimal encoursNonAffecte;
         private long nbAReaffecter;
+        private long nbApures;               // hors charge d'agent
+        private BigDecimal encoursApure;
+        private long nbContentieux;          // hors charge d'agent
+        private BigDecimal encoursContentieux;
     }
 
     /** Reponse complete pour un point de service. */
@@ -97,7 +110,7 @@ public final class PortefeuilleAffectationDtos {
         private String agence;
         private Long delegationId;
         private String delegation;
-        private long nbCredits;              // SAF : credits vivants
+        private long nbCredits;              // SAF : credits EN COURS (seuls affectables)
         private BigDecimal encours;
         private long nbEnRetard;
         private BigDecimal encoursPar30;
@@ -107,6 +120,10 @@ public final class PortefeuilleAffectationDtos {
         private long nbAReaffecter;          // agent desactive ou parti
         private long nbAgents;               // AGENT_CREDIT actifs rattaches au PS
         private double tauxAffectation;      // nbAffectes / nbCredits
+        private long nbApures;               // credits apures, hors charge d'agent
+        private BigDecimal encoursApure;
+        private long nbContentieux;          // credits au judiciaire, hors charge d'agent
+        private BigDecimal encoursContentieux;
     }
 
     @Data @NoArgsConstructor @AllArgsConstructor
