@@ -523,7 +523,7 @@ interface BarreAffluence {
                         </div>
                         <p-table [value]="correspondancesFiltrees()" responsiveLayout="scroll" [paginator]="true" [rows]="10">
                             <ng-template pTemplate="header">
-                                <tr><th>Salarié</th><th>Mat.</th><th>Badge</th><th>Nom lu à la porte</th><th>Source</th></tr>
+                                <tr><th>Salarié</th><th>Mat.</th><th>Badge</th><th>Nom lu à la porte</th><th>Source</th><th></th></tr>
                             </ng-template>
                             <ng-template pTemplate="body" let-c>
                                 <tr [class.bg-red-50]="c.coherent === false">
@@ -539,10 +539,20 @@ interface BarreAffluence {
                                         <p-tag [value]="c.source === 'MANUEL' ? 'Manuel' : 'Auto'"
                                                [severity]="c.source === 'MANUEL' ? 'info' : 'secondary'" />
                                     </td>
+                                    <td class="whitespace-nowrap">
+                                        <ng-container *ngIf="c.coherent === false">
+                                            <button pButton icon="pi pi-user-plus" label="Créer la personne lue" class="p-button-sm p-button-outlined p-button-danger mr-1"
+                                                    pTooltip="Crée la personne sous le nom lu à la porte (matricule technique) et lui transfère ce badge et tous ses passages"
+                                                    (click)="ouvrirCreationPersonne({ badgeNo: c.badgeNo, nomBrut: c.nomBrut })"></button>
+                                            <p-dropdown [options]="optionsPersonnel()" [(ngModel)]="associations[c.badgeNo]" placeholder="…ou réassocier à" [filter]="true"
+                                                        optionLabel="label" optionValue="value" appendTo="body" [style]="{ minWidth: '14rem' }"></p-dropdown>
+                                            <button pButton icon="pi pi-check" class="p-button-sm p-button-text" [disabled]="!associations[c.badgeNo]" (click)="associer(c.badgeNo)"></button>
+                                        </ng-container>
+                                    </td>
                                 </tr>
                             </ng-template>
                             <ng-template pTemplate="emptymessage">
-                                <tr><td colspan="5" class="text-center text-color-secondary">Aucune correspondance apprise</td></tr>
+                                <tr><td colspan="6" class="text-center text-color-secondary">Aucune correspondance apprise</td></tr>
                             </ng-template>
                         </p-table>
                     </div>
