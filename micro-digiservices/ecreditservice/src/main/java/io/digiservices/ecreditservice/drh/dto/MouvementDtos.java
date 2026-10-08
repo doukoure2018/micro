@@ -42,6 +42,10 @@ public final class MouvementDtos {
         private Integer dureeMinutes;       // null si non clôturée
         private String classement;          // PAUSE / PAUSE_DEPASSEE / SORTIE_TRAVAIL / NON_CLOTUREE
         private int minutesComptees;        // 0 pour PAUSE, dépassement pour PAUSE_DEPASSEE, durée pour SORTIE_TRAVAIL
+        /** Moyen d'identification à la sortie : FACE, NFC, MOBILE, CODE, AUTRE (incident du 2026-10-08). */
+        private String moyen;
+        /** Nom lu à la porte à la sortie quand il diffère du salarié : le badge d'une autre personne. */
+        private String nomBrutEtranger;
     }
 
     /** Journée reconstruite d'un agent : arrivée, départ et sorties intermédiaires classées. */
@@ -68,6 +72,13 @@ public final class MouvementDtos {
         private double mouvements;
         /** V158 : {@code mouvements} au-delà de MOUVEMENT_SEUIL_MOUVEMENTS_JOUR. */
         private boolean depasseSeuil;
+        /**
+         * Noms lus à la porte ce jour qui ne sont pas celui du salarié : ses mouvements mélangent
+         * le badge d'une autre personne (incident du matricule 630, 2026-10-08). Vide si tout est cohérent.
+         */
+        private List<String> badgesEtrangers;
+        /** Ouvertures à distance (application, interphone) : pas un passage physique, non comptées. */
+        private int ouverturesDistance;
     }
 
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
@@ -102,6 +113,10 @@ public final class MouvementDtos {
         private String matricule;
         private String source;         // AUTO / MANUEL
         private String nomPersonnel;
+        /** Nom le plus souvent lu à la porte avec ce badge. */
+        private String nomBrut;
+        /** Faux quand le nom lu à la porte n'est pas celui du salarié rattaché : association à revoir. */
+        private boolean coherent;
     }
 
     /** Badge vu à la porte mais jamais rattaché à un matricule. */

@@ -401,11 +401,20 @@ interface BarreAffluence {
                                        [pTooltip]="'Plus de ' + fmtMouv(seuilMouvements()) + ' allers-retours complets pendant les heures de travail ce jour-là'" />
                             </td>
                             <td>
-                                <span *ngIf="j.sorties.length === 0" class="text-color-secondary text-sm">Aucune sortie intermédiaire</span>
+                                <div *ngIf="j.badgesEtrangers?.length" class="mb-1">
+                                    <p-tag severity="danger" icon="pi pi-exclamation-triangle"
+                                           [value]="'Badge d’une autre personne : ' + j.badgesEtrangers.join(', ')"
+                                           pTooltip="La porte lit ces passages sous un autre nom : le matricule porte le badge de quelqu'un d'autre. Corrigez l'association dans l'onglet Badges." />
+                                </div>
+                                <span *ngIf="j.sorties.length === 0 && !j.badgesEtrangers?.length" class="text-color-secondary text-sm">Aucune sortie intermédiaire</span>
                                 <div class="flex flex-wrap gap-1">
                                     <p-tag *ngFor="let s of j.sorties"
-                                           [value]="libelleSortie(s)" [severity]="severiteSortie(s.classement)"
+                                           [value]="libelleSortie(s)" [severity]="s.nomBrutEtranger ? 'danger' : severiteSortie(s.classement)"
+                                           [icon]="iconeMoyen(s.moyen)"
                                            [pTooltip]="tooltipSortie(s)" />
+                                    <p-tag *ngIf="j.ouverturesDistance" severity="secondary" icon="pi pi-mobile"
+                                           [value]="j.ouverturesDistance + ' ouverture(s) à distance'"
+                                           pTooltip="Porte ouverte depuis l'application ou l'interphone : ce n'est pas un passage de la personne, non compté" />
                                 </div>
                             </td>
                             <td [class.text-orange-500]="j.minutesHorsBureau > 0" class="font-medium">{{ duree(j.minutesHorsBureau) }}</td>
@@ -425,6 +434,8 @@ interface BarreAffluence {
                     <p-tag value="Retour non badgé" severity="secondary" /> sortie sans retour badgé —
                     <p-tag value="Entrée non badgée" severity="warn" /> premier badge = sortie (arrivée inconnue) —
                     <p-tag value="Départ non badgé" severity="secondary" /> dernier badge = entrée.
+                    Moyen de passage sur chaque sortie : <i class="pi pi-user"></i> visage, <i class="pi pi-id-card"></i> carte, <i class="pi pi-mobile"></i> téléphone.
+                    <p-tag value="Badge d'une autre personne" severity="danger" icon="pi pi-exclamation-triangle" /> la porte lit un autre nom que celui du salarié : association de badge à corriger.
                     Horaires comptés : 08h35–16h25 du lundi au jeudi, 08h35–13h55 le vendredi et le samedi (marges de 5 min) ; les sorties avant 08h35 ou après 16h25 ne sont pas comptées ; la pause n'est pas appliquée le vendredi ni le samedi.
                 </div>
             </div>
@@ -471,7 +482,14 @@ interface BarreAffluence {
                             </ng-template>
                         </p-table>
                     </div>
-                    <p-dialog header="Créer la personne et rattacher le badge" [(visible)]="creationPersonne.visible" [modal]="true" [style]="{ width: '480px' }">
+                    <p-dialog header="Confirmation demandée" [(visible)]="confirmation.visible" [modal]="true" [style]="{ width: '34rem' }">
+            <p class="m-0">{{ confirmation.message }}</p>
+            <ng-template pTemplate="footer">
+                <button pButton label="Annuler" class="p-button-text" (click)="confirmation.visible = false"></button>
+                <button pButton label="Confirmer et forcer" class="p-button-danger" (click)="confirmerForcage()"></button>
+            </ng-template>
+        </p-dialog>
+        <p-dialog header="Créer la personne et rattacher le badge" [(visible)]="creationPersonne.visible" [modal]="true" [style]="{ width: '480px' }">
                         <div class="flex flex-col gap-3">
                             <div class="text-sm text-color-secondary">
                                 Nom lu à la porte : <b>{{ creationPersonne.nomBrut }}</b> — badge {{ creationPersonne.badgeNo }}.
@@ -505,13 +523,18 @@ interface BarreAffluence {
                         </div>
                         <p-table [value]="correspondancesFiltrees()" responsiveLayout="scroll" [paginator]="true" [rows]="10">
                             <ng-template pTemplate="header">
-                                <tr><th>Salarié</th><th>Mat.</th><th>Badge</th><th>Source</th></tr>
+                                <tr><th>Salarié</th><th>Mat.</th><th>Badge</th><th>Nom lu à la porte</th><th>Source</th></tr>
                             </ng-template>
                             <ng-template pTemplate="body" let-c>
-                                <tr>
+                                <tr [class.bg-red-50]="c.coherent === false">
                                     <td>{{ c.nomPersonnel || '—' }}</td>
                                     <td>{{ c.matricule }}</td>
                                     <td class="text-sm">{{ c.badgeNo }}</td>
+                                    <td class="text-sm">
+                                        <span *ngIf="c.coherent !== false">{{ c.nomBrut || '—' }}</span>
+                                        <p-tag *ngIf="c.coherent === false" severity="danger" icon="pi pi-exclamation-triangle" [value]="c.nomBrut"
+                                               pTooltip="Ce badge est lu à la porte sous un autre nom que le salarié rattaché : tous ses passages sont attribués à la mauvaise personne. Réassociez-le (onglet Badges non rattachés ou « Créer la personne ») ." />
+                                    </td>
                                     <td>
                                         <p-tag [value]="c.source === 'MANUEL' ? 'Manuel' : 'Auto'"
                                                [severity]="c.source === 'MANUEL' ? 'info' : 'secondary'" />
@@ -519,7 +542,7 @@ interface BarreAffluence {
                                 </tr>
                             </ng-template>
                             <ng-template pTemplate="emptymessage">
-                                <tr><td colspan="4" class="text-center text-color-secondary">Aucune correspondance apprise</td></tr>
+                                <tr><td colspan="5" class="text-center text-color-secondary">Aucune correspondance apprise</td></tr>
                             </ng-template>
                         </p-table>
                     </div>
@@ -667,6 +690,13 @@ export class MouvementsComponent implements OnInit {
     }
 
     tooltipSortie(s: any): string {
+        if (s.nomBrutEtranger) {
+            return `Passage lu à la porte sous le nom « ${s.nomBrutEtranger} » : ce n'est pas ce salarié. ` + this.tooltipClassement(s);
+        }
+        return this.tooltipClassement(s);
+    }
+
+    private tooltipClassement(s: any): string {
         switch (s.classement) {
             case 'PAUSE': return 'Pause déjeuner dans la plage 13h00–14h30 : non comptée';
             case 'PAUSE_DEPASSEE': return `Sortie ${s.heureSortie}→${s.heureRetour} : ${s.minutesComptees} min hors plage de pause`;
@@ -914,11 +944,34 @@ export class MouvementsComponent implements OnInit {
         this.creationPersonne = { visible: true, badgeNo: b.badgeNo, nomBrut: b.nomBrut, nom, prenom, enCours: false };
     }
 
-    creerPersonne(): void {
+    /** Le serveur refuse une association incohérente sauf confirmation : on la demande ici, puis on rejoue en forçant. */
+    confirmation: { visible: boolean; message: string; action: (() => void) | null } = { visible: false, message: '', action: null };
+    private static readonly CONFIRMATION_REQUISE = 'CONFIRMATION_REQUISE: ';
+
+    private messageErreur(e: any): string {
+        return e?.error?.data?.error || e?.error?.message || e?.message || '';
+    }
+
+    /** Vrai si l'erreur n'attend qu'une confirmation ; ouvre alors le dialogue avec `rejouer` comme action. */
+    private demanderConfirmationSiBesoin(e: any, rejouer: () => void): boolean {
+        const m = this.messageErreur(e);
+        const i = m.indexOf(MouvementsComponent.CONFIRMATION_REQUISE);
+        if (i < 0) return false;
+        this.confirmation = { visible: true, message: m.substring(i + MouvementsComponent.CONFIRMATION_REQUISE.length), action: rejouer };
+        return true;
+    }
+
+    confirmerForcage(): void {
+        const action = this.confirmation.action;
+        this.confirmation = { visible: false, message: '', action: null };
+        if (action) action();
+    }
+
+    creerPersonne(forcer = false): void {
         const c = this.creationPersonne;
         if (!c.nom.trim() || !c.prenom.trim()) return;
         c.enCours = true;
-        this.drhService.creerPersonneEtAssocierBadge$(c.badgeNo, c.nom.trim(), c.prenom.trim()).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        this.drhService.creerPersonneEtAssocierBadge$(c.badgeNo, c.nom.trim(), c.prenom.trim(), forcer).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (r) => {
                 c.enCours = false;
                 c.visible = false;
@@ -928,22 +981,35 @@ export class MouvementsComponent implements OnInit {
             },
             error: (e) => {
                 c.enCours = false;
-                this.erreur(e);
+                if (!this.demanderConfirmationSiBesoin(e, () => this.creerPersonne(true))) this.erreur(e);
             }
         });
     }
 
-    associer(badgeNo: string): void {
+    associer(badgeNo: string, forcer = false): void {
         const matricule = this.associations[badgeNo];
         if (!matricule) return;
-        this.drhService.associerBadgeMouvement$(badgeNo, matricule).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        this.drhService.associerBadgeMouvement$(badgeNo, matricule, forcer).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (r) => {
-                this.messageService.add({ severity: 'success', summary: 'Badge associé', detail: r.message || 'Correspondance enregistrée' });
+                this.messageService.add({ severity: 'success', summary: 'Badge associé', detail: r.message || 'Correspondance enregistrée', life: 8000 });
                 delete this.associations[badgeNo];
                 this.charger();
             },
-            error: (e) => this.erreur(e)
+            error: (e) => {
+                if (!this.demanderConfirmationSiBesoin(e, () => this.associer(badgeNo, true))) this.erreur(e);
+            }
         });
+    }
+
+    /** Icône du moyen de passage lu à la sortie : visage, carte, téléphone. */
+    iconeMoyen(moyen: string | undefined): string | undefined {
+        switch (moyen) {
+            case 'FACE': return 'pi pi-user';
+            case 'NFC': return 'pi pi-id-card';
+            case 'MOBILE': return 'pi pi-mobile';
+            case 'CODE': return 'pi pi-key';
+            default: return undefined;
+        }
     }
 
     importer(event: Event): void {

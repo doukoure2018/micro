@@ -66,7 +66,8 @@ public final class MouvementQuery {
 
     /** Événements ACCESS du personnel identifié, ordonnés pour la reconstruction des intervalles. */
     public static final String MOUVEMENTS_IDENTIFIES_PERIODE = """
-        SELECT m.matricule, TRIM(ip.prenom || ' ' || ip.nom) AS nom, m.jour, m.heure, m.sens
+        SELECT m.matricule, TRIM(ip.prenom || ' ' || ip.nom) AS nom, m.jour, m.heure, m.sens,
+               m.nom_brut, m.badge_no, m.credential
           FROM drh_mouvement m
           JOIN info_personnel ip ON ip.matricule = m.matricule
          WHERE m.resultat = 'ACCESS'
@@ -128,11 +129,17 @@ public final class MouvementQuery {
         SELECT COALESCE(MAX(m), 90000) + 1 FROM numeriques WHERE m >= 90001
         """;
 
-    /** Ré-identifie a posteriori les mouvements déjà importés avec ce badge. */
+    /**
+     * Ré-identifie a posteriori les mouvements déjà importés avec ce badge : ceux jamais identifiés
+     * ET ceux portés par le matricule que cette association remplace. Sans la seconde clause, une
+     * association erronée ne pouvait jamais être défaite depuis l'écran — c'est ainsi que 81
+     * passages de la secrétaire sont restés sur le matricule 630 (incident du 2026-10-08).
+     */
     public static final String APPLIQUER_BADGE_AUX_MOUVEMENTS = """
         UPDATE drh_mouvement
            SET matricule = :matricule
-         WHERE badge_no = :badge_no AND matricule IS NULL AND NOT visiteur AND resultat = 'ACCESS'
+         WHERE badge_no = :badge_no AND NOT visiteur AND resultat = 'ACCESS'
+           AND (matricule IS NULL OR matricule = CAST(:ancien AS VARCHAR))
         """;
 
     public static final String PARAMETRE_TEXTE = """
@@ -221,5 +228,47 @@ public final class MouvementQuery {
          WHERE pj.jour BETWEEN :du AND :au
          GROUP BY d.code
          ORDER BY d.code
+        """;
+
+    /** Nom lu à la porte pour ce badge (le plus fréquent), pour contrôler la cohérence d'une association. */
+    public static final String NOM_BRUT_DOMINANT_DU_BADGE = """
+        SELECT nom_brut, COUNT(*) AS nb
+          FROM drh_mouvement
+         WHERE badge_no = :badge_no AND NOT visiteur AND resultat = 'ACCESS'
+         GROUP BY nom_brut ORDER BY nb DESC LIMIT 1
+        """;
+
+    /** Même chose pour tous les badges rattachés, en une requête (écran des correspondances). */
+    public static final String NOM_BRUT_DOMINANT_PAR_BADGE = """
+        SELECT DISTINCT ON (badge_no) badge_no, nom_brut, COUNT(*) OVER (PARTITION BY badge_no) AS nb_total
+          FROM (SELECT badge_no, nom_brut, COUNT(*) AS nb
+                  FROM drh_mouvement
+                 WHERE badge_no IS NOT NULL AND NOT visiteur AND resultat = 'ACCESS'
+                 GROUP BY badge_no, nom_brut) t
+         ORDER BY badge_no, nb DESC
+        """;
+
+    /** Jours sur lesquels un matricule a des mouvements : à recalculer après un re-rattachement. */
+    public static final String JOURS_MOUVEMENTS_MATRICULE = """
+        SELECT DISTINCT jour FROM drh_mouvement WHERE matricule = :matricule AND resultat = 'ACCESS'
+        """;
+
+    /**
+     * Pointage présence (première entrée / dernière sortie) reconstruit depuis les mouvements, pour
+     * les jours où un matricule a (ou avait) des passages. Le pointage est un dérivé : après un
+     * re-rattachement il doit suivre, sinon la présence du mauvais salarié reste affichée.
+     */
+    public static final String SUPPRIMER_POINTAGE_MATRICULE_JOURS = """
+        DELETE FROM drh_pointage WHERE matricule = :matricule AND jour = ANY(:jours)
+        """;
+
+    public static final String RECONSTRUIRE_POINTAGE_MATRICULE_JOURS = """
+        INSERT INTO drh_pointage (jour, matricule, nom_brut, premiere_entree, derniere_sortie)
+        SELECT jour, matricule, MIN(nom_brut), MIN(heure), MAX(heure)
+          FROM drh_mouvement
+         WHERE matricule = :matricule AND jour = ANY(:jours) AND resultat = 'ACCESS'
+         GROUP BY jour, matricule
+        ON CONFLICT (jour, matricule) WHERE matricule IS NOT NULL
+        DO UPDATE SET premiere_entree = EXCLUDED.premiere_entree, derniere_sortie = EXCLUDED.derniere_sortie
         """;
 }

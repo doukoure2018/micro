@@ -49,6 +49,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
@@ -271,7 +272,31 @@ public class MouvementServiceImpl implements MouvementService {
 
     // ==================== Intervalles sortie -> retour (phase 2) ====================
 
-    private record Evt(LocalTime heure, boolean entree) {
+    /**
+     * Un badgeage. {@code nomBrut} est le nom que la porte a lu ; {@code credential} le moyen
+     * (« FACE 3AF20DC6 », « NFC FCCF155B », « MOBILE_TAP … », « REMOTE_UNLOCK_USER »…).
+     * Une ouverture à distance n'est pas un passage : elle est comptée à part et exclue des sorties.
+     */
+    private record Evt(LocalTime heure, boolean entree, String nomBrut, String credential) {
+        Evt(LocalTime heure, boolean entree) {
+            this(heure, entree, null, null);
+        }
+
+        boolean aDistance() {
+            return credential != null && credential.toUpperCase(Locale.ROOT).startsWith("REMOTE");
+        }
+
+        /** FACE, NFC, MOBILE, CODE, DISTANCE ou AUTRE. */
+        String moyen() {
+            if (credential == null || credential.isBlank()) return "AUTRE";
+            String c = credential.toUpperCase(Locale.ROOT);
+            if (c.startsWith("FACE")) return "FACE";
+            if (c.startsWith("NFC")) return "NFC";
+            if (c.startsWith("MOBILE")) return "MOBILE";
+            if (c.startsWith("PIN") || c.startsWith("CODE")) return "CODE";
+            if (c.startsWith("REMOTE")) return "DISTANCE";
+            return "AUTRE";
+        }
     }
 
     @Override
@@ -396,7 +421,9 @@ public class MouvementServiceImpl implements MouvementService {
                 agents.computeIfAbsent(mat, m -> MouvementPersonneDto.builder()
                         .matricule(m).nom(String.valueOf(r.get("nom"))).jours(new ArrayList<>()).build());
             }
-            evts.add(new Evt(((java.sql.Time) r.get("heure")).toLocalTime(), "ENTRY".equals(r.get("sens"))));
+            evts.add(new Evt(((java.sql.Time) r.get("heure")).toLocalTime(), "ENTRY".equals(r.get("sens")),
+                    r.get("nom_brut") == null ? null : String.valueOf(r.get("nom_brut")),
+                    r.get("credential") == null ? null : String.valueOf(r.get("credential"))));
         }
         clore(agents, matCourant, jourCourant, evts, pauseDebut, pauseFin, debutTravail, fins);
         return agents;
@@ -408,18 +435,28 @@ public class MouvementServiceImpl implements MouvementService {
                        LocalTime debutTravail, LocalTime[] fins) {
         if (matricule == null || evts.isEmpty()) return;
         LocalTime fin = PresenceServiceImpl.heureSortieDuJour(jour, fins[0], fins[1], fins[2]);
-        agents.get(matricule).getJours().add(analyserJour(jour, evts, pauseDebut, pauseFin, debutTravail, fin));
+        agents.get(matricule).getJours().add(analyserJour(jour, agents.get(matricule).getNom(), evts,
+                pauseDebut, pauseFin, debutTravail, fin));
     }
 
     /** V158 : mouvements par jour au-delà desquels la ligne est signalée (1 mouvement = 1 sortie + 1 retour). */
     private double seuilMouvements = 2;
 
-    private MouvementJourDto analyserJour(LocalDate jour, List<Evt> evts,
+    private MouvementJourDto analyserJour(LocalDate jour, String nomSalarie, List<Evt> evts,
                                           LocalTime pauseDebut, LocalTime pauseFin,
                                           LocalTime debutTravail, LocalTime finTravail) {
+        // Incident du 2026-10-08 : une ouverture à distance (application, interphone) n'est pas un
+        // passage de la personne. Elle est comptée pour information et retirée de la reconstruction.
+        int ouverturesDistance = (int) evts.stream().filter(Evt::aDistance).count();
+        // Les noms lus à la porte qui ne sont pas celui du salarié : son matricule porte le badge
+        // d'une autre personne (association erronée), et ses mouvements n'ont alors aucun sens.
+        List<String> badgesEtrangers = evts.stream()
+                .filter(e -> !e.aDistance() && e.nomBrut() != null && !memeNom(e.nomBrut(), nomSalarie))
+                .map(Evt::nomBrut).distinct().sorted().toList();
         // Double badgeage même sens à moins de 2 minutes : on garde le premier
         List<Evt> nets = new ArrayList<>();
         for (Evt e : evts) {
+            if (e.aDistance()) continue;
             Evt dernier = nets.isEmpty() ? null : nets.get(nets.size() - 1);
             if (dernier != null && dernier.entree() == e.entree()
                     && Duration.between(dernier.heure(), e.heure()).toMinutes() < 2) continue;
@@ -443,13 +480,18 @@ public class MouvementServiceImpl implements MouvementService {
             derniereSortie = e.heure();
             Evt suivant = i + 1 < nets.size() ? nets.get(i + 1) : null;
             if (suivant == null) continue; // dernier badge du jour = départ final, pas une sortie intermédiaire
+            String etranger = e.nomBrut() != null && !memeNom(e.nomBrut(), nomSalarie) ? e.nomBrut() : null;
             if (!suivant.entree()) {
                 // Sortie suivie d'une autre sortie : le retour n'a pas été badgé
                 sorties.add(SortieDto.builder().heureSortie(e.heure())
-                        .classement("NON_CLOTUREE").minutesComptees(0).build());
+                        .classement("NON_CLOTUREE").minutesComptees(0)
+                        .moyen(e.moyen()).nomBrutEtranger(etranger).build());
                 continue;
             }
-            sorties.add(classer(e.heure(), suivant.heure(), journeeContinue, pauseDebut, pauseFin, debutTravail, finTravail));
+            SortieDto sortie = classer(e.heure(), suivant.heure(), journeeContinue, pauseDebut, pauseFin, debutTravail, finTravail);
+            sortie.setMoyen(e.moyen());
+            sortie.setNomBrutEtranger(etranger);
+            sorties.add(sortie);
         }
         // V158 : badgeages à partir de l'heure d'arrivée majorée de la tolérance (08:35),
         // conservés pour information et pour le tableau de bord du jour.
@@ -481,7 +523,21 @@ public class MouvementServiceImpl implements MouvementService {
                 .minutesDepassementPause(sorties.stream().filter(s -> "PAUSE_DEPASSEE".equals(s.getClassement()))
                         .mapToInt(SortieDto::getMinutesComptees).sum())
                 .nonCloturees((int) sorties.stream().filter(s -> "NON_CLOTUREE".equals(s.getClassement())).count())
+                .badgesEtrangers(badgesEtrangers)
+                .ouverturesDistance(ouverturesDistance)
                 .build();
+    }
+
+    /**
+     * Même personne malgré la casse, les accents, l'ordre des mots ou des mots collés
+     * (« Sidibe Amadousadjo » et « AMADOU SADJO SIDIBE » sont la même personne).
+     */
+    static boolean memeNom(String a, String b) {
+        if (a == null || b == null) return false;
+        String na = normaliser(a), nb = normaliser(b);
+        if (na.isEmpty() || nb.isEmpty()) return false;
+        if (na.replace(" ", "").equals(nb.replace(" ", ""))) return true;
+        return trierMots(na).equals(trierMots(nb));
     }
 
     /** V150 : durée réglementaire de la pause (minutes), lue à chaque reconstitution. */
@@ -987,7 +1043,16 @@ public class MouvementServiceImpl implements MouvementService {
     @Override
     public List<BadgeCorrespondanceDto> correspondances(User drh) {
         exigerDrh(drh);
-        return mouvementRepository.correspondances();
+        // Incident du 2026-10-08 : un badge rattaché à un salarié alors que la porte le lit sous un
+        // autre nom est une association à revoir. On le signale ici plutôt que de le laisser passer.
+        Map<String, String> nomsLus = mouvementRepository.nomBrutDominantParBadge();
+        List<BadgeCorrespondanceDto> lignes = mouvementRepository.correspondances();
+        for (BadgeCorrespondanceDto c : lignes) {
+            String lu = nomsLus.get(c.getBadgeNo());
+            c.setNomBrut(lu);
+            c.setCoherent(lu == null || c.getNomPersonnel() == null || memeNom(lu, c.getNomPersonnel()));
+        }
+        return lignes;
     }
 
     @Override
@@ -998,7 +1063,8 @@ public class MouvementServiceImpl implements MouvementService {
 
     @Override
     @Transactional
-    public Map<String, Object> creerPersonneEtAssocier(User drh, String badgeNo, String nom, String prenom) {
+    public Map<String, Object> creerPersonneEtAssocier(User drh, String badgeNo, String nom, String prenom,
+                                                       boolean forcer) {
         exigerDrhEcriture(drh);
         if (badgeNo == null || badgeNo.isBlank()) {
             throw new ValidationException("Numéro de badge manquant");
@@ -1006,8 +1072,14 @@ public class MouvementServiceImpl implements MouvementService {
         if (nom == null || nom.isBlank() || prenom == null || prenom.isBlank()) {
             throw new ValidationException("Le nom et le prénom sont obligatoires");
         }
-        if (mouvementRepository.matriculePourBadge(badgeNo.strip()).isPresent()) {
-            throw new ValidationException("Ce badge est déjà rattaché à un matricule : utilisez « Associer » pour le modifier");
+        Optional<String> dejaRattache = mouvementRepository.matriculePourBadge(badgeNo.strip());
+        if (dejaRattache.isPresent() && !forcer) {
+            // Cas de l'incident du 2026-10-08 : le badge d'une personne sans matricule de paie avait
+            // été rattaché à un salarié. Créer la personne et REPRENDRE le badge est justement la
+            // bonne correction, à condition que la DRH confirme qu'elle retire le badge à l'ancien.
+            throw new ValidationException(CONFIRMATION_REQUISE + "Ce badge est déjà rattaché au matricule "
+                    + dejaRattache.get() + ". Créer cette personne lui retirera le badge et lui "
+                    + "transférera tous ses passages. Confirmez pour continuer.");
         }
         String matricule = String.valueOf(mouvementRepository.prochainMatriculeTechnique());
         var personnel = new io.digiservices.ecreditservice.dto.InfoPersonnelDto();
@@ -1018,7 +1090,7 @@ public class MouvementServiceImpl implements MouvementService {
         if (cree.getId() != null) {
             salaireService.updateInfoPersonnelBadge(cree.getId(), true); // contrôlé par le rapprochement des présences
         }
-        int reidentifies = associerBadge(drh, badgeNo, matricule);
+        int reidentifies = associerBadge(drh, badgeNo, matricule, true);
         log.info("Personne créée depuis le badge {} : {} {} (matricule technique {}), {} mouvements ré-identifiés",
                 badgeNo, personnel.getPrenom(), personnel.getNom(), matricule, reidentifies);
         Map<String, Object> resultat = new HashMap<>();
@@ -1030,7 +1102,7 @@ public class MouvementServiceImpl implements MouvementService {
 
     @Override
     @Transactional
-    public int associerBadge(User drh, String badgeNo, String matricule) {
+    public int associerBadge(User drh, String badgeNo, String matricule, boolean forcer) {
         exigerDrhEcriture(drh);
         if (badgeNo == null || badgeNo.isBlank()) {
             throw new ValidationException("Numéro de badge manquant");
@@ -1038,10 +1110,47 @@ public class MouvementServiceImpl implements MouvementService {
         if (matricule == null || matricule.isBlank() || !mouvementRepository.matriculeConnu(matricule.strip())) {
             throw new ValidationException("Matricule inconnu dans le fichier du personnel : " + matricule);
         }
-        mouvementRepository.associerBadgeManuel(badgeNo.strip(), matricule.strip());
-        int reidentifies = mouvementRepository.appliquerBadgeAuxMouvements(badgeNo.strip(), matricule.strip());
-        log.info("Badge {} associé au matricule {} — {} mouvements ré-identifiés", badgeNo, matricule, reidentifies);
+        String badge = badgeNo.strip(), nouveau = matricule.strip();
+
+        // Garde-fou de l'incident du 2026-10-08 : la porte lit le nom du porteur à chaque passage.
+        // Si ce nom n'est pas celui du salarié choisi, l'association est presque sûrement une erreur
+        // et elle enverrait tous les passages d'une autre personne sur ce salarié. On refuse, sauf
+        // confirmation explicite de la DRH.
+        String nomLu = mouvementRepository.nomBrutDominantDuBadge(badge).orElse(null);
+        String nomSalarie = nomDuMatricule(nouveau);
+        if (!forcer && nomLu != null && nomSalarie != null && !memeNom(nomLu, nomSalarie)) {
+            throw new ValidationException(CONFIRMATION_REQUISE + "La porte lit ce badge sous le nom « "
+                    + nomLu + " », mais le matricule " + nouveau + " est « " + nomSalarie
+                    + " ». Si vous confirmez, tous les passages de ce badge seront attribués à "
+                    + nomSalarie + ".");
+        }
+
+        String ancien = mouvementRepository.matriculePourBadge(badge).orElse(null);
+        mouvementRepository.associerBadgeManuel(badge, nouveau);
+        int reidentifies = mouvementRepository.appliquerBadgeAuxMouvements(badge, nouveau,
+                nouveau.equals(ancien) ? null : ancien);
+
+        // Le pointage présence est un dérivé des mouvements : il suit, pour les deux salariés.
+        List<java.time.LocalDate> jours = mouvementRepository.joursMouvements(nouveau);
+        mouvementRepository.reconstruirePointage(nouveau, jours);
+        if (ancien != null && !ancien.equals(nouveau)) {
+            mouvementRepository.reconstruirePointage(ancien, jours);
+        }
+        log.info("Badge {} associé au matricule {} (anciennement {}) — {} mouvements ré-identifiés, {} jours de pointage recalculés",
+                badge, nouveau, ancien, reidentifies, jours.size());
         return reidentifies;
+    }
+
+    /** Préfixe des refus qui n'attendent qu'une confirmation de la DRH (l'écran propose alors « forcer »). */
+    public static final String CONFIRMATION_REQUISE = "CONFIRMATION_REQUISE: ";
+
+    private String nomDuMatricule(String matricule) {
+        for (Map<String, Object> p : mouvementRepository.personnelActifNoms()) {
+            if (matricule.equals(String.valueOf(p.get("matricule")))) {
+                return (String.valueOf(p.get("prenom")) + " " + String.valueOf(p.get("nom"))).strip();
+            }
+        }
+        return null;
     }
 
     /** V154 : lecture — profil DRH, délégué MOUVEMENTS ou DGA. */
