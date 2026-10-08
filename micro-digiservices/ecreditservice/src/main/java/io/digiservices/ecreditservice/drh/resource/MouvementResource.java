@@ -106,8 +106,9 @@ public class MouvementResource {
     @PutMapping("/badges/{badgeNo}")
     public ResponseEntity<Response> associerBadge(@PathVariable String badgeNo,
                                                   @RequestParam String matricule,
+                                                  @RequestParam(defaultValue = "false") boolean forcer,
                                                   Authentication auth, HttpServletRequest req) {
-        int reidentifies = mouvementService.associerBadge(user(auth), badgeNo, matricule);
+        int reidentifies = mouvementService.associerBadge(user(auth), badgeNo, matricule, forcer);
         return ResponseEntity.ok(getResponse(req,
                 Map.of("mouvementsReidentifies", reidentifies),
                 "Badge associé — " + reidentifies + " mouvement(s) ré-identifié(s)", OK));
@@ -117,8 +118,9 @@ public class MouvementResource {
     @PostMapping("/badges/{badgeNo}/creer-personne")
     public ResponseEntity<Response> creerPersonneEtAssocier(@PathVariable String badgeNo,
                                                             @RequestBody Map<String, String> body,
+                                                            @RequestParam(defaultValue = "false") boolean forcer,
                                                             Authentication auth, HttpServletRequest req) {
-        var resultat = mouvementService.creerPersonneEtAssocier(user(auth), badgeNo, body.get("nom"), body.get("prenom"));
+        var resultat = mouvementService.creerPersonneEtAssocier(user(auth), badgeNo, body.get("nom"), body.get("prenom"), forcer);
         return ResponseEntity.ok(getResponse(req, resultat,
                 "Personne créée (matricule " + resultat.get("matricule") + ") et badge associé — "
                         + resultat.get("mouvementsReidentifies") + " mouvement(s) ré-identifié(s)", OK));

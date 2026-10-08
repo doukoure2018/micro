@@ -146,11 +146,44 @@ public class MouvementRepositoryImpl implements MouvementRepository {
     }
 
     @Override
-    public int appliquerBadgeAuxMouvements(String badgeNo, String matricule) {
+    public int appliquerBadgeAuxMouvements(String badgeNo, String matricule, String ancienMatricule) {
         return jdbcClient.sql(MouvementQuery.APPLIQUER_BADGE_AUX_MOUVEMENTS)
                 .param("badge_no", badgeNo)
                 .param("matricule", matricule)
+                .param("ancien", ancienMatricule)
                 .update();
+    }
+
+    @Override
+    public Optional<String> nomBrutDominantDuBadge(String badgeNo) {
+        return jdbcClient.sql(MouvementQuery.NOM_BRUT_DOMINANT_DU_BADGE)
+                .param("badge_no", badgeNo)
+                .query((rs, i) -> rs.getString("nom_brut")).optional();
+    }
+
+    @Override
+    public Map<String, String> nomBrutDominantParBadge() {
+        Map<String, String> map = new java.util.HashMap<>();
+        jdbcClient.sql(MouvementQuery.NOM_BRUT_DOMINANT_PAR_BADGE)
+                .query((rs, i) -> map.put(rs.getString("badge_no"), rs.getString("nom_brut"))).list();
+        return map;
+    }
+
+    @Override
+    public List<LocalDate> joursMouvements(String matricule) {
+        return jdbcClient.sql(MouvementQuery.JOURS_MOUVEMENTS_MATRICULE)
+                .param("matricule", matricule)
+                .query((rs, i) -> rs.getDate("jour").toLocalDate()).list();
+    }
+
+    @Override
+    public void reconstruirePointage(String matricule, List<LocalDate> jours) {
+        if (jours == null || jours.isEmpty()) return;
+        java.sql.Date[] tableau = jours.stream().map(java.sql.Date::valueOf).toArray(java.sql.Date[]::new);
+        jdbcClient.sql(MouvementQuery.SUPPRIMER_POINTAGE_MATRICULE_JOURS)
+                .param("matricule", matricule).param("jours", tableau).update();
+        jdbcClient.sql(MouvementQuery.RECONSTRUIRE_POINTAGE_MATRICULE_JOURS)
+                .param("matricule", matricule).param("jours", tableau).update();
     }
 
     @Override

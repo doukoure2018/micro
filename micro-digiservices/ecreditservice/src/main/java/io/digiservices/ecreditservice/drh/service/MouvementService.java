@@ -36,7 +36,7 @@ public interface MouvementService {
     List<BadgeInconnuDto> badgesInconnus(User drh);
 
     /** Association manuelle badge -> matricule + ré-identification des mouvements passés. */
-    int associerBadge(User drh, String badgeNo, String matricule);
+    int associerBadge(User drh, String badgeNo, String matricule, boolean forcer);
 
     /** Usage interne (présences) : journées reconstruites par matricule, sans contrôle d'habilitation. */
     java.util.Map<String, MouvementPersonneDto> reconstituerPeriode(LocalDate du, LocalDate au);
@@ -61,5 +61,5 @@ public interface MouvementService {
      * badge siège activé, puis association du badge (mouvements passés ré-identifiés).
      * @return {matricule, id, mouvementsReidentifies}
      */
-    java.util.Map<String, Object> creerPersonneEtAssocier(User drh, String badgeNo, String nom, String prenom);
+    java.util.Map<String, Object> creerPersonneEtAssocier(User drh, String badgeNo, String nom, String prenom, boolean forcer);
 }

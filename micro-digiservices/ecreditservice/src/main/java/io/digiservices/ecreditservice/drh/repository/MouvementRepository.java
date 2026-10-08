@@ -43,8 +43,24 @@ public interface MouvementRepository {
 
     void associerBadgeManuel(String badgeNo, String matricule);
 
-    /** @return nombre de mouvements ré-identifiés a posteriori. */
-    int appliquerBadgeAuxMouvements(String badgeNo, String matricule);
+    /**
+     * Ré-identifie les mouvements de ce badge : ceux jamais identifiés et ceux portés par
+     * {@code ancienMatricule} (null = seulement les non identifiés).
+     * @return nombre de mouvements ré-identifiés a posteriori.
+     */
+    int appliquerBadgeAuxMouvements(String badgeNo, String matricule, String ancienMatricule);
+
+    /** Nom lu à la porte le plus fréquent pour ce badge, ou vide si jamais vu. */
+    Optional<String> nomBrutDominantDuBadge(String badgeNo);
+
+    /** Nom lu à la porte le plus fréquent, pour chaque badge vu (badge_no -> nom_brut). */
+    Map<String, String> nomBrutDominantParBadge();
+
+    /** Jours ayant des mouvements pour ce matricule. */
+    List<LocalDate> joursMouvements(String matricule);
+
+    /** Reconstruit le pointage présence d'un matricule sur des jours donnés, depuis ses mouvements. */
+    void reconstruirePointage(String matricule, List<LocalDate> jours);
 
     boolean matriculeConnu(String matricule);
 

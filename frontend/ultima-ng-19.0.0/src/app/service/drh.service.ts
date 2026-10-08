@@ -528,11 +528,12 @@ export class DrhService {
         this.http.get<IResponse>(`${this.server}/ecredit/drh/mouvements/badges`).pipe(catchError(this.handleError));
 
     /** Personne badgée sans matricule : création dans le fichier du personnel (matricule technique 90001+) + association du badge. */
-    creerPersonneEtAssocierBadge$ = (badgeNo: string, nom: string, prenom: string): Observable<IResponse> =>
-        this.http.post<IResponse>(`${this.server}/ecredit/drh/mouvements/badges/${encodeURIComponent(badgeNo)}/creer-personne`, { nom, prenom }).pipe(catchError(this.handleError));
+    creerPersonneEtAssocierBadge$ = (badgeNo: string, nom: string, prenom: string, forcer = false): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/drh/mouvements/badges/${encodeURIComponent(badgeNo)}/creer-personne?forcer=${forcer}`, { nom, prenom }).pipe(catchError(this.handleError));
 
-    associerBadgeMouvement$ = (badgeNo: string, matricule: string): Observable<IResponse> =>
-        this.http.put<IResponse>(`${this.server}/ecredit/drh/mouvements/badges/${encodeURIComponent(badgeNo)}?matricule=${matricule}`, {}).pipe(catchError(this.handleError));
+    /** `forcer` : la DRH confirme une association que le serveur juge incohérente (nom lu à la porte ≠ salarié). */
+    associerBadgeMouvement$ = (badgeNo: string, matricule: string, forcer = false): Observable<IResponse> =>
+        this.http.put<IResponse>(`${this.server}/ecredit/drh/mouvements/badges/${encodeURIComponent(badgeNo)}?matricule=${matricule}&forcer=${forcer}`, {}).pipe(catchError(this.handleError));
 
     detailsMouvements$ = (du: string, au: string): Observable<IResponse> =>
         this.http.get<IResponse>(`${this.server}/ecredit/drh/mouvements/details?du=${du}&au=${au}`).pipe(catchError(this.handleError));
