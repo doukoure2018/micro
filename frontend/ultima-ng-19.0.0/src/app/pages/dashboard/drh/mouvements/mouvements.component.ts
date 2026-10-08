@@ -544,9 +544,11 @@ interface BarreAffluence {
                                             <button pButton icon="pi pi-user-plus" label="Créer la personne lue" class="p-button-sm p-button-outlined p-button-danger mr-1"
                                                     pTooltip="Crée la personne sous le nom lu à la porte (matricule technique) et lui transfère ce badge et tous ses passages"
                                                     (click)="ouvrirCreationPersonne({ badgeNo: c.badgeNo, nomBrut: c.nomBrut })"></button>
-                                            <p-dropdown [options]="optionsPersonnel()" [(ngModel)]="associations[c.badgeNo]" placeholder="…ou réassocier à" [filter]="true"
+                                            <p-dropdown [options]="optionsPersonnel()" [(ngModel)]="associations[c.badgeNo]" placeholder="…ou choisir un salarié" [filter]="true"
                                                         optionLabel="label" optionValue="value" appendTo="body" [style]="{ minWidth: '14rem' }"></p-dropdown>
-                                            <button pButton icon="pi pi-check" class="p-button-sm p-button-text" [disabled]="!associations[c.badgeNo]" (click)="associer(c.badgeNo)"></button>
+                                            <button pButton icon="pi pi-link" label="Réassocier" class="p-button-sm p-button-danger ml-1" [disabled]="!associations[c.badgeNo]"
+                                                    pTooltip="Transfère ce badge et tous ses passages au salarié choisi"
+                                                    (click)="associer(c.badgeNo)"></button>
                                         </ng-container>
                                     </td>
                                 </tr>
