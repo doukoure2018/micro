@@ -1,7 +1,6 @@
 import { Key } from '@/enum/cache.key';
 import { IAuthentication } from '@/interface/IAuthentication';
 
-import { Topbar } from '@/pages/landing/components/topbar';
 import { StorageService } from '@/service/storage.service';
 import { UserService } from '@/service/user.service';
 import { getFormData } from '@/utils/fileutils';
@@ -23,96 +22,69 @@ import { environment } from 'src/environments/environment';
 
 @Component({
     selector: 'app-home',
-    imports: [ProgressSpinnerModule, RouterModule, InputTextModule, Topbar, ButtonModule, DialogModule, FormsModule, InputGroupModule, InputGroupAddonModule, MessageModule, ToastModule],
+    imports: [ProgressSpinnerModule, RouterModule, InputTextModule, ButtonModule, DialogModule, FormsModule, InputGroupModule, InputGroupAddonModule, MessageModule, ToastModule],
     templateUrl: './home.component.html',
     styles: `
-        /* Grille décorative du hero */
-        .hero-grid {
-            background-image:
-                linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-            background-size: 48px 48px;
-            mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%);
+        /* ---- Typographie de la page de garde ---- */
+        .landing {
+            font-family: Figtree, Lato, 'Helvetica Neue', sans-serif;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* Cartes services */
-        .service-card {
-            background: var(--surface-card, #fff);
-            border: 1px solid var(--surface-border, #e5e7eb);
-            border-radius: 1.25rem;
-            padding: 1.75rem;
-            transition: all 0.3s ease;
+        .landing h1,
+        .landing h2,
+        .landing h3 {
+            font-family: Archivo, Lato, 'Helvetica Neue', sans-serif;
         }
 
-        .service-card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 20px 40px -12px rgba(6, 78, 59, 0.18);
-            border-color: rgba(16, 185, 129, 0.4);
-        }
-
-        /* Tuiles "à propos" et "KUMY" */
-        .about-tile {
-            background: var(--surface-card, #fff);
-            border: 1px solid var(--surface-border, #e5e7eb);
-            border-radius: 1rem;
-            padding: 1.5rem;
-            transition: all 0.3s ease;
-        }
-
-        .about-tile:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 14px 30px -12px rgba(6, 78, 59, 0.18);
-            border-color: rgba(16, 185, 129, 0.4);
-        }
-
-        .kumy-tile {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 1rem;
-            padding: 1.5rem;
-            backdrop-filter: blur(4px);
-        }
-
-        /* Boutons du hero */
-        ::ng-deep .hero-cta-primary .p-button {
-            background: #fff !important;
-            border-color: #fff !important;
-            color: #065f46 !important;
+        .landing .section-title {
+            font-size: 1.75rem;
             font-weight: 600;
+            line-height: 1.18;
+            letter-spacing: -0.015em;
         }
 
-        ::ng-deep .hero-cta-primary .p-button:hover {
-            background: #d1fae5 !important;
-            border-color: #d1fae5 !important;
+        @media (min-width: 992px) {
+            .landing .section-title {
+                font-size: 2.5rem;
+            }
         }
 
-        ::ng-deep .hero-cta-secondary .p-button {
-            border-color: rgba(255, 255, 255, 0.4) !important;
-            color: #fff !important;
+        .landing .eyebrow {
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: #176b3a;
         }
 
-        ::ng-deep .hero-cta-secondary .p-button:hover {
-            background: rgba(255, 255, 255, 0.1) !important;
+        .landing .stat-figure {
+            font-family: Archivo, Lato, 'Helvetica Neue', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 600;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
         }
 
-        /* Boutons des cartes services */
-        ::ng-deep .service-btn-emerald .p-button {
-            background: #059669 !important;
-            border-color: #059669 !important;
+        .landing .service-card {
+            background: #fff;
+            border: 1px solid #e2e7e1;
+            border-radius: 0.625rem;
+            padding: 1.875rem;
         }
 
-        ::ng-deep .service-btn-emerald .p-button:hover {
-            background: #047857 !important;
-            border-color: #047857 !important;
+        .landing .chip {
+            font-size: 0.8125rem;
+            font-weight: 500;
+            color: #176b3a;
+            background: #edf4ee;
+            border-radius: 0.25rem;
+            padding: 0.375rem 0.75rem;
         }
 
-        ::ng-deep .p-menu {
-            border-radius: 0.75rem !important;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
-        }
-
+        /* ---- Dialog d'inscription du personnel ---- */
         ::ng-deep .personnel-dialog .p-dialog-header {
-            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            background: #176b3a;
             color: white;
         }
 
@@ -138,8 +110,8 @@ import { environment } from 'src/environments/environment';
         }
 
         ::ng-deep .personnel-dialog input:focus {
-            border-color: #059669 !important;
-            box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.2) !important;
+            border-color: #176b3a !important;
+            box-shadow: 0 0 0 2px rgba(23, 107, 58, 0.2) !important;
         }
     `,
     providers: [MessageService]
@@ -148,6 +120,7 @@ export class HomeComponent {
     loading = signal<boolean>(true);
     isAuthenticatedAndRedirecting = signal<boolean>(false);
     currentYear = new Date().getFullYear();
+    mobileMenuOpen = signal<boolean>(false);
 
     // Dialog Personnel
     showPersonnelDialog = signal<boolean>(false);
@@ -165,6 +138,21 @@ export class HomeComponent {
     private messageService = inject(MessageService);
 
     private readonly redirectBaseUrl: string = environment.redirectUri;
+    private readonly authServer: string = environment.authServer;
+    // Même code challenge que la topbar (PKCE fixe)
+    private readonly codeChallenge = 'HK02sitqCRpUlfLEX2xl4JGqaVQhNDsfTWH-oQzJHGw';
+
+    getLoginUrl(): string {
+        return `${this.authServer}/oauth2/authorize?response_type=code&client_id=client&scope=openid&redirect_uri=${this.redirectBaseUrl}&code_challenge_method=S256&code_challenge=${this.codeChallenge}`;
+    }
+
+    toggleMobileMenu() {
+        this.mobileMenuOpen.update((open) => !open);
+    }
+
+    closeMobileMenu() {
+        this.mobileMenuOpen.set(false);
+    }
 
     ngOnInit(): void {
         // Si déjà authentifié
