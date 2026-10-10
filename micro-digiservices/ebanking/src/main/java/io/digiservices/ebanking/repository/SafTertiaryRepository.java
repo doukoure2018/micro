@@ -138,22 +138,33 @@ public class SafTertiaryRepository {
         return n != null && n > 0;
     }
 
+    /** Colonnes communes a CC_MOVIMTO_MENSUAL et CC_MOVIMTO_HISTORICO (meme structure, meme cle). */
+    private static final String COLONNES_MOUVEMENT =
+            "COD_EMPRESA, NUM_MOVIMIENTO, FEC_MOVIMIENTO, MON_MOVIMIENTO, DES_MOVIMIENTO, " +
+            "EST_MOVIMIENTO, IND_APL_CARGO, COD_USUARIO, DES_REFERENCIA";
+
     /**
-     * Les N derniers mouvements confirmes d'un compte (CC.CC_MOVIMTO_MENSUAL, EST_MOVIMIENTO = 'C'),
-     * du plus recent au plus ancien. Le sens vient du libelle (IND_APL_CARGO est constant en
-     * production, voir SensMouvement) ; l'indicateur est renvoye brut a titre de trace.
+     * Les N derniers mouvements d'un compte, du plus recent au plus ancien.
+     *
+     * SAF repartit les mouvements sur deux tables de structure identique : CC_MOVIMTO_MENSUAL
+     * (mois courant) et CC_MOVIMTO_HISTORICO (mois anterieurs). Un compte sans operation ce
+     * mois-ci n'a donc rien dans la table mensuelle (constat terrain du 2026-10-10) : on prend
+     * le TOP n de chaque table, puis le TOP n de la reunion. Le filtre porte sur COD_EMPRESA +
+     * NUM_CUENTA pour s'appuyer sur la cle primaire. Le sens vient du libelle (IND_APL_CARGO est
+     * constant en production, voir SensMouvement) ; l'indicateur et l'etat sont renvoyes bruts.
      */
-    public List<TransactionCompteDTO> obtenerUltimosMovimientos(String numCuenta, int limite) {
+    public List<TransactionCompteDTO> obtenerUltimosMovimientos(String codEmpresa, String numCuenta, int limite) {
         return primary.query(
-                "SELECT TOP (?) m.NUM_MOVIMIENTO, m.FEC_MOVIMIENTO, m.MON_MOVIMIENTO, m.DES_MOVIMIENTO, " +
-                "       m.IND_APL_CARGO, m.COD_USUARIO, m.DES_REFERENCIA " +
-                "FROM CC.CC_MOVIMTO_MENSUAL m " +
-                "WHERE m.NUM_CUENTA = ? AND m.EST_MOVIMIENTO = 'C' " +
-                "ORDER BY m.FEC_MOVIMIENTO DESC, m.NUM_MOVIMIENTO DESC",
+                "SELECT TOP (?) u.* FROM ( " +
+                "    SELECT TOP (?) " + COLONNES_MOUVEMENT + " FROM CC.CC_MOVIMTO_MENSUAL " +
+                "    WHERE COD_EMPRESA = ? AND NUM_CUENTA = ? ORDER BY FEC_MOVIMIENTO DESC, NUM_MOVIMIENTO DESC " +
+                "    UNION ALL " +
+                "    SELECT TOP (?) " + COLONNES_MOUVEMENT + " FROM CC.CC_MOVIMTO_HISTORICO " +
+                "    WHERE COD_EMPRESA = ? AND NUM_CUENTA = ? ORDER BY FEC_MOVIMIENTO DESC, NUM_MOVIMIENTO DESC " +
+                ") u ORDER BY u.FEC_MOVIMIENTO DESC, u.NUM_MOVIMIENTO DESC",
                 (rs, i) -> {
                     Timestamp ts = rs.getTimestamp("FEC_MOVIMIENTO");
                     String libelle = rs.getString("DES_MOVIMIENTO");
-                    String ind = rs.getString("IND_APL_CARGO");
                     return TransactionCompteDTO.builder()
                             .source("PRODUCTION")
                             .numero(rs.getObject("NUM_MOVIMIENTO") == null ? null : rs.getLong("NUM_MOVIMIENTO"))
@@ -161,11 +172,12 @@ public class SafTertiaryRepository {
                             .sens(SensMouvement.depuisLibelle(libelle))
                             .montant(rs.getBigDecimal("MON_MOVIMIENTO"))
                             .libelle(libelle == null ? null : libelle.trim())
+                            .etat(rs.getString("EST_MOVIMIENTO"))
                             .utilisateur(rs.getString("COD_USUARIO"))
                             .reference(rs.getString("DES_REFERENCIA"))
-                            .indicateurBrut(ind)
+                            .indicateurBrut(rs.getString("IND_APL_CARGO"))
                             .build();
                 },
-                limite, numCuenta);
+                limite, limite, codEmpresa, numCuenta, limite, codEmpresa, numCuenta);
     }
 }

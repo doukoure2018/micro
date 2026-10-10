@@ -777,7 +777,7 @@ public class FicheSignaletiqueServiceImpl implements FicheSignaletiqueService {
             throw new ResourceNotFoundException("Compte du client " + client, "numCuenta", compte);
         }
 
-        List<TransactionCompteDTO> production = safRepository.obtenerUltimosMovimientos(compte, n);
+        List<TransactionCompteDTO> production = safRepository.obtenerUltimosMovimientos(DEFAULT_COD_EMPRESA, compte, n);
 
         List<TransactionCompteDTO> middleware = List.of();
         boolean middlewareDisponible = true;
