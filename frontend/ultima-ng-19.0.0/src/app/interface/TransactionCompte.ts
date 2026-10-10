@@ -8,6 +8,8 @@ export interface TransactionCompte {
     libelle?: string;
     /** Connu côté middleware seulement. */
     soldeApres?: number;
+    /** EST_MOVIMIENTO brut (production) ; 'C' = confirmé. */
+    etat?: string;
     utilisateur?: string;
     reference?: string;
     indicateurBrut?: string;

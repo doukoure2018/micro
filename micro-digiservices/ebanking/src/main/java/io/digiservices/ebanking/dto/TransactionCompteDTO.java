@@ -38,6 +38,9 @@ public class TransactionCompteDTO {
     /** Solde du compte apres l'operation : connu cote middleware seulement. */
     private BigDecimal soldeApres;
 
+    /** EST_MOVIMIENTO brut (production) ; 'C' = confirme. */
+    private String etat;
+
     /** COD_USUARIO (production) ou FAITPAR (middleware). */
     private String utilisateur;
 
