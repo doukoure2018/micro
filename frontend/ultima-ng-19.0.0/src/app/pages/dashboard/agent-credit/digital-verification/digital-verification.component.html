@@ -595,7 +595,8 @@
                         </ng-template>
 
                         <!-- 5 dernières transactions : Production | Middleware -->
-                        <ng-template pTemplate="rowexpansion" let-compte>
+                        <!-- PrimeNG 19 : le template de ligne depliee se nomme « expandedrow » (« rowexpansion » = ancien nom, ignore en silence) -->
+                        <ng-template pTemplate="expandedrow" let-compte>
                             <tr class="transactions-row">
                                 <td colspan="12">
                                     <div class="transactions-panel">
