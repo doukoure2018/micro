@@ -740,6 +740,13 @@ export class UserService {
         );
 
     /**
+     * Les 5 derniers mouvements d'un compte du client, Production et Middleware côte à côte
+     * (ligne dépliable du tableau de rapprochement). Chaque appel est journalisé côté serveur.
+     */
+    getDernieresTransactionsCompte$ = (codCliente: string, numCuenta: string, limite = 5): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/ecredit/fiche-signaletique-with-solde/${codCliente}/comptes/${numCuenta}/dernieres-transactions`, { params: { limite } }).pipe(catchError(this.handleError));
+
+    /**
      * Récupérer la liste des agents de crédit par agence
      */
     getListAgentCredit$ = (agenceId: number): Observable<IResponse> =>

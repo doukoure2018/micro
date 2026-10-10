@@ -1,4 +1,5 @@
 import { CompteInfo } from '@/interface/CompteInfo';
+import { DernieresTransactionsCompte, TransactionCompte } from '@/interface/TransactionCompte';
 import { FicheSignaletiqueWithSolde } from '@/interface/FicheSignaletiqueWithSolde';
 import { Individuel } from '@/interface/individuel';
 import { IUser } from '@/interface/user';
@@ -44,6 +45,21 @@ export class DigitalVerificationComponent implements OnInit {
         message: undefined,
         error: undefined
     });
+
+    // ---- Confidentialité des soldes : masqués par défaut, révélés par compte ou globalement ----
+    /** Comptes dont les soldes sont révélés (icône œil de la ligne). */
+    soldesReveles = signal<Set<string>>(new Set());
+    /** Révélation globale (cartes, totaux et toutes les lignes) ; se referme seule après 60 s. */
+    toutReveler = signal(false);
+    private minuteurRemasquage?: ReturnType<typeof setTimeout>;
+    static readonly MONTANT_MASQUE = '•••••• GNF';
+    static readonly DELAI_REMASQUAGE_MS = 60_000;
+
+    // ---- Dernières transactions par compte (ligne dépliable) ----
+    transactions = signal<Record<string, DernieresTransactionsCompte>>({});
+    transactionsEnCours = signal<Set<string>>(new Set());
+    transactionsErreur = signal<Record<string, string>>({});
+    expandedRows: { [numCuenta: string]: boolean } = {};
 
     searchForm!: FormGroup;
     updateForm!: FormGroup;
@@ -136,6 +152,7 @@ export class DigitalVerificationComponent implements OnInit {
             error: undefined,
             ficheSignaletique: undefined
         }));
+        this.reinitialiserConfidentialite();
 
         // Call the new endpoint with soldes
         this.userService
@@ -290,11 +307,138 @@ export class DigitalVerificationComponent implements OnInit {
     clearSearch(): void {
         this.searchForm.reset();
         this.updateForm.reset();
+        this.reinitialiserConfidentialite();
         this.state.update((s) => ({
             ...s,
             ficheSignaletique: undefined,
             error: undefined
         }));
+    }
+
+    // ==================== CONFIDENTIALITÉ DES SOLDES ====================
+
+    /** Les soldes de ce compte sont-ils lisibles (révélation de la ligne ou globale) ? */
+    estRevele(numCuenta: string): boolean {
+        return this.toutReveler() || this.soldesReveles().has(numCuenta);
+    }
+
+    basculerSolde(numCuenta: string): void {
+        this.soldesReveles.update((s) => {
+            const copie = new Set(s);
+            copie.has(numCuenta) ? copie.delete(numCuenta) : copie.add(numCuenta);
+            return copie;
+        });
+    }
+
+    basculerToutReveler(): void {
+        this.toutReveler() ? this.masquerTout() : this.revelerTout();
+    }
+
+    private revelerTout(): void {
+        this.toutReveler.set(true);
+        clearTimeout(this.minuteurRemasquage);
+        this.minuteurRemasquage = setTimeout(() => this.masquerTout(), DigitalVerificationComponent.DELAI_REMASQUAGE_MS);
+    }
+
+    masquerTout(): void {
+        clearTimeout(this.minuteurRemasquage);
+        this.toutReveler.set(false);
+        this.soldesReveles.set(new Set());
+    }
+
+    /** Montant d'une ligne du tableau : masqué tant que le compte n'est pas révélé. */
+    montantCompte(valeur: number | undefined | null, numCuenta: string): string {
+        return this.estRevele(numCuenta) ? this.formatCurrency(valeur as number) : DigitalVerificationComponent.MONTANT_MASQUE;
+    }
+
+    /** Montant global (cartes, comparaison, totaux) : masqué tant que la révélation globale n'est pas active. */
+    montantGlobal(valeur: number | undefined | null): string {
+        return this.toutReveler() ? this.formatCurrency(valeur as number) : DigitalVerificationComponent.MONTANT_MASQUE;
+    }
+
+    private reinitialiserConfidentialite(): void {
+        this.masquerTout();
+        this.transactions.set({});
+        this.transactionsEnCours.set(new Set());
+        this.transactionsErreur.set({});
+        this.expandedRows = {};
+    }
+
+    // ==================== DERNIÈRES TRANSACTIONS ====================
+
+    onRowExpand(event: { data: CompteInfo }): void {
+        this.chargerTransactions(event.data);
+    }
+
+    chargerTransactions(compte: CompteInfo, forcer = false): void {
+        const numCuenta = compte.numCuenta;
+        const codCliente = this.state().ficheSignaletique?.codCliente;
+        if (!codCliente || !numCuenta) return;
+        if (!forcer && (this.transactions()[numCuenta] || this.transactionsEnCours().has(numCuenta))) return;
+
+        this.transactionsEnCours.update((s) => new Set(s).add(numCuenta));
+        this.transactionsErreur.update((e) => ({ ...e, [numCuenta]: '' }));
+
+        this.userService
+            .getDernieresTransactionsCompte$(codCliente, numCuenta)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    const data = (response?.data as any)?.transactions as DernieresTransactionsCompte | undefined;
+                    if (data) {
+                        this.transactions.update((t) => ({ ...t, [numCuenta]: data }));
+                    } else {
+                        this.transactionsErreur.update((e) => ({ ...e, [numCuenta]: 'Aucune transaction retournée' }));
+                    }
+                    this.transactionsEnCours.update((s) => {
+                        const copie = new Set(s);
+                        copie.delete(numCuenta);
+                        return copie;
+                    });
+                },
+                error: (error) => {
+                    const message = typeof error === 'string' ? error : error?.message || 'Impossible de charger les transactions';
+                    this.transactionsErreur.update((e) => ({ ...e, [numCuenta]: message }));
+                    this.transactionsEnCours.update((s) => {
+                        const copie = new Set(s);
+                        copie.delete(numCuenta);
+                        return copie;
+                    });
+                }
+            });
+    }
+
+    transactionsDe(numCuenta: string): DernieresTransactionsCompte | undefined {
+        return this.transactions()[numCuenta];
+    }
+
+    chargementTransactions(numCuenta: string): boolean {
+        return this.transactionsEnCours().has(numCuenta);
+    }
+
+    erreurTransactions(numCuenta: string): string {
+        return this.transactionsErreur()[numCuenta] || '';
+    }
+
+    /** Montant d'une transaction : suit la révélation du compte, sinon le masquage serait contournable. */
+    montantTransaction(t: TransactionCompte, numCuenta: string): string {
+        return this.estRevele(numCuenta) ? this.formatCurrency(t.montant as number) : DigitalVerificationComponent.MONTANT_MASQUE;
+    }
+
+    sensLibelle(sens: string): string {
+        switch (sens) {
+            case 'DEPOT':
+                return 'Dépôt';
+            case 'RETRAIT':
+                return 'Retrait';
+            default:
+                return '—';
+        }
+    }
+
+    formatDateHeure(date: any): string {
+        if (!date) return '-';
+        return new Date(date).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     }
 
     // Message service methods

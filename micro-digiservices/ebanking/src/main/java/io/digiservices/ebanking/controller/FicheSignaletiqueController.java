@@ -1,5 +1,6 @@
 package io.digiservices.ebanking.controller;
 
+import io.digiservices.ebanking.dto.DernieresTransactionsCompteDTO;
 import io.digiservices.ebanking.dto.FicheSignaletiqueResponseDTO;
 import io.digiservices.ebanking.dto.FicheSignaletiqueResponseSoldeDTO;
 import io.digiservices.ebanking.dto.UpdateFicheSignaletiqueDTO;
@@ -226,6 +227,38 @@ public class FicheSignaletiqueController {
         response.put("timestamp", System.currentTimeMillis());
 
         return response;
+    }
+
+    /**
+     * Derniers mouvements d'un compte du client, Production et Middleware cote a cote.
+     * Sous /fiche-signaletique-solde/** pour rester dans le perimetre deja ouvert a Feign.
+     */
+    @GetMapping("/fiche-signaletique-solde/{codCliente}/comptes/{numCuenta}/dernieres-transactions")
+    public ResponseEntity<?> getDernieresTransactionsCompte(@PathVariable("codCliente") String codCliente,
+                                                            @PathVariable("numCuenta") String numCuenta,
+                                                            @RequestParam(name = "limite", defaultValue = "5") int limite) {
+        log.info("Dernieres transactions - Client: {}, Compte: {}, limite: {}", codCliente, numCuenta, limite);
+        try {
+            DernieresTransactionsCompteDTO result =
+                    ficheSignaletiqueService.getDernieresTransactionsCompte(codCliente, numCuenta, limite);
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "SUCCESS");
+            response.put("code", 200);
+            response.put("data", result);
+            response.put("timestamp", System.currentTimeMillis());
+            return ResponseEntity.ok(response);
+        } catch (ResourceNotFoundException e) {
+            log.warn("Dernieres transactions refusees - Client: {}, Compte: {} : {}", codCliente, numCuenta, e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(createErrorResponse("NOT_FOUND", e.getMessage(), codCliente));
+        } catch (ApiException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(createErrorResponse("BAD_REQUEST", e.getMessage(), codCliente));
+        } catch (Exception e) {
+            log.error("Erreur inattendue dernieres transactions - Client: {}, Compte: {}", codCliente, numCuenta, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(createErrorResponse("INTERNAL_ERROR", "Une erreur inattendue s'est produite", codCliente));
+        }
     }
 
     // Optional: Add a method to get soldes only (without full fiche)

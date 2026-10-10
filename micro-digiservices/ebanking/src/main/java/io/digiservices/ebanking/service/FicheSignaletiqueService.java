@@ -1,5 +1,6 @@
 package io.digiservices.ebanking.service;
 
+import io.digiservices.ebanking.dto.DernieresTransactionsCompteDTO;
 import io.digiservices.ebanking.dto.FicheSignaletiqueResponseDTO;
 import io.digiservices.ebanking.dto.FicheSignaletiqueResponseSoldeDTO;
 import io.digiservices.ebanking.dto.UpdateFicheSignaletiqueDTO;
@@ -19,4 +20,10 @@ public interface FicheSignaletiqueService {
      FicheSignaletiqueResponseDTO getFicheSignaletique(String codEmpresa, String codCliente);
 
      FicheSignaletiqueResponseSoldeDTO getFicheSignaletiqueWithSolde(String codCliente);
+
+     /**
+      * Les derniers mouvements d'un compte du client, Production et Middleware cote a cote.
+      * Refuse (ResourceNotFoundException) un compte qui n'appartient pas au client.
+      */
+     DernieresTransactionsCompteDTO getDernieresTransactionsCompte(String codCliente, String numCuenta, int limite);
 }

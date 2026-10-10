@@ -15,6 +15,7 @@ import io.digiservices.ecreditservice.dto.CorrectionAgenceStat;
 import io.digiservices.ecreditservice.dto.CorrectionPointVenteStat;
 import io.digiservices.ecreditservice.dto.CorrectionEvolutionStat;
 import io.digiservices.ecreditservice.exception.ValidationException;
+import io.digiservices.ecreditservice.repository.ConsultationTransactionsRepository;
 import io.digiservices.ecreditservice.service.CorrectionService;
 import io.digiservices.ecreditservice.service.PerimetreAgentService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -51,6 +52,8 @@ public class CorrectionResource {
     private final UserClient userClient;
 
     private final PerimetreAgentService perimetreAgentService;
+
+    private final ConsultationTransactionsRepository consultationTransactionsRepository;
 
     /** Périmètre d'action de l'agent connecté : code de son point de service (préfixe des numéros membre). */
     @GetMapping("/perimetre/agent")
@@ -164,6 +167,56 @@ public class CorrectionResource {
         }
     }
 
+
+    /**
+     * Derniers mouvements d'un compte du client, Production et Middleware cote a cote, pour la
+     * ligne depliable du tableau de rapprochement. ebanking verifie que le compte appartient au
+     * client ; chaque appel (reussi, refuse ou en erreur) est journalise pour l'audit (V162).
+     */
+    @GetMapping("/fiche-signaletique-with-solde/{codCliente}/comptes/{numCuenta}/dernieres-transactions")
+    public ResponseEntity<Response> getDernieresTransactionsCompte(@NotNull Authentication authentication,
+                                                                   @PathVariable("codCliente") String codCliente,
+                                                                   @PathVariable("numCuenta") String numCuenta,
+                                                                   @RequestParam(name = "limite", defaultValue = "5") int limite,
+                                                                   HttpServletRequest request) {
+        User user = userClient.getUserByUuid(authentication.getName());
+        log.info("Dernieres transactions - user {} client {} compte {}", user.getUserId(), codCliente, numCuenta);
+        try {
+            Map<String, Object> result = ebankingClient.getDernieresTransactionsCompte(codCliente, numCuenta, limite);
+            Map<String, Object> transactions = (Map<String, Object>) result.get("data");
+            Integer nbProd = tailleListe(transactions, "production");
+            Integer nbMw = tailleListe(transactions, "middleware");
+            Boolean mwDispo = transactions == null ? null : (Boolean) transactions.get("middlewareDisponible");
+            consultationTransactionsRepository.journaliser(user.getUserId(), user.getUsername(), user.getRole(),
+                    codCliente, numCuenta, limite, "OK", nbProd, nbMw, mwDispo, null);
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("transactions", transactions);
+            return ResponseEntity.ok(getResponse(request, data, "Dernières transactions récupérées", OK));
+
+        } catch (FeignException.NotFound e) {
+            consultationTransactionsRepository.journaliser(user.getUserId(), user.getUsername(), user.getRole(),
+                    codCliente, numCuenta, limite, "REFUSE", null, null, null, "Compte etranger au client");
+            return ResponseEntity.status(NOT_FOUND).body(
+                    getResponse(request, Map.of("codCliente", codCliente, "numCuenta", numCuenta),
+                            "Ce compte n'appartient pas au client", NOT_FOUND));
+
+        } catch (FeignException e) {
+            log.error("ebanking injoignable pour les transactions - client {} compte {} : {}", codCliente, numCuenta, e.getMessage());
+            consultationTransactionsRepository.journaliser(user.getUserId(), user.getUsername(), user.getRole(),
+                    codCliente, numCuenta, limite, "ERREUR", null, null, null, e.getMessage());
+            return ResponseEntity.status(SERVICE_UNAVAILABLE).body(
+                    getResponse(request, Map.of("codCliente", codCliente, "numCuenta", numCuenta),
+                            "Service bancaire indisponible, veuillez réessayer", SERVICE_UNAVAILABLE));
+        }
+    }
+
+    private static Integer tailleListe(Map<String, Object> data, String cle) {
+        if (data == null || !(data.get(cle) instanceof List<?> liste)) {
+            return null;
+        }
+        return liste.size();
+    }
 
     /**
      * Récupère la fiche signalétique d'un client avec les soldes
