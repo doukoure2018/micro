@@ -162,7 +162,7 @@ type Filtre = 'enCours' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent' |
                     appendTo="body"
                 ></p-select>
                 <input pInputText type="text" [ngModel]="recherche()" (ngModelChange)="recherche.set($event)" placeholder="Client, code, n° crédit…" class="w-64" />
-                <button pButton icon="pi pi-file-excel" label="Exporter Excel" class="p-button-success p-button-outlined ml-auto" pTooltip="Tous les crédits du point de service, au format DR / Agence / PS / crédit… + agent digi" [loading]="exportEnCours()" [disabled]="!agence || !data()" (click)="exporterPointService()"></button>
+                <button pButton icon="pi pi-file-excel" label="Exporter Excel" class="p-button-success p-button-outlined ml-auto" pTooltip="Tous les crédits du point de service, au format DR / Agence / PS / crédit… + gestionnaire désigné" [loading]="exportEnCours()" [disabled]="!agence || !data()" (click)="exporterPointService()"></button>
             </div>
 
             <!-- Indicateurs -->
@@ -241,9 +241,11 @@ type Filtre = 'enCours' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent' |
                         <th class="text-right">Octroyé</th>
                         <th class="text-right">Encours</th>
                         <th>Retard</th>
+                        <th>Date du retard</th>
+                        <th class="text-right">Montant en retard</th>
                         <th>Gestionnaire SAF</th>
                         <th>Mise en place</th>
-                        <th>Agent digi</th>
+                        <th>Gestionnaire désigné</th>
                         <th></th>
                     </tr>
                 </ng-template>
@@ -266,6 +268,8 @@ type Filtre = 'enCours' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent' |
                             <p-tag *ngIf="l.credit.datPremiereImpayee; else sain" severity="danger" [value]="(l.credit.joursRetard || 0) + ' j'"></p-tag>
                             <ng-template #sain><span class="text-gray-400">—</span></ng-template>
                         </td>
+                        <td class="text-sm" [class.text-red-600]="l.credit.datPremiereImpayee">{{ l.credit.datPremiereImpayee ? (l.credit.datPremiereImpayee | date: 'dd/MM/yyyy') : '—' }}</td>
+                        <td class="text-right font-semibold" [class.text-red-600]="montantRetard(l.credit) > 0" [pTooltip]="montantRetard(l.credit) > 0 ? 'Capital ' + (l.credit.mntCapImpaye || 0 | number: '1.0-0') + ' + intérêts ' + (l.credit.mntIntImpaye || 0 | number: '1.0-0') : ''">{{ montantRetard(l.credit) > 0 ? (montantRetard(l.credit) | number: '1.0-0') : '—' }}</td>
                         <td class="text-sm">
                             <div>{{ l.credit.nomGestionnaireSaf || l.credit.codGestionnaireSaf || '—' }}</div>
                             <div class="flex items-center gap-1 text-xs text-gray-500">
@@ -294,7 +298,7 @@ type Filtre = 'enCours' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent' |
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
                     <tr>
-                        <td [attr.colspan]="data()?.peutAffecter ? 13 : 12" class="text-center text-gray-500 py-6">
+                        <td [attr.colspan]="data()?.peutAffecter ? 15 : 14" class="text-center text-gray-500 py-6">
                             {{ agence ? 'Aucun crédit pour ce filtre.' : 'Choisissez un point de service.' }}
                         </td>
                     </tr>
@@ -659,6 +663,11 @@ export class PortefeuilleAffectationComponent implements OnInit {
 
     selectionAffectee(): CreditAffecte[] {
         return this.selection.filter((l) => !!l.affectation);
+    }
+
+    /** Capital impayé + intérêts impayés : le montant total en retard du crédit. */
+    montantRetard(c: { mntCapImpaye?: number; mntIntImpaye?: number }): number {
+        return (c.mntCapImpaye || 0) + (c.mntIntImpaye || 0);
     }
 
     /** Les crédits sélectionnés qui peuvent effectivement être confiés à un agent. */

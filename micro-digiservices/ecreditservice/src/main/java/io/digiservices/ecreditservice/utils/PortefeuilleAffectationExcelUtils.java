@@ -31,7 +31,7 @@ import java.util.List;
  * Exports Excel de l'affectation des credits aux agents (V159, lot 2).
  * Feuille par point de service au format demande par la DSIG : DR, Agence, PS, credit, type,
  * octroi, montant, encours, retard, usager de mise en place, gestionnaire SAF (code, nom,
- * statut) puis l'agent digi affecte.
+ * statut) puis le gestionnaire designe (agent digi affecte).
  */
 public final class PortefeuilleAffectationExcelUtils {
 
@@ -43,9 +43,9 @@ public final class PortefeuilleAffectationExcelUtils {
 
     private static final String[] ENTETES_CREDITS = {
             "DR", "Agence", "Point de service", "N° crédit", "Client", "Code client", "Type", "État",
-            "Date octroi", "Montant octroyé", "Encours", "Retard (jours)",
+            "Date octroi", "Montant octroyé", "Encours", "Retard (jours)", "Date du retard", "Montant en retard",
             "Usager de mise en place", "Gestionnaire SAF", "Usager du gestionnaire", "Statut du gestionnaire",
-            "Agent digi affecté", "Affecté le", "Affecté par", "À réaffecter"
+            "Gestionnaire désigné", "Affecté le", "Affecté par", "À réaffecter"
     };
 
     /** Classeur d'un point de service : feuille Synthèse puis feuille Crédits. */
@@ -163,6 +163,10 @@ public final class PortefeuilleAffectationExcelUtils {
         cellMontant(row, i++, c.getMonCredito(), montant);
         cellMontant(row, i++, c.getMonSaldo(), montant);
         row.createCell(i++).setCellValue(c.getJoursRetard() == null ? 0 : c.getJoursRetard());
+        row.createCell(i++).setCellValue(date(c.getDatPremiereImpayee()));
+        java.math.BigDecimal retard = (c.getMntCapImpaye() == null ? java.math.BigDecimal.ZERO : c.getMntCapImpaye())
+                .add(c.getMntIntImpaye() == null ? java.math.BigDecimal.ZERO : c.getMntIntImpaye());
+        cellMontant(row, i++, retard, montant);
         row.createCell(i++).setCellValue(nvl(c.getUsagerMiseEnPlace()));
         row.createCell(i++).setCellValue(nvl(c.getCodGestionnaireSaf()));
         row.createCell(i++).setCellValue(nvl(c.getNomGestionnaireSaf()));
