@@ -1,4 +1,4 @@
-import { CreditAffecte, PortefeuilleAffectation, Affectation, SynthesePointService } from '@/interface/portefeuille-affectation';
+import { CreditAffecte, PortefeuilleAffectation, Affectation, SynthesePointService, CreditSaf } from '@/interface/portefeuille-affectation';
 import { HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { IResponse } from '@/interface/response';
@@ -150,6 +150,7 @@ type Filtre = 'enCours' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent' |
                     (onChange)="charger()"
                 ></p-select>
                 <p-selectButton [options]="filtreOptions()" [ngModel]="filtre()" (ngModelChange)="changerFiltre($event)" optionLabel="label" optionValue="value" [allowEmpty]="false"></p-selectButton>
+                <p-select [options]="retardOptions()" [ngModel]="retardFiltre()" (ngModelChange)="retardFiltre.set($event)" optionLabel="label" optionValue="value" appendTo="body" styleClass="w-56" pTooltip="Ancienneté du retard, en jours depuis la première échéance impayée"></p-select>
                 <p-select
                     [options]="data()?.agents || []"
                     [ngModel]="agentFiltre()"
@@ -292,6 +293,7 @@ type Filtre = 'enCours' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent' |
                         <td class="whitespace-nowrap">
                             <button *ngIf="data()?.peutAffecter && l.affectable" pButton icon="pi pi-user-plus" class="p-button-text p-button-sm" pTooltip="Affecter ce crédit" (click)="ouvrirAffectation([l])"></button>
                             <button *ngIf="data()?.peutAffecter && l.affectation" pButton icon="pi pi-user-minus" class="p-button-text p-button-sm p-button-warning" pTooltip="Désaffecter" (click)="ouvrirDesaffectation([l])"></button>
+                            <button pButton icon="pi pi-calendar" class="p-button-text p-button-sm" pTooltip="Plan de remboursement" (click)="voirEcheancier(l.credit)"></button>
                             <button pButton icon="pi pi-history" class="p-button-text p-button-sm" pTooltip="Historique des responsables" (click)="ouvrirHistorique(l)"></button>
                         </td>
                     </tr>
@@ -336,6 +338,33 @@ type Filtre = 'enCours' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent' |
         </div>
 
         <!-- Dialogue d'affectation -->
+        <p-dialog [header]="'Plan de remboursement — crédit ' + (creditEcheancier()?.numCredito || '')" [visible]="showEcheancier()" (visibleChange)="!$event && fermerEcheancier()" [modal]="true" [style]="{ width: '780px' }">
+            <p class="m-0 mb-3 text-sm" *ngIf="creditEcheancier() as c">
+                <strong>{{ c.nomCliente }}</strong> ({{ c.codCliente }}) — octroyé {{ c.monCredito | number: '1.0-0' }} GNF, encours {{ c.monSaldo | number: '1.0-0' }} GNF
+                <span *ngIf="c.datPremiereImpayee" class="text-red-600"> — en retard depuis le {{ c.datPremiereImpayee | date: 'dd/MM/yyyy' }} ({{ c.joursRetard }} j), {{ montantRetard(c) | number: '1.0-0' }} GNF impayés</span>
+            </p>
+            <p-table [value]="echeancier()" [loading]="loadingEcheancier()" responsiveLayout="scroll" styleClass="p-datatable-sm">
+                <ng-template pTemplate="header">
+                    <tr><th>#</th><th>Échéance</th><th class="text-right">Montant</th><th class="text-right">dont intérêts</th><th class="text-right">Restant dû</th><th>Statut</th></tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-e>
+                    <tr [class.bg-red-50]="!e.fecCancelacion && enRetard(e.fecCuota)">
+                        <td>{{ e.numCuota }}</td>
+                        <td>{{ e.fecCuota | date: 'dd/MM/yyyy' }}</td>
+                        <td class="text-right">{{ e.monCuota | number: '1.0-0' }}</td>
+                        <td class="text-right">{{ e.monInt | number: '1.0-0' }}</td>
+                        <td class="text-right">{{ (e.salPrincipal || 0) + (e.salInt || 0) | number: '1.0-0' }}</td>
+                        <td>
+                            <p-tag *ngIf="e.fecCancelacion" [value]="'Payée le ' + (e.fecCancelacion | date: 'dd/MM/yyyy')" severity="success"></p-tag>
+                            <p-tag *ngIf="!e.fecCancelacion" [value]="enRetard(e.fecCuota) ? 'Impayée' : 'À venir'" [severity]="enRetard(e.fecCuota) ? 'danger' : 'info'"></p-tag>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage"><tr><td colspan="6" class="text-center text-gray-500 py-4">Aucune échéance dans SAF pour ce crédit.</td></tr></ng-template>
+            </p-table>
+            <ng-template pTemplate="footer"><button pButton label="Fermer" class="p-button-text" (click)="fermerEcheancier()"></button></ng-template>
+        </p-dialog>
+
         <p-dialog header="Affecter à un agent" [visible]="showAffectation()" (visibleChange)="!$event && showAffectation.set(false)" [modal]="true" [style]="{ width: '520px' }">
             <p class="mb-3">
                 <strong>{{ cibles.length }}</strong> crédit(s), <strong>{{ encoursCibles() | number: '1.0-0' }}</strong> GNF d'encours, point de service <strong>{{ agence?.desAgencia }}</strong>.
@@ -531,6 +560,10 @@ export class PortefeuilleAffectationComponent implements OnInit {
                 }
             })
             .filter((l) => {
+                const t = this.retardFiltre();
+                return t === 'tous' || this.trancheRetard(l.credit) === t;
+            })
+            .filter((l) => {
                 if (!q) return true;
                 const c = l.credit;
                 return (c.nomCliente || '').toLowerCase().includes(q) || (c.codCliente || '').toLowerCase().includes(q) || String(c.numCredito).includes(q) || (l.affectation?.agentNom || '').toLowerCase().includes(q);
@@ -663,6 +696,70 @@ export class PortefeuilleAffectationComponent implements OnInit {
 
     selectionAffectee(): CreditAffecte[] {
         return this.selection.filter((l) => !!l.affectation);
+    }
+
+    // ---- Filtre par ancienneté du retard (demande DSIG du 2026-10-10) ----
+    retardFiltre = signal<'tous' | 'aJour' | 'r30' | 'r90' | 'r120' | 'plus120'>('tous');
+
+    /** Tranche de retard d'un crédit, en jours depuis la première échéance impayée. */
+    private trancheRetard(c: { datPremiereImpayee?: string; joursRetard?: number }): 'aJour' | 'r30' | 'r90' | 'r120' | 'plus120' {
+        if (!c.datPremiereImpayee) return 'aJour';
+        const j = c.joursRetard || 0;
+        if (j <= 30) return 'r30';
+        if (j <= 90) return 'r90';
+        if (j <= 120) return 'r120';
+        return 'plus120';
+    }
+
+    /** Options avec les effectifs, calculés sur les crédits en cours du point de service. */
+    retardOptions = computed(() => {
+        const n = { aJour: 0, r30: 0, r90: 0, r120: 0, plus120: 0 };
+        for (const l of this.data()?.credits || []) if (l.affectable) n[this.trancheRetard(l.credit)]++;
+        return [
+            { label: 'Tout retard', value: 'tous' },
+            { label: 'À jour (' + n.aJour + ')', value: 'aJour' },
+            { label: 'Retard 1 à 30 j (' + n.r30 + ')', value: 'r30' },
+            { label: 'Retard 31 à 90 j (' + n.r90 + ')', value: 'r90' },
+            { label: 'Retard 91 à 120 j (' + n.r120 + ')', value: 'r120' },
+            { label: 'Retard plus de 120 j (' + n.plus120 + ')', value: 'plus120' }
+        ];
+    });
+
+    // ---- Plan de remboursement d'un crédit (échéancier SAF) ----
+    showEcheancier = signal(false);
+    loadingEcheancier = signal(false);
+    echeancier = signal<any[]>([]);
+    creditEcheancier = signal<CreditSaf | null>(null);
+
+    voirEcheancier(credit: CreditSaf): void {
+        this.creditEcheancier.set(credit);
+        this.echeancier.set([]);
+        this.loadingEcheancier.set(true);
+        this.showEcheancier.set(true);
+        this.userService
+            .getPortefeuilleEcheancier$(credit.codAgencia, credit.numCredito)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r) => {
+                    this.echeancier.set((r.data as any)?.echeancier || []);
+                    this.loadingEcheancier.set(false);
+                },
+                error: () => {
+                    this.loadingEcheancier.set(false);
+                    this.messageService.add({ severity: 'error', summary: 'Échéancier', detail: 'Plan de remboursement indisponible (base SAF ?)' });
+                }
+            });
+    }
+
+    fermerEcheancier(): void {
+        this.showEcheancier.set(false);
+        this.creditEcheancier.set(null);
+        this.echeancier.set([]);
+    }
+
+    /** Une échéance non payée dont la date est passée. */
+    enRetard(date: string | null | undefined): boolean {
+        return !!date && new Date(date) < new Date(new Date().toDateString());
     }
 
     /** Capital impayé + intérêts impayés : le montant total en retard du crédit. */
