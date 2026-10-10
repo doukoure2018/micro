@@ -87,6 +87,11 @@ import { SignalementTelephone, libelleMotifSignalement } from '@/interface/signa
                 <!-- <p-megamenu [model]="model" styleClass="layout-megamenu" breakpoint="0px"></p-megamenu> -->
             </div>
             <div class="layout-topbar-actions-end">
+                <button type="button" class="layout-topbar-action mode-large-entree" (click)="layoutService.basculerContenuLarge()"
+                        title="Mode large : afficher uniquement le contenu, sans le menu">
+                    <i class="pi pi-window-maximize"></i>
+                    <span class="mode-large-libelle">Mode large</span>
+                </button>
                 <ul class="layout-topbar-items">
                     <li class="layout-topbar-search">
                         <a pStyleClass="@next" enterFromClass="!hidden" enterActiveClass="animate-scalein" leaveToClass="!hidden" leaveActiveClass="animate-fadeout" [hideOnOutsideClick]="true" (click)="focusSearchInput()">

@@ -72,6 +72,21 @@ export class LayoutService {
 
     layoutState = signal<LayoutState>(this._state);
 
+    /**
+     * Mode large (demande DSIG du 2026-10-10) : seul le contenu s'affiche, menu latéral, barre du
+     * haut, fil d'Ariane et pied de page disparaissent. Un bouton flottant et la touche Échap
+     * permettent le retour. Rien n'est persisté : on revient toujours à la mise en page normale.
+     */
+    contenuLarge = signal(false);
+
+    basculerContenuLarge(): void {
+        this.contenuLarge.update((v) => !v);
+    }
+
+    quitterContenuLarge(): void {
+        this.contenuLarge.set(false);
+    }
+
     private configUpdate = new Subject<layoutConfig>();
 
     private overlayOpen = new Subject<any>();

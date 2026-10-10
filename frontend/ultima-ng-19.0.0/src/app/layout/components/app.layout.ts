@@ -33,9 +33,14 @@ import { IResponse } from '@/interface/response';
                 <div app-footer></div>
             </div>
         </div>
+        <button *ngIf="layoutService.contenuLarge()" type="button" class="mode-large-sortie" (click)="layoutService.quitterContenuLarge()"
+                title="Revenir à l'affichage normal (Échap)">
+            <i class="pi pi-arrow-left"></i> Quitter le mode large
+        </button>
         <app-configurator />
         <p-toast />
     `,
+    host: { '(document:keydown.escape)': 'layoutService.quitterContenuLarge()' },
     providers: [MessageService]
 })
 export class AppLayout implements OnDestroy {
@@ -167,6 +172,7 @@ export class AppLayout implements OnDestroy {
             'layout-menu-profile-active': layoutState.rightMenuActive,
             'layout-sidebar-active': layoutState.sidebarActive,
             'layout-sidebar-anchored': layoutState.anchored,
+            'layout-contenu-large': this.layoutService.contenuLarge(),
             [`layout-topbar-${layoutConfig.topbarTheme}`]: true,
             [`layout-menu-${layoutConfig.menuTheme}`]: true,
             [`layout-menu-profile-${layoutConfig.menuProfilePosition}`]: true
