@@ -1,12 +1,15 @@
 package io.digiservices.ebanking.service.impl;
 
 import io.digiservices.ebanking.dto.CompteDTO;
+import io.digiservices.ebanking.dto.DernieresTransactionsCompteDTO;
 import io.digiservices.ebanking.dto.FicheSignaletiqueResponseDTO;
 import io.digiservices.ebanking.dto.FicheSignaletiqueResponseSoldeDTO;
+import io.digiservices.ebanking.dto.TransactionCompteDTO;
 import io.digiservices.ebanking.dto.UpdateFicheSignaletiqueDTO;
 import io.digiservices.ebanking.exception.ApiException;
 import io.digiservices.ebanking.exception.ResourceNotFoundException;
 import io.digiservices.ebanking.repository.FicheSignaletiqueRepository;
+import io.digiservices.ebanking.repository.SafTertiaryRepository;
 import io.digiservices.ebanking.service.FicheSignaletiqueService;
 import io.digiservices.ebanking.utils.DataCleanerUtility;
 import jakarta.validation.ConstraintViolation;
@@ -19,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +37,7 @@ import java.util.stream.Collectors;
 public class FicheSignaletiqueServiceImpl implements FicheSignaletiqueService {
 
     private final FicheSignaletiqueRepository repository;
+    private final SafTertiaryRepository safRepository;
     private final DataCleanerUtility dataCleaner;
     private final Validator validator;
 
@@ -755,6 +760,46 @@ public class FicheSignaletiqueServiceImpl implements FicheSignaletiqueService {
         }
 
         return compte;
+    }
+
+    @Override
+    public DernieresTransactionsCompteDTO getDernieresTransactionsCompte(String codCliente, String numCuenta, int limite) {
+        validateParameters(codCliente);
+        if (numCuenta == null || numCuenta.isBlank()) {
+            throw new ApiException("Le numéro de compte est obligatoire");
+        }
+        final String client = codCliente.trim();
+        final String compte = numCuenta.trim();
+        final int n = Math.max(1, Math.min(limite, 20));
+
+        // Garde-fou : jamais de mouvements d'un compte etranger au client demande
+        if (!safRepository.compteAppartientAuClient(DEFAULT_COD_EMPRESA, client, compte)) {
+            throw new ResourceNotFoundException("Compte du client " + client, "numCuenta", compte);
+        }
+
+        List<TransactionCompteDTO> production = safRepository.obtenerUltimosMovimientos(compte, n);
+
+        List<TransactionCompteDTO> middleware = List.of();
+        boolean middlewareDisponible = true;
+        try {
+            middleware = repository.getDernieresTransactionsMiddleware(compte, n);
+        } catch (Exception e) {
+            middlewareDisponible = false;
+            log.warn("Middleware indisponible pour les transactions du compte {} : {}", compte, e.getMessage());
+        }
+
+        log.info("Dernieres transactions - Client: {}, Compte: {} : {} prod / {} mw (mw dispo: {})",
+                client, compte, production.size(), middleware.size(), middlewareDisponible);
+
+        return DernieresTransactionsCompteDTO.builder()
+                .codCliente(client)
+                .numCuenta(compte)
+                .limite(n)
+                .production(production)
+                .middleware(middleware)
+                .middlewareDisponible(middlewareDisponible)
+                .genereLe(LocalDateTime.now())
+                .build();
     }
 
 }

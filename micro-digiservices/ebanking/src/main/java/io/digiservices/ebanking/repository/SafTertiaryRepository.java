@@ -1,10 +1,13 @@
 package io.digiservices.ebanking.repository;
 
+import io.digiservices.ebanking.dto.TransactionCompteDTO;
+import io.digiservices.ebanking.utils.SensMouvement;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -121,5 +124,48 @@ public class SafTertiaryRepository {
                 "WHERE m.NUM_CUENTA = ? AND m.FEC_MOVIMIENTO >= ? " +
                 "ORDER BY m.FEC_MOVIMIENTO DESC",
                 numCuenta, depuis);
+    }
+
+    /**
+     * Le compte appartient-il bien au client ? Garde-fou de l'endpoint des dernieres
+     * transactions : sans lui, n'importe quel numero de compte devine serait lisible.
+     */
+    public boolean compteAppartientAuClient(String codEmpresa, String codCliente, String numCuenta) {
+        Integer n = primary.queryForObject(
+                "SELECT COUNT(*) FROM CC.CC_CUENTA_EFECTIVO " +
+                "WHERE COD_EMPRESA = ? AND COD_CLIENTE = ? AND NUM_CUENTA = ?",
+                Integer.class, codEmpresa, codCliente, numCuenta);
+        return n != null && n > 0;
+    }
+
+    /**
+     * Les N derniers mouvements confirmes d'un compte (CC.CC_MOVIMTO_MENSUAL, EST_MOVIMIENTO = 'C'),
+     * du plus recent au plus ancien. Le sens vient du libelle (IND_APL_CARGO est constant en
+     * production, voir SensMouvement) ; l'indicateur est renvoye brut a titre de trace.
+     */
+    public List<TransactionCompteDTO> obtenerUltimosMovimientos(String numCuenta, int limite) {
+        return primary.query(
+                "SELECT TOP (?) m.NUM_MOVIMIENTO, m.FEC_MOVIMIENTO, m.MON_MOVIMIENTO, m.DES_MOVIMIENTO, " +
+                "       m.IND_APL_CARGO, m.COD_USUARIO, m.DES_REFERENCIA " +
+                "FROM CC.CC_MOVIMTO_MENSUAL m " +
+                "WHERE m.NUM_CUENTA = ? AND m.EST_MOVIMIENTO = 'C' " +
+                "ORDER BY m.FEC_MOVIMIENTO DESC, m.NUM_MOVIMIENTO DESC",
+                (rs, i) -> {
+                    Timestamp ts = rs.getTimestamp("FEC_MOVIMIENTO");
+                    String libelle = rs.getString("DES_MOVIMIENTO");
+                    String ind = rs.getString("IND_APL_CARGO");
+                    return TransactionCompteDTO.builder()
+                            .source("PRODUCTION")
+                            .numero(rs.getObject("NUM_MOVIMIENTO") == null ? null : rs.getLong("NUM_MOVIMIENTO"))
+                            .date(ts == null ? null : ts.toLocalDateTime())
+                            .sens(SensMouvement.depuisLibelle(libelle))
+                            .montant(rs.getBigDecimal("MON_MOVIMIENTO"))
+                            .libelle(libelle == null ? null : libelle.trim())
+                            .utilisateur(rs.getString("COD_USUARIO"))
+                            .reference(rs.getString("DES_REFERENCIA"))
+                            .indicateurBrut(ind)
+                            .build();
+                },
+                limite, numCuenta);
     }
 }

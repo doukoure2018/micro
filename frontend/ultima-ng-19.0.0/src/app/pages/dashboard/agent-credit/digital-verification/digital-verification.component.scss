@@ -1479,3 +1479,206 @@ $danger-gradient: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
         }
     }
 }
+
+/* ============================================================================
+   Confidentialité des soldes (icône œil) et 5 dernières transactions par compte
+   ============================================================================ */
+.digital-verification-container {
+    .btn-oeil {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.9rem;
+        height: 1.9rem;
+        border: 0;
+        border-radius: 50%;
+        background: transparent;
+        color: inherit;
+        opacity: 0.65;
+        cursor: pointer;
+        transition: background-color 0.15s, opacity 0.15s;
+
+        &:hover {
+            opacity: 1;
+            background: rgba(0, 0, 0, 0.06);
+        }
+
+        i {
+            font-size: 1rem;
+        }
+    }
+
+    .stat-value-confidentiel {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .montant-masque {
+        letter-spacing: 0.08em;
+        opacity: 0.55;
+        user-select: none;
+    }
+
+    .btn-reveler-tout {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-left: auto;
+        padding: 0.4rem 0.8rem;
+        border: 1px solid var(--surface-border, #cbd5e1);
+        border-radius: 999px;
+        background: var(--surface-card, #fff);
+        color: var(--text-color, #1f2937);
+        font: inherit;
+        font-size: 0.8rem;
+        cursor: pointer;
+
+        &:hover {
+            background: var(--surface-hover, #f1f5f9);
+        }
+    }
+
+    .legend-note {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-size: 0.75rem;
+        color: var(--text-color-secondary, #64748b);
+    }
+
+    .btn-deplier {
+        width: 2rem !important;
+        height: 2rem !important;
+    }
+
+    .transactions-row > td {
+        padding: 0 !important;
+        background: var(--surface-ground, #f8fafc);
+    }
+
+    .transactions-panel {
+        padding: 1rem 1.25rem 1.25rem 3.5rem;
+        border-left: 3px solid var(--primary-color, #176b3a);
+    }
+
+    .transactions-titre {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .transactions-chargement,
+    .transactions-erreur,
+    .transactions-vide {
+        padding: 0.75rem;
+        font-size: 0.85rem;
+        color: var(--text-color-secondary, #64748b);
+    }
+
+    .transactions-erreur {
+        color: #b91c1c;
+    }
+
+    .transactions-colonnes {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(28rem, 1fr));
+        gap: 1rem;
+    }
+
+    .transactions-bloc {
+        background: var(--surface-card, #fff);
+        border: 1px solid var(--surface-border, #e2e8f0);
+        border-radius: 0.5rem;
+        overflow: hidden;
+
+        &.bloc-prod .transactions-bloc-titre {
+            background: rgba(22, 101, 52, 0.06);
+        }
+
+        &.bloc-mw .transactions-bloc-titre {
+            background: rgba(217, 119, 6, 0.08);
+        }
+    }
+
+    .transactions-bloc-titre {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .transactions-compteur {
+        margin-left: auto;
+        padding: 0.1rem 0.5rem;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.06);
+        font-weight: 600;
+    }
+
+    .transactions-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.82rem;
+
+        th {
+            padding: 0.4rem 0.6rem;
+            text-align: left;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-color-secondary, #64748b);
+            border-bottom: 1px solid var(--surface-border, #e2e8f0);
+        }
+
+        td {
+            padding: 0.45rem 0.6rem;
+            border-bottom: 1px solid var(--surface-border, #f1f5f9);
+            vertical-align: middle;
+        }
+
+        tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .nowrap {
+            white-space: nowrap;
+        }
+    }
+
+    .sens-chip {
+        display: inline-block;
+        padding: 0.1rem 0.5rem;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 600;
+
+        &.sens-depot {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        &.sens-retrait {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        &.sens-inconnu {
+            background: #f1f5f9;
+            color: #475569;
+        }
+    }
+
+    .na-badge-block {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+}

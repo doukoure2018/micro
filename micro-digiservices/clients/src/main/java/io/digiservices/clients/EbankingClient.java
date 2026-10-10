@@ -129,6 +129,12 @@ public interface EbankingClient {
     @GetMapping(path = "/ebanking/fiche-signaletique-solde/{codCliente}")
     ResponseEntity<?> getFicheSignaletiqueWithSolde(@PathVariable(name = "codCliente") String codCliente);
 
+    /** Derniers mouvements d'un compte du client (Production + Middleware), pour la ligne depliable du rapprochement. */
+    @GetMapping(path = "/ebanking/fiche-signaletique-solde/{codCliente}/comptes/{numCuenta}/dernieres-transactions")
+    Map<String, Object> getDernieresTransactionsCompte(@PathVariable(name = "codCliente") String codCliente,
+                                                       @PathVariable(name = "numCuenta") String numCuenta,
+                                                       @RequestParam(name = "limite") int limite);
+
 
     // Synthese DG : lectures via la datasource SAF tertiary (dev), hors base de production
     // et hors perimetre protege par cle API (/ebanking/agri/**).

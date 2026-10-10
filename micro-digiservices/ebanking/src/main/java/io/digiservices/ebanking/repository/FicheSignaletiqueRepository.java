@@ -2,8 +2,10 @@ package io.digiservices.ebanking.repository;
 
 import io.digiservices.ebanking.dto.CompteDTO;
 import io.digiservices.ebanking.dto.FicheSignaletiqueResponseDTO;
+import io.digiservices.ebanking.dto.TransactionCompteDTO;
 import io.digiservices.ebanking.dto.UpdateFicheSignaletiqueDTO;
 import io.digiservices.ebanking.exception.ApiException;
+import io.digiservices.ebanking.utils.SensMouvement;
 import jakarta.persistence.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -705,5 +707,38 @@ public class FicheSignaletiqueRepository {
         }
 
         return comptesMap;
+    }
+
+    /**
+     * Les N dernieres transactions d'un compte cote Middleware (TRANSACTIONSAF), du plus
+     * recent au plus ancien. Le sens est deduit des soldes avant/apres operation.
+     * Laisse remonter l'exception : l'appelant decide d'afficher « middleware indisponible ».
+     */
+    public List<TransactionCompteDTO> getDernieresTransactionsMiddleware(String numCuenta, int limite) {
+        return middlewareJdbcTemplate.query(
+                "SELECT TOP (?) NUMTRANSACTION, DATEOPERATION, MONTANT, TYPEOPERATION, MOTIFS, " +
+                "       FAITPAR, SOLDEAVANTOPERATION, SOLDEAPRESOPERATION " +
+                "FROM TRANSACTIONSAF " +
+                "WHERE NUMCOMPTE = ? AND (ETATSAF = 'Success' OR ETATSAF IS NULL) " +
+                "ORDER BY DATEOPERATION DESC, NUMTRANSACTION DESC",
+                (rs, i) -> {
+                    Timestamp ts = rs.getTimestamp("DATEOPERATION");
+                    String type = rs.getString("TYPEOPERATION");
+                    BigDecimal avant = rs.getBigDecimal("SOLDEAVANTOPERATION");
+                    BigDecimal apres = rs.getBigDecimal("SOLDEAPRESOPERATION");
+                    return TransactionCompteDTO.builder()
+                            .source("MIDDLEWARE")
+                            .numero(rs.getObject("NUMTRANSACTION") == null ? null : rs.getLong("NUMTRANSACTION"))
+                            .date(ts == null ? null : ts.toLocalDateTime())
+                            .sens(SensMouvement.depuisSoldesOuLibelle(avant, apres, type))
+                            .montant(rs.getBigDecimal("MONTANT"))
+                            .libelle(type == null ? null : type.trim())
+                            .soldeApres(apres)
+                            .utilisateur(rs.getString("FAITPAR"))
+                            .reference(rs.getString("MOTIFS"))
+                            .indicateurBrut(type)
+                            .build();
+                },
+                limite, numCuenta);
     }
 }
