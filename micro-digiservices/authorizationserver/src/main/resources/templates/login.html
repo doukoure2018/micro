@@ -34,6 +34,7 @@
                     </button>
                 </div>
                 <form method="post" th:action="@{/login}">
+                    <input type="hidden" name="flow_client" th:value="${flowClient}" />
                     <div class="space-y-5 sm:space-y-6">
                         <div>
                             <label for="username" class="block mb-2 text-sm font-medium text-gray-800">Email Addresse</label>

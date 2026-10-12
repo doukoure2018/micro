@@ -40,6 +40,14 @@ public class MobileOAuthSessionFilter implements Filter {
      */
     public static final String WEB_AUTH_COOKIE = "WEB_OAUTH_URL";
 
+    /** Client OAuth2 de la derniere autorisation web memorisee (session), et instant (epoch ms). */
+    public static final String WEB_AUTH_CLIENT_KEY = "WEB_OAUTH_CLIENT_SESSION";
+    public static final String WEB_AUTH_AT_KEY = "WEB_OAUTH_AT_SESSION";
+    /** Champ cache du formulaire de login : client pour lequel la page a ete affichee. */
+    public static final String FLOW_CLIENT_PARAM = "flow_client";
+    /** Client de la SPA digi : le flux par defaut d'un login fait hors de toute autorisation. */
+    public static final String DIGI_SPA_CLIENT_ID = "client";
+
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
@@ -119,8 +127,12 @@ public class MobileOAuthSessionFilter implements Filter {
                 if (httpRequest.getQueryString() != null) {
                     fullOAuthUrl += "?" + httpRequest.getQueryString();
                 }
-                // (1) En session (comportement historique).
-                httpRequest.getSession(true).setAttribute(WEB_AUTH_SESSION_KEY, fullOAuthUrl);
+                // (1) En session (comportement historique), avec le client et l'instant : la page de
+                //     login ne se rattache a cette autorisation que si elle la suit immediatement.
+                HttpSession session = httpRequest.getSession(true);
+                session.setAttribute(WEB_AUTH_SESSION_KEY, fullOAuthUrl);
+                session.setAttribute(WEB_AUTH_CLIENT_KEY, clientId == null ? "" : clientId);
+                session.setAttribute(WEB_AUTH_AT_KEY, System.currentTimeMillis());
                 // (2) ET dans un cookie, qui survit a une recreation de session HTTP.
                 Cookie webAuthCookie = new Cookie(WEB_AUTH_COOKIE,
                         URLEncoder.encode(fullOAuthUrl, StandardCharsets.UTF_8));

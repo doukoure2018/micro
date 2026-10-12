@@ -2,6 +2,7 @@ package io.digiservices.authorizationserver.controller;
 
 import io.digiservices.authorizationserver.exception.ApiException;
 import io.digiservices.authorizationserver.model.User;
+import io.digiservices.authorizationserver.security.MobileOAuthSessionFilter;
 import io.digiservices.authorizationserver.security.MfaAuthentication;
 import io.digiservices.authorizationserver.service.UserService;
 import jakarta.servlet.RequestDispatcher;
@@ -37,6 +38,9 @@ import static io.digiservices.authorizationserver.utils.UserUtils.getUser;
 @Controller
 @AllArgsConstructor
 public class LoginController {
+    /** Flux pour lequel la page de login a ete affichee (session), relu au re-affichage apres erreur. */
+    public static final String LOGIN_FLOW_CLIENT_KEY = "LOGIN_FLOW_CLIENT";
+    private static final long FRAICHEUR_AUTORISATION_MS = 90_000;
     private final SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
     private final AuthenticationFailureHandler authenticationFailureHandler = new SimpleUrlAuthenticationFailureHandler("/mfa?error");
     private final AuthenticationSuccessHandler authenticationSuccessHandler;
@@ -50,7 +54,35 @@ public class LoginController {
             String errorMessage = getErrorMessage(request);
             model.addAttribute("errorMessage", errorMessage);
         }
+        model.addAttribute("flowClient", flowClientPourCettePage(request, error != null));
         return "login";
+    }
+
+    /**
+     * Client OAuth2 pour lequel la page de login est affichee. La page suit une autorisation de
+     * moins de 90 s (redirection immediate de /oauth2/authorize) : c'est ce client. Sinon (acces
+     * direct a /login, autorisation ancienne laissee en attente par un autre onglet, AgriScore par
+     * exemple) : la SPA digi. Memorise en session pour que le re-affichage apres un mot de passe
+     * errone garde le meme flux, meme au-dela des 90 s.
+     */
+    private String flowClientPourCettePage(HttpServletRequest request, boolean reaffichageApresErreur) {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return MobileOAuthSessionFilter.DIGI_SPA_CLIENT_ID;
+        }
+        Object memorise = session.getAttribute(LOGIN_FLOW_CLIENT_KEY);
+        if (reaffichageApresErreur && memorise != null) {
+            return memorise.toString();
+        }
+        String flux = MobileOAuthSessionFilter.DIGI_SPA_CLIENT_ID;
+        Object client = session.getAttribute(MobileOAuthSessionFilter.WEB_AUTH_CLIENT_KEY);
+        Object at = session.getAttribute(MobileOAuthSessionFilter.WEB_AUTH_AT_KEY);
+        if (client != null && !client.toString().isBlank() && at instanceof Long instant
+                && System.currentTimeMillis() - instant < FRAICHEUR_AUTORISATION_MS) {
+            flux = client.toString();
+        }
+        session.setAttribute(LOGIN_FLOW_CLIENT_KEY, flux);
+        return flux;
     }
 
     private String getErrorMessage(HttpServletRequest request) {
