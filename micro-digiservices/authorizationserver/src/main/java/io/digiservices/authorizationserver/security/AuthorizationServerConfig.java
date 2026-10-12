@@ -47,6 +47,7 @@ import org.springframework.security.web.authentication.SavedRequestAwareAuthenti
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.CookieClearingLogoutHandler;
+import io.digiservices.authorizationserver.controller.LoginController;
 import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
@@ -90,6 +91,10 @@ public class AuthorizationServerConfig {
 
     @Value("${oauth.issuer:http://localhost:8080}")
     private String oauthIssuer;
+
+    /** Code challenge PKCE fixe de la SPA digi (identique à celui du frontend). */
+    @Value("${DIGI_SPA_CODE_CHALLENGE:HK02sitqCRpUlfLEX2xl4JGqaVQhNDsfTWH-oQzJHGw}")
+    private String digiSpaCodeChallenge;
 
     private final UserRepository userRepository;
     private final AgentPerimetreService agentPerimetreService;
@@ -197,59 +202,67 @@ public class AuthorizationServerConfig {
                         return;
                     }
 
-                    // Priorité 2: Saved Request standard
+                    // Priorités 2 à 4 : reprise d'un flux OAuth2 en attente (SavedRequest standard, repli
+                    // session, repli cookie) — MAIS uniquement si ce flux est celui pour lequel la page de
+                    // login a été affichée (champ caché flow_client, posé par LoginController).
+                    // Incident du 2026-10-12 : une autorisation KUMY laissée en attente dans la session par
+                    // l'onglet AgriScore était consommée par un login fait sur /auth/login pour digi ;
+                    // l'utilisateur atterrissait sur le handler Firebase sans état (« missing initial state »).
+                    String flowClient = request.getParameter(MobileOAuthSessionFilter.FLOW_CLIENT_PARAM);
+                    if (flowClient == null || flowClient.isBlank()) {
+                        flowClient = MobileOAuthSessionFilter.DIGI_SPA_CLIENT_ID;
+                    }
                     HttpSession session = request.getSession(false);
+                    String continuation = null;
+                    String origine = null;
                     if (session != null) {
                         SavedRequest savedRequest = (SavedRequest) session.getAttribute("SPRING_SECURITY_SAVED_REQUEST");
-                        if (savedRequest != null) {
-                            String redirectUrl = savedRequest.getRedirectUrl();
-                            log.info("📋 Found saved request: {}", redirectUrl);
-                            if (redirectUrl.contains("/oauth2/authorize")) {
-                                log.info("➡️ Redirecting to OAuth2 flow");
-                                // Le fallback web devient inutile : on le nettoie pour éviter
-                                // une reprise obsolète lors d'un login ultérieur dans la même session.
-                                session.removeAttribute(MobileOAuthSessionFilter.WEB_AUTH_SESSION_KEY);
-                                clearWebOAuthCookie(response);
-                                response.sendRedirect(redirectUrl);
-                                return;
+                        if (savedRequest != null && savedRequest.getRedirectUrl().contains("/oauth2/authorize")) {
+                            continuation = savedRequest.getRedirectUrl();
+                            origine = "SavedRequest";
+                        }
+                        if (continuation == null) {
+                            Object webOAuthUrl = session.getAttribute(MobileOAuthSessionFilter.WEB_AUTH_SESSION_KEY);
+                            if (webOAuthUrl != null && !webOAuthUrl.toString().isEmpty()) {
+                                continuation = webOAuthUrl.toString();
+                                origine = "repli session";
                             }
                         }
                     }
-
-                    // Priorité 3: Fallback web SESSION — URL /oauth2/authorize mémorisée par MobileOAuthSessionFilter.
-                    // Reprend le flux OAuth2 quand la SavedRequest a été perdue (ressource non permitAll,
-                    // multi-onglets, session recréée...) au lieu de renvoyer vers la SPA sans code,
-                    // ce qui obligeait l'utilisateur à "se connecter deux fois".
-                    if (session != null) {
-                        Object webOAuthUrl = session.getAttribute(MobileOAuthSessionFilter.WEB_AUTH_SESSION_KEY);
-                        if (webOAuthUrl != null && !webOAuthUrl.toString().isEmpty()) {
-                            log.info("🌐 Resuming OAuth2 flow from session fallback");
-                            session.removeAttribute(MobileOAuthSessionFilter.WEB_AUTH_SESSION_KEY);
-                            clearWebOAuthCookie(response);
-                            response.sendRedirect(webOAuthUrl.toString());
-                            return;
-                        }
-                    }
-
-                    // Priorité 4: Fallback web COOKIE — survit à une recréation/perte de session HTTP
-                    // (cause du retour intermittent sur la home au lieu du profil). Dernier recours
-                    // avant la redirection par défaut.
-                    String webCookieUrl = null;
-                    if (cookies != null) {
+                    if (continuation == null && cookies != null) {
                         for (Cookie cookie : cookies) {
                             if (MobileOAuthSessionFilter.WEB_AUTH_COOKIE.equals(cookie.getName())
                                     && cookie.getValue() != null && !cookie.getValue().isEmpty()) {
-                                webCookieUrl = java.net.URLDecoder.decode(
-                                        cookie.getValue(), java.nio.charset.StandardCharsets.UTF_8);
+                                String url = java.net.URLDecoder.decode(cookie.getValue(), java.nio.charset.StandardCharsets.UTF_8);
+                                if (url.contains("/oauth2/authorize")) {
+                                    continuation = url;
+                                    origine = "repli cookie";
+                                }
                                 break;
                             }
                         }
                     }
-                    if (webCookieUrl != null && webCookieUrl.contains("/oauth2/authorize")) {
-                        log.info("🍪 Resuming OAuth2 flow from cookie fallback");
-                        clearWebOAuthCookie(response);
-                        response.sendRedirect(webCookieUrl);
-                        return;
+                    // Les replis ne servent qu'une fois, quel que soit l'issue.
+                    if (session != null) {
+                        session.removeAttribute(MobileOAuthSessionFilter.WEB_AUTH_SESSION_KEY);
+                        session.removeAttribute(MobileOAuthSessionFilter.WEB_AUTH_CLIENT_KEY);
+                        session.removeAttribute(MobileOAuthSessionFilter.WEB_AUTH_AT_KEY);
+                        session.removeAttribute(LoginController.LOGIN_FLOW_CLIENT_KEY);
+                    }
+                    clearWebOAuthCookie(response);
+
+                    if (continuation != null) {
+                        String clientDuFlux = clientIdDe(continuation);
+                        if (flowClient.equals(clientDuFlux)) {
+                            log.info("➡️ Reprise du flux OAuth2 ({}) pour le client '{}'", origine, clientDuFlux);
+                            response.sendRedirect(continuation);
+                            return;
+                        }
+                        log.warn("⚠️ Flux OAuth2 en attente pour '{}' ({}) ignoré : le login a été fait pour '{}'",
+                                clientDuFlux, origine, flowClient);
+                        if (session != null) {
+                            session.removeAttribute("SPRING_SECURITY_SAVED_REQUEST");
+                        }
                     }
 
                     // Vérifier MFA
@@ -257,6 +270,15 @@ public class AuthorizationServerConfig {
                             .anyMatch(a -> a.getAuthority().equals("MFA_REQUIRED"))) {
                         log.info("🔐 MFA required");
                         response.sendRedirect("/mfa");
+                        return;
+                    }
+
+                    // Login fait pour digi sans flux en attente : repartir sur l'autorisation digi plutôt
+                    // que sur l'accueil sans code (cause du « double login »).
+                    if (MobileOAuthSessionFilter.DIGI_SPA_CLIENT_ID.equals(flowClient)) {
+                        String url = digiAuthorizeUrl();
+                        log.info("🌐 Login digi sans flux en attente : redirection vers l'autorisation digi");
+                        response.sendRedirect(url);
                         return;
                     }
 
@@ -336,6 +358,27 @@ public class AuthorizationServerConfig {
     }
 
     /** Efface le cookie de fallback web OAuth2 (apres reprise du flux ou redirection standard). */
+    /** client_id d'une URL /oauth2/authorize mémorisée (vide si absent). */
+    private static String clientIdDe(String authorizeUrl) {
+        int q = authorizeUrl.indexOf('?');
+        if (q < 0) return "";
+        for (String param : authorizeUrl.substring(q + 1).split("&")) {
+            if (param.startsWith("client_id=")) {
+                return java.net.URLDecoder.decode(param.substring("client_id=".length()),
+                        java.nio.charset.StandardCharsets.UTF_8);
+            }
+        }
+        return "";
+    }
+
+    /** Autorisation de la SPA digi, telle que son bouton « Se connecter » la construit. */
+    private String digiAuthorizeUrl() {
+        return oauthIssuer + "/oauth2/authorize?response_type=code&client_id="
+                + MobileOAuthSessionFilter.DIGI_SPA_CLIENT_ID + "&scope=openid&redirect_uri="
+                + java.net.URLEncoder.encode(uiAppUrl, java.nio.charset.StandardCharsets.UTF_8)
+                + "&code_challenge_method=S256&code_challenge=" + digiSpaCodeChallenge;
+    }
+
     private static void clearWebOAuthCookie(HttpServletResponse response) {
         Cookie cookie = new Cookie(MobileOAuthSessionFilter.WEB_AUTH_COOKIE, "");
         cookie.setPath("/");
