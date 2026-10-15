@@ -129,6 +129,7 @@ export class DetailComponent {
         showWorkflowRejetDR: boolean;
         /** Modal « Renvoyer à l'agent » (DA, dossier APPROVED sans analyse exploitable). */
         showRenvoiAgent: boolean;
+        showAnnulationDossier: boolean;
         analyseChargesFonctionnaire?: AnalyseChargesFonctionnaire | null;
         analyseCreditAgricole?: AnalyseCreditAgricole | null;
         /** Échéancier avec moratoire (CAS / CAS-R, V147) affiché aux approbateurs. */
@@ -163,7 +164,8 @@ export class DetailComponent {
         showModalRejetFlux: false,
         showWorkflowRejetDA: false,
         showWorkflowRejetDR: false,
-        showRenvoiAgent: false
+        showRenvoiAgent: false,
+        showAnnulationDossier: false
     });
 
     updateForm: FormGroup;
@@ -187,6 +189,7 @@ export class DetailComponent {
     workflowDAForm: FormGroup;
     workflowDARejetForm: FormGroup;
     renvoiAgentForm: FormGroup;
+    annulationDossierForm: FormGroup;
 
     // Formulaires workflow DR
     workflowDRForm: FormGroup;
@@ -266,6 +269,10 @@ export class DetailComponent {
             instructions: ['']
         });
         this.renvoiAgentForm = this.fb.group({
+            motif: ['', [Validators.required, Validators.minLength(10)]]
+        });
+        this.annulationDossierForm = this.fb.group({
+            motifCode: ['DESISTEMENT_CLIENT', [Validators.required]],
             motif: ['', [Validators.required, Validators.minLength(10)]]
         });
 
@@ -2957,6 +2964,61 @@ export class DetailComponent {
         }
         if (!this.state().hasDossierCredit) return "Le dossier de crédit (pièces) n'a pas été constitué par l'agent : validation impossible.";
         return '';
+    }
+
+    // ===== Annulation du dossier (V163) : le client s'est désisté =====
+
+    /** Motifs normalisés, identiques à ceux acceptés par le serveur. */
+    readonly motifsAnnulation = [
+        { label: 'Désistement du client', value: 'DESISTEMENT_CLIENT' },
+        { label: 'Client injoignable', value: 'CLIENT_INJOIGNABLE' },
+        { label: 'Double saisie', value: 'DOUBLE_SAISIE' },
+        { label: 'Erreur de saisie', value: 'ERREUR_SAISIE' },
+        { label: 'Autre motif', value: 'AUTRE' }
+    ];
+
+    /** Étapes depuis lesquelles l'agent qui porte le dossier peut en demander l'annulation. */
+    private static readonly ETATS_ANNULABLES = ['AFFECTEE', 'SELECTION', 'CORRECTION', 'CORRECTION_DR',
+        'CORRECTION_DE', 'RETOUR_AGENT', 'APPROVED', 'VALIDATED_DA', 'VALIDATED_DR', 'PENDING_DG', 'REJETE_DG'];
+
+    peutAnnulerDossier(): boolean {
+        const d: any = this.state().demandeIndividuel;
+        if (!d || this.state().user?.role !== 'AGENT_CREDIT') return false;
+        if (d.statutDemande !== 'EN_ATTENTE') return false;
+        const aMoi = d.agentCreditAffecte === this.state().user?.userId
+            || d.codUsuarios === this.state().user?.username
+            || d.codUsuarios === `${this.state().user?.firstName} ${this.state().user?.lastName}`;
+        return aMoi && DetailComponent.ETATS_ANNULABLES.includes(d.validationState);
+    }
+
+    /** Vrai quand une annulation attend la décision du DA : le dossier est figé. */
+    annulationEnAttente(): boolean {
+        return (this.state().demandeIndividuel as any)?.validationState === 'ANNULATION_DEMANDEE';
+    }
+
+    ouvrirAnnulationDossier(): void {
+        this.annulationDossierForm.reset({ motifCode: 'DESISTEMENT_CLIENT', motif: '' });
+        this.state.update(this.mergeState({ showAnnulationDossier: true }));
+    }
+
+    confirmerAnnulationDossier(): void {
+        if (this.annulationDossierForm.invalid) return;
+        const demandeId = this.state().demandeIndividuel?.demandeIndividuelId;
+        if (!demandeId) return;
+        const { motifCode, motif } = this.annulationDossierForm.value;
+        this.userService
+            .demanderAnnulationDossier$(+demandeId, motifCode, motif)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.messageService.add({ severity: 'info', summary: 'Annulation demandée', detail: "Votre Directeur d'Agence doit valider l'annulation. Le dossier est figé jusqu'à sa décision.", life: 6000 });
+                    this.state.update(this.mergeState({ showAnnulationDossier: false }));
+                    this.loadDemandeWithGaranties();
+                },
+                error: (err: any) => {
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || "Erreur lors de la demande d'annulation", life: 6000 });
+                }
+            });
     }
 
     ouvrirRenvoiAgent(): void {

@@ -468,7 +468,7 @@ public class DemandeIndQuery {
                    validation_state, statut_demande, createdat
             FROM demandeindividuel
             WHERE numero_membre = :numeroMembre
-              AND COALESCE(statut_demande, '') NOT IN ('REJET', 'REJECTED')
+              AND COALESCE(statut_demande, '') NOT IN ('REJET', 'REJECTED', 'ANNULE')
               AND COALESCE(validation_state, '') <> 'VALIDATED_FINAL'
             ORDER BY createdat DESC
             LIMIT 1

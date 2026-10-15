@@ -78,4 +78,17 @@ public interface WorkflowService {
     List<AgentAgenceDto> getAgentsAgence(Long agenceId);
     void setAgentFonction(Long userId, String fonction, boolean actif, Long affectePar, Long agenceIdDA);
     List<String> getMesFonctions(Long userId);
+
+    // ===== Annulation du dossier (V163) =====
+
+    void demanderAnnulation(Long demandeId, String motifCode, String motif, String demandeePar,
+                            Long userId, String codUsuarios, String username);
+
+    void validerAnnulation(Long demandeId, Long agenceId, String decideePar);
+
+    void refuserAnnulation(Long demandeId, Long agenceId, String motifRefus, String decideePar);
+
+    List<WorkflowDemandeDto> getAnnulationsAValiderDA(Long agenceId);
+
+    List<WorkflowDemandeDto> getAnnulationsAC(Long userId, String codUsuarios, String username);
 }

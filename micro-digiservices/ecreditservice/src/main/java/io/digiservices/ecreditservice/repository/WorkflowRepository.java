@@ -89,4 +89,18 @@ public interface WorkflowRepository {
     boolean isCompteActif(Long userId);
     List<String> getMesFonctions(Long userId);
     List<String> getRolesOfUser(Long userId);
+
+    // ===== Annulation du dossier (V163) =====
+
+    /** @return 1 si la demande d'annulation a ete posee, 0 si l'etat ou le porteur ne s'y prete pas. */
+    int demanderAnnulation(Long demandeId, String motifCode, String motif, String demandeePar,
+                           Long userId, String codUsuarios, String username);
+
+    int validerAnnulation(Long demandeId, Long agenceId, String decideePar);
+
+    int refuserAnnulation(Long demandeId, Long agenceId, String motifRefus, String decideePar);
+
+    List<WorkflowDemandeDto> getAnnulationsAValiderDA(Long agenceId);
+
+    List<WorkflowDemandeDto> getAnnulationsAC(Long userId, String codUsuarios, String username);
 }

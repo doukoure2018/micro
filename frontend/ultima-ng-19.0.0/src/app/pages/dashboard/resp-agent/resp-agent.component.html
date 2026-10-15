@@ -675,8 +675,90 @@
                 </div>
             </div>
 
+            <!-- V163 : annulations de dossier demandees par les agents, en attente de ma decision -->
+            <div *ngIf="hasWorkflowAnnulations()" class="card mb-4 border-l-4 border-red-500">
+                <div class="p-4">
+                    <div class="flex flex-wrap gap-3 align-items-center justify-content-between mb-4">
+                        <h3 class="text-xl font-semibold m-0 text-900">
+                            <i class="pi pi-ban mr-2 text-red-600"></i>
+                            Annulations de dossier &agrave; valider
+                            <p-badge [value]="state().workflowAnnulations.length.toString()" severity="danger" class="ml-2"></p-badge>
+                        </h3>
+                        <span class="text-600 text-sm">Le client s'est d&eacute;sist&eacute; : votre d&eacute;cision sort le dossier du circuit, ou le remet en instruction.</span>
+                    </div>
+
+                    <p-table [value]="state().workflowAnnulations" [paginator]="true" [rows]="10" responsiveLayout="scroll"
+                        styleClass="p-datatable-sm">
+                        <ng-template pTemplate="header">
+                            <tr>
+                                <th>Client</th>
+                                <th class="text-right">Montant</th>
+                                <th>&Eacute;tape atteinte</th>
+                                <th>Motif</th>
+                                <th>Demand&eacute;e par</th>
+                                <th>Le</th>
+                                <th></th>
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-d>
+                            <tr>
+                                <td>
+                                    <div class="font-semibold">{{ d.prenom }} {{ d.nom }}</div>
+                                    <div class="text-xs text-500">{{ d.numeroMembre }}</div>
+                                </td>
+                                <td class="text-right font-semibold">{{ d.montantDemande | currency:'GNF ':'symbol':'1.0-0' }}</td>
+                                <td><p-tag [value]="d.etatAvantAnnulation || '&mdash;'" severity="secondary"></p-tag></td>
+                                <td>
+                                    <div class="font-medium">{{ libelleMotifAnnulation(d.annulationMotifCode) }}</div>
+                                    <div class="text-xs text-600">{{ d.annulationMotif }}</div>
+                                </td>
+                                <td class="text-sm">{{ d.annulationDemandeePar }}</td>
+                                <td class="text-sm">{{ d.dateDemandeAnnulation | date: 'dd/MM/yyyy' }}</td>
+                                <td class="whitespace-nowrap">
+                                    <button pButton type="button" icon="pi pi-check" label="Valider" class="p-button-sm p-button-danger mr-2"
+                                        pTooltip="Le dossier sort d&eacute;finitivement du circuit" (click)="ouvrirAnnulationValider(d)"></button>
+                                    <button pButton type="button" icon="pi pi-undo" label="Refuser" class="p-button-sm p-button-outlined"
+                                        pTooltip="Le dossier reprend son cours" (click)="ouvrirAnnulationRefus(d)"></button>
+                                </td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+                </div>
+            </div>
+
+            <p-dialog header="Valider l'annulation du dossier" [(visible)]="showAnnulationValiderDialog" [modal]="true" [style]="{ width: '520px' }">
+                <div class="mb-3 p-3 bg-red-50 border-round" *ngIf="selectedAnnulation">
+                    <p class="font-semibold m-0">{{ selectedAnnulation.prenom }} {{ selectedAnnulation.nom }}</p>
+                    <p class="text-600 m-0">{{ selectedAnnulation.montantDemande | currency:'GNF ':'symbol':'1.0-0' }}</p>
+                    <p class="text-600 m-0 mt-2 text-sm">Motif invoqu&eacute; : <strong>{{ libelleMotifAnnulation(selectedAnnulation.annulationMotifCode) }}</strong> &mdash; {{ selectedAnnulation.annulationMotif }}</p>
+                </div>
+                <p class="m-0 text-sm">Le dossier sortira d&eacute;finitivement du circuit et rejoindra les dossiers cl&ocirc;tur&eacute;s.
+                    Le client pourra d&eacute;poser une nouvelle demande.</p>
+                <ng-template #footer>
+                    <div class="flex justify-end gap-3">
+                        <button pButton type="button" label="Retour" class="p-button-secondary p-button-outlined" (click)="showAnnulationValiderDialog = false"></button>
+                        <button pButton type="button" label="Confirmer l'annulation" icon="pi pi-ban" class="p-button-danger" (click)="confirmerAnnulation()"></button>
+                    </div>
+                </ng-template>
+            </p-dialog>
+
+            <p-dialog header="Refuser l'annulation" [(visible)]="showAnnulationRefusDialog" [modal]="true" [style]="{ width: '520px' }">
+                <p class="m-0 mb-3 text-sm">Le dossier reprendra son cours &agrave; l'&eacute;tape o&ugrave; il &eacute;tait, et l'agent verra votre motif.</p>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Motif du refus <span class="text-red-500">*</span></label>
+                <textarea pTextarea [(ngModel)]="motifRefusAnnulation" rows="3" class="w-full" [autoResize]="true"
+                    placeholder="Ex : le client a confirm&eacute; par t&eacute;l&eacute;phone qu'il maintenait sa demande, poursuivez l'instruction"></textarea>
+                <small *ngIf="motifRefusAnnulation.length > 0 && motifRefusAnnulation.trim().length < 10" class="text-red-500">Minimum 10 caract&egrave;res requis</small>
+                <ng-template #footer>
+                    <div class="flex justify-end gap-3">
+                        <button pButton type="button" label="Retour" class="p-button-secondary p-button-outlined" (click)="showAnnulationRefusDialog = false"></button>
+                        <button pButton type="button" label="Refuser l'annulation" icon="pi pi-undo" class="p-button-warning"
+                            [disabled]="motifRefusAnnulation.trim().length < 10" (click)="refuserAnnulation()"></button>
+                    </div>
+                </ng-template>
+            </p-dialog>
+
             <!-- Cas où il n'y a pas de demandes -->
-            <div *ngIf="state().filteredDemandeAttentes?.length === 0 && !hasAnalyseCredits() && !hasDemandesRejetees() && !hasWorkflowAValider() && !hasWorkflowCorrectionDR() && !state().loading"
+            <div *ngIf="state().filteredDemandeAttentes?.length === 0 && !hasAnalyseCredits() && !hasDemandesRejetees() && !hasWorkflowAValider() && !hasWorkflowCorrectionDR() && !hasWorkflowAnnulations() && !state().loading"
                 class="card text-center p-6">
                 <div class="flex flex-column align-items-center gap-4">
                     <i class="pi pi-check-circle text-6xl text-green-500"></i>

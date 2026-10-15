@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -479,5 +480,66 @@ public class WorkflowServiceImpl implements WorkflowService {
         if (request.getSectionsARevoir() == null || request.getSectionsARevoir().isEmpty()) {
             throw new ApiException("Au moins une section à revoir doit être sélectionnée");
         }
+    }
+
+    // ===== Annulation du dossier (V163, DSIG 2026-10-15) =====
+
+    /** Motifs normalises : c'est le code qui se compte, le commentaire qui explique le cas. */
+    private static final Set<String> MOTIFS_ANNULATION = Set.of(
+            "DESISTEMENT_CLIENT", "CLIENT_INJOIGNABLE", "DOUBLE_SAISIE", "ERREUR_SAISIE", "AUTRE");
+
+    /** Un commentaire plus court n'explique rien : meme exigence que les autres motifs du circuit. */
+    private static final int LONGUEUR_MINIMALE_MOTIF = 10;
+
+    @Override
+    public void demanderAnnulation(Long demandeId, String motifCode, String motif, String demandeePar,
+                                   Long userId, String codUsuarios, String username) {
+        if (motifCode == null || !MOTIFS_ANNULATION.contains(motifCode)) {
+            throw new ApiException("Le motif d'annulation est obligatoire et doit être choisi dans la liste");
+        }
+        if (motif == null || motif.strip().length() < LONGUEUR_MINIMALE_MOTIF) {
+            throw new ApiException("Expliquez l'annulation en " + LONGUEUR_MINIMALE_MOTIF + " caractères au moins");
+        }
+        log.info("Demande d'annulation du dossier {} par {} ({}) : {}", demandeId, demandeePar, motifCode, motif);
+        int rows = workflowRepository.demanderAnnulation(demandeId, motifCode, motif.strip(), demandeePar,
+                userId, codUsuarios, username);
+        if (rows == 0) {
+            throw new ApiException("Annulation impossible : ce dossier ne vous est pas affecté, "
+                    + "il est déjà mis en place, ou une demande d'annulation est déjà en cours");
+        }
+    }
+
+    @Override
+    public void validerAnnulation(Long demandeId, Long agenceId, String decideePar) {
+        log.info("Validation de l'annulation du dossier {} par {}", demandeId, decideePar);
+        int rows = workflowRepository.validerAnnulation(demandeId, agenceId, decideePar);
+        if (rows == 0) {
+            throw new ApiException("Demande non trouvée, hors de votre agence, "
+                    + "ou aucune annulation n'est en attente sur ce dossier");
+        }
+    }
+
+    @Override
+    public void refuserAnnulation(Long demandeId, Long agenceId, String motifRefus, String decideePar) {
+        if (motifRefus == null || motifRefus.strip().length() < LONGUEUR_MINIMALE_MOTIF) {
+            throw new ApiException("Le motif du refus est obligatoire, en "
+                    + LONGUEUR_MINIMALE_MOTIF + " caractères au moins");
+        }
+        log.info("Refus de l'annulation du dossier {} par {} : {}", demandeId, decideePar, motifRefus);
+        int rows = workflowRepository.refuserAnnulation(demandeId, agenceId, motifRefus.strip(), decideePar);
+        if (rows == 0) {
+            throw new ApiException("Demande non trouvée, hors de votre agence, "
+                    + "ou aucune annulation n'est en attente sur ce dossier");
+        }
+    }
+
+    @Override
+    public List<WorkflowDemandeDto> getAnnulationsAValiderDA(Long agenceId) {
+        return workflowRepository.getAnnulationsAValiderDA(agenceId);
+    }
+
+    @Override
+    public List<WorkflowDemandeDto> getAnnulationsAC(Long userId, String codUsuarios, String username) {
+        return workflowRepository.getAnnulationsAC(userId, codUsuarios, username);
     }
 }

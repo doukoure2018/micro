@@ -1611,6 +1611,23 @@ export class UserService {
         <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/rejeter-da`, body).pipe(catchError(this.handleError));
 
     // Renvoi DA -> agent (erreur de destination) puis resoumission par l'agent
+    // ===== Annulation du dossier de crédit (V163) : l'agent demande, le DA tranche =====
+
+    demanderAnnulationDossier$ = (demandeId: number, motifCode: string, motif: string) =>
+        <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/demander-annulation`, { motifCode, motif }).pipe(catchError(this.handleError));
+
+    validerAnnulationDossier$ = (demandeId: number) =>
+        <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/valider-annulation`, {}).pipe(catchError(this.handleError));
+
+    refuserAnnulationDossier$ = (demandeId: number, motifRefus: string) =>
+        <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/refuser-annulation`, { motifRefus }).pipe(catchError(this.handleError));
+
+    getAnnulationsAValiderDA$ = () =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/annulations-a-valider-da`).pipe(catchError(this.handleError));
+
+    getAnnulationsAC$ = () =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/annulations-ac`).pipe(catchError(this.handleError));
+
     renvoyerAgent$ = (demandeId: number, motif: string) =>
         <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/renvoyer-agent`, { motif }).pipe(catchError(this.handleError));
 

@@ -11,7 +11,7 @@ export type ScopeDossiers = 'EN_COURS' | 'CLOTURES';
 export type SeveriteTag = 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast' | undefined;
 
 /** Étape du circuit à laquelle se trouve un dossier en cours (regroupe les validation_state). */
-export type EtapeDossier = 'RECEPTION' | 'ANALYSE' | 'CORRECTION' | 'APPROBATION';
+export type EtapeDossier = 'RECEPTION' | 'ANALYSE' | 'CORRECTION' | 'APPROBATION' | 'ANNULATION';
 
 const ETAPES: Record<string, EtapeDossier> = {
     // Accueil / affectation par le DA
@@ -32,6 +32,8 @@ const ETAPES: Record<string, EtapeDossier> = {
     VALIDATED_DA: 'APPROBATION',
     VALIDATED_DR: 'APPROBATION',
     PENDING_DG: 'APPROBATION',
+    // Annulation demandée par l'agent, en attente de la décision du DA (V163)
+    ANNULATION_DEMANDEE: 'ANNULATION',
     // Historique
     VALIDATION: 'ANALYSE'
 };
@@ -52,7 +54,8 @@ const LIBELLES: Record<string, string> = {
     VALIDATED_DA: 'Validée DA, chez le DR',
     VALIDATED_DR: 'Validée DR, chez le DE',
     PENDING_DG: 'Validée DE, visa DG',
-    VALIDATED_FINAL: 'Approuvée (niveau final)'
+    VALIDATED_FINAL: 'Approuvée (niveau final)',
+    ANNULATION_DEMANDEE: 'Annulation demandée, décision du DA'
 };
 
 const SEVERITES: Record<string, SeveriteTag> = {
@@ -71,11 +74,17 @@ const SEVERITES: Record<string, SeveriteTag> = {
     VALIDATED_DA: 'warn',
     VALIDATED_DR: 'warn',
     PENDING_DG: 'warn',
-    VALIDATED_FINAL: 'success'
+    VALIDATED_FINAL: 'success',
+    ANNULATION_DEMANDEE: 'warn'
 };
 
 export function estRejete(d: { statutDemande?: string | null }): boolean {
     return d.statutDemande === 'REJET' || d.statutDemande === 'REJECTED';
+}
+
+/** V163 : dossier annulé (désistement du client), validé par le DA. Clôturé comme un rejet. */
+export function estAnnule(d: { statutDemande?: string | null }): boolean {
+    return d.statutDemande === 'ANNULE';
 }
 
 export function estApprouveFinal(d: { validationState?: string | null }): boolean {
@@ -83,24 +92,26 @@ export function estApprouveFinal(d: { validationState?: string | null }): boolea
 }
 
 export function estCloture(d: { statutDemande?: string | null; validationState?: string | null }): boolean {
-    return estRejete(d) || estApprouveFinal(d);
+    return estRejete(d) || estAnnule(d) || estApprouveFinal(d);
 }
 
 export function etapeDossier(d: { statutDemande?: string | null; validationState?: string | null }): EtapeDossier | 'APPROUVE' | 'REJETE' {
     if (estRejete(d)) return 'REJETE';
+    if (estAnnule(d)) return 'ANNULATION';
     if (estApprouveFinal(d)) return 'APPROUVE';
     return ETAPES[d.validationState || 'NOUVEAU'] || 'RECEPTION';
 }
 
 export function libelleEtat(d: { statutDemande?: string | null; validationState?: string | null; motifRejetDg?: string | null; motifRejetDe?: string | null }): string {
     if (estRejete(d)) return 'Rejetée';
+    if (estAnnule(d)) return 'Annulée (désistement)';
     // Rejet DG confirmé par le DE (2026-09-23) : CORRECTION_DE sans motif DE propre
     if (d.validationState === 'CORRECTION_DE' && d.motifRejetDg && !d.motifRejetDe) return 'À corriger (rejet DG confirmé par le DE)';
     return LIBELLES[d.validationState || 'NOUVEAU'] || d.validationState || 'Nouvelle demande';
 }
 
 export function severiteEtat(d: { statutDemande?: string | null; validationState?: string | null }): SeveriteTag {
-    if (estRejete(d)) return 'danger';
+    if (estRejete(d) || estAnnule(d)) return 'danger';
     return SEVERITES[d.validationState || 'NOUVEAU'] || 'info';
 }
 
