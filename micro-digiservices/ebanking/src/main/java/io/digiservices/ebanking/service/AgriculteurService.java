@@ -41,4 +41,7 @@ public interface AgriculteurService {
 
     /** Identite et contacts d'un membre. */
     io.digiservices.clients.agri.IdentiteMembreDto getIdentiteMembre(String codCliente);
+
+    /** Comptes et credits des membres dont le telephone principal est ce numero (9 chiffres). */
+    io.digiservices.clients.agri.ComptesParTelephoneDto getComptesParTelephone(String telephone);
 }

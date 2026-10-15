@@ -62,4 +62,7 @@ public interface AgriculteurService {
 
     /** Identité et contacts d'un membre. */
     io.digiservices.agriculteurservice.dto.IdentiteMembreDto getIdentite(String codeClient);
+
+    /** Comptes et crédits des membres dont le téléphone principal est ce numéro (déjà normalisé). */
+    io.digiservices.agriculteurservice.dto.ComptesParTelephoneDto getComptesParTelephone(String telephone);
 }
