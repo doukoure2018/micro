@@ -42,8 +42,9 @@ avec ses comptes et ses crédits en cours, dans la structure exacte de `/farmers
   été trouvé (`principal`, `secondaire`, `autre`), les membres trouvés sur le principal d'abord.
 - Seuls les membres qui ont **au moins un compte de crédit ou de remboursement, ou un crédit en
   cours** sont servis ; un membre qui porte le numéro sans rien de cela n'est pas listé.
-- Au-delà de **20 membres** pour un même numéro (numéro collectif), les membres sont listés avec
-  leur code, leur nom et leur agence **sans leurs comptes**, `comptesNonLus` vaut `true` et le
+- Au-delà de **20 membres** pour un même numéro (numéro collectif : certains sont portés par plus
+  de mille fiches), seuls les **20 premiers** sont listés, avec leur code, leur nom et leur agence
+  **sans leurs comptes** ; `nombreMembres` donne le total, `comptesNonLus` vaut `true` et le
   `message` invite à passer par `/farmers/{codeMembre}/comptes`.
 
 ### Champs de la réponse
