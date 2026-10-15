@@ -1,7 +1,7 @@
 # API membre : comptes et échéances par numéro de téléphone
 
 **Crédit Rural de Guinée S.A. · DSIG · Service Innovation et Développement**
-Documentation du 15 octobre 2026 · Complément de « API membre : identité et comptes » · Lecture seule
+Documentation du 15 octobre 2026, révisée le 16 octobre · Complément de « API membre : identité et comptes » · Lecture seule
 
 Un troisième point d'entrée qui fait exactement ce que fait `/farmers/{codeMembre}/comptes`,
 mais à partir d'un **numéro de téléphone** du membre — principal, secondaire ou autre
@@ -52,9 +52,9 @@ avec ses comptes et ses crédits en cours, dans la structure exacte de `/farmers
 | Champ | Sens |
 |---|---|
 | `telephone` | Le numéro cherché, normalisé (9 chiffres) |
-| `nombreMembres` | Nombre de membres qui portent ce numéro en téléphone principal |
+| `nombreMembres` | Nombre total de membres qui portent ce numéro sur **l'un de leurs trois téléphones** (principal, secondaire ou autre). C'est le total réel, à utiliser pour afficher « N membres trouvés » et pour décider de passer par `/farmers/{codeMembre}/comptes` |
 | `comptesNonLus` | `true` si le seuil est dépassé et que les comptes n'ont pas été lus |
-| `membres[]` | Un membre par ligne : `codeMembre`, `nomMembre`, `codeAgence`, `libelleAgence`, `champTelephone`, puis `comptes` et `creditsEnCours` — mêmes champs que dans `/farmers/{codeMembre}/comptes` |
+| `membres[]` | Un membre par ligne : `codeMembre`, `nomMembre`, `codeAgence`, `libelleAgence`, `champTelephone`, puis `comptes` et `creditsEnCours` — mêmes champs que dans `/farmers/{codeMembre}/comptes`. La liste peut être **plus courte** que `nombreMembres` : sous le seuil, les membres sans compte de crédit ni crédit en cours n'y figurent pas ; au-delà, seuls les 20 premiers y sont |
 | `message` | `null`, ou « Aucun membre avec ce numero », ou l'explication du seuil |
 
 ### Exemple de réponse
