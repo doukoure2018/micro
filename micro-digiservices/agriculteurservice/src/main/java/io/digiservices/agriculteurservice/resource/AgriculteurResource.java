@@ -90,6 +90,20 @@ public class AgriculteurResource {
         return ResponseEntity.ok(agriculteurService.getComptes(clientId));
     }
 
+    /**
+     * Comme {@code /farmers/{clientId}/comptes}, mais à partir du téléphone principal du membre
+     * (CL_CLIENTES.TEL_PRINCIPAL). Le numéro est normalisé avant tout appel : 9 chiffres
+     * commençant par 6, indicatif +224 accepté, sinon 400. Un numéro peut être porté par
+     * plusieurs membres : la réponse les liste.
+     */
+    @GetMapping("/telephones/{telephone}/comptes")
+    public ResponseEntity<io.digiservices.agriculteurservice.dto.ComptesParTelephoneDto> getComptesParTelephone(
+            @PathVariable("telephone") String telephone) {
+        String numero = io.digiservices.agriculteurservice.utils.TelephoneGuineen.normaliser(telephone);
+        log.info("[AGRI] GET /agriculteurs/telephones/{}/comptes", numero);
+        return ResponseEntity.ok(agriculteurService.getComptesParTelephone(numero));
+    }
+
     @GetMapping("/credits/{creditId}")
     public ResponseEntity<CreditAgricoleDto> getCredit(@PathVariable("creditId") Long creditId) {
         log.info("[AGRI] GET /agriculteurs/credits/{}", creditId);

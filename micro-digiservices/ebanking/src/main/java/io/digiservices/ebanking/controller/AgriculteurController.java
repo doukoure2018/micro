@@ -142,4 +142,12 @@ public class AgriculteurController {
         log.info("[AGRI] GET /identite/{}", codCliente);
         return ResponseEntity.ok(agriculteurService.getIdentiteMembre(codCliente));
     }
+
+    /** Comptes et credits des membres portant ce numero en telephone principal (9 chiffres). */
+    @GetMapping("/telephones/{telephone}/comptes")
+    public ResponseEntity<io.digiservices.clients.agri.ComptesParTelephoneDto> getComptesParTelephone(
+            @PathVariable("telephone") String telephone) {
+        log.info("[AGRI] GET /telephones/{}/comptes", telephone);
+        return ResponseEntity.ok(agriculteurService.getComptesParTelephone(telephone));
+    }
 }

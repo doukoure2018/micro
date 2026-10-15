@@ -174,6 +174,36 @@ public class AgriMapper {
                 .build();
     }
 
+    public io.digiservices.agriculteurservice.dto.ComptesParTelephoneDto toComptesParTelephone(
+            io.digiservices.clients.agri.ComptesParTelephoneDto src) {
+        if (src == null) return null;
+        java.util.List<io.digiservices.agriculteurservice.dto.MembreComptesDto> membres =
+                src.getMembres() == null ? java.util.List.of()
+                        : src.getMembres().stream().map(this::toMembreComptes).toList();
+        return io.digiservices.agriculteurservice.dto.ComptesParTelephoneDto.builder()
+                .telephone(src.getTelephone())
+                .nombreMembres(src.getNombreMembres())
+                .comptesNonLus(src.isComptesNonLus())
+                .membres(membres)
+                .message(src.getMessage())
+                .build();
+    }
+
+    public io.digiservices.agriculteurservice.dto.MembreComptesDto toMembreComptes(
+            io.digiservices.clients.agri.MembreComptesDto src) {
+        if (src == null) return null;
+        return io.digiservices.agriculteurservice.dto.MembreComptesDto.builder()
+                .codeMembre(src.getCodeMembre())
+                .nomMembre(src.getNomMembre())
+                .codeAgence(src.getCodeAgence())
+                .libelleAgence(src.getLibelleAgence())
+                .comptes(src.getComptes() == null ? java.util.List.of()
+                        : src.getComptes().stream().map(this::toCompte).toList())
+                .creditsEnCours(src.getCreditsEnCours() == null ? java.util.List.of()
+                        : src.getCreditsEnCours().stream().map(this::toCreditRemboursement).toList())
+                .build();
+    }
+
     public io.digiservices.agriculteurservice.dto.CreditRemboursementDto toCreditRemboursement(
             io.digiservices.clients.agri.CreditEnCoursDto src) {
         if (src == null) return null;

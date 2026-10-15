@@ -475,6 +475,28 @@ public class AgriculteurRepository {
             ORDER BY c.COD_PRODUCTO, c.NUM_CUENTA
             """;
 
+    /**
+     * Membres dont le telephone principal est le numero donne, deja normalise par l'appelant
+     * (9 chiffres). La colonne n'est pas indexee (seule la cle primaire l'est) : lecture
+     * complete de CL_CLIENTES, 0,05 a 0,5 s mesures le 15 octobre 2026 — acceptable. La
+     * comparaison se fait apres LTRIM/RTRIM : des numeros sont saisis avec des espaces.
+     */
+    private static final String SQL_CLIENTS_PAR_TELEPHONE = """
+            SELECT c.COD_CLIENTE, c.NOM_CLIENTE, c.COD_AGENCIA, ag.DES_AGENCIA
+            FROM CL.CL_CLIENTES c
+            LEFT JOIN CF.CF_AGENCIAS ag
+                ON ag.COD_EMPRESA = c.COD_EMPRESA AND ag.COD_AGENCIA = c.COD_AGENCIA
+            WHERE c.COD_EMPRESA = '00000'
+              AND LTRIM(RTRIM(c.TEL_PRINCIPAL)) = :telephone
+            ORDER BY c.COD_AGENCIA, c.COD_CLIENTE
+            """;
+
+    /** Une ligne par membre portant ce numero en telephone principal ; vide si aucun. */
+    public List<java.util.Map<String, Object>> findClientsParTelephone(String telephone) {
+        MapSqlParameterSource params = new MapSqlParameterSource().addValue("telephone", telephone);
+        return execute("agri.clientsParTelephone", () -> tertiary.queryForList(SQL_CLIENTS_PAR_TELEPHONE, params));
+    }
+
     /** Une ligne par compte ; la liste est vide si le membre n'a aucun de ces comptes. */
     public List<java.util.Map<String, Object>> findComptesMembre(String codCliente, List<String> produits) {
         MapSqlParameterSource params = new MapSqlParameterSource()

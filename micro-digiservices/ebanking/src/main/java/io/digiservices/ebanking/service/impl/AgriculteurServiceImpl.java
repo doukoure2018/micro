@@ -196,6 +196,14 @@ public class AgriculteurServiceImpl implements AgriculteurService {
     @org.springframework.beans.factory.annotation.Value("${agri.comptes.produit-remboursement:CC014}")
     private String produitRemboursement;
 
+    /**
+     * Au-dela de ce nombre de membres pour un meme numero, les comptes ne sont pas lus : le
+     * numero est collectif (jusqu'a 399 emprunteurs sur un seul numero, releve du 15 octobre
+     * 2026) et l'appelant doit passer par le code membre.
+     */
+    @org.springframework.beans.factory.annotation.Value("${agri.comptes.max-membres-par-telephone:20}")
+    private int maxMembresParTelephone;
+
     /** Echeances restant a payer servies avec les comptes (demande DSIG du 2026-09-29). */
     @org.springframework.beans.factory.annotation.Value("${agri.comptes.nb-echeances:5}")
     private int nbEcheancesParCredit;
@@ -237,6 +245,61 @@ public class AgriculteurServiceImpl implements AgriculteurService {
                 .comptes(comptes)
                 .creditsEnCours(credits)
                 .message(comptes.isEmpty() && credits.isEmpty() ? "Compte non disponible" : null)
+                .build();
+    }
+
+    /**
+     * Recherche par telephone principal : les membres qui portent le numero, puis pour chacun
+     * les memes comptes et credits que {@link #getComptesMembre(String)}. Seuls les membres qui
+     * ont au moins un compte ou un credit en cours sont servis avec leurs comptes ; les autres
+     * ne sont pas listes (rien a montrer). Au-dela du seuil, identite seule.
+     */
+    @Override
+    public io.digiservices.clients.agri.ComptesParTelephoneDto getComptesParTelephone(String telephone) {
+        List<java.util.Map<String, Object>> lignes = agriculteurRepository.findClientsParTelephone(telephone);
+        if (lignes.isEmpty()) {
+            log.info("[AGRI] telephone {} : aucun membre", telephone);
+            return io.digiservices.clients.agri.ComptesParTelephoneDto.builder()
+                    .telephone(telephone).nombreMembres(0).membres(List.of())
+                    .message("Aucun membre avec ce numero")
+                    .build();
+        }
+        boolean comptesNonLus = lignes.size() > maxMembresParTelephone;
+        List<io.digiservices.clients.agri.MembreComptesDto> membres = new java.util.ArrayList<>();
+        for (java.util.Map<String, Object> r : lignes) {
+            String codeMembre = txt(r.get("COD_CLIENTE"));
+            io.digiservices.clients.agri.MembreComptesDto.MembreComptesDtoBuilder membre =
+                    io.digiservices.clients.agri.MembreComptesDto.builder()
+                            .codeMembre(codeMembre)
+                            .nomMembre(txt(r.get("NOM_CLIENTE")))
+                            .codeAgence(txt(r.get("COD_AGENCIA")))
+                            .libelleAgence(txt(r.get("DES_AGENCIA")));
+            if (comptesNonLus) {
+                membres.add(membre.comptes(List.of()).creditsEnCours(List.of()).build());
+                continue;
+            }
+            io.digiservices.clients.agri.ComptesMembreDto comptes = getComptesMembre(codeMembre);
+            if (comptes.getComptes().isEmpty() && comptes.getCreditsEnCours().isEmpty()) {
+                continue;       // porte le numero mais n'a ni compte de credit ni credit en cours
+            }
+            membres.add(membre.comptes(comptes.getComptes()).creditsEnCours(comptes.getCreditsEnCours()).build());
+        }
+        String message = null;
+        if (comptesNonLus) {
+            message = "Numero partage par " + lignes.size() + " membres (seuil " + maxMembresParTelephone
+                    + ") : comptes non lus, interrogez /farmers/{codeMembre}/comptes";
+        } else if (membres.isEmpty()) {
+            message = "Aucun des " + lignes.size() + " membre(s) portant ce numero n'a de compte de credit "
+                    + "ni de credit en cours";
+        }
+        log.info("[AGRI] telephone {} : {} membre(s) trouve(s), {} servi(s){}", telephone, lignes.size(),
+                membres.size(), comptesNonLus ? ", comptes non lus (seuil)" : "");
+        return io.digiservices.clients.agri.ComptesParTelephoneDto.builder()
+                .telephone(telephone)
+                .nombreMembres(lignes.size())
+                .comptesNonLus(comptesNonLus)
+                .membres(membres)
+                .message(message)
                 .build();
     }
 
