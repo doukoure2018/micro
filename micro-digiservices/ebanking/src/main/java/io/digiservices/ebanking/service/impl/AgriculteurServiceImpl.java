@@ -267,7 +267,10 @@ public class AgriculteurServiceImpl implements AgriculteurService {
         }
         boolean comptesNonLus = lignes.size() > maxMembresParTelephone;
         List<io.digiservices.clients.agri.MembreComptesDto> membres = new java.util.ArrayList<>();
-        for (java.util.Map<String, Object> r : lignes) {
+        // Numero collectif : on ne liste que les premiers membres (jusqu'a 1 242 sur un numero,
+        // releve du 15 octobre 2026), l'appelant a le compte total dans nombreMembres.
+        List<java.util.Map<String, Object>> listees = comptesNonLus ? lignes.subList(0, maxMembresParTelephone) : lignes;
+        for (java.util.Map<String, Object> r : listees) {
             String codeMembre = txt(r.get("COD_CLIENTE"));
             io.digiservices.clients.agri.MembreComptesDto.MembreComptesDtoBuilder membre =
                     io.digiservices.clients.agri.MembreComptesDto.builder()
@@ -289,7 +292,8 @@ public class AgriculteurServiceImpl implements AgriculteurService {
         String message = null;
         if (comptesNonLus) {
             message = "Numero partage par " + lignes.size() + " membres (seuil " + maxMembresParTelephone
-                    + ") : comptes non lus, interrogez /farmers/{codeMembre}/comptes";
+                    + ") : " + maxMembresParTelephone + " premiers listes sans leurs comptes, interrogez "
+                    + "/farmers/{codeMembre}/comptes";
         } else if (membres.isEmpty()) {
             message = "Aucun des " + lignes.size() + " membre(s) portant ce numero n'a de compte de credit "
                     + "ni de credit en cours";
