@@ -8,7 +8,8 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 /**
- * Reponse de la recherche par numero de telephone principal (CL_CLIENTES.TEL_PRINCIPAL) : un
+ * Reponse de la recherche par numero de telephone (CL_CLIENTES.TEL_PRINCIPAL, TEL_SECUNDARIO
+ * ou TEL_OTRO) : un
  * numero peut etre porte par plusieurs membres, la reponse est donc une liste. Au-dela du seuil
  * parametre, les membres sont listes sans leurs comptes et {@code message} le dit.
  */

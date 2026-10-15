@@ -74,7 +74,7 @@ public interface EbankingAgriClient {
     io.digiservices.clients.agri.IdentiteMembreDto getIdentiteMembre(
             @PathVariable("codCliente") String codCliente);
 
-    /** Comptes et credits des membres dont le telephone principal est ce numero (9 chiffres). */
+    /** Comptes et credits des membres dont l'un des trois telephones est ce numero (9 chiffres). */
     @GetMapping("/ebanking/agri/telephones/{telephone}/comptes")
     io.digiservices.clients.agri.ComptesParTelephoneDto getComptesParTelephone(
             @PathVariable("telephone") String telephone);

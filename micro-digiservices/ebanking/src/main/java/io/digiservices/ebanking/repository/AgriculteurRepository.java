@@ -476,22 +476,29 @@ public class AgriculteurRepository {
             """;
 
     /**
-     * Membres dont le telephone principal est le numero donne, deja normalise par l'appelant
-     * (9 chiffres). La colonne n'est pas indexee (seule la cle primaire l'est) : lecture
-     * complete de CL_CLIENTES, 0,05 a 0,5 s mesures le 15 octobre 2026 — acceptable. La
-     * comparaison se fait apres LTRIM/RTRIM : des numeros sont saisis avec des espaces.
+     * Membres dont l'un des trois telephones de la fiche (principal, secondaire, autre) est le
+     * numero donne, deja normalise par l'appelant (9 chiffres) ; CHAMP_TELEPHONE dit lequel. Les
+     * colonnes ne sont pas indexees (seule la cle primaire l'est) : lecture complete de
+     * CL_CLIENTES, 0,05 a 0,5 s mesures le 15 octobre 2026 — acceptable. La comparaison se fait
+     * apres LTRIM/RTRIM : des numeros sont saisis avec des espaces.
      */
     private static final String SQL_CLIENTS_PAR_TELEPHONE = """
-            SELECT c.COD_CLIENTE, c.NOM_CLIENTE, c.COD_AGENCIA, ag.DES_AGENCIA
+            SELECT c.COD_CLIENTE, c.NOM_CLIENTE, c.COD_AGENCIA, ag.DES_AGENCIA,
+                   CASE WHEN LTRIM(RTRIM(c.TEL_PRINCIPAL)) = :telephone THEN 'principal'
+                        WHEN LTRIM(RTRIM(c.TEL_SECUNDARIO)) = :telephone THEN 'secondaire'
+                        ELSE 'autre' END AS CHAMP_TELEPHONE
             FROM CL.CL_CLIENTES c
             LEFT JOIN CF.CF_AGENCIAS ag
                 ON ag.COD_EMPRESA = c.COD_EMPRESA AND ag.COD_AGENCIA = c.COD_AGENCIA
             WHERE c.COD_EMPRESA = '00000'
-              AND LTRIM(RTRIM(c.TEL_PRINCIPAL)) = :telephone
-            ORDER BY c.COD_AGENCIA, c.COD_CLIENTE
+              AND (LTRIM(RTRIM(c.TEL_PRINCIPAL)) = :telephone
+                   OR LTRIM(RTRIM(c.TEL_SECUNDARIO)) = :telephone
+                   OR LTRIM(RTRIM(c.TEL_OTRO)) = :telephone)
+            ORDER BY CASE WHEN LTRIM(RTRIM(c.TEL_PRINCIPAL)) = :telephone THEN 0 ELSE 1 END,
+                     c.COD_AGENCIA, c.COD_CLIENTE
             """;
 
-    /** Une ligne par membre portant ce numero en telephone principal ; vide si aucun. */
+    /** Une ligne par membre portant ce numero sur l'un de ses trois telephones ; vide si aucun. */
     public List<java.util.Map<String, Object>> findClientsParTelephone(String telephone) {
         MapSqlParameterSource params = new MapSqlParameterSource().addValue("telephone", telephone);
         return execute("agri.clientsParTelephone", () -> tertiary.queryForList(SQL_CLIENTS_PAR_TELEPHONE, params));

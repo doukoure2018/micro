@@ -22,6 +22,8 @@ public class MembreComptesDto {
     private String nomMembre;
     private String codeAgence;
     private String libelleAgence;
+    /** Sur quel telephone de la fiche le numero a ete trouve : principal, secondaire ou autre. */
+    private String champTelephone;
     /** Vides quand le numero est partage par trop de membres : seule l'identite est servie. */
     private List<CompteMembreDto> comptes;
     private List<CreditEnCoursDto> creditsEnCours;
