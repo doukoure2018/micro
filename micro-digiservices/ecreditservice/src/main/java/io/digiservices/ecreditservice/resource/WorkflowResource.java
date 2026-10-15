@@ -659,4 +659,73 @@ public class WorkflowResource {
         }
         throw new ApiException("Acces reserve aux agents d'accueil");
     }
+
+    // ==================== Annulation du dossier (V163, DSIG 2026-10-15) ====================
+
+    /** L'agent demande l'annulation de son dossier : le client s'est desiste. */
+    @PutMapping("/{demandeId}/demander-annulation")
+    public ResponseEntity<Response> demanderAnnulation(
+            @PathVariable Long demandeId,
+            @RequestBody Map<String, Object> body,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        String demandeePar = user.getFirstName() + " " + user.getLastName();
+        String motifCode = body.get("motifCode") != null ? String.valueOf(body.get("motifCode")) : null;
+        String motif = body.get("motif") != null ? String.valueOf(body.get("motif")) : null;
+        workflowService.demanderAnnulation(demandeId, motifCode, motif, demandeePar,
+                user.getUserId(), demandeePar, user.getUsername());
+        return ResponseEntity.ok(getResponse(httpRequest,
+                Map.of("message", "Annulation demandée, en attente de la validation du Directeur d'Agence"),
+                "Annulation demandée", OK));
+    }
+
+    /** Le DA valide l'annulation : le dossier sort du circuit. */
+    @PutMapping("/{demandeId}/valider-annulation")
+    public ResponseEntity<Response> validerAnnulation(
+            @PathVariable Long demandeId,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        String decideePar = user.getFirstName() + " " + user.getLastName();
+        workflowService.validerAnnulation(demandeId, user.getAgenceId(), decideePar);
+        return ResponseEntity.ok(getResponse(httpRequest,
+                Map.of("message", "Dossier annulé"), "Annulation validée", OK));
+    }
+
+    /** Le DA refuse : le dossier reprend sa course a l'etape ou il etait. */
+    @PutMapping("/{demandeId}/refuser-annulation")
+    public ResponseEntity<Response> refuserAnnulation(
+            @PathVariable Long demandeId,
+            @RequestBody Map<String, Object> body,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        String decideePar = user.getFirstName() + " " + user.getLastName();
+        String motifRefus = body.get("motifRefus") != null ? String.valueOf(body.get("motifRefus")) : null;
+        workflowService.refuserAnnulation(demandeId, user.getAgenceId(), motifRefus, decideePar);
+        return ResponseEntity.ok(getResponse(httpRequest,
+                Map.of("message", "Annulation refusée, le dossier reprend son cours"), "Annulation refusée", OK));
+    }
+
+    /** File du DA : les annulations de son agence qui attendent sa decision. */
+    @GetMapping("/annulations-a-valider-da")
+    public ResponseEntity<Response> getAnnulationsAValiderDA(Authentication authentication,
+                                                            HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        var result = workflowService.getAnnulationsAValiderDA(user.getAgenceId());
+        return ResponseEntity.ok(getResponse(httpRequest,
+                Map.of("workflowDemandes", result), "Annulations à valider récupérées", OK));
+    }
+
+    /** Suivi de l'agent : ses demandes en attente et les refus du DA. */
+    @GetMapping("/annulations-ac")
+    public ResponseEntity<Response> getAnnulationsAC(Authentication authentication,
+                                                     HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        String codUsuarios = user.getFirstName() + " " + user.getLastName();
+        var result = workflowService.getAnnulationsAC(user.getUserId(), codUsuarios, user.getUsername());
+        return ResponseEntity.ok(getResponse(httpRequest,
+                Map.of("workflowDemandes", result), "Annulations récupérées", OK));
+    }
 }

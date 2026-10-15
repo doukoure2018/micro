@@ -1090,4 +1090,122 @@ public class WorkflowQuery {
             JOIN roles r ON r.role_id = ur.role_id
             WHERE ur.user_id = :userId
             """;
+
+    // ==================== ANNULATION DU DOSSIER (V163, DSIG 2026-10-15) ====================
+    /*
+     * Le client se desiste pendant l'analyse : l'agent demande l'annulation avec un motif,
+     * son DA tranche. Le dossier se fige entre les deux — aucune transition du circuit ne
+     * reconnait 'ANNULATION_DEMANDEE', donc il ne peut ni avancer, ni etre valide, ni etre
+     * affecte tant que la decision n'est pas prise. L'etape atteinte est memorisee pour
+     * pouvoir y revenir si le DA refuse.
+     */
+
+    /** Etapes depuis lesquelles l'agent peut demander l'annulation : partout sauf la phase
+     *  accueil (le dossier n'est pas encore le sien) et un dossier deja mis en place. */
+    public static final String UPDATE_DEMANDER_ANNULATION = """
+            UPDATE demandeindividuel
+            SET etat_avant_annulation = validation_state,
+                validation_state = 'ANNULATION_DEMANDEE',
+                annulation_dossier_motif_code = :motifCode,
+                annulation_dossier_motif = :motif,
+                annulation_dossier_demandee_par = :demandeePar,
+                date_demande_annulation_dossier = CURRENT_TIMESTAMP,
+                annulation_dossier_decidee_par = NULL,
+                date_decision_annulation_dossier = NULL,
+                annulation_dossier_motif_refus = NULL
+            WHERE demandeindividuel_id = :demandeId
+              AND statut_demande = 'EN_ATTENTE'
+              AND validation_state IN ('AFFECTEE', 'SELECTION', 'CORRECTION', 'CORRECTION_DR',
+                                       'CORRECTION_DE', 'RETOUR_AGENT', 'APPROVED',
+                                       'VALIDATED_DA', 'VALIDATED_DR', 'PENDING_DG', 'REJETE_DG')
+              AND (agent_credit_affecte = :userId
+                   OR cod_usuarios = :codUsuarios
+                   OR cod_usuarios = :username)
+            """;
+
+    /**
+     * Le DA valide : le dossier sort du circuit. Le statut porte la cloture (c'est lui que
+     * lisent la liste des dossiers et l'anti-doublon), l'etape revient a celle atteinte avant
+     * la demande, pour garder trace de l'endroit ou le dossier s'est arrete — comme un rejet.
+     */
+    public static final String UPDATE_VALIDER_ANNULATION = """
+            UPDATE demandeindividuel
+            SET statut_demande = 'ANNULE',
+                validation_state = COALESCE(etat_avant_annulation, validation_state),
+                annulation_dossier_decidee_par = :decideePar,
+                date_decision_annulation_dossier = CURRENT_TIMESTAMP
+            WHERE demandeindividuel_id = :demandeId
+              AND validation_state = 'ANNULATION_DEMANDEE'
+              AND agence = :agenceId
+            """;
+
+    /** Le DA refuse : le dossier reprend sa course exactement la ou il etait. */
+    public static final String UPDATE_REFUSER_ANNULATION = """
+            UPDATE demandeindividuel
+            SET validation_state = COALESCE(etat_avant_annulation, 'SELECTION'),
+                etat_avant_annulation = NULL,
+                annulation_dossier_motif_refus = :motifRefus,
+                annulation_dossier_decidee_par = :decideePar,
+                date_decision_annulation_dossier = CURRENT_TIMESTAMP
+            WHERE demandeindividuel_id = :demandeId
+              AND validation_state = 'ANNULATION_DEMANDEE'
+              AND agence = :agenceId
+            """;
+
+    /** File du DA : les annulations de son agence qui attendent sa decision. */
+    public static final String SELECT_ANNULATIONS_A_VALIDER_DA = """
+            SELECT d.demandeindividuel_id AS "demandeIndividuelId",
+                   d.nom, d.prenom, d.telephone,
+                   d.numero_membre AS "numeroMembre",
+                   d.delegation, d.agence, d.pos,
+                   d.montant_demande AS "montantDemande",
+                   d.object_credit AS "objectCredit",
+                   d.description_activite AS "descriptionActivite",
+                   d.nature_client AS "natureClient",
+                   d.validation_state AS "validationState",
+                   d.statut_demande AS "statutDemande",
+                   d.etat_avant_annulation AS "etatAvantAnnulation",
+                   d.annulation_dossier_motif_code AS "annulationMotifCode",
+                   d.annulation_dossier_motif AS "annulationMotif",
+                   d.annulation_dossier_demandee_par AS "annulationDemandeePar",
+                   d.date_demande_annulation_dossier AS "dateDemandeAnnulation",
+                   d.avis_agent_credit AS "avisAgentCredit",
+                   d.createdat AS "createdAt"
+            FROM demandeindividuel d
+            WHERE d.validation_state = 'ANNULATION_DEMANDEE'
+              AND d.agence = :agenceId
+            ORDER BY d.date_demande_annulation_dossier
+            """;
+
+    /**
+     * Suivi de l'agent : ses demandes en attente de decision, et celles que le DA a refusees
+     * (motif de refus renseigne, dossier revenu dans le circuit).
+     */
+    public static final String SELECT_ANNULATIONS_AC = """
+            SELECT d.demandeindividuel_id AS "demandeIndividuelId",
+                   d.nom, d.prenom, d.telephone,
+                   d.numero_membre AS "numeroMembre",
+                   d.delegation, d.agence, d.pos,
+                   d.montant_demande AS "montantDemande",
+                   d.object_credit AS "objectCredit",
+                   d.nature_client AS "natureClient",
+                   d.validation_state AS "validationState",
+                   d.statut_demande AS "statutDemande",
+                   d.etat_avant_annulation AS "etatAvantAnnulation",
+                   d.annulation_dossier_motif_code AS "annulationMotifCode",
+                   d.annulation_dossier_motif AS "annulationMotif",
+                   d.annulation_dossier_demandee_par AS "annulationDemandeePar",
+                   d.date_demande_annulation_dossier AS "dateDemandeAnnulation",
+                   d.annulation_dossier_decidee_par AS "annulationDecideePar",
+                   d.date_decision_annulation_dossier AS "dateDecisionAnnulation",
+                   d.annulation_dossier_motif_refus AS "annulationMotifRefus",
+                   d.createdAt AS "createdAt"
+            FROM demandeindividuel d
+            WHERE (d.agent_credit_affecte = :userId
+                   OR d.cod_usuarios = :codUsuarios
+                   OR d.cod_usuarios = :username)
+              AND (d.validation_state = 'ANNULATION_DEMANDEE'
+                   OR d.annulation_dossier_motif_refus IS NOT NULL)
+            ORDER BY d.date_demande_annulation_dossier DESC
+            """;
 }

@@ -721,4 +721,82 @@ public class WorkflowRepositoryImpl implements WorkflowRepository {
             throw new ApiException("Erreur lors de la recuperation: " + e.getMessage());
         }
     }
+
+    // ===== Annulation du dossier (V163) =====
+
+    @Override
+    public int demanderAnnulation(Long demandeId, String motifCode, String motif, String demandeePar,
+                                  Long userId, String codUsuarios, String username) {
+        try {
+            return jdbcClient.sql(UPDATE_DEMANDER_ANNULATION)
+                    .param("demandeId", demandeId)
+                    .param("motifCode", motifCode)
+                    .param("motif", motif)
+                    .param("demandeePar", demandeePar)
+                    .param("userId", userId)
+                    .param("codUsuarios", codUsuarios)
+                    .param("username", username)
+                    .update();
+        } catch (Exception e) {
+            log.error("Erreur lors de la demande d'annulation: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la demande d'annulation: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public int validerAnnulation(Long demandeId, Long agenceId, String decideePar) {
+        try {
+            return jdbcClient.sql(UPDATE_VALIDER_ANNULATION)
+                    .param("demandeId", demandeId)
+                    .param("agenceId", agenceId)
+                    .param("decideePar", decideePar)
+                    .update();
+        } catch (Exception e) {
+            log.error("Erreur lors de la validation de l'annulation: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la validation de l'annulation: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public int refuserAnnulation(Long demandeId, Long agenceId, String motifRefus, String decideePar) {
+        try {
+            return jdbcClient.sql(UPDATE_REFUSER_ANNULATION)
+                    .param("demandeId", demandeId)
+                    .param("agenceId", agenceId)
+                    .param("motifRefus", motifRefus)
+                    .param("decideePar", decideePar)
+                    .update();
+        } catch (Exception e) {
+            log.error("Erreur lors du refus de l'annulation: {}", e.getMessage());
+            throw new ApiException("Erreur lors du refus de l'annulation: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public List<WorkflowDemandeDto> getAnnulationsAValiderDA(Long agenceId) {
+        try {
+            return jdbcClient.sql(SELECT_ANNULATIONS_A_VALIDER_DA)
+                    .param("agenceId", agenceId)
+                    .query(WorkflowDemandeDto.class)
+                    .list();
+        } catch (Exception e) {
+            log.error("Erreur lors de la recuperation des annulations a valider: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la récupération: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public List<WorkflowDemandeDto> getAnnulationsAC(Long userId, String codUsuarios, String username) {
+        try {
+            return jdbcClient.sql(SELECT_ANNULATIONS_AC)
+                    .param("userId", userId)
+                    .param("codUsuarios", codUsuarios)
+                    .param("username", username)
+                    .query(WorkflowDemandeDto.class)
+                    .list();
+        } catch (Exception e) {
+            log.error("Erreur lors de la recuperation des annulations de l'agent: {}", e.getMessage());
+            throw new ApiException("Erreur lors de la récupération: " + e.getMessage());
+        }
+    }
 }

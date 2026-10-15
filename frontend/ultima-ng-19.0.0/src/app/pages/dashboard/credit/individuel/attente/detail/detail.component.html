@@ -958,6 +958,34 @@
                         class="bg-indigo-600 hover:bg-indigo-700 font-bold" [loading]="state().loading"
                         (click)="prendreEnChargeDepuisDetail()"></button>
                 </div>
+                <!-- V163 : annulation du dossier (desistement du client) -->
+                <div *ngIf="annulationEnAttente()"
+                    class="mb-6 border-2 border-orange-400 bg-orange-50 rounded-xl p-4 flex items-start gap-3">
+                    <i class="pi pi-hourglass text-orange-600 text-xl mt-1"></i>
+                    <div>
+                        <div class="font-bold text-orange-800">Annulation demand&eacute;e, en attente de la d&eacute;cision du Directeur d'Agence</div>
+                        <div class="text-sm text-orange-700">Le dossier est fig&eacute; : il ne peut ni avancer, ni &ecirc;tre valid&eacute;, tant que la d&eacute;cision n'est pas prise.</div>
+                        <div class="text-sm text-orange-700 mt-1" *ngIf="$any(state().demandeIndividuel)?.annulationMotif">
+                            Motif : {{ $any(state().demandeIndividuel)?.annulationMotif }}
+                        </div>
+                    </div>
+                </div>
+                <div *ngIf="$any(state().demandeIndividuel)?.annulationMotifRefus && !annulationEnAttente()"
+                    class="mb-6 border-2 border-red-400 bg-red-50 rounded-xl p-4 flex items-start gap-3">
+                    <i class="pi pi-times-circle text-red-600 text-xl mt-1"></i>
+                    <div>
+                        <div class="font-bold text-red-800">Annulation refus&eacute;e par le Directeur d'Agence</div>
+                        <div class="text-sm text-red-700">{{ $any(state().demandeIndividuel)?.annulationMotifRefus }}</div>
+                        <div class="text-sm text-red-700 mt-1">Le dossier a repris son cours : poursuivez l'instruction.</div>
+                    </div>
+                </div>
+                <div *ngIf="peutAnnulerDossier()" class="mb-6 flex justify-end">
+                    <button pButton type="button" icon="pi pi-ban" label="Annuler le dossier"
+                        class="p-button-danger p-button-outlined"
+                        pTooltip="Le client renonce &agrave; sa demande : votre Directeur d'Agence devra valider l'annulation"
+                        (click)="ouvrirAnnulationDossier()"></button>
+                </div>
+
                 <div *ngIf="!peutApprouver() && !estAffecteAMoiNonPrisEnCharge() && libelleBlocageApprobation()"
                     class="mb-6 border border-gray-300 bg-gray-50 rounded-xl p-4 text-gray-700 flex items-center gap-3">
                     <i class="pi pi-info-circle text-gray-500 text-xl"></i>
@@ -1833,6 +1861,37 @@
         </div>
 
         <!-- Modal Renvoi à l'agent (DA) -->
+        <p-dialog header="Annuler le dossier de cr&eacute;dit" [visible]="state().showAnnulationDossier" [modal]="true"
+            [style]="{ width: '560px' }" [closable]="true"
+            (onHide)="state.update(mergeState({showAnnulationDossier: false}))">
+            <div class="mb-4 p-3 bg-red-50 border-round">
+                <p class="font-semibold m-0">{{ state().demandeIndividuel?.prenom }} {{ state().demandeIndividuel?.nom }}</p>
+                <p class="text-600 m-0">{{ state().demandeIndividuel?.montantDemande | currency:'GNF ':'symbol':'1.0-0' }} - {{
+                    state().demandeIndividuel?.objectCredit }}</p>
+                <p class="text-600 m-0 mt-2 text-sm">Le dossier sera fig&eacute; puis transmis &agrave; votre Directeur d'Agence,
+                    qui validera ou refusera l'annulation. S'il refuse, le dossier reprendra exactement o&ugrave; il en est.</p>
+            </div>
+            <form [formGroup]="annulationDossierForm">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Motif <span class="text-red-500">*</span></label>
+                <p-select formControlName="motifCode" [options]="motifsAnnulation" optionLabel="label" optionValue="value"
+                    styleClass="w-full mb-3" appendTo="body"></p-select>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Explication <span class="text-red-500">*</span></label>
+                <textarea pTextarea formControlName="motif" rows="3" class="w-full"
+                    placeholder="Ex : le client a inform&eacute; l'agence le 14/10 qu'il renon&ccedil;ait &agrave; sa demande, il a trouv&eacute; un autre financement"
+                    [autoResize]="true"></textarea>
+                <small *ngIf="annulationDossierForm.get('motif')?.invalid && annulationDossierForm.get('motif')?.touched"
+                    class="text-red-500">Minimum 10 caract&egrave;res requis</small>
+            </form>
+            <ng-template #footer>
+                <div class="flex justify-end gap-3">
+                    <button pButton type="button" label="Retour" icon="pi pi-times" class="p-button-secondary p-button-outlined"
+                        (click)="state.update(mergeState({showAnnulationDossier: false}))"></button>
+                    <button pButton type="button" label="Demander l'annulation" icon="pi pi-ban" class="p-button-danger"
+                        (click)="confirmerAnnulationDossier()" [disabled]="annulationDossierForm.invalid"></button>
+                </div>
+            </ng-template>
+        </p-dialog>
+
         <p-dialog header="Renvoyer le dossier &agrave; l'agent de cr&eacute;dit" [visible]="state().showRenvoiAgent" [modal]="true"
             [style]="{ width: '560px' }" [closable]="true"
             (onHide)="state.update(mergeState({showRenvoiAgent: false}))">

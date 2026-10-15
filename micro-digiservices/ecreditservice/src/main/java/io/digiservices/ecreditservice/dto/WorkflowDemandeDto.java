@@ -96,4 +96,18 @@ public class WorkflowDemandeDto {
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss.SSSSSS")
     private LocalDateTime dateAnnulationDa;
+
+    // Annulation du dossier demandee par l'agent, tranchee par le DA (V163)
+    private String etatAvantAnnulation;
+    private String annulationMotifCode;
+    private String annulationMotif;
+    private String annulationDemandeePar;
+    private String annulationDecideePar;
+    private String annulationMotifRefus;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss.SSSSSS")
+    private LocalDateTime dateDemandeAnnulation;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss.SSSSSS")
+    private LocalDateTime dateDecisionAnnulation;
 }

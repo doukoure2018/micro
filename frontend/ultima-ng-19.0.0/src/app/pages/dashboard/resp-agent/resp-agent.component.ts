@@ -7,7 +7,7 @@ import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
 import { Component, computed, DestroyRef, inject, Input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
@@ -28,7 +28,7 @@ import { ToastModule } from 'primeng/toast';
 
 @Component({
     selector: 'app-resp-agent',
-    imports: [CommonModule, TableModule, InputIconModule, IconFieldModule, TagModule, PopoverModule, ButtonModule, ToastModule, ProgressSpinnerModule, ChipModule, CardModule, DividerModule, TabViewModule, BadgeModule, DialogModule, ReactiveFormsModule, TextareaModule, RouterLink],
+    imports: [CommonModule, TableModule, InputIconModule, IconFieldModule, TagModule, PopoverModule, ButtonModule, ToastModule, ProgressSpinnerModule, ChipModule, CardModule, DividerModule, TabViewModule, BadgeModule, DialogModule, ReactiveFormsModule, FormsModule, TextareaModule, RouterLink],
     templateUrl: './resp-agent.component.html'
 })
 export class RespAgentComponent {
@@ -42,6 +42,7 @@ export class RespAgentComponent {
         // Workflow hierarchique
         workflowAValider: any[];
         workflowCorrectionDR: any[];
+        workflowAnnulations: any[];
         loading: boolean;
         message: string | undefined;
         error: string | any;
@@ -53,7 +54,8 @@ export class RespAgentComponent {
         demandeAnalyseCredits: [],
         demandesRejetees: [],
         workflowAValider: [],
-        workflowCorrectionDR: []
+        workflowCorrectionDR: [],
+        workflowAnnulations: []
     });
 
     // Workflow dialogs
@@ -107,6 +109,7 @@ export class RespAgentComponent {
         this.loadDemandesRejetees();
         this.loadWorkflowAValiderDA();
         this.loadWorkflowCorrectionDR();
+        this.loadWorkflowAnnulations();
     }
 
     getStateValidation(statut: string): string {
@@ -412,6 +415,7 @@ export class RespAgentComponent {
         this.loadDemandesRejetees();
         this.loadWorkflowAValiderDA();
         this.loadWorkflowCorrectionDR();
+        this.loadWorkflowAnnulations();
         this.messageService.add({
             severity: 'info',
             summary: 'Actualisation',
@@ -447,6 +451,86 @@ export class RespAgentComponent {
                     }));
                 },
                 error: () => {}
+            });
+    }
+
+    // ===== Annulations de dossier à valider (V163) : le client s'est désisté =====
+
+    selectedAnnulation: any = null;
+    showAnnulationValiderDialog = false;
+    showAnnulationRefusDialog = false;
+    motifRefusAnnulation = '';
+
+    readonly libellesMotifAnnulation: Record<string, string> = {
+        DESISTEMENT_CLIENT: 'Désistement du client',
+        CLIENT_INJOIGNABLE: 'Client injoignable',
+        DOUBLE_SAISIE: 'Double saisie',
+        ERREUR_SAISIE: 'Erreur de saisie',
+        AUTRE: 'Autre motif'
+    };
+
+    libelleMotifAnnulation(code: string): string {
+        return this.libellesMotifAnnulation[code] || code || '—';
+    }
+
+    private loadWorkflowAnnulations(): void {
+        this.userService.getAnnulationsAValiderDA$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    this.state.update(s => ({
+                        ...s,
+                        workflowAnnulations: response.data?.workflowDemandes || []
+                    }));
+                },
+                error: () => {}
+            });
+    }
+
+    hasWorkflowAnnulations(): boolean {
+        return (this.state().workflowAnnulations?.length || 0) > 0;
+    }
+
+    ouvrirAnnulationValider(demande: any): void {
+        this.selectedAnnulation = demande;
+        this.showAnnulationValiderDialog = true;
+    }
+
+    ouvrirAnnulationRefus(demande: any): void {
+        this.selectedAnnulation = demande;
+        this.motifRefusAnnulation = '';
+        this.showAnnulationRefusDialog = true;
+    }
+
+    confirmerAnnulation(): void {
+        if (!this.selectedAnnulation) return;
+        this.userService.validerAnnulationDossier$(this.selectedAnnulation.demandeIndividuelId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.messageService.add({ severity: 'success', summary: 'Dossier annulé', detail: 'Le dossier sort du circuit et rejoint les dossiers clôturés', life: 5000 });
+                    this.showAnnulationValiderDialog = false;
+                    this.loadWorkflowAnnulations();
+                },
+                error: (err) => {
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || "Erreur lors de la validation de l'annulation", life: 5000 });
+                }
+            });
+    }
+
+    refuserAnnulation(): void {
+        if (!this.selectedAnnulation || this.motifRefusAnnulation.trim().length < 10) return;
+        this.userService.refuserAnnulationDossier$(this.selectedAnnulation.demandeIndividuelId, this.motifRefusAnnulation.trim())
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.messageService.add({ severity: 'info', summary: 'Annulation refusée', detail: "Le dossier reprend son cours à l'étape où il était", life: 5000 });
+                    this.showAnnulationRefusDialog = false;
+                    this.loadWorkflowAnnulations();
+                },
+                error: (err) => {
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || 'Erreur lors du refus', life: 5000 });
+                }
             });
     }
 
