@@ -197,6 +197,7 @@ public class AgriMapper {
                 .nomMembre(src.getNomMembre())
                 .codeAgence(src.getCodeAgence())
                 .libelleAgence(src.getLibelleAgence())
+                .champTelephone(src.getChampTelephone())
                 .comptes(src.getComptes() == null ? java.util.List.of()
                         : src.getComptes().stream().map(this::toCompte).toList())
                 .creditsEnCours(src.getCreditsEnCours() == null ? java.util.List.of()

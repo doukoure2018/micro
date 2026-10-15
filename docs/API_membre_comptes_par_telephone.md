@@ -4,8 +4,8 @@
 Documentation du 15 octobre 2026 · Complément de « API membre : identité et comptes » · Lecture seule
 
 Un troisième point d'entrée qui fait exactement ce que fait `/farmers/{codeMembre}/comptes`,
-mais à partir du **numéro de téléphone principal** du membre (`TEL_PRINCIPAL` de la fiche
-client) au lieu de son code.
+mais à partir d'un **numéro de téléphone** du membre — principal, secondaire ou autre
+(`TEL_PRINCIPAL`, `TEL_SECUNDARIO`, `TEL_OTRO` de la fiche client) — au lieu de son code.
 
 ---
 
@@ -38,6 +38,8 @@ Un numéro de téléphone n'est pas un identifiant : il peut être porté par pl
 (famille, groupement, agent de collecte). La réponse est donc une **liste de membres**, chacun
 avec ses comptes et ses crédits en cours, dans la structure exacte de `/farmers/{codeMembre}/comptes`.
 
+- Les trois téléphones de la fiche sont consultés ; `champTelephone` dit sur lequel le numéro a
+  été trouvé (`principal`, `secondaire`, `autre`), les membres trouvés sur le principal d'abord.
 - Seuls les membres qui ont **au moins un compte de crédit ou de remboursement, ou un crédit en
   cours** sont servis ; un membre qui porte le numéro sans rien de cela n'est pas listé.
 - Au-delà de **20 membres** pour un même numéro (numéro collectif), les membres sont listés avec
@@ -51,7 +53,7 @@ avec ses comptes et ses crédits en cours, dans la structure exacte de `/farmers
 | `telephone` | Le numéro cherché, normalisé (9 chiffres) |
 | `nombreMembres` | Nombre de membres qui portent ce numéro en téléphone principal |
 | `comptesNonLus` | `true` si le seuil est dépassé et que les comptes n'ont pas été lus |
-| `membres[]` | Un membre par ligne : `codeMembre`, `nomMembre`, `codeAgence`, `libelleAgence`, puis `comptes` et `creditsEnCours` — mêmes champs que dans `/farmers/{codeMembre}/comptes` |
+| `membres[]` | Un membre par ligne : `codeMembre`, `nomMembre`, `codeAgence`, `libelleAgence`, `champTelephone`, puis `comptes` et `creditsEnCours` — mêmes champs que dans `/farmers/{codeMembre}/comptes` |
 | `message` | `null`, ou « Aucun membre avec ce numero », ou l'explication du seuil |
 
 ### Exemple de réponse
@@ -67,6 +69,7 @@ avec ses comptes et ses crédits en cours, dans la structure exacte de `/farmers
       "nomMembre": "DIALLO MAMADOU SALIOU",
       "codeAgence": "322",
       "libelleAgence": "COYAH",
+      "champTelephone": "principal",
       "comptes": [
         { "numeroCompte": "32200800202659", "type": "CREDIT", "produit": "CC008",
           "codeAgence": "322", "libelleAgence": "COYAH", "statut": "Actif",
@@ -110,9 +113,8 @@ avec ses comptes et ses crédits en cours, dans la structure exacte de `/farmers
 
 ## Deux points à savoir
 
-- **Le téléphone principal seulement.** Les numéros secondaire et « autre » de la fiche ne sont
-  pas consultés. Un membre dont le bon numéro est en secondaire n'est pas trouvé par cette
-  recherche : passer par `/farmers/{codeMembre}/identite` pour corriger la fiche.
+- **Les trois téléphones de la fiche sont consultés.** Un même numéro peut donc ressortir
+  comme « principal » chez un membre et « autre » chez un autre : `champTelephone` le dit.
 - **Chaque appel est journalisé** (numéro, nombre de membres trouvés et servis). Ce point
   d'entrée expose des soldes à partir d'une donnée plus facile à deviner qu'un code membre :
   la clé d'API reste strictement personnelle.

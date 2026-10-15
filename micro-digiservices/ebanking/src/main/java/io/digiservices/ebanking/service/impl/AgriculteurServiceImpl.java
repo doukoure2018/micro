@@ -249,7 +249,8 @@ public class AgriculteurServiceImpl implements AgriculteurService {
     }
 
     /**
-     * Recherche par telephone principal : les membres qui portent le numero, puis pour chacun
+     * Recherche par telephone (principal, secondaire ou autre) : les membres qui portent le
+     * numero, les principaux d'abord, puis pour chacun
      * les memes comptes et credits que {@link #getComptesMembre(String)}. Seuls les membres qui
      * ont au moins un compte ou un credit en cours sont servis avec leurs comptes ; les autres
      * ne sont pas listes (rien a montrer). Au-dela du seuil, identite seule.
@@ -273,7 +274,8 @@ public class AgriculteurServiceImpl implements AgriculteurService {
                             .codeMembre(codeMembre)
                             .nomMembre(txt(r.get("NOM_CLIENTE")))
                             .codeAgence(txt(r.get("COD_AGENCIA")))
-                            .libelleAgence(txt(r.get("DES_AGENCIA")));
+                            .libelleAgence(txt(r.get("DES_AGENCIA")))
+                            .champTelephone(txt(r.get("CHAMP_TELEPHONE")));
             if (comptesNonLus) {
                 membres.add(membre.comptes(List.of()).creditsEnCours(List.of()).build());
                 continue;

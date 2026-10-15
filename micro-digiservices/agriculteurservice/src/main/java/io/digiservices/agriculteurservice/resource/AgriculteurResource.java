@@ -91,8 +91,9 @@ public class AgriculteurResource {
     }
 
     /**
-     * Comme {@code /farmers/{clientId}/comptes}, mais à partir du téléphone principal du membre
-     * (CL_CLIENTES.TEL_PRINCIPAL). Le numéro est normalisé avant tout appel : 9 chiffres
+     * Comme {@code /farmers/{clientId}/comptes}, mais à partir d'un des trois téléphones de la
+     * fiche du membre (CL_CLIENTES.TEL_PRINCIPAL, TEL_SECUNDARIO, TEL_OTRO). Le numéro est
+     * normalisé avant tout appel : 9 chiffres
      * commençant par 6, indicatif +224 accepté, sinon 400. Un numéro peut être porté par
      * plusieurs membres : la réponse les liste.
      */
