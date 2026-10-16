@@ -109,7 +109,17 @@ public class PortefeuilleScoreService {
         if (!p.toutReseau()) {
             throw new ApiException("Le recalcul des scores est reserve a la Direction de l'Exploitation");
         }
-        int n = calculerReseau();
+        int n;
+        try {
+            n = calculerReseau();
+        } catch (Exception e) {
+            // Incident du 2026-10-16 : un « Read timed out » brut ne dit rien a l'utilisateur.
+            String detail = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage().split("\\R")[0];
+            log.warn("[SCORE] Recalcul impossible (user {}) : {}", p.user().getUserId(), detail);
+            throw new ApiException("Systeme bancaire (SAF) indisponible : le recalcul n'a pas pu lire les points de "
+                    + "service. Reessayez plus tard ; si cela persiste, la DSIG est alertee automatiquement. Detail : "
+                    + (detail.length() > 160 ? detail.substring(0, 160) + "…" : detail));
+        }
         log.info("[SCORE] Recalcul demande par user {} : {} agent(s) note(s)", p.user().getUserId(), n);
         return n;
     }

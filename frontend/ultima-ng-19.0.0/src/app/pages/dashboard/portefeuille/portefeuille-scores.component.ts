@@ -45,6 +45,11 @@ import { Observable } from 'rxjs';
                 </div>
             </div>
 
+            <div *ngIf="erreurRecalcul()" class="border border-orange-400 bg-orange-50 text-orange-800 rounded p-3 mb-4 flex items-start gap-2">
+                <i class="pi pi-exclamation-triangle mt-1"></i>
+                <div><b>Le recalcul n'a pas abouti.</b> {{ erreurRecalcul() }}</div>
+            </div>
+
             <!-- Réseau / périmètre -->
             <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4" *ngIf="data()?.reseau as r">
                 <div class="border rounded p-3">
@@ -208,6 +213,7 @@ export class PortefeuilleScoresComponent implements OnInit {
     loading = signal(false);
     recalcul = signal(false);
     exportEnCours = signal(false);
+    erreurRecalcul = signal<string | null>(null);
     fiche = signal<FicheAgent | null>(null);
     loadingFiche = signal(false);
     showFiche = false;
@@ -277,6 +283,7 @@ export class PortefeuilleScoresComponent implements OnInit {
 
     recalculer(): void {
         this.recalcul.set(true);
+        this.erreurRecalcul.set(null);
         this.userService
             .recalculerScoresAgents$()
             .pipe(takeUntilDestroyed(this.destroyRef))
@@ -288,7 +295,9 @@ export class PortefeuilleScoresComponent implements OnInit {
                 },
                 error: (err) => {
                     this.recalcul.set(false);
-                    this.erreur('Recalcul impossible', err);
+                    const detail = typeof err === 'string' ? err : (err as any)?.message || 'Erreur inattendue';
+                    this.erreurRecalcul.set(detail);
+                    this.messageService.add({ severity: 'error', summary: 'Recalcul impossible', detail, life: 10000 });
                 }
             });
     }
