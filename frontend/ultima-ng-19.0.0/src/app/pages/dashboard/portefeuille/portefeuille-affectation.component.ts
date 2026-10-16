@@ -314,10 +314,11 @@ type Filtre = 'enCours' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent' |
                     <ng-template pTemplate="header">
                         <tr>
                             <th>Agent</th>
-                            <th>Statut</th>
-                            <th class="text-right">Crédits</th>
-                            <th class="text-right">Encours</th>
-                            <th class="text-right">En retard</th>
+                            <th>Rattaché au PS</th>
+                            <th class="text-right">Nombre de crédits</th>
+                            <th class="text-right">Encours (GNF)</th>
+                            <th class="text-right">Nombre de crédits en retard</th>
+                            <th class="text-right">Montant en retard (GNF)</th>
                         </tr>
                     </ng-template>
                     <ng-template pTemplate="body" let-a>
@@ -330,6 +331,7 @@ type Filtre = 'enCours' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent' |
                             <td class="text-right">{{ a.nbCredits }}</td>
                             <td class="text-right">{{ a.encours | number: '1.0-0' }}</td>
                             <td class="text-right" [class.text-red-600]="a.nbEnRetard > 0">{{ a.nbEnRetard }}</td>
+                            <td class="text-right" [class.text-red-600]="a.montantRetard > 0">{{ a.montantRetard | number: '1.0-0' }}</td>
                         </tr>
                     </ng-template>
                 </p-table>

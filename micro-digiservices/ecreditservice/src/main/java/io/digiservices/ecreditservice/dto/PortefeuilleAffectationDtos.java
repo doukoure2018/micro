@@ -67,6 +67,8 @@ public final class PortefeuilleAffectationDtos {
         private long nbCredits;
         private BigDecimal encours;
         private long nbEnRetard;
+        /** Somme des capitaux et interets impayes de ses credits en retard (demande DSIG du 16/10/2026). */
+        private BigDecimal montantRetard;
     }
 
     /**

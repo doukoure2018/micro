@@ -174,6 +174,7 @@ public class PortefeuilleAffectationRepository {
                         .nbCredits(0)
                         .encours(BigDecimal.ZERO)
                         .nbEnRetard(0)
+                        .montantRetard(BigDecimal.ZERO)
                         .build())
                 .list();
     }

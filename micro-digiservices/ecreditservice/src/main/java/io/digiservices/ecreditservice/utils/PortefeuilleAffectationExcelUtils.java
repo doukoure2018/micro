@@ -72,7 +72,9 @@ public final class PortefeuilleAffectationExcelUtils {
             ligneNombre(s, r++, "Taux d'affectation", ind.getNbCredits() == 0 ? 0 : (double) ind.getNbAffectes() / ind.getNbCredits(), pourcent);
             r++;
             Row ra = s.createRow(r++);
-            String[] ea = {"Agent", "Rattaché au PS", "Crédits", "Encours (GNF)", "En retard"};
+            // Tableau par agent au format demande par la DSIG le 16/10/2026.
+            String[] ea = {"Agent", "Rattaché au PS", "Nombre de crédits", "Encours (GNF)",
+                           "Nombre de crédits en retard", "Montant en retard (GNF)"};
             for (int i = 0; i < ea.length; i++) { Cell c = ra.createCell(i); c.setCellValue(ea[i]); c.setCellStyle(entete); }
             for (var a : p.getAgents()) {
                 Row row = s.createRow(r++);
@@ -81,9 +83,10 @@ public final class PortefeuilleAffectationExcelUtils {
                 row.createCell(2).setCellValue(a.getNbCredits());
                 cellMontant(row, 3, a.getEncours(), montant);
                 row.createCell(4).setCellValue(a.getNbEnRetard());
+                cellMontant(row, 5, a.getMontantRetard(), montant);
             }
             s.setColumnWidth(0, 34 * 256);
-            for (int i = 1; i <= 4; i++) s.setColumnWidth(i, 22 * 256);
+            for (int i = 1; i <= 5; i++) s.setColumnWidth(i, 22 * 256);
 
             Sheet f = wb.createSheet("Crédits");
             Row re = f.createRow(0);
