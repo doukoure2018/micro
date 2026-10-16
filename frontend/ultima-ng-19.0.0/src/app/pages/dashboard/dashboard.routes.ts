@@ -97,6 +97,11 @@ export default [
         loadComponent: () => import('./portefeuille/portefeuille-affectation.component').then((c) => c.PortefeuilleAffectationComponent)
     },
     {
+        path: 'portefeuille-scores',
+        data: { breadcrumb: 'Appréciation des agents' },
+        loadComponent: () => import('./portefeuille/portefeuille-scores.component').then((c) => c.PortefeuilleScoresComponent)
+    },
+    {
         path: 'verification-client',
         data: { breadcrumb: 'Verification Client' },
         loadComponent: () => import('./agent-credit/digital-verification/digital-verification.component').then((c) => c.DigitalVerificationComponent)
