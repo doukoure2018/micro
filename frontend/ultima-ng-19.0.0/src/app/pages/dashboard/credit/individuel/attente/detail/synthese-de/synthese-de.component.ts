@@ -1,4 +1,4 @@
-import { DemandeIndividuel, PieceJointeDemande } from '@/interface/demande-individuel.interface';
+import { AnalyseChargesFonctionnaire, DemandeIndividuel, PieceJointeDemande } from '@/interface/demande-individuel.interface';
 import { CreditActiviteData } from '@/service/credit-activite.model';
 import { CreditosClienteResponseDTO } from '@/interface/CreditosClienteResponseDTO';
 import { Personnecaution } from '@/interface/personnecaution';
@@ -72,6 +72,8 @@ export class SyntheseDeComponent implements OnInit {
         documents: Selection[];
         /** Pièces du dossier fonctionnaire : bulletin de salaire, attestation de service. */
         pieces: PieceJointeDemande[];
+        /** Crédit fonctionnaire : analyse charges & quotité saisie par l'agent de crédit. */
+        analyseCharges: AnalyseChargesFonctionnaire | null;
         avisList: Avis[];
         user?: IUser;
         dossierId: number | null;
@@ -94,6 +96,7 @@ export class SyntheseDeComponent implements OnInit {
         cautions: [],
         documents: [],
         pieces: [],
+        analyseCharges: null,
         avisList: [],
         dossierId: null,
         hasDossier: false,
@@ -151,6 +154,13 @@ export class SyntheseDeComponent implements OnInit {
 
                     if (dossierId) {
                         this.loadTresorerie(dossierId);
+                    }
+
+                    // Crédit fonctionnaire : l'instruction ne passe pas par le bilan et la
+                    // trésorerie mais par les charges et la quotité cessible — le DE et le DG
+                    // validaient sans les voir (DSIG, 2026-10-16).
+                    if (demande?.natureClient === 'Demande de credit Pour Fonctionnaire') {
+                        this.loadAnalyseCharges();
                     }
 
                     // Synthese DG : donnees SAF liees au membre (codCliente = numeroMembre)
@@ -217,6 +227,51 @@ export class SyntheseDeComponent implements OnInit {
                 },
                 error: () => this.state.update((s) => ({ ...s, pieces: [] }))
             });
+    }
+
+    private loadAnalyseCharges(): void {
+        this.userService
+            .getAnalyseChargesFonctionnaire$(this.demandeId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    this.state.update((s) => ({ ...s, analyseCharges: response.data?.analyseCharges || null }));
+                },
+                error: () => this.state.update((s) => ({ ...s, analyseCharges: null }))
+            });
+    }
+
+    /** Crédit fonctionnaire : bilan et trésorerie sont remplacés par les charges et la quotité. */
+    estFonctionnaire(): boolean {
+        return this.state().demande?.natureClient === 'Demande de credit Pour Fonctionnaire';
+    }
+
+    /** Les douze postes de charges mensuelles, dans l'ordre de saisie de l'agent. */
+    readonly postesCharges: { key: keyof AnalyseChargesFonctionnaire; libelle: string }[] = [
+        { key: 'chargeLoyer', libelle: 'Loyer' },
+        { key: 'chargeTransport', libelle: 'Transport' },
+        { key: 'chargeNourriture', libelle: 'Nourriture' },
+        { key: 'chargeVignette', libelle: 'Vignette' },
+        { key: 'chargeAssurance', libelle: 'Assurance' },
+        { key: 'chargeElectricite', libelle: 'Électricité' },
+        { key: 'chargeEau', libelle: 'Eau' },
+        { key: 'chargeAssuranceMaladie', libelle: 'Assurance maladie' },
+        { key: 'chargeScolarite', libelle: 'Scolarité' },
+        { key: 'chargeCasSociaux', libelle: 'Cas sociaux' },
+        { key: 'chargeAbonnementImage', libelle: 'Abonnement image (TV)' },
+        { key: 'chargeServiceSalubrite', libelle: 'Service salubrité' }
+    ];
+
+    montantCharge(key: keyof AnalyseChargesFonctionnaire): number {
+        const analyse = this.state().analyseCharges;
+        return analyse ? Number(analyse[key]) || 0 : 0;
+    }
+
+    /** Vrai quand l'échéance demandée dépasse la quotité cessible : le point qui arrête le DE. */
+    echeanceAuDelaDeLaQuotite(): boolean {
+        const analyse = this.state().analyseCharges;
+        if (!analyse) return false;
+        return Number(this.state().demande?.echeance || 0) > Number(analyse.quotiteCessible || 0);
     }
 
     /** Libellé d'une pièce du dossier fonctionnaire. */

@@ -536,7 +536,83 @@
         </div>
     </div>
 
-    <!-- ══ 4. SYNTHÈSE DU BILAN ══ -->
+    <!-- ══ 4. CHARGES & QUOTITÉ (crédit fonctionnaire) ══ -->
+    @if (estFonctionnaire()) {
+    <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8 print-block">
+        <div class="bg-amber-600 text-white px-6 py-4 flex items-center gap-3">
+            <i class="pi pi-calculator text-xl"></i>
+            <span class="font-bold text-lg uppercase tracking-wide">4. Charges &amp; quotité</span>
+            @if (state().analyseCharges) {
+            <span class="ml-auto text-sm font-bold px-3 py-1 rounded-full"
+                [ngClass]="state().analyseCharges?.verdict === 'FINANCABLE' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
+                {{ state().analyseCharges?.verdict === 'FINANCABLE' ? 'FINANÇABLE' : 'NON FINANÇABLE' }}
+            </span>
+            }
+        </div>
+        <div class="p-6">
+            @if (state().analyseCharges) {
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Revenus, quotité et capacité -->
+                <div>
+                    <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                        <div class="text-gray-500">Salaire net retenu</div>
+                        <div class="text-right font-semibold">{{ state().analyseCharges?.salaireNetRetenu | number:'1.0-0':'fr-FR' }} GNF</div>
+                        <div class="text-gray-500">Autres revenus retenus</div>
+                        <div class="text-right font-semibold">{{ (state().analyseCharges?.autresRevenusRetenus || 0) | number:'1.0-0':'fr-FR' }} GNF</div>
+                        <div class="text-gray-500">Total des charges</div>
+                        <div class="text-right font-semibold">{{ state().analyseCharges?.totalCharges | number:'1.0-0':'fr-FR' }} GNF</div>
+                        <div class="text-gray-700 font-semibold border-t pt-2">Quotité cessible</div>
+                        <div class="text-right font-bold text-amber-700 border-t pt-2">{{ state().analyseCharges?.quotiteCessible | number:'1.0-0':'fr-FR' }} GNF</div>
+                        <div class="text-gray-700 font-semibold">Échéance demandée</div>
+                        <div class="text-right font-bold" [ngClass]="echeanceAuDelaDeLaQuotite() ? 'text-red-600' : 'text-green-600'">
+                            {{ state().demande?.echeance | number:'1.0-0':'fr-FR' }} GNF
+                        </div>
+                        <div class="text-gray-700 font-semibold">Capacité résiduelle</div>
+                        <div class="text-right font-bold"
+                            [ngClass]="(state().analyseCharges?.capaciteResiduelle ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'">
+                            {{ state().analyseCharges?.capaciteResiduelle | number:'1.0-0':'fr-FR' }} GNF
+                        </div>
+                    </div>
+                    @if (echeanceAuDelaDeLaQuotite()) {
+                    <div class="mt-3 bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+                        <i class="pi pi-exclamation-triangle mr-2"></i>L'échéance demandée dépasse la quotité cessible.
+                    </div>
+                    }
+                </div>
+                <!-- Détail des charges -->
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <div class="font-semibold text-gray-700 mb-3"><i class="pi pi-list mr-2"></i>Charges mensuelles (12 postes)</div>
+                    <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
+                        @for (poste of postesCharges; track poste.key) {
+                        <div class="flex justify-between border-b border-gray-100 py-1 col-span-2 md:col-span-1">
+                            <span class="text-gray-500">{{ poste.libelle }}</span>
+                            <span class="font-medium">{{ montantCharge(poste.key) | number:'1.0-0':'fr-FR' }}</span>
+                        </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            @if (state().analyseCharges?.avisAgent) {
+            <div class="mt-4 bg-white border border-gray-200 rounded-lg p-4">
+                <div class="font-semibold text-gray-700 mb-1"><i class="pi pi-comment mr-2"></i>Avis de l'agent de crédit</div>
+                <p class="text-gray-600 italic mb-0">&laquo; {{ state().analyseCharges?.avisAgent }} &raquo;</p>
+            </div>
+            }
+            <div class="mt-3 text-xs text-gray-500">
+                Saisie par {{ state().analyseCharges?.analysePar || "l'agent de crédit" }}
+            </div>
+            } @else {
+            <div class="text-center py-6 text-amber-700">
+                <i class="pi pi-info-circle mr-2"></i>
+                L'agent de crédit n'a pas encore renseigné l'analyse charges &amp; quotité.
+            </div>
+            }
+        </div>
+    </div>
+    }
+
+    <!-- ══ 4. SYNTHÈSE DU BILAN (hors crédit fonctionnaire) ══ -->
+    @if (!estFonctionnaire()) {
     <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8 print-block">
         <div class="bg-cyan-700 text-white px-6 py-4 flex items-center gap-3">
             <i class="pi pi-chart-bar text-xl"></i>
@@ -554,7 +630,10 @@
         </div>
     </div>
 
-    <!-- ══ 5. SYNTHÈSE DE LA TRÉSORERIE (compacte) ══ -->
+    }
+
+    <!-- ══ 5. SYNTHÈSE DE LA TRÉSORERIE (compacte, hors crédit fonctionnaire) ══ -->
+    @if (!estFonctionnaire()) {
     <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8 print-block">
         <div class="bg-teal-600 text-white px-6 py-4 flex items-center gap-3">
             <i class="pi pi-wallet text-xl"></i>
@@ -615,6 +694,8 @@
             }
         </div>
     </div>
+
+    }
 
     <!-- ══ 6. PERSONNES CAUTION ══ -->
     <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mb-8 print-block">
