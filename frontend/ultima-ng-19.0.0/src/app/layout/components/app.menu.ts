@@ -329,6 +329,14 @@ export class AppMenu {
                 routerLink: ['/dashboards/portefeuille-affectation']
             });
         }
+        // Appreciation des agents a partir de leur portefeuille (V164) : DE, DG, DR (sa delegation).
+        if (['DR', 'DG', 'SUPER_ADMIN'].includes(this.role || '') || this.estManager('DE')) {
+            items.push({
+                label: 'Appréciation des agents',
+                icon: 'pi pi-fw pi-star',
+                routerLink: ['/dashboards/portefeuille-scores']
+            });
+        }
         return items;
     }
 

@@ -296,5 +296,7 @@ export interface IResponse {
         historique?: any[];
         synthese?: any[];
         compteur?: any;
+        scores?: any;
+        fiche?: any;
     };
 }

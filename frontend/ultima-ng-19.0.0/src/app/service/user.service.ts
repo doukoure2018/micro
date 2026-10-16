@@ -1756,6 +1756,12 @@ export class UserService {
 
     exportSyntheseAffectations$ = () => this.http.get(`${this.server}/ecredit/portefeuille/affectations/synthese/export`, { responseType: 'blob', observe: 'response' });
 
+    // Appréciation des agents de crédit (V164)
+    getScoresAgents$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/scores`).pipe(catchError(this.handleError));
+    getFicheScoreAgent$ = (agentUserId: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/scores/${agentUserId}`).pipe(catchError(this.handleError));
+    recalculerScoresAgents$ = () => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/portefeuille/scores/recalculer`, {}).pipe(catchError(this.handleError));
+    exportScoresAgents$ = () => this.http.get(`${this.server}/ecredit/portefeuille/scores/export`, { responseType: 'blob', observe: 'response' });
+
     getHistoriqueAffectation$ = (codAgencia: string, numCredito: number) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/affectations/${codAgencia}/${numCredito}/historique`).pipe(catchError(this.handleError));
 
