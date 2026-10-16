@@ -22,6 +22,10 @@ public interface EbankingPortefeuilleClient {
     @GetMapping("/ebanking/portefeuille/agences")
     List<AgenceSafDto> getAgences();
 
+    /** Sonde de sante des bases SAF (connexion directe courte, message SQL Server exact). */
+    @GetMapping("/ebanking/portefeuille/sante")
+    io.digiservices.clients.portefeuille.SanteSafDto getSanteSaf();
+
     @GetMapping("/ebanking/portefeuille/credits")
     PageDto<PortefeuilleCreditDto> getCredits(
             @RequestParam(value = "codAgencia") String codAgencia,

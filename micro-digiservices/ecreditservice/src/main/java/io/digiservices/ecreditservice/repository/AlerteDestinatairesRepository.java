@@ -66,6 +66,19 @@ public class AlerteDestinatairesRepository {
                 .list();
     }
 
+    /** Administrateurs (SUPER_ADMIN) avec e-mail : destinataires des alertes techniques. */
+    public List<Destinataire> superAdmins() {
+        return jdbcClient.sql("""
+                SELECT DISTINCT u.email, TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,'')) AS nom
+                FROM users u
+                JOIN user_roles ur ON ur.user_id = u.user_id
+                JOIN roles r ON r.role_id = ur.role_id
+                WHERE r.name = 'SUPER_ADMIN' AND u.enabled AND u.email IS NOT NULL AND u.email <> ''
+                """)
+                .query((rs, n) -> new Destinataire(rs.getString("email"), rs.getString("nom"), List.of()))
+                .list();
+    }
+
     /** DA avec e-mail : chacun porte les codes SAF des points de service de son agence. */
     public List<Destinataire> das() {
         return jdbcClient.sql("""

@@ -35,6 +35,13 @@ public class PortefeuilleController {
     private static final int MAX_PAGE_SIZE = 100;
 
     private final PortefeuilleRepository repository;
+    private final io.digiservices.ebanking.service.SafSanteProbe santeProbe;
+
+    /** Etat des connexions aux bases SAF, base par base, en quelques secondes. */
+    @GetMapping("/sante")
+    public ResponseEntity<io.digiservices.clients.portefeuille.SanteSafDto> sante() {
+        return ResponseEntity.ok(santeProbe.sonder());
+    }
 
     @GetMapping("/agences")
     public ResponseEntity<List<AgenceSafDto>> getAgences() {
