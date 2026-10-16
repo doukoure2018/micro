@@ -47,7 +47,7 @@ import { Observable } from 'rxjs';
 
             <div *ngIf="erreurRecalcul()" class="border border-orange-400 bg-orange-50 text-orange-800 rounded p-3 mb-4 flex items-start gap-2">
                 <i class="pi pi-exclamation-triangle mt-1"></i>
-                <div><b>Le recalcul n'a pas abouti.</b> {{ erreurRecalcul() }}</div>
+                <div>{{ erreurRecalcul() }}</div>
             </div>
 
             <!-- Réseau / périmètre -->

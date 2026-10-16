@@ -116,9 +116,9 @@ public class PortefeuilleScoreService {
             // Incident du 2026-10-16 : un « Read timed out » brut ne dit rien a l'utilisateur.
             String detail = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage().split("\\R")[0];
             log.warn("[SCORE] Recalcul impossible (user {}) : {}", p.user().getUserId(), detail);
-            throw new ApiException("Systeme bancaire (SAF) indisponible : le recalcul n'a pas pu lire les points de "
-                    + "service. Reessayez plus tard ; si cela persiste, la DSIG est alertee automatiquement. Detail : "
-                    + (detail.length() > 160 ? detail.substring(0, 160) + "…" : detail));
+            // Message voulu par la DSIG (2026-10-16) : court, sans detail technique ; la cause exacte est
+            // dans le journal et dans l'alerte e-mail envoyee aux administrateurs.
+            throw new ApiException("Base non disponible, moment de cloture");
         }
         log.info("[SCORE] Recalcul demande par user {} : {} agent(s) note(s)", p.user().getUserId(), n);
         return n;
