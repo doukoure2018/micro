@@ -578,9 +578,33 @@ export class DetailComponent {
             AGENT_CREDIT: 'Agent de Crédit',
             DR: 'Directeur Régional',
             DA: "Directeur d'Agence",
-            MANAGER: 'Manager'
+            MANAGER: 'Manager',
+            DG: 'Directeur Général',
+            SUPER_ADMIN: 'Administrateur'
         };
         return roleLabels[role] || role;
+    }
+
+    /**
+     * Qui lit le dossier instruit (analyses, pièces jointes, documents téléversés) : le DA, le DR,
+     * le DE (MANAGER), et depuis le 2026-10-16 le DG — qui valide au-dessus de 100 M et n'y avait
+     * accès sur aucun écran — ainsi que l'administrateur, pour le support. Lecture seule : les
+     * blocs d'action restent conditionnés à leur rôle propre.
+     */
+    peutConsulterAnalyses(): boolean {
+        return ['DA', 'DR', 'MANAGER', 'DG', 'SUPER_ADMIN'].includes(this.state().user?.role || '');
+    }
+
+    /** Libellé court d'une pièce, pour la vignette de la galerie des documents. */
+    libelleCourtPiece(type?: string): string {
+        switch (type) {
+            case 'BULLETIN_SALAIRE':
+                return 'Bulletin';
+            case 'ATTESTATION_SERVICE':
+                return 'Attestation';
+            default:
+                return 'Pièce';
+        }
     }
 
     /**
