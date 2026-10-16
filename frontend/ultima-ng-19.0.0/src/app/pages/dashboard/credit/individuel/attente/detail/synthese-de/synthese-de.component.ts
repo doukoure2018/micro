@@ -1,4 +1,4 @@
-import { DemandeIndividuel } from '@/interface/demande-individuel.interface';
+import { DemandeIndividuel, PieceJointeDemande } from '@/interface/demande-individuel.interface';
 import { CreditActiviteData } from '@/service/credit-activite.model';
 import { CreditosClienteResponseDTO } from '@/interface/CreditosClienteResponseDTO';
 import { Personnecaution } from '@/interface/personnecaution';
@@ -70,6 +70,8 @@ export class SyntheseDeComponent implements OnInit {
         garanties: any[];
         cautions: Personnecaution[];
         documents: Selection[];
+        /** Pièces du dossier fonctionnaire : bulletin de salaire, attestation de service. */
+        pieces: PieceJointeDemande[];
         avisList: Avis[];
         user?: IUser;
         dossierId: number | null;
@@ -91,6 +93,7 @@ export class SyntheseDeComponent implements OnInit {
         garanties: [],
         cautions: [],
         documents: [],
+        pieces: [],
         avisList: [],
         dossierId: null,
         hasDossier: false,
@@ -202,6 +205,44 @@ export class SyntheseDeComponent implements OnInit {
                 },
                 error: () => this.state.update((s) => ({ ...s, documents: [] }))
             });
+        // Les pièces du dossier fonctionnaire (bulletin de salaire, attestation) vivent dans une
+        // autre table que les documents téléversés : sans cet appel, le DE et le DG ne voyaient
+        // pas le bulletin, alors que le DA et le DR le voient sur le détail (DSIG, 2026-10-16).
+        this.userService
+            .getPiecesDemande$(this.demandeId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    this.state.update((s) => ({ ...s, pieces: response.data?.pieces || [] }));
+                },
+                error: () => this.state.update((s) => ({ ...s, pieces: [] }))
+            });
+    }
+
+    /** Libellé d'une pièce du dossier fonctionnaire. */
+    libelleTypePiece(type?: string): string {
+        switch (type) {
+            case 'BULLETIN_SALAIRE':
+                return 'Bulletin de salaire';
+            case 'ATTESTATION_SERVICE':
+                return 'Attestation de service';
+            case 'AUTRE':
+                return 'Autre pièce';
+            default:
+                return type || 'Pièce';
+        }
+    }
+
+    /** Libellé court, pour la vignette. */
+    libelleCourtPiece(type?: string): string {
+        switch (type) {
+            case 'BULLETIN_SALAIRE':
+                return 'Bulletin';
+            case 'ATTESTATION_SERVICE':
+                return 'Attestation';
+            default:
+                return 'Pièce';
+        }
     }
 
     private loadAvis(): void {
