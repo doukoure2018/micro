@@ -486,6 +486,30 @@
                         </tr>
                     </tbody>
                 </table>
+
+                <!-- Justificatifs du dossier : visibles de tous les lecteurs, et non plus seulement
+                     dans la carte d'analyse réservée au DA / DR / DE (DSIG, 2026-10-16) -->
+                <div class="mt-5 border border-emerald-200 bg-emerald-50 rounded-lg p-4">
+                    <div class="font-semibold text-gray-700 mb-2">
+                        <i class="pi pi-paperclip mr-2"></i>Justificatifs du dossier
+                        ({{ state().piecesFonctionnaire?.length || 0 }})
+                    </div>
+                    <div *ngIf="state().piecesFonctionnaire?.length; else aucunJustificatif" class="flex flex-wrap gap-2">
+                        <a *ngFor="let piece of state().piecesFonctionnaire" [href]="piece.urlFichier"
+                            target="_blank" rel="noopener"
+                            class="inline-flex items-center gap-2 bg-white border border-emerald-200 rounded-lg px-3 py-2 text-sm no-underline hover:border-emerald-400">
+                            <i class="pi pi-file text-emerald-600"></i>
+                            <span class="font-medium text-gray-700">{{ libelleTypePieceFonctionnaire(piece.typePiece) }}</span>
+                            <span class="text-gray-400">{{ piece.nomFichier }}</span>
+                            <i class="pi pi-external-link text-emerald-600"></i>
+                        </a>
+                    </div>
+                    <ng-template #aucunJustificatif>
+                        <div class="text-gray-500 text-sm">
+                            <i class="pi pi-info-circle mr-2"></i>Aucun justificatif d&eacute;pos&eacute; par l'agent de cr&eacute;dit
+                        </div>
+                    </ng-template>
+                </div>
             </div>
         </div>
 
@@ -1367,7 +1391,7 @@
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
         <!-- SECTION CONSULTATION - DA/DR/MANAGER                                   -->
         <!-- ═══════════════════════════════════════════════════════════════════════ -->
-        <div *ngIf="state().user?.role === 'DA' || state().user?.role === 'DR' || state().user?.role === 'MANAGER'"
+        <div *ngIf="peutConsulterAnalyses()"
             class="bg-white rounded-xl shadow-md overflow-hidden border-2 border-indigo-200 mb-8">
             <div class="bg-indigo-600 text-white px-6 py-4 flex items-center gap-3">
                 <i class="pi pi-eye text-xl"></i>
@@ -1721,7 +1745,7 @@
                                 <div>
                                     <div class="font-bold text-lg">Documents T&eacute;l&eacute;vers&eacute;s</div>
                                     <div class="font-medium" style="color: #0d9488;">
-                                        {{ (state().documents?.length || 0) }} document(s)
+                                        {{ (state().documents?.length || 0) + (state().piecesFonctionnaire?.length || 0) }} document(s)
                                     </div>
                                 </div>
                             </div>
@@ -1762,8 +1786,27 @@
                                 </div>
                             </div>
 
+                            <!-- Pi&egrave;ces du dossier fonctionnaire (bulletin de salaire, attestation) :
+                                 elles vivent dans une autre table que les documents t&eacute;l&eacute;vers&eacute;s,
+                                 mais le lecteur les cherche ici (DSIG, 2026-10-16) -->
+                            <div *ngIf="state().piecesFonctionnaire?.length" class="flex flex-wrap gap-2 mt-2">
+                                <a *ngFor="let piece of state().piecesFonctionnaire" [href]="piece.urlFichier"
+                                    target="_blank" rel="noopener"
+                                    [pTooltip]="libelleTypePieceFonctionnaire(piece.typePiece) + ' — ' + piece.nomFichier"
+                                    class="relative rounded-lg overflow-hidden border border-amber-200 bg-white hover:shadow-lg transition-all group no-underline"
+                                    style="width: 80px; height: 80px; flex-shrink: 0;">
+                                    <div class="w-full h-full bg-amber-50 flex flex-col items-center justify-center">
+                                        <i class="pi pi-paperclip text-2xl text-amber-600"></i>
+                                        <span style="font-size: 9px;"
+                                            class="text-amber-700 font-semibold mt-1 px-1 text-center leading-tight">
+                                            {{ libelleCourtPiece(piece.typePiece) }}
+                                        </span>
+                                    </div>
+                                </a>
+                            </div>
+
                             <!-- Aucun document -->
-                            <div *ngIf="!state().documents || state().documents!.length === 0"
+                            <div *ngIf="(!state().documents || state().documents!.length === 0) && !state().piecesFonctionnaire?.length"
                                 class="text-center py-4 text-gray-500">
                                 <i class="pi pi-info-circle mr-2"></i>
                                 Aucun document t&eacute;l&eacute;vers&eacute;
