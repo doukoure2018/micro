@@ -115,10 +115,13 @@ public class PortefeuilleAffectationService {
                     AffectationDto porteur = aff;
                     AgentDto agent = agents.computeIfAbsent(aff.getAgentUserId(), id -> AgentDto.builder()
                             .userId(id).nom(porteur.getAgentNom()).disponible(false)
-                            .nbCredits(0).encours(BigDecimal.ZERO).nbEnRetard(0).build());
+                            .nbCredits(0).encours(BigDecimal.ZERO).nbEnRetard(0).montantRetard(BigDecimal.ZERO).build());
                     agent.setNbCredits(agent.getNbCredits() + 1);
                     agent.setEncours(agent.getEncours().add(solde));
-                    if (credit.getDatPremiereImpayee() != null) agent.setNbEnRetard(agent.getNbEnRetard() + 1);
+                    if (credit.getDatPremiereImpayee() != null) {
+                        agent.setNbEnRetard(agent.getNbEnRetard() + 1);
+                        agent.setMontantRetard(agent.getMontantRetard().add(montantRetard(credit)));
+                    }
                 }
             }
 
@@ -322,6 +325,13 @@ public class PortefeuilleAffectationService {
     // ------------------------------------------------------------------ regles
 
     /** Pourquoi un credit affecte doit changer de main, ou null s'il est bien porte. */
+    /** Montant en retard d'un credit : capital impaye + interets impayes (meme formule que l'export). */
+    private static BigDecimal montantRetard(PortefeuilleCreditDto credit) {
+        BigDecimal capital = credit.getMntCapImpaye() == null ? BigDecimal.ZERO : credit.getMntCapImpaye();
+        BigDecimal interets = credit.getMntIntImpaye() == null ? BigDecimal.ZERO : credit.getMntIntImpaye();
+        return capital.add(interets);
+    }
+
     private static String motifReaffectation(AffectationDto aff, String codAgencia) {
         if (Boolean.FALSE.equals(aff.getAgentActif())) {
             return "Agent desactive";

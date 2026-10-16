@@ -74,6 +74,8 @@ export interface AgentPortefeuille {
     nbCredits: number;
     encours: number;
     nbEnRetard: number;
+    /** Capital + intérêts impayés de ses crédits en retard */
+    montantRetard: number;
 }
 
 /** nbCredits, encours et les compteurs d'affectation ne portent que sur les crédits EN COURS. */
