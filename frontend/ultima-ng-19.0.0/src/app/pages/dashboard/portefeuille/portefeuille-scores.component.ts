@@ -39,6 +39,7 @@ import { Observable } from 'rxjs';
                     </div>
                 </div>
                 <div class="flex gap-2">
+                    <button pButton icon="pi pi-question-circle" label="Comment lire ces scores ?" class="p-button-text" (click)="showAide = true"></button>
                     <button pButton icon="pi pi-refresh" class="p-button-text" (click)="charger()" [loading]="loading()" pTooltip="Recharger"></button>
                     <button *ngIf="data()?.peutRecalculer" pButton icon="pi pi-calculator" label="Recalculer maintenant" class="p-button-outlined" [loading]="recalcul()" (click)="recalculer()" pTooltip="Relit SAF pour tout le réseau (une à deux minutes) ; le calcul automatique tourne chaque nuit à 03:30"></button>
                     <button pButton icon="pi pi-file-excel" label="Exporter Excel" class="p-button-success p-button-outlined" [loading]="exportEnCours()" [disabled]="!data()?.agents?.length" (click)="exporter()"></button>
@@ -146,6 +147,105 @@ import { Observable } from 'rxjs';
             </p-table>
         </div>
 
+        <!-- Comment lire ces scores : la grille, les classes et le PAR 30 -->
+        <p-dialog header="Comment lire ces scores" [(visible)]="showAide" [modal]="true" [style]="{ width: '920px', maxWidth: '96vw' }" [dismissableMask]="true">
+            <div class="text-sm leading-relaxed">
+                <p class="mb-4">
+                    Chaque nuit, l'outil relit dans SAF les crédits <b>en cours</b> confiés à chaque agent et lui donne une note sur 100.
+                    Aucune saisie n'est demandée : tout vient des encours et des échéances du système bancaire.
+                    Le score résume la <b>santé du portefeuille</b> confié à l'agent — il ne mesure ni son effort ni son contexte, et ne décide rien à la place de la hiérarchie.
+                </p>
+
+                <h3 class="font-bold text-base mb-2">Les cinq critères</h3>
+                <div class="overflow-x-auto mb-4">
+                    <table class="w-full border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-gray-50 border-b-2 border-gray-200 text-left">
+                                <th class="py-2 px-3">Critère</th><th class="py-2 px-3">Ce qu'il mesure</th>
+                                <th class="py-2 px-3 text-right">Tous les points</th><th class="py-2 px-3 text-right">Zéro point</th><th class="py-2 px-3 text-right">Points</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b border-gray-100"><td class="py-2 px-3 font-semibold">PAR 30</td><td class="py-2 px-3">encours des crédits en retard de plus de 30 jours, rapporté à l'encours total</td><td class="py-2 px-3 text-right">0 %</td><td class="py-2 px-3 text-right">15 %</td><td class="py-2 px-3 text-right font-bold">30</td></tr>
+                            <tr class="border-b border-gray-100"><td class="py-2 px-3 font-semibold">Régularité</td><td class="py-2 px-3">échéances payées sur échéances échues, tous crédits confondus</td><td class="py-2 px-3 text-right">100 %</td><td class="py-2 px-3 text-right">70 %</td><td class="py-2 px-3 text-right font-bold">20</td></tr>
+                            <tr class="border-b border-gray-100"><td class="py-2 px-3 font-semibold">Crédits en retard</td><td class="py-2 px-3">part des crédits portant au moins une échéance impayée</td><td class="py-2 px-3 text-right">0 %</td><td class="py-2 px-3 text-right">30 %</td><td class="py-2 px-3 text-right font-bold">15</td></tr>
+                            <tr class="border-b border-gray-100"><td class="py-2 px-3 font-semibold">Poids du retard</td><td class="py-2 px-3">capital et intérêts impayés, rapportés à l'encours</td><td class="py-2 px-3 text-right">0 %</td><td class="py-2 px-3 text-right">10 %</td><td class="py-2 px-3 text-right font-bold">15</td></tr>
+                            <tr class="border-b border-gray-100"><td class="py-2 px-3 font-semibold">Charge</td><td class="py-2 px-3">nombre de crédits portés, face à la médiane des agents du réseau</td><td class="py-2 px-3 text-right">médiane atteinte</td><td class="py-2 px-3 text-right">aucun crédit</td><td class="py-2 px-3 text-right font-bold">10</td></tr>
+                            <tr><td class="py-2 px-3 font-semibold text-gray-500">Tendance</td><td class="py-2 px-3 text-gray-500">variation du PAR 30 sur trois mois — entrera dans le barème au quatrième calcul mensuel</td><td class="py-2 px-3 text-right text-gray-500">en baisse</td><td class="py-2 px-3 text-right text-gray-500">en hausse</td><td class="py-2 px-3 text-right font-bold text-gray-500">10</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="mb-4">
+                    Entre les deux bornes, les points se donnent en proportion : à mi-chemin, la moitié des points.
+                    Tant que la tendance n'a pas trois mois d'historique, le score se calcule sur 90 points et se ramène à 100.
+                </p>
+
+                <h3 class="font-bold text-base mb-2">Les classes</h3>
+                <div class="flex flex-wrap gap-2 mb-4">
+                    <span class="border rounded-lg px-3 py-2"><span class="classe A">A</span> 80 à 100 — portefeuille sain</span>
+                    <span class="border rounded-lg px-3 py-2"><span class="classe B">B</span> 65 à 79 — bon, quelques retards</span>
+                    <span class="border rounded-lg px-3 py-2"><span class="classe C">C</span> 50 à 64 — à surveiller</span>
+                    <span class="border rounded-lg px-3 py-2"><span class="classe D">D</span> moins de 50 — alerte</span>
+                    <span class="border rounded-lg px-3 py-2"><span class="classe NN">non noté</span> moins de 10 crédits, ou affecté depuis moins de 90 jours</span>
+                </div>
+
+                <h3 class="font-bold text-base mb-2">Le PAR 30, le critère qui pèse le plus</h3>
+                <p class="mb-3">
+                    Il ne mesure pas ce que les clients doivent aujourd'hui, mais ce que la banque <b>risque de perdre</b>.
+                    Prenons un client qui a emprunté 15 000 000 et à qui il reste 11 800 000 à rembourser.
+                    Il ne paie plus depuis 64 jours ; les échéances sautées font 4 310 000.
+                    S'il ne revient jamais, la banque ne perd pas 4 310 000 mais <b>11 800 000</b> : un crédit qui a décroché,
+                    c'est son encours entier qui est en danger.
+                </p>
+                <p class="mb-3">
+                    D'où la règle, la même dans toute la microfinance : un retard de <b>moins de 30 jours</b> ne compte pas
+                    (le client a eu un contretemps, il paie la semaine suivante) ; à partir de <b>30 jours</b>, on compte
+                    <b>tout l'encours</b> du crédit. Les jours de retard se déduisent de la date de la plus ancienne échéance
+                    impayée dans SAF.
+                </p>
+                <div class="overflow-x-auto mb-3">
+                    <table class="w-full border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-gray-50 border-b-2 border-gray-200 text-left">
+                                <th class="py-2 px-3">Exemple : un portefeuille de 26 crédits</th><th class="py-2 px-3 text-right">Retard</th><th class="py-2 px-3 text-right">Encours</th><th class="py-2 px-3">Compté dans le PAR 30 ?</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b border-gray-100"><td class="py-2 px-3">Crédit 548 219</td><td class="py-2 px-3 text-right text-red-600 font-semibold">64 jours</td><td class="py-2 px-3 text-right">11 800 000</td><td class="py-2 px-3"><b class="text-red-600">oui</b>, tout l'encours</td></tr>
+                            <tr class="border-b border-gray-100"><td class="py-2 px-3">Crédit 551 744</td><td class="py-2 px-3 text-right text-red-600 font-semibold">38 jours</td><td class="py-2 px-3 text-right">7 300 000</td><td class="py-2 px-3"><b class="text-red-600">oui</b>, tout l'encours</td></tr>
+                            <tr class="border-b border-gray-100"><td class="py-2 px-3">Crédit 553 902</td><td class="py-2 px-3 text-right">17 jours</td><td class="py-2 px-3 text-right">6 100 000</td><td class="py-2 px-3">non — moins de 30 jours</td></tr>
+                            <tr class="border-b border-gray-100"><td class="py-2 px-3">23 autres crédits</td><td class="py-2 px-3 text-right">à jour</td><td class="py-2 px-3 text-right">293 200 000</td><td class="py-2 px-3">non</td></tr>
+                            <tr class="bg-gray-50"><td class="py-2 px-3 font-bold">Portefeuille</td><td class="py-2 px-3"></td><td class="py-2 px-3 text-right font-bold">318 400 000</td><td class="py-2 px-3"><b class="text-red-600">19 100 000 en danger</b></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="mb-4">
+                    19 100 000 sur 318 400 000 font <b>6 %</b> : sur 100 francs en portefeuille, 6 francs sont dans des crédits
+                    qui ont décroché. Le barème est linéaire — 15 % vaut 0 point, 0 % en vaut 30, donc chaque point de PAR 30
+                    coûte 2 points : à 6 %, l'agent garde <b>18 points sur 30</b>.
+                </p>
+
+                <h3 class="font-bold text-base mb-2">Deux chiffres à ne pas confondre</h3>
+                <div class="overflow-x-auto mb-4">
+                    <table class="w-full border-collapse text-sm">
+                        <thead><tr class="bg-gray-50 border-b-2 border-gray-200 text-left"><th class="py-2 px-3">Colonne</th><th class="py-2 px-3">Ce qu'elle dit</th><th class="py-2 px-3">À quoi elle sert</th></tr></thead>
+                        <tbody>
+                            <tr class="border-b border-gray-100"><td class="py-2 px-3 font-semibold">Montant en retard</td><td class="py-2 px-3">ce que les clients doivent maintenant : capital et intérêts échus impayés</td><td class="py-2 px-3">la somme à aller encaisser</td></tr>
+                            <tr><td class="py-2 px-3 font-semibold">PAR 30</td><td class="py-2 px-3">l'encours entier des crédits qui ont décroché</td><td class="py-2 px-3">juger la santé du portefeuille</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3 class="font-bold text-base mb-2">Trois règles de justice</h3>
+                <ul class="list-disc pl-5 mb-1">
+                    <li class="mb-1"><b>Retard hérité</b> : un crédit déjà en retard le jour où il est confié à l'agent ne compte pas contre lui pendant 90 jours — on ne lui reproche pas le retard qu'on lui donne à assainir. Il reste affiché, avec la mention « dont N hérités ».</li>
+                    <li class="mb-1"><b>Non noté</b> : sous 10 crédits en cours, ou avant 90 jours d'affectation, aucun score n'est donné. Noter un agent sur six crédits ou trois semaines n'aurait pas de sens.</li>
+                    <li><b>Mêmes bornes pour tous</b> : elles sont celles du réseau, pas du point de service. Le contexte se lit à côté — score moyen du point de service sur la fiche, et tendance dès trois mois.</li>
+                </ul>
+            </div>
+            <ng-template pTemplate="footer"><button pButton label="Fermer" class="p-button-text" (click)="showAide = false"></button></ng-template>
+        </p-dialog>
+
         <!-- Fiche agent -->
         <p-dialog [header]="fiche()?.score?.agentNom || 'Fiche agent'" [(visible)]="showFiche" [modal]="true" [style]="{ width: '960px', maxWidth: '96vw' }" [dismissableMask]="true">
             <div *ngIf="loadingFiche()" class="text-gray-500 py-4">Chargement…</div>
@@ -217,6 +317,8 @@ export class PortefeuilleScoresComponent implements OnInit {
     fiche = signal<FicheAgent | null>(null);
     loadingFiche = signal(false);
     showFiche = false;
+    /** Boîte « Comment lire ces scores » : la grille, les classes et le PAR 30 expliqués. */
+    showAide = false;
 
     delegationFiltre = signal<number | null>(null);
     agenceFiltre = signal<number | null>(null);
