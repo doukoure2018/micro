@@ -24,6 +24,8 @@ public class AgentAgenceDto {
     private String pointventeLibele;
     private Boolean fonctionAccueil;
     private Boolean fonctionCredit;
+    /** Recouvrement contentieux : l'agent peut recevoir les dossiers passes au judiciaire (V165). */
+    private Boolean fonctionContentieux;
     /** FALSE si le compte est desactive ou verrouille : exclu de l'affectation par le DA. */
     private Boolean compteActif;
 }

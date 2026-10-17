@@ -1741,7 +1741,7 @@ export class UserService {
     getPortefeuilleAffectations$ = (codAgencia: string) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/affectations`, { params: { codAgencia } }).pipe(catchError(this.handleError));
 
-    affecterCredits$ = (body: { codAgencia: string; numCreditos: number[]; agentUserId: number; motif?: string }) =>
+    affecterCredits$ = (body: { codAgencia: string; numCreditos: number[]; agentUserId: number; motif?: string; typeAffectation?: string }) =>
         <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/portefeuille/affectations`, body).pipe(catchError(this.handleError));
 
     desaffecterCredits$ = (body: { codAgencia: string; numCreditos: number[]; motif?: string }) =>
@@ -1841,7 +1841,7 @@ export class UserService {
     // DA - gestion des fonctions d'agence
     getAgentsAgence$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/agents-agence`).pipe(catchError(this.handleError));
 
-    setAgentFonction$ = (userId: number, fonction: 'ACCUEIL' | 'CREDIT', actif: boolean) =>
+    setAgentFonction$ = (userId: number, fonction: 'ACCUEIL' | 'CREDIT' | 'CONTENTIEUX', actif: boolean) =>
         <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/agents/${userId}/fonction`, { fonction, actif }).pipe(catchError(this.handleError));
 
     getMesFonctions$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/mes-fonctions`).pipe(catchError(this.handleError));

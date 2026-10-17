@@ -34,7 +34,7 @@ public class PortefeuilleAffectationRepository {
                    TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')) AS affecte_par_nom,
                    a.date_affectation, a.date_fin, a.fin_par_user_id,
                    TRIM(COALESCE(f.first_name, '') || ' ' || COALESCE(f.last_name, '')) AS fin_par_nom,
-                   a.motif, a.motif_fin, a.actif
+                   a.motif, a.motif_fin, a.actif, a.type_affectation
             FROM portefeuille_affectation a
             JOIN users u ON u.user_id = a.agent_user_id
             LEFT JOIN users p ON p.user_id = a.affecte_par_user_id
@@ -70,6 +70,19 @@ public class PortefeuilleAffectationRepository {
             ORDER BY nom
             """;
 
+    // Agents de recouvrement : la fonction CONTENTIEUX est posee par le DA et se lit au
+    // niveau de l'AGENCE du point de service — le contentieux ne se traite pas au guichet.
+    private static final String AGENTS_CONTENTIEUX = """
+            SELECT DISTINCT u.user_id, u.email,
+                   TRIM(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')) AS nom
+            FROM users u
+            JOIN agent_fonctions af ON af.user_id = u.user_id
+                 AND af.fonction = 'CONTENTIEUX' AND af.actif
+            WHERE u.enabled
+              AND u.agence_id IN (SELECT pv.agence_id FROM pointvente pv WHERE pv.code = :codAgencia)
+            ORDER BY nom
+            """;
+
     private static final String FERMER = """
             UPDATE portefeuille_affectation
             SET actif = FALSE, date_fin = CURRENT_TIMESTAMP, fin_par_user_id = :userId, motif_fin = :motifFin
@@ -78,8 +91,8 @@ public class PortefeuilleAffectationRepository {
 
     private static final String OUVRIR = """
             INSERT INTO portefeuille_affectation
-                (cod_agencia, num_credito, cod_cliente, agent_user_id, affecte_par_user_id, motif)
-            VALUES (:codAgencia, :numCredito, :codCliente, :agentUserId, :affecteParUserId, :motif)
+                (cod_agencia, num_credito, cod_cliente, agent_user_id, affecte_par_user_id, motif, type_affectation)
+            VALUES (:codAgencia, :numCredito, :codCliente, :agentUserId, :affecteParUserId, :motif, :typeAffectation)
             RETURNING id
             """;
 
@@ -148,6 +161,7 @@ public class PortefeuilleAffectationRepository {
             .motif(rs.getString("motif"))
             .motifFin(rs.getString("motif_fin"))
             .actif(rs.getBoolean("actif"))
+            .typeAffectation(rs.getString("type_affectation"))
             .build();
 
     public List<AffectationDto> findActivesParPointService(String codAgencia) {
@@ -162,6 +176,22 @@ public class PortefeuilleAffectationRepository {
         return jdbcClient.sql(FIND_HISTORIQUE)
                 .param("codAgencia", codAgencia).param("numCredito", numCredito)
                 .query(MAPPER).list();
+    }
+
+    /** Agents de recouvrement contentieux de l'agence du point de service (V165). */
+    public List<AgentDto> agentsContentieux(String codAgencia) {
+        return jdbcClient.sql(AGENTS_CONTENTIEUX).param("codAgencia", codAgencia)
+                .query((rs, n) -> AgentDto.builder()
+                        .userId(rs.getLong("user_id"))
+                        .nom(rs.getString("nom"))
+                        .email(rs.getString("email"))
+                        .disponible(true)
+                        .nbCredits(0)
+                        .encours(BigDecimal.ZERO)
+                        .nbEnRetard(0)
+                        .montantRetard(BigDecimal.ZERO)
+                        .build())
+                .list();
     }
 
     public List<AgentDto> agentsDuPointService(String codAgencia) {
@@ -188,11 +218,12 @@ public class PortefeuilleAffectationRepository {
     }
 
     public Long ouvrir(String codAgencia, Long numCredito, String codCliente,
-                       Long agentUserId, Long affecteParUserId, String motif) {
+                       Long agentUserId, Long affecteParUserId, String motif, String typeAffectation) {
         return jdbcClient.sql(OUVRIR)
                 .param("codAgencia", codAgencia).param("numCredito", numCredito)
                 .param("codCliente", codCliente).param("agentUserId", agentUserId)
                 .param("affecteParUserId", affecteParUserId).param("motif", motif)
+                .param("typeAffectation", typeAffectation)
                 .query(Long.class).single();
     }
 }

@@ -51,6 +51,8 @@ export interface Affectation {
     motif?: string;
     motifFin?: string;
     actif: boolean;
+    /** CREDIT (agent de crédit) ou CONTENTIEUX (agent de recouvrement de l'agence) */
+    typeAffectation?: 'CREDIT' | 'CONTENTIEUX';
 }
 
 /** Catégorie de gestion dérivée de IND_ESTADO (règle DSIG du 07/10/2026). */
@@ -64,6 +66,8 @@ export interface CreditAffecte {
     categorie: CategorieCredit;
     categorieLibelle: string; // « En cours », « Contentieux », « Apuré »
     affectable: boolean; // seuls les crédits en cours peuvent être confiés à un agent
+    /** Dossier au contentieux : confiable à un agent portant la fonction contentieux */
+    affectableContentieux: boolean;
 }
 
 export interface AgentPortefeuille {
@@ -90,6 +94,8 @@ export interface IndicateursAffectation {
     encoursApure: number;
     nbContentieux: number;
     encoursContentieux: number;
+    nbContentieuxAffectes: number;
+    nbContentieuxNonAffectes: number;
 }
 
 export interface PortefeuilleAffectation {
@@ -100,6 +106,8 @@ export interface PortefeuilleAffectation {
     role: string;
     indicateurs: IndicateursAffectation;
     agents: AgentPortefeuille[];
+    /** Agents de l'agence portant la fonction contentieux, avec leur charge */
+    agentsContentieux: AgentPortefeuille[];
     credits: CreditAffecte[];
 }
 
@@ -132,6 +140,7 @@ export interface AffectationRequest {
     numCreditos: number[];
     agentUserId: number;
     motif?: string;
+    typeAffectation?: 'CREDIT' | 'CONTENTIEUX';
 }
 
 export interface DesaffectationRequest {

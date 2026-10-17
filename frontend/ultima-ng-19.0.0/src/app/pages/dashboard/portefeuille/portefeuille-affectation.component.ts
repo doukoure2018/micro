@@ -204,15 +204,18 @@ type Filtre = 'enCours' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent' |
                 <span>
                     <b>{{ ind.nbContentieux }}</b> au contentieux
                     <span class="text-gray-500">— {{ ind.encoursContentieux | number: '1.0-0' }} GNF</span>
+                    <span class="text-gray-500" *ngIf="ind.nbContentieux">
+                        · {{ ind.nbContentieuxAffectes }} confié(s) au recouvrement, {{ ind.nbContentieuxNonAffectes }} sans responsable
+                    </span>
                 </span>
-                <span class="text-xs text-gray-500">sortis du cycle de remboursement, non affectables</span>
+                <span class="text-xs text-gray-500">sortis du cycle de remboursement : le contentieux se confie aux agents de recouvrement, filtre « Contentieux »</span>
             </div>
 
             <!-- Barre d'action sur la selection (DA) -->
             <div class="flex flex-wrap gap-2 items-center mb-3 p-3 border rounded bg-surface-50" *ngIf="data()?.peutAffecter">
                 <span class="font-semibold">{{ selection.length }} crédit(s) sélectionné(s)</span>
                 <span class="text-sm text-gray-500" *ngIf="selection.length">— {{ encoursSelection() | number: '1.0-0' }} GNF</span>
-                <button pButton icon="pi pi-user-plus" label="Affecter la sélection" class="ml-auto" [disabled]="!selectionAffectable().length || !agentsDisponibles().length" (click)="ouvrirAffectation(selection)"></button>
+                <button pButton icon="pi pi-user-plus" [label]="modeContentieux() ? 'Affecter au contentieux' : 'Affecter la sélection'" class="ml-auto" [disabled]="!selectionAffectable().length || !agentsCibles().length" (click)="ouvrirAffectation(selection)"></button>
                 <button pButton icon="pi pi-user-minus" label="Désaffecter" class="p-button-outlined p-button-warning" [disabled]="!selectionAffectee().length" (click)="ouvrirDesaffectation(selectionAffectee())"></button>
                 <button pButton icon="pi pi-times" class="p-button-text" [disabled]="!selection.length" (click)="selection = []" pTooltip="Vider la sélection"></button>
             </div>
@@ -252,7 +255,7 @@ type Filtre = 'enCours' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent' |
                 </ng-template>
                 <ng-template pTemplate="body" let-l>
                     <tr [class.bg-orange-50]="l.aReaffecter" [class.bg-red-50]="l.affectable && !l.affectation && !l.aReaffecter && data()?.peutAffecter" [class.opacity-60]="!l.affectable">
-                        <td *ngIf="data()?.peutAffecter"><p-tableCheckbox [value]="l" [disabled]="!l.affectable" [pTooltip]="l.affectable ? '' : 'Crédit ' + l.categorieLibelle.toLowerCase() + ' : hors cycle de remboursement, non affectable'"></p-tableCheckbox></td>
+                        <td *ngIf="data()?.peutAffecter"><p-tableCheckbox [value]="l" [disabled]="!selectionnable(l)" [pTooltip]="selectionnable(l) ? '' : 'Crédit ' + l.categorieLibelle.toLowerCase() + ' : hors cycle de remboursement, non affectable'"></p-tableCheckbox></td>
                         <td class="font-mono text-sm">{{ l.credit.numCredito }}</td>
                         <td>
                             <div class="font-semibold">{{ l.credit.nomCliente }}</div>
@@ -291,7 +294,7 @@ type Filtre = 'enCours' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent' |
                             }
                         </td>
                         <td class="whitespace-nowrap">
-                            <button *ngIf="data()?.peutAffecter && l.affectable" pButton icon="pi pi-user-plus" class="p-button-text p-button-sm" pTooltip="Affecter ce crédit" (click)="ouvrirAffectation([l])"></button>
+                            <button *ngIf="data()?.peutAffecter && selectionnable(l)" pButton icon="pi pi-user-plus" class="p-button-text p-button-sm" [pTooltip]="modeContentieux() ? 'Confier ce dossier au recouvrement' : 'Affecter ce crédit'" (click)="ouvrirAffectation([l])"></button>
                             <button *ngIf="data()?.peutAffecter && l.affectation" pButton icon="pi pi-user-minus" class="p-button-text p-button-sm p-button-warning" pTooltip="Désaffecter" (click)="ouvrirDesaffectation([l])"></button>
                             <button pButton icon="pi pi-calendar" class="p-button-text p-button-sm" pTooltip="Plan de remboursement" (click)="voirEcheancier(l.credit)"></button>
                             <button pButton icon="pi pi-history" class="p-button-text p-button-sm" pTooltip="Historique des responsables" (click)="ouvrirHistorique(l)"></button>
@@ -367,14 +370,18 @@ type Filtre = 'enCours' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent' |
             <ng-template pTemplate="footer"><button pButton label="Fermer" class="p-button-text" (click)="fermerEcheancier()"></button></ng-template>
         </p-dialog>
 
-        <p-dialog header="Affecter à un agent" [visible]="showAffectation()" (visibleChange)="!$event && showAffectation.set(false)" [modal]="true" [style]="{ width: '520px' }">
+        <p-dialog [header]="modeContentieux() ? 'Confier au recouvrement contentieux' : 'Affecter à un agent'" [visible]="showAffectation()" (visibleChange)="!$event && showAffectation.set(false)" [modal]="true" [style]="{ width: '520px' }">
             <p class="mb-3">
-                <strong>{{ cibles.length }}</strong> crédit(s), <strong>{{ encoursCibles() | number: '1.0-0' }}</strong> GNF d'encours, point de service <strong>{{ agence?.desAgencia }}</strong>.
+                <strong>{{ cibles.length }}</strong> {{ modeContentieux() ? 'dossier(s) au contentieux' : 'crédit(s)' }}, <strong>{{ encoursCibles() | number: '1.0-0' }}</strong> GNF d'encours, point de service <strong>{{ agence?.desAgencia }}</strong>.
             </p>
             <div class="mb-3">
-                <label class="block text-sm font-semibold mb-1">Agent de crédit du point de service</label>
-                <p-select [options]="agentsDisponibles()" [(ngModel)]="agentChoisi" optionLabel="nom" optionValue="userId" placeholder="Choisir un agent" styleClass="w-full" appendTo="body"></p-select>
-                <small class="text-gray-500" *ngIf="!agentsDisponibles().length">Aucun agent de crédit actif n'est rattaché à ce point de service.</small>
+                <label class="block text-sm font-semibold mb-1">{{ modeContentieux() ? "Agent de recouvrement de l'agence" : 'Agent de crédit du point de service' }}</label>
+                <p-select [options]="agentsCibles()" [(ngModel)]="agentChoisi" optionLabel="nom" optionValue="userId" placeholder="Choisir un agent" styleClass="w-full" appendTo="body"></p-select>
+                <small class="text-gray-500" *ngIf="!agentsCibles().length">
+                    {{ modeContentieux()
+                        ? "Aucun agent de votre agence ne porte la fonction contentieux : activez-la dans « Gestion des agents »."
+                        : "Aucun agent de crédit actif n'est rattaché à ce point de service." }}
+                </small>
             </div>
             <div class="mb-2">
                 <label class="block text-sm font-semibold mb-1">Motif (facultatif)</label>
@@ -531,6 +538,17 @@ export class PortefeuilleAffectationComponent implements OnInit {
     });
 
     agentsDisponibles = computed(() => (this.data()?.agents || []).filter((a) => a.disponible));
+    /** Agents de recouvrement de l'agence, proposés pour les dossiers au contentieux (V165). */
+    agentsContentieux = computed(() => (this.data()?.agentsContentieux || []).filter((a) => a.disponible));
+    /** Le filtre « Contentieux » bascule l'écran en mode recouvrement. */
+    modeContentieux = computed(() => this.filtre() === 'contentieux');
+    /** Les agents proposés dans le dialogue, selon le mode. */
+    agentsCibles = computed(() => (this.modeContentieux() ? this.agentsContentieux() : this.agentsDisponibles()));
+
+    /** Une ligne est sélectionnable selon le mode : crédit en cours, ou dossier au contentieux. */
+    selectionnable(l: CreditAffecte): boolean {
+        return this.modeContentieux() ? l.affectableContentieux : l.affectable;
+    }
 
     /** Lignes affichées : filtre, agent, recherche ; à réaffecter puis non affectés en tête. */
     lignes = computed<CreditAffecte[]>(() => {
@@ -771,7 +789,7 @@ export class PortefeuilleAffectationComponent implements OnInit {
 
     /** Les crédits sélectionnés qui peuvent effectivement être confiés à un agent. */
     selectionAffectable(): CreditAffecte[] {
-        return this.selection.filter((l) => l.affectable);
+        return this.selection.filter((l) => this.selectionnable(l));
     }
 
     encoursSelection(): number {
@@ -785,13 +803,15 @@ export class PortefeuilleAffectationComponent implements OnInit {
     ouvrirAffectation(lignes: CreditAffecte[]): void {
         // La case a cocher est deja desactivee sur les credits hors cycle, mais la case d'en-tete
         // selectionne tout le filtre courant : on filtre donc ici aussi, avant d'ouvrir.
-        const affectables = lignes.filter((l) => l.affectable);
+        const affectables = lignes.filter((l) => this.selectionnable(l));
         const ecartes = lignes.length - affectables.length;
         if (!affectables.length) {
             this.messageService.add({
                 severity: 'warn',
-                summary: 'Aucun crédit affectable',
-                detail: "Les crédits apurés ou au contentieux sont sortis du cycle de remboursement et ne peuvent pas être confiés à un agent."
+                summary: this.modeContentieux() ? 'Aucun dossier au contentieux' : 'Aucun crédit affectable',
+                detail: this.modeContentieux()
+                    ? "Seuls les dossiers passés au contentieux dans SAF se confient au recouvrement."
+                    : "Les crédits apurés ou au contentieux sont sortis du cycle de remboursement et ne peuvent pas être confiés à un agent de crédit."
             });
             return;
         }
@@ -799,7 +819,9 @@ export class PortefeuilleAffectationComponent implements OnInit {
             this.messageService.add({
                 severity: 'info',
                 summary: ecartes + ' crédit(s) écarté(s)',
-                detail: 'Apurés ou au contentieux : ils ne sont la charge de personne.'
+                detail: this.modeContentieux()
+                    ? "Ils ne sont pas au contentieux dans SAF."
+                    : 'Apurés ou au contentieux : ils ne sont la charge d\'aucun agent de crédit.'
             });
         }
         this.cibles = affectables;
@@ -816,7 +838,8 @@ export class PortefeuilleAffectationComponent implements OnInit {
                 codAgencia: this.agence.codAgencia,
                 numCreditos: this.cibles.map((l) => l.credit.numCredito),
                 agentUserId: this.agentChoisi,
-                motif: this.motif.trim() || undefined
+                motif: this.motif.trim() || undefined,
+                typeAffectation: this.modeContentieux() ? 'CONTENTIEUX' : 'CREDIT'
             })
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({

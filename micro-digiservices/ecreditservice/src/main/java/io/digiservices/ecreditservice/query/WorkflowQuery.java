@@ -1044,6 +1044,7 @@ public class WorkflowQuery {
                    pv.libele AS "pointventeLibele",
                    COALESCE(BOOL_OR(af.fonction = 'ACCUEIL' AND af.actif), FALSE) AS "fonctionAccueil",
                    COALESCE(BOOL_OR(af.fonction = 'CREDIT' AND af.actif), FALSE) AS "fonctionCredit",
+                   COALESCE(BOOL_OR(af.fonction = 'CONTENTIEUX' AND af.actif), FALSE) AS "fonctionContentieux",
                    (COALESCE(u.enabled, TRUE) AND COALESCE(u.account_non_locked, TRUE)) AS "compteActif"
             FROM users u
             JOIN user_roles ur ON ur.user_id = u.user_id

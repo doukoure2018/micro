@@ -457,7 +457,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     @Override
     @Transactional
     public void setAgentFonction(Long userId, String fonction, boolean actif, Long affectePar, Long agenceIdDA) {
-        if (!"ACCUEIL".equals(fonction) && !"CREDIT".equals(fonction)) {
+        if (!"ACCUEIL".equals(fonction) && !"CREDIT".equals(fonction) && !"CONTENTIEUX".equals(fonction)) {
             throw new ApiException("Fonction invalide : " + fonction);
         }
         Long agenceAgent = workflowRepository.getAgenceOfUser(userId);

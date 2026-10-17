@@ -23,6 +23,11 @@ public final class PortefeuilleAffectationDtos {
     private PortefeuilleAffectationDtos() {
     }
 
+    /** Credit en cours confie a un agent de credit du point de service. */
+    public static final String TYPE_CREDIT = "CREDIT";
+    /** Dossier au contentieux confie a un agent de recouvrement de l'agence (V165). */
+    public static final String TYPE_CONTENTIEUX = "CONTENTIEUX";
+
     /** Une ligne de portefeuille_affectation, enrichie des noms. */
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
     public static class AffectationDto {
@@ -43,6 +48,8 @@ public final class PortefeuilleAffectationDtos {
         private String motif;
         private String motifFin;
         private boolean actif;
+        /** CREDIT ou CONTENTIEUX : de quoi l'agent repond sur ce credit (V165). */
+        private String typeAffectation;
     }
 
     /** Un credit SAF et son affectation digi courante (null si non affecte). */
@@ -55,6 +62,8 @@ public final class PortefeuilleAffectationDtos {
         private CategorieCredit categorie;   // EN_COURS, CONTENTIEUX ou APURE (derivee d'IND_ESTADO)
         private String categorieLibelle;     // « En cours », « Contentieux », « Apuré »
         private boolean affectable;          // seuls les credits en cours peuvent etre confies
+        /** Dossier au contentieux : confiable a un agent portant la fonction CONTENTIEUX (V165). */
+        private boolean affectableContentieux;
     }
 
     /** Agent de credit du point de service, avec sa charge. */
@@ -86,8 +95,10 @@ public final class PortefeuilleAffectationDtos {
         private long nbAReaffecter;
         private long nbApures;               // hors charge d'agent
         private BigDecimal encoursApure;
-        private long nbContentieux;          // hors charge d'agent
+        private long nbContentieux;          // hors charge d'agent de credit
         private BigDecimal encoursContentieux;
+        private long nbContentieuxAffectes;  // confies a un agent de recouvrement (V165)
+        private long nbContentieuxNonAffectes;
     }
 
     /** Reponse complete pour un point de service. */
@@ -100,6 +111,8 @@ public final class PortefeuilleAffectationDtos {
         private String role;
         private IndicateursDto indicateurs;
         private List<AgentDto> agents;
+        /** Agents de l'agence portant la fonction CONTENTIEUX, avec leur charge (V165). */
+        private List<AgentDto> agentsContentieux;
         private List<CreditAffecteDto> credits;
     }
 
@@ -134,6 +147,8 @@ public final class PortefeuilleAffectationDtos {
         @NotEmpty private List<Long> numCreditos;
         @NotNull private Long agentUserId;
         private String motif;
+        /** CREDIT (defaut) ou CONTENTIEUX : voir {@code TYPE_CREDIT} / {@code TYPE_CONTENTIEUX}. */
+        private String typeAffectation;
     }
 
     @Data @NoArgsConstructor @AllArgsConstructor

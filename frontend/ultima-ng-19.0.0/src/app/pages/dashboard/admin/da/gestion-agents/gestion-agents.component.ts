@@ -14,7 +14,7 @@ import { TooltipModule } from 'primeng/tooltip';
 
 /**
  * DA — Gestion des agents de l'agence : activation/désactivation des fonctions
- * ACCUEIL et CREDIT pour chaque AGENT_CREDIT / AGENT_ACCUEIL.
+ * ACCUEIL, CREDIT et CONTENTIEUX pour chaque AGENT_CREDIT / AGENT_ACCUEIL.
  * Un AGENT_CREDIT avec la fonction ACCUEIL active cumule saisie ET analyse
  * (points de service mono-agent) : il reste éligible aux affectations du DA.
  */
@@ -44,6 +44,7 @@ import { TooltipModule } from 'primeng/tooltip';
                         <th>Point de vente</th>
                         <th class="text-center">Fonction Accueil</th>
                         <th class="text-center">Fonction Crédit</th>
+                        <th class="text-center">Fonction Contentieux</th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-a>
@@ -66,17 +67,21 @@ import { TooltipModule } from 'primeng/tooltip';
                         <td class="text-center">
                             <p-inputSwitch [ngModel]="estCredit(a)" [disabled]="a.role === 'AGENT_CREDIT'" (onChange)="toggle(a, 'CREDIT', $event.checked)" pTooltip="Analyse des demandes"></p-inputSwitch>
                         </td>
+                        <td class="text-center">
+                            <p-inputSwitch [ngModel]="!!a.fonctionContentieux" (onChange)="toggle(a, 'CONTENTIEUX', $event.checked)" pTooltip="Recouvrement des dossiers passés au contentieux : l'agent peut recevoir ces dossiers depuis l'écran « Affectation du portefeuille »"></p-inputSwitch>
+                        </td>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
                     <tr>
-                        <td colspan="5" class="text-center py-6 text-gray-500">Aucun agent dans votre agence.</td>
+                        <td colspan="6" class="text-center py-6 text-gray-500">Aucun agent dans votre agence.</td>
                     </tr>
                 </ng-template>
             </p-table>
 
             <p class="text-xs text-gray-400 mt-3">
                 Le rôle de connexion (posé à la création du compte) inclut d'office sa fonction de base : elle n'est pas désactivable ici. Seule la fonction complémentaire se gère (ex. Accueil pour un agent de crédit).
+                La fonction <strong>Contentieux</strong> ne vient d'aucun rôle : activez-la pour les agents chargés du recouvrement, ils apparaîtront alors dans la liste des agents à qui confier un dossier au contentieux.
             </p>
         </div>
     `
@@ -115,7 +120,8 @@ export class GestionAgentsComponent implements OnInit {
         return a.role === 'AGENT_CREDIT' || !!a.fonctionCredit;
     }
 
-    toggle(a: any, fonction: 'ACCUEIL' | 'CREDIT', actif: boolean): void {
+    toggle(a: any, fonction: 'ACCUEIL' | 'CREDIT' | 'CONTENTIEUX', actif: boolean): void {
+        const libelle = fonction === 'ACCUEIL' ? 'Accueil' : fonction === 'CREDIT' ? 'Crédit' : 'Contentieux';
         this.userService
             .setAgentFonction$(a.userId, fonction, actif)
             .pipe(takeUntilDestroyed(this.destroyRef))
@@ -124,7 +130,7 @@ export class GestionAgentsComponent implements OnInit {
                     this.messageService.add({
                         severity: 'success',
                         summary: 'Fonction mise à jour',
-                        detail: `${fonction === 'ACCUEIL' ? 'Accueil' : 'Crédit'} ${actif ? 'activée' : 'désactivée'} pour ${a.firstName} ${a.lastName}`,
+                        detail: `${libelle} ${actif ? 'activée' : 'désactivée'} pour ${a.firstName} ${a.lastName}`,
                         life: 4000
                     });
                     this.load();
