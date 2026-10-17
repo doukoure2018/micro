@@ -6,6 +6,8 @@ import io.digiservices.clients.portefeuille.PortefeuilleCreditDto;
 import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.AffectationDto;
 import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.AffectationRequest;
 import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.AgentDto;
+import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.ContentieuxDto;
+import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.ContentieuxRequest;
 import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.CreditAffecteDto;
 import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.DesaffectationRequest;
 import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.IndicateursDto;
@@ -71,8 +73,16 @@ public class PortefeuilleAffectationService {
         verifierPerimetre(perimetre, codAgencia);
 
         List<PortefeuilleCreditDto> credits = portefeuilleClient.getTousCredits(codAgencia);
-        Map<Long, AffectationDto> actives = repository.findActivesParPointService(codAgencia).stream()
+        // Un credit peut porter deux responsables a la fois : son agent de credit (CREDIT) et,
+        // quand le dossier est au contentieux, un agent de recouvrement (CONTENTIEUX, V165-V166).
+        List<AffectationDto> toutesActives = repository.findActivesParPointService(codAgencia);
+        Map<Long, AffectationDto> actives = toutesActives.stream()
+                .filter(a -> !TYPE_CONTENTIEUX.equals(a.getTypeAffectation()))
                 .collect(Collectors.toMap(AffectationDto::getNumCredito, Function.identity(), (a, b) -> a));
+        Map<Long, AffectationDto> activesContentieux = toutesActives.stream()
+                .filter(a -> TYPE_CONTENTIEUX.equals(a.getTypeAffectation()))
+                .collect(Collectors.toMap(AffectationDto::getNumCredito, Function.identity(), (a, b) -> a));
+        Map<Long, ContentieuxDto> declarations = repository.contentieuxActifs(codAgencia);
 
         // Agents proposables (actifs, rattaches au PS) puis ceux qui portent encore des credits
         // sans etre proposables (desactives ou partis) : ils apparaissent pour etre vides.
@@ -84,25 +94,27 @@ public class PortefeuilleAffectationService {
 
         List<CreditAffecteDto> lignes = new ArrayList<>(credits.size());
         long nbEnCours = 0, nbAffectes = 0, nbAReaffecter = 0, nbApures = 0, nbContentieux = 0,
-                nbContentieuxAffectes = 0;
+                nbContentieuxAffectes = 0, nbContentieuxDeclares = 0;
         BigDecimal encours = BigDecimal.ZERO, encoursNonAffecte = BigDecimal.ZERO,
-                encoursApure = BigDecimal.ZERO, encoursContentieux = BigDecimal.ZERO;
+                encoursApure = BigDecimal.ZERO, encoursContentieux = BigDecimal.ZERO,
+                encoursContentieuxDeclare = BigDecimal.ZERO;
         for (PortefeuilleCreditDto credit : credits) {
             BigDecimal solde = credit.getMonSaldo() == null ? BigDecimal.ZERO : credit.getMonSaldo();
             CategorieCredit categorie = CategorieCredit.depuis(credit.getIndEstado());
             AffectationDto aff = actives.get(credit.getNumCredito());
+            AffectationDto affContentieux = activesContentieux.get(credit.getNumCredito());
+            ContentieuxDto declaration = declarations.get(credit.getNumCredito());
+            // Au contentieux par SAF (statut judiciaire) ou par declaration du DA dans digi.
+            boolean auContentieux = categorie == CategorieCredit.CONTENTIEUX || declaration != null;
 
-            // Un dossier au contentieux confie a un agent de recouvrement garde son responsable :
-            // seule une affectation de credit est fermee d'office quand le credit sort du cycle (V165).
-            boolean suiviContentieux = categorie == CategorieCredit.CONTENTIEUX
-                    && aff != null && TYPE_CONTENTIEUX.equals(aff.getTypeAffectation());
-            if (!categorie.isAffectable() && !suiviContentieux) {
+            if (!categorie.isAffectable()) {
                 // Le credit est sorti du cycle : il n'est la charge de personne. S'il portait
                 // encore une affectation, elle est fermee d'office pour ne pas laisser un agent
                 // responsable d'un dossier que le recouvrement ordinaire ne peut plus faire avancer.
                 if (aff != null) {
                     repository.fermer(codAgencia, credit.getNumCredito(),
-                            perimetre.user().getUserId(), "Credit " + categorie.getLibelle().toLowerCase());
+                            perimetre.user().getUserId(), "Credit " + categorie.getLibelle().toLowerCase(),
+                            TYPE_CREDIT);
                     log.info("[AFFECTATION] PS {} credit {} : affectation fermee, credit {}",
                             codAgencia, credit.getNumCredito(), categorie);
                     aff = null;
@@ -113,20 +125,6 @@ public class PortefeuilleAffectationService {
                 } else {
                     nbContentieux++;
                     encoursContentieux = encoursContentieux.add(solde);
-                }
-            } else if (suiviContentieux) {
-                nbContentieux++;
-                nbContentieuxAffectes++;
-                encoursContentieux = encoursContentieux.add(solde);
-                AffectationDto porteur = aff;
-                AgentDto agent = agentsContentieux.computeIfAbsent(aff.getAgentUserId(), id -> AgentDto.builder()
-                        .userId(id).nom(porteur.getAgentNom()).disponible(false)
-                        .nbCredits(0).encours(BigDecimal.ZERO).nbEnRetard(0).montantRetard(BigDecimal.ZERO).build());
-                agent.setNbCredits(agent.getNbCredits() + 1);
-                agent.setEncours(agent.getEncours().add(solde));
-                if (credit.getDatPremiereImpayee() != null) {
-                    agent.setNbEnRetard(agent.getNbEnRetard() + 1);
-                    agent.setMontantRetard(agent.getMontantRetard().add(montantRetard(credit)));
                 }
             } else {
                 nbEnCours++;
@@ -150,6 +148,27 @@ public class PortefeuilleAffectationService {
                 }
             }
 
+            // Le dossier au contentieux, declare par le DA ou passe au judiciaire par SAF :
+            // il compte dans la charge de recouvrement, sans quitter le portefeuille de son
+            // agent de credit tant que SAF le dit en cours (V166).
+            if (declaration != null && categorie == CategorieCredit.EN_COURS) {
+                nbContentieuxDeclares++;
+                encoursContentieuxDeclare = encoursContentieuxDeclare.add(solde);
+            }
+            if (auContentieux && affContentieux != null) {
+                nbContentieuxAffectes++;
+                AffectationDto porteur = affContentieux;
+                AgentDto agent = agentsContentieux.computeIfAbsent(porteur.getAgentUserId(), id -> AgentDto.builder()
+                        .userId(id).nom(porteur.getAgentNom()).disponible(false)
+                        .nbCredits(0).encours(BigDecimal.ZERO).nbEnRetard(0).montantRetard(BigDecimal.ZERO).build());
+                agent.setNbCredits(agent.getNbCredits() + 1);
+                agent.setEncours(agent.getEncours().add(solde));
+                if (credit.getDatPremiereImpayee() != null) {
+                    agent.setNbEnRetard(agent.getNbEnRetard() + 1);
+                    agent.setMontantRetard(agent.getMontantRetard().add(montantRetard(credit)));
+                }
+            }
+
             String motif = aff == null ? null : motifReaffectation(aff, codAgencia);
             lignes.add(CreditAffecteDto.builder()
                     .credit(credit).affectation(aff)
@@ -157,7 +176,10 @@ public class PortefeuilleAffectationService {
                     .categorie(categorie)
                     .categorieLibelle(categorie.getLibelle())
                     .affectable(categorie.isAffectable())
-                    .affectableContentieux(categorie == CategorieCredit.CONTENTIEUX)
+                    .affectableContentieux(auContentieux)
+                    .declarableContentieux(!auContentieux && categorie != CategorieCredit.APURE)
+                    .contentieux(declaration)
+                    .affectationContentieux(affContentieux)
                     .build());
         }
 
@@ -175,7 +197,9 @@ public class PortefeuilleAffectationService {
                         .nbApures(nbApures).encoursApure(encoursApure)
                         .nbContentieux(nbContentieux).encoursContentieux(encoursContentieux)
                         .nbContentieuxAffectes(nbContentieuxAffectes)
-                        .nbContentieuxNonAffectes(nbContentieux - nbContentieuxAffectes)
+                        .nbContentieuxNonAffectes(nbContentieux + nbContentieuxDeclares - nbContentieuxAffectes)
+                        .nbContentieuxDeclares(nbContentieuxDeclares)
+                        .encoursContentieuxDeclare(encoursContentieuxDeclare)
                         .build())
                 .agents(new ArrayList<>(agents.values()))
                 .agentsContentieux(new ArrayList<>(agentsContentieux.values()))
@@ -206,11 +230,12 @@ public class PortefeuilleAffectationService {
 
         Map<Long, PortefeuilleCreditDto> creditsSaf = creditsSafParNumero(req.getCodAgencia(), req.getNumCreditos());
         if (contentieux) {
-            verifierContentieux(creditsSaf, req.getNumCreditos());
+            verifierContentieux(req.getCodAgencia(), creditsSaf, req.getNumCreditos());
         } else {
             verifierAffectables(creditsSaf, req.getNumCreditos());
         }
         Map<Long, AffectationDto> actives = repository.findActivesParPointService(req.getCodAgencia()).stream()
+                .filter(a -> type.equals(a.getTypeAffectation() == null ? TYPE_CREDIT : a.getTypeAffectation()))
                 .collect(Collectors.toMap(AffectationDto::getNumCredito, Function.identity(), (a, b) -> a));
 
         Long auteur = perimetre.user().getUserId();
@@ -223,7 +248,7 @@ public class PortefeuilleAffectationService {
                 continue; // deja chez cet agent : rien a faire
             }
             if (courante != null) {
-                repository.fermer(req.getCodAgencia(), numCredito, auteur, "Reaffectation a " + agent.getNom());
+                repository.fermer(req.getCodAgencia(), numCredito, auteur, "Reaffectation a " + agent.getNom(), type);
             }
             repository.ouvrir(req.getCodAgencia(), numCredito, credit.getCodCliente(),
                     agent.getUserId(), auteur, motif, type);
@@ -234,6 +259,80 @@ public class PortefeuilleAffectationService {
         return n;
     }
 
+    /**
+     * Passe des credits au contentieux dans digi : suivi de recouvrement interne, SAF n'est
+     * pas touche. Le credit reste dans le portefeuille de son agent de credit et dans son
+     * score tant que SAF le dit en cours — la perte reste la sienne. Un agent de
+     * recouvrement peut etre designe dans la foulee, ou plus tard.
+     */
+    @Transactional
+    public int declarerContentieux(String uuid, ContentieuxRequest req) {
+        Perimetre perimetre = perimetreSafService.perimetreDe(uuid);
+        verifierPeutAffecter(perimetre, req.getCodAgencia());
+        Long auteur = perimetre.user().getUserId();
+        String motif = nettoyer(req.getMotif());
+
+        Map<Long, PortefeuilleCreditDto> creditsSaf = creditsSafParNumero(req.getCodAgencia(), req.getNumCreditos());
+        List<Long> apures = new ArrayList<>();
+        for (Long num : new LinkedHashSet<>(req.getNumCreditos())) {
+            PortefeuilleCreditDto credit = creditsSaf.get(num);
+            if (credit != null && CategorieCredit.depuis(credit.getIndEstado()) == CategorieCredit.APURE) {
+                apures.add(num);
+            }
+        }
+        if (!apures.isEmpty()) {
+            throw new ApiException("Un credit apure est sorti du cycle : il ne se passe pas au contentieux ("
+                    + apures.stream().map(String::valueOf).collect(Collectors.joining(", ")) + ")");
+        }
+
+        Map<Long, ContentieuxDto> deja = repository.contentieuxActifs(req.getCodAgencia());
+        int n = 0;
+        List<Long> declares = new ArrayList<>();
+        for (Long num : new LinkedHashSet<>(req.getNumCreditos())) {
+            if (deja.containsKey(num)) {
+                continue;               // deja au contentieux : rien a faire
+            }
+            PortefeuilleCreditDto credit = creditsSaf.get(num);
+            repository.declarerContentieux(req.getCodAgencia(), num,
+                    credit == null ? null : credit.getCodCliente(), auteur, motif);
+            declares.add(num);
+            n++;
+        }
+        log.info("[CONTENTIEUX] {} credit(s) du PS {} passes au contentieux par user {}",
+                n, req.getCodAgencia(), auteur);
+
+        // Designation facultative de l'agent de recouvrement, dans le meme geste.
+        if (req.getAgentUserId() != null && !req.getNumCreditos().isEmpty()) {
+            AffectationRequest versRecouvrement = new AffectationRequest();
+            versRecouvrement.setCodAgencia(req.getCodAgencia());
+            versRecouvrement.setNumCreditos(new ArrayList<>(new LinkedHashSet<>(req.getNumCreditos())));
+            versRecouvrement.setAgentUserId(req.getAgentUserId());
+            versRecouvrement.setMotif(motif);
+            versRecouvrement.setTypeAffectation(TYPE_CONTENTIEUX);
+            affecter(uuid, versRecouvrement);
+        }
+        return n;
+    }
+
+    /** Leve le contentieux declare dans digi et retire le dossier a l'agent de recouvrement. */
+    @Transactional
+    public int leverContentieux(String uuid, ContentieuxRequest req) {
+        Perimetre perimetre = perimetreSafService.perimetreDe(uuid);
+        verifierPeutAffecter(perimetre, req.getCodAgencia());
+        Long auteur = perimetre.user().getUserId();
+        String motif = nettoyer(req.getMotif());
+        int n = 0;
+        for (Long numCredito : new LinkedHashSet<>(req.getNumCreditos())) {
+            n += repository.leverContentieux(req.getCodAgencia(), numCredito, auteur,
+                    motif == null ? "Levee du contentieux" : motif);
+            repository.fermer(req.getCodAgencia(), numCredito, auteur,
+                    motif == null ? "Levee du contentieux" : motif, TYPE_CONTENTIEUX);
+        }
+        log.info("[CONTENTIEUX] {} credit(s) du PS {} sortis du contentieux par user {}",
+                n, req.getCodAgencia(), auteur);
+        return n;
+    }
+
     /** Retire les credits a leur agent sans les confier a un autre ; renvoie le nombre ferme. */
     @Transactional
     public int desaffecter(String uuid, DesaffectationRequest req) {
@@ -241,10 +340,12 @@ public class PortefeuilleAffectationService {
         verifierPeutAffecter(perimetre, req.getCodAgencia());
         Long auteur = perimetre.user().getUserId();
         String motif = nettoyer(req.getMotif());
+        String typeDesaffectation = TYPE_CONTENTIEUX.equalsIgnoreCase(nettoyer(req.getTypeAffectation()))
+                ? TYPE_CONTENTIEUX : TYPE_CREDIT;
         int n = 0;
         for (Long numCredito : new LinkedHashSet<>(req.getNumCreditos())) {
             n += repository.fermer(req.getCodAgencia(), numCredito, auteur,
-                    motif == null ? "Desaffectation" : motif);
+                    motif == null ? "Desaffectation" : motif, typeDesaffectation);
         }
         log.info("[AFFECTATION] {} credit(s) du PS {} desaffecte(s) par user {}", n, req.getCodAgencia(), auteur);
         return n;
@@ -409,19 +510,26 @@ public class PortefeuilleAffectationService {
      * Refuse l'affectation d'un credit sorti du cycle. Pose ici, cote serveur, pour qu'un appel
      * direct ne contourne pas ce que l'ecran interdit deja (regle DSIG du 2026-10-07).
      */
-    /** Au contentieux, on ne confie que des dossiers que SAF a bien passes au judiciaire. */
-    private static void verifierContentieux(Map<Long, PortefeuilleCreditDto> creditsSaf, List<Long> demandes) {
+    /**
+     * Au recouvrement, on ne confie que des dossiers au contentieux : passes au judiciaire
+     * par SAF, ou declares par le DA dans digi (V166).
+     */
+    private void verifierContentieux(String codAgencia, Map<Long, PortefeuilleCreditDto> creditsSaf,
+                                     List<Long> demandes) {
+        Map<Long, ContentieuxDto> declares = repository.contentieuxActifs(codAgencia);
         List<Long> refuses = new ArrayList<>();
         for (Long num : new LinkedHashSet<>(demandes)) {
             PortefeuilleCreditDto credit = creditsSaf.get(num);
-            if (credit != null && CategorieCredit.depuis(credit.getIndEstado()) != CategorieCredit.CONTENTIEUX) {
+            boolean contentieuxSaf = credit != null
+                    && CategorieCredit.depuis(credit.getIndEstado()) == CategorieCredit.CONTENTIEUX;
+            if (!contentieuxSaf && !declares.containsKey(num)) {
                 refuses.add(num);
             }
         }
         if (!refuses.isEmpty()) {
-            throw new ApiException("Ces credits ne sont pas au contentieux dans SAF et ne peuvent pas etre "
-                    + "confies au recouvrement : "
-                    + refuses.stream().map(String::valueOf).collect(Collectors.joining(", ")));
+            throw new ApiException("Ces credits ne sont pas au contentieux : passez-les d'abord au "
+                    + "contentieux avant de les confier au recouvrement ("
+                    + refuses.stream().map(String::valueOf).collect(Collectors.joining(", ")) + ")");
         }
     }
 

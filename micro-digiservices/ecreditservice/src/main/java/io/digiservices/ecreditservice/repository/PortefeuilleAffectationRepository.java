@@ -2,6 +2,7 @@ package io.digiservices.ecreditservice.repository;
 
 import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.AffectationDto;
 import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.AgentDto;
+import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.ContentieuxDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.RowMapper;
@@ -87,6 +88,31 @@ public class PortefeuilleAffectationRepository {
             UPDATE portefeuille_affectation
             SET actif = FALSE, date_fin = CURRENT_TIMESTAMP, fin_par_user_id = :userId, motif_fin = :motifFin
             WHERE actif AND cod_agencia = :codAgencia AND num_credito = :numCredito
+              AND type_affectation = :typeAffectation
+            """;
+
+    // ===================== Contentieux declare par le DA (V166) =====================
+    // digi n'ecrit jamais dans SAF : ces lignes sont un suivi de recouvrement interne.
+
+    private static final String CONTENTIEUX_ACTIFS = """
+            SELECT c.id, c.cod_agencia, c.num_credito, c.cod_cliente, c.declare_par_user_id,
+                   TRIM(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')) AS declare_par_nom,
+                   c.date_declaration, c.motif
+            FROM portefeuille_contentieux c
+            JOIN users u ON u.user_id = c.declare_par_user_id
+            WHERE c.actif AND c.cod_agencia = :codAgencia
+            """;
+
+    private static final String DECLARER_CONTENTIEUX = """
+            INSERT INTO portefeuille_contentieux
+                (cod_agencia, num_credito, cod_cliente, declare_par_user_id, motif)
+            VALUES (:codAgencia, :numCredito, :codCliente, :userId, :motif)
+            """;
+
+    private static final String LEVER_CONTENTIEUX = """
+            UPDATE portefeuille_contentieux
+            SET actif = FALSE, date_fin = CURRENT_TIMESTAMP, fin_par_user_id = :userId, motif_fin = :motifFin
+            WHERE actif AND cod_agencia = :codAgencia AND num_credito = :numCredito
             """;
 
     private static final String OUVRIR = """
@@ -105,7 +131,7 @@ public class PortefeuilleAffectationRepository {
             FROM portefeuille_affectation a
             JOIN users u ON u.user_id = a.agent_user_id
             LEFT JOIN pointvente pv ON pv.id = u.pointvente_id
-            WHERE a.actif AND a.cod_agencia IN (:codes)
+            WHERE a.actif AND a.type_affectation = 'CREDIT' AND a.cod_agencia IN (:codes)
             GROUP BY a.cod_agencia
             """;
 
@@ -209,11 +235,46 @@ public class PortefeuilleAffectationRepository {
                 .list();
     }
 
-    /** Ferme l'affectation active d'un credit ; renvoie 1 si une ligne etait ouverte. */
-    public int fermer(String codAgencia, Long numCredito, Long userId, String motifFin) {
+    /** Declarations de contentieux actives du point de service, par numero de credit. */
+    public Map<Long, ContentieuxDto> contentieuxActifs(String codAgencia) {
+        Map<Long, ContentieuxDto> m = new HashMap<>();
+        jdbcClient.sql(CONTENTIEUX_ACTIFS).param("codAgencia", codAgencia)
+                .query((rs, n) -> ContentieuxDto.builder()
+                        .id(rs.getLong("id"))
+                        .codAgencia(rs.getString("cod_agencia"))
+                        .numCredito(rs.getLong("num_credito"))
+                        .codCliente(rs.getString("cod_cliente"))
+                        .declareParUserId(rs.getLong("declare_par_user_id"))
+                        .declareParNom(rs.getString("declare_par_nom"))
+                        .dateDeclaration(rs.getObject("date_declaration", OffsetDateTime.class))
+                        .motif(rs.getString("motif"))
+                        .build())
+                .list().forEach(c -> m.put(c.getNumCredito(), c));
+        return m;
+    }
+
+    /** Passe un credit au contentieux cote digi ; sans effet s'il y est deja. */
+    public int declarerContentieux(String codAgencia, Long numCredito, String codCliente, Long userId, String motif) {
+        return jdbcClient.sql(DECLARER_CONTENTIEUX)
+                .param("codAgencia", codAgencia).param("numCredito", numCredito)
+                .param("codCliente", codCliente).param("userId", userId).param("motif", motif)
+                .update();
+    }
+
+    /** Leve le contentieux declare ; renvoie 1 si une declaration etait ouverte. */
+    public int leverContentieux(String codAgencia, Long numCredito, Long userId, String motifFin) {
+        return jdbcClient.sql(LEVER_CONTENTIEUX)
+                .param("codAgencia", codAgencia).param("numCredito", numCredito)
+                .param("userId", userId).param("motifFin", motifFin)
+                .update();
+    }
+
+    /** Ferme l'affectation active d'un credit, du type donne ; renvoie 1 si une ligne etait ouverte. */
+    public int fermer(String codAgencia, Long numCredito, Long userId, String motifFin, String typeAffectation) {
         return jdbcClient.sql(FERMER)
                 .param("codAgencia", codAgencia).param("numCredito", numCredito)
                 .param("userId", userId).param("motifFin", motifFin)
+                .param("typeAffectation", typeAffectation)
                 .update();
     }
 

@@ -68,6 +68,24 @@ export interface CreditAffecte {
     affectable: boolean; // seuls les crédits en cours peuvent être confiés à un agent
     /** Dossier au contentieux : confiable à un agent portant la fonction contentieux */
     affectableContentieux: boolean;
+    /** Le DA peut encore le passer au contentieux (ni déjà contentieux, ni apuré) */
+    declarableContentieux: boolean;
+    /** Passage au contentieux déclaré dans digi, null sinon */
+    contentieux?: ContentieuxDeclare | null;
+    /** Agent de recouvrement qui en répond, null sinon */
+    affectationContentieux?: Affectation | null;
+}
+
+/** Passage au contentieux déclaré par le DA dans digi (V166) : SAF n'est pas modifié. */
+export interface ContentieuxDeclare {
+    id: number;
+    codAgencia: string;
+    numCredito: number;
+    codCliente?: string;
+    declareParUserId: number;
+    declareParNom?: string;
+    dateDeclaration: string;
+    motif?: string;
 }
 
 export interface AgentPortefeuille {
@@ -96,6 +114,8 @@ export interface IndicateursAffectation {
     encoursContentieux: number;
     nbContentieuxAffectes: number;
     nbContentieuxNonAffectes: number;
+    nbContentieuxDeclares: number;
+    encoursContentieuxDeclare: number;
 }
 
 export interface PortefeuilleAffectation {
@@ -147,4 +167,5 @@ export interface DesaffectationRequest {
     codAgencia: string;
     numCreditos: number[];
     motif?: string;
+    typeAffectation?: 'CREDIT' | 'CONTENTIEUX';
 }

@@ -52,6 +52,19 @@ public final class PortefeuilleAffectationDtos {
         private String typeAffectation;
     }
 
+    /** Passage au contentieux declare par le DA dans digi (V166), sans effet sur SAF. */
+    @Data @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class ContentieuxDto {
+        private Long id;
+        private String codAgencia;
+        private Long numCredito;
+        private String codCliente;
+        private Long declareParUserId;
+        private String declareParNom;
+        private OffsetDateTime dateDeclaration;
+        private String motif;
+    }
+
     /** Un credit SAF et son affectation digi courante (null si non affecte). */
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
     public static class CreditAffecteDto {
@@ -64,6 +77,12 @@ public final class PortefeuilleAffectationDtos {
         private boolean affectable;          // seuls les credits en cours peuvent etre confies
         /** Dossier au contentieux : confiable a un agent portant la fonction CONTENTIEUX (V165). */
         private boolean affectableContentieux;
+        /** Le DA peut encore le passer au contentieux : ni deja contentieux, ni apure (V166). */
+        private boolean declarableContentieux;
+        /** Passage au contentieux declare dans digi, null sinon (V166). */
+        private ContentieuxDto contentieux;
+        /** Agent de recouvrement qui en repond, null sinon (affectation de type CONTENTIEUX). */
+        private AffectationDto affectationContentieux;
     }
 
     /** Agent de credit du point de service, avec sa charge. */
@@ -99,6 +118,8 @@ public final class PortefeuilleAffectationDtos {
         private BigDecimal encoursContentieux;
         private long nbContentieuxAffectes;  // confies a un agent de recouvrement (V165)
         private long nbContentieuxNonAffectes;
+        private long nbContentieuxDeclares;  // passes au contentieux par le DA dans digi (V166)
+        private BigDecimal encoursContentieuxDeclare;
     }
 
     /** Reponse complete pour un point de service. */
@@ -151,10 +172,22 @@ public final class PortefeuilleAffectationDtos {
         private String typeAffectation;
     }
 
+    /** Passage au contentieux (ou levee) d'une liste de credits, par le DA (V166). */
+    @Data @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class ContentieuxRequest {
+        @NotBlank private String codAgencia;
+        @NotEmpty private List<Long> numCreditos;
+        private String motif;
+        /** Agent de recouvrement, facultatif : le DA peut declarer sans designer personne. */
+        private Long agentUserId;
+    }
+
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class DesaffectationRequest {
         @NotBlank private String codAgencia;
         @NotEmpty private List<Long> numCreditos;
         private String motif;
+        /** CREDIT (defaut) ou CONTENTIEUX : de quel responsable on retire le dossier. */
+        private String typeAffectation;
     }
 }
