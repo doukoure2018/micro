@@ -16,3 +16,7 @@ keys/*.key
 # Dumps de base de donnees (donnees reelles, ne jamais committer)
 *.dump
 docs/drh/access-porte
+# Identifiants VPN SIC / BCRG transmis par mail — jamais dans le depot
+docs/vpn/access config
+docs/vpn/*.dmg
+docs/vpn/*.exe
