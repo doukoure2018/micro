@@ -1,6 +1,7 @@
 package io.digiservices.ecreditservice.resource;
 
 import io.digiservices.ecreditservice.domain.Response;
+import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos;
 import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.AffectationRequest;
 import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.DesaffectationRequest;
 import io.digiservices.ecreditservice.service.PortefeuilleAffectationService;
@@ -70,6 +71,27 @@ public class PortefeuilleAffectationResource {
     }
 
     /** Synthese du perimetre : une ligne par point de service (SAF + affectations digi). */
+    /** Passe des credits au contentieux dans digi (DA) ; SAF n'est pas modifie. */
+    @PostMapping("/contentieux")
+    public ResponseEntity<Response> passerAuContentieux(@NotNull Authentication authentication,
+                                                       @Valid @RequestBody PortefeuilleAffectationDtos.ContentieuxRequest body,
+                                                       HttpServletRequest request) {
+        int n = service.declarerContentieux(authentication.getName(), body);
+        return ResponseEntity.ok(getResponse(request, Map.of("nbDeclares", n),
+                n == 0 ? "Ces credits etaient deja au contentieux"
+                       : n + " credit(s) passe(s) au contentieux", OK));
+    }
+
+    /** Leve le contentieux declare et retire le dossier a l'agent de recouvrement (DA). */
+    @PostMapping("/contentieux/lever")
+    public ResponseEntity<Response> leverContentieux(@NotNull Authentication authentication,
+                                                     @Valid @RequestBody PortefeuilleAffectationDtos.ContentieuxRequest body,
+                                                     HttpServletRequest request) {
+        int n = service.leverContentieux(authentication.getName(), body);
+        return ResponseEntity.ok(getResponse(request, Map.of("nbLeves", n),
+                n + " credit(s) sorti(s) du contentieux", OK));
+    }
+
     @GetMapping("/synthese")
     public ResponseEntity<Response> synthese(@NotNull Authentication authentication, HttpServletRequest request) {
         return ResponseEntity.ok(getResponse(request,

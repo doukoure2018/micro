@@ -204,7 +204,11 @@ type Filtre = 'enCours' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent' |
                 <span>
                     <b>{{ ind.nbContentieux }}</b> au contentieux
                     <span class="text-gray-500">— {{ ind.encoursContentieux | number: '1.0-0' }} GNF</span>
-                    <span class="text-gray-500" *ngIf="ind.nbContentieux">
+                    <span class="text-gray-500" *ngIf="ind.nbContentieuxDeclares">
+                        + {{ ind.nbContentieuxDeclares }} passé(s) au contentieux par l'agence
+                        <span class="text-gray-400">({{ ind.encoursContentieuxDeclare | number: '1.0-0' }} GNF)</span>
+                    </span>
+                    <span class="text-gray-500" *ngIf="ind.nbContentieux || ind.nbContentieuxDeclares">
                         · {{ ind.nbContentieuxAffectes }} confié(s) au recouvrement, {{ ind.nbContentieuxNonAffectes }} sans responsable
                     </span>
                 </span>
@@ -217,6 +221,7 @@ type Filtre = 'enCours' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent' |
                 <span class="text-sm text-gray-500" *ngIf="selection.length">— {{ encoursSelection() | number: '1.0-0' }} GNF</span>
                 <button pButton icon="pi pi-user-plus" [label]="modeContentieux() ? 'Affecter au contentieux' : 'Affecter la sélection'" class="ml-auto" [disabled]="!selectionAffectable().length || !agentsCibles().length" (click)="ouvrirAffectation(selection)"></button>
                 <button pButton icon="pi pi-user-minus" label="Désaffecter" class="p-button-outlined p-button-warning" [disabled]="!selectionAffectee().length" (click)="ouvrirDesaffectation(selectionAffectee())"></button>
+                <button pButton icon="pi pi-gavel" label="Passer au contentieux" class="p-button-outlined p-button-danger" [disabled]="!selectionDeclarable().length" (click)="ouvrirContentieux(selection)" pTooltip="Suivi de recouvrement interne : le statut du crédit dans SAF n'est pas modifié"></button>
                 <button pButton icon="pi pi-times" class="p-button-text" [disabled]="!selection.length" (click)="selection = []" pTooltip="Vider la sélection"></button>
             </div>
 
@@ -292,10 +297,21 @@ type Filtre = 'enCours' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent' |
                             } @else {
                                 <span class="text-gray-400">—</span>
                             }
+                            @if (l.contentieux) {
+                                <p-tag severity="danger" value="contentieux" class="mt-1"
+                                    [pTooltip]="'Passé au contentieux le ' + (l.contentieux.dateDeclaration | date: 'dd/MM/yyyy') + ' par ' + (l.contentieux.declareParNom || '') + (l.contentieux.motif ? ' — ' + l.contentieux.motif : '')"></p-tag>
+                            }
+                            @if (l.affectationContentieux) {
+                                <div class="text-xs text-red-700 mt-1">
+                                    <i class="pi pi-gavel mr-1"></i>Recouvrement : {{ l.affectationContentieux.agentNom }}
+                                </div>
+                            }
                         </td>
                         <td class="whitespace-nowrap">
                             <button *ngIf="data()?.peutAffecter && selectionnable(l)" pButton icon="pi pi-user-plus" class="p-button-text p-button-sm" [pTooltip]="modeContentieux() ? 'Confier ce dossier au recouvrement' : 'Affecter ce crédit'" (click)="ouvrirAffectation([l])"></button>
                             <button *ngIf="data()?.peutAffecter && l.affectation" pButton icon="pi pi-user-minus" class="p-button-text p-button-sm p-button-warning" pTooltip="Désaffecter" (click)="ouvrirDesaffectation([l])"></button>
+                            <button *ngIf="data()?.peutAffecter && l.declarableContentieux" pButton icon="pi pi-gavel" class="p-button-text p-button-sm p-button-danger" pTooltip="Passer ce crédit au contentieux" (click)="ouvrirContentieux([l])"></button>
+                            <button *ngIf="data()?.peutAffecter && l.contentieux" pButton icon="pi pi-undo" class="p-button-text p-button-sm" pTooltip="Lever le contentieux" (click)="leverContentieux([l])"></button>
                             <button pButton icon="pi pi-calendar" class="p-button-text p-button-sm" pTooltip="Plan de remboursement" (click)="voirEcheancier(l.credit)"></button>
                             <button pButton icon="pi pi-history" class="p-button-text p-button-sm" pTooltip="Historique des responsables" (click)="ouvrirHistorique(l)"></button>
                         </td>
@@ -393,6 +409,31 @@ type Filtre = 'enCours' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent' |
             </ng-template>
         </p-dialog>
 
+        <!-- Passage au contentieux (DA) : suivi de recouvrement interne, SAF inchange -->
+        <p-dialog header="Passer au contentieux" [visible]="showContentieux()" (visibleChange)="!$event && showContentieux.set(false)" [modal]="true" [style]="{ width: '540px' }">
+            <p class="mb-3">
+                <strong>{{ cibles.length }}</strong> crédit(s), <strong>{{ encoursCibles() | number: '1.0-0' }}</strong> GNF d'encours, point de service <strong>{{ agence?.desAgencia }}</strong>.
+            </p>
+            <div class="mb-3 text-sm bg-surface-50 border rounded p-3">
+                <i class="pi pi-info-circle mr-2"></i>
+                Le dossier est suivi au recouvrement dans digi. <b>Le statut du crédit dans SAF ne change pas</b>, et le crédit
+                reste dans le portefeuille de son agent de crédit : la perte reste la sienne.
+            </div>
+            <div class="mb-3">
+                <label class="block text-sm font-semibold mb-1">Agent de recouvrement (facultatif)</label>
+                <p-select [options]="agentsContentieux()" [(ngModel)]="agentRecouvrement" optionLabel="nom" optionValue="userId" placeholder="Désigner plus tard" [showClear]="true" styleClass="w-full" appendTo="body"></p-select>
+                <small class="text-gray-500" *ngIf="!agentsContentieux().length">Aucun agent de votre agence ne porte la fonction contentieux : activez-la dans « Gestion des agents ».</small>
+            </div>
+            <div class="mb-2">
+                <label class="block text-sm font-semibold mb-1">Motif (facultatif)</label>
+                <textarea pTextarea [(ngModel)]="motif" rows="2" class="w-full" placeholder="Ex. : trois échéances impayées, client injoignable"></textarea>
+            </div>
+            <ng-template pTemplate="footer">
+                <button pButton label="Annuler" class="p-button-text" (click)="showContentieux.set(false)"></button>
+                <button pButton label="Confirmer" icon="pi pi-gavel" class="p-button-danger" [loading]="envoi()" (click)="confirmerContentieux()"></button>
+            </ng-template>
+        </p-dialog>
+
         <!-- Dialogue de desaffectation -->
         <p-dialog header="Désaffecter" [visible]="showDesaffectation()" (visibleChange)="!$event && showDesaffectation.set(false)" [modal]="true" [style]="{ width: '480px' }">
             <p class="mb-3">Retirer <strong>{{ cibles.length }}</strong> crédit(s) à leur agent. Ils redeviendront « non affectés » ; l'historique conserve qui les a portés.</p>
@@ -455,6 +496,8 @@ export class PortefeuilleAffectationComponent implements OnInit {
     motif = '';
     envoi = signal(false);
     showAffectation = signal(false);
+    showContentieux = signal(false);
+    agentRecouvrement: number | null = null;
     showDesaffectation = signal(false);
 
     // Vue synthese (perimetre a plusieurs points de service : DA, DR, DE, DG)
@@ -574,7 +617,7 @@ export class PortefeuilleAffectationComponent implements OnInit {
                     case 'apures':
                         return l.categorie === 'APURE';
                     case 'contentieux':
-                        return l.categorie === 'CONTENTIEUX';
+                        return l.categorie === 'CONTENTIEUX' || !!l.contentieux;
                     default:
                         return l.affectable;
                 }
@@ -792,6 +835,72 @@ export class PortefeuilleAffectationComponent implements OnInit {
         return this.selection.filter((l) => this.selectionnable(l));
     }
 
+    /** Crédits de la sélection que le DA peut encore passer au contentieux. */
+    selectionDeclarable(): CreditAffecte[] {
+        return this.selection.filter((l) => l.declarableContentieux);
+    }
+
+    ouvrirContentieux(lignes: CreditAffecte[]): void {
+        const declarables = lignes.filter((l) => l.declarableContentieux);
+        if (!declarables.length) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Rien à passer au contentieux',
+                detail: "Ces crédits y sont déjà, ou sont apurés : un crédit apuré est sorti du cycle."
+            });
+            return;
+        }
+        this.cibles = declarables;
+        this.agentRecouvrement = null;
+        this.motif = '';
+        this.showContentieux.set(true);
+    }
+
+    confirmerContentieux(): void {
+        if (!this.agence || !this.cibles.length) return;
+        this.envoi.set(true);
+        this.userService
+            .passerAuContentieux$({
+                codAgencia: this.agence.codAgencia,
+                numCreditos: this.cibles.map((l) => l.credit.numCredito),
+                motif: this.motif.trim() || undefined,
+                agentUserId: this.agentRecouvrement ?? undefined
+            })
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => {
+                    this.envoi.set(false);
+                    this.showContentieux.set(false);
+                    this.selection = [];
+                    this.messageService.add({ severity: 'success', summary: 'Contentieux', detail: r.message });
+                    this.charger();
+                },
+                error: (err) => {
+                    this.envoi.set(false);
+                    this.erreur('Passage au contentieux refusé', err);
+                }
+            });
+    }
+
+    leverContentieux(lignes: CreditAffecte[]): void {
+        if (!this.agence) return;
+        const cibles = lignes.filter((l) => !!l.contentieux);
+        if (!cibles.length) return;
+        this.userService
+            .leverContentieux$({
+                codAgencia: this.agence.codAgencia,
+                numCreditos: cibles.map((l) => l.credit.numCredito)
+            })
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => {
+                    this.messageService.add({ severity: 'success', summary: 'Contentieux levé', detail: r.message });
+                    this.charger();
+                },
+                error: (err) => this.erreur('Levée refusée', err)
+            });
+    }
+
     encoursSelection(): number {
         return this.selection.reduce((s, l) => s + (l.credit.monSaldo || 0), 0);
     }
@@ -869,7 +978,8 @@ export class PortefeuilleAffectationComponent implements OnInit {
             .desaffecterCredits$({
                 codAgencia: this.agence.codAgencia,
                 numCreditos: this.cibles.map((l) => l.credit.numCredito),
-                motif: this.motif.trim() || undefined
+                motif: this.motif.trim() || undefined,
+                typeAffectation: this.modeContentieux() ? 'CONTENTIEUX' : 'CREDIT'
             })
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
