@@ -2,6 +2,9 @@ import { CreditAffecte, PortefeuilleAffectation, Affectation, SynthesePointServi
 import { HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { IResponse } from '@/interface/response';
+import { CapacitesSignalement, MOTIFS_SIGNALEMENT, MotifSignalementTelephone, SignalementTelephone, libelleMotifSignalement, libelleStatutSignalement, severiteStatutSignalement } from '@/interface/signalement-telephone';
+import { SignalementTelephoneService } from '@/service/signalement-telephone.service';
+import { Router } from '@angular/router';
 import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
@@ -163,8 +166,76 @@ type Filtre = 'enCours' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent' |
                     appendTo="body"
                 ></p-select>
                 <input pInputText type="text" [ngModel]="recherche()" (ngModelChange)="recherche.set($event)" placeholder="Client, code, n° crédit…" class="w-64" />
+                <button
+                    pButton
+                    icon="pi pi-flag"
+                    [label]="nbSignalementsOuverts() ? 'Signalements (' + nbSignalementsOuverts() + ')' : 'Signalements'"
+                    class="p-button-outlined"
+                    [class.p-button-warning]="nbSignalementsOuverts() > 0"
+                    pTooltip="Numéros signalés au point de service et leur suivi"
+                    (click)="ouvrirListeSignalements()"
+                ></button>
                 <button pButton icon="pi pi-file-excel" label="Exporter Excel" class="p-button-success p-button-outlined ml-auto" pTooltip="Tous les crédits du point de service, au format DR / Agence / PS / crédit… + gestionnaire désigné" [loading]="exportEnCours()" [disabled]="!agence || !data()" (click)="exporterPointService()"></button>
             </div>
+
+        <!-- Dialog : signaler un numéro (DA, DR, DE) — même circuit que l'état TT1 (V156) -->
+        <p-dialog header="Signaler le numéro de téléphone" [visible]="showSignalement()" (visibleChange)="!$event && fermerSignalement()" [modal]="true" [style]="{ width: '560px' }">
+            <div *ngIf="ligneSignalee as e">
+                <p class="m-0 mb-3 text-sm">
+                    <strong>{{ e.nomCliente }}</strong> ({{ e.codCliente }})<span *ngIf="e.numCredito"> — crédit {{ e.numCredito }}</span><span *ngIf="e.desAgencia || e.pointVente"> — {{ e.desAgencia || e.pointVente }}</span>
+                </p>
+                <div class="border rounded p-2 mb-3 text-sm" style="font-variant-numeric: tabular-nums">
+                    <div class="text-xs text-gray-500 uppercase mb-1">Numéros constatés dans SAF</div>
+                    <div [class.text-gray-400]="!e.telPrincipal">Principal : {{ e.telPrincipal || '—' }}</div>
+                    <div [class.text-gray-400]="!e.telSecundario">Secondaire : {{ e.telSecundario || '—' }}</div>
+                    <div [class.text-gray-400]="!e.telOtro">Autre : {{ e.telOtro || '—' }}</div>
+                </div>
+                <label class="block text-sm font-medium mb-1">Motif <span class="text-red-500">*</span></label>
+                <p-select [options]="motifsSignalement" [(ngModel)]="motifSignalement" optionLabel="label" optionValue="value" styleClass="w-full mb-3" appendTo="body" placeholder="Choisir un motif"></p-select>
+                <label class="block text-sm font-medium mb-1">Commentaire</label>
+                <textarea pTextarea [(ngModel)]="commentaireSignalement" rows="3" class="w-full" maxlength="2000" placeholder="Ce que le client ou l'agent vous a indiqué"></textarea>
+                <p class="text-xs text-gray-500 mt-2">
+                    Le point de service reçoit une notification et un courriel. C'est l'agent de crédit qui saisira le nouveau numéro et suivra le circuit habituel de validation par le directeur d'agence.
+                </p>
+            </div>
+            <ng-template pTemplate="footer">
+                <button pButton label="Annuler" class="p-button-text" (click)="fermerSignalement()"></button>
+                <button pButton label="Envoyer le signalement" icon="pi pi-send" [loading]="envoiSignalement()" [disabled]="!motifSignalement" (click)="envoyerSignalement()"></button>
+            </ng-template>
+        </p-dialog>
+
+        <!-- Dialog : suivi des signalements du périmètre -->
+        <p-dialog header="Signalements de numéros" [visible]="showListeSignalements()" (visibleChange)="!$event && showListeSignalements.set(false)" [modal]="true" [style]="{ width: '900px' }">
+            <p-table [value]="listeSignalements()" [loading]="loadingSignalements()" responsiveLayout="scroll">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Signalé le</th>
+                        <th>Client</th>
+                        <th>Point de service</th>
+                        <th>Motif</th>
+                        <th>Statut</th>
+                        <th>Suivi</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-sig>
+                    <tr>
+                        <td class="whitespace-nowrap">{{ sig.signaleAt | date: 'dd/MM/yyyy HH:mm' }}<div class="text-xs text-gray-500">{{ sig.signalePar }} ({{ sig.signaleParRole }})</div></td>
+                        <td><span class="font-medium">{{ sig.nomClient || sig.codCliente }}</span><div class="text-xs text-gray-500">{{ sig.codCliente }}<span *ngIf="sig.numCredito"> · crédit {{ sig.numCredito }}</span></div></td>
+                        <td>{{ sig.pointVente || sig.codAgencia }}</td>
+                        <td>{{ libelleMotifSig(sig.motif) }}<div class="text-xs text-gray-500" *ngIf="sig.commentaire">{{ sig.commentaire }}</div></td>
+                        <td><p-tag [value]="libelleStatutSig(sig.statut)" [severity]="severiteStatutSig(sig.statut)"></p-tag></td>
+                        <td class="text-sm">
+                            <div *ngIf="sig.prisPar">Pris par {{ sig.prisPar }} le {{ sig.prisAt | date: 'dd/MM/yyyy' }}</div>
+                            <div *ngIf="sig.demandeId">Demande {{ sig.demandeId }} — {{ sig.demandeStatut }}</div>
+                            <div *ngIf="sig.motifClassement" class="text-gray-500">Classé : {{ sig.motifClassement }}</div>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr><td colspan="6" class="text-center text-gray-500 py-6">Aucun signalement sur votre périmètre.</td></tr>
+                </ng-template>
+            </p-table>
+        </p-dialog>
 
             <!-- Indicateurs -->
             <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4" *ngIf="data()?.indicateurs as ind">
@@ -244,6 +315,7 @@ type Filtre = 'enCours' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent' |
                         <th style="width: 3rem" *ngIf="data()?.peutAffecter"><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
                         <th>N° crédit</th>
                         <th>Client</th>
+                        <th>Téléphones</th>
                         <th>Type</th>
                         <th>État</th>
                         <th>Octroi</th>
@@ -265,6 +337,23 @@ type Filtre = 'enCours' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent' |
                         <td>
                             <div class="font-semibold">{{ l.credit.nomCliente }}</div>
                             <div class="text-xs text-gray-500">{{ l.credit.codCliente }}</div>
+                        </td>
+                        <td class="whitespace-nowrap text-sm" style="font-variant-numeric: tabular-nums">
+                            <div [class.text-gray-400]="!l.credit.telPrincipal">
+                                {{ l.credit.telPrincipal || '—' }}
+                                <i class="pi pi-exclamation-triangle text-orange-500 text-xs ml-1" *ngIf="formatDouteux(l.credit.telPrincipal)" title="Ce numéro n'a pas 9 chiffres"></i>
+                            </div>
+                            <div [class.text-gray-400]="!l.credit.telSecundario">{{ l.credit.telSecundario || '—' }}</div>
+                            <div [class.text-gray-400]="!l.credit.telOtro">{{ l.credit.telOtro || '—' }}</div>
+                            <div class="mt-1" *ngIf="signalementDe(l.credit.codCliente) as sig">
+                                <p-tag [value]="libelleStatutSig(sig.statut)" [severity]="severiteStatutSig(sig.statut)" styleClass="text-xs"></p-tag>
+                            </div>
+                            <a class="text-xs text-primary cursor-pointer hover:underline" *ngIf="!signalementDe(l.credit.codCliente) && capacites().estAgent" (click)="modifierNumero(l.credit)">
+                                <i class="pi pi-pencil text-xs mr-1"></i>Modifier le numéro
+                            </a>
+                            <a class="text-xs text-orange-600 cursor-pointer hover:underline" *ngIf="!signalementDe(l.credit.codCliente) && capacites().peutSignaler" (click)="ouvrirSignalement(l.credit)">
+                                <i class="pi pi-flag text-xs mr-1"></i>Signaler le numéro
+                            </a>
                         </td>
                         <td class="text-sm">{{ l.credit.desTipCredito || l.credit.tipCredito }}</td>
                         <td>
@@ -319,7 +408,7 @@ type Filtre = 'enCours' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent' |
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
                     <tr>
-                        <td [attr.colspan]="data()?.peutAffecter ? 15 : 14" class="text-center text-gray-500 py-6">
+                        <td [attr.colspan]="data()?.peutAffecter ? 16 : 15" class="text-center text-gray-500 py-6">
                             {{ agence ? 'Aucun crédit pour ce filtre.' : 'Choisissez un point de service.' }}
                         </td>
                     </tr>
@@ -480,6 +569,23 @@ export class PortefeuilleAffectationComponent implements OnInit {
     private userService = inject(UserService);
     private messageService = inject(MessageService);
     private destroyRef = inject(DestroyRef);
+    private signalementService = inject(SignalementTelephoneService);
+    private router = inject(Router);
+
+    // ── Téléphones clients et signalement : même circuit que l'état TT1 (V156) ──
+    capacites = signal<CapacitesSignalement>({ peutSignaler: false, estAgent: false, niveau: 'PS', ouverts: {} });
+    motifsSignalement = MOTIFS_SIGNALEMENT;
+    motifSignalement: MotifSignalementTelephone | null = null;
+    commentaireSignalement = '';
+    ligneSignalee: any | null = null;
+    showSignalement = signal(false);
+    envoiSignalement = signal(false);
+    showListeSignalements = signal(false);
+    listeSignalements = signal<SignalementTelephone[]>([]);
+    loadingSignalements = signal(false);
+    libelleMotifSig = libelleMotifSignalement;
+    libelleStatutSig = libelleStatutSignalement;
+    severiteStatutSig = severiteStatutSignalement;
 
     agences = signal<AgenceSaf[]>([]);
     agence: AgenceSaf | null = null;
@@ -635,6 +741,7 @@ export class PortefeuilleAffectationComponent implements OnInit {
     });
 
     ngOnInit(): void {
+        this.chargerCapacites();
         this.userService
             .getPortefeuilleAgences$()
             .pipe(takeUntilDestroyed(this.destroyRef))
@@ -651,6 +758,104 @@ export class PortefeuilleAffectationComponent implements OnInit {
                     }
                 },
                 error: (err) => this.erreur('Points de service indisponibles', err)
+            });
+    }
+
+    // ── Téléphones clients et signalement (identique à l'état TT1) ──
+
+    nbSignalementsOuverts(): number {
+        return Object.keys(this.capacites().ouverts || {}).length;
+    }
+
+    /** Signalement ouvert pour ce client, s'il y en a un (étiquette sur la ligne). */
+    signalementDe(codCliente: string): SignalementTelephone | null {
+        return this.capacites().ouverts?.[codCliente] || null;
+    }
+
+    /** Un numéro guinéen a neuf chiffres : au-delà ou en deçà, on le signale à l'œil. */
+    formatDouteux(numero?: string | null): boolean {
+        if (!numero) return false;
+        return numero.replace(/\D/g, '').length !== 9;
+    }
+
+    private chargerCapacites(): void {
+        this.signalementService
+            .capacitesEtOuverts()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => {
+                    const d: any = r.data || {};
+                    this.capacites.set({
+                        peutSignaler: !!d.peutSignaler,
+                        estAgent: !!d.estAgent,
+                        niveau: d.niveau || 'PS',
+                        ouverts: d.ouverts || {}
+                    });
+                },
+                error: () => {}
+            });
+    }
+
+    /** Agent de crédit : le formulaire de changement de numéro s'ouvre pré-rempli. */
+    modifierNumero(ligne: any): void {
+        this.router.navigate(['/dashboards/changement-telephone/agent'], { queryParams: { codCliente: ligne.codCliente } });
+    }
+
+    ouvrirSignalement(ligne: any): void {
+        this.ligneSignalee = ligne;
+        this.motifSignalement = ligne.telPrincipal ? null : 'ABSENT';
+        this.commentaireSignalement = '';
+        this.showSignalement.set(true);
+    }
+
+    fermerSignalement(): void {
+        this.showSignalement.set(false);
+        this.ligneSignalee = null;
+    }
+
+    envoyerSignalement(): void {
+        const e = this.ligneSignalee;
+        if (!e || !this.motifSignalement) return;
+        this.envoiSignalement.set(true);
+        this.signalementService
+            .signaler({
+                codCliente: e.codCliente,
+                nomClient: e.nomCliente,
+                numCredito: e.numCredito,
+                codAgencia: e.codAgencia,
+                motif: this.motifSignalement,
+                commentaire: this.commentaireSignalement.trim() || undefined
+            })
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.envoiSignalement.set(false);
+                    this.fermerSignalement();
+                    this.messageService.add({ severity: 'success', summary: 'Signalement transmis', detail: 'Le point de service a été notifié', life: 5000 });
+                    this.chargerCapacites();
+                },
+                error: (err) => {
+                    this.envoiSignalement.set(false);
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || "Le signalement n'a pas pu être enregistré", life: 6000 });
+                }
+            });
+    }
+
+    ouvrirListeSignalements(): void {
+        this.showListeSignalements.set(true);
+        this.loadingSignalements.set(true);
+        this.signalementService
+            .listPerimetre()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => {
+                    this.listeSignalements.set((r.data as any)?.signalements || []);
+                    this.loadingSignalements.set(false);
+                },
+                error: (err) => {
+                    this.loadingSignalements.set(false);
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || 'Liste indisponible', life: 6000 });
+                }
             });
     }
 

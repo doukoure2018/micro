@@ -42,7 +42,8 @@ public final class PortefeuilleAffectationExcelUtils {
     private static final DateTimeFormatter FMT_HORODATAGE = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     private static final String[] ENTETES_CREDITS = {
-            "DR", "Agence", "Point de service", "N° crédit", "Client", "Code client", "Type", "État",
+            "DR", "Agence", "Point de service", "N° crédit", "Client", "Code client",
+            "Tél. principal", "Tél. secondaire", "Tél. autre", "Type", "État",
             "Date octroi", "Montant octroyé", "Encours", "Retard (jours)", "Date du retard", "Montant en retard",
             "Usager de mise en place", "Gestionnaire SAF", "Usager du gestionnaire", "Statut du gestionnaire",
             "Gestionnaire désigné", "Affecté le", "Affecté par", "À réaffecter"
@@ -96,7 +97,7 @@ public final class PortefeuilleAffectationExcelUtils {
                 ligneCredit(f.createRow(i++), l, h, montant);
             }
             f.createFreezePane(0, 1);
-            int[] largeurs = {18, 22, 24, 12, 30, 14, 20, 12, 16, 16, 12, 20, 22, 30, 12, 26, 12, 24, 30};
+            int[] largeurs = {18, 22, 24, 12, 30, 14, 14, 14, 14, 20, 12, 16, 16, 12, 20, 22, 30, 12, 26, 12, 24, 30};
             for (int c = 0; c < largeurs.length; c++) f.setColumnWidth(c, largeurs[c] * 256);
 
             wb.write(out);
@@ -160,6 +161,9 @@ public final class PortefeuilleAffectationExcelUtils {
         row.createCell(i++).setCellValue(c.getNumCredito() == null ? 0 : c.getNumCredito());
         row.createCell(i++).setCellValue(nvl(c.getNomCliente()));
         row.createCell(i++).setCellValue(nvl(c.getCodCliente()));
+        row.createCell(i++).setCellValue(nvl(c.getTelPrincipal()));
+        row.createCell(i++).setCellValue(nvl(c.getTelSecundario()));
+        row.createCell(i++).setCellValue(nvl(c.getTelOtro()));
         row.createCell(i++).setCellValue(c.getDesTipCredito() != null ? c.getDesTipCredito() : String.valueOf(c.getTipCredito()));
         row.createCell(i++).setCellValue(nvl(l.getCategorieLibelle()));
         row.createCell(i++).setCellValue(date(c.getFecApertura()));

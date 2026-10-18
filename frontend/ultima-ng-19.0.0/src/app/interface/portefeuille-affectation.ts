@@ -163,7 +163,11 @@ export interface ContentieuxLigne {
     numCredito: number;
     codCliente: string;
     nomCliente?: string;
+    /** Premier numéro renseigné, conservé pour compatibilité ; préférer les trois numéros SAF. */
     telephone?: string;
+    telPrincipal?: string;
+    telSecundario?: string;
+    telOtro?: string;
     typeCredit?: string;
     encours: number;
     joursRetard?: number;
