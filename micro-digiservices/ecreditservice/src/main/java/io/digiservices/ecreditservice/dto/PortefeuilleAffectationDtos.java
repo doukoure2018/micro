@@ -146,7 +146,11 @@ public final class PortefeuilleAffectationDtos {
         private Long numCredito;
         private String codCliente;
         private String nomCliente;
+        /** Premier numero renseigne, conserve pour compatibilite ; les trois numeros SAF suivent. */
         private String telephone;
+        private String telPrincipal;
+        private String telSecundario;
+        private String telOtro;
         private String typeCredit;
         private BigDecimal encours;
         private Long joursRetard;
