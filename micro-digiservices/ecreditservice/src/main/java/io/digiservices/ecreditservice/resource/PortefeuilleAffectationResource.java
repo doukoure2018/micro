@@ -71,6 +71,16 @@ public class PortefeuilleAffectationResource {
     }
 
     /** Synthese du perimetre : une ligne par point de service (SAF + affectations digi). */
+    /** Les dossiers au contentieux du perimetre (DA) : SAF judiciaire + declares par l'agence. */
+    @GetMapping("/contentieux")
+    public ResponseEntity<Response> contentieux(@NotNull Authentication authentication,
+                                                @RequestParam(name = "codAgencia", required = false) String codAgencia,
+                                                HttpServletRequest request) {
+        return ResponseEntity.ok(getResponse(request,
+                Map.of("contentieux", service.contentieux(authentication.getName(), codAgencia)),
+                "Dossiers au contentieux", OK));
+    }
+
     /** Passe des credits au contentieux dans digi (DA) ; SAF n'est pas modifie. */
     @PostMapping("/contentieux")
     public ResponseEntity<Response> passerAuContentieux(@NotNull Authentication authentication,

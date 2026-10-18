@@ -297,6 +297,7 @@ export interface IResponse {
         synthese?: any[];
         compteur?: any;
         scores?: any;
+        contentieux?: any;
         fiche?: any;
     };
 }

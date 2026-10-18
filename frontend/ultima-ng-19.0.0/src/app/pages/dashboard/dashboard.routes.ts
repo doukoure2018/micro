@@ -97,6 +97,11 @@ export default [
         loadComponent: () => import('./portefeuille/portefeuille-affectation.component').then((c) => c.PortefeuilleAffectationComponent)
     },
     {
+        path: 'portefeuille-contentieux',
+        data: { breadcrumb: 'Dossiers au contentieux' },
+        loadComponent: () => import('./portefeuille/portefeuille-contentieux.component').then((c) => c.PortefeuilleContentieuxComponent)
+    },
+    {
         path: 'portefeuille-scores',
         data: { breadcrumb: 'Appréciation des agents' },
         loadComponent: () => import('./portefeuille/portefeuille-scores.component').then((c) => c.PortefeuilleScoresComponent)

@@ -137,6 +137,38 @@ public final class PortefeuilleAffectationDtos {
         private List<CreditAffecteDto> credits;
     }
 
+    /** Une ligne de la liste des dossiers au contentieux du perimetre (V166). */
+    @Data @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class ContentieuxLigneDto {
+        private String codAgencia;
+        private String pointVente;
+        private String agence;
+        private Long numCredito;
+        private String codCliente;
+        private String nomCliente;
+        private String telephone;
+        private String typeCredit;
+        private BigDecimal encours;
+        private Long joursRetard;
+        private BigDecimal montantRetard;
+        /** SAF (passe au judiciaire par la banque) ou AGENCE (declare par le DA dans digi). */
+        private String origine;
+        private java.time.OffsetDateTime dateDeclaration;
+        private String declareParNom;
+        private String motif;
+        private Long agentRecouvrementId;
+        private String agentRecouvrementNom;
+        private String agentCreditNom;      // l'agent de credit qui porte encore le dossier
+    }
+
+    /** La liste du contentieux d'un perimetre, avec les agents a qui confier les dossiers. */
+    @Data @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class ContentieuxListeDto {
+        private List<ContentieuxLigneDto> lignes;
+        private List<AgentDto> agents;      // agents de recouvrement de l'agence
+        private boolean peutAffecter;       // DA de l'agence (ou SUPER_ADMIN)
+    }
+
     /** Une ligne de la synthese par point de service (DA, DR, DE, DG) : SAF + affectations digi. */
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
     public static class SynthesePointServiceDto {

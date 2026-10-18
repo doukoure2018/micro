@@ -7,6 +7,8 @@ import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.Affectatio
 import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.AffectationRequest;
 import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.AgentDto;
 import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.ContentieuxDto;
+import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.ContentieuxLigneDto;
+import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.ContentieuxListeDto;
 import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.ContentieuxRequest;
 import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.CreditAffecteDto;
 import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.DesaffectationRequest;
@@ -84,6 +86,7 @@ public class PortefeuilleAffectationService {
                 .collect(Collectors.toMap(AffectationDto::getNumCredito, Function.identity(), (a, b) -> a));
         Map<Long, ContentieuxDto> declarations = repository.contentieuxActifs(codAgencia);
 
+
         // Agents proposables (actifs, rattaches au PS) puis ceux qui portent encore des credits
         // sans etre proposables (desactives ou partis) : ils apparaissent pour etre vides.
         Map<Long, AgentDto> agents = new LinkedHashMap<>();
@@ -91,6 +94,19 @@ public class PortefeuilleAffectationService {
         // Agents de recouvrement de l'agence : ils portent les dossiers au contentieux (V165).
         Map<Long, AgentDto> agentsContentieux = new LinkedHashMap<>();
         repository.agentsContentieux(codAgencia).forEach(a -> agentsContentieux.put(a.getUserId(), a));
+        // Les dossiers que le DA a deja confies a un agent dans digi, en amont de l'octroi :
+        // quand le credit remonte de SAF sans responsable, cet agent devient le gestionnaire
+        // designe, sans que le DA ait a refaire l'affectation (V166).
+        if (peutAffecter(perimetre)
+                && reprendreGestionnairesDigi(codAgencia, credits, actives, agents, perimetre.user().getUserId()) > 0) {
+            toutesActives = repository.findActivesParPointService(codAgencia);
+            actives = toutesActives.stream()
+                    .filter(a -> !TYPE_CONTENTIEUX.equals(a.getTypeAffectation()))
+                    .collect(Collectors.toMap(AffectationDto::getNumCredito, Function.identity(), (a, b) -> a));
+            activesContentieux = toutesActives.stream()
+                    .filter(a -> TYPE_CONTENTIEUX.equals(a.getTypeAffectation()))
+                    .collect(Collectors.toMap(AffectationDto::getNumCredito, Function.identity(), (a, b) -> a));
+        }
 
         List<CreditAffecteDto> lignes = new ArrayList<>(credits.size());
         long nbEnCours = 0, nbAffectes = 0, nbAReaffecter = 0, nbApures = 0, nbContentieux = 0,
@@ -205,6 +221,46 @@ public class PortefeuilleAffectationService {
                 .agentsContentieux(new ArrayList<>(agentsContentieux.values()))
                 .credits(lignes)
                 .build();
+    }
+
+    /**
+     * Credits en cours encore sans responsable dont le client a un dossier digi confie par le
+     * DA a un agent de ce point de service : l'agent devient le gestionnaire designe. Rien
+     * n'est devine — l'affectation ne se pose que si l'agent est toujours un agent de credit
+     * actif du point de service, et elle est tracee comme les autres.
+     */
+    private int reprendreGestionnairesDigi(String codAgencia, List<PortefeuilleCreditDto> credits,
+                                           Map<Long, AffectationDto> actives, Map<Long, AgentDto> agents,
+                                           Long auteur) {
+        List<PortefeuilleCreditDto> sansResponsable = credits.stream()
+                .filter(c -> CategorieCredit.depuis(c.getIndEstado()).isAffectable())
+                .filter(c -> !actives.containsKey(c.getNumCredito()))
+                .filter(c -> c.getCodCliente() != null && !c.getCodCliente().isBlank())
+                .toList();
+        if (sansResponsable.isEmpty()) {
+            return 0;
+        }
+        Map<String, Long> gestionnaires = repository.gestionnairesDigi(
+                sansResponsable.stream().map(PortefeuilleCreditDto::getCodCliente)
+                        .collect(Collectors.toCollection(LinkedHashSet::new)));
+        if (gestionnaires.isEmpty()) {
+            return 0;
+        }
+        int n = 0;
+        for (PortefeuilleCreditDto credit : sansResponsable) {
+            Long agentUserId = gestionnaires.get(credit.getCodCliente());
+            if (agentUserId == null || !agents.containsKey(agentUserId)) {
+                continue;   // pas de dossier digi, ou agent parti du point de service
+            }
+            repository.ouvrir(codAgencia, credit.getNumCredito(), credit.getCodCliente(),
+                    agentUserId, auteur, "Gestionnaire du dossier digi", TYPE_CREDIT);
+            n++;
+        }
+        if (n > 0) {
+            log.info("[AFFECTATION] PS {} : {} credit(s) repris automatiquement sur le gestionnaire "
+                    + "du dossier digi", codAgencia, n);
+        }
+        return n;
     }
 
     /**
@@ -359,6 +415,97 @@ public class PortefeuilleAffectationService {
     public List<SynthesePointServiceDto> synthese(String uuid) {
         Perimetre perimetre = perimetreSafService.perimetreDe(uuid);
         return syntheseParCodes(perimetre.toutReseau() ? null : perimetre.codes());
+    }
+
+    /** Au-dela, la lecture de SAF point de service par point de service devient trop longue. */
+    private static final int MAX_POINTS_CONTENTIEUX = 25;
+
+    /**
+     * Les dossiers au contentieux du perimetre, point de service par point de service :
+     * ceux que SAF a passes au judiciaire et ceux que l'agence a declares dans digi.
+     */
+    public ContentieuxListeDto contentieux(String uuid, String codAgenciaDemande) {
+        Perimetre perimetre = perimetreSafService.perimetreDe(uuid);
+        List<String> codes;
+        if (codAgenciaDemande != null && !codAgenciaDemande.isBlank()) {
+            verifierPerimetre(perimetre, codAgenciaDemande);
+            codes = List.of(codAgenciaDemande);
+        } else if (perimetre.toutReseau()) {
+            throw new ApiException("Choisissez un point de service : la liste du contentieux se lit "
+                    + "point de service par point de service");
+        } else {
+            codes = List.copyOf(perimetre.codes());
+            if (codes.size() > MAX_POINTS_CONTENTIEUX) {
+                throw new ApiException("Perimetre trop large (" + codes.size() + " points de service) : "
+                        + "choisissez un point de service");
+            }
+        }
+        Map<String, PointVenteHierarchie> hierarchie = new LinkedHashMap<>();
+        perimetreRepository.hierarchie(codes).forEach(h -> hierarchie.putIfAbsent(h.code(), h));
+
+        List<ContentieuxLigneDto> lignes = new ArrayList<>();
+        for (String code : codes) {
+            Map<Long, ContentieuxDto> declarations = repository.contentieuxActifs(code);
+            List<AffectationDto> actives = repository.findActivesParPointService(code);
+            Map<Long, AffectationDto> recouvrement = actives.stream()
+                    .filter(a -> TYPE_CONTENTIEUX.equals(a.getTypeAffectation()))
+                    .collect(Collectors.toMap(AffectationDto::getNumCredito, Function.identity(), (a, b) -> a));
+            Map<Long, AffectationDto> agentsCredit = actives.stream()
+                    .filter(a -> !TYPE_CONTENTIEUX.equals(a.getTypeAffectation()))
+                    .collect(Collectors.toMap(AffectationDto::getNumCredito, Function.identity(), (a, b) -> a));
+            List<PortefeuilleCreditDto> credits;
+            try {
+                credits = portefeuilleClient.getTousCredits(code);
+            } catch (Exception e) {
+                log.warn("[CONTENTIEUX] PS {} non lu : {}", code, e.getMessage());
+                continue;
+            }
+            PointVenteHierarchie h = hierarchie.get(code);
+            for (PortefeuilleCreditDto credit : credits) {
+                ContentieuxDto declaration = declarations.get(credit.getNumCredito());
+                boolean contentieuxSaf = CategorieCredit.depuis(credit.getIndEstado()) == CategorieCredit.CONTENTIEUX;
+                if (declaration == null && !contentieuxSaf) {
+                    continue;
+                }
+                AffectationDto recouvreur = recouvrement.get(credit.getNumCredito());
+                AffectationDto agentCredit = agentsCredit.get(credit.getNumCredito());
+                lignes.add(ContentieuxLigneDto.builder()
+                        .codAgencia(code)
+                        .pointVente(h != null ? h.libelle() : credit.getDesAgencia())
+                        .agence(h != null ? h.agence() : null)
+                        .numCredito(credit.getNumCredito())
+                        .codCliente(credit.getCodCliente())
+                        .nomCliente(credit.getNomCliente())
+                        .telephone(premierNonVide(credit.getTelPrincipal(), credit.getTelSecundario(), credit.getTelOtro()))
+                        .typeCredit(credit.getDesTipCredito())
+                        .encours(nvl(credit.getMonSaldo()))
+                        .joursRetard(credit.getJoursRetard())
+                        .montantRetard(montantRetard(credit))
+                        .origine(contentieuxSaf ? "SAF" : "AGENCE")
+                        .dateDeclaration(declaration == null ? null : declaration.getDateDeclaration())
+                        .declareParNom(declaration == null ? null : declaration.getDeclareParNom())
+                        .motif(declaration == null ? null : declaration.getMotif())
+                        .agentRecouvrementId(recouvreur == null ? null : recouvreur.getAgentUserId())
+                        .agentRecouvrementNom(recouvreur == null ? null : recouvreur.getAgentNom())
+                        .agentCreditNom(agentCredit == null ? null : agentCredit.getAgentNom())
+                        .build());
+            }
+        }
+        lignes.sort(Comparator.comparing((ContentieuxLigneDto l) -> l.getJoursRetard() == null ? 0L : l.getJoursRetard())
+                .reversed().thenComparing(ContentieuxLigneDto::getCodAgencia));
+
+        // Les agents de recouvrement sont ceux de l'agence : un seul appel suffit.
+        List<AgentDto> agents = codes.isEmpty() ? List.of() : repository.agentsContentieux(codes.get(0));
+        return ContentieuxListeDto.builder()
+                .lignes(lignes)
+                .agents(agents)
+                .peutAffecter(codes.stream().allMatch(c -> peutAffecter(perimetre)))
+                .build();
+    }
+
+    private static String premierNonVide(String... valeurs) {
+        for (String v : valeurs) if (v != null && !v.isBlank()) return v.trim();
+        return null;
     }
 
     /** Compteur du perimetre pour le menu du DA : ce qui attend une decision. */
