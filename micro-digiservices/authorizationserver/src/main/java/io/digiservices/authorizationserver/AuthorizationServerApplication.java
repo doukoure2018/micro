@@ -29,6 +29,10 @@ public class AuthorizationServerApplication {
 	// Scope métier portant les claims agent CRG transmis à KUMY/AgriScore (Variante A OIDC)
 	private static final String AGENT_PROFILE_SCOPE = "agent_profile";
 
+	// Scope de l'outil de bureau « Rapprochement des encours » : profil, niveau de perimetre
+	// et codes de points de service SAF (proposition DSIG du 2026-10-18).
+	private static final String RAPPROCHEMENT_SCOPE = "rapprochement";
+
 	@Value("${ui.app.url}")
 	private String redirecturl;
 
@@ -59,6 +63,14 @@ public class AuthorizationServerApplication {
 	private String desktopClientId;
 	@Value("${desktop.oidc.redirect-uri:http://127.0.0.1:8765/callback}")
 	private String desktopRedirectUri;
+
+	// Client desktop "Rapprochement des encours" (comptes clients et credits) — client PUBLIC
+	// distinct du precedent : un client par application, pour pouvoir en couper un sans l'autre
+	// et garder des journaux d'authentification lisibles.
+	@Value("${rapprochement.oidc.client-id:crg-rapprochement-encours}")
+	private String rapprochementClientId;
+	@Value("${rapprochement.oidc.redirect-uri:http://127.0.0.1:8766/callback}")
+	private String rapprochementRedirectUri;
 
 	public static void main(String[] args) {
 		SpringApplication.run(AuthorizationServerApplication.class, args);
@@ -109,7 +121,13 @@ public class AuthorizationServerApplication {
 					kumyTestClientId, kumyTestClientSecret, testRedirectUris);
 
 			// Client desktop public (app Python de rapprochement solde) — PKCE + loopback
-			registerDesktopClient(registeredClientRepository, desktopClientId, desktopRedirectUri);
+			registerDesktopClient(registeredClientRepository, desktopClientId, desktopRedirectUri,
+					AGENT_PROFILE_SCOPE);
+
+			// Client desktop public de l'outil « Rapprochement des encours » — PKCE + loopback,
+			// scope rapprochement (profil, niveau, codes de points de service).
+			registerDesktopClient(registeredClientRepository, rapprochementClientId, rapprochementRedirectUri,
+					RAPPROCHEMENT_SCOPE);
 		};
 	}
 
@@ -130,7 +148,7 @@ public class AuthorizationServerApplication {
 	 * conserve d'anciennes valeurs quel que soit le code.
 	 */
 	private void registerDesktopClient(RegisteredClientRepository repository,
-									   String clientId, String redirectUri){
+									   String clientId, String redirectUri, String businessScope){
 		var existing = repository.findByClientId(clientId);
 		if(existing != null){
 			var ts = existing.getTokenSettings();
@@ -139,7 +157,8 @@ public class AuthorizationServerApplication {
 					&& !ts.isReuseRefreshTokens();
 			boolean redirectOk = existing.getRedirectUris().contains(redirectUri);
 			boolean pkceOk = existing.getClientSettings().isRequireProofKey();
-			if(tokenSettingsOk && redirectOk && pkceOk){
+			boolean scopeOk = existing.getScopes().contains(businessScope);
+			if(tokenSettingsOk && redirectOk && pkceOk && scopeOk){
 				return;
 			}
 		}
@@ -157,7 +176,7 @@ public class AuthorizationServerApplication {
 						scopes.add(OidcScopes.OPENID);
 						scopes.add(OidcScopes.PROFILE);
 						scopes.add(OidcScopes.EMAIL);
-						scopes.add(AGENT_PROFILE_SCOPE);
+						scopes.add(businessScope);
 					})
 					.redirectUri(redirectUri)
 					.clientSettings(ClientSettings.builder()
@@ -171,8 +190,8 @@ public class AuthorizationServerApplication {
 							.build())
 					.build();
 			repository.save(desktopClient);
-			log.info("Desktop OIDC client {}: {} (redirect: {}, access {} / refresh {} / rotation)",
-					existing != null ? "mis à jour" : "enregistré", clientId, redirectUri,
+			log.info("Desktop OIDC client {}: {} (redirect: {}, scope {}, access {} / refresh {} / rotation)",
+					existing != null ? "mis à jour" : "enregistré", clientId, redirectUri, businessScope,
 					DESKTOP_ACCESS_TTL, DESKTOP_REFRESH_TTL);
 		}catch (Exception exception){
 			log.error("Failed to register desktop client {}: {}", clientId, exception.getMessage());

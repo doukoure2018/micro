@@ -1,10 +1,12 @@
 package io.digiservices.userservice.resource;
 
 import io.digiservices.userservice.dto.AgentPerimetreResponse;
+import io.digiservices.userservice.dto.RapprochementProfilResponse;
 import io.digiservices.userservice.dto.AgentStatusResponse;
 import io.digiservices.userservice.exception.ApiException;
 import io.digiservices.userservice.model.User;
 import io.digiservices.userservice.perimetre.AgentPerimetreService;
+import io.digiservices.userservice.perimetre.RapprochementProfilService;
 import io.digiservices.userservice.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +33,7 @@ public class AgentResource {
 
     private final UserService userService;
     private final AgentPerimetreService agentPerimetreService;
+    private final RapprochementProfilService rapprochementProfilService;
 
     @GetMapping("/{agentId}/status")
     public ResponseEntity<AgentStatusResponse> getAgentStatus(@PathVariable("agentId") String agentId) {
@@ -72,6 +75,27 @@ public class AgentResource {
             return ResponseEntity.ok(agentPerimetreService.perimetre(agentId, user));
         } catch (ApiException e) {
             log.warn("Périmètre agent {} introuvable: {}", agentId, e.getMessage());
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * Profil de l'utilisateur dans l'outil « Rapprochement des encours » : profil, niveau de
+     * perimetre et codes de points de service SAF, identiques aux claims du scope
+     * {@code rapprochement}. Sert au support DSIG et au futur service central de calcul.
+     */
+    @GetMapping("/{agentId}/rapprochement")
+    public ResponseEntity<RapprochementProfilResponse> getRapprochementProfil(@PathVariable("agentId") String agentId) {
+        Long userId = parseAgentId(agentId);
+        if (userId == null) {
+            log.warn("agent_id invalide reçu: {}", agentId);
+            return ResponseEntity.badRequest().build();
+        }
+        try {
+            User user = userService.getUserId(userId);
+            return ResponseEntity.ok(rapprochementProfilService.profil(agentId, user));
+        } catch (ApiException e) {
+            log.warn("Profil rapprochement de l'agent {} introuvable: {}", agentId, e.getMessage());
             return ResponseEntity.notFound().build();
         }
     }
