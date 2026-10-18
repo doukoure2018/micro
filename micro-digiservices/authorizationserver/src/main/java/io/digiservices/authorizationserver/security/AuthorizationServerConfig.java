@@ -3,6 +3,7 @@ package io.digiservices.authorizationserver.security;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digiservices.authorizationserver.perimetre.AgentPerimetreService;
+import io.digiservices.authorizationserver.perimetre.RapprochementProfilService;
 import io.digiservices.authorizationserver.model.User;
 import io.digiservices.authorizationserver.repository.UserRepository;
 import jakarta.servlet.ServletException;
@@ -82,6 +83,8 @@ public class AuthorizationServerConfig {
 
     // Scope métier KUMY/AgriScore (SSO fédéré OIDC) et rôles CRG concernés par AgriScore.
     private static final String AGENT_PROFILE_SCOPE = "agent_profile";
+    /** Scope de l'outil de bureau « Rapprochement des encours » (DSIG, 2026-10-18). */
+    private static final String RAPPROCHEMENT_SCOPE = "rapprochement";
 
     private final JwtConfiguration jwtConfiguration;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -98,6 +101,7 @@ public class AuthorizationServerConfig {
 
     private final UserRepository userRepository;
     private final AgentPerimetreService agentPerimetreService;
+    private final RapprochementProfilService rapprochementProfilService;
 
     @Bean
     @Order(1)
@@ -442,7 +446,37 @@ public class AuthorizationServerConfig {
                     && principal.getPrincipal() instanceof User user) {
                 addAgentProfileClaims(context, user);
             }
+
+            // Claims de l'outil de rapprochement des encours — ID Token, scope rapprochement.
+            if (OidcParameterNames.ID_TOKEN.equals(context.getTokenType().getValue())
+                    && context.getAuthorizedScopes().contains(RAPPROCHEMENT_SCOPE)
+                    && principal.getPrincipal() instanceof User user) {
+                addRapprochementClaims(context, user);
+            }
         };
+    }
+
+    /**
+     * Ajoute les claims du scope {@code rapprochement} : profil de l'utilisateur dans l'outil
+     * de rapprochement, niveau de perimetre, codes de points de service SAF et droit de
+     * recalculer l'etat consolide du reseau. N'emet rien si l'utilisateur n'est pas habilite.
+     */
+    private void addRapprochementClaims(JwtEncodingContext context, User user) {
+        try {
+            RapprochementProfilService.Resolution resolution =
+                    rapprochementProfilService.resolve(user.getUserId());
+            if (resolution.horsOutil()) {
+                log.warn("⚠️ Utilisateur {} (role '{}') non habilité au rapprochement — claims non émis",
+                        user.getUserId(), user.getRole());
+                return;
+            }
+            rapprochementProfilService.claims(resolution)
+                    .forEach((name, value) -> context.getClaims().claim(name, value));
+            log.info("✅ Claims rapprochement ajoutés pour {} (profil {}, niveau {})",
+                    user.getUserId(), resolution.profil(), resolution.niveau());
+        } catch (Exception e) {
+            log.error("❌ Erreur ajout des claims rapprochement pour user {}: {}", user.getUserId(), e.getMessage(), e);
+        }
     }
 
     /**
@@ -494,6 +528,20 @@ public class AuthorizationServerConfig {
                     claims.putAll(agentPerimetreService.userInfoClaims(userId, resolution));
                 } catch (Exception e) {
                     log.error("❌ Erreur calcul du périmètre /userinfo pour user {}: {}", userId, e.getMessage(), e);
+                }
+            }
+        }
+
+        // Profil et périmètre de l'outil de rapprochement : la liste des points de service y est
+        // recalculée à chaque appel, pour qu'une mutation dans digi s'applique sans nouveau login.
+        if (authorization.getAuthorizedScopes().contains(RAPPROCHEMENT_SCOPE)) {
+            Long userId = parseUserId(claims.get("sub"));
+            if (userId != null) {
+                try {
+                    claims.putAll(rapprochementProfilService.claims(rapprochementProfilService.resolve(userId)));
+                } catch (Exception e) {
+                    log.error("❌ Erreur calcul du profil rapprochement /userinfo pour user {}: {}",
+                            userId, e.getMessage(), e);
                 }
             }
         }
