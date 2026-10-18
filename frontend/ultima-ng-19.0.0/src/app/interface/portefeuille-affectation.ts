@@ -155,6 +155,35 @@ export interface SynthesePointService {
     encoursContentieux: number;
 }
 
+/** Une ligne de la liste du contentieux (V166). */
+export interface ContentieuxLigne {
+    codAgencia: string;
+    pointVente?: string;
+    agence?: string;
+    numCredito: number;
+    codCliente: string;
+    nomCliente?: string;
+    telephone?: string;
+    typeCredit?: string;
+    encours: number;
+    joursRetard?: number;
+    montantRetard: number;
+    /** SAF (passé au judiciaire par la banque) ou AGENCE (déclaré par le DA) */
+    origine: 'SAF' | 'AGENCE';
+    dateDeclaration?: string;
+    declareParNom?: string;
+    motif?: string;
+    agentRecouvrementId?: number;
+    agentRecouvrementNom?: string;
+    agentCreditNom?: string;
+}
+
+export interface ContentieuxListe {
+    lignes: ContentieuxLigne[];
+    agents: AgentPortefeuille[];
+    peutAffecter: boolean;
+}
+
 export interface AffectationRequest {
     codAgencia: string;
     numCreditos: number[];

@@ -329,6 +329,15 @@ export class AppMenu {
                 routerLink: ['/dashboards/portefeuille-affectation']
             });
         }
+        // Dossiers au contentieux (V166) : le DA les confie a ses agents de recouvrement,
+        // le DR consulte sa delegation.
+        if (['DA', 'DR'].includes(this.role || '')) {
+            items.push({
+                label: 'Dossiers au contentieux',
+                icon: 'pi pi-fw pi-gavel',
+                routerLink: ['/dashboards/portefeuille-contentieux']
+            });
+        }
         // Appreciation des agents a partir de leur portefeuille (V164) : DE, DG, DR (sa delegation).
         if (['DR', 'DG', 'SUPER_ADMIN'].includes(this.role || '') || this.estManager('DE')) {
             items.push({

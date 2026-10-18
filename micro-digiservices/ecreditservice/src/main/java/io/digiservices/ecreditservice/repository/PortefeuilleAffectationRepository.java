@@ -91,6 +91,18 @@ public class PortefeuilleAffectationRepository {
               AND type_affectation = :typeAffectation
             """;
 
+    // L'agent a qui le DA a confie le dossier dans digi, en amont de l'octroi : quand le
+    // credit remonte de SAF sans responsable, c'est lui le gestionnaire designe (V166).
+    // Un client peut avoir plusieurs dossiers : on retient le plus recent.
+    private static final String GESTIONNAIRES_DIGI = """
+            SELECT DISTINCT ON (d.numero_membre)
+                   d.numero_membre AS cod_cliente, d.agent_credit_affecte AS agent_user_id
+            FROM demandeindividuel d
+            WHERE d.agent_credit_affecte IS NOT NULL
+              AND d.numero_membre IN (:clients)
+            ORDER BY d.numero_membre, d.createdat DESC NULLS LAST
+            """;
+
     // ===================== Contentieux declare par le DA (V166) =====================
     // digi n'ecrit jamais dans SAF : ces lignes sont un suivi de recouvrement interne.
 
@@ -233,6 +245,16 @@ public class PortefeuilleAffectationRepository {
                         .montantRetard(BigDecimal.ZERO)
                         .build())
                 .list();
+    }
+
+    /** Agent de credit designe dans digi pour chaque client donne (dossier affecte par le DA). */
+    public Map<String, Long> gestionnairesDigi(Collection<String> clients) {
+        if (clients == null || clients.isEmpty()) return Map.of();
+        Map<String, Long> m = new HashMap<>();
+        jdbcClient.sql(GESTIONNAIRES_DIGI).param("clients", List.copyOf(clients))
+                .query((rs, n) -> Map.entry(rs.getString("cod_cliente"), rs.getLong("agent_user_id")))
+                .list().forEach(x -> m.put(x.getKey(), x.getValue()));
+        return m;
     }
 
     /** Declarations de contentieux actives du point de service, par numero de credit. */

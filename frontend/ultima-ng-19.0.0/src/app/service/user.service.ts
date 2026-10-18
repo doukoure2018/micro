@@ -1744,6 +1744,11 @@ export class UserService {
     affecterCredits$ = (body: { codAgencia: string; numCreditos: number[]; agentUserId: number; motif?: string; typeAffectation?: string }) =>
         <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/portefeuille/affectations`, body).pipe(catchError(this.handleError));
 
+    getContentieux$ = (codAgencia?: string) =>
+        <Observable<IResponse>>this.http
+            .get<IResponse>(`${this.server}/ecredit/portefeuille/affectations/contentieux`, codAgencia ? { params: { codAgencia } } : {})
+            .pipe(catchError(this.handleError));
+
     passerAuContentieux$ = (body: { codAgencia: string; numCreditos: number[]; motif?: string; agentUserId?: number }) =>
         <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/portefeuille/affectations/contentieux`, body).pipe(catchError(this.handleError));
 
