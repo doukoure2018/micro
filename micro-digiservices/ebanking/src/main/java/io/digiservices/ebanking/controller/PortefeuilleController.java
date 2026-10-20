@@ -211,6 +211,13 @@ public class PortefeuilleController {
         return ResponseEntity.ok(repository.findNouveauxImpayes(depuisJours));
     }
 
+    /** Controles SAF du rapport mensuel des indicateurs, tout le reseau (V167). */
+    @GetMapping("/controles-mensuels")
+    public ResponseEntity<List<io.digiservices.clients.portefeuille.ControleMensuelDto>> getControlesMensuels(
+            @RequestParam("annee") int annee, @RequestParam("mois") int mois) {
+        return ResponseEntity.ok(repository.controlesMensuels(annee, mois));
+    }
+
     @GetMapping("/indicateurs-reseau")
     public ResponseEntity<List<io.digiservices.clients.portefeuille.IndicateursAgenceDto>> getIndicateursReseau() {
         return ResponseEntity.ok(repository.indicateursReseau());

@@ -58,6 +58,11 @@ public interface EbankingPortefeuilleClient {
     @GetMapping("/ebanking/portefeuille/indicateurs-reseau")
     List<io.digiservices.clients.portefeuille.IndicateursAgenceDto> getIndicateursReseau();
 
+    /** Controles SAF du rapport mensuel des indicateurs (V167), tout le reseau, pour un mois. */
+    @GetMapping("/ebanking/portefeuille/controles-mensuels")
+    List<io.digiservices.clients.portefeuille.ControleMensuelDto> getControlesMensuels(
+            @RequestParam(value = "annee") int annee, @RequestParam(value = "mois") int mois);
+
     // ==================== TT1 (lot 1) : echeances de la periode ====================
 
     /** Echeances tombant entre du et au (ISO yyyy-MM-dd) sur une liste de codes agence SAF. */
