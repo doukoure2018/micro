@@ -352,9 +352,18 @@ public class CorrectionResource {
             // PA_DISTRITOS...) : on reprend la valeur actuelle de la fiche SAF pour ces champs.
             completerCodesReferenceDepuisSaf(updateFicheSignaletiqueDTO);
 
+            // Un code d'activité absent du référentiel SAF (ex. 198, hérité d'anciennes fiches) ferait
+            // échouer l'UPDATE sans que l'agent puisse rien y changer : il est traité ici, avant SAF.
+            List<String> avertissements = new ArrayList<>();
+            String refusActivite = controlerActiviteContreSaf(updateFicheSignaletiqueDTO, avertissements);
+            if (refusActivite != null) {
+                log.warn("Correction PP {} refusée avant SAF : {}", updateFicheSignaletiqueDTO.getCodCliente(), refusActivite);
+                return ResponseEntity.badRequest()
+                        .body(getResponse(request, Map.of("error", refusActivite), refusActivite, BAD_REQUEST));
+            }
+
             // Call the ebanking service to update SAF ; si SAF refuse un code de référence (clé étrangère),
             // on reprend la valeur SAF actuelle de ce champ et on rejoue une fois (voir mettreAJourSafAvecReprise).
-            List<String> avertissements = new ArrayList<>();
             Map<String, Object> result = mettreAJourSafAvecReprise(updateFicheSignaletiqueDTO, avertissements);
             if (!avertissements.isEmpty()) {
                 result.put("avertissements", avertissements);
@@ -485,6 +494,94 @@ public class CorrectionResource {
                     .body(getResponse(request, Map.of("error", "Référentiel SAF indisponible : " + e.getMessage()),
                             "Référentiel SAF indisponible", org.springframework.http.HttpStatus.BAD_GATEWAY));
         }
+    }
+
+    /**
+     * Référentiel SAF des activités économiques (CL.CL_ACTIVIDAD_ECONOMICA), pour que les formulaires ne
+     * proposent que des codes que SAF accepte. Constaté le 2026-10-20 : la liste figée du frontend et le
+     * référentiel SAF (101 à 110 + 199 « à ne pas utiliser ») ne coïncident pas forcément, et 143 fiches
+     * portent un code 198 que SAF refuse. Réponse : liste {code, libelle} triée par code.
+     */
+    @GetMapping("/reference/activites-saf")
+    public ResponseEntity<Response> activitesSaf(HttpServletRequest request) {
+        try {
+            List<Map<String, String>> activites = new ArrayList<>();
+            for (var a : activitesSafValides()) {
+                activites.add(Map.of("code", a.getKey(), "libelle", a.getValue()));
+            }
+            activites.sort(java.util.Comparator.comparing(m -> m.get("code")));
+            return ResponseEntity.ok(getResponse(request, Map.of("activites", activites, "count", activites.size()),
+                    "Activités économiques SAF", OK));
+        } catch (Exception e) {
+            log.error("Activités SAF indisponibles : {}", e.getMessage());
+            return ResponseEntity.status(org.springframework.http.HttpStatus.BAD_GATEWAY)
+                    .body(getResponse(request, Map.of("error", "Référentiel SAF indisponible : " + e.getMessage()),
+                            "Référentiel SAF indisponible", org.springframework.http.HttpStatus.BAD_GATEWAY));
+        }
+    }
+
+    /** Code de remplacement, arrêté par la DSIG le 2026-10-20, d'une activité absente du référentiel SAF. */
+    private static final String ACTIVITE_DE_REMPLACEMENT = "199";
+
+    /** Les activités que SAF accepte, sous la forme (code, libellé) ; vide si SAF est injoignable. */
+    private List<Map.Entry<String, String>> activitesSafValides() {
+        List<Map.Entry<String, String>> valides = new ArrayList<>();
+        List<io.digiservices.clients.domain.ActividaDto> bruts = ebankingClient.getAllActivida();
+        for (io.digiservices.clients.domain.ActividaDto a : bruts == null ? List.<io.digiservices.clients.domain.ActividaDto>of() : bruts) {
+            if (a.getId() == null || a.getId().isBlank()) continue;
+            String libelle = a.getDES_ACTIVIDAD() == null ? a.getId().trim() : a.getDES_ACTIVIDAD().trim();
+            valides.add(Map.entry(a.getId().trim(), libelle));
+        }
+        return valides;
+    }
+
+    /**
+     * Contrôle l'activité économique contre le référentiel SAF AVANT l'appel de mise à jour.
+     *
+     * <p>Cas constaté le 2026-10-20 (fiche 32100009674) : la fiche SAF portait elle-même le code 198,
+     * absent de CL.CL_ACTIVIDAD_ECONOMICA ; la correction le recopiait, SAF refusait sa propre valeur par
+     * clé étrangère, et la reprise automatique ne pouvait rien proposer puisque la valeur SAF actuelle
+     * était la valeur refusée. Le message demandait alors à l'agent de corriger un champ que l'écran de
+     * validation n'affiche pas.</p>
+     *
+     * <p>Règle : un code absent du référentiel et égal à la valeur SAF actuelle est un code hérité ; il
+     * est remplacé par {@link #ACTIVITE_DE_REMPLACEMENT} et l'agent en est averti. Un code absent que
+     * l'agent a lui-même saisi est refusé, avec la liste des codes valides. Si SAF est injoignable, on
+     * laisse passer : SAF tranchera, comme avant.</p>
+     *
+     * @return le message de refus, ou {@code null} si la fiche peut partir vers SAF.
+     */
+    private String controlerActiviteContreSaf(UpdateFicheSignaletiqueDTO dto, List<String> avertissements) {
+        String code = dto.getCodActividad() == null ? null : dto.getCodActividad().trim();
+        if (code == null || code.isEmpty()) {
+            return null; // déjà repris depuis SAF par completerCodesReferenceDepuisSaf, ou volontairement vide
+        }
+        List<Map.Entry<String, String>> valides;
+        try {
+            valides = activitesSafValides();
+        } catch (Exception e) {
+            log.warn("Référentiel SAF des activités injoignable, contrôle sauté : {}", e.getMessage());
+            return null;
+        }
+        if (valides.isEmpty() || valides.stream().anyMatch(a -> a.getKey().equals(code))) {
+            return null;
+        }
+        Map<String, Object> ficheSaf = lireFicheSaf(dto.getCodCliente());
+        Object actuelSaf = ficheSaf == null ? null : ficheSaf.get("codActividad");
+        boolean herite = actuelSaf != null && String.valueOf(actuelSaf).trim().equals(code);
+        if (herite) {
+            dto.setCodActividad(ACTIVITE_DE_REMPLACEMENT);
+            String avertissement = "l'activité économique '" + code + "' portée par la fiche SAF n'existe plus dans "
+                    + "le référentiel SAF ; elle a été remplacée par '" + ACTIVITE_DE_REMPLACEMENT
+                    + "' (décision DSIG du 20/10/2026). À revoir si une activité précise convient mieux.";
+            log.warn("Correction PP {} : {}", dto.getCodCliente(), avertissement);
+            avertissements.add(avertissement);
+            return null;
+        }
+        String liste = valides.stream().map(a -> a.getKey() + " " + a.getValue())
+                .collect(java.util.stream.Collectors.joining(", "));
+        return "Validation refusée avant SAF : l'activité économique '" + code + "' n'existe pas dans le référentiel "
+                + "SAF. Choisissez un code valide : " + liste + ".";
     }
 
     /** Cherche une clé (insensible à la casse) au premier niveau puis dans les sous-objets (clé composite JPA). */

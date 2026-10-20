@@ -115,6 +115,7 @@ export class UpdateCorrectionRejetComponent implements OnInit {
 
     ngOnInit(): void {
         this.chargerSecteursSaf();
+        this.chargerActivitesSaf();
         this.initializeForm();
 
         // Watch for province changes
@@ -532,6 +533,22 @@ export class UpdateCorrectionRejetComponent implements OnInit {
             }
         });
         return details.join(' — ');
+    }
+
+    /**
+     * Activités économiques lues dans SAF ; la liste figée reste le repli si SAF est injoignable.
+     * Constaté le 2026-10-20 : des fiches portent un code 198 que SAF refuse ; seule la liste SAF fait foi.
+     */
+    private chargerActivitesSaf(): void {
+        this.userService.getActivitesSaf$().subscribe({
+            next: (r) => {
+                const activites = ((r.data as any)?.activites || []) as { code: string; libelle: string }[];
+                if (activites.length > 0) {
+                    this.activityOptions = activites.map((a) => ({ label: `${a.code} — ${a.libelle}`, value: a.code }));
+                }
+            },
+            error: () => { /* repli : liste figée ReferenceData.ACTIVITIES */ }
+        });
     }
 
     /** Secteurs économiques lus dans SAF ; la liste figée reste le repli si SAF est injoignable. */
