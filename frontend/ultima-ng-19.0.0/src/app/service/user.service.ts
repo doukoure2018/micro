@@ -716,6 +716,8 @@ export class UserService {
      */
     /** Référentiel SAF des secteurs économiques (liste {code, libelle}) : seuls ces codes passent la validation SAF. */
     getSecteursSaf$ = (): Observable<IResponse> => this.http.get<IResponse>(`${this.server}/ecredit/reference/secteurs-saf`).pipe(catchError(this.handleError));
+    /** Activités économiques lues dans SAF (CL_ACTIVIDAD_ECONOMICA) : seuls ces codes passent la clé étrangère SAF. */
+    getActivitesSaf$ = (): Observable<IResponse> => this.http.get<IResponse>(`${this.server}/ecredit/reference/activites-saf`).pipe(catchError(this.handleError));
 
     updateFicheSignaletique$ = (updateData: any): Observable<IResponse> => this.http.put<IResponse>(`${this.server}/ecredit/update/fiche-signaletique`, updateData).pipe(tap(console.log), catchError(this.handleError));
 
