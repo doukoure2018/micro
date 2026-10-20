@@ -299,5 +299,6 @@ export interface IResponse {
         scores?: any;
         contentieux?: any;
         fiche?: any;
+        ligne?: any;
     };
 }

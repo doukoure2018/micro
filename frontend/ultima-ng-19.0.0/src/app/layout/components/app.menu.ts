@@ -338,6 +338,15 @@ export class AppMenu {
                 routerLink: ['/dashboards/portefeuille-contentieux']
             });
         }
+        // Rapports du reseau (V167) : le DA saisit les indicateurs mensuels de ses points de
+        // service, le DR verifie sa delegation, la DE consolide le reseau.
+        if (['DA', 'DR', 'DG', 'SUPER_ADMIN'].includes(this.role || '') || this.estManager('DE')) {
+            items.push({
+                label: 'Indicateurs mensuels',
+                icon: 'pi pi-fw pi-table',
+                routerLink: ['/dashboards/rapport-mensuel']
+            });
+        }
         // Appreciation des agents a partir de leur portefeuille (V164) : DE, DG, DR (sa delegation).
         if (['DR', 'DG', 'SUPER_ADMIN'].includes(this.role || '') || this.estManager('DE')) {
             items.push({

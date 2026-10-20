@@ -1,0 +1,199 @@
+package io.digiservices.ecreditservice.dto;
+
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+/** Objets du module A « Indicateurs mensuels » (V167). */
+public final class RapportMensuelDtos {
+
+    private RapportMensuelDtos() {
+    }
+
+    public static final String MODULE = "MENSUEL";
+
+    public static final String BROUILLON = "BROUILLON";
+    public static final String SOUMIS = "SOUMIS";
+    public static final String VALIDE = "VALIDE";
+    public static final String RENVOYE = "RENVOYE";
+    public static final String CONSOLIDE = "CONSOLIDE";
+
+    /** Une rubrique du referentiel, telle que l'ecran l'affiche. */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class RubriqueDto {
+        private String code;
+        private String libelle;
+        private String libelleCourt;
+        private int ordre;
+        /** SAISIE ou CALCUL. */
+        private String nature;
+        /** MONTANT, NOMBRE ou TAUX. */
+        private String format;
+        private String formule;
+        private boolean controleSaf;
+        private String sourceSaf;
+        private String aide;
+    }
+
+    /** La valeur d'une rubrique saisie : declaration de l'agence et controle SAF en regard. */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class ValeurDto {
+        private BigDecimal valeur;
+        private BigDecimal valeurSaf;
+        private OffsetDateTime dateLectureSaf;
+        private String commentaire;
+        /** Ecart entre saisie et SAF au-dela des seuils parametres. */
+        private boolean ecart;
+        /** (saisie - SAF) / SAF, null si pas de controle ou SAF = 0. */
+        private BigDecimal ecartPct;
+    }
+
+    /** Un rapport = un point de service pour un mois. */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class LigneDto {
+        private Long id;
+        private String codAgencia;
+        private String pointService;
+        private Long agenceId;
+        private String agence;
+        private Long delegationId;
+        private String delegation;
+        private int annee;
+        private int mois;
+        private String etat;
+        private String commentaire;
+        private String saisiPar;
+        private OffsetDateTime dateSaisie;
+        private String soumisPar;
+        private OffsetDateTime dateSoumission;
+        private String validePar;
+        private OffsetDateTime dateValidation;
+        private String renvoyePar;
+        private OffsetDateTime dateRenvoi;
+        private String motifRenvoi;
+        private String consolidePar;
+        private OffsetDateTime dateConsolidation;
+        /** Rubriques SAISIE : code -> valeur declaree + controle. */
+        @Builder.Default
+        private Map<String, ValeurDto> valeurs = new LinkedHashMap<>();
+        /** Rubriques CALCUL : code -> resultat de la formule (null si denominateur absent ou nul). */
+        @Builder.Default
+        private Map<String, BigDecimal> calcules = new LinkedHashMap<>();
+        /** Valeurs declarees le mois precedent, pour comparaison. */
+        @Builder.Default
+        private Map<String, BigDecimal> moisPrecedent = new LinkedHashMap<>();
+        private int nbSaisies;
+        private int nbManquantes;
+        private int nbEcarts;
+        /** Toutes les rubriques SAISIE sont renseignees. */
+        private boolean complet;
+        /** L'utilisateur connecte peut modifier cette ligne (DA de l'agence, etat BROUILLON ou RENVOYE). */
+        private boolean modifiable;
+    }
+
+    /** Total d'une agence, d'une delegation ou du reseau : sommes des saisies, taux en rapport de sommes. */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class AgregatDto {
+        /** AGENCE, DELEGATION ou RESEAU. */
+        private String niveau;
+        private Long id;
+        private String libelle;
+        private Long parentId;
+        private int nbPointsService;
+        private int nbComplets;
+        private int nbSoumis;
+        private int nbValides;
+        private int nbRenvoyes;
+        private int nbConsolides;
+        private int nbEcarts;
+        /** code -> somme (MONTANT, NOMBRE) ou taux (TAUX ; TAUX_REMB = moyenne simple, comme le fichier). */
+        @Builder.Default
+        private Map<String, BigDecimal> valeurs = new LinkedHashMap<>();
+        /** code -> somme des controles SAF connus. */
+        @Builder.Default
+        private Map<String, BigDecimal> valeursSaf = new LinkedHashMap<>();
+    }
+
+    /** Le mois tel que l'ecran le recoit : rubriques, lignes du perimetre, totaux, droits. */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class RapportMensuelDto {
+        private int annee;
+        private int mois;
+        /** PS, AGENCE, DELEGATION ou RESEAU. */
+        private String niveau;
+        private String role;
+        @Builder.Default
+        private List<RubriqueDto> rubriques = new ArrayList<>();
+        @Builder.Default
+        private List<LigneDto> lignes = new ArrayList<>();
+        @Builder.Default
+        private List<AgregatDto> agences = new ArrayList<>();
+        @Builder.Default
+        private List<AgregatDto> delegations = new ArrayList<>();
+        private AgregatDto total;
+        private boolean peutSaisir;
+        private boolean peutValider;
+        private boolean peutConsolider;
+        private BigDecimal seuilEcartPct;
+        private BigDecimal seuilEcartMontant;
+        /** Message si SAF n'a pas pu etre lu a l'ouverture du mois. */
+        private String avertissementSaf;
+    }
+
+    /** Enregistrement d'un brouillon : seules les rubriques presentes sont touchees. */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class BrouillonRequest {
+        /** code -> valeur (null efface la saisie). Les taux arrivent en fraction (0,97). */
+        private Map<String, BigDecimal> valeurs;
+        /** code -> commentaire d'ecart. */
+        private Map<String, String> commentaires;
+        private String commentaire;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class PeriodeRequest {
+        @NotNull
+        private Integer annee;
+        @NotNull
+        private Integer mois;
+        /** Codes SAF des points de service vises ; vide = tout le perimetre. */
+        private List<String> codes;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DecisionRequest {
+        @NotEmpty
+        private List<Long> ids;
+        private String motif;
+    }
+}

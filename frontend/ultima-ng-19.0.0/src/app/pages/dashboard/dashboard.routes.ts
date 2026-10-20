@@ -107,6 +107,11 @@ export default [
         loadComponent: () => import('./portefeuille/portefeuille-scores.component').then((c) => c.PortefeuilleScoresComponent)
     },
     {
+        path: 'rapport-mensuel',
+        data: { breadcrumb: 'Indicateurs mensuels' },
+        loadComponent: () => import('./rapports/rapport-mensuel.component').then((c) => c.RapportMensuelComponent)
+    },
+    {
         path: 'verification-client',
         data: { breadcrumb: 'Verification Client' },
         loadComponent: () => import('./agent-credit/digital-verification/digital-verification.component').then((c) => c.DigitalVerificationComponent)

@@ -233,6 +233,44 @@ public class PortefeuilleRepository {
             ORDER BY cr.COD_AGENCIA
             """;
 
+    /**
+     * Controles SAF du rapport mensuel des indicateurs (V167) : par point de service, l'encours,
+     * les impayes et le capital en retard a la date de lecture, et les octrois du mois demande.
+     * Une seule requete pour tout le reseau, comme la synthese PAR.
+     */
+    private static final String SQL_CONTROLES_MENSUELS = "SELECT cr.COD_AGENCIA, "
+            + "COALESCE(SUM(CASE WHEN " + EST_EN_COURS + " AND cr.MON_SALDO > 0 THEN cr.MON_SALDO ELSE 0 END), 0) AS ENCOURS, "
+            + "COALESCE(SUM(CASE WHEN " + EST_EN_COURS + " AND cr.MON_SALDO > 0 "
+            + "THEN COALESCE(t.CAP_IMP, 0) + COALESCE(t.INT_IMP, 0) ELSE 0 END), 0) AS RETARDS, "
+            + "COALESCE(SUM(CASE WHEN " + EST_EN_COURS + " AND cr.MON_SALDO > 0 AND t.PREM_IMP IS NOT NULL "
+            + "THEN cr.MON_SALDO ELSE 0 END), 0) AS CAPITAL_RETARD, "
+            + "SUM(CASE WHEN cr.FEC_APERTURA >= :debut AND cr.FEC_APERTURA < :fin THEN 1 ELSE 0 END) AS NB_OCTROIS, "
+            + "COALESCE(SUM(CASE WHEN cr.FEC_APERTURA >= :debut AND cr.FEC_APERTURA < :fin "
+            + "THEN cr.MON_CREDITO ELSE 0 END), 0) AS OCTROIS " + """
+            FROM PR.PR_CREDITOS cr
+            LEFT JOIN """ + IMPAYES_PAR_CREDIT + """
+                ON t.COD_EMPRESA = cr.COD_EMPRESA AND t.COD_AGENCIA = cr.COD_AGENCIA
+               AND t.NUM_CREDITO = cr.NUM_CREDITO
+            WHERE cr.IND_ESTADO IS NULL OR cr.IND_ESTADO <> 'X'
+            GROUP BY cr.COD_AGENCIA
+            ORDER BY cr.COD_AGENCIA
+            """;
+
+    /** Controles du rapport mensuel pour tout le reseau (V167). */
+    public List<io.digiservices.clients.portefeuille.ControleMensuelDto> controlesMensuels(int annee, int mois) {
+        LocalDate aujourdhui = LocalDate.now();
+        LocalDate debut = LocalDate.of(annee, mois, 1);
+        MapSqlParameterSource p = new MapSqlParameterSource()
+                .addValue("aujourdhui", java.sql.Date.valueOf(aujourdhui))
+                .addValue("debut", java.sql.Date.valueOf(debut))
+                .addValue("fin", java.sql.Date.valueOf(debut.plusMonths(1)));
+        return execute("portefeuille.controlesMensuels", () -> primary.query(SQL_CONTROLES_MENSUELS, p,
+                (rs, n) -> new io.digiservices.clients.portefeuille.ControleMensuelDto(
+                        str(rs, "COD_AGENCIA"), rs.getBigDecimal("ENCOURS"), rs.getBigDecimal("RETARDS"),
+                        rs.getBigDecimal("CAPITAL_RETARD"), rs.getLong("NB_OCTROIS"), rs.getBigDecimal("OCTROIS"),
+                        aujourdhui)));
+    }
+
     /** Echeances non payees tombant exactement a J+joursAvant (credits actifs). */
     public List<io.digiservices.clients.portefeuille.EcheanceAvenirDto> findEcheancesAvenir(int joursAvant) {
         MapSqlParameterSource p = new MapSqlParameterSource()

@@ -4,6 +4,7 @@ import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular
 import { JwtHelperService } from '@auth0/angular-jwt';
 import { catchError, map, Observable, tap, throwError } from 'rxjs';
 import { IResponse } from '@/interface/response';
+import { BrouillonRapport } from '@/interface/rapport-mensuel';
 import { IUser } from '@/interface/user';
 import { Key } from '@/enum/cache.key';
 import { IAuthentication } from '@/interface/IAuthentication';
@@ -1777,6 +1778,32 @@ export class UserService {
 
     getHistoriqueAffectation$ = (codAgencia: string, numCredito: number) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/affectations/${codAgencia}/${numCredito}/historique`).pipe(catchError(this.handleError));
+
+    // ==================== Rapports du reseau : indicateurs mensuels (V167) ====================
+
+    getRapportMensuel$ = (annee: number, mois: number) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/rapports/mensuels`, { params: { annee, mois } }).pipe(catchError(this.handleError));
+
+    enregistrerBrouillonRapportMensuel$ = (id: number, body: BrouillonRapport) =>
+        <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/rapports/mensuels/${id}/brouillon`, body).pipe(catchError(this.handleError));
+
+    soumettreRapportMensuel$ = (annee: number, mois: number, codes: string[]) =>
+        <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/rapports/mensuels/soumettre`, { annee, mois, codes }).pipe(catchError(this.handleError));
+
+    validerRapportMensuel$ = (ids: number[]) =>
+        <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/rapports/mensuels/valider`, { ids }).pipe(catchError(this.handleError));
+
+    renvoyerRapportMensuel$ = (ids: number[], motif: string) =>
+        <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/rapports/mensuels/renvoyer`, { ids, motif }).pipe(catchError(this.handleError));
+
+    consoliderRapportMensuel$ = (annee: number, mois: number) =>
+        <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/rapports/mensuels/consolider`, { annee, mois, codes: [] }).pipe(catchError(this.handleError));
+
+    actualiserControleSafRapportMensuel$ = (annee: number, mois: number) =>
+        <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/rapports/mensuels/controle-saf`, { annee, mois, codes: [] }).pipe(catchError(this.handleError));
+
+    exportRapportMensuel$ = (annee: number, mois: number) =>
+        this.http.get(`${this.server}/ecredit/rapports/mensuels/export`, { params: { annee, mois }, responseType: 'blob', observe: 'response' });
 
     getPortefeuilleEcheancier$ = (codAgencia: string, numCredito: number) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/credits/${codAgencia}/${numCredito}/echeancier`).pipe(catchError(this.handleError));
