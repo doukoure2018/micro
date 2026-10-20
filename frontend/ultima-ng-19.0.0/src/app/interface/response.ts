@@ -300,5 +300,6 @@ export interface IResponse {
         contentieux?: any;
         fiche?: any;
         ligne?: any;
+        annuel?: any;
     };
 }

@@ -21,6 +21,7 @@ public final class RapportMensuelDtos {
     }
 
     public static final String MODULE = "MENSUEL";
+    public static final String MODULE_ACTIVITE = "ACTIVITE";
 
     public static final String BROUILLON = "BROUILLON";
     public static final String SOUMIS = "SOUMIS";
@@ -45,6 +46,51 @@ public final class RapportMensuelDtos {
         private boolean controleSaf;
         private String sourceSaf;
         private String aide;
+        /** V168 : section du bloc, periodicite (MENSUEL, TRIMESTRIEL, OUVERTURE), agregat annuel, sous-groupe. */
+        private String section;
+        private String periodicite;
+        private String agregatAnnuel;
+        private String groupe;
+    }
+
+    /** Un bloc du rapport (V168) : orientation d'affichage et d'export, periodicite, ligne annuelle. */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SectionDto {
+        private String code;
+        private String libelle;
+        private int ordre;
+        /** MOIS_LIGNES, MOIS_COLONNES, TRIMESTRE ou INSTANTANE. */
+        private String orientation;
+        private String periodicite;
+        private String libelleAnnuel;
+        private String note;
+    }
+
+    /** Un exercice d'un point de service (ou le total d'une agence) : mois par mois, puis l'annuel. */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class AnnuelDto {
+        private String module;
+        private int annee;
+        /** Point de service, ou null pour un total. */
+        private String codAgencia;
+        private String libelle;
+        private String agence;
+        private String delegation;
+        private int nbPointsService;
+        /** mois (1..12) -> code -> valeur (saisies agregees et calculs). */
+        @Builder.Default
+        private Map<Integer, Map<String, BigDecimal>> parMois = new LinkedHashMap<>();
+        /** code -> valeur annuelle selon l'agregat de la rubrique (et formule pour les calculs). */
+        @Builder.Default
+        private Map<String, BigDecimal> annuel = new LinkedHashMap<>();
+        /** mois -> etat du rapport (un seul point de service) ou nombre de rapports soumis/valides (total). */
+        @Builder.Default
+        private Map<Integer, String> etats = new LinkedHashMap<>();
     }
 
     /** La valeur d'une rubrique saisie : declaration de l'agence et controle SAF en regard. */
@@ -70,6 +116,7 @@ public final class RapportMensuelDtos {
     @Builder
     public static class LigneDto {
         private Long id;
+        private String module;
         private String codAgencia;
         private String pointService;
         private Long agenceId;
@@ -141,8 +188,11 @@ public final class RapportMensuelDtos {
     @AllArgsConstructor
     @Builder
     public static class RapportMensuelDto {
+        private String module;
         private int annee;
         private int mois;
+        @Builder.Default
+        private List<SectionDto> sections = new ArrayList<>();
         /** PS, AGENCE, DELEGATION ou RESEAU. */
         private String niveau;
         private String role;
@@ -180,6 +230,8 @@ public final class RapportMensuelDtos {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class PeriodeRequest {
+        /** MENSUEL par defaut (compatibilite avec l'ecran des indicateurs). */
+        private String module;
         @NotNull
         private Integer annee;
         @NotNull

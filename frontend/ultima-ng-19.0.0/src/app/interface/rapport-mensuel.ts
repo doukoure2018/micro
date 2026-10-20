@@ -13,6 +13,37 @@ export interface RubriqueRapport {
     controleSaf: boolean;
     sourceSaf: string | null;
     aide: string | null;
+    /** V168 : section du bloc, périodicité (MENSUEL, TRIMESTRIEL, OUVERTURE), agrégat annuel, sous-groupe. */
+    section: string | null;
+    periodicite: 'MENSUEL' | 'TRIMESTRIEL' | 'OUVERTURE';
+    agregatAnnuel: 'SOMME' | 'MOYENNE' | 'DERNIER' | 'AUCUN';
+    groupe: string | null;
+}
+
+export type ModuleRapport = 'MENSUEL' | 'ACTIVITE';
+
+export interface SectionRapport {
+    code: string;
+    libelle: string;
+    ordre: number;
+    orientation: 'MOIS_LIGNES' | 'MOIS_COLONNES' | 'TRIMESTRE' | 'INSTANTANE';
+    periodicite: 'MENSUEL' | 'TRIMESTRIEL';
+    libelleAnnuel: string | null;
+    note: string | null;
+}
+
+/** Un exercice d'un point de service (ou le total d'une agence) : mois par mois, puis l'annuel. */
+export interface AnnuelRapport {
+    module: ModuleRapport;
+    annee: number;
+    codAgencia: string | null;
+    libelle: string;
+    agence: string | null;
+    delegation: string | null;
+    nbPointsService: number;
+    parMois: Record<number, Record<string, number | null>>;
+    annuel: Record<string, number | null>;
+    etats: Record<number, string | null>;
 }
 
 export interface ValeurRapport {
@@ -74,8 +105,10 @@ export interface AgregatRapport {
 }
 
 export interface RapportMensuel {
+    module: ModuleRapport;
     annee: number;
     mois: number;
+    sections: SectionRapport[];
     niveau: 'PS' | 'AGENCE' | 'DELEGATION' | 'RESEAU';
     role: string;
     rubriques: RubriqueRapport[];

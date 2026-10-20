@@ -2,6 +2,7 @@ package io.digiservices.ecreditservice.repository;
 
 import io.digiservices.ecreditservice.dto.RapportMensuelDtos.LigneDto;
 import io.digiservices.ecreditservice.dto.RapportMensuelDtos.RubriqueDto;
+import io.digiservices.ecreditservice.dto.RapportMensuelDtos.SectionDto;
 import io.digiservices.ecreditservice.dto.RapportMensuelDtos.ValeurDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.RowMapper;
@@ -29,13 +30,26 @@ public class RapportMensuelRepository {
 
     public List<RubriqueDto> rubriques(String module) {
         return jdbcClient.sql("""
-                SELECT code, libelle, libelle_court, ordre, nature, format, formule, controle_saf, source_saf, aide
+                SELECT code, libelle, libelle_court, ordre, nature, format, formule, controle_saf, source_saf, aide,
+                       section, periodicite, agregat_annuel, groupe
                 FROM rapport_rubrique WHERE module = :module AND actif ORDER BY ordre
                 """).param("module", module)
                 .query((rs, n) -> new RubriqueDto(rs.getString("code"), rs.getString("libelle"),
                         rs.getString("libelle_court"), rs.getInt("ordre"), rs.getString("nature"),
                         rs.getString("format"), rs.getString("formule"), rs.getBoolean("controle_saf"),
-                        rs.getString("source_saf"), rs.getString("aide")))
+                        rs.getString("source_saf"), rs.getString("aide"), rs.getString("section"),
+                        rs.getString("periodicite"), rs.getString("agregat_annuel"), rs.getString("groupe")))
+                .list();
+    }
+
+    public List<SectionDto> sections(String module) {
+        return jdbcClient.sql("""
+                SELECT code, libelle, ordre, orientation, periodicite, libelle_annuel, note
+                FROM rapport_section WHERE module = :module ORDER BY ordre
+                """).param("module", module)
+                .query((rs, n) -> new SectionDto(rs.getString("code"), rs.getString("libelle"), rs.getInt("ordre"),
+                        rs.getString("orientation"), rs.getString("periodicite"), rs.getString("libelle_annuel"),
+                        rs.getString("note")))
                 .list();
     }
 
@@ -49,7 +63,7 @@ public class RapportMensuelRepository {
     // ==================== Rapports ====================
 
     private static final String SELECT_LIGNE = """
-            SELECT r.id, r.cod_agencia, r.annee, r.mois, r.etat, r.commentaire,
+            SELECT r.id, r.module, r.cod_agencia, r.annee, r.mois, r.etat, r.commentaire,
                    r.date_saisie, r.date_soumission, r.date_validation, r.date_renvoi, r.motif_renvoi, r.date_consolidation,
                    TRIM(COALESCE(us.first_name, '') || ' ' || COALESCE(us.last_name, '')) AS saisi_par,
                    TRIM(COALESCE(uo.first_name, '') || ' ' || COALESCE(uo.last_name, '')) AS soumis_par,
@@ -65,7 +79,7 @@ public class RapportMensuelRepository {
             """;
 
     private static final RowMapper<LigneDto> LIGNE_MAPPER = (rs, n) -> LigneDto.builder()
-            .id(rs.getLong("id")).codAgencia(rs.getString("cod_agencia"))
+            .id(rs.getLong("id")).module(rs.getString("module")).codAgencia(rs.getString("cod_agencia"))
             .annee(rs.getInt("annee")).mois(rs.getInt("mois")).etat(rs.getString("etat"))
             .commentaire(rs.getString("commentaire"))
             .saisiPar(vide(rs.getString("saisi_par"))).dateSaisie(odt(rs, "date_saisie"))
@@ -77,22 +91,31 @@ public class RapportMensuelRepository {
             .build();
 
     /** Cree les rapports du mois qui n'existent pas encore pour ces points de service ; retourne le nombre crees. */
-    public int creerSiAbsents(Collection<String> codes, int annee, int mois, Long userId) {
+    public int creerSiAbsents(String module, Collection<String> codes, int annee, int mois, Long userId) {
         int crees = 0;
         for (String code : codes) {
             crees += jdbcClient.sql("""
-                    INSERT INTO rapport_mensuel (cod_agencia, annee, mois, cree_par_user_id)
-                    VALUES (:code, :annee, :mois, :userId)
-                    ON CONFLICT (cod_agencia, annee, mois) DO NOTHING
-                    """).param("code", code).param("annee", annee).param("mois", mois).param("userId", userId).update();
+                    INSERT INTO rapport_mensuel (module, cod_agencia, annee, mois, cree_par_user_id)
+                    VALUES (:module, :code, :annee, :mois, :userId)
+                    ON CONFLICT (module, cod_agencia, annee, mois) DO NOTHING
+                    """).param("module", module).param("code", code).param("annee", annee).param("mois", mois)
+                    .param("userId", userId).update();
         }
         return crees;
     }
 
-    public List<LigneDto> rapports(int annee, int mois, Collection<String> codes) {
+    public List<LigneDto> rapports(String module, int annee, int mois, Collection<String> codes) {
         if (codes.isEmpty()) return List.of();
-        return jdbcClient.sql(SELECT_LIGNE + " WHERE r.annee = :annee AND r.mois = :mois AND r.cod_agencia IN (:codes) ORDER BY r.cod_agencia")
-                .param("annee", annee).param("mois", mois).param("codes", List.copyOf(codes))
+        return jdbcClient.sql(SELECT_LIGNE + " WHERE r.module = :module AND r.annee = :annee AND r.mois = :mois AND r.cod_agencia IN (:codes) ORDER BY r.cod_agencia")
+                .param("module", module).param("annee", annee).param("mois", mois).param("codes", List.copyOf(codes))
+                .query(LIGNE_MAPPER).list();
+    }
+
+    /** Tous les rapports d'un exercice pour ces points de service (vue annuelle, export). */
+    public List<LigneDto> rapportsExercice(String module, int annee, Collection<String> codes) {
+        if (codes.isEmpty()) return List.of();
+        return jdbcClient.sql(SELECT_LIGNE + " WHERE r.module = :module AND r.annee = :annee AND r.cod_agencia IN (:codes) ORDER BY r.cod_agencia, r.mois")
+                .param("module", module).param("annee", annee).param("codes", List.copyOf(codes))
                 .query(LIGNE_MAPPER).list();
     }
 
@@ -127,14 +150,14 @@ public class RapportMensuelRepository {
     }
 
     /** cod_agencia -> (code -> valeur declaree) pour un mois : sert a la comparaison avec le mois precedent. */
-    public Map<String, Map<String, BigDecimal>> valeursDeclarees(int annee, int mois, Collection<String> codes) {
+    public Map<String, Map<String, BigDecimal>> valeursDeclarees(String module, int annee, int mois, Collection<String> codes) {
         Map<String, Map<String, BigDecimal>> m = new HashMap<>();
         if (codes.isEmpty()) return m;
         jdbcClient.sql("""
                 SELECT r.cod_agencia, v.code, v.valeur
                 FROM rapport_mensuel r JOIN rapport_mensuel_valeur v ON v.rapport_id = r.id
-                WHERE r.annee = :annee AND r.mois = :mois AND r.cod_agencia IN (:codes) AND v.valeur IS NOT NULL
-                """).param("annee", annee).param("mois", mois).param("codes", List.copyOf(codes))
+                WHERE r.module = :module AND r.annee = :annee AND r.mois = :mois AND r.cod_agencia IN (:codes) AND v.valeur IS NOT NULL
+                """).param("module", module).param("annee", annee).param("mois", mois).param("codes", List.copyOf(codes))
                 .query((rs, n) -> m.computeIfAbsent(rs.getString("cod_agencia"), k -> new HashMap<>())
                         .put(rs.getString("code"), rs.getBigDecimal("valeur")))
                 .list();

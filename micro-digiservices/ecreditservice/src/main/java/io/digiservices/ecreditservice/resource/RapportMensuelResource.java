@@ -43,16 +43,32 @@ public class RapportMensuelResource {
     /** Le mois pour le perimetre de l'utilisateur ; les rapports manquants sont ouverts vides. */
     @GetMapping
     public ResponseEntity<Response> charger(@NotNull Authentication authentication,
+                                            @RequestParam(value = "module", required = false) String module,
                                             @RequestParam("annee") int annee, @RequestParam("mois") int mois,
                                             HttpServletRequest request) {
         return ResponseEntity.ok(getResponse(request,
-                Map.of("rapport", service.charger(authentication.getName(), annee, mois)),
-                "Indicateurs mensuels", OK));
+                Map.of("rapport", service.charger(authentication.getName(), module, annee, mois)),
+                "Rapport du mois", OK));
     }
 
     @GetMapping("/rubriques")
-    public ResponseEntity<Response> rubriques(HttpServletRequest request) {
-        return ResponseEntity.ok(getResponse(request, Map.of("rubriques", service.rubriques()), "Rubriques", OK));
+    public ResponseEntity<Response> rubriques(@RequestParam(value = "module", required = false) String module,
+                                              HttpServletRequest request) {
+        return ResponseEntity.ok(getResponse(request,
+                Map.of("rubriques", service.rubriques(module), "sections", service.sections(module)), "Rubriques", OK));
+    }
+
+    /** Vue annuelle (V168) : un point de service, une agence ou tout le perimetre, mois par mois puis annuel. */
+    @GetMapping("/annuel")
+    public ResponseEntity<Response> annuel(@NotNull Authentication authentication,
+                                           @RequestParam(value = "module", required = false) String module,
+                                           @RequestParam("annee") int annee,
+                                           @RequestParam(value = "codAgencia", required = false) String codAgencia,
+                                           @RequestParam(value = "agenceId", required = false) Long agenceId,
+                                           HttpServletRequest request) {
+        return ResponseEntity.ok(getResponse(request,
+                Map.of("annuel", service.annuel(authentication.getName(), module, annee, codAgencia, agenceId)),
+                "Exercice", OK));
     }
 
     /** Enregistre le brouillon d'un point de service (DA) ; appele au fil de la saisie. */
@@ -109,9 +125,12 @@ public class RapportMensuelResource {
     /** Export Excel du mois au format du fichier de la Direction de l'Exploitation. */
     @GetMapping("/export")
     public ResponseEntity<byte[]> exporter(@NotNull Authentication authentication,
+                                           @RequestParam(value = "module", required = false) String module,
                                            @RequestParam("annee") int annee, @RequestParam("mois") int mois) {
-        byte[] contenu = service.exporter(authentication.getName(), annee, mois);
-        String nom = "indicateurs_mensuels_" + RapportMensuelExcelUtils.MOIS[mois - 1].toLowerCase() + "_" + annee + ".xlsx";
+        byte[] contenu = service.exporter(authentication.getName(), module, annee, mois);
+        String nom = "ACTIVITE".equals(module)
+                ? "rapport_activite_" + annee + ".xlsx"
+                : "indicateurs_mensuels_" + RapportMensuelExcelUtils.MOIS[mois - 1].toLowerCase() + "_" + annee + ".xlsx";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
         headers.setContentDispositionFormData("attachment", nom);

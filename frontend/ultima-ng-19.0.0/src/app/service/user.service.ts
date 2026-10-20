@@ -1781,14 +1781,21 @@ export class UserService {
 
     // ==================== Rapports du reseau : indicateurs mensuels (V167) ====================
 
-    getRapportMensuel$ = (annee: number, mois: number) =>
-        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/rapports/mensuels`, { params: { annee, mois } }).pipe(catchError(this.handleError));
+    getRapportMensuel$ = (annee: number, mois: number, module = 'MENSUEL') =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/rapports/mensuels`, { params: { annee, mois, module } }).pipe(catchError(this.handleError));
+
+    getRapportAnnuel$ = (module: string, annee: number, codAgencia: string | null, agenceId: number | null) =>
+        <Observable<IResponse>>(
+            this.http
+                .get<IResponse>(`${this.server}/ecredit/rapports/mensuels/annuel`, { params: { module, annee, ...(codAgencia ? { codAgencia } : {}), ...(agenceId ? { agenceId } : {}) } })
+                .pipe(catchError(this.handleError))
+        );
 
     enregistrerBrouillonRapportMensuel$ = (id: number, body: BrouillonRapport) =>
         <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/rapports/mensuels/${id}/brouillon`, body).pipe(catchError(this.handleError));
 
-    soumettreRapportMensuel$ = (annee: number, mois: number, codes: string[]) =>
-        <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/rapports/mensuels/soumettre`, { annee, mois, codes }).pipe(catchError(this.handleError));
+    soumettreRapportMensuel$ = (annee: number, mois: number, codes: string[], module = 'MENSUEL') =>
+        <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/rapports/mensuels/soumettre`, { module, annee, mois, codes }).pipe(catchError(this.handleError));
 
     validerRapportMensuel$ = (ids: number[]) =>
         <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/rapports/mensuels/valider`, { ids }).pipe(catchError(this.handleError));
@@ -1796,14 +1803,14 @@ export class UserService {
     renvoyerRapportMensuel$ = (ids: number[], motif: string) =>
         <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/rapports/mensuels/renvoyer`, { ids, motif }).pipe(catchError(this.handleError));
 
-    consoliderRapportMensuel$ = (annee: number, mois: number) =>
-        <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/rapports/mensuels/consolider`, { annee, mois, codes: [] }).pipe(catchError(this.handleError));
+    consoliderRapportMensuel$ = (annee: number, mois: number, module = 'MENSUEL') =>
+        <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/rapports/mensuels/consolider`, { module, annee, mois, codes: [] }).pipe(catchError(this.handleError));
 
     actualiserControleSafRapportMensuel$ = (annee: number, mois: number) =>
-        <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/rapports/mensuels/controle-saf`, { annee, mois, codes: [] }).pipe(catchError(this.handleError));
+        <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/rapports/mensuels/controle-saf`, { module: 'MENSUEL', annee, mois, codes: [] }).pipe(catchError(this.handleError));
 
-    exportRapportMensuel$ = (annee: number, mois: number) =>
-        this.http.get(`${this.server}/ecredit/rapports/mensuels/export`, { params: { annee, mois }, responseType: 'blob', observe: 'response' });
+    exportRapportMensuel$ = (annee: number, mois: number, module = 'MENSUEL') =>
+        this.http.get(`${this.server}/ecredit/rapports/mensuels/export`, { params: { annee, mois, module }, responseType: 'blob', observe: 'response' });
 
     getPortefeuilleEcheancier$ = (codAgencia: string, numCredito: number) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/credits/${codAgencia}/${numCredito}/echeancier`).pipe(catchError(this.handleError));

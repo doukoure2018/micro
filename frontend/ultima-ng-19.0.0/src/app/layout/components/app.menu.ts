@@ -347,6 +347,15 @@ export class AppMenu {
                 routerLink: ['/dashboards/rapport-mensuel']
             });
         }
+        // Rapport d'activite du point de service (V168) : rempli au PS (agent de credit ou DA),
+        // centralise et soumis par le DA, verifie par le DR, consolide par la DE.
+        if (['AGENT_CREDIT', 'DA', 'DR', 'DG', 'SUPER_ADMIN'].includes(this.role || '') || this.estManager('DE')) {
+            items.push({
+                label: "Rapport d'activité",
+                icon: 'pi pi-fw pi-book',
+                routerLink: ['/dashboards/rapport-activite']
+            });
+        }
         // Appreciation des agents a partir de leur portefeuille (V164) : DE, DG, DR (sa delegation).
         if (['DR', 'DG', 'SUPER_ADMIN'].includes(this.role || '') || this.estManager('DE')) {
             items.push({

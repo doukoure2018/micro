@@ -1,4 +1,4 @@
-import { AgregatRapport, EtatRapport, LigneRapport, MOIS_LIBELLES, RapportMensuel, RubriqueRapport } from '@/interface/rapport-mensuel';
+import { AgregatRapport, AnnuelRapport, EtatRapport, LigneRapport, MOIS_LIBELLES, ModuleRapport, RapportMensuel, RubriqueRapport, SectionRapport } from '@/interface/rapport-mensuel';
 import { IResponse } from '@/interface/response';
 import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
@@ -17,6 +17,7 @@ import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
+import { ActivatedRoute } from '@angular/router';
 import { Observable } from 'rxjs';
 
 interface GroupeAgence {
@@ -41,18 +42,20 @@ interface GroupeAgence {
             <!-- En-tête : période, actions globales -->
             <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
                 <div>
-                    <h2 class="text-xl font-semibold m-0">Indicateurs mensuels</h2>
+                    <h2 class="text-xl font-semibold m-0">{{ estActivite() ? "Rapport d'activité du point de service" : 'Indicateurs mensuels' }}</h2>
                     <div class="text-sm text-gray-500">
-                        <ng-container *ngIf="data()?.peutSaisir">Saisissez les 13 rubriques de chaque point de service ; tout s'enregistre en brouillon au fil de la saisie. Soumettez l'agence quand tout est complet.</ng-container>
-                        <ng-container *ngIf="data() && !data()!.peutSaisir">Rapports saisis par les agences ; la colonne SAF est un contrôle, la saisie fait foi.</ng-container>
+                        <ng-container *ngIf="data()?.peutSaisir && !estActivite()">Saisissez les 13 rubriques de chaque point de service ; tout s'enregistre en brouillon au fil de la saisie. Soumettez l'agence quand tout est complet.</ng-container>
+                        <ng-container *ngIf="data()?.peutSaisir && estActivite()">Remplissez le mois bloc par bloc ; une case vide vaut 0, tout s'enregistre en brouillon au fil de la saisie. Les blocs trimestriels n'apparaissent qu'en mars, juin, septembre et décembre ; les soldes d'ouverture en janvier.</ng-container>
+                        <ng-container *ngIf="data() && !data()!.peutSaisir && !estActivite()">Rapports saisis par les agences ; la colonne SAF est un contrôle, la saisie fait foi.</ng-container>
+                        <ng-container *ngIf="data() && !data()!.peutSaisir && estActivite()">Rapports remplis par les points de service et soumis par les agences ; la vue annuelle reconstitue la feuille de l'exercice.</ng-container>
                     </div>
                 </div>
                 <div class="flex flex-wrap gap-2 items-center">
                     <p-select [options]="moisOptions" [ngModel]="mois()" (ngModelChange)="changerPeriode($event, annee())" optionLabel="label" optionValue="value" styleClass="w-40" appendTo="body"></p-select>
                     <p-select [options]="anneeOptions" [ngModel]="annee()" (ngModelChange)="changerPeriode(mois(), $event)" optionLabel="label" optionValue="value" styleClass="w-28" appendTo="body"></p-select>
                     <button pButton icon="pi pi-refresh" class="p-button-text" (click)="charger()" [loading]="loading()" pTooltip="Recharger"></button>
-                    <button pButton icon="pi pi-sync" label="Contrôle SAF" class="p-button-outlined" [loading]="safEnCours()" (click)="actualiserSaf()" pTooltip="Relit dans SAF les valeurs de contrôle (encours, retards, capital en retard, octrois du mois)"></button>
-                    <button pButton icon="pi pi-file-excel" label="Exporter Excel" class="p-button-success p-button-outlined" [loading]="exportEnCours()" [disabled]="!data()?.lignes?.length" (click)="exporter()"></button>
+                    <button *ngIf="!estActivite()" pButton icon="pi pi-sync" label="Contrôle SAF" class="p-button-outlined" [loading]="safEnCours()" (click)="actualiserSaf()" pTooltip="Relit dans SAF les valeurs de contrôle (encours, retards, capital en retard, octrois du mois)"></button>
+                    <button pButton icon="pi pi-file-excel" [label]="estActivite() ? 'Exporter l’exercice' : 'Exporter Excel'" class="p-button-success p-button-outlined" [loading]="exportEnCours()" [disabled]="!data()?.lignes?.length" (click)="exporter()" [pTooltip]="estActivite() ? 'Classeur au format du rapport Forécariah : une feuille par point de service et un total par agence' : ''"></button>
                 </div>
             </div>
 
@@ -72,7 +75,7 @@ interface GroupeAgence {
             </div>
 
             <div class="flex flex-wrap items-center gap-3 mb-3">
-                <p-selectButton [options]="vueOptions()" [ngModel]="vue()" (ngModelChange)="vue.set($event)" optionLabel="label" optionValue="value"></p-selectButton>
+                <p-selectButton [options]="vueOptions()" [ngModel]="vue()" (ngModelChange)="changerVue($event)" optionLabel="label" optionValue="value"></p-selectButton>
                 <ng-container *ngIf="data()?.peutConsolider">
                     <button pButton icon="pi pi-lock" label="Consolider le mois" class="p-button-outlined ml-auto" [disabled]="!(data()!.total?.nbValides)" [loading]="actionEnCours()" (click)="consolider()" pTooltip="Fige les rapports validés : ils ne pourront plus être renvoyés"></button>
                 </ng-container>
@@ -161,6 +164,34 @@ interface GroupeAgence {
                     </ng-template>
                 </div>
             </div>
+
+            <!-- ============ VUE ANNUELLE (rapport d'activité) : la feuille de l'exercice, bloc par bloc ============ -->
+            <ng-container *ngIf="vue() === 'annuel' && data() as d">
+                <div class="flex flex-wrap items-center gap-2 mb-3">
+                    <p-select [options]="ciblesAnnuel()" [ngModel]="cibleAnnuel()" (ngModelChange)="cibleAnnuel.set($event); chargerAnnuel()" optionLabel="label" optionValue="value" styleClass="w-72" appendTo="body" placeholder="Point de service ou total"></p-select>
+                    <p-select [options]="d.sections" [ngModel]="sectionAnnuel()" (ngModelChange)="sectionAnnuel.set($event)" optionLabel="libelle" optionValue="code" styleClass="w-96" appendTo="body" placeholder="Bloc"></p-select>
+                    <p-select *ngIf="sectionCourante()?.orientation === 'INSTANTANE'" [options]="trimestreOptions" [ngModel]="trimestreAnnuel()" (ngModelChange)="trimestreAnnuel.set($event)" optionLabel="label" optionValue="value" styleClass="w-48" appendTo="body"></p-select>
+                    <span class="text-xs text-gray-500 ml-auto" *ngIf="annuel() as a">{{ a.libelle }} · {{ a.nbPointsService }} PS · exercice {{ a.annee }}</span>
+                </div>
+                <div *ngIf="sectionCourante()?.note" class="text-xs text-gray-500 mb-2"><i class="pi pi-info-circle mr-1"></i>{{ sectionCourante()!.note }}</div>
+                <div *ngIf="annuelLoading()" class="text-gray-500 p-3"><i class="pi pi-spin pi-spinner mr-1"></i>Chargement de l'exercice…</div>
+                <div *ngIf="!annuelLoading() && grilleAnnuelle() as g" class="grille-conteneur">
+                    <table class="w-full text-xs grille">
+                        <thead>
+                            <tr class="uppercase text-gray-600">
+                                <th class="text-left py-2 pr-2 sticky-col">{{ g.enteteLigne }}</th>
+                                <th *ngFor="let c of g.colonnes" class="text-right py-2 px-2 whitespace-nowrap" [class.text-gray-400]="c.calcul" [pTooltip]="c.titre">{{ c.libelle }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let l of g.lignes" class="border-t" [class.bg-gray-100]="l.total" [class.font-semibold]="l.total">
+                                <td class="py-1 pr-2 whitespace-nowrap sticky-col">{{ l.libelle }}<span *ngIf="l.etat" class="ml-2 text-gray-400 font-normal">{{ l.etat }}</span></td>
+                                <td *ngFor="let v of l.valeurs; let i = index" class="text-right px-2 tabular" [class.text-gray-300]="v == null">{{ v == null ? '·' : fmt(v, g.parLigne ? $any(l).format : g.colonnes[i].format) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </ng-container>
 
             <!-- ============ VUE TABLEAU : la grille du fichier ============ -->
             <ng-container *ngIf="vue() === 'tableau' && data() as d">
@@ -252,7 +283,34 @@ interface GroupeAgence {
                             <span class="text-gray-400 ml-auto">Entrée : rubrique suivante · un espace sépare les milliers · les taux en %</span>
                         </div>
 
-                        <div class="overflow-x-auto">
+                        <!-- Rapport d'activité : les blocs du fichier, champs en grille -->
+                        <div *ngIf="estActivite()" class="flex flex-col gap-3">
+                            <details *ngFor="let sec of sectionsFiche()" class="border rounded" open>
+                                <summary class="px-3 py-2 bg-gray-50 cursor-pointer font-semibold flex items-center justify-between gap-2">
+                                    <span>{{ sec.section.libelle }}<span *ngIf="sec.section.periodicite === 'TRIMESTRIEL'" class="ml-2 text-xs font-normal text-gray-500">fin de trimestre</span></span>
+                                    <span class="text-xs font-normal text-gray-500">{{ sec.nbSaisies }}/{{ sec.nbChamps }}</span>
+                                </summary>
+                                <div class="px-3 py-2">
+                                    <div *ngIf="sec.section.note" class="text-xs text-gray-500 mb-2">{{ sec.section.note }}</div>
+                                    <div *ngFor="let grp of sec.groupes" class="mb-2">
+                                        <div *ngIf="grp.groupe" class="text-xs uppercase text-gray-500 mt-1 mb-1 border-b">{{ grp.groupe }}</div>
+                                        <div class="champs">
+                                            <div *ngFor="let r of grp.rubriques" class="champ" [class.champ-calc]="r.nature === 'CALCUL'">
+                                                <label class="text-xs text-gray-600 truncate" [pTooltip]="r.aide || r.libelle">{{ r.libelleCourt }}</label>
+                                                <ng-container *ngIf="r.nature === 'SAISIE'; else calcChamp">
+                                                    <input *ngIf="l.modifiable; else lectureChamp" pInputText [id]="'inp-' + r.code" type="text" inputmode="decimal" class="w-full text-right tabular p-inputtext-sm" [ngModel]="texte[r.code]" (ngModelChange)="saisir(r.code, $event)" (blur)="formater(r)" (focus)="brut(r)" (keydown.enter)="focusSuivant(indexRubrique(r.code), 1)" (keydown.shift.enter)="focusSuivant(indexRubrique(r.code), -1)" (paste)="coller($event, indexRubrique(r.code))" [placeholder]="r.format === 'TAUX' ? '%' : '0'" autocomplete="off" />
+                                                    <ng-template #lectureChamp><div class="text-right tabular text-sm py-1" [class.text-gray-300]="l.valeurs[r.code]?.valeur == null">{{ l.valeurs[r.code]?.valeur == null ? '·' : fmt(l.valeurs[r.code]?.valeur, r.format) }}</div></ng-template>
+                                                    <div class="text-xs text-gray-400 text-right" *ngIf="l.moisPrecedent[r.code] != null">M-1 : {{ fmt(l.moisPrecedent[r.code], r.format) }}</div>
+                                                </ng-container>
+                                                <ng-template #calcChamp><div class="text-right tabular text-sm py-1 text-gray-600">{{ calculLocal(r) == null ? '·' : fmt(calculLocal(r), r.format) }}</div></ng-template>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+
+                        <div *ngIf="!estActivite()" class="overflow-x-auto">
                             <table class="w-full text-sm fiche">
                                 <thead>
                                     <tr class="text-xs uppercase text-gray-500">
@@ -374,6 +432,12 @@ interface GroupeAgence {
             .grille thead th.sticky-col { z-index: 3; }
             .grille tbody tr:not(.bg-gray-100):not(.bg-blue-50):not(.bg-blue-100) td.sticky-col { background: #fff; }
             .nav-grille { position: sticky; top: 0; z-index: 4; background: #fff; padding: 4px 0; }
+            .champs { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 6px 10px; }
+            .champ { display: flex; flex-direction: column; min-width: 0; }
+            .champ-calc { background: #f3f4f6; border-radius: 4px; padding: 2px 6px; }
+            details > summary { list-style: none; }
+            details > summary::-webkit-details-marker { display: none; }
+            details[open] > summary { border-bottom: 1px solid #e5e7eb; }
             .carte { background: #fff; transition: box-shadow 0.15s; }
             .carte:hover { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
             .carte-alerte { border-color: #fca5a5; }
@@ -390,6 +454,24 @@ export class RapportMensuelComponent implements OnInit, OnDestroy, AfterViewChec
     private readonly userService = inject(UserService);
     private readonly messageService = inject(MessageService);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly route = inject(ActivatedRoute);
+
+    /** MENSUEL (indicateurs) ou ACTIVITE (rapport d'activité du PS), d'après la route. */
+    module = signal<ModuleRapport>('MENSUEL');
+    estActivite = computed(() => this.module() === 'ACTIVITE');
+
+    // Vue annuelle (rapport d'activité)
+    annuel = signal<AnnuelRapport | null>(null);
+    annuelLoading = signal(false);
+    cibleAnnuel = signal<string | null>(null);
+    sectionAnnuel = signal<string | null>(null);
+    trimestreAnnuel = signal(3);
+    trimestreOptions = [
+        { label: '31 mars', value: 3 },
+        { label: '30 juin', value: 6 },
+        { label: '30 septembre', value: 9 },
+        { label: '31 décembre', value: 12 }
+    ];
 
     data = signal<RapportMensuel | null>(null);
     loading = signal(false);
@@ -399,24 +481,113 @@ export class RapportMensuelComponent implements OnInit, OnDestroy, AfterViewChec
     sauvegardeEnCours = signal(false);
     modifie = signal(false);
     dernierEnregistrement = signal<Date | null>(null);
-    vue = signal<'saisie' | 'cartes' | 'tableau'>('saisie');
+    vue = signal<'saisie' | 'cartes' | 'tableau' | 'annuel'>('saisie');
     showFiche = false;
     codeSelectionne = signal<string | null>(null);
     annee = signal(0);
     mois = signal(0);
 
     /** Le DA saisit point par point ; le DR et la DE vérifient par agence (cartes) ou dans la grille. */
-    vueOptions = computed(() =>
-        this.data()?.peutSaisir
-            ? [
-                  { label: 'Saisie par point de service', value: 'saisie' },
-                  { label: 'Vue tableau', value: 'tableau' }
-              ]
-            : [
-                  { label: 'Par agence', value: 'cartes' },
-                  { label: 'Vue tableau', value: 'tableau' }
-              ]
-    );
+    vueOptions = computed(() => {
+        const synthese = this.estActivite() ? { label: "Vue annuelle (feuille de l'exercice)", value: 'annuel' } : { label: 'Vue tableau', value: 'tableau' };
+        return this.data()?.peutSaisir ? [{ label: 'Saisie par point de service', value: 'saisie' }, synthese] : [{ label: 'Par agence', value: 'cartes' }, synthese];
+    });
+
+    /** Position de chaque rubrique dans la liste servie : sert au passage Entrée / au collage. */
+    private rubriqueIndex = computed(() => {
+        const m = new Map<string, number>();
+        (this.data()?.rubriques || []).forEach((r, i) => m.set(r.code, i));
+        return m;
+    });
+
+    /** Blocs de la fiche du rapport d'activité : sections, puis sous-groupes, puis rubriques dans l'ordre du fichier. */
+    sectionsFiche = computed(() => {
+        const d = this.data();
+        const l = this.ligne();
+        if (!d || !l) return [];
+        return d.sections
+            .map((section) => {
+                const rubriques = d.rubriques.filter((r) => r.section === section.code);
+                const groupes: { groupe: string | null; rubriques: RubriqueRapport[] }[] = [];
+                for (const r of rubriques) {
+                    const dernier = groupes[groupes.length - 1];
+                    if (dernier && dernier.groupe === r.groupe) dernier.rubriques.push(r);
+                    else groupes.push({ groupe: r.groupe, rubriques: [r] });
+                }
+                const saisies = rubriques.filter((r) => r.nature === 'SAISIE');
+                return { section, groupes, nbChamps: saisies.length, nbSaisies: saisies.filter((r) => l.valeurs[r.code]?.valeur != null).length };
+            })
+            .filter((s) => s.groupes.length);
+    });
+
+    ciblesAnnuel = computed(() => {
+        const d = this.data();
+        if (!d) return [];
+        const options: { label: string; value: string }[] = [];
+        if (d.agences.length > 1) options.push({ label: d.total?.libelle || 'Tout le périmètre', value: 'TOUT' });
+        for (const a of d.agences) {
+            if (d.lignes.filter((l) => l.agenceId === a.id).length > 1) options.push({ label: 'TOTAL AGENCE ' + a.libelle, value: 'AG:' + a.id });
+            for (const l of d.lignes.filter((x) => x.agenceId === a.id)) options.push({ label: l.pointService + ' (' + a.libelle + ')', value: 'PS:' + l.codAgencia });
+        }
+        return options;
+    });
+    sectionCourante = computed(() => this.data()?.sections.find((s) => s.code === this.sectionAnnuel()) || null);
+
+    /** La feuille de l'exercice pour le bloc choisi, rendue selon l'orientation du fichier. */
+    grilleAnnuelle = computed(() => {
+        const a = this.annuel();
+        const d = this.data();
+        const sec = this.sectionCourante();
+        if (!a || !d || !sec) return null;
+        const rubriques = d.rubriques.filter((r) => r.section === sec.code);
+        const fmtMois = (m: number) => MOIS_LIBELLES[m - 1];
+        type Col = { code: string; libelle: string; titre: string; format: string; calcul: boolean };
+        const col = (r: RubriqueRapport): Col => ({ code: r.code, libelle: r.libelleCourt, titre: r.libelle, format: r.format, calcul: r.nature === 'CALCUL' });
+        const v = (m: number, code: string) => a.parMois[m]?.[code] ?? null;
+        if (sec.orientation === 'MOIS_COLONNES') {
+            const colonnes: Col[] = [{ code: '', libelle: sec.libelleAnnuel || 'TOTAL', titre: 'Exercice', format: '', calcul: true }];
+            for (let m = 1; m <= 12; m++) colonnes.push({ code: String(m), libelle: fmtMois(m), titre: fmtMois(m), format: '', calcul: false });
+            const lignes = rubriques.map((r) => ({ libelle: r.libelle, total: r.nature === 'CALCUL', etat: null as string | null, valeurs: [a.annuel[r.code] ?? null, ...Array.from({ length: 12 }, (_, i) => v(i + 1, r.code))] }));
+            // Le format vient de la ligne : on le porte sur chaque colonne via la rubrique.
+            return { enteteLigne: 'Libellés', colonnes: colonnes.map((c) => ({ ...c, format: 'LIGNE' })), lignes: lignes.map((l, i) => ({ ...l, format: rubriques[i].format })), parLigne: true };
+        }
+        if (sec.orientation === 'INSTANTANE') {
+            const m = this.trimestreAnnuel();
+            const groupes = Array.from(new Set(rubriques.map((r) => r.groupe || '')));
+            const mesures = Array.from(new Set(rubriques.map((r) => r.libelleCourt)));
+            const colonnes: Col[] = mesures.map((mes) => {
+                const r = rubriques.find((x) => x.libelleCourt === mes)!;
+                return { code: mes, libelle: mes, titre: mes, format: r.format, calcul: r.nature === 'CALCUL' };
+            });
+            const lignes = groupes.map((g) => ({
+                libelle: g,
+                total: g === 'Total',
+                etat: null as string | null,
+                valeurs: mesures.map((mes) => {
+                    const r = rubriques.find((x) => (x.groupe || '') === g && x.libelleCourt === mes);
+                    return r ? v(m, r.code) : null;
+                })
+            }));
+            return { enteteLigne: 'Au ' + this.trimestreOptions.find((t) => t.value === m)?.label, colonnes, lignes, parLigne: false };
+        }
+        const mensuelles = rubriques.filter((r) => r.periodicite !== 'OUVERTURE');
+        const ouverture = rubriques.filter((r) => r.periodicite === 'OUVERTURE');
+        const colonnes = mensuelles.map(col);
+        const lignes: { libelle: string; total: boolean; etat: string | null; valeurs: (number | null)[] }[] = [];
+        if (ouverture.length) {
+            lignes.push({ libelle: ouverture[0].groupe || 'Ouverture', total: false, etat: null, valeurs: mensuelles.map((r) => {
+                const o = ouverture.find((x) => x.code.replace('_A1_', '_').replace('_SOLDE_', '_') === r.code);
+                return o ? v(1, o.code) : null;
+            }) });
+        }
+        const trimestriel = sec.periodicite === 'TRIMESTRIEL';
+        for (let m = 1; m <= 12; m++) {
+            if (trimestriel && m % 3 !== 0) continue;
+            lignes.push({ libelle: trimestriel ? ['1er', '2e', '3e', '4e'][m / 3 - 1] + ' trimestre' : fmtMois(m), total: false, etat: a.nbPointsService === 1 ? this.libelleEtatCourt(a.etats[m]) : a.etats[m] || null, valeurs: mensuelles.map((r) => v(m, r.code)) });
+        }
+        if (sec.libelleAnnuel) lignes.push({ libelle: sec.libelleAnnuel, total: true, etat: null, valeurs: mensuelles.map((r) => a.annuel[r.code] ?? null) });
+        return { enteteLigne: trimestriel ? 'Trimestre' : 'Mois', colonnes, lignes, parLigne: false };
+    });
     moisOptions = MOIS_LIBELLES.map((label, i) => ({ label, value: i + 1 }));
     anneeOptions: { label: string; value: number }[] = [];
 
@@ -477,7 +648,17 @@ export class RapportMensuelComponent implements OnInit, OnDestroy, AfterViewChec
         this.mois.set(d.getMonth() + 1);
         const an = new Date().getFullYear();
         this.anneeOptions = [an, an - 1, an - 2].map((v) => ({ label: String(v), value: v }));
-        this.charger();
+        this.route.data.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((donnees) => {
+            const m = (donnees['module'] as ModuleRapport) || 'MENSUEL';
+            if (m !== this.module()) {
+                this.module.set(m);
+                this.data.set(null);
+                this.annuel.set(null);
+                this.codeSelectionne.set(null);
+                this.vue.set('saisie');
+            }
+            this.charger();
+        });
     }
 
     ngOnDestroy(): void {
@@ -549,7 +730,7 @@ export class RapportMensuelComponent implements OnInit, OnDestroy, AfterViewChec
     charger(): void {
         this.loading.set(true);
         this.userService
-            .getRapportMensuel$(this.annee(), this.mois())
+            .getRapportMensuel$(this.annee(), this.mois(), this.module())
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (r: IResponse) => {
@@ -558,6 +739,10 @@ export class RapportMensuelComponent implements OnInit, OnDestroy, AfterViewChec
                     this.loading.set(false);
                     if (d && !d.peutSaisir && this.vue() === 'saisie') {
                         this.vue.set('cartes');
+                    }
+                    if (d && this.estActivite()) {
+                        if (!this.sectionAnnuel()) this.sectionAnnuel.set(d.sections[0]?.code || null);
+                        if (this.vue() === 'annuel') this.chargerAnnuel();
                     }
                     const code = this.codeSelectionne();
                     if (code && d?.lignes.some((l) => l.codAgencia === code)) {
@@ -595,6 +780,46 @@ export class RapportMensuelComponent implements OnInit, OnDestroy, AfterViewChec
 
     aller(code: string | null): void {
         if (code) this.selectionner(code);
+    }
+
+    changerVue(v: 'saisie' | 'cartes' | 'tableau' | 'annuel'): void {
+        this.flushAutosave();
+        this.vue.set(v);
+        if (v === 'annuel') this.chargerAnnuel();
+    }
+
+    chargerAnnuel(): void {
+        const d = this.data();
+        if (!d) return;
+        if (!this.cibleAnnuel()) {
+            const premiere = this.ciblesAnnuel()[0];
+            this.cibleAnnuel.set(premiere ? premiere.value : null);
+        }
+        const cible = this.cibleAnnuel() || 'TOUT';
+        const codAgencia = cible.startsWith('PS:') ? cible.substring(3) : null;
+        const agenceId = cible.startsWith('AG:') ? Number(cible.substring(3)) : null;
+        this.annuelLoading.set(true);
+        this.userService
+            .getRapportAnnuel$(this.module(), this.annee(), codAgencia, agenceId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => {
+                    this.annuel.set((r.data?.annuel || null) as AnnuelRapport | null);
+                    this.annuelLoading.set(false);
+                },
+                error: (err) => {
+                    this.annuelLoading.set(false);
+                    this.erreur('Exercice indisponible', err);
+                }
+            });
+    }
+
+    indexRubrique(code: string): number {
+        return this.rubriqueIndex().get(code) ?? 0;
+    }
+
+    private libelleEtatCourt(e: string | null | undefined): string | null {
+        return e ? this.libelleEtat(e as EtatRapport) : null;
     }
 
     ouvrirDepuisTableau(l: LigneRapport): void {
@@ -828,11 +1053,11 @@ export class RapportMensuelComponent implements OnInit, OnDestroy, AfterViewChec
     soumettre(g: GroupeAgence): void {
         this.flushAutosave();
         const codes = g.lignes.filter((l) => l.modifiable).map((l) => l.codAgencia);
-        this.action(this.userService.soumettreRapportMensuel$(this.annee(), this.mois(), codes), 'Rapports soumis');
+        this.action(this.userService.soumettreRapportMensuel$(this.annee(), this.mois(), codes, this.module()), 'Rapports soumis');
     }
 
     soumettreLigne(l: LigneRapport): void {
-        this.action(this.userService.soumettreRapportMensuel$(this.annee(), this.mois(), [l.codAgencia]), 'Rapport soumis');
+        this.action(this.userService.soumettreRapportMensuel$(this.annee(), this.mois(), [l.codAgencia], this.module()), 'Rapport soumis');
     }
 
     idsSoumis(g: GroupeAgence): number[] {
@@ -862,7 +1087,7 @@ export class RapportMensuelComponent implements OnInit, OnDestroy, AfterViewChec
     }
 
     consolider(): void {
-        this.action(this.userService.consoliderRapportMensuel$(this.annee(), this.mois()), 'Mois consolidé');
+        this.action(this.userService.consoliderRapportMensuel$(this.annee(), this.mois(), this.module()), 'Mois consolidé');
     }
 
     actualiserSaf(): void {
@@ -901,7 +1126,7 @@ export class RapportMensuelComponent implements OnInit, OnDestroy, AfterViewChec
 
     exporter(): void {
         this.flushAutosave();
-        this.telecharger(this.userService.exportRapportMensuel$(this.annee(), this.mois()), 'indicateurs_mensuels.xlsx');
+        this.telecharger(this.userService.exportRapportMensuel$(this.annee(), this.mois(), this.module()), this.estActivite() ? 'rapport_activite.xlsx' : 'indicateurs_mensuels.xlsx');
     }
 
     // ==================== Calculs d'affichage ====================
