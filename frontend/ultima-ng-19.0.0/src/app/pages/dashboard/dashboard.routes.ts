@@ -108,7 +108,12 @@ export default [
     },
     {
         path: 'rapport-mensuel',
-        data: { breadcrumb: 'Indicateurs mensuels' },
+        data: { breadcrumb: 'Indicateurs mensuels', module: 'MENSUEL' },
+        loadComponent: () => import('./rapports/rapport-mensuel.component').then((c) => c.RapportMensuelComponent)
+    },
+    {
+        path: 'rapport-activite',
+        data: { breadcrumb: "Rapport d'activité", module: 'ACTIVITE' },
         loadComponent: () => import('./rapports/rapport-mensuel.component').then((c) => c.RapportMensuelComponent)
     },
     {
