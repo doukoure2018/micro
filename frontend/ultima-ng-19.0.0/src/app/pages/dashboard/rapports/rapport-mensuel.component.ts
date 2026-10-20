@@ -3,7 +3,7 @@ import { IResponse } from '@/interface/response';
 import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
 import { HttpResponse } from '@angular/common/http';
-import { Component, DestroyRef, HostListener, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { AfterViewChecked, Component, DestroyRef, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
@@ -217,7 +217,17 @@ interface GroupeAgence {
             </div>
 
             <!-- ============ VUE TABLEAU : la grille du fichier ============ -->
-            <div *ngIf="vue() === 'tableau' && data() as d" class="overflow-x-auto">
+            <ng-container *ngIf="vue() === 'tableau' && data() as d">
+                <!-- Barre de navigation horizontale : on reste en haut, la grille défile sous les en-têtes -->
+                <div class="nav-grille flex flex-wrap items-center gap-2 mb-1" *ngIf="defilementMax() > 0">
+                    <button pButton icon="pi pi-step-backward" class="p-button-text p-button-sm" (click)="allerA(0)" [disabled]="defilementPos() <= 0" pTooltip="Première colonne"></button>
+                    <button pButton icon="pi pi-chevron-left" class="p-button-outlined p-button-sm" (click)="defiler(-1)" [disabled]="defilementPos() <= 0" pTooltip="Colonnes précédentes (← au clavier)"></button>
+                    <input type="range" class="flex-1 min-w-40" min="0" [max]="defilementMax()" step="1" [value]="defilementPos()" (input)="allerA(+$any($event.target).value)" aria-label="Défilement horizontal de la grille" />
+                    <button pButton icon="pi pi-chevron-right" class="p-button-outlined p-button-sm" (click)="defiler(1)" [disabled]="defilementPos() >= defilementMax()" pTooltip="Colonnes suivantes (→ au clavier)"></button>
+                    <button pButton icon="pi pi-step-forward" class="p-button-text p-button-sm" (click)="allerA(defilementMax())" [disabled]="defilementPos() >= defilementMax()" pTooltip="Dernière colonne"></button>
+                    <span class="text-xs text-gray-500 whitespace-nowrap">{{ colonnesVisibles() }}</span>
+                </div>
+                <div #grille class="grille-conteneur" tabindex="0" (scroll)="surDefilement()" (keydown.arrowleft)="defiler(-1); $event.preventDefault()" (keydown.arrowright)="defiler(1); $event.preventDefault()">
                 <table class="w-full text-xs grille">
                     <thead>
                         <tr class="uppercase text-gray-600">
@@ -260,8 +270,9 @@ interface GroupeAgence {
                         </tr>
                     </tbody>
                 </table>
+                </div>
                 <div class="text-xs text-gray-400 mt-2">Les taux de retards, de réalisation, de couverture des charges et de PAR sont calculés ; le taux de remboursement d'une agence est la moyenne simple de ses points de service, comme dans le fichier actuel.</div>
-            </div>
+            </ng-container>
         </div>
 
         <!-- Coller depuis Excel -->
@@ -288,12 +299,18 @@ interface GroupeAgence {
         `
             .tabular { font-variant-numeric: tabular-nums; }
             .fiche input.manquant { border-color: #f59e0b; background: #fffbeb; }
+            .grille-conteneur { overflow: auto; max-height: calc(100vh - 230px); scroll-behavior: smooth; outline: none; border: 1px solid #e5e7eb; border-radius: 4px; }
+            .grille-conteneur:focus-visible { box-shadow: 0 0 0 2px #93c5fd; }
+            .grille thead th { position: sticky; top: 0; background: #f9fafb; z-index: 2; }
             .grille th.sticky-col, .grille td.sticky-col { position: sticky; left: 0; background: inherit; z-index: 1; }
+            .grille thead th.sticky-col { z-index: 3; }
             .grille tbody tr:not(.bg-gray-100):not(.bg-blue-50):not(.bg-blue-100) td.sticky-col { background: #fff; }
+            .nav-grille { position: sticky; top: 0; z-index: 4; background: #fff; padding: 4px 0; }
+            .nav-grille input[type='range'] { accent-color: #2563eb; cursor: pointer; }
         `
     ]
 })
-export class RapportMensuelComponent implements OnInit, OnDestroy {
+export class RapportMensuelComponent implements OnInit, OnDestroy, AfterViewChecked {
     private readonly userService = inject(UserService);
     private readonly messageService = inject(MessageService);
     private readonly destroyRef = inject(DestroyRef);
@@ -332,6 +349,12 @@ export class RapportMensuelComponent implements OnInit, OnDestroy {
     private timerAutosave: ReturnType<typeof setTimeout> | null = null;
     private enEdition: string | null = null;
 
+    /** Navigation horizontale de la vue tableau sans aller chercher l'ascenseur en bas de page. */
+    @ViewChild('grille') grille?: ElementRef<HTMLDivElement>;
+    defilementPos = signal(0);
+    defilementMax = signal(0);
+    colonnesVisibles = signal('');
+
     groupes = computed<GroupeAgence[]>(() => {
         const d = this.data();
         if (!d) return [];
@@ -363,6 +386,59 @@ export class RapportMensuelComponent implements OnInit, OnDestroy {
 
     ngOnDestroy(): void {
         if (this.timerAutosave) clearTimeout(this.timerAutosave);
+    }
+
+    ngAfterViewChecked(): void {
+        const el = this.grille?.nativeElement;
+        if (!el) {
+            if (this.defilementMax() !== 0) this.defilementMax.set(0);
+            return;
+        }
+        const max = Math.max(0, el.scrollWidth - el.clientWidth);
+        if (max !== this.defilementMax()) {
+            // Hors du cycle de vérification, pour ne pas modifier la vue pendant qu'Angular la contrôle.
+            setTimeout(() => {
+                this.defilementMax.set(max);
+                this.surDefilement();
+            });
+        }
+    }
+
+    @HostListener('window:resize')
+    surRedimensionnement(): void {
+        this.ngAfterViewChecked();
+    }
+
+    // ==================== Navigation de la grille ====================
+
+    surDefilement(): void {
+        const el = this.grille?.nativeElement;
+        if (!el) return;
+        this.defilementPos.set(Math.round(el.scrollLeft));
+        // Quelles rubriques sont à l'écran : repère pour l'utilisateur, calculé sur les en-têtes.
+        const entetes = Array.from(el.querySelectorAll<HTMLElement>('thead th')).slice(1, -1);
+        const gauche = el.scrollLeft + (el.querySelector<HTMLElement>('thead th.sticky-col')?.offsetWidth || 0);
+        const droite = el.scrollLeft + el.clientWidth;
+        const visibles = entetes.filter((th) => th.offsetLeft + th.offsetWidth > gauche + 8 && th.offsetLeft < droite - 8);
+        if (visibles.length) {
+            const premier = entetes.indexOf(visibles[0]) + 1;
+            const dernier = entetes.indexOf(visibles[visibles.length - 1]) + 1;
+            this.colonnesVisibles.set(`Colonnes ${premier}–${dernier} sur ${entetes.length}`);
+        }
+    }
+
+    /** Avance ou recule d'une largeur d'écran moins une colonne, pour garder un repère. */
+    defiler(sens: number): void {
+        const el = this.grille?.nativeElement;
+        if (!el) return;
+        const pas = Math.max(120, el.clientWidth - 160);
+        this.allerA(el.scrollLeft + sens * pas);
+    }
+
+    allerA(position: number): void {
+        const el = this.grille?.nativeElement;
+        if (!el) return;
+        el.scrollLeft = Math.min(this.defilementMax(), Math.max(0, position));
     }
 
     @HostListener('window:beforeunload', ['$event'])
