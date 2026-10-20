@@ -72,13 +72,55 @@ interface GroupeAgence {
             </div>
 
             <div class="flex flex-wrap items-center gap-3 mb-3">
-                <p-selectButton [options]="vueOptions" [ngModel]="vue()" (ngModelChange)="vue.set($event)" optionLabel="label" optionValue="value"></p-selectButton>
+                <p-selectButton [options]="vueOptions()" [ngModel]="vue()" (ngModelChange)="vue.set($event)" optionLabel="label" optionValue="value"></p-selectButton>
                 <ng-container *ngIf="data()?.peutConsolider">
                     <button pButton icon="pi pi-lock" label="Consolider le mois" class="p-button-outlined ml-auto" [disabled]="!(data()!.total?.nbValides)" [loading]="actionEnCours()" (click)="consolider()" pTooltip="Fige les rapports validés : ils ne pourront plus être renvoyés"></button>
                 </ng-container>
             </div>
 
-            <!-- ============ VUE SAISIE : liste des PS + fiche ============ -->
+            <!-- ============ VUE CARTES (DR / DE) : une carte par agence, un clic sur un PS ouvre sa fiche ============ -->
+            <ng-container *ngIf="vue() === 'cartes' && data() as d">
+                <ng-container *ngFor="let bloc of blocsCartes()">
+                    <div *ngIf="bloc.titre" class="flex items-center gap-3 mt-2 mb-2">
+                        <h3 class="text-base font-semibold m-0">{{ bloc.titre }}</h3>
+                        <span class="text-xs text-gray-500">{{ bloc.agregat.nbComplets }}/{{ bloc.agregat.nbPointsService }} complets · {{ bloc.agregat.nbSoumis }} soumis · {{ bloc.agregat.nbValides }} validés · {{ bloc.agregat.nbConsolides }} consolidés<span *ngIf="bloc.agregat.nbEcarts"> · <span class="text-orange-600">{{ bloc.agregat.nbEcarts }} écart(s)</span></span></span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 mb-4">
+                        <div *ngFor="let g of bloc.groupes" class="carte border rounded flex flex-col" [class.carte-alerte]="g.agregat.nbRenvoyes > 0" [class.carte-ok]="g.agregat.nbValides + g.agregat.nbConsolides === g.agregat.nbPointsService">
+                            <div class="px-3 py-2 border-b bg-gray-50 flex items-start justify-between gap-2">
+                                <div class="min-w-0">
+                                    <div class="font-semibold text-base truncate">{{ g.agregat.libelle }}</div>
+                                    <div class="text-xs text-gray-500">{{ g.agregat.nbPointsService }} PS · {{ g.agregat.nbComplets }} complets</div>
+                                </div>
+                                <p-tag [value]="etatAgence(g)" [severity]="severiteAgence(g)"></p-tag>
+                            </div>
+                            <div class="px-3 pt-2">
+                                <div class="barre"><div class="barre-valide" [style.width.%]="pct(g.agregat.nbValides + g.agregat.nbConsolides, g.agregat.nbPointsService)"></div><div class="barre-soumis" [style.left.%]="pct(g.agregat.nbValides + g.agregat.nbConsolides, g.agregat.nbPointsService)" [style.width.%]="pct(g.agregat.nbSoumis, g.agregat.nbPointsService)"></div></div>
+                                <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                    <span>{{ g.agregat.nbSoumis }} à vérifier</span>
+                                    <span [class.text-orange-600]="g.agregat.nbEcarts > 0">{{ g.agregat.nbEcarts }} écart(s) SAF</span>
+                                </div>
+                            </div>
+                            <div class="px-1 py-2 flex-1">
+                                <div *ngFor="let l of g.lignes" class="ps flex items-center justify-between gap-2 px-2 py-1 rounded cursor-pointer hover:bg-blue-50" (click)="ouvrirFiche(l.codAgencia)">
+                                    <div class="min-w-0">
+                                        <div class="text-sm font-medium truncate">{{ l.pointService }}</div>
+                                        <div class="text-xs text-gray-500">{{ l.nbSaisies }}/{{ l.nbSaisies + l.nbManquantes }}<span *ngIf="l.nbEcarts" class="text-orange-600"> · {{ l.nbEcarts }} écart(s)</span><span *ngIf="l.calcules['TAUX_PAR'] != null"> · PAR {{ fmt(l.calcules['TAUX_PAR'], 'TAUX') }}</span></div>
+                                    </div>
+                                    <p-tag [value]="libelleEtat(l.etat)" [severity]="severiteEtat(l.etat)"></p-tag>
+                                </div>
+                            </div>
+                            <div class="px-3 py-2 border-t flex justify-end gap-2" *ngIf="d.peutValider">
+                                <button pButton icon="pi pi-undo" label="Renvoyer" class="p-button-sm p-button-danger p-button-text" [disabled]="!idsRenvoyables(g).length" (click)="ouvrirRenvoi(idsRenvoyables(g), g.agregat.libelle)"></button>
+                                <button pButton icon="pi pi-check" [label]="'Valider (' + idsSoumis(g).length + ')'" class="p-button-sm p-button-success" [disabled]="!idsSoumis(g).length" [loading]="actionEnCours()" (click)="valider(idsSoumis(g))"></button>
+                            </div>
+                        </div>
+                    </div>
+                </ng-container>
+                <div *ngIf="!loading() && !groupes().length" class="text-gray-500 p-3">Aucun point de service dans votre périmètre.</div>
+            </ng-container>
+
+            <!-- ============ VUE SAISIE (DA) : liste des PS + fiche ============ -->
             <div *ngIf="vue() === 'saisie'" class="grid grid-cols-12 gap-4">
                 <!-- Liste des points de service, groupés par agence -->
                 <div class="col-span-12 lg:col-span-4">
@@ -113,7 +155,76 @@ interface GroupeAgence {
 
                 <!-- Fiche de saisie du PS sélectionné -->
                 <div class="col-span-12 lg:col-span-8">
-                    <ng-container *ngIf="ligne() as l; else choisir">
+                    <ng-container *ngIf="ligne(); else choisir"><ng-container *ngTemplateOutlet="ficheTpl"></ng-container></ng-container>
+                    <ng-template #choisir>
+                        <div class="text-gray-500 p-6 text-center border rounded border-dashed" *ngIf="!loading()">Choisissez un point de service dans la liste.</div>
+                    </ng-template>
+                </div>
+            </div>
+
+            <!-- ============ VUE TABLEAU : la grille du fichier ============ -->
+            <ng-container *ngIf="vue() === 'tableau' && data() as d">
+                <!-- Barre de navigation horizontale : on reste en haut, la grille défile sous les en-têtes -->
+                <div class="nav-grille flex flex-wrap items-center gap-2 mb-1" *ngIf="defilementMax() > 0">
+                    <button pButton icon="pi pi-step-backward" class="p-button-text p-button-sm" (click)="allerA(0)" [disabled]="defilementPos() <= 0" pTooltip="Première colonne"></button>
+                    <button pButton icon="pi pi-chevron-left" class="p-button-outlined p-button-sm" (click)="defiler(-1)" [disabled]="defilementPos() <= 0" pTooltip="Colonnes précédentes (← au clavier)"></button>
+                    <input type="range" class="flex-1 min-w-40" min="0" [max]="defilementMax()" step="1" [value]="defilementPos()" (input)="allerA(+$any($event.target).value)" aria-label="Défilement horizontal de la grille" />
+                    <button pButton icon="pi pi-chevron-right" class="p-button-outlined p-button-sm" (click)="defiler(1)" [disabled]="defilementPos() >= defilementMax()" pTooltip="Colonnes suivantes (→ au clavier)"></button>
+                    <button pButton icon="pi pi-step-forward" class="p-button-text p-button-sm" (click)="allerA(defilementMax())" [disabled]="defilementPos() >= defilementMax()" pTooltip="Dernière colonne"></button>
+                    <span class="text-xs text-gray-500 whitespace-nowrap">{{ colonnesVisibles() }}</span>
+                </div>
+                <div #grille class="grille-conteneur" tabindex="0" (scroll)="surDefilement()" (keydown.arrowleft)="defiler(-1); $event.preventDefault()" (keydown.arrowright)="defiler(1); $event.preventDefault()">
+                <table class="w-full text-xs grille">
+                    <thead>
+                        <tr class="uppercase text-gray-600">
+                            <th class="text-left py-2 pr-2 sticky-col">Point de service</th>
+                            <th *ngFor="let r of d.rubriques" class="text-right py-2 px-2 whitespace-nowrap" [class.text-gray-400]="r.nature === 'CALCUL'" [pTooltip]="r.libelle">{{ r.libelleCourt }}</th>
+                            <th class="text-left py-2 px-2">État</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <ng-container *ngFor="let g of groupes()">
+                            <tr *ngFor="let l of g.lignes; let i = index" class="border-t hover:bg-blue-50 cursor-pointer" (click)="ouvrirDepuisTableau(l)">
+                                <td class="py-1 pr-2 whitespace-nowrap sticky-col">{{ i + 1 }}. {{ l.pointService }}</td>
+                                <td *ngFor="let r of d.rubriques" class="text-right px-2 tabular" [class.bg-orange-50]="l.valeurs[r.code]?.ecart" [class.text-gray-300]="r.nature === 'SAISIE' && l.valeurs[r.code]?.valeur == null">
+                                    {{ r.nature === 'CALCUL' ? fmt(l.calcules[r.code], r.format) : (l.valeurs[r.code]?.valeur == null ? '·' : fmt(l.valeurs[r.code]?.valeur, r.format)) }}
+                                </td>
+                                <td class="px-2"><p-tag [value]="libelleEtat(l.etat)" [severity]="severiteEtat(l.etat)"></p-tag></td>
+                            </tr>
+                            <tr class="border-t bg-gray-100 font-semibold">
+                                <td class="py-1 pr-2 whitespace-nowrap sticky-col">TOTAL AGENCE {{ g.agregat.libelle | uppercase }}</td>
+                                <td *ngFor="let r of d.rubriques" class="text-right px-2 tabular">{{ fmt(g.agregat.valeurs[r.code], r.format) }}</td>
+                                <td class="px-2 text-gray-500 font-normal">{{ g.agregat.nbComplets }}/{{ g.agregat.nbPointsService }} complets</td>
+                            </tr>
+                        </ng-container>
+                        <ng-container *ngIf="d.delegations.length > 1">
+                            <tr *ngFor="let del of d.delegations" class="border-t bg-blue-50 font-semibold">
+                                <td class="py-1 pr-2 whitespace-nowrap sticky-col">DR {{ del.libelle | uppercase }}</td>
+                                <td *ngFor="let r of d.rubriques" class="text-right px-2 tabular">{{ fmt(del.valeurs[r.code], r.format) }}</td>
+                                <td class="px-2 text-gray-500 font-normal">{{ del.nbComplets }}/{{ del.nbPointsService }}</td>
+                            </tr>
+                        </ng-container>
+                        <tr *ngIf="d.total && (d.delegations.length !== 1 || d.niveau === 'RESEAU')" class="border-t-2 bg-blue-100 font-bold">
+                            <td class="py-1 pr-2 whitespace-nowrap sticky-col">{{ d.total.libelle }}</td>
+                            <td *ngFor="let r of d.rubriques" class="text-right px-2 tabular">{{ fmt(d.total.valeurs[r.code], r.format) }}</td>
+                            <td class="px-2 font-normal text-gray-500">{{ d.total.nbComplets }}/{{ d.total.nbPointsService }}</td>
+                        </tr>
+                        <tr *ngIf="d.total && d.delegations.length === 1 && d.niveau !== 'RESEAU'" class="border-t-2 bg-blue-100 font-bold">
+                            <td class="py-1 pr-2 whitespace-nowrap sticky-col">DR {{ d.delegations[0].libelle | uppercase }}</td>
+                            <td *ngFor="let r of d.rubriques" class="text-right px-2 tabular">{{ fmt(d.delegations[0].valeurs[r.code], r.format) }}</td>
+                            <td class="px-2 font-normal text-gray-500">{{ d.delegations[0].nbComplets }}/{{ d.delegations[0].nbPointsService }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                </div>
+                <div class="text-xs text-gray-400 mt-2">Les taux de retards, de réalisation, de couverture des charges et de PAR sont calculés ; le taux de remboursement d'une agence est la moyenne simple de ses points de service, comme dans le fichier actuel.</div>
+            </ng-container>
+        </div>
+
+
+        <!-- Fiche d'un point de service : partagée entre la colonne de saisie (DA) et la fenêtre (DR / DE) -->
+        <ng-template #ficheTpl>
+                    <ng-container *ngIf="ligne() as l">
                         <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
                             <div>
                                 <div class="text-lg font-semibold">{{ l.pointService }} <span class="text-sm text-gray-400">{{ l.agence }} · {{ l.delegation }}</span></div>
@@ -210,70 +321,27 @@ interface GroupeAgence {
                             </div>
                         </div>
                     </ng-container>
-                    <ng-template #choisir>
-                        <div class="text-gray-500 p-6 text-center border rounded border-dashed" *ngIf="!loading()">Choisissez un point de service dans la liste.</div>
-                    </ng-template>
-                </div>
-            </div>
+        </ng-template>
 
-            <!-- ============ VUE TABLEAU : la grille du fichier ============ -->
-            <ng-container *ngIf="vue() === 'tableau' && data() as d">
-                <!-- Barre de navigation horizontale : on reste en haut, la grille défile sous les en-têtes -->
-                <div class="nav-grille flex flex-wrap items-center gap-2 mb-1" *ngIf="defilementMax() > 0">
-                    <button pButton icon="pi pi-step-backward" class="p-button-text p-button-sm" (click)="allerA(0)" [disabled]="defilementPos() <= 0" pTooltip="Première colonne"></button>
-                    <button pButton icon="pi pi-chevron-left" class="p-button-outlined p-button-sm" (click)="defiler(-1)" [disabled]="defilementPos() <= 0" pTooltip="Colonnes précédentes (← au clavier)"></button>
-                    <input type="range" class="flex-1 min-w-40" min="0" [max]="defilementMax()" step="1" [value]="defilementPos()" (input)="allerA(+$any($event.target).value)" aria-label="Défilement horizontal de la grille" />
-                    <button pButton icon="pi pi-chevron-right" class="p-button-outlined p-button-sm" (click)="defiler(1)" [disabled]="defilementPos() >= defilementMax()" pTooltip="Colonnes suivantes (→ au clavier)"></button>
-                    <button pButton icon="pi pi-step-forward" class="p-button-text p-button-sm" (click)="allerA(defilementMax())" [disabled]="defilementPos() >= defilementMax()" pTooltip="Dernière colonne"></button>
-                    <span class="text-xs text-gray-500 whitespace-nowrap">{{ colonnesVisibles() }}</span>
-                </div>
-                <div #grille class="grille-conteneur" tabindex="0" (scroll)="surDefilement()" (keydown.arrowleft)="defiler(-1); $event.preventDefault()" (keydown.arrowright)="defiler(1); $event.preventDefault()">
-                <table class="w-full text-xs grille">
-                    <thead>
-                        <tr class="uppercase text-gray-600">
-                            <th class="text-left py-2 pr-2 sticky-col">Point de service</th>
-                            <th *ngFor="let r of d.rubriques" class="text-right py-2 px-2 whitespace-nowrap" [class.text-gray-400]="r.nature === 'CALCUL'" [pTooltip]="r.libelle">{{ r.libelleCourt }}</th>
-                            <th class="text-left py-2 px-2">État</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <ng-container *ngFor="let g of groupes()">
-                            <tr *ngFor="let l of g.lignes; let i = index" class="border-t hover:bg-blue-50 cursor-pointer" (click)="ouvrirDepuisTableau(l)">
-                                <td class="py-1 pr-2 whitespace-nowrap sticky-col">{{ i + 1 }}. {{ l.pointService }}</td>
-                                <td *ngFor="let r of d.rubriques" class="text-right px-2 tabular" [class.bg-orange-50]="l.valeurs[r.code]?.ecart" [class.text-gray-300]="r.nature === 'SAISIE' && l.valeurs[r.code]?.valeur == null">
-                                    {{ r.nature === 'CALCUL' ? fmt(l.calcules[r.code], r.format) : (l.valeurs[r.code]?.valeur == null ? '·' : fmt(l.valeurs[r.code]?.valeur, r.format)) }}
-                                </td>
-                                <td class="px-2"><p-tag [value]="libelleEtat(l.etat)" [severity]="severiteEtat(l.etat)"></p-tag></td>
-                            </tr>
-                            <tr class="border-t bg-gray-100 font-semibold">
-                                <td class="py-1 pr-2 whitespace-nowrap sticky-col">TOTAL AGENCE {{ g.agregat.libelle | uppercase }}</td>
-                                <td *ngFor="let r of d.rubriques" class="text-right px-2 tabular">{{ fmt(g.agregat.valeurs[r.code], r.format) }}</td>
-                                <td class="px-2 text-gray-500 font-normal">{{ g.agregat.nbComplets }}/{{ g.agregat.nbPointsService }} complets</td>
-                            </tr>
+        <!-- Fiche d'un point de service en fenêtre (vue cartes) -->
+        <p-dialog [(visible)]="showFiche" [modal]="true" [maximizable]="true" [dismissableMask]="true" [style]="{ width: '72rem', maxWidth: '96vw' }" [header]="ligne()?.pointService || 'Point de service'">
+            <ng-container *ngTemplateOutlet="ficheTpl"></ng-container>
+            <ng-template pTemplate="footer">
+                <div class="flex flex-wrap items-center justify-between gap-2 w-full" *ngIf="ligne() as l">
+                    <div class="flex gap-1">
+                        <button pButton icon="pi pi-chevron-left" label="Précédent" class="p-button-text p-button-sm" [disabled]="!precedent()" (click)="aller(precedent())"></button>
+                        <button pButton icon="pi pi-chevron-right" label="Suivant" iconPos="right" class="p-button-text p-button-sm" [disabled]="!suivant()" (click)="aller(suivant())"></button>
+                    </div>
+                    <div class="flex gap-2">
+                        <button pButton label="Fermer" class="p-button-text" (click)="showFiche = false"></button>
+                        <ng-container *ngIf="data()?.peutValider">
+                            <button pButton icon="pi pi-undo" label="Renvoyer" class="p-button-danger p-button-outlined" [disabled]="l.etat !== 'SOUMIS' && l.etat !== 'VALIDE'" (click)="ouvrirRenvoi([l.id], l.pointService)"></button>
+                            <button pButton icon="pi pi-check" label="Valider" class="p-button-success" [disabled]="l.etat !== 'SOUMIS'" [loading]="actionEnCours()" (click)="valider([l.id])"></button>
                         </ng-container>
-                        <ng-container *ngIf="d.delegations.length > 1">
-                            <tr *ngFor="let del of d.delegations" class="border-t bg-blue-50 font-semibold">
-                                <td class="py-1 pr-2 whitespace-nowrap sticky-col">DR {{ del.libelle | uppercase }}</td>
-                                <td *ngFor="let r of d.rubriques" class="text-right px-2 tabular">{{ fmt(del.valeurs[r.code], r.format) }}</td>
-                                <td class="px-2 text-gray-500 font-normal">{{ del.nbComplets }}/{{ del.nbPointsService }}</td>
-                            </tr>
-                        </ng-container>
-                        <tr *ngIf="d.total && (d.delegations.length !== 1 || d.niveau === 'RESEAU')" class="border-t-2 bg-blue-100 font-bold">
-                            <td class="py-1 pr-2 whitespace-nowrap sticky-col">{{ d.total.libelle }}</td>
-                            <td *ngFor="let r of d.rubriques" class="text-right px-2 tabular">{{ fmt(d.total.valeurs[r.code], r.format) }}</td>
-                            <td class="px-2 font-normal text-gray-500">{{ d.total.nbComplets }}/{{ d.total.nbPointsService }}</td>
-                        </tr>
-                        <tr *ngIf="d.total && d.delegations.length === 1 && d.niveau !== 'RESEAU'" class="border-t-2 bg-blue-100 font-bold">
-                            <td class="py-1 pr-2 whitespace-nowrap sticky-col">DR {{ d.delegations[0].libelle | uppercase }}</td>
-                            <td *ngFor="let r of d.rubriques" class="text-right px-2 tabular">{{ fmt(d.delegations[0].valeurs[r.code], r.format) }}</td>
-                            <td class="px-2 font-normal text-gray-500">{{ d.delegations[0].nbComplets }}/{{ d.delegations[0].nbPointsService }}</td>
-                        </tr>
-                    </tbody>
-                </table>
+                    </div>
                 </div>
-                <div class="text-xs text-gray-400 mt-2">Les taux de retards, de réalisation, de couverture des charges et de PAR sont calculés ; le taux de remboursement d'une agence est la moyenne simple de ses points de service, comme dans le fichier actuel.</div>
-            </ng-container>
-        </div>
+            </ng-template>
+        </p-dialog>
 
         <!-- Coller depuis Excel -->
         <p-dialog header="Coller depuis Excel" [(visible)]="showColler" [modal]="true" [style]="{ width: '34rem' }">
@@ -306,6 +374,14 @@ interface GroupeAgence {
             .grille thead th.sticky-col { z-index: 3; }
             .grille tbody tr:not(.bg-gray-100):not(.bg-blue-50):not(.bg-blue-100) td.sticky-col { background: #fff; }
             .nav-grille { position: sticky; top: 0; z-index: 4; background: #fff; padding: 4px 0; }
+            .carte { background: #fff; transition: box-shadow 0.15s; }
+            .carte:hover { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
+            .carte-alerte { border-color: #fca5a5; }
+            .carte-ok { border-color: #86efac; }
+            .barre { position: relative; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden; }
+            .barre-valide { position: absolute; left: 0; top: 0; height: 100%; background: #16a34a; }
+            .barre-soumis { position: absolute; top: 0; height: 100%; background: #60a5fa; }
+            .ps + .ps { border-top: 1px solid #f3f4f6; }
             .nav-grille input[type='range'] { accent-color: #2563eb; cursor: pointer; }
         `
     ]
@@ -323,15 +399,24 @@ export class RapportMensuelComponent implements OnInit, OnDestroy, AfterViewChec
     sauvegardeEnCours = signal(false);
     modifie = signal(false);
     dernierEnregistrement = signal<Date | null>(null);
-    vue = signal<'saisie' | 'tableau'>('saisie');
+    vue = signal<'saisie' | 'cartes' | 'tableau'>('saisie');
+    showFiche = false;
     codeSelectionne = signal<string | null>(null);
     annee = signal(0);
     mois = signal(0);
 
-    vueOptions = [
-        { label: 'Saisie par point de service', value: 'saisie' },
-        { label: 'Vue tableau', value: 'tableau' }
-    ];
+    /** Le DA saisit point par point ; le DR et la DE vérifient par agence (cartes) ou dans la grille. */
+    vueOptions = computed(() =>
+        this.data()?.peutSaisir
+            ? [
+                  { label: 'Saisie par point de service', value: 'saisie' },
+                  { label: 'Vue tableau', value: 'tableau' }
+              ]
+            : [
+                  { label: 'Par agence', value: 'cartes' },
+                  { label: 'Vue tableau', value: 'tableau' }
+              ]
+    );
     moisOptions = MOIS_LIBELLES.map((label, i) => ({ label, value: i + 1 }));
     anneeOptions: { label: string; value: number }[] = [];
 
@@ -359,6 +444,17 @@ export class RapportMensuelComponent implements OnInit, OnDestroy, AfterViewChec
         const d = this.data();
         if (!d) return [];
         return d.agences.map((a) => ({ agregat: a, lignes: d.lignes.filter((l) => l.agenceId === a.id) }));
+    });
+    /** Cartes groupées par délégation quand le périmètre en couvre plusieurs (DE), sinon un seul bloc sans titre. */
+    blocsCartes = computed<{ titre: string | null; agregat: AgregatRapport; groupes: GroupeAgence[] }[]>(() => {
+        const d = this.data();
+        if (!d) return [];
+        const groupes = this.groupes();
+        if (d.delegations.length <= 1) {
+            const agregat = d.delegations[0] || d.total;
+            return agregat ? [{ titre: null, agregat, groupes }] : [];
+        }
+        return d.delegations.map((del) => ({ titre: 'DR ' + del.libelle, agregat: del, groupes: groupes.filter((g) => g.agregat.parentId === del.id) }));
     });
     private ordre = computed(() => this.groupes().flatMap((g) => g.lignes.map((l) => l.codAgencia)));
     ligne = computed(() => this.data()?.lignes.find((l) => l.codAgencia === this.codeSelectionne()) ?? null);
@@ -460,8 +556,8 @@ export class RapportMensuelComponent implements OnInit, OnDestroy, AfterViewChec
                     const d = (r.data?.rapport || null) as RapportMensuel | null;
                     this.data.set(d);
                     this.loading.set(false);
-                    if (d && !d.peutSaisir && this.vue() === 'saisie' && !this.codeSelectionne()) {
-                        this.vue.set('tableau');
+                    if (d && !d.peutSaisir && this.vue() === 'saisie') {
+                        this.vue.set('cartes');
                     }
                     const code = this.codeSelectionne();
                     if (code && d?.lignes.some((l) => l.codAgencia === code)) {
@@ -502,8 +598,40 @@ export class RapportMensuelComponent implements OnInit, OnDestroy, AfterViewChec
     }
 
     ouvrirDepuisTableau(l: LigneRapport): void {
-        this.selectionner(l.codAgencia);
-        this.vue.set('saisie');
+        if (this.data()?.peutSaisir) {
+            this.selectionner(l.codAgencia);
+            this.vue.set('saisie');
+        } else {
+            this.ouvrirFiche(l.codAgencia);
+        }
+    }
+
+    /** Vue cartes : la fiche du point de service s'ouvre en fenêtre, sans quitter la page. */
+    ouvrirFiche(code: string): void {
+        this.selectionner(code);
+        this.showFiche = true;
+    }
+
+    etatAgence(g: GroupeAgence): string {
+        const a = g.agregat;
+        if (a.nbConsolides === a.nbPointsService) return 'Consolidée';
+        if (a.nbValides + a.nbConsolides === a.nbPointsService) return 'Validée';
+        if (a.nbRenvoyes > 0) return a.nbRenvoyes + ' renvoyé(s)';
+        if (a.nbSoumis > 0) return a.nbSoumis + ' à vérifier';
+        return a.nbComplets === a.nbPointsService ? 'Complète, non soumise' : 'En saisie';
+    }
+
+    severiteAgence(g: GroupeAgence): 'secondary' | 'info' | 'success' | 'danger' | 'contrast' | 'warn' {
+        const a = g.agregat;
+        if (a.nbConsolides === a.nbPointsService) return 'contrast';
+        if (a.nbValides + a.nbConsolides === a.nbPointsService) return 'success';
+        if (a.nbRenvoyes > 0) return 'danger';
+        if (a.nbSoumis > 0) return 'info';
+        return a.nbComplets === a.nbPointsService ? 'warn' : 'secondary';
+    }
+
+    pct(n: number, total: number): number {
+        return total ? Math.round((100 * n) / total) : 0;
     }
 
     /** Recopie la ligne sélectionnée dans les champs de saisie. */
@@ -716,7 +844,7 @@ export class RapportMensuelComponent implements OnInit, OnDestroy, AfterViewChec
     }
 
     valider(ids: number[]): void {
-        this.action(this.userService.validerRapportMensuel$(ids), 'Rapports validés');
+        this.action(this.userService.validerRapportMensuel$(ids), 'Rapports validés', () => (this.showFiche = false));
     }
 
     ouvrirRenvoi(ids: number[], libelle: string): void {
@@ -727,7 +855,10 @@ export class RapportMensuelComponent implements OnInit, OnDestroy, AfterViewChec
     }
 
     renvoyer(): void {
-        this.action(this.userService.renvoyerRapportMensuel$(this.renvoiIds, this.renvoiMotif.trim()), 'Rapports renvoyés', () => (this.showRenvoi = false));
+        this.action(this.userService.renvoyerRapportMensuel$(this.renvoiIds, this.renvoiMotif.trim()), 'Rapports renvoyés', () => {
+            this.showRenvoi = false;
+            this.showFiche = false;
+        });
     }
 
     consolider(): void {
