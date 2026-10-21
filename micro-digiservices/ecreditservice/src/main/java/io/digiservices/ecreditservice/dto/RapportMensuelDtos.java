@@ -152,8 +152,47 @@ public final class RapportMensuelDtos {
         private int nbEcarts;
         /** Toutes les rubriques SAISIE sont renseignees. */
         private boolean complet;
-        /** L'utilisateur connecte peut modifier cette ligne (DA de l'agence, etat BROUILLON ou RENVOYE). */
+        /** L'utilisateur connecte peut modifier cette ligne (DA de l'agence ou agent designe, etat BROUILLON ou RENVOYE). */
         private boolean modifiable;
+        /** Agents de credit designes par le DA pour saisir ce point de service (V169). */
+        @Builder.Default
+        private List<AgentDesigneDto> agentsDesignes = new ArrayList<>();
+    }
+
+    /** Un agent de credit designe pour la saisie d'un point de service (V169). */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class AgentDesigneDto {
+        private Long userId;
+        private String nom;
+        private String email;
+        private OffsetDateTime dateDesignation;
+        private String designePar;
+    }
+
+    /** Pour le DA : un point de service, ses agents de credit, et qui parmi eux est designe. */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class DesignationPsDto {
+        private String codAgencia;
+        private String pointService;
+        @Builder.Default
+        private List<AgentDesigneDto> agents = new ArrayList<>();
+        @Builder.Default
+        private List<Long> designes = new ArrayList<>();
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DesignationRequest {
+        @NotNull
+        private String codAgencia;
+        @NotNull
+        private Long agentUserId;
     }
 
     /** Total d'une agence, d'une delegation ou du reseau : sommes des saisies, taux en rapport de sommes. */
@@ -208,6 +247,10 @@ public final class RapportMensuelDtos {
         private boolean peutSaisir;
         private boolean peutValider;
         private boolean peutConsolider;
+        /** DA : peut designer les agents saisissants de ses points de service. */
+        private boolean peutDesigner;
+        /** Agent de credit non designe : consultation seule, l'ecran le dit. */
+        private boolean lectureSeule;
         private BigDecimal seuilEcartPct;
         private BigDecimal seuilEcartMontant;
         /** Message si SAF n'a pas pu etre lu a l'ouverture du mois. */
