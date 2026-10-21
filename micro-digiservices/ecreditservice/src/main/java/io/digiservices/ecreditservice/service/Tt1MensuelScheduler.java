@@ -57,6 +57,7 @@ public class Tt1MensuelScheduler {
     private final PortefeuillePerimetreRepository perimetreRepository;
     private final EnvoiTt1MensuelRepository envoiRepository;
     private final ApplicationEventPublisher publisher;
+    private final SafJobRetry safJobs;
     private final DonneesSafService donneesSaf;
 
     @Value("${portefeuille.tt1.envoi.mensuel.actif:false}")
@@ -82,8 +83,13 @@ public class Tt1MensuelScheduler {
      * pour l'envoi, les suivants pour rattraper ce qui a echoue (cloture SAF, panne SMTP).
      * Le dimanche n'est pas un jour ouvre ; le samedi en est un au CRG.
      */
-    @Scheduled(cron = "0 45 6 * * *", zone = "GMT")
+    // Apres la restauration de la sauvegarde SAF (~07:15) : 08:15 GMT, rejoue si la base est encore en restauration.
+    @Scheduled(cron = "${portefeuille.tt1.cron:0 15 8 * * *}", zone = "GMT")
     public void envoyerEtatMensuel() {
+        safJobs.executer("etat TT1 mensuel", this::envoyerEtatMensuelInterne);
+    }
+
+    void envoyerEtatMensuelInterne() {
         if (!actif) {
             return;
         }

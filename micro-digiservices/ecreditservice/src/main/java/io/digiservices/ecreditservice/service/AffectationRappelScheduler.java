@@ -32,14 +32,19 @@ public class AffectationRappelScheduler {
     private final PortefeuilleAffectationService affectationService;
     private final AlerteDestinatairesRepository destinataires;
     private final ApplicationEventPublisher publisher;
+    private final SafJobRetry safJobs;
     private final DonneesSafService donneesSaf;
 
     @Value("${portefeuille.affectation.rappel.actif:true}")
     private boolean actif;
 
-    /** Lundi 07:45 GMT, apres la synthese PAR hebdomadaire (07:30). */
-    @Scheduled(cron = "${portefeuille.affectation.rappel.cron:0 45 7 * * MON}", zone = "GMT")
+    /** Lundi 08:45 GMT, apres la synthese PAR hebdomadaire (08:30) et la restauration de la sauvegarde SAF. */
+    @Scheduled(cron = "${portefeuille.affectation.rappel.cron:0 45 8 * * MON}", zone = "GMT")
     public void rappelHebdomadaire() {
+        safJobs.executer("rappel hebdomadaire d'affectation", this::rappelHebdomadaireInterne);
+    }
+
+    void rappelHebdomadaireInterne() {
         if (!actif) {
             return;
         }
