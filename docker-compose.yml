@@ -425,15 +425,21 @@ services:
       - "127.0.0.1:8081:8081"
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      # Aiguillage SAF (DSIG 21/10/2026). Identifiants dans .env.prod, jamais ici.
+      # Production BDCRG : ecritures, assainissement, telephone, rapprochements.
       SPRING_DATASOURCE_URL: "jdbc:sqlserver://10.220.220.8:1433;databaseName=BDCRG;trustServerCertificate=true;encrypt=true"
-      SPRING_DATASOURCE_USERNAME: "DIGI"
-      SPRING_DATASOURCE_PASSWORD: "@Digi2711@!"
-      # Tertiary (module agricole/KUMY) : bascule sur BDCRG PROD — le defaut du yml
-      # pointe sur le SAF dev 10.110.15.2, injoignable depuis le changement de VPN
-      # (503 systematiques sur /agriculteurs/** apres 60 s de timeout)
-      SPRING_TERTIARY_DATASOURCE_URL: "jdbc:sqlserver://10.220.220.8:1433;databaseName=BDCRG;trustServerCertificate=true;encrypt=true"
-      SPRING_TERTIARY_DATASOURCE_USERNAME: "DIGI"
-      SPRING_TERTIARY_DATASOURCE_PASSWORD: "@Digi2711@!"
+      SPRING_DATASOURCE_USERNAME: ${SAF_PROD_USERNAME:-DIGI}
+      SPRING_DATASOURCE_PASSWORD: ${SAF_PROD_PASSWORD}
+      # Sauvegarde BDCRG (10.9.0.168, restauree chaque matin ~07:15) : toutes les autres lectures.
+      SPRING_SAUVEGARDE_DATASOURCE_URL: "jdbc:sqlserver://10.9.0.168:1433;databaseName=BDCRG;trustServerCertificate=true;encrypt=true"
+      SPRING_SAUVEGARDE_DATASOURCE_USERNAME: ${SAF_SAUVEGARDE_USERNAME:-DIGI_LECTURE}
+      SPRING_SAUVEGARDE_DATASOURCE_PASSWORD: ${SAF_SAUVEGARDE_PASSWORD}
+      SAF_SAUVEGARDE_ACTIVE: ${SAF_SAUVEGARDE_ACTIVE:-true}
+      # Tertiary (module agricole/KUMY) : lit la sauvegarde, un tiers ne charge pas la production.
+      SPRING_TERTIARY_DATASOURCE_URL: "jdbc:sqlserver://10.9.0.168:1433;databaseName=BDCRG;trustServerCertificate=true;encrypt=true"
+      SPRING_TERTIARY_DATASOURCE_USERNAME: ${SAF_SAUVEGARDE_USERNAME:-DIGI_LECTURE}
+      SPRING_TERTIARY_DATASOURCE_PASSWORD: ${SAF_SAUVEGARDE_PASSWORD}
+      SPRING_MIDDLEWARE_DATASOURCE_PASSWORD: ${SAF_MIDDLEWARE_PASSWORD}
       UI_APP_URL: ${UI_APP_URL}
       BACKEND_APP_URL: ${BACKEND_APP_URL}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://admin:admin2711@discoveryserver:5002/eureka/"

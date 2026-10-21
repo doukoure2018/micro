@@ -1,5 +1,6 @@
 package io.digiservices.ebanking.service.impl;
 
+import io.digiservices.ebanking.config.SafRoutage;
 import io.digiservices.ebanking.dto.CompteDTO;
 import io.digiservices.ebanking.dto.DernieresTransactionsCompteDTO;
 import io.digiservices.ebanking.dto.FicheSignaletiqueResponseDTO;
@@ -43,6 +44,8 @@ public class FicheSignaletiqueServiceImpl implements FicheSignaletiqueService {
 
     // Thread pool for async operations
     private final ExecutorService executorService = Executors.newFixedThreadPool(5);
+    /** Les taches deleguees gardent la cible SAF de la requete (production pour l'assainissement). */
+    private final Executor executeur = SafRoutage.propager(executorService);
 
     private static final String DEFAULT_COD_EMPRESA = "00000";
     private static final int DEFAULT_TIMEOUT_SECONDS = 60;
@@ -77,7 +80,7 @@ public class FicheSignaletiqueServiceImpl implements FicheSignaletiqueService {
             // Execute with timeout using CompletableFuture
             CompletableFuture<Map<String, Object>> future = CompletableFuture.supplyAsync(
                     () -> repository.updateFicheSignaletique(cleanedDto),
-                    executorService
+                    executeur
             );
 
             Map<String, Object> result;
@@ -154,7 +157,7 @@ public class FicheSignaletiqueServiceImpl implements FicheSignaletiqueService {
                             throw new ApiException("La requête a pris trop de temps. Veuillez réessayer.");
                         }
                     },
-                    executorService
+                    executeur
             );
 
             FicheSignaletiqueResponseDTO result;
@@ -409,13 +412,13 @@ public class FicheSignaletiqueServiceImpl implements FicheSignaletiqueService {
 
             // Lancer les 3 requêtes en parallèle
             CompletableFuture<FicheSignaletiqueResponseDTO> futureFiche = CompletableFuture.supplyAsync(
-                    () -> repository.getFicheSignaletique(empresa, client), executorService);
+                    () -> repository.getFicheSignaletique(empresa, client), executeur);
 
             CompletableFuture<List<CompteDTO>> futureProd = CompletableFuture.supplyAsync(
-                    () -> repository.getComptesSoldes(empresa, client), executorService);
+                    () -> repository.getComptesSoldes(empresa, client), executeur);
 
             CompletableFuture<Map<String, CompteDTO>> futureMw = CompletableFuture.supplyAsync(
-                    () -> repository.getComptesSoldesMiddleware(empresa, client), executorService);
+                    () -> repository.getComptesSoldesMiddleware(empresa, client), executeur);
 
             // Fiche identité (obligatoire) + Middleware (rapide, requis pour fallback)
             FicheSignaletiqueResponseDTO basicFiche;

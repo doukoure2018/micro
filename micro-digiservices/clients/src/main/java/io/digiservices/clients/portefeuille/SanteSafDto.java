@@ -21,17 +21,22 @@ public class SanteSafDto {
 
     private boolean toutOk;
     private List<Base> bases;
+    /** Aiguillage actif : les lectures ordinaires viennent de la sauvegarde. */
+    private boolean sauvegardeActive;
+    /** Date de restauration de la sauvegarde (yyyy-MM-dd HH:mm:ss), a afficher comme « Donnees SAF au ». */
+    private String dateDonneesSauvegarde;
 
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class Base {
-        private String nom;          // production, tertiary (agri), middleware
+        private String nom;          // production, sauvegarde, tertiary (agri), middleware
         private String hote;
         private String utilisateur;
         private boolean ok;
         private long dureeMs;
         private String message;      // null si ok
+        private String dateRestauration; // sauvegarde / tertiary : date de restauration de la base
     }
 }
