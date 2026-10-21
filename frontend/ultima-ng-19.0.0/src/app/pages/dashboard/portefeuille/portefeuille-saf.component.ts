@@ -1,3 +1,4 @@
+import { DonneesSafComponent } from './donnees-saf.component';
 import { IResponse } from '@/interface/response';
 import { CapacitesSignalement, MOTIFS_SIGNALEMENT, MotifSignalementTelephone, SignalementTelephone, libelleMotifSignalement, libelleStatutSignalement, severiteStatutSignalement } from '@/interface/signalement-telephone';
 import { SignalementTelephoneService } from '@/service/signalement-telephone.service';
@@ -28,13 +29,13 @@ import { Router } from '@angular/router';
 @Component({
     selector: 'app-portefeuille-saf',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, DialogModule, DropdownModule, InputTextModule, SelectButtonModule, TableModule, TagModule, TextareaModule, ToastModule, TooltipModule],
+    imports: [CommonModule, DonneesSafComponent, FormsModule, ButtonModule, DialogModule, DropdownModule, InputTextModule, SelectButtonModule, TableModule, TagModule, TextareaModule, ToastModule, TooltipModule],
     providers: [MessageService],
     template: `
         <p-toast></p-toast>
         <div class="card">
             <div class="flex flex-wrap justify-between items-center gap-3 mb-2">
-                <h2 class="text-xl font-bold m-0">Portefeuille crédits SAF</h2>
+                <h2 class="text-xl font-bold m-0">Portefeuille crédits SAF</h2> <app-donnees-saf></app-donnees-saf>
                 <button pButton icon="pi pi-refresh" class="p-button-text" (click)="recharger()" [loading]="state().loading"></button>
             </div>
             <p-selectButton [options]="vueOptions" [(ngModel)]="vue" optionLabel="label" optionValue="value" class="block mb-3" (onChange)="changerVue()"></p-selectButton>

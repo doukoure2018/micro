@@ -1,3 +1,4 @@
+import { DonneesSafComponent } from './donnees-saf.component';
 import { AgentPortefeuille, ContentieuxLigne, ContentieuxListe } from '@/interface/portefeuille-affectation';
 import { IResponse } from '@/interface/response';
 import { CapacitesSignalement, MOTIFS_SIGNALEMENT, MotifSignalementTelephone, SignalementTelephone, libelleMotifSignalement, libelleStatutSignalement, severiteStatutSignalement } from '@/interface/signalement-telephone';
@@ -27,14 +28,14 @@ import { TooltipModule } from 'primeng/tooltip';
 @Component({
     selector: 'app-portefeuille-contentieux',
     standalone: true,
-    imports: [CommonModule, FormsModule, TableModule, ButtonModule, SelectModule, InputTextModule, TagModule, DialogModule, TextareaModule, ToastModule, TooltipModule],
+    imports: [CommonModule, DonneesSafComponent, FormsModule, TableModule, ButtonModule, SelectModule, InputTextModule, TagModule, DialogModule, TextareaModule, ToastModule, TooltipModule],
     providers: [MessageService],
     template: `
         <p-toast></p-toast>
         <div class="card">
             <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
                 <div>
-                    <h2 class="text-xl font-semibold m-0">Dossiers au contentieux</h2>
+                    <h2 class="text-xl font-semibold m-0">Dossiers au contentieux</h2> <app-donnees-saf></app-donnees-saf>
                     <div class="text-sm text-gray-500">
                         Crédits passés au judiciaire par la banque et crédits passés au contentieux par l'agence dans digi.
                         Le crédit reste dans le portefeuille de son agent de crédit : la perte reste la sienne.

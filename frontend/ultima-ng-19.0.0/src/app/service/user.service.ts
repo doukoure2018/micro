@@ -2,9 +2,11 @@ import { inject, Injectable } from '@angular/core';
 import { StorageService } from './storage.service';
 import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
 import { JwtHelperService } from '@auth0/angular-jwt';
-import { catchError, map, Observable, tap, throwError } from 'rxjs';
+import { catchError, map, Observable, tap, throwError, of } from 'rxjs';
 import { IResponse } from '@/interface/response';
 import { BrouillonRapport } from '@/interface/rapport-mensuel';
+import { DonneesSaf } from '@/interface/donnees-saf';
+import { shareReplay } from 'rxjs/operators';
 import { IUser } from '@/interface/user';
 import { Key } from '@/enum/cache.key';
 import { IAuthentication } from '@/interface/IAuthentication';
@@ -1778,6 +1780,22 @@ export class UserService {
 
     getHistoriqueAffectation$ = (codAgencia: string, numCredito: number) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/affectations/${codAgencia}/${numCredito}/historique`).pipe(catchError(this.handleError));
+
+    // ==================== « Donnees SAF au … » (aiguillage production / sauvegarde) ====================
+
+    private donneesSaf$?: Observable<DonneesSaf | null>;
+
+    /** Un seul appel par chargement de l'application, partage entre les pages. */
+    getDonneesSaf$ = (): Observable<DonneesSaf | null> => {
+        if (!this.donneesSaf$) {
+            this.donneesSaf$ = this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/donnees-saf`).pipe(
+                map((r) => (r.data?.donneesSaf || null) as DonneesSaf | null),
+                catchError(() => of(null)),
+                shareReplay(1)
+            );
+        }
+        return this.donneesSaf$;
+    };
 
     // ==================== Rapports du reseau : indicateurs mensuels (V167) ====================
 

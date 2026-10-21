@@ -1,3 +1,4 @@
+import { DonneesSafComponent } from './donnees-saf.component';
 import { ClasseScore, FicheAgent, ScoreAgent, Scores, SyntheseScore } from '@/interface/portefeuille-score';
 import { IResponse } from '@/interface/response';
 import { UserService } from '@/service/user.service';
@@ -24,14 +25,14 @@ import { Observable } from 'rxjs';
 @Component({
     selector: 'app-portefeuille-scores',
     standalone: true,
-    imports: [CommonModule, FormsModule, TableModule, ButtonModule, SelectModule, InputTextModule, TagModule, DialogModule, ToastModule, TooltipModule],
+    imports: [CommonModule, DonneesSafComponent, FormsModule, TableModule, ButtonModule, SelectModule, InputTextModule, TagModule, DialogModule, ToastModule, TooltipModule],
     providers: [MessageService],
     template: `
         <p-toast></p-toast>
         <div class="card">
             <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
                 <div>
-                    <h2 class="text-xl font-semibold m-0">Appréciation des agents de crédit</h2>
+                    <h2 class="text-xl font-semibold m-0">Appréciation des agents de crédit</h2> <app-donnees-saf></app-donnees-saf>
                     <div class="text-sm text-gray-500">
                         Score sur 100 à partir du portefeuille affecté à chaque agent (crédits en cours lus dans SAF).
                         <span *ngIf="data()?.dateCalcul; else jamais">Calculé le {{ data()!.dateCalcul | date: 'dd/MM/yyyy' }}.</span>

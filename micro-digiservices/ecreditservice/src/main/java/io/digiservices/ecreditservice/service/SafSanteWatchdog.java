@@ -36,6 +36,7 @@ public class SafSanteWatchdog {
     private final EbankingPortefeuilleClient portefeuilleClient;
     private final AlerteDestinatairesRepository destinataires;
     private final ApplicationEventPublisher publisher;
+    private final DonneesSafService donneesSaf;
 
     @Value("${saf.sante.actif:true}")
     private boolean actif;
@@ -57,6 +58,7 @@ public class SafSanteWatchdog {
         String cause;
         try {
             SanteSafDto sante = portefeuilleClient.getSanteSaf();
+            donneesSaf.memoriser(sante);
             if (sante.isToutOk()) {
                 retabli();
                 return;

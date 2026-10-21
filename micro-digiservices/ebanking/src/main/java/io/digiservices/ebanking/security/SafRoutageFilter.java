@@ -2,6 +2,7 @@ package io.digiservices.ebanking.security;
 
 import io.digiservices.ebanking.config.SafRoutage;
 import io.digiservices.ebanking.config.SafRoutageProperties;
+import io.digiservices.ebanking.service.SafSanteProbe;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,8 +30,14 @@ public class SafRoutageFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
-        SafRoutage.forcer(cible(request));
+        SafRoutage.Cible cible = cible(request);
+        SafRoutage.forcer(cible);
         try {
+            // Les reponses servies par la sauvegarde disent de quand datent leurs donnees.
+            if (cible == SafRoutage.Cible.SAUVEGARDE && proprietes.isActive()) {
+                String date = SafSanteProbe.dateRestaurationConnue();
+                if (date != null) response.setHeader("X-Donnees-SAF-Au", date);
+            }
             chain.doFilter(request, response);
         } finally {
             SafRoutage.effacer();

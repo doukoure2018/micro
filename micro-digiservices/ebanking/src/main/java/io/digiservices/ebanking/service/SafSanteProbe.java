@@ -48,11 +48,19 @@ public class SafSanteProbe {
         this.routage = routage;
     }
 
+    /** Derniere date de restauration connue de la sauvegarde (pour l'en-tete X-Donnees-SAF-Au). */
+    private static volatile String dateRestaurationConnue;
+
+    public static String dateRestaurationConnue() {
+        return dateRestaurationConnue;
+    }
+
     public SanteSafDto sonder() {
         List<SanteSafDto.Base> bases = new ArrayList<>();
         bases.add(tester("production", production, false));
         SanteSafDto.Base sauv = tester("sauvegarde", sauvegarde, true);
         bases.add(sauv);
+        if (sauv.getDateRestauration() != null) dateRestaurationConnue = sauv.getDateRestauration();
         bases.add(tester("tertiary", tertiary, true));
         bases.add(tester("middleware", middleware, false));
         boolean toutOk = bases.stream().allMatch(SanteSafDto.Base::isOk);
