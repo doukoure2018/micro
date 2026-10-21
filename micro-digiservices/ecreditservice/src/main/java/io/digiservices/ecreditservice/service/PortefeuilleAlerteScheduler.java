@@ -50,6 +50,7 @@ public class PortefeuilleAlerteScheduler {
     private final EbankingPortefeuilleClient portefeuilleClient;
     private final AlerteDestinatairesRepository destinataires;
     private final ApplicationEventPublisher publisher;
+    private final DonneesSafService donneesSaf;
     private final io.digiservices.ecreditservice.repository.SignalementTelephoneRepository signalementRepository;
     private final SignalementTelephoneNotifier signalementNotifier;
 
@@ -223,6 +224,7 @@ public class PortefeuilleAlerteScheduler {
     // ==================== Helpers ====================
 
     private void publier(String email, String sujet, String corpsHtml) {
+        corpsHtml = donneesSaf.annoter(corpsHtml);
         publisher.publishEvent(new Event(EventType.PORTEFEUILLE_ALERTE,
                 Map.of("email", email, "sujet", sujet, "corpsHtml", corpsHtml)));
     }

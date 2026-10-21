@@ -32,6 +32,7 @@ public class AffectationRappelScheduler {
     private final PortefeuilleAffectationService affectationService;
     private final AlerteDestinatairesRepository destinataires;
     private final ApplicationEventPublisher publisher;
+    private final DonneesSafService donneesSaf;
 
     @Value("${portefeuille.affectation.rappel.actif:true}")
     private boolean actif;
@@ -97,7 +98,7 @@ public class AffectationRappelScheduler {
         publisher.publishEvent(new Event(EventType.PORTEFEUILLE_ALERTE, Map.of(
                 "email", d.email(),
                 "sujet", "Crédits sans responsable — " + LocalDate.now().format(FMT),
-                "corpsHtml", html.toString())));
+                "corpsHtml", donneesSaf.annoter(html.toString()))));
         return true;
     }
 

@@ -1,3 +1,4 @@
+import { DonneesSafComponent } from '../portefeuille/donnees-saf.component';
 import { AgregatRapport, AnnuelRapport, EtatRapport, LigneRapport, MOIS_LIBELLES, ModuleRapport, RapportMensuel, RubriqueRapport, SectionRapport } from '@/interface/rapport-mensuel';
 import { IResponse } from '@/interface/response';
 import { UserService } from '@/service/user.service';
@@ -34,7 +35,7 @@ interface GroupeAgence {
 @Component({
     selector: 'app-rapport-mensuel',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, DialogModule, InputTextModule, SelectModule, SelectButtonModule, TableModule, TagModule, TextareaModule, ToastModule, TooltipModule],
+    imports: [CommonModule, DonneesSafComponent, FormsModule, ButtonModule, DialogModule, InputTextModule, SelectModule, SelectButtonModule, TableModule, TagModule, TextareaModule, ToastModule, TooltipModule],
     providers: [MessageService],
     template: `
         <p-toast></p-toast>
@@ -42,7 +43,7 @@ interface GroupeAgence {
             <!-- En-tête : période, actions globales -->
             <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
                 <div>
-                    <h2 class="text-xl font-semibold m-0">{{ estActivite() ? "Rapport d'activité du point de service" : 'Indicateurs mensuels' }}</h2>
+                    <h2 class="text-xl font-semibold m-0">{{ estActivite() ? "Rapport d'activité du point de service" : 'Indicateurs mensuels' }}</h2> <app-donnees-saf></app-donnees-saf>
                     <div class="text-sm text-gray-500">
                         <ng-container *ngIf="data()?.peutSaisir && !estActivite()">Saisissez les 13 rubriques de chaque point de service ; tout s'enregistre en brouillon au fil de la saisie. Soumettez l'agence quand tout est complet.</ng-container>
                         <ng-container *ngIf="data()?.peutSaisir && estActivite()">Remplissez le mois bloc par bloc ; une case vide vaut 0, tout s'enregistre en brouillon au fil de la saisie. Les blocs trimestriels n'apparaissent qu'en mars, juin, septembre et décembre ; les soldes d'ouverture en janvier.</ng-container>

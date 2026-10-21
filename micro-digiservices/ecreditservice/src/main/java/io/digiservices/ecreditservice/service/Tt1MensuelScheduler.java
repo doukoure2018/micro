@@ -57,6 +57,7 @@ public class Tt1MensuelScheduler {
     private final PortefeuillePerimetreRepository perimetreRepository;
     private final EnvoiTt1MensuelRepository envoiRepository;
     private final ApplicationEventPublisher publisher;
+    private final DonneesSafService donneesSaf;
 
     @Value("${portefeuille.tt1.envoi.mensuel.actif:false}")
     private boolean actif;
@@ -149,7 +150,7 @@ public class Tt1MensuelScheduler {
             publisher.publishEvent(new Event(EventType.PORTEFEUILLE_TT1_MENSUEL, Map.of(
                     "email", d.email(),
                     "sujet", "État TT1 " + du.format(MOIS) + " — échéances à encaisser",
-                    "corpsHtml", corps(role, d, du, au, duPrec, auPrec, moisEnCours, moisEcoule, repartition, detailJoint),
+                    "corpsHtml", donneesSaf.annoter(corps(role, d, du, au, duPrec, auPrec, moisEnCours, moisEcoule, repartition, detailJoint)),
                     "nomFichier", nomFichier,
                     "contenuBase64", java.util.Base64.getEncoder().encodeToString(classeur),
                     "typeMime", TYPE_XLSX)));

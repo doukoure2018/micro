@@ -1,3 +1,4 @@
+import { DonneesSafComponent } from './donnees-saf.component';
 import { CreditAffecte, PortefeuilleAffectation, Affectation, SynthesePointService, CreditSaf } from '@/interface/portefeuille-affectation';
 import { HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -39,13 +40,13 @@ type Filtre = 'enCours' | 'nonAffectes' | 'aReaffecter' | 'affectes' | 'agent' |
 @Component({
     selector: 'app-portefeuille-affectation',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, DialogModule, InputTextModule, SelectModule, SelectButtonModule, TableModule, TagModule, TextareaModule, ToastModule, TooltipModule],
+    imports: [CommonModule, DonneesSafComponent, FormsModule, ButtonModule, DialogModule, InputTextModule, SelectModule, SelectButtonModule, TableModule, TagModule, TextareaModule, ToastModule, TooltipModule],
     providers: [MessageService],
     template: `
         <p-toast></p-toast>
         <div class="card">
             <div class="flex flex-wrap justify-between items-center gap-3 mb-2">
-                <h2 class="text-xl font-bold m-0">{{ titre() }}</h2>
+                <h2 class="text-xl font-bold m-0">{{ titre() }}</h2> <app-donnees-saf></app-donnees-saf>
                 <button pButton icon="pi pi-refresh" class="p-button-text" (click)="vue() === 'synthese' ? chargerSynthese() : charger()" [loading]="loading() || loadingSynthese()"></button>
             </div>
             <p-selectButton *ngIf="agences().length > 1" [options]="vueOptions" [ngModel]="vue()" (ngModelChange)="changerVue($event)" optionLabel="label" optionValue="value" [allowEmpty]="false" class="block mb-3"></p-selectButton>

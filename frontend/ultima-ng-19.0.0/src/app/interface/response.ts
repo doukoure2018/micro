@@ -301,5 +301,6 @@ export interface IResponse {
         fiche?: any;
         ligne?: any;
         annuel?: any;
+        donneesSaf?: any;
     };
 }
