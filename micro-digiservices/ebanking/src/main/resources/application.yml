@@ -19,6 +19,12 @@ spring:
       max-lifetime: 600000
 
   # Configuration DataSource Middleware (nouvelle)
+  # Sauvegarde SAF (restauree chaque matin) : toutes les lectures hors modules « production ».
+  sauvegarde:
+    datasource:
+      url: ${SPRING_SAUVEGARDE_DATASOURCE_URL:jdbc:sqlserver://10.9.0.168:1433;databaseName=BDCRG;trustServerCertificate=true;encrypt=true}
+      username: ${SPRING_SAUVEGARDE_DATASOURCE_USERNAME:DIGI_LECTURE}
+      password: ${SPRING_SAUVEGARDE_DATASOURCE_PASSWORD:}
   middleware:
     datasource:
       url: jdbc:sqlserver://10.220.220.11:1433;databaseName=BD_MIDDLEWARE;trustServerCertificate=true;encrypt=true
@@ -117,3 +123,13 @@ feign:
       default:
         connectTimeout: 30000
         readTimeout: 120000
+
+# Aiguillage SAF (DSIG 21/10/2026) : production pour les ecritures et les chemins listes, sauvegarde pour le reste.
+saf:
+  sauvegarde:
+    active: ${SAF_SAUVEGARDE_ACTIVE:false}
+    chemins-production:
+      - /ebanking/fiche-signaletique
+      - /ebanking/telephone
+      - /ebanking/reconciliation
+      - /ebanking/reconciliationcompte
