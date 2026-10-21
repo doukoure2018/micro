@@ -86,6 +86,23 @@ export interface LigneRapport {
     nbEcarts: number;
     complet: boolean;
     modifiable: boolean;
+    /** Agents de crédit désignés par le DA pour saisir ce point de service (V169). */
+    agentsDesignes: AgentDesigne[];
+}
+
+export interface AgentDesigne {
+    userId: number;
+    nom: string;
+    email: string | null;
+    dateDesignation: string | null;
+    designePar: string | null;
+}
+
+export interface DesignationPs {
+    codAgencia: string;
+    pointService: string;
+    agents: AgentDesigne[];
+    designes: number[];
 }
 
 export interface AgregatRapport {
@@ -119,6 +136,8 @@ export interface RapportMensuel {
     peutSaisir: boolean;
     peutValider: boolean;
     peutConsolider: boolean;
+    peutDesigner: boolean;
+    lectureSeule: boolean;
     seuilEcartPct: number;
     seuilEcartMontant: number;
     avertissementSaf: string | null;

@@ -3,7 +3,9 @@ package io.digiservices.ecreditservice.service;
 import io.digiservices.clients.EbankingPortefeuilleClient;
 import io.digiservices.clients.portefeuille.ControleMensuelDto;
 import io.digiservices.ecreditservice.dto.RapportMensuelDtos.AgregatDto;
+import io.digiservices.ecreditservice.dto.RapportMensuelDtos.AgentDesigneDto;
 import io.digiservices.ecreditservice.dto.RapportMensuelDtos.AnnuelDto;
+import io.digiservices.ecreditservice.dto.RapportMensuelDtos.DesignationPsDto;
 import io.digiservices.ecreditservice.dto.RapportMensuelDtos.BrouillonRequest;
 import io.digiservices.ecreditservice.dto.RapportMensuelDtos.DecisionRequest;
 import io.digiservices.ecreditservice.dto.RapportMensuelDtos.LigneDto;
@@ -15,6 +17,8 @@ import io.digiservices.ecreditservice.dto.RapportMensuelDtos.ValeurDto;
 import io.digiservices.ecreditservice.exception.ApiException;
 import io.digiservices.ecreditservice.repository.PortefeuillePerimetreRepository;
 import io.digiservices.ecreditservice.repository.PortefeuillePerimetreRepository.PointVenteHierarchie;
+import io.digiservices.ecreditservice.repository.PortefeuilleAffectationRepository;
+import io.digiservices.ecreditservice.repository.RapportDesignationRepository;
 import io.digiservices.ecreditservice.repository.RapportMensuelRepository;
 import io.digiservices.ecreditservice.service.PerimetreSafService.Perimetre;
 import io.digiservices.ecreditservice.utils.RapportActiviteExcelUtils;
@@ -70,6 +74,8 @@ public class RapportMensuelService {
     private final PortefeuillePerimetreRepository perimetreRepository;
     private final PerimetreSafService perimetreSafService;
     private final EbankingPortefeuilleClient portefeuilleClient;
+    private final RapportDesignationRepository designations;
+    private final PortefeuilleAffectationRepository affectations;
 
     /** Rubriques dont SAF fournit aujourd'hui une valeur de controle, et comment la lire. */
     private static final Map<String, Function<ControleMensuelDto, BigDecimal>> CONTROLES_SAF = Map.of(
@@ -93,7 +99,8 @@ public class RapportMensuelService {
         // Seuls ceux qui saisissent ouvrent les rapports de leurs points de service (et, pour le
         // module A, declenchent la lecture SAF de controle). Le DR et la DE voient ce qui existe :
         // ouvrir 185 rapports et interroger SAF a chaque consultation du reseau n'a pas de sens.
-        int crees = peutSaisir(p, module) ? repository.creerSiAbsents(module, hier.keySet(), annee, mois, p.user().getUserId()) : 0;
+        Set<String> designes = codesDesignes(p);
+        int crees = peutSaisir(p, designes) ? repository.creerSiAbsents(module, codesSaisissables(p, hier.keySet(), designes), annee, mois, p.user().getUserId()) : 0;
         if (crees > 0) {
             log.info("[RAPPORT {}] {}/{} : {} rapport(s) ouvert(s) par user={} ({})", module, mois, annee, crees,
                     p.user().getUserId(), p.niveau());
@@ -492,7 +499,9 @@ public class RapportMensuelService {
         YearMonth precedent = YearMonth.of(annee, mois).minusMonths(1);
         Map<String, Map<String, BigDecimal>> moisPrecedent = repository.valeursDeclarees(module, precedent.getYear(), precedent.getMonthValue(), hier.keySet());
 
-        boolean peutSaisir = peutSaisir(p, module);
+        Set<String> designes = codesDesignes(p);
+        boolean peutSaisir = peutSaisir(p, designes);
+        Map<String, List<AgentDesigneDto>> agentsDesignes = designations.activesParCodes(hier.keySet());
         List<LigneDto> lignes = new ArrayList<>();
         for (PointVenteHierarchie h : hier.values()) {
             LigneDto l = parCode.get(h.code());
@@ -523,7 +532,9 @@ public class RapportMensuelService {
             l.setNbManquantes(saisies.size() - nbSaisies);
             l.setNbEcarts(nbEcarts);
             l.setComplet(nbSaisies == saisies.size());
-            l.setModifiable(peutSaisir && p.couvre(h.code()) && ETATS_MODIFIABLES.contains(l.getEtat()));
+            l.setModifiable(peutSaisir && p.couvre(h.code()) && ETATS_MODIFIABLES.contains(l.getEtat())
+                    && (!"AGENT_CREDIT".equals(p.role()) || designes.contains(h.code())));
+            l.setAgentsDesignes(agentsDesignes.getOrDefault(h.code(), List.of()));
             lignes.add(l);
         }
 
@@ -556,6 +567,8 @@ public class RapportMensuelService {
                 .module(module).annee(annee).mois(mois).niveau(p.niveau()).role(p.role())
                 .sections(sections).rubriques(rubriques).lignes(lignes).agences(agences).delegations(delegations).total(total)
                 .peutSaisir(peutSaisir).peutValider(peutValider(p)).peutConsolider(peutConsolider(p))
+                .peutDesigner("DA".equals(p.role()))
+                .lectureSeule("AGENT_CREDIT".equals(p.role()) && !peutSaisir)
                 .seuilEcartPct(seuilPct).seuilEcartMontant(seuilMontant)
                 .avertissementSaf(avertissement)
                 .build();
@@ -686,13 +699,81 @@ public class RapportMensuelService {
         return hier;
     }
 
-    /** Module A : le DA. Module B : le DA, et l'agent de credit sur son propre point de service. */
-    private static boolean peutSaisir(Perimetre p, String module) {
-        return "DA".equals(p.role()) || (MODULE_ACTIVITE.equals(module) && "AGENT_CREDIT".equals(p.role()));
+    /**
+     * Le DA saisit ses points de service ; un agent de credit saisit le sien s'il y a ete designe
+     * par son DA (V169, les deux rapports) ; les autres agents consultent seulement.
+     */
+    private static boolean peutSaisir(Perimetre p, Set<String> designes) {
+        return "DA".equals(p.role()) || ("AGENT_CREDIT".equals(p.role()) && !designes.isEmpty());
+    }
+
+    /** Points de service designes pour un agent de credit (vide pour les autres roles). */
+    private Set<String> codesDesignes(Perimetre p) {
+        if (!"AGENT_CREDIT".equals(p.role())) return Set.of();
+        Set<String> d = new HashSet<>(designations.codesDesignes(p.user().getUserId()));
+        d.retainAll(p.codes());
+        return d;
+    }
+
+    private static Collection<String> codesSaisissables(Perimetre p, Collection<String> codes, Set<String> designes) {
+        if (!"AGENT_CREDIT".equals(p.role())) return codes;
+        return codes.stream().filter(designes::contains).toList();
     }
 
     private static boolean peutSaisir(Perimetre p) {
         return "DA".equals(p.role());
+    }
+
+    // ==================== Designation des agents saisissants (DA, V169) ====================
+
+    /** Les points de service de l'agence du DA, leurs agents de credit et les designes. */
+    public List<DesignationPsDto> designationsAgence(String uuid) {
+        Perimetre p = perimetreSafService.perimetreDe(uuid);
+        verifierDa(p);
+        Map<String, PointVenteHierarchie> hier = hierarchie(p, null);
+        Map<String, List<AgentDesigneDto>> actives = designations.activesParCodes(hier.keySet());
+        List<DesignationPsDto> resultat = new ArrayList<>();
+        for (PointVenteHierarchie h : hier.values()) {
+            List<AgentDesigneDto> agents = affectations.agentsDuPointService(h.code()).stream()
+                    .map(a -> new AgentDesigneDto(a.getUserId(), a.getNom(), a.getEmail(), null, null)).collect(Collectors.toList());
+            List<AgentDesigneDto> designes = actives.getOrDefault(h.code(), List.of());
+            // Un agent designe puis mute ailleurs reste liste, pour que le DA puisse le retirer.
+            for (AgentDesigneDto d : designes) {
+                if (agents.stream().noneMatch(a -> a.getUserId().equals(d.getUserId()))) agents.add(d);
+            }
+            resultat.add(DesignationPsDto.builder().codAgencia(h.code()).pointService(h.libelle())
+                    .agents(agents).designes(designes.stream().map(AgentDesigneDto::getUserId).toList()).build());
+        }
+        return resultat;
+    }
+
+    @Transactional
+    public boolean designer(String uuid, String codAgencia, Long agentUserId) {
+        Perimetre p = perimetreSafService.perimetreDe(uuid);
+        verifierDa(p);
+        verifierCouvre(p, codAgencia);
+        if (affectations.agentsDuPointService(codAgencia).stream().noneMatch(a -> a.getUserId().equals(agentUserId))) {
+            throw new ApiException("Cet utilisateur n'est pas un agent de credit actif de ce point de service");
+        }
+        boolean fait = designations.designer(codAgencia, agentUserId, p.user().getUserId());
+        if (fait) log.info("[RAPPORT DESIGNATION] PS {} : agent {} designe par user {}", codAgencia, agentUserId, p.user().getUserId());
+        return fait;
+    }
+
+    @Transactional
+    public boolean retirer(String uuid, String codAgencia, Long agentUserId) {
+        Perimetre p = perimetreSafService.perimetreDe(uuid);
+        verifierDa(p);
+        verifierCouvre(p, codAgencia);
+        boolean fait = designations.retirer(codAgencia, agentUserId, p.user().getUserId());
+        if (fait) log.info("[RAPPORT DESIGNATION] PS {} : agent {} retire par user {}", codAgencia, agentUserId, p.user().getUserId());
+        return fait;
+    }
+
+    private static void verifierDa(Perimetre p) {
+        if (!"DA".equals(p.role())) {
+            throw new ApiException("Seul le directeur d'agence designe les agents qui saisissent les rapports");
+        }
     }
 
     private static boolean peutValider(Perimetre p) {
@@ -703,9 +784,11 @@ public class RapportMensuelService {
         return p.toutReseau();
     }
 
-    private static void verifierModifiable(Perimetre p, LigneDto rapport) {
-        if (!peutSaisir(p, rapport.getModule())) {
-            throw new ApiException("Seul le directeur d'agence saisit les indicateurs de ses points de service");
+    private void verifierModifiable(Perimetre p, LigneDto rapport) {
+        Set<String> designes = codesDesignes(p);
+        if (!peutSaisir(p, designes)
+                || ("AGENT_CREDIT".equals(p.role()) && !designes.contains(rapport.getCodAgencia()))) {
+            throw new ApiException("La saisie de ce point de service est reservee au directeur d'agence et aux agents qu'il a designes");
         }
         verifierCouvre(p, rapport.getCodAgencia());
         if (!ETATS_MODIFIABLES.contains(rapport.getEtat())) {

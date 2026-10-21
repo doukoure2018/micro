@@ -339,8 +339,9 @@ export class AppMenu {
             });
         }
         // Rapports du reseau (V167) : le DA saisit les indicateurs mensuels de ses points de
-        // service, le DR verifie sa delegation, la DE consolide le reseau.
-        if (['DA', 'DR', 'DG', 'SUPER_ADMIN'].includes(this.role || '') || this.estManager('DE')) {
+        // service, le DR verifie sa delegation, la DE consolide le reseau. Depuis la V169 l'agent
+        // de credit les voit aussi : il saisit son PS si son DA l'a designe, sinon il consulte.
+        if (['AGENT_CREDIT', 'DA', 'DR', 'DG', 'SUPER_ADMIN'].includes(this.role || '') || this.estManager('DE')) {
             items.push({
                 label: 'Indicateurs mensuels',
                 icon: 'pi pi-fw pi-table',

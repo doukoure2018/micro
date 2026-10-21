@@ -122,6 +122,32 @@ public class RapportMensuelResource {
                 "Controle SAF actualise pour " + n + " point(s) de service", OK));
     }
 
+    // ==================== Agents designes pour la saisie (DA, V169) ====================
+
+    @GetMapping("/designations")
+    public ResponseEntity<Response> designations(@NotNull Authentication authentication, HttpServletRequest request) {
+        return ResponseEntity.ok(getResponse(request,
+                Map.of("designations", service.designationsAgence(authentication.getName())), "Agents saisissants", OK));
+    }
+
+    @PostMapping("/designations")
+    public ResponseEntity<Response> designer(@NotNull Authentication authentication,
+                                             @Valid @RequestBody io.digiservices.ecreditservice.dto.RapportMensuelDtos.DesignationRequest body,
+                                             HttpServletRequest request) {
+        boolean fait = service.designer(authentication.getName(), body.getCodAgencia(), body.getAgentUserId());
+        return ResponseEntity.ok(getResponse(request, Map.of("fait", fait),
+                fait ? "Agent designe : il peut saisir les rapports de ce point de service" : "Cet agent etait deja designe", OK));
+    }
+
+    @PostMapping("/designations/retirer")
+    public ResponseEntity<Response> retirer(@NotNull Authentication authentication,
+                                            @Valid @RequestBody io.digiservices.ecreditservice.dto.RapportMensuelDtos.DesignationRequest body,
+                                            HttpServletRequest request) {
+        boolean fait = service.retirer(authentication.getName(), body.getCodAgencia(), body.getAgentUserId());
+        return ResponseEntity.ok(getResponse(request, Map.of("fait", fait),
+                fait ? "Designation retiree : l'agent consulte seulement" : "Cet agent n'etait pas designe", OK));
+    }
+
     /** Export Excel du mois au format du fichier de la Direction de l'Exploitation. */
     @GetMapping("/export")
     public ResponseEntity<byte[]> exporter(@NotNull Authentication authentication,

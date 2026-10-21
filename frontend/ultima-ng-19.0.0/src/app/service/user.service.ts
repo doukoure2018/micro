@@ -1827,6 +1827,14 @@ export class UserService {
     actualiserControleSafRapportMensuel$ = (annee: number, mois: number) =>
         <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/rapports/mensuels/controle-saf`, { module: 'MENSUEL', annee, mois, codes: [] }).pipe(catchError(this.handleError));
 
+    getDesignationsRapport$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/rapports/mensuels/designations`).pipe(catchError(this.handleError));
+
+    designerAgentRapport$ = (codAgencia: string, agentUserId: number) =>
+        <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/rapports/mensuels/designations`, { codAgencia, agentUserId }).pipe(catchError(this.handleError));
+
+    retirerAgentRapport$ = (codAgencia: string, agentUserId: number) =>
+        <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/rapports/mensuels/designations/retirer`, { codAgencia, agentUserId }).pipe(catchError(this.handleError));
+
     exportRapportMensuel$ = (annee: number, mois: number, module = 'MENSUEL', agenceId: number | null = null) =>
         this.http.get(`${this.server}/ecredit/rapports/mensuels/export`, { params: { annee, mois, module, ...(agenceId ? { agenceId } : {}) }, responseType: 'blob', observe: 'response' });
 

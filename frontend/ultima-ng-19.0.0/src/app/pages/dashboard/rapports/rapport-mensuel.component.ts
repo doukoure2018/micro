@@ -1,5 +1,5 @@
 import { DonneesSafComponent } from '../portefeuille/donnees-saf.component';
-import { AgregatRapport, AnnuelRapport, EtatRapport, LigneRapport, MOIS_LIBELLES, ModuleRapport, RapportMensuel, RubriqueRapport, SectionRapport } from '@/interface/rapport-mensuel';
+import { AgregatRapport, AnnuelRapport, DesignationPs, EtatRapport, LigneRapport, MOIS_LIBELLES, ModuleRapport, RapportMensuel, RubriqueRapport, SectionRapport } from '@/interface/rapport-mensuel';
 import { IResponse } from '@/interface/response';
 import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
@@ -55,11 +55,16 @@ interface GroupeAgence {
                     <p-select [options]="moisOptions" [ngModel]="mois()" (ngModelChange)="changerPeriode($event, annee())" optionLabel="label" optionValue="value" styleClass="w-40" appendTo="body"></p-select>
                     <p-select [options]="anneeOptions" [ngModel]="annee()" (ngModelChange)="changerPeriode(mois(), $event)" optionLabel="label" optionValue="value" styleClass="w-28" appendTo="body"></p-select>
                     <button pButton icon="pi pi-refresh" class="p-button-text" (click)="charger()" [loading]="loading()" pTooltip="Recharger"></button>
+                    <button *ngIf="data()?.peutDesigner" pButton icon="pi pi-user-edit" label="Agents saisissants" class="p-button-outlined" (click)="ouvrirDesignations()" pTooltip="Désigner, par point de service, les agents de crédit qui saisissent les indicateurs et le rapport d'activité"></button>
                     <button *ngIf="!estActivite()" pButton icon="pi pi-sync" label="Contrôle SAF" class="p-button-outlined" [loading]="safEnCours()" (click)="actualiserSaf()" pTooltip="Relit dans SAF les valeurs de contrôle (encours, retards, capital en retard, octrois du mois)"></button>
                     <button pButton icon="pi pi-file-excel" [label]="estActivite() ? 'Exporter l’exercice' : 'Exporter Excel'" class="p-button-success p-button-outlined" [loading]="exportEnCours()" [disabled]="!data()?.lignes?.length" (click)="exporter()" [pTooltip]="estActivite() ? 'Classeur au format du rapport Forécariah : une feuille par point de service et un total pour l’agence choisie dans la vue annuelle ; sans agence choisie, un total par agence' : ''"></button>
                 </div>
             </div>
 
+            <div *ngIf="data()?.lectureSeule" class="border border-blue-300 bg-blue-50 text-blue-800 rounded p-3 mb-3 flex items-start gap-2">
+                <i class="pi pi-eye mt-1"></i>
+                <div>Consultation seule : votre directeur d'agence ne vous a pas désigné pour la saisie des rapports de votre point de service. Vous voyez ce qui a été déclaré ; pour saisir, demandez-lui de vous désigner.</div>
+            </div>
             <div *ngIf="data()?.avertissementSaf" class="border border-orange-400 bg-orange-50 text-orange-800 rounded p-3 mb-3 flex items-start gap-2">
                 <i class="pi pi-exclamation-triangle mt-1"></i><div>{{ data()!.avertissementSaf }}</div>
             </div>
@@ -109,7 +114,7 @@ interface GroupeAgence {
                                 <div *ngFor="let l of g.lignes" class="ps flex items-center justify-between gap-2 px-2 py-1 rounded cursor-pointer hover:bg-blue-50" (click)="ouvrirFiche(l.codAgencia)">
                                     <div class="min-w-0">
                                         <div class="text-sm font-medium truncate">{{ l.pointService }}</div>
-                                        <div class="text-xs text-gray-500">{{ l.nbSaisies }}/{{ l.nbSaisies + l.nbManquantes }}<span *ngIf="l.nbEcarts" class="text-orange-600"> · {{ l.nbEcarts }} écart(s)</span><span *ngIf="l.calcules['TAUX_PAR'] != null"> · PAR {{ fmt(l.calcules['TAUX_PAR'], 'TAUX') }}</span></div>
+                                        <div class="text-xs text-gray-500">{{ l.nbSaisies }}/{{ l.nbSaisies + l.nbManquantes }}<span *ngIf="l.nbEcarts" class="text-orange-600"> · {{ l.nbEcarts }} écart(s)</span><span *ngIf="l.calcules['TAUX_PAR'] != null"> · PAR {{ fmt(l.calcules['TAUX_PAR'], 'TAUX') }}</span><span *ngIf="l.agentsDesignes?.length" class="text-gray-400"> · {{ nomsDesignes(l) }}</span></div>
                                     </div>
                                     <p-tag [value]="libelleEtat(l.etat)" [severity]="severiteEtat(l.etat)"></p-tag>
                                 </div>
@@ -149,6 +154,7 @@ interface GroupeAgence {
                                     {{ l.nbSaisies }}/{{ l.nbSaisies + l.nbManquantes }} rubriques
                                     <span *ngIf="l.nbEcarts" class="text-orange-600"> · {{ l.nbEcarts }} écart(s)</span>
                                     <span *ngIf="l.etat === 'RENVOYE' && l.motifRenvoi" class="text-red-600"> · {{ l.motifRenvoi }}</span>
+                                    <span *ngIf="l.agentsDesignes?.length" class="text-gray-400"> · saisie : {{ nomsDesignes(l) }}</span>
                                 </div>
                             </div>
                             <p-tag [value]="libelleEtat(l.etat)" [severity]="severiteEtat(l.etat)"></p-tag>
@@ -402,6 +408,27 @@ interface GroupeAgence {
             </ng-template>
         </p-dialog>
 
+        <!-- Agents saisissants (DA) -->
+        <p-dialog header="Agents désignés pour la saisie des rapports" [(visible)]="showDesignations" [modal]="true" [style]="{ width: '44rem', maxWidth: '96vw' }">
+            <p class="text-sm text-gray-600 mb-3">Cochez, pour chaque point de service, les agents de crédit qui saisissent les indicateurs mensuels et le rapport d'activité à votre place. Vous gardez la main : vous pouvez toujours saisir, et vous seul soumettez. Les agents non cochés consultent seulement.</p>
+            <div *ngIf="designationsLoading()" class="text-gray-500"><i class="pi pi-spin pi-spinner mr-1"></i>Chargement…</div>
+            <div *ngFor="let ps of designations()" class="border rounded mb-2">
+                <div class="px-3 py-2 bg-gray-50 border-b font-semibold">{{ ps.pointService }} <span class="text-xs text-gray-400 font-normal">{{ ps.codAgencia }}</span></div>
+                <div class="px-3 py-2">
+                    <div *ngIf="!ps.agents.length" class="text-sm text-gray-400">Aucun agent de crédit actif rattaché à ce point de service.</div>
+                    <label *ngFor="let a of ps.agents" class="flex items-center gap-2 py-1 cursor-pointer text-sm">
+                        <input type="checkbox" [checked]="ps.designes.includes(a.userId)" (change)="basculerDesignation(ps, a.userId, $any($event.target).checked)" [disabled]="designationEnCours()" />
+                        <span>{{ a.nom }}</span>
+                        <span class="text-xs text-gray-400">{{ a.email }}</span>
+                        <span *ngIf="ps.designes.includes(a.userId)" class="text-xs text-green-700 ml-auto">désigné</span>
+                    </label>
+                </div>
+            </div>
+            <ng-template pTemplate="footer">
+                <button pButton label="Fermer" class="p-button-text" (click)="showDesignations = false; charger()"></button>
+            </ng-template>
+        </p-dialog>
+
         <!-- Coller depuis Excel -->
         <p-dialog header="Coller depuis Excel" [(visible)]="showColler" [modal]="true" [style]="{ width: '34rem' }">
             <p class="text-sm text-gray-600 mb-2">Copiez dans Excel les cellules de la ligne du point de service, de <strong>ENCAISSES</strong> à <strong>CAPITAL RESTANT DÛ</strong> (colonnes C à R), puis collez ici. Les colonnes calculées sont ignorées ; les taux peuvent être en % (97) ou en fraction (0,97).</p>
@@ -598,6 +625,10 @@ export class RapportMensuelComponent implements OnInit, OnDestroy, AfterViewChec
     commentaireGlobal = '';
     showColler = false;
     texteColle = '';
+    showDesignations = false;
+    designations = signal<DesignationPs[]>([]);
+    designationsLoading = signal(false);
+    designationEnCours = signal(false);
     showRenvoi = false;
     renvoiIds: number[] = [];
     renvoiLibelle = '';
@@ -813,6 +844,49 @@ export class RapportMensuelComponent implements OnInit, OnDestroy, AfterViewChec
                     this.erreur('Exercice indisponible', err);
                 }
             });
+    }
+
+    // ==================== Agents saisissants (DA) ====================
+
+    nomsDesignes(l: LigneRapport): string {
+        return (l.agentsDesignes || []).map((a) => a.nom).join(', ');
+    }
+
+    ouvrirDesignations(): void {
+        this.showDesignations = true;
+        this.designationsLoading.set(true);
+        this.userService
+            .getDesignationsRapport$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => {
+                    this.designations.set((r.data?.designations || []) as DesignationPs[]);
+                    this.designationsLoading.set(false);
+                },
+                error: (err) => {
+                    this.designationsLoading.set(false);
+                    this.erreur('Agents indisponibles', err);
+                }
+            });
+    }
+
+    basculerDesignation(ps: DesignationPs, agentUserId: number, designer: boolean): void {
+        this.designationEnCours.set(true);
+        const flux = designer ? this.userService.designerAgentRapport$(ps.codAgencia, agentUserId) : this.userService.retirerAgentRapport$(ps.codAgencia, agentUserId);
+        flux.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: (r: IResponse) => {
+                this.designationEnCours.set(false);
+                this.designations.update((liste) =>
+                    liste.map((p) => (p.codAgencia !== ps.codAgencia ? p : { ...p, designes: designer ? [...p.designes.filter((id) => id !== agentUserId), agentUserId] : p.designes.filter((id) => id !== agentUserId) }))
+                );
+                this.messageService.add({ severity: 'success', summary: designer ? 'Agent désigné' : 'Désignation retirée', detail: r.message || '', life: 4000 });
+            },
+            error: (err) => {
+                this.designationEnCours.set(false);
+                this.erreur('Désignation refusée', err);
+                this.ouvrirDesignations();
+            }
+        });
     }
 
     indexRubrique(code: string): number {
