@@ -50,6 +50,7 @@ public class PortefeuilleAlerteScheduler {
     private final EbankingPortefeuilleClient portefeuilleClient;
     private final AlerteDestinatairesRepository destinataires;
     private final ApplicationEventPublisher publisher;
+    private final SafJobRetry safJobs;
     private final DonneesSafService donneesSaf;
     private final io.digiservices.ecreditservice.repository.SignalementTelephoneRepository signalementRepository;
     private final SignalementTelephoneNotifier signalementNotifier;
@@ -70,8 +71,13 @@ public class PortefeuilleAlerteScheduler {
      * Chaque jour a 07h15 GMT : rappel aux agents de credit et au DA pour les signalements de
      * numero restes sans prise en charge au-dela du delai. Une relance par signalement et par jour.
      */
-    @Scheduled(cron = "0 15 7 * * *", zone = "GMT")
+    // Apres la restauration de la sauvegarde SAF (~07:15) : 08:25 GMT.
+    @Scheduled(cron = "0 25 8 * * *", zone = "GMT")
     public void relancerSignalementsTelephone() {
+        safJobs.executer("relance des signalements de telephone", this::relancerSignalementsTelephoneInterne);
+    }
+
+    void relancerSignalementsTelephoneInterne() {
         if (!actives) {
             return;
         }
@@ -97,8 +103,13 @@ public class PortefeuilleAlerteScheduler {
 
     // ==================== Digest quotidien ====================
 
-    @Scheduled(cron = "${portefeuille.alertes.cron-quotidien:0 0 7 * * *}", zone = "GMT")
+    // Apres la restauration de la sauvegarde SAF (~07:15) : 08:20 GMT, rejoue si la base est encore en restauration.
+    @Scheduled(cron = "${portefeuille.alertes.cron-quotidien:0 20 8 * * *}", zone = "GMT")
     public void digestQuotidien() {
+        safJobs.executer("alertes portefeuille du jour", this::digestQuotidienInterne);
+    }
+
+    void digestQuotidienInterne() {
         if (!actives) {
             return;
         }
@@ -167,8 +178,12 @@ public class PortefeuilleAlerteScheduler {
 
     // ==================== Synthese hebdomadaire PAR ====================
 
-    @Scheduled(cron = "${portefeuille.alertes.cron-hebdo:0 30 7 * * MON}", zone = "GMT")
+    @Scheduled(cron = "${portefeuille.alertes.cron-hebdo:0 30 8 * * MON}", zone = "GMT")
     public void syntheseHebdomadaire() {
+        safJobs.executer("synthese PAR hebdomadaire", this::syntheseHebdomadaireInterne);
+    }
+
+    void syntheseHebdomadaireInterne() {
         if (!actives) {
             return;
         }
