@@ -103,25 +103,50 @@ public class PortefeuilleScoreService {
         }
     }
 
-    /** Recalcul a la demande (DE, SUPER_ADMIN) : premier calcul, calibrage des bornes. */
-    public int recalculer(String uuid) {
+    // Recalcul a la demande : 93 points de service lus un par un dans SAF, 2 a 4 minutes — plus
+    // que ce qu'un appel HTTP peut attendre (le 21/10/2026 la passerelle coupait a 2 min alors que
+    // le calcul aboutissait). Il tourne donc en arriere-plan, un seul a la fois ; l'ecran suit.
+    private final java.util.concurrent.ExecutorService executeurRecalcul =
+            java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
+                Thread t = new Thread(r, "score-recalcul");
+                t.setDaemon(true);
+                return t;
+            });
+    private final java.util.concurrent.atomic.AtomicBoolean recalculEnCours = new java.util.concurrent.atomic.AtomicBoolean(false);
+    private volatile java.time.LocalDateTime recalculDepuis;
+    private volatile String dernierRecalcul;
+
+    /** Recalcul a la demande (DE, SUPER_ADMIN) : lance en arriere-plan, repond tout de suite. */
+    public String recalculer(String uuid) {
         Perimetre p = perimetreSafService.perimetreDe(uuid);
         if (!p.toutReseau()) {
             throw new ApiException("Le recalcul des scores est reserve a la Direction de l'Exploitation");
         }
-        int n;
-        try {
-            n = calculerReseau();
-        } catch (Exception e) {
-            // Incident du 2026-10-16 : un « Read timed out » brut ne dit rien a l'utilisateur.
-            String detail = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage().split("\\R")[0];
-            log.warn("[SCORE] Recalcul impossible (user {}) : {}", p.user().getUserId(), detail);
-            // Message voulu par la DSIG (2026-10-16) : court, sans detail technique ; la cause exacte est
-            // dans le journal et dans l'alerte e-mail envoyee aux administrateurs.
-            throw new ApiException("Base non disponible, moment de cloture");
+        if (!recalculEnCours.compareAndSet(false, true)) {
+            throw new ApiException("Un recalcul est deja en cours depuis " + heure(recalculDepuis) + " : patientez, l'ecran se mettra a jour");
         }
-        log.info("[SCORE] Recalcul demande par user {} : {} agent(s) note(s)", p.user().getUserId(), n);
-        return n;
+        recalculDepuis = java.time.LocalDateTime.now();
+        dernierRecalcul = null;
+        long userId = p.user().getUserId();
+        executeurRecalcul.execute(() -> {
+            try {
+                int n = calculerReseau();
+                dernierRecalcul = n + " agent(s) note(s) le " + heure(java.time.LocalDateTime.now());
+                log.info("[SCORE] Recalcul demande par user {} : {} agent(s) note(s)", userId, n);
+            } catch (Exception e) {
+                String detail = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage().split("\\R")[0];
+                log.warn("[SCORE] Recalcul impossible (user {}) : {}", userId, detail);
+                // Message voulu par la DSIG (2026-10-16) : court, sans detail technique.
+                dernierRecalcul = "Recalcul interrompu : base non disponible, moment de cloture";
+            } finally {
+                recalculEnCours.set(false);
+            }
+        });
+        return "Recalcul lance : lecture des points de service dans SAF, 2 a 4 minutes. L'ecran se met a jour seul.";
+    }
+
+    private static String heure(java.time.LocalDateTime t) {
+        return t == null ? "?" : t.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
     }
 
     /**
@@ -197,6 +222,9 @@ public class PortefeuilleScoreService {
         return ScoresDto.builder()
                 .dateCalcul(date)
                 .peutRecalculer(p.toutReseau())
+                .recalculEnCours(recalculEnCours.get())
+                .recalculDepuis(recalculEnCours.get() ? heure(recalculDepuis) : null)
+                .dernierRecalcul(dernierRecalcul)
                 .reseau(synthese(null, p.toutReseau() ? "Tout le réseau" : libellePerimetre(p), agents))
                 .delegations(parDelegation(agents))
                 .agents(agents)

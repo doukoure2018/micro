@@ -42,11 +42,15 @@ import { Observable } from 'rxjs';
                 <div class="flex gap-2">
                     <button pButton icon="pi pi-question-circle" label="Comment lire ces scores ?" class="p-button-text" (click)="showAide = true"></button>
                     <button pButton icon="pi pi-refresh" class="p-button-text" (click)="charger()" [loading]="loading()" pTooltip="Recharger"></button>
-                    <button *ngIf="data()?.peutRecalculer" pButton icon="pi pi-calculator" label="Recalculer maintenant" class="p-button-outlined" [loading]="recalcul()" (click)="recalculer()" pTooltip="Relit SAF pour tout le réseau (une à deux minutes) ; le calcul automatique tourne chaque nuit à 03:30"></button>
+                    <button *ngIf="data()?.peutRecalculer" pButton icon="pi pi-calculator" label="Recalculer maintenant" class="p-button-outlined" [loading]="recalcul()" (click)="recalculer()" pTooltip="Relit SAF pour tout le réseau en arrière-plan (deux à quatre minutes) ; le calcul automatique tourne chaque nuit à 03:30"></button>
                     <button pButton icon="pi pi-file-excel" label="Exporter Excel" class="p-button-success p-button-outlined" [loading]="exportEnCours()" [disabled]="!data()?.agents?.length" (click)="exporter()"></button>
                 </div>
             </div>
 
+            <div *ngIf="data()?.recalculEnCours" class="border border-blue-300 bg-blue-50 text-blue-800 rounded p-3 mb-4 flex items-center gap-2">
+                <i class="pi pi-spin pi-spinner"></i>
+                <div>Recalcul en cours depuis {{ data()!.recalculDepuis }} : lecture des points de service dans SAF (2 à 4 minutes). Cette page se met à jour seule.</div>
+            </div>
             <div *ngIf="erreurRecalcul()" class="border border-orange-400 bg-orange-50 text-orange-800 rounded p-3 mb-4 flex items-start gap-2">
                 <i class="pi pi-exclamation-triangle mt-1"></i>
                 <div>{{ erreurRecalcul() }}</div>
@@ -374,8 +378,14 @@ export class PortefeuilleScoresComponent implements OnInit {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (r: IResponse) => {
-                    this.data.set((r.data?.scores || null) as Scores | null);
+                    const d = (r.data?.scores || null) as Scores | null;
+                    this.data.set(d);
                     this.loading.set(false);
+                    // Un recalcul lance par un autre administrateur (ou avant un rechargement de page) : on le suit aussi.
+                    if (d?.recalculEnCours && !this.suiviRecalcul) {
+                        this.recalcul.set(true);
+                        this.suivreRecalcul();
+                    }
                 },
                 error: (err) => {
                     this.loading.set(false);
@@ -384,6 +394,9 @@ export class PortefeuilleScoresComponent implements OnInit {
             });
     }
 
+    private suiviRecalcul: ReturnType<typeof setInterval> | null = null;
+
+    /** Le recalcul tourne côté serveur (2 à 4 min) : on le lance, puis on recharge toutes les 20 s jusqu'à sa fin. */
     recalculer(): void {
         this.recalcul.set(true);
         this.erreurRecalcul.set(null);
@@ -392,9 +405,8 @@ export class PortefeuilleScoresComponent implements OnInit {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (r: IResponse) => {
-                    this.recalcul.set(false);
-                    this.messageService.add({ severity: 'success', summary: 'Scores recalculés', detail: r.message || '' });
-                    this.charger();
+                    this.messageService.add({ severity: 'info', summary: 'Recalcul lancé', detail: r.message || '', life: 8000 });
+                    this.suivreRecalcul();
                 },
                 error: (err) => {
                     this.recalcul.set(false);
@@ -403,6 +415,34 @@ export class PortefeuilleScoresComponent implements OnInit {
                     this.messageService.add({ severity: 'error', summary: 'Recalcul impossible', detail, life: 10000 });
                 }
             });
+    }
+
+    private suivreRecalcul(): void {
+        if (this.suiviRecalcul) clearInterval(this.suiviRecalcul);
+        const debut = Date.now();
+        this.suiviRecalcul = setInterval(() => {
+            this.userService
+                .getScoresAgents$()
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe({
+                    next: (r: IResponse) => {
+                        const d = (r.data?.scores || null) as Scores | null;
+                        if (!d) return;
+                        this.data.set(d);
+                        if (!d.recalculEnCours || Date.now() - debut > 10 * 60 * 1000) {
+                            clearInterval(this.suiviRecalcul!);
+                            this.suiviRecalcul = null;
+                            this.recalcul.set(false);
+                            if (d.dernierRecalcul?.startsWith('Recalcul interrompu')) {
+                                this.erreurRecalcul.set(d.dernierRecalcul);
+                            } else {
+                                this.messageService.add({ severity: 'success', summary: 'Scores recalculés', detail: d.dernierRecalcul || '', life: 8000 });
+                            }
+                        }
+                    },
+                    error: () => {}
+                });
+        }, 20000);
     }
 
     ouvrirFiche(a: ScoreAgent): void {

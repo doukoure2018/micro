@@ -52,8 +52,8 @@ public class PortefeuilleScoreResource {
     /** Recalcul immediat sur tout le reseau (DE, SUPER_ADMIN) : premier calcul, calibrage. */
     @PostMapping("/recalculer")
     public ResponseEntity<Response> recalculer(@NotNull Authentication authentication, HttpServletRequest request) {
-        int n = service.recalculer(authentication.getName());
-        return ResponseEntity.ok(getResponse(request, Map.of("nbAgents", n), n + " agent(s) note(s)", OK));
+        String message = service.recalculer(authentication.getName());
+        return ResponseEntity.ok(getResponse(request, Map.of("lance", true), message, OK));
     }
 
     @GetMapping("/export")

@@ -65,6 +65,9 @@ export interface BornesScore {
 export interface Scores {
     dateCalcul?: string;
     peutRecalculer: boolean;
+    recalculEnCours?: boolean;
+    recalculDepuis?: string | null;
+    dernierRecalcul?: string | null;
     reseau: SyntheseScore;
     delegations: SyntheseScore[];
     agents: ScoreAgent[];
