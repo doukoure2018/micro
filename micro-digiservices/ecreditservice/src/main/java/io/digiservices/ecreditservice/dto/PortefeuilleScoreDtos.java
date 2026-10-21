@@ -83,6 +83,11 @@ public final class PortefeuilleScoreDtos {
     public static class ScoresDto {
         private LocalDate dateCalcul;
         private boolean peutRecalculer;
+        /** Un recalcul lance a la demande tourne en arriere-plan (2 a 4 minutes sur tout le reseau). */
+        private boolean recalculEnCours;
+        private String recalculDepuis;
+        /** Resultat du dernier recalcul a la demande : message de succes ou d'erreur, null si aucun. */
+        private String dernierRecalcul;
         private SyntheseScoreDto reseau;
         private List<SyntheseScoreDto> delegations;
         private List<ScoreAgentDto> agents;
