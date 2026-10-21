@@ -55,7 +55,7 @@ interface GroupeAgence {
                     <p-select [options]="anneeOptions" [ngModel]="annee()" (ngModelChange)="changerPeriode(mois(), $event)" optionLabel="label" optionValue="value" styleClass="w-28" appendTo="body"></p-select>
                     <button pButton icon="pi pi-refresh" class="p-button-text" (click)="charger()" [loading]="loading()" pTooltip="Recharger"></button>
                     <button *ngIf="!estActivite()" pButton icon="pi pi-sync" label="Contrôle SAF" class="p-button-outlined" [loading]="safEnCours()" (click)="actualiserSaf()" pTooltip="Relit dans SAF les valeurs de contrôle (encours, retards, capital en retard, octrois du mois)"></button>
-                    <button pButton icon="pi pi-file-excel" [label]="estActivite() ? 'Exporter l’exercice' : 'Exporter Excel'" class="p-button-success p-button-outlined" [loading]="exportEnCours()" [disabled]="!data()?.lignes?.length" (click)="exporter()" [pTooltip]="estActivite() ? 'Classeur au format du rapport Forécariah : une feuille par point de service et un total par agence' : ''"></button>
+                    <button pButton icon="pi pi-file-excel" [label]="estActivite() ? 'Exporter l’exercice' : 'Exporter Excel'" class="p-button-success p-button-outlined" [loading]="exportEnCours()" [disabled]="!data()?.lignes?.length" (click)="exporter()" [pTooltip]="estActivite() ? 'Classeur au format du rapport Forécariah : une feuille par point de service et un total pour l’agence choisie dans la vue annuelle ; sans agence choisie, un total par agence' : ''"></button>
                 </div>
             </div>
 
@@ -1126,7 +1126,15 @@ export class RapportMensuelComponent implements OnInit, OnDestroy, AfterViewChec
 
     exporter(): void {
         this.flushAutosave();
-        this.telecharger(this.userService.exportRapportMensuel$(this.annee(), this.mois(), this.module()), this.estActivite() ? 'rapport_activite.xlsx' : 'indicateurs_mensuels.xlsx');
+        // Rapport d'activité : l'agence choisie dans la vue annuelle (ou celle du PS choisi) donne
+        // le détail par point de service ; sans choix, une feuille Total par agence.
+        let agenceId: number | null = null;
+        if (this.estActivite()) {
+            const cible = this.cibleAnnuel() || '';
+            if (cible.startsWith('AG:')) agenceId = Number(cible.substring(3));
+            else if (cible.startsWith('PS:')) agenceId = this.data()?.lignes.find((l) => l.codAgencia === cible.substring(3))?.agenceId ?? null;
+        }
+        this.telecharger(this.userService.exportRapportMensuel$(this.annee(), this.mois(), this.module(), agenceId), this.estActivite() ? 'rapport_activite.xlsx' : 'indicateurs_mensuels.xlsx');
     }
 
     // ==================== Calculs d'affichage ====================

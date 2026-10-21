@@ -404,22 +404,33 @@ public class RapportMensuelService {
         return new int[]{consolides, nonValides};
     }
 
-    public byte[] exporter(String uuid, String module, int annee, int mois) {
+    public byte[] exporter(String uuid, String module, int annee, int mois, Long agenceId) {
         module = module(module);
         try {
             if (MODULE.equals(module)) {
                 return RapportMensuelExcelUtils.classeur(charger(uuid, module, annee, mois));
             }
-            return exporterExercice(uuid, module, annee);
+            return exporterExercice(uuid, module, annee, agenceId);
         } catch (IOException e) {
             throw new ApiException("Export Excel impossible : " + e.getMessage());
         }
     }
 
-    /** Export au format du fichier Forecariah : une feuille par point de service, un total par agence. */
-    private byte[] exporterExercice(String uuid, String module, int annee) throws IOException {
+    /**
+     * Export au format du fichier Forecariah. Pour une agence (celle du DA, ou celle demandee par
+     * agenceId) : une feuille par point de service puis la feuille Total. Pour une delegation ou
+     * le reseau sans agence choisie : une feuille Total par agence, puis le total du perimetre —
+     * jamais une feuille par point de service, c'est ce qui a epuise la memoire le 20/10/2026.
+     */
+    private byte[] exporterExercice(String uuid, String module, int annee, Long agenceId) throws IOException {
         Perimetre p = perimetreSafService.perimetreDe(uuid);
         Map<String, PointVenteHierarchie> hier = hierarchie(p, null);
+        if (agenceId != null) {
+            hier.values().removeIf(h -> !agenceId.equals(h.agenceId()));
+            if (hier.isEmpty()) {
+                throw new ApiException("Cette agence n'est pas dans votre perimetre");
+            }
+        }
         List<RubriqueDto> rubriques = repository.rubriques(module);
         List<SectionDto> sections = repository.sections(module);
         List<LigneDto> rapports = repository.rapportsExercice(module, annee, hier.keySet());
@@ -427,15 +438,18 @@ public class RapportMensuelService {
         List<AnnuelDto> feuilles = new ArrayList<>();
         Map<Long, List<PointVenteHierarchie>> parAgence = hier.values().stream().filter(h -> h.agenceId() != null)
                 .collect(Collectors.groupingBy(PointVenteHierarchie::agenceId, LinkedHashMap::new, Collectors.toList()));
+        boolean detailPs = parAgence.size() == 1;
         for (List<PointVenteHierarchie> psAgence : parAgence.values()) {
-            for (PointVenteHierarchie h : psAgence) {
-                List<LigneDto> rs = rapports.stream().filter(l -> l.getCodAgencia().equals(h.code())).toList();
-                AnnuelDto a = exercice(module, annee, List.of(h), rs, valeurs, rubriques);
-                a.setCodAgencia(h.code());
-                a.setLibelle(h.libelle());
-                a.setAgence(h.agence());
-                a.setDelegation(h.delegation());
-                feuilles.add(a);
+            if (detailPs) {
+                for (PointVenteHierarchie h : psAgence) {
+                    List<LigneDto> rs = rapports.stream().filter(l -> l.getCodAgencia().equals(h.code())).toList();
+                    AnnuelDto a = exercice(module, annee, List.of(h), rs, valeurs, rubriques);
+                    a.setCodAgencia(h.code());
+                    a.setLibelle(h.libelle());
+                    a.setAgence(h.agence());
+                    a.setDelegation(h.delegation());
+                    feuilles.add(a);
+                }
             }
             Set<String> codes = psAgence.stream().map(PointVenteHierarchie::code).collect(Collectors.toSet());
             AnnuelDto total = exercice(module, annee, psAgence, rapports.stream().filter(l -> codes.contains(l.getCodAgencia())).toList(), valeurs, rubriques);
@@ -444,6 +458,12 @@ public class RapportMensuelService {
             total.setDelegation(psAgence.get(0).delegation());
             feuilles.add(total);
         }
+        if (parAgence.size() > 1) {
+            AnnuelDto total = exercice(module, annee, hier.values(), rapports, valeurs, rubriques);
+            total.setLibelle(p.toutReseau() && agenceId == null ? "TOTAL RESEAU" : "TOTAL " + nvl(hier.values().iterator().next().delegation()).toUpperCase());
+            feuilles.add(total);
+        }
+        log.info("[RAPPORT ACTIVITE] export {} : {} feuille(s) pour user={} ({})", annee, feuilles.size(), p.user().getUserId(), p.niveau());
         return RapportActiviteExcelUtils.classeur(annee, feuilles, sections, rubriques);
     }
 

@@ -13,7 +13,7 @@ import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -38,8 +38,12 @@ public final class RapportActiviteExcelUtils {
     private static final String[] TRIMESTRES = {"1er trimestre", "2e trimestre", "3e trimestre", "4e trimestre"};
     private static final String[] FIN_TRIMESTRE = {"31 mars", "30 juin", "30 septembre", "31 décembre"};
 
+    /**
+     * Classeur ecrit en flux (SXSSF, fenetre de 200 lignes) : le 20/10/2026 un export de tout le
+     * reseau (185 feuilles) construit en memoire a epuise le tas du service et l'a rendu muet.
+     */
     public static byte[] classeur(int annee, List<AnnuelDto> feuilles, List<SectionDto> sections, List<RubriqueDto> rubriques) throws IOException {
-        try (Workbook wb = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+        try (SXSSFWorkbook wb = new SXSSFWorkbook(200); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Styles st = new Styles(wb);
             Map<String, List<RubriqueDto>> parSection = new LinkedHashMap<>();
             for (RubriqueDto r : rubriques) {
@@ -49,6 +53,9 @@ public final class RapportActiviteExcelUtils {
             for (AnnuelDto f : feuilles) {
                 String nom = nomFeuille(f.getLibelle(), ++n);
                 Sheet s = wb.createSheet(nom);
+                s.setColumnWidth(0, 8 * 256);
+                s.setColumnWidth(1, 34 * 256);
+                for (int c = 2; c < 30; c++) s.setColumnWidth(c, 17 * 256);
                 int r = 0;
                 ligneTexte(s, r++, "DELEGATION REGIONALE DE :", nvl(f.getDelegation()), st);
                 ligneTexte(s, r++, "AGENCE :", nvl(f.getAgence()), st);
@@ -61,11 +68,9 @@ public final class RapportActiviteExcelUtils {
                     r = section(s, r, sec, rs, f, st);
                     r++;
                 }
-                s.setColumnWidth(0, 8 * 256);
-                s.setColumnWidth(1, 34 * 256);
-                for (int c = 2; c < 30; c++) s.setColumnWidth(c, 17 * 256);
             }
             wb.write(out);
+            wb.dispose();
             return out.toByteArray();
         }
     }

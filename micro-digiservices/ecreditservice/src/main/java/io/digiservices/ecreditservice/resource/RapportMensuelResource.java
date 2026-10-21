@@ -126,8 +126,9 @@ public class RapportMensuelResource {
     @GetMapping("/export")
     public ResponseEntity<byte[]> exporter(@NotNull Authentication authentication,
                                            @RequestParam(value = "module", required = false) String module,
-                                           @RequestParam("annee") int annee, @RequestParam("mois") int mois) {
-        byte[] contenu = service.exporter(authentication.getName(), module, annee, mois);
+                                           @RequestParam("annee") int annee, @RequestParam("mois") int mois,
+                                           @RequestParam(value = "agenceId", required = false) Long agenceId) {
+        byte[] contenu = service.exporter(authentication.getName(), module, annee, mois, agenceId);
         String nom = "ACTIVITE".equals(module)
                 ? "rapport_activite_" + annee + ".xlsx"
                 : "indicateurs_mensuels_" + RapportMensuelExcelUtils.MOIS[mois - 1].toLowerCase() + "_" + annee + ".xlsx";
