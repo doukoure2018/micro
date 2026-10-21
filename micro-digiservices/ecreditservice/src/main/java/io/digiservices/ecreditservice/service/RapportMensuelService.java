@@ -90,7 +90,10 @@ public class RapportMensuelService {
         Perimetre p = perimetreSafService.perimetreDe(uuid);
         Map<String, PointVenteHierarchie> hier = hierarchie(p, null);
         String avertissement = null;
-        int crees = repository.creerSiAbsents(module, hier.keySet(), annee, mois, p.user().getUserId());
+        // Seuls ceux qui saisissent ouvrent les rapports de leurs points de service (et, pour le
+        // module A, declenchent la lecture SAF de controle). Le DR et la DE voient ce qui existe :
+        // ouvrir 185 rapports et interroger SAF a chaque consultation du reseau n'a pas de sens.
+        int crees = peutSaisir(p, module) ? repository.creerSiAbsents(module, hier.keySet(), annee, mois, p.user().getUserId()) : 0;
         if (crees > 0) {
             log.info("[RAPPORT {}] {}/{} : {} rapport(s) ouvert(s) par user={} ({})", module, mois, annee, crees,
                     p.user().getUserId(), p.niveau());
@@ -408,7 +411,10 @@ public class RapportMensuelService {
         module = module(module);
         try {
             if (MODULE.equals(module)) {
-                return RapportMensuelExcelUtils.classeur(charger(uuid, module, annee, mois));
+                // L'export ne reflete que les valeurs saisies : ni creation de rapports, ni lecture SAF.
+                verifierPeriode(annee, mois);
+                Perimetre p = perimetreSafService.perimetreDe(uuid);
+                return RapportMensuelExcelUtils.classeur(construire(p, module, hierarchie(p, null), annee, mois, null));
             }
             return exporterExercice(uuid, module, annee, agenceId);
         } catch (IOException e) {
@@ -526,11 +532,25 @@ public class RapportMensuelService {
         List<AgregatDto> delegations = new ArrayList<>();
         Map<Long, List<LigneDto>> parAgence = lignes.stream().filter(l -> l.getAgenceId() != null)
                 .collect(Collectors.groupingBy(LigneDto::getAgenceId, LinkedHashMap::new, Collectors.toList()));
-        parAgence.forEach((id, ls) -> agences.add(agreger("AGENCE", id, ls.get(0).getAgence(), ls.get(0).getDelegationId(), ls, saisies, calculs)));
+        // Les points de service sans rapport comptent dans le total attendu, pour que « 2/6 complets »
+        // reste honnete quand une agence n'a rien ouvert ; ils sont aussi listes comme non ouverts.
+        Map<Long, Long> psParAgence = hier.values().stream().filter(h -> h.agenceId() != null)
+                .collect(Collectors.groupingBy(PointVenteHierarchie::agenceId, LinkedHashMap::new, Collectors.counting()));
+        Map<Long, Long> psParDelegation = hier.values().stream().filter(h -> h.delegationId() != null)
+                .collect(Collectors.groupingBy(PointVenteHierarchie::delegationId, LinkedHashMap::new, Collectors.counting()));
+        Map<Long, PointVenteHierarchie> uneParAgence = new LinkedHashMap<>();
+        Map<Long, PointVenteHierarchie> uneParDelegation = new LinkedHashMap<>();
+        for (PointVenteHierarchie h : hier.values()) {
+            if (h.agenceId() != null) uneParAgence.putIfAbsent(h.agenceId(), h);
+            if (h.delegationId() != null) uneParDelegation.putIfAbsent(h.delegationId(), h);
+        }
         Map<Long, List<LigneDto>> parDelegation = lignes.stream().filter(l -> l.getDelegationId() != null)
                 .collect(Collectors.groupingBy(LigneDto::getDelegationId, LinkedHashMap::new, Collectors.toList()));
-        parDelegation.forEach((id, ls) -> delegations.add(agreger("DELEGATION", id, ls.get(0).getDelegation(), null, ls, saisies, calculs)));
-        AgregatDto total = agreger(p.niveau(), null, libelleTotal(p, lignes), null, lignes, saisies, calculs);
+        uneParAgence.forEach((id, h) -> agences.add(agreger("AGENCE", id, h.agence(), h.delegationId(),
+                parAgence.getOrDefault(id, List.of()), saisies, calculs, psParAgence.get(id).intValue())));
+        uneParDelegation.forEach((id, h) -> delegations.add(agreger("DELEGATION", id, h.delegation(), null,
+                parDelegation.getOrDefault(id, List.of()), saisies, calculs, psParDelegation.get(id).intValue())));
+        AgregatDto total = agreger(p.niveau(), null, libelleTotal(p, lignes.isEmpty() ? List.of() : lignes), null, lignes, saisies, calculs, hier.size());
 
         return RapportMensuelDto.builder()
                 .module(module).annee(annee).mois(mois).niveau(p.niveau()).role(p.role())
@@ -556,9 +576,9 @@ public class RapportMensuelService {
      * actuel — regle a trancher par la Direction de l'Exploitation.
      */
     static AgregatDto agreger(String niveau, Long id, String libelle, Long parentId, List<LigneDto> lignes,
-                              List<RubriqueDto> saisies, List<RubriqueDto> calculs) {
+                              List<RubriqueDto> saisies, List<RubriqueDto> calculs, int nbPointsService) {
         AgregatDto a = AgregatDto.builder().niveau(niveau).id(id).libelle(libelle).parentId(parentId)
-                .nbPointsService(lignes.size()).build();
+                .nbPointsService(nbPointsService).build();
         for (RubriqueDto r : saisies) {
             BigDecimal somme = null, sommeSaf = null;
             int n = 0;

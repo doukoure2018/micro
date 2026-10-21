@@ -293,6 +293,9 @@ services:
       SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_QUERY_CACHE: "false"
       SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_REGION_FACTORY_CLASS: "org.hibernate.cache.internal.NoCachingRegionFactory"
       FILE_BASE_URL: https://digi-creditrural-io.com/ecredit/files
+      # Tas explicite (sans cela : 25 % du conteneur = 256 Mo, épuisé le 20/10/2026 par un export Excel)
+      # et sortie immédiate sur OutOfMemoryError : Docker relance le conteneur au lieu de le laisser muet.
+      JAVA_TOOL_OPTIONS: "-Xms256m -Xmx640m -XX:+ExitOnOutOfMemoryError"
       # API Canal+ (actualisation décodeur) — renseigner CANAL_API_* dans .env.prod
       CANAL_API_BASE_URL: ${CANAL_API_BASE_URL:-http://162.19.114.155:8088}
       CANAL_API_USERNAME: ${CANAL_API_USERNAME:-}
