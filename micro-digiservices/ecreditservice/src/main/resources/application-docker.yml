@@ -49,7 +49,7 @@ spring:
       spring:
         json:
           type:
-            mapping: Notification:io.digiservices.userservice.domain.Notification
+            mapping: Notification:io.digiservices.ecreditservice.domain.Notification  # classe locale (userservice.* n'existe pas ici : producteur jamais construit depuis 2025)
       message.max.bytes: 1300000000
       max.request.size: 1300000000
 

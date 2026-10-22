@@ -75,16 +75,26 @@ public class SafSanteWatchdog {
         }
         derniereCause = cause;
         log.warn("[SAF-SANTE] Echec {} consecutif(s) : {}", echecsConsecutifs, cause.replace("<br>", " | "));
-        boolean premiereAlerte = echecsConsecutifs == echecsAvantAlerte;
+        // Premiere alerte : des le seuil atteint, et tant qu'aucun envoi n'a abouti (le 22/10/2026 un
+        // envoi en echec a fait planter la sonde et l'alerte n'est jamais partie).
+        boolean premiereAlerte = echecsConsecutifs >= echecsAvantAlerte && dernierEnvoi == null;
         boolean rappel = dernierEnvoi != null && Duration.between(dernierEnvoi, LocalDateTime.now()).toHours() >= rappelHeures;
         if (premiereAlerte || rappel) {
-            envoyer("⚠ Système bancaire (SAF) indisponible pour digi", corpsPanne(cause, rappel));
+            try {
+                envoyer("⚠ Système bancaire (SAF) indisponible pour digi", corpsPanne(cause, rappel));
+            } catch (Exception e) {
+                log.error("[SAF-SANTE] Alerte non envoyee (nouvel essai au prochain passage) : {}", premiereLigne(e.getMessage()));
+            }
         }
     }
 
     private void retabli() {
         if (echecsConsecutifs >= echecsAvantAlerte && dernierEnvoi != null) {
-            envoyer("✔ Système bancaire (SAF) rétabli pour digi", corpsRetabli());
+            try {
+                envoyer("✔ Système bancaire (SAF) rétabli pour digi", corpsRetabli());
+            } catch (Exception e) {
+                log.error("[SAF-SANTE] Message de retablissement non envoye : {}", premiereLigne(e.getMessage()));
+            }
         } else if (echecsConsecutifs > 0) {
             log.info("[SAF-SANTE] Retabli apres {} echec(s), sans alerte envoyee", echecsConsecutifs);
         }

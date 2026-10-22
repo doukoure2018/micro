@@ -56,7 +56,8 @@ public class AffectationRappelScheduler {
             }
             log.info("[AFFECTATION] Rappel hebdo : {} e-mail(s) publie(s) aux DA", envoyes);
         } catch (Exception e) {
-            log.warn("[AFFECTATION] Rappel hebdo saute (SAF indisponible ?) : {}", e.getMessage());
+            log.warn("[AFFECTATION] Rappel hebdo en echec (SAF indisponible ?) : {}", e.getMessage());
+            throw new IllegalStateException("Rappel hebdo : " + e.getMessage(), e);
         }
     }
 
