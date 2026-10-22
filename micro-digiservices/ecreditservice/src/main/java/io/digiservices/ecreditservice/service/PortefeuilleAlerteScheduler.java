@@ -127,8 +127,9 @@ public class PortefeuilleAlerteScheduler {
             }
             log.info("[ALERTES] Digest quotidien : {} e-mails publies", envoyes);
         } catch (Exception e) {
-            // Cloture SAF ou base indisponible : on saute l'execution du jour
-            log.warn("[ALERTES] Digest quotidien saute (SAF indisponible ?) : {}", e.getMessage());
+            // Cloture SAF ou base en restauration : SafJobRetry rejoue la tache un peu plus tard.
+            log.warn("[ALERTES] Digest quotidien en echec (SAF indisponible ?) : {}", e.getMessage());
+            throw new IllegalStateException("Digest quotidien : " + e.getMessage(), e);
         }
     }
 
@@ -199,7 +200,8 @@ public class PortefeuilleAlerteScheduler {
             }
             log.info("[ALERTES] Synthese hebdo : {} e-mails publies", envoyes);
         } catch (Exception e) {
-            log.warn("[ALERTES] Synthese hebdo sautee (SAF indisponible ?) : {}", e.getMessage());
+            log.warn("[ALERTES] Synthese hebdo en echec (SAF indisponible ?) : {}", e.getMessage());
+            throw new IllegalStateException("Synthese hebdo : " + e.getMessage(), e);
         }
     }
 
