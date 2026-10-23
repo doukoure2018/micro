@@ -305,6 +305,7 @@ export interface IResponse {
         designations?: any;
         charge?: any;
         transferts?: any;
+        peutReattribuer?: boolean;
         transfert?: any;
     };
 }

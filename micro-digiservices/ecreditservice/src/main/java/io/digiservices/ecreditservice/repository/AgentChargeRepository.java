@@ -78,6 +78,47 @@ public class AgentChargeRepository {
                 """).param("id", userId).query().listOfRows();
     }
 
+    /**
+     * Dossiers en cours portes par un agent qui n'est plus la (lot 3) : agent de credit affecte
+     * parti du point de service ou desactive, ou correction accueil dont l'agent d'accueil est
+     * parti. Filtre par agence (DA) ou par delegation (DR).
+     */
+    public List<Map<String, Object>> dossiersOrphelins(Long agenceId, Long delegationId) {
+        String perimetre = agenceId != null ? " AND d.agence = :agence " : delegationId != null ? " AND d.delegation = :delegation " : "";
+        var spec = jdbcClient.sql("""
+                SELECT d.demandeindividuel_id AS id, d.nom, d.prenom, d.numero_membre, d.montant_demande,
+                       d.validation_state AS etat, d.createdat, d.pos, pv.libele AS point_vente, d.agence, a.libele AS agence_libelle,
+                       d.agent_credit_affecte, TRIM(COALESCE(ua.first_name,'') || ' ' || COALESCE(ua.last_name,'')) AS agent,
+                       pva.libele AS agent_point_vente, COALESCE(ua.enabled, TRUE) AS agent_actif,
+                       d.saisie_par, TRIM(COALESCE(us.first_name,'') || ' ' || COALESCE(us.last_name,'')) AS accueil,
+                       pvs.libele AS accueil_point_vente,
+                       CASE
+                         WHEN d.validation_state = 'CORRECTION_ACCUEIL' AND us.user_id IS NOT NULL AND us.pointvente_id IS DISTINCT FROM d.pos
+                              THEN 'Agent d''accueil mute a ' || COALESCE(pvs.libele, '?') || ' : personne ne peut corriger'
+                         WHEN ua.user_id IS NOT NULL AND NOT COALESCE(ua.enabled, TRUE) THEN 'Compte de l''agent de credit desactive'
+                         WHEN ua.user_id IS NOT NULL AND ua.pointvente_id IS DISTINCT FROM d.pos THEN 'Agent de credit mute a ' || COALESCE(pva.libele, '?')
+                         ELSE 'Agent de credit introuvable'
+                       END AS raison
+                FROM demandeindividuel d
+                LEFT JOIN pointvente pv ON pv.id = d.pos
+                LEFT JOIN agence a ON a.id = d.agence
+                LEFT JOIN users ua ON ua.user_id = d.agent_credit_affecte
+                LEFT JOIN pointvente pva ON pva.id = ua.pointvente_id
+                LEFT JOIN users us ON us.user_id = d.saisie_par
+                LEFT JOIN pointvente pvs ON pvs.id = us.pointvente_id
+                WHERE """ + EN_COURS + perimetre + """
+                  AND d.validation_state IN ('AFFECTEE', 'SELECTION', 'CORRECTION', 'CORRECTION_DR', 'CORRECTION_DE', 'RETOUR_AGENT', 'CORRECTION_ACCUEIL')
+                  AND (
+                        (d.agent_credit_affecte IS NOT NULL AND (ua.user_id IS NULL OR NOT COALESCE(ua.enabled, TRUE) OR ua.pointvente_id IS DISTINCT FROM d.pos))
+                     OR (d.validation_state = 'CORRECTION_ACCUEIL' AND us.user_id IS NOT NULL AND us.pointvente_id IS DISTINCT FROM d.pos)
+                  )
+                ORDER BY a.libele, pv.libele, d.createdat
+                """);
+        if (agenceId != null) spec = spec.param("agence", agenceId);
+        if (delegationId != null) spec = spec.param("delegation", delegationId);
+        return spec.query().listOfRows();
+    }
+
     public Map<String, Object> portefeuille(Long userId) {
         return jdbcClient.sql("""
                 SELECT COUNT(*) AS nb, COUNT(DISTINCT cod_agencia) AS nb_ps,

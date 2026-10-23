@@ -38,6 +38,27 @@ public class AgentChargeResource {
     private final AgentChargeRepository repository;
     private final UserClient userClient;
 
+    /** Dossiers en cours portes par un agent parti ou desactive : DA (son agence), DR (sa delegation), reseau (tout). */
+    @GetMapping("/dossiers-a-reattribuer")
+    public ResponseEntity<Response> dossiersAReattribuer(@NotNull Authentication authentication, HttpServletRequest request) {
+        User u = userClient.getUserByUuid(authentication.getName());
+        boolean de = "MANAGER".equals(u.getRole()) && "DE".equalsIgnoreCase(u.getService());
+        List<Map<String, Object>> liste;
+        if ("DA".equals(u.getRole())) {
+            if (u.getAgenceId() == null) throw new ApiException("Compte non rattache a une agence");
+            liste = repository.dossiersOrphelins(u.getAgenceId(), null);
+        } else if ("DR".equals(u.getRole())) {
+            if (u.getDelegationId() == null) throw new ApiException("Compte non rattache a une delegation");
+            liste = repository.dossiersOrphelins(null, u.getDelegationId());
+        } else if (de || "DG".equals(u.getRole()) || "SUPER_ADMIN".equals(u.getRole())) {
+            liste = repository.dossiersOrphelins(null, null);
+        } else {
+            throw new ApiException("Acces reserve aux directeurs d'agence, regionaux et a la Direction de l'Exploitation");
+        }
+        return ResponseEntity.ok(getResponse(request, Map.of("dossiers", liste, "peutReattribuer", "DA".equals(u.getRole())),
+                liste.size() + " dossier(s) a reattribuer", OK));
+    }
+
     @GetMapping("/{userId}/charge")
     public ResponseEntity<Response> charge(@NotNull Authentication authentication, @PathVariable("userId") Long userId,
                                            HttpServletRequest request) {
