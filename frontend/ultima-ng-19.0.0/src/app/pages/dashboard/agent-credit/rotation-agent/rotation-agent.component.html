@@ -1,6 +1,36 @@
 <p-toast></p-toast>
 <p-confirmDialog></p-confirmDialog>
 
+<!-- Rotation guidée (V170) : ce que l'agent porte encore sur son point de service, et à qui le confier -->
+<p-dialog header="Avant d'activer la rotation : transférer la charge de l'agent" [(visible)]="showTransfert" [modal]="true"
+    [style]="{ width: '640px', maxWidth: '96vw' }">
+    @if(transfertAgent && transfertCharge) {
+    <div class="mb-3 p-3 border-round" style="background:#eff6ff;border:1px solid #bfdbfe">
+        <div class="font-semibold">{{ transfertAgent.fullName }} porte encore, à {{ transfertAgent.pointVenteDisplay }} :</div>
+        <ul class="mt-2 mb-0 pl-4 text-sm">
+            <li><strong>{{ transfertCharge.nbDossiersCredit }}</strong> dossier(s) de crédit en cours
+                @if(transfertCharge.nbDossiersCredit) { <span class="text-gray-600">({{ etatsCharge(transfertCharge.dossiersCredit) }})</span> }</li>
+            <li><strong>{{ transfertCharge.nbDossiersAccueil }}</strong> dossier(s) saisi(s) à l'accueil encore en cours</li>
+            <li><strong>{{ transfertCharge.nbPortefeuille }}</strong> crédit(s) SAF affecté(s) dans le portefeuille</li>
+            <li><strong>{{ transfertCharge.designations?.length || 0 }}</strong> désignation(s) pour la saisie des rapports</li>
+        </ul>
+        <div class="text-sm mt-2 text-gray-700">La rotation est refusée tant que cette charge n'est pas transférée à un agent de crédit du <strong>même point de service</strong>. Le directeur d'agence en sera averti par courriel et sur son tableau de bord, et pourra réattribuer dossier par dossier.</div>
+    </div>
+    <label class="block text-sm font-semibold mb-1">Transférer à</label>
+    <p-dropdown [(ngModel)]="transfertVers" [options]="candidatsTransfert()" optionLabel="label" optionValue="value"
+        placeholder="-- Agent de crédit du même point de service --" [style]="{'width': '100%'}" appendTo="body" [disabled]="transfertEnCours"></p-dropdown>
+    @if(!candidatsTransfert().length) {
+    <small class="text-orange-600 block mt-2"><i class="pi pi-exclamation-triangle mr-1"></i>Aucun autre agent de crédit sur ce point de service : la rotation ne peut pas être activée. Demandez au directeur d'agence de réattribuer les dossiers, ou affectez d'abord un agent à ce point de service.</small>
+    }
+    <label class="block text-sm font-semibold mb-1 mt-3">Motif</label>
+    <input pInputText type="text" [(ngModel)]="transfertMotif" class="w-full" maxlength="500" [disabled]="transfertEnCours" />
+    }
+    <ng-template pTemplate="footer">
+        <button pButton label="Annuler" class="p-button-text" (click)="showTransfert = false" [disabled]="transfertEnCours"></button>
+        <button pButton label="Transférer puis activer" icon="pi pi-arrow-right" [disabled]="!transfertVers || transfertEnCours" [loading]="transfertEnCours" (click)="transfererPuisActiver()"></button>
+    </ng-template>
+</p-dialog>
+
 <div class="card">
     <!-- En-tête -->
     <div class="flex justify-between items-center mb-6">

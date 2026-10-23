@@ -8,6 +8,8 @@ import { FormsModule } from '@angular/forms';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
+import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
 import { DropdownModule } from 'primeng/dropdown';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { TableModule } from 'primeng/table';
@@ -28,7 +30,7 @@ interface AgentWithStatus extends AgentCreditDTO {
 @Component({
     selector: 'app-rotation-agent',
     standalone: true,
-    imports: [CommonModule, FormsModule, TableModule, ButtonModule, CardModule, TagModule, DropdownModule, ProgressSpinnerModule, ToastModule, ConfirmDialogModule, TooltipModule],
+    imports: [CommonModule, FormsModule, TableModule, ButtonModule, CardModule, TagModule, DropdownModule, DialogModule, InputTextModule, ProgressSpinnerModule, ToastModule, ConfirmDialogModule, TooltipModule],
     templateUrl: './rotation-agent.component.html',
     styleUrl: './rotation-agent.component.scss',
     providers: [MessageService, ConfirmationService]
@@ -50,6 +52,77 @@ export class RotationAgentComponent implements OnInit {
     private messageService = inject(MessageService);
     private confirmationService = inject(ConfirmationService);
     private destroyRef = inject(DestroyRef);
+
+    // ===== Rotation guidée (V170) : ce que porte l'agent, et à qui le transférer avant d'activer =====
+    showTransfert = false;
+    transfertAgent: AgentWithStatus | null = null;
+    transfertCharge: any = null;
+    transfertVers: number | null = null;
+    transfertMotif = '';
+    transfertEnCours = false;
+
+    /** Agents de crédit du même point de service que celui qui part (destinataires possibles). */
+    candidatsTransfert(): { label: string; value: number }[] {
+        const a = this.transfertAgent;
+        if (!a) return [];
+        return this.state()
+            .agents.filter((x) => x.userId !== a.userId && x.pointventeId === a.pointventeId)
+            .map((x) => ({ label: `${x.fullName} — ${x.pointVenteDisplay || ''}`, value: x.userId! }));
+    }
+
+    etatsCharge(liste: any[]): string {
+        return (liste || []).map((l) => `${l.nb} ${l.etat}`).join(', ');
+    }
+
+    /** Lu avant toute activation : charge vide → activation directe ; sinon la fenêtre de transfert. */
+    private verifierChargePuisActiver(agent: AgentWithStatus): void {
+        this.updateAgentLoadingState(agent.userId!, true);
+        this.userService
+            .getChargeAgent$(agent.userId!)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r) => {
+                    const charge = r.data?.charge;
+                    if (!charge || charge.vide) {
+                        this.performActivation(agent);
+                        return;
+                    }
+                    this.updateAgentLoadingState(agent.userId!, false);
+                    const ps = this.state().pointsVente.find((pv) => pv.id === agent.selectedPointVenteId);
+                    this.transfertAgent = agent;
+                    this.transfertCharge = charge;
+                    this.transfertVers = null;
+                    this.transfertMotif = `Rotation vers ${ps?.libele || 'un autre point de service'}`;
+                    this.showTransfert = true;
+                },
+                error: () => {
+                    this.updateAgentLoadingState(agent.userId!, false);
+                    this.messageService.add({ severity: 'error', summary: 'Charge de l’agent indisponible', detail: 'Impossible de vérifier ce que porte cet agent ; rotation non activée.', life: 6000 });
+                }
+            });
+    }
+
+    /** Transfère la charge à l'agent choisi (même PS), puis active la rotation. */
+    transfererPuisActiver(): void {
+        const agent = this.transfertAgent;
+        if (!agent || !this.transfertVers) return;
+        this.transfertEnCours = true;
+        this.userService
+            .transfererChargeAgent$(agent.userId!, this.transfertVers, this.transfertMotif, agent.selectedPointVenteId || null)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r) => {
+                    this.transfertEnCours = false;
+                    this.showTransfert = false;
+                    this.messageService.add({ severity: 'success', summary: 'Charge transférée', detail: r.message || '', life: 7000 });
+                    this.performActivation(agent);
+                },
+                error: (error) => {
+                    this.transfertEnCours = false;
+                    this.messageService.add({ severity: 'error', summary: 'Transfert refusé', detail: error?.message || error || 'Erreur lors du transfert', life: 8000 });
+                }
+            });
+    }
 
     ngOnInit(): void {
         this.loadUserAndData();
@@ -203,7 +276,7 @@ export class RotationAgentComponent implements OnInit {
             acceptLabel: 'Oui, activer',
             rejectLabel: 'Annuler',
             accept: () => {
-                this.performActivation(agent);
+                this.verifierChargePuisActiver(agent);
             }
         });
     }
