@@ -1784,10 +1784,12 @@ export class UserService {
     // ==================== « Donnees SAF au … » (aiguillage production / sauvegarde) ====================
 
     private donneesSaf$?: Observable<DonneesSaf | null>;
+    private donneesSafDepuis = 0;
 
-    /** Un seul appel par chargement de l'application, partage entre les pages. */
+    /** Un appel au plus par minute, partage entre les pages (le message « restauration en cours » doit disparaitre vite). */
     getDonneesSaf$ = (): Observable<DonneesSaf | null> => {
-        if (!this.donneesSaf$) {
+        if (!this.donneesSaf$ || Date.now() - this.donneesSafDepuis > 60000) {
+            this.donneesSafDepuis = Date.now();
             this.donneesSaf$ = this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/donnees-saf`).pipe(
                 map((r) => (r.data?.donneesSaf || null) as DonneesSaf | null),
                 catchError(() => of(null)),

@@ -15,15 +15,24 @@ import { TooltipModule } from 'primeng/tooltip';
     standalone: true,
     imports: [CommonModule, TooltipModule],
     template: `
-        <span *ngIf="etat() as e" class="donnees-saf" [class.direct]="!e.sauvegardeActive" [pTooltip]="aide(e)" tooltipPosition="bottom">
-            <i class="pi" [ngClass]="e.sauvegardeActive ? 'pi-history' : 'pi-bolt'"></i>
-            {{ e.mention }}
-        </span>
+        <ng-container *ngIf="etat() as e">
+            <span *ngIf="!e.enRestauration" class="donnees-saf" [class.direct]="!e.sauvegardeActive" [pTooltip]="aide(e)" tooltipPosition="bottom">
+                <i class="pi" [ngClass]="e.sauvegardeActive ? 'pi-history' : 'pi-bolt'"></i>
+                {{ e.mention }}
+            </span>
+            <div *ngIf="e.enRestauration" class="restauration">
+                <i class="pi pi-clock"></i>
+                <div><strong>{{ e.messageInfo }}</strong><div class="text-xs">Les chiffres SAF de cette page (portefeuille, retards, contrôles) ne peuvent pas être lus pendant la restauration quotidienne ; les saisies et les dossiers digi restent accessibles.</div></div>
+            </div>
+        </ng-container>
     `,
     styles: [
         `
+            :host { display: contents; }
             .donnees-saf { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 2px 9px; border-radius: 12px; background: #e3f1f1; color: #0f6e6e; white-space: nowrap; }
             .donnees-saf.direct { background: #eceff3; color: #5a6577; }
+            .restauration { flex-basis: 100%; display: flex; gap: 10px; align-items: flex-start; margin-top: 8px; padding: 10px 12px; border-radius: 6px; border: 1px solid #93c5fd; background: #eff6ff; color: #1e3a8a; font-size: 14px; font-weight: normal; }
+            .restauration .pi { margin-top: 2px; }
         `
     ]
 })

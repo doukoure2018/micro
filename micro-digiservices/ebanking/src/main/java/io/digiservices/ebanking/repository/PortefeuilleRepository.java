@@ -617,9 +617,17 @@ public class PortefeuilleRepository {
             log.debug("[PORTEFEUILLE] {} OK en {} ms", op, System.currentTimeMillis() - start);
             return result;
         } catch (DataAccessResourceFailureException | QueryTimeoutException e) {
+            if (TertiaryUnavailableException.estEnRestauration(e)) {
+                log.warn("[PORTEFEUILLE] {} : sauvegarde SAF en cours de restauration", op);
+                throw new TertiaryUnavailableException(TertiaryUnavailableException.MESSAGE_RESTAURATION, e);
+            }
             log.error("[PORTEFEUILLE] {} : datasource primary indisponible - {}", op, e.getMessage());
             throw new TertiaryUnavailableException("Base SAF momentanement indisponible", e);
         } catch (DataAccessException e) {
+            if (TertiaryUnavailableException.estEnRestauration(e)) {
+                log.warn("[PORTEFEUILLE] {} : sauvegarde SAF en cours de restauration", op);
+                throw new TertiaryUnavailableException(TertiaryUnavailableException.MESSAGE_RESTAURATION, e);
+            }
             log.error("[PORTEFEUILLE] {} : erreur d'acces aux donnees - {}", op, e.getMessage());
             throw e;
         }

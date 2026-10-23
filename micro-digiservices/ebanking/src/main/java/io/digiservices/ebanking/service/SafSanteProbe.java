@@ -68,8 +68,11 @@ public class SafSanteProbe {
             bases.stream().filter(b -> !b.isOk()).forEach(b ->
                     log.warn("[SAF-SANTE] {} ({}, {}) : {}", b.getNom(), b.getHote(), b.getUtilisateur(), b.getMessage()));
         }
+        boolean enRestauration = !sauv.isOk() && sauv.getMessage() != null
+                && (sauv.getMessage().contains("Cannot open database") || sauv.getMessage().contains("restore"));
         return SanteSafDto.builder().toutOk(toutOk).bases(bases)
                 .sauvegardeActive(routage.isActive())
+                .sauvegardeEnRestauration(enRestauration)
                 .dateDonneesSauvegarde(sauv.getDateRestauration())
                 .build();
     }

@@ -92,6 +92,32 @@ public class HandleException extends ResponseEntityExceptionHandler implements E
         return new ResponseEntity<>(handleErrorResponse("Access denied. You don't have access", getRootCauseMessage(exception), request, FORBIDDEN), FORBIDDEN);
     }
 
+    /**
+     * Un service appele par Feign a repondu avec un message (ex. ebanking : « la base SAF est en
+     * cours de restauration ») : on le rend tel quel, avec son statut, plutot que « [503] during [GET] ... ».
+     */
+    @ExceptionHandler(feign.FeignException.class)
+    public ResponseEntity<Response> feignException(feign.FeignException exception) {
+        String message = null;
+        try {
+            String corps = exception.contentUTF8();
+            if (corps != null && !corps.isBlank()) {
+                var noeud = new com.fasterxml.jackson.databind.ObjectMapper().readTree(corps);
+                if (noeud.hasNonNull("message")) message = noeud.get("message").asText();
+            }
+        } catch (Exception ignore) {
+            // corps non JSON : on retombe sur le message generique
+        }
+        int statut = exception.status();
+        if (statut == 503 && message != null) {
+            log.warn("Service indisponible : {}", message);
+            return new ResponseEntity<>(handleErrorResponse(message, message, request, org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE),
+                    org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE);
+        }
+        log.error(String.format("FeignException: %s", exception.getMessage()));
+        return new ResponseEntity<>(handleErrorResponse(processErrorMessage(exception), getRootCauseMessage(exception), request, INTERNAL_SERVER_ERROR), INTERNAL_SERVER_ERROR);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Response> exception(Exception exception) {
         log.error(String.format("Exception: %s", exception.getMessage()));
