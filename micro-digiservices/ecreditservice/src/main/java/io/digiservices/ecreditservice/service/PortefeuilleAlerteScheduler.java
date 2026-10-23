@@ -8,6 +8,8 @@ import io.digiservices.ecreditservice.enumeration.EventType;
 import io.digiservices.ecreditservice.event.Event;
 import io.digiservices.ecreditservice.repository.AlerteDestinatairesRepository;
 import io.digiservices.ecreditservice.repository.AlerteDestinatairesRepository.Destinataire;
+import io.digiservices.ecreditservice.repository.AlerteSyntheseRepository;
+import io.digiservices.ecreditservice.service.AlerteSyntheseService.Synthese;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,9 +19,12 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.Locale;
 import java.util.Map;
 
@@ -28,9 +33,11 @@ import java.util.Map;
  * (PORTEFEUILLE_ALERTE -> notificationservice) :
  *
  * <ul>
- *   <li><b>Quotidien 07h00 GMT</b> : digest par agent de credit (son point de service)
- *       et par DA (son agence) — echeances a J+3 pour la relance des clients, et
- *       credits venus de basculer en impaye la veille ;</li>
+ *   <li><b>Quotidien 08h20 GMT</b> : digest detaille par agent de credit (son point de
+ *       service) — echeances a J+3 pour la relance des clients, et credits venus de
+ *       basculer en impaye la veille ; et, les jours ouvres, <b>synthese</b> (sans nom de
+ *       client) au DA par point de service et par agent, au DR par agence avec le nom du
+ *       DA, et le lundi a la DE par delegation — proposition DSIG du 23/10/2026 ;</li>
  *   <li><b>Hebdomadaire lundi 07h30 GMT</b> : synthese PAR 30/90 par point de service,
  *       aux DA (leur agence) et DR (leur delegation).</li>
  * </ul>
@@ -54,6 +61,8 @@ public class PortefeuilleAlerteScheduler {
     private final DonneesSafService donneesSaf;
     private final io.digiservices.ecreditservice.repository.SignalementTelephoneRepository signalementRepository;
     private final SignalementTelephoneNotifier signalementNotifier;
+    private final AlerteSyntheseService syntheses;
+    private final AlerteSyntheseRepository syntheseRepository;
 
     @Value("${portefeuille.alertes.actives:false}")
     private boolean actives;
@@ -122,15 +131,62 @@ public class PortefeuilleAlerteScheduler {
             for (Destinataire d : destinataires.agentsCredit()) {
                 envoyes += envoyerDigest(d, "Votre point de service", echeances, impayes) ? 1 : 0;
             }
-            for (Destinataire d : destinataires.das()) {
-                envoyes += envoyerDigest(d, "Votre agence", echeances, impayes) ? 1 : 0;
-            }
-            log.info("[ALERTES] Digest quotidien : {} e-mails publies", envoyes);
+            log.info("[ALERTES] Digest quotidien : {} e-mails publies aux agents", envoyes);
+            envoyerSynthesesDirecteurs(echeances, impayes);
         } catch (Exception e) {
             // Cloture SAF ou base en restauration : SafJobRetry rejoue la tache un peu plus tard.
             log.warn("[ALERTES] Digest quotidien en echec (SAF indisponible ?) : {}", e.getMessage());
             throw new IllegalStateException("Digest quotidien : " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Syntheses du matin aux directeurs (jours ouvres seulement) : DA par point de service et par
+     * agent ; DR par agence avec le nom du DA ; DE par delegation le lundi. Chaque e-mail ne part
+     * que s'il y a au moins un impaye ou une echeance dans le perimetre. Les indicateurs reseau
+     * (PAR 30) sont lus une fois pour tous ; leur absence ne bloque pas l'envoi.
+     */
+    private void envoyerSynthesesDirecteurs(List<EcheanceAvenirDto> echeances, List<NouvelImpayeDto> impayes) {
+        if (LocalDate.now().getDayOfWeek() == DayOfWeek.SUNDAY) {
+            log.info("[ALERTES] Dimanche : pas de synthese aux directeurs");
+            return;
+        }
+        Map<String, IndicateursAgenceDto> indicateurs;
+        try {
+            indicateurs = portefeuilleClient.getIndicateursReseau().stream()
+                    .collect(Collectors.toMap(IndicateursAgenceDto::getCodAgencia, Function.identity(), (a, b) -> a));
+        } catch (Exception e) {
+            log.warn("[ALERTES] Indicateurs reseau indisponibles pour la synthese, PAR omis : {}", e.getMessage());
+            indicateurs = Map.of();
+        }
+        int da = 0, dr = 0, de = 0;
+        for (Destinataire d : destinataires.das()) {
+            try {
+                Synthese s = syntheses.pourDa("Votre agence", d.codesSaf(), echeances, impayes, indicateurs, joursAvantEcheance);
+                if (s != null) { publier(d.email(), s.getSujet(), s.getCorpsHtml()); da++; }
+            } catch (Exception e) {
+                log.warn("[ALERTES] Synthese DA impossible pour {} : {}", d.email(), e.getMessage());
+            }
+        }
+        for (Destinataire d : destinataires.drs()) {
+            try {
+                Synthese s = syntheses.pourGroupes("Votre délégation", d.codesSaf(), false, echeances, impayes, indicateurs, joursAvantEcheance);
+                if (s != null) { publier(d.email(), s.getSujet(), s.getCorpsHtml()); dr++; }
+            } catch (Exception e) {
+                log.warn("[ALERTES] Synthese DR impossible pour {} : {}", d.email(), e.getMessage());
+            }
+        }
+        if (LocalDate.now().getDayOfWeek() == DayOfWeek.MONDAY) {
+            List<String> tous = destinataires.drs().stream().flatMap(x -> x.codesSaf().stream()).distinct().toList();
+            Synthese s = syntheses.pourGroupes("Réseau", tous, true, echeances, impayes, indicateurs, joursAvantEcheance);
+            if (s != null) {
+                for (var m : syntheseRepository.managersDe()) {
+                    publier(m.email(), s.getSujet(), s.getCorpsHtml());
+                    de++;
+                }
+            }
+        }
+        log.info("[ALERTES] Syntheses du matin : {} DA, {} DR, {} DE", da, dr, de);
     }
 
     private boolean envoyerDigest(Destinataire d, String perimetre,
