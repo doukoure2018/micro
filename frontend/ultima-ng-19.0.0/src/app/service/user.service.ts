@@ -1622,6 +1622,16 @@ export class UserService {
     reattribuerDossier$ = (demandeId: number, agentUserId: number, motif: string) =>
         <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/reattribuer`, { agentUserId, motif }).pipe(catchError(this.handleError));
 
+    /** Rotation guidee (V170) : transfert de la charge d'un agent a un agent du meme point de service. */
+    transfererChargeAgent$ = (agentUserId: number, versAgentUserId: number, motif: string, nouveauPointVenteId: number | null) =>
+        <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/agents/${agentUserId}/transferer`, { versAgentUserId, motif, nouveauPointVenteId }).pipe(catchError(this.handleError));
+
+    getTransfertsAAcquitter$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/agents/transferts/a-acquitter`).pipe(catchError(this.handleError));
+
+    getDossiersTransfert$ = (id: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/agents/transferts/${id}/dossiers`).pipe(catchError(this.handleError));
+
+    acquitterTransfert$ = (id: number) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/agents/transferts/${id}/acquitter`, {}).pipe(catchError(this.handleError));
+
     getChargeAgent$ = (userId: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/agents/${userId}/charge`).pipe(catchError(this.handleError));
 
     demanderAnnulationDossier$ = (demandeId: number, motifCode: string, motif: string) =>

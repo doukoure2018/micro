@@ -304,5 +304,7 @@ export interface IResponse {
         donneesSaf?: any;
         designations?: any;
         charge?: any;
+        transferts?: any;
+        transfert?: any;
     };
 }

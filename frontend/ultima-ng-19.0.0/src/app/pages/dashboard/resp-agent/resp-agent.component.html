@@ -675,6 +675,25 @@
                 </div>
             </div>
 
+            <!-- V170 : rotation d'un agent, charge transferee — message a acquitter -->
+            <div *ngFor="let t of state().transferts" class="card mb-4 border-l-4 border-blue-500">
+                <div class="p-4 flex flex-wrap align-items-start justify-content-between gap-3">
+                    <div>
+                        <div class="text-lg font-semibold text-900"><i class="pi pi-sync mr-2 text-blue-600"></i>Rotation de {{ t.agent }}
+                            <span class="text-600 font-normal">({{ t.ancien_point_vente }} &rarr; {{ t.nouveau_point_vente || 'autre point de service' }}, le {{ t.date_transfert | date:'dd/MM/yyyy HH:mm' }})</span></div>
+                        <div class="text-700 mt-1">
+                            <strong>{{ t.nb_dossiers_credit }}</strong> dossier(s) de cr&eacute;dit et <strong>{{ t.nb_dossiers_accueil }}</strong> saisie(s) d'accueil transf&eacute;r&eacute;s &agrave; <strong>{{ t.vers }}</strong>,
+                            ainsi que {{ t.nb_portefeuille }} cr&eacute;dit(s) SAF et {{ t.nb_designations }} d&eacute;signation(s) de rapport &mdash; par {{ t.par }}. Motif : {{ t.motif }}.
+                        </div>
+                        <div class="text-600 text-sm mt-1">Vous pouvez r&eacute;attribuer chaque dossier depuis sa page (bouton &laquo; R&eacute;attribuer le dossier &raquo;).</div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button pButton type="button" icon="pi pi-list" label="Voir les dossiers" class="p-button-outlined p-button-sm" (click)="voirDossiersTransfert(t)"></button>
+                        <button pButton type="button" icon="pi pi-check" label="J'ai pris connaissance" class="p-button-sm" (click)="acquitterTransfert(t)"></button>
+                    </div>
+                </div>
+            </div>
+
             <!-- V163 : annulations de dossier demandees par les agents, en attente de ma decision -->
             <div *ngIf="hasWorkflowAnnulations()" class="card mb-4 border-l-4 border-red-500">
                 <div class="p-4">
@@ -778,3 +797,28 @@
     </div>
 
 </div>
+
+<p-dialog header="Dossiers transf&eacute;r&eacute;s" [(visible)]="showDossiersTransfert" [modal]="true" [style]="{ width: '760px', maxWidth: '96vw' }">
+    <div *ngIf="transfertOuvert" class="text-sm text-600 mb-3">{{ transfertOuvert.agent }} &rarr; {{ transfertOuvert.vers }} ({{ transfertOuvert.ancien_point_vente }})</div>
+    <p-table [value]="dossiersTransfert" responsiveLayout="scroll" styleClass="p-datatable-sm">
+        <ng-template pTemplate="header">
+            <tr><th>N&deg;</th><th>Client</th><th>Membre</th><th>&Eacute;tape</th><th class="text-right">Montant</th><th>Agent actuel</th><th></th></tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-d>
+            <tr>
+                <td>{{ d.id }}</td>
+                <td>{{ d.prenom }} {{ d.nom }}</td>
+                <td>{{ d.numero_membre }}</td>
+                <td>{{ d.etat }}</td>
+                <td class="text-right">{{ d.montant_demande | number:'1.0-0' }}</td>
+                <td>{{ d.agent_actuel }}</td>
+                <td><a [routerLink]="['/dashboards/credit/individuel/attente/detail', d.id]" class="text-blue-600">Ouvrir</a></td>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage"><tr><td colspan="7" class="text-600">Aucun dossier (chargement, ou charge sans dossier de cr&eacute;dit).</td></tr></ng-template>
+    </p-table>
+    <ng-template pTemplate="footer">
+        <button pButton label="Fermer" class="p-button-text" (click)="showDossiersTransfert = false"></button>
+        <button *ngIf="transfertOuvert" pButton label="J'ai pris connaissance" icon="pi pi-check" (click)="acquitterTransfert(transfertOuvert)"></button>
+    </ng-template>
+</p-dialog>

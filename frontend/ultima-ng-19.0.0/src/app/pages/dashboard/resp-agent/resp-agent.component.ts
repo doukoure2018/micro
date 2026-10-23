@@ -43,6 +43,7 @@ export class RespAgentComponent {
         workflowAValider: any[];
         workflowCorrectionDR: any[];
         workflowAnnulations: any[];
+        transferts: any[];
         loading: boolean;
         message: string | undefined;
         error: string | any;
@@ -55,7 +56,8 @@ export class RespAgentComponent {
         demandesRejetees: [],
         workflowAValider: [],
         workflowCorrectionDR: [],
-        workflowAnnulations: []
+        workflowAnnulations: [],
+        transferts: []
     });
 
     // Workflow dialogs
@@ -110,6 +112,7 @@ export class RespAgentComponent {
         this.loadWorkflowAValiderDA();
         this.loadWorkflowCorrectionDR();
         this.loadWorkflowAnnulations();
+        this.loadTransferts();
     }
 
     getStateValidation(statut: string): string {
@@ -416,6 +419,7 @@ export class RespAgentComponent {
         this.loadWorkflowAValiderDA();
         this.loadWorkflowCorrectionDR();
         this.loadWorkflowAnnulations();
+        this.loadTransferts();
         this.messageService.add({
             severity: 'info',
             summary: 'Actualisation',
@@ -473,6 +477,49 @@ export class RespAgentComponent {
         return this.libellesMotifAnnulation[code] || code || '—';
     }
 
+    // ===== Rotation guidée (V170) : transferts de charge à acquitter =====
+    showDossiersTransfert = false;
+    dossiersTransfert: any[] = [];
+    transfertOuvert: any = null;
+
+    private loadTransferts(): void {
+        this.userService.getTransfertsAAcquitter$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => this.state.update(s => ({ ...s, transferts: response.data?.transferts || [] })),
+                error: () => {}
+            });
+    }
+
+    hasTransferts(): boolean {
+        return (this.state().transferts?.length || 0) > 0;
+    }
+
+    voirDossiersTransfert(t: any): void {
+        this.transfertOuvert = t;
+        this.dossiersTransfert = [];
+        this.showDossiersTransfert = true;
+        this.userService.getDossiersTransfert$(t.id)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => (this.dossiersTransfert = response.data?.dossiers || []),
+                error: () => this.messageService.add({ severity: 'error', summary: 'Dossiers indisponibles', life: 5000 })
+            });
+    }
+
+    acquitterTransfert(t: any): void {
+        this.userService.acquitterTransfert$(t.id)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.state.update(s => ({ ...s, transferts: (s.transferts || []).filter((x: any) => x.id !== t.id) }));
+                    this.showDossiersTransfert = false;
+                    this.messageService.add({ severity: 'success', summary: 'Message acquitté', life: 3000 });
+                },
+                error: (err: any) => this.messageService.add({ severity: 'error', summary: 'Acquittement refusé', detail: err || '', life: 5000 })
+            });
+    }
+
     private loadWorkflowAnnulations(): void {
         this.userService.getAnnulationsAValiderDA$()
             .pipe(takeUntilDestroyed(this.destroyRef))
@@ -511,6 +558,7 @@ export class RespAgentComponent {
                     this.messageService.add({ severity: 'success', summary: 'Dossier annulé', detail: 'Le dossier sort du circuit et rejoint les dossiers clôturés', life: 5000 });
                     this.showAnnulationValiderDialog = false;
                     this.loadWorkflowAnnulations();
+        this.loadTransferts();
                 },
                 error: (err) => {
                     this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || "Erreur lors de la validation de l'annulation", life: 5000 });
@@ -527,6 +575,7 @@ export class RespAgentComponent {
                     this.messageService.add({ severity: 'info', summary: 'Annulation refusée', detail: "Le dossier reprend son cours à l'étape où il était", life: 5000 });
                     this.showAnnulationRefusDialog = false;
                     this.loadWorkflowAnnulations();
+        this.loadTransferts();
                 },
                 error: (err) => {
                     this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || 'Erreur lors du refus', life: 5000 });
