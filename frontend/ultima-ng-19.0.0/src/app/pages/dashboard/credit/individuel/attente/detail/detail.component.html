@@ -1003,6 +1003,15 @@
                         <div class="text-sm text-red-700 mt-1">Le dossier a repris son cours : poursuivez l'instruction.</div>
                     </div>
                 </div>
+                <div *ngIf="peutReattribuer()" class="mb-6 border border-indigo-200 bg-indigo-50 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
+                    <div class="text-sm text-indigo-900">
+                        <i class="pi pi-users mr-2"></i><strong>Agent responsable :</strong>
+                        {{ $any(state().demandeIndividuel)?.codUsuarios || 'agent n° ' + $any(state().demandeIndividuel)?.agentCreditAffecte }}
+                        <span class="text-indigo-700"> &mdash; en cas de rotation, d'absence ou de d&eacute;part, confiez le dossier &agrave; un autre agent de cr&eacute;dit du m&ecirc;me point de service, sans changer d'&eacute;tape.</span>
+                    </div>
+                    <button pButton type="button" icon="pi pi-user-edit" label="R&eacute;attribuer le dossier"
+                        class="p-button-outlined" (click)="ouvrirReattribution()"></button>
+                </div>
                 <div *ngIf="peutAnnulerDossier()" class="mb-6 flex justify-end">
                     <button pButton type="button" icon="pi pi-ban" label="Annuler le dossier"
                         class="p-button-danger p-button-outlined"
@@ -1931,6 +1940,34 @@
                         (click)="state.update(mergeState({showAnnulationDossier: false}))"></button>
                     <button pButton type="button" label="Demander l'annulation" icon="pi pi-ban" class="p-button-danger"
                         (click)="confirmerAnnulationDossier()" [disabled]="annulationDossierForm.invalid"></button>
+                </div>
+            </ng-template>
+        </p-dialog>
+
+        <p-dialog header="R&eacute;attribuer le dossier &agrave; un autre agent" [visible]="state().showReattribution" [modal]="true"
+            [style]="{ width: '560px' }" [closable]="true"
+            (onHide)="state.update(mergeState({showReattribution: false}))">
+            <div class="mb-4 p-3 bg-indigo-50 border-round">
+                <p class="font-semibold m-0">{{ state().demandeIndividuel?.prenom }} {{ state().demandeIndividuel?.nom }}</p>
+                <p class="text-600 m-0">{{ state().demandeIndividuel?.montantDemande | currency:'GNF ':'symbol':'1.0-0' }} &mdash; &eacute;tape actuelle : {{ $any(state().demandeIndividuel)?.validationState }}</p>
+                <p class="text-600 m-0 mt-2 text-sm">Le dossier reste &agrave; la m&ecirc;me &eacute;tape ; seul l'agent responsable change. En correction accueil, la saisie passe aussi au nouvel agent, qui pourra corriger et rediligenter.</p>
+            </div>
+            <form [formGroup]="reattributionForm">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Nouvel agent de cr&eacute;dit (m&ecirc;me point de service) <span class="text-red-500">*</span></label>
+                <p-select formControlName="agentUserId" [options]="agentsReattribution()" optionLabel="label" optionValue="value"
+                    placeholder="-- Choisir l'agent --" [filter]="true" filterBy="label" styleClass="w-full mb-3" appendTo="body"></p-select>
+                <small *ngIf="!agentsReattribution().length" class="text-orange-500 block mb-3"><i class="pi pi-exclamation-triangle mr-1"></i>Aucun autre agent de cr&eacute;dit actif sur ce point de service.</small>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Motif <span class="text-red-500">*</span></label>
+                <textarea pTextarea formControlName="motif" rows="2" class="w-full"
+                    placeholder="Ex : rotation de l'agent vers Matoto le 20/10 ; absence prolong&eacute;e ; d&eacute;part" [autoResize]="true"></textarea>
+                <small *ngIf="reattributionForm.get('motif')?.invalid && reattributionForm.get('motif')?.touched" class="text-red-500">Minimum 5 caract&egrave;res requis</small>
+            </form>
+            <ng-template #footer>
+                <div class="flex justify-end gap-3">
+                    <button pButton type="button" label="Retour" icon="pi pi-times" class="p-button-secondary p-button-outlined"
+                        (click)="state.update(mergeState({showReattribution: false}))"></button>
+                    <button pButton type="button" label="R&eacute;attribuer" icon="pi pi-user-edit"
+                        (click)="confirmerReattribution()" [disabled]="reattributionForm.invalid"></button>
                 </div>
             </ng-template>
         </p-dialog>

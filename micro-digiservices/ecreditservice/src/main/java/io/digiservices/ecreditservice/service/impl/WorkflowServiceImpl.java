@@ -404,6 +404,38 @@ public class WorkflowServiceImpl implements WorkflowService {
 
     @Override
     @Transactional
+    public void reattribuer(Long demandeId, Long agentUserId, String affectePar, Long agenceIdDA, String motif) {
+        if (motif == null || motif.isBlank() || motif.trim().length() < 5) {
+            throw new ApiException("Indiquez le motif de la reattribution (rotation, absence, depart...)");
+        }
+        verifierEligibiliteAgent(agentUserId, agenceIdDA);
+        java.util.Map<String, Object> infos = workflowRepository.infosReattribution(demandeId, agentUserId);
+        if (infos == null) {
+            throw new ApiException("Demande non trouvee");
+        }
+        Long agenceDossier = infos.get("agence") == null ? null : ((Number) infos.get("agence")).longValue();
+        if (agenceDossier == null || !agenceDossier.equals(agenceIdDA)) {
+            throw new ApiException("Ce dossier n'appartient pas a votre agence");
+        }
+        Long pos = infos.get("pos") == null ? null : ((Number) infos.get("pos")).longValue();
+        Long psAgent = infos.get("agent_pointvente_id") == null ? null : ((Number) infos.get("agent_pointvente_id")).longValue();
+        if (pos != null && !pos.equals(psAgent)) {
+            throw new ApiException("Un dossier se reattribue a un agent de credit du meme point de service");
+        }
+        Long ancienAgent = infos.get("agent_credit_affecte") == null ? null : ((Number) infos.get("agent_credit_affecte")).longValue();
+        if (agentUserId.equals(ancienAgent) && !"CORRECTION_ACCUEIL".equals(infos.get("validation_state"))) {
+            throw new ApiException("Ce dossier est deja chez cet agent");
+        }
+        String nomAgent = String.valueOf(infos.get("agent_nom"));
+        log.info("[REATTRIBUTION] demande {} : agent {} -> {} par {} ({})", demandeId, ancienAgent, agentUserId, affectePar, motif);
+        int rows = workflowRepository.reattribuer(demandeId, agentUserId, ancienAgent, affectePar, nomAgent, motif.trim());
+        if (rows == 0) {
+            throw new ApiException("Ce dossier n'est pas dans un etat qui permet la reattribution (il attend une validation ou est clos)");
+        }
+    }
+
+    @Override
+    @Transactional
     public void annulerAccueil(Long demandeId, String motif) {
         if (motif == null || motif.isBlank()) {
             throw new ApiException("Le motif de l'annulation est obligatoire");
