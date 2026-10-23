@@ -68,7 +68,7 @@ public class EmailServiceImpl implements EmailService {
                     ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : typeMime;
             helper.addAttachment(nomFichier == null || nomFichier.isBlank() ? "etat.xlsx" : nomFichier,
                     new org.springframework.core.io.ByteArrayResource(contenu), type);
-            mailSender.send(message);
+            envoyerEnSerie(message);
             log.info("Etat portefeuille envoye a {} : {} ({} octets joints)", to, sujet, contenu.length);
         } catch (Exception e) {
             log.error("Echec envoi etat portefeuille a {} : {}", to, e.getMessage());
@@ -84,10 +84,42 @@ public class EmailServiceImpl implements EmailService {
             helper.setTo(to);
             helper.setSubject(sujet);
             helper.setText(corpsHtml, true);
-            mailSender.send(message);
+            envoyerEnSerie(message);
             log.info("Alerte portefeuille envoyee a {} : {}", to, sujet);
         } catch (Exception e) {
             log.error("Echec envoi alerte portefeuille a {} : {}", to, e.getMessage());
+        }
+    }
+
+    // Les digests du matin partent par centaines (244 le 23/10/2026) : une session SMTP par
+    // message, et Gmail a coupe au 80e (« 454 4.7.0 Too many login attempts »). On espace donc
+    // les envois en serie et, sur ce refus temporaire, on attend avant de reessayer.
+    private static final long ESPACEMENT_MS = 1200;
+    private static final long PAUSE_REFUS_MS = 90_000;
+    private static final int ESSAIS_MAX = 4;
+    private static final Object VERROU_SERIE = new Object();
+    private static long dernierEnvoiMs = 0;
+
+    private void envoyerEnSerie(MimeMessage message) throws InterruptedException {
+        synchronized (VERROU_SERIE) {
+            for (int essai = 1; ; essai++) {
+                long attente = dernierEnvoiMs + ESPACEMENT_MS - System.currentTimeMillis();
+                if (attente > 0) Thread.sleep(attente);
+                try {
+                    mailSender.send(message);
+                    dernierEnvoiMs = System.currentTimeMillis();
+                    return;
+                } catch (Exception e) {
+                    String m = e.getMessage() == null ? "" : e.getMessage();
+                    boolean refusTemporaire = m.contains("Too many login attempts") || m.contains("4.7.0")
+                            || m.contains("Authentication failed") || m.contains("Try again later");
+                    if (!refusTemporaire || essai >= ESSAIS_MAX) throw e;
+                    log.warn("SMTP : refus temporaire (essai {}/{}), pause de {} s avant nouvel essai : {}",
+                            essai, ESSAIS_MAX, PAUSE_REFUS_MS / 1000, m.split("\\R")[0]);
+                    Thread.sleep(PAUSE_REFUS_MS);
+                    dernierEnvoiMs = System.currentTimeMillis();
+                }
+            }
         }
     }
 
