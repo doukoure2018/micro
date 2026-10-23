@@ -92,11 +92,13 @@ public class AgentChargeRepository {
                        pva.libele AS agent_point_vente, COALESCE(ua.enabled, TRUE) AS agent_actif,
                        d.saisie_par, TRIM(COALESCE(us.first_name,'') || ' ' || COALESCE(us.last_name,'')) AS accueil,
                        pvs.libele AS accueil_point_vente,
+                       -- Pas d apostrophe doublee ici : le parseur de parametres nommes de Spring ne la comprend pas
+                       -- et prend ensuite le « ? » d un libelle pour un parametre (bad SQL grammar, 23/10/2026).
                        CASE
                          WHEN d.validation_state = 'CORRECTION_ACCUEIL' AND us.user_id IS NOT NULL AND us.pointvente_id IS DISTINCT FROM d.pos
-                              THEN 'Agent d''accueil mute a ' || COALESCE(pvs.libele, '?') || ' : personne ne peut corriger'
-                         WHEN ua.user_id IS NOT NULL AND NOT COALESCE(ua.enabled, TRUE) THEN 'Compte de l''agent de credit desactive'
-                         WHEN ua.user_id IS NOT NULL AND ua.pointvente_id IS DISTINCT FROM d.pos THEN 'Agent de credit mute a ' || COALESCE(pva.libele, '?')
+                              THEN 'Agent accueil mute a ' || COALESCE(pvs.libele, 'un autre PS') || ' : personne ne peut corriger'
+                         WHEN ua.user_id IS NOT NULL AND NOT COALESCE(ua.enabled, TRUE) THEN 'Compte de l agent de credit desactive'
+                         WHEN ua.user_id IS NOT NULL AND ua.pointvente_id IS DISTINCT FROM d.pos THEN 'Agent de credit mute a ' || COALESCE(pva.libele, 'un autre PS')
                          ELSE 'Agent de credit introuvable'
                        END AS raison
                 FROM demandeindividuel d
