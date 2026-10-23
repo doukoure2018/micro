@@ -1618,6 +1618,12 @@ export class UserService {
     // Renvoi DA -> agent (erreur de destination) puis resoumission par l'agent
     // ===== Annulation du dossier de crédit (V163) : l'agent demande, le DA tranche =====
 
+    /** Rotation, lot 1 : le DA reattribue un dossier en cours a un autre agent de credit du meme point de service. */
+    reattribuerDossier$ = (demandeId: number, agentUserId: number, motif: string) =>
+        <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/reattribuer`, { agentUserId, motif }).pipe(catchError(this.handleError));
+
+    getChargeAgent$ = (userId: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/agents/${userId}/charge`).pipe(catchError(this.handleError));
+
     demanderAnnulationDossier$ = (demandeId: number, motifCode: string, motif: string) =>
         <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/demander-annulation`, { motifCode, motif }).pipe(catchError(this.handleError));
 

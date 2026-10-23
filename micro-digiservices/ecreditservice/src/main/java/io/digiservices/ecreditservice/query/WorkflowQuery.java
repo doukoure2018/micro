@@ -952,6 +952,42 @@ public class WorkflowQuery {
             """;
 
     /**
+     * Reattribution par le DA (rotation, absence, depart) : le dossier change d'agent sans changer
+     * d'etape. En correction accueil, c'est la saisie elle-meme qui passe au nouvel agent, sinon
+     * personne ne pourrait la corriger (la liste impose saisie_par = utilisateur).
+     */
+    public static final String UPDATE_REATTRIBUER = """
+            UPDATE demandeindividuel
+            SET agent_credit_affecte = :agentUserId,
+                affecte_par_da = :affectePar,
+                date_affectation_ac = CURRENT_TIMESTAMP,
+                saisie_par = CASE WHEN validation_state = 'CORRECTION_ACCUEIL' THEN :agentUserId ELSE saisie_par END,
+                saisie_par_role = CASE WHEN validation_state = 'CORRECTION_ACCUEIL' THEN 'AGENT_CREDIT' ELSE saisie_par_role END,
+                cod_usuarios = CASE WHEN validation_state = 'CORRECTION_ACCUEIL' THEN :nomAgent ELSE cod_usuarios END
+            WHERE demandeindividuel_id = :demandeId
+              AND COALESCE(statut_demande, '') NOT IN ('REJET', 'REJECTED', 'ANNULE')
+              AND validation_state IN ('AFFECTEE', 'SELECTION', 'CORRECTION', 'CORRECTION_DR', 'CORRECTION_DE',
+                                       'RETOUR_AGENT', 'CORRECTION_ACCUEIL')
+            """;
+
+    public static final String SELECT_INFOS_REATTRIBUTION = """
+            SELECT d.agence, d.pos, d.validation_state, d.agent_credit_affecte, d.saisie_par,
+                   u.pointvente_id AS agent_pointvente_id,
+                   TRIM(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')) AS agent_nom
+            FROM demandeindividuel d
+            LEFT JOIN users u ON u.user_id = :agentUserId
+            WHERE d.demandeindividuel_id = :demandeId
+            """;
+
+    public static final String INSERT_HISTORIQUE_REATTRIBUTION = """
+            INSERT INTO demande_etat_historique (demandeindividuel_id, evenement, ancien_etat, nouvel_etat,
+                                                 ancien_statut, nouveau_statut, ancien_agent, nouvel_agent, acteur, motif)
+            SELECT demandeindividuel_id, 'REATTRIBUTION', validation_state, validation_state, statut_demande, statut_demande,
+                   :ancienAgent, :agentUserId, :acteur, :motif
+            FROM demandeindividuel WHERE demandeindividuel_id = :demandeId
+            """;
+
+    /**
      * Le DA annule une demande saisie par l'accueil : retour en correction avec motif.
      * L'agent affecte est conserve : apres correction et rediligence, le dossier lui revient.
      */

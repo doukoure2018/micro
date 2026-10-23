@@ -74,6 +74,10 @@ public interface WorkflowRepository {
     int marquerReception(Long demandeId, Long userId, String codUsuarios);
     List<WorkflowDemandeDto> getAAffecterDA(Long agenceId);
     int affecterAC(Long demandeId, Long agentUserId, String affectePar);
+
+    java.util.Map<String, Object> infosReattribution(Long demandeId, Long agentUserId);
+
+    int reattribuer(Long demandeId, Long agentUserId, Long ancienAgent, String affectePar, String nomAgent, String motif);
     int annulerAccueil(Long demandeId, String motif);
     List<WorkflowDemandeDto> getMesReceptions(Long userId);
     int rediligenterAccueil(Long demandeId, Long userId);

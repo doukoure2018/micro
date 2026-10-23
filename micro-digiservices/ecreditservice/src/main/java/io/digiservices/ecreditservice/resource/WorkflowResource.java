@@ -557,6 +557,29 @@ public class WorkflowResource {
                         "Demande affectee a l'agent de credit", OK));
     }
 
+    /**
+     * Reattribution par le DA d'un dossier en cours a un autre agent de credit du meme point de
+     * service (rotation, absence, depart), correction accueil comprise. Journalise avec motif.
+     */
+    @PutMapping("/{demandeId}/reattribuer")
+    public ResponseEntity<Response> reattribuer(
+            @PathVariable Long demandeId,
+            @RequestBody Map<String, Object> body,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        requireDA(user);
+        Long agentUserId = body.get("agentUserId") == null ? null : Long.valueOf(String.valueOf(body.get("agentUserId")));
+        if (agentUserId == null) {
+            throw new ApiException("Choisissez l'agent de credit destinataire");
+        }
+        String motif = body.get("motif") != null ? String.valueOf(body.get("motif")) : null;
+        workflowService.reattribuer(demandeId, agentUserId, user.getFirstName() + " " + user.getLastName(), user.getAgenceId(), motif);
+        return ResponseEntity.ok(
+                getResponse(httpRequest, Map.of("message", "Dossier reattribue"),
+                        "Dossier reattribue : il est desormais chez l'agent choisi, a la meme etape", OK));
+    }
+
     @PutMapping("/{demandeId}/annuler-accueil")
     public ResponseEntity<Response> annulerAccueil(
             @PathVariable Long demandeId,

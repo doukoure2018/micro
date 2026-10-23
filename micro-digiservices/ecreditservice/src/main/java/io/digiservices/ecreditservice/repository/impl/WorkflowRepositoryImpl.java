@@ -560,6 +560,26 @@ public class WorkflowRepositoryImpl implements WorkflowRepository {
     }
 
     @Override
+    public java.util.Map<String, Object> infosReattribution(Long demandeId, Long agentUserId) {
+        return jdbcClient.sql(SELECT_INFOS_REATTRIBUTION)
+                .param("demandeId", demandeId).param("agentUserId", agentUserId)
+                .query().listOfRows().stream().findFirst().orElse(null);
+    }
+
+    public int reattribuer(Long demandeId, Long agentUserId, Long ancienAgent, String affectePar, String nomAgent, String motif) {
+        // Le journal des etats (declencheur V149) lit app.acteur sur la meme connexion.
+        jdbcClient.sql("SELECT set_config('app.acteur', :acteur, true)").param("acteur", affectePar).query(String.class).optional();
+        int rows = jdbcClient.sql(UPDATE_REATTRIBUER)
+                .param("demandeId", demandeId).param("agentUserId", agentUserId)
+                .param("affectePar", affectePar).param("nomAgent", nomAgent).update();
+        if (rows > 0) {
+            jdbcClient.sql(INSERT_HISTORIQUE_REATTRIBUTION)
+                    .param("demandeId", demandeId).param("ancienAgent", ancienAgent).param("agentUserId", agentUserId)
+                    .param("acteur", affectePar).param("motif", motif).update();
+        }
+        return rows;
+    }
+
     public int affecterAC(Long demandeId, Long agentUserId, String affectePar) {
         try {
             return jdbcClient.sql(UPDATE_AFFECTER_AC)

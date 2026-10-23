@@ -68,6 +68,9 @@ public interface WorkflowService {
     List<AgentAgenceDto> getAgentsCreditEligibles(Long agenceId);
     List<WorkflowDemandeDto> getAAffecterDA(Long agenceId);
     void affecterAC(Long demandeId, Long agentUserId, String affectePar, Long agenceIdDA);
+
+    /** Reattribution d'un dossier en cours a un autre agent de credit du meme point de service (DA). */
+    void reattribuer(Long demandeId, Long agentUserId, String affectePar, Long agenceIdDA, String motif);
     void annulerAccueil(Long demandeId, String motif);
     List<WorkflowDemandeDto> getMesReceptions(Long userId);
     void rediligenterAccueil(Long demandeId, Long userId);

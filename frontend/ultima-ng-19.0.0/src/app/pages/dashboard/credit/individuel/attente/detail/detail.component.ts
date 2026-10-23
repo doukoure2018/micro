@@ -129,6 +129,7 @@ export class DetailComponent {
         showWorkflowRejetDR: boolean;
         /** Modal « Renvoyer à l'agent » (DA, dossier APPROVED sans analyse exploitable). */
         showRenvoiAgent: boolean;
+        showReattribution: boolean;
         showAnnulationDossier: boolean;
         analyseChargesFonctionnaire?: AnalyseChargesFonctionnaire | null;
         analyseCreditAgricole?: AnalyseCreditAgricole | null;
@@ -165,6 +166,7 @@ export class DetailComponent {
         showWorkflowRejetDA: false,
         showWorkflowRejetDR: false,
         showRenvoiAgent: false,
+        showReattribution: false,
         showAnnulationDossier: false
     });
 
@@ -190,6 +192,7 @@ export class DetailComponent {
     workflowDARejetForm: FormGroup;
     renvoiAgentForm: FormGroup;
     annulationDossierForm: FormGroup;
+    reattributionForm: FormGroup;
 
     // Formulaires workflow DR
     workflowDRForm: FormGroup;
@@ -275,6 +278,10 @@ export class DetailComponent {
             motifCode: ['DESISTEMENT_CLIENT', [Validators.required]],
             motif: ['', [Validators.required, Validators.minLength(10)]]
         });
+        this.reattributionForm = this.fb.group({
+            agentUserId: [null, [Validators.required]],
+            motif: ['', [Validators.required, Validators.minLength(5)]]
+        });
 
         this.workflowDRForm = this.fb.group({
             avis: ['', [Validators.required, Validators.minLength(10)]]
@@ -299,6 +306,7 @@ export class DetailComponent {
 
     /** Agents de credit eligibles (agence du DA, sans fonction Accueil) et selection. */
     agentsEligibles: { label: string; value: number }[] = [];
+    agentsEligiblesBruts: any[] = [];
     agentAffectation: { label: string; value: number } | null = null;
     affectationEnCours = false;
 
@@ -314,6 +322,7 @@ export class DetailComponent {
             .subscribe({
                 next: (response: IResponse) => {
                     const agents = (response.data as any)?.agents || [];
+                    this.agentsEligiblesBruts = agents;
                     this.agentsEligibles = agents.map((a: any) => ({
                         label: `${a.firstName} ${a.lastName}${a.pointventeLibele ? ' — ' + a.pointventeLibele : ''}${a.fonctionAccueil ? ' (accueil + crédit)' : ''}`,
                         value: a.userId
@@ -3018,6 +3027,51 @@ export class DetailComponent {
     /** Vrai quand une annulation attend la décision du DA : le dossier est figé. */
     annulationEnAttente(): boolean {
         return (this.state().demandeIndividuel as any)?.validationState === 'ANNULATION_DEMANDEE';
+    }
+
+    // ===== Réattribution par le DA (rotation, absence, départ) — lot 1 rotation =====
+
+    private static readonly ETATS_REATTRIBUABLES = ['AFFECTEE', 'SELECTION', 'CORRECTION', 'CORRECTION_DR', 'CORRECTION_DE', 'RETOUR_AGENT', 'CORRECTION_ACCUEIL'];
+
+    /** Le DA peut confier un dossier en cours à un autre agent de crédit du même point de service, sans changer d'étape. */
+    peutReattribuer(): boolean {
+        const d: any = this.state().demandeIndividuel;
+        return this.state().user?.role === 'DA' && !!d && DetailComponent.ETATS_REATTRIBUABLES.includes(d.validationState) && !['REJET', 'REJECTED', 'ANNULE'].includes(d.statutDemande || '');
+    }
+
+    /** Agents de crédit éligibles du point de service du dossier (à défaut, de l'agence, signalé). */
+    agentsReattribution(): { label: string; value: number }[] {
+        const d: any = this.state().demandeIndividuel;
+        const pos = d?.pos;
+        const memePs = this.agentsEligiblesBruts.filter((a) => a.role === 'AGENT_CREDIT' && a.compteActif !== false && (!pos || a.pointventeId === pos) && a.userId !== d?.agentCreditAffecte);
+        return memePs.map((a: any) => ({ label: `${a.firstName} ${a.lastName}${a.pointventeLibele ? ' — ' + a.pointventeLibele : ''}`, value: a.userId }));
+    }
+
+    ouvrirReattribution(): void {
+        if (!this.agentsEligiblesBruts.length) this.loadAgentsEligibles();
+        this.reattributionForm.reset({ agentUserId: null, motif: '' });
+        this.state.update(this.mergeState({ showReattribution: true }));
+    }
+
+    confirmerReattribution(): void {
+        if (this.reattributionForm.invalid) return;
+        const demandeId = this.state().demandeIndividuel?.demandeIndividuelId;
+        if (!demandeId) return;
+        const { agentUserId, motif } = this.reattributionForm.value;
+        const agent = this.agentsReattribution().find((a) => a.value === agentUserId);
+        this.userService
+            .reattribuerDossier$(+demandeId, agentUserId, motif)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.messageService.add({ severity: 'success', summary: 'Dossier réattribué', detail: `Le dossier est désormais chez ${agent?.label || "l'agent choisi"}, à la même étape.`, life: 6000 });
+                    this.state.update(this.mergeState({ showReattribution: false }));
+                    this.loadDemandeWithGaranties();
+                },
+                error: (err: any) => {
+                    this.messageService.add({ severity: 'error', summary: 'Réattribution refusée', detail: err || 'Erreur lors de la réattribution', life: 8000 });
+                }
+            });
     }
 
     ouvrirAnnulationDossier(): void {
