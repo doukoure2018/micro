@@ -23,6 +23,8 @@ public class SanteSafDto {
     private List<Base> bases;
     /** Aiguillage actif : les lectures ordinaires viennent de la sauvegarde. */
     private boolean sauvegardeActive;
+    /** La sauvegarde est en cours de restauration (45 min environ, heure variable) : lectures SAF impossibles. */
+    private boolean sauvegardeEnRestauration;
     /** Date de restauration de la sauvegarde (yyyy-MM-dd HH:mm:ss), a afficher comme « Donnees SAF au ». */
     private String dateDonneesSauvegarde;
 

@@ -6,4 +6,6 @@ export interface DonneesSaf {
     mention: string;
     toutOk: boolean;
     dateSonde: string | null;
+    enRestauration?: boolean;
+    messageInfo?: string | null;
 }

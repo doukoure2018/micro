@@ -43,7 +43,13 @@ public class DonneesSafService {
         private String mention;
         private boolean toutOk;
         private LocalDateTime dateSonde;
+        /** La sauvegarde est en cours de restauration : les ecrans SAF affichent un message d'attente. */
+        private boolean enRestauration;
+        private String messageInfo;
     }
+
+    public static final String MESSAGE_RESTAURATION =
+            "Veuillez patienter : la base SAF est actuellement en cours de restauration. Revenez dans 30 minutes.";
 
     /** Appele par la sonde a chaque passage. */
     public void memoriser(SanteSafDto sante) {
@@ -53,8 +59,11 @@ public class DonneesSafService {
 
     public DonneesSafDto etat() {
         SanteSafDto s = derniere;
-        if (s == null) {
-            // Premiere demande avant le premier passage de la sonde : une lecture directe, une fois.
+        // Pas encore sonde, ou sonde vieille de plus de trois minutes alors qu'elle etait en echec
+        // (restauration en cours) : on relit, pour que le message d'attente disparaisse vite.
+        boolean perimee = s != null && !s.isToutOk() && dateSonde != null
+                && dateSonde.isBefore(LocalDateTime.now().minusMinutes(3));
+        if (s == null || perimee) {
             try {
                 s = portefeuilleClient.getSanteSaf();
                 memoriser(s);
@@ -74,6 +83,8 @@ public class DonneesSafService {
                 .mention(mention)
                 .toutOk(s.isToutOk())
                 .dateSonde(dateSonde)
+                .enRestauration(s.isSauvegardeActive() && s.isSauvegardeEnRestauration())
+                .messageInfo(s.isSauvegardeActive() && s.isSauvegardeEnRestauration() ? MESSAGE_RESTAURATION : null)
                 .build();
     }
 
