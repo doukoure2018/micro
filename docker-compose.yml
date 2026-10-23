@@ -277,6 +277,10 @@ services:
     environment:
       # Alertes portefeuille SAF (phase 3) : digests quotidiens + synthese PAR hebdo
       PORTEFEUILLE_ALERTES_ACTIVES: "true"
+      # Synthese du matin aux DA/DR (jours ouvres) : un point de service passe en rouge, et l'objet le
+      # mentionne, des que ses impayes du jour atteignent l'un des deux seuils (nombre OU montant GNF).
+      PORTEFEUILLE_ALERTES_SEUIL_IMPAYES_NB: "5"
+      PORTEFEUILLE_ALERTES_SEUIL_IMPAYES_MONTANT: "20000000"
       # Etat TT1 mensuel (lot 3) : envoi aux DA et DR le premier jour ouvre du mois, piece jointe Excel.
       # COUPE sur demande DSIG du 2026-09-30, tant que le compte SMTP refuse l'authentification :
       # sans cela le planificateur genere les classeurs et les envois echouent silencieusement.
