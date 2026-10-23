@@ -1632,6 +1632,8 @@ export class UserService {
 
     acquitterTransfert$ = (id: number) => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/agents/transferts/${id}/acquitter`, {}).pipe(catchError(this.handleError));
 
+    getDossiersAReattribuer$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/agents/dossiers-a-reattribuer`).pipe(catchError(this.handleError));
+
     getChargeAgent$ = (userId: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/agents/${userId}/charge`).pipe(catchError(this.handleError));
 
     demanderAnnulationDossier$ = (demandeId: number, motifCode: string, motif: string) =>

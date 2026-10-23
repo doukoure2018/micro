@@ -499,6 +499,11 @@ export default [
         loadComponent: () => import('./admin/da/receptions-a-affecter/receptions-a-affecter.component').then((c) => c.ReceptionsAAffecterComponent)
     },
     {
+        path: 'dossiers-a-reattribuer',
+        data: { breadcrumb: 'Dossiers à réattribuer' },
+        loadComponent: () => import('./admin/da/dossiers-a-reattribuer/dossiers-a-reattribuer.component').then((c) => c.DossiersAReattribuerComponent)
+    },
+    {
         path: 'da/gestion-agents',
         data: { breadcrumb: 'Gestion des agents' },
         loadComponent: () => import('./admin/da/gestion-agents/gestion-agents.component').then((c) => c.GestionAgentsComponent)

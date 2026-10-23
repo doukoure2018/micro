@@ -247,6 +247,12 @@ export class AppMenu {
                     routerLink: ['/dashboards/da/gestion-agents']
                 },
                 {
+                    // Rotation (lot 3) : dossiers en cours portes par un agent parti ou desactive.
+                    label: 'Dossiers à réattribuer',
+                    icon: 'pi pi-fw pi-user-edit',
+                    routerLink: ['/dashboards/dossiers-a-reattribuer']
+                },
+                {
                     label: 'Suivi crédits de mon agence',
                     icon: 'pi pi-fw pi-chart-line',
                     routerLink: ['/dashboards/suivi-credits-reseau']
@@ -254,11 +260,18 @@ export class AppMenu {
             );
         }
         if (this.role === 'DR') {
-            items.push({
-                label: 'Suivi crédits de ma délégation',
-                icon: 'pi pi-fw pi-chart-line',
-                routerLink: ['/dashboards/suivi-credits-reseau']
-            });
+            items.push(
+                {
+                    label: 'Suivi crédits de ma délégation',
+                    icon: 'pi pi-fw pi-chart-line',
+                    routerLink: ['/dashboards/suivi-credits-reseau']
+                },
+                {
+                    label: 'Dossiers à réattribuer',
+                    icon: 'pi pi-fw pi-user-edit',
+                    routerLink: ['/dashboards/dossiers-a-reattribuer']
+                }
+            );
         }
         if (this.estManager('DE')) {
             items.push(
