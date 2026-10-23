@@ -14,15 +14,15 @@ public class RotationTransfertRepository {
 
     private final JdbcClient jdbcClient;
 
-    private static final String EN_COURS = """
-            COALESCE(statut_demande, '') NOT IN ('REJET', 'REJECTED', 'ANNULE')
-            AND COALESCE(validation_state, '') <> 'VALIDATED_FINAL'
-            """;
+    // Chaine simple avec espaces de bordure : un bloc de texte Java perd l'espace en fin de ligne, et
+    // « WHERE """ + EN_COURS » donnait WHERECOALESCE(... (bad SQL grammar, 23/10/2026).
+    private static final String EN_COURS = " COALESCE(d.statut_demande, '') NOT IN ('REJET', 'REJECTED', 'ANNULE')"
+            + " AND COALESCE(d.validation_state, '') <> 'VALIDATED_FINAL' ";
 
     /** Ids des dossiers en cours portes par l'agent (comme agent de credit ou comme accueil en correction). */
     public List<Long> dossiersATransferer(Long agentUserId) {
-        return jdbcClient.sql("SELECT demandeindividuel_id FROM demandeindividuel WHERE " + EN_COURS
-                        + " AND (agent_credit_affecte = :id OR (saisie_par = :id AND validation_state = 'CORRECTION_ACCUEIL')) ORDER BY 1")
+        return jdbcClient.sql("SELECT d.demandeindividuel_id FROM demandeindividuel d WHERE " + EN_COURS
+                        + " AND (d.agent_credit_affecte = :id OR (d.saisie_par = :id AND d.validation_state = 'CORRECTION_ACCUEIL')) ORDER BY 1")
                 .param("id", agentUserId).query(Long.class).list();
     }
 
@@ -33,17 +33,17 @@ public class RotationTransfertRepository {
     /** Les dossiers en cours changent d'agent de credit ; les saisies d'accueil en cours passent aussi au nouvel agent. */
     public int transfererDossiersCredit(Long de, Long vers, String affectePar) {
         return jdbcClient.sql("""
-                UPDATE demandeindividuel
+                UPDATE demandeindividuel d
                    SET agent_credit_affecte = :vers, affecte_par_da = :par, date_affectation_ac = CURRENT_TIMESTAMP
-                 WHERE agent_credit_affecte = :de AND """ + EN_COURS)
+                 WHERE d.agent_credit_affecte = :de AND """ + EN_COURS)
                 .param("de", de).param("vers", vers).param("par", affectePar).update();
     }
 
     public int transfererSaisiesAccueil(Long de, Long vers, String nomVers) {
         return jdbcClient.sql("""
-                UPDATE demandeindividuel
+                UPDATE demandeindividuel d
                    SET saisie_par = :vers, saisie_par_role = 'AGENT_CREDIT', cod_usuarios = :nom
-                 WHERE saisie_par = :de AND """ + EN_COURS)
+                 WHERE d.saisie_par = :de AND """ + EN_COURS)
                 .param("de", de).param("vers", vers).param("nom", nomVers).update();
     }
 

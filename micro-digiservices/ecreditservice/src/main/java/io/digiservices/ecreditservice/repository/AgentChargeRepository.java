@@ -20,10 +20,10 @@ public class AgentChargeRepository {
 
     private final JdbcClient jdbcClient;
 
-    private static final String EN_COURS = """
-            COALESCE(d.statut_demande, '') NOT IN ('REJET', 'REJECTED', 'ANNULE')
-            AND COALESCE(d.validation_state, '') NOT IN ('VALIDATED_FINAL')
-            """;
+    // Chaine simple avec espaces de bordure : un bloc de texte Java perd l'espace en fin de ligne, et
+    // « WHERE """ + EN_COURS » donnait WHERECOALESCE(... (bad SQL grammar, 23/10/2026).
+    private static final String EN_COURS = " COALESCE(d.statut_demande, '') NOT IN ('REJET', 'REJECTED', 'ANNULE')"
+            + " AND COALESCE(d.validation_state, '') <> 'VALIDATED_FINAL' ";
 
     public Map<String, Object> agent(Long userId) {
         return jdbcClient.sql("""
