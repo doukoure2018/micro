@@ -154,10 +154,32 @@
                 « Affectations &amp; réorientation » — l'état d'instruction est conservé, seule la responsabilité change ;
             </li>
             <li>
+                <strong>Réattribution par le DA</strong> (depuis le 23/10/2026) : quand l'agent qui porte un dossier <strong>a quitté le point de service</strong> (rotation) ou que son compte est
+                désactivé, le DA confie le dossier à un autre agent de crédit <strong>du même point de service</strong>, à n'importe quelle étape en cours —
+                <span class="state correction">CORRECTION_ACCUEIL</span> comprise (la saisie passe alors au nouvel agent, qui corrige et rediligente). Bouton « Réattribuer le dossier » sur la page du
+                dossier, ou page « Dossiers à réattribuer » qui liste tous les dossiers orphelins de l'agence avec la raison. Motif obligatoire, journalisé ;
+            </li>
+            <li>
                 <strong>Annulation</strong> : le DA peut annuler une demande fraîchement réceptionnée (motif obligatoire) → <span class="state correction">CORRECTION_ACCUEIL</span> : l'agent d'accueil la corrige puis la
                 <strong>rediligente</strong> — elle retourne directement à l'agent de crédit affecté.
             </li>
         </ul>
+        <p class="note">
+            <i class="pi pi-directions"></i>
+            <strong>Affecter, réorienter, réattribuer — quelle différence ?</strong>
+            <strong>Affecter</strong>, c'est faire entrer un dossier dans le circuit chez un agent ;
+            <strong>réattribuer</strong>, c'est changer d'agent sans toucher au circuit parce que le premier est parti.
+            La <strong>réorientation</strong> est l'affectation refaite sur un dossier déjà en cours (agent indisponible) ; la réattribution couvre en plus les corrections accueil et les
+            dossiers d'un agent muté, et exige un agent du même point de service. À ne pas confondre avec l'<strong>affectation du portefeuille</strong>, qui ne concerne pas les demandes
+            mais les crédits déjà mis en place dans SAF, confiés aux agents pour le suivi des remboursements.
+        </p>
+        <p class="note">
+            <i class="pi pi-sync"></i>
+            <strong>Rotation d'un agent.</strong> Depuis le 23/10/2026, le responsable d'agence ne peut plus activer la rotation d'un agent vers un autre point de service tant que celui-ci porte
+            des dossiers en cours, des saisies d'accueil à corriger, des crédits SAF affectés ou des désignations de rapports : l'écran de rotation affiche cette charge et propose de la
+            <strong>transférer d'un geste à un agent du même point de service</strong> avant d'activer. Le DA en est averti par courriel et par un message sur son tableau de bord, qu'il acquitte
+            après avoir, s'il le souhaite, réattribué dossier par dossier.
+        </p>
         <p class="note">
             <i class="pi pi-users"></i>
             <strong>Qui est agent d'accueil ?</strong> Le rôle <code>AGENT_ACCUEIL</code> est posé à la création du compte, mais le DA gère aussi des <strong>fonctions d'agence</strong> : depuis « Gestion des agents », il
