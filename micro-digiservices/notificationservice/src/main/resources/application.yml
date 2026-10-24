@@ -62,10 +62,17 @@ spring:
       default-topic: NOTIFICATION_TOPIC
     consumer:
       group-id: topicgroupid
+      # Un message traite et valide a la fois. L'envoi des courriels est volontairement espace
+      # (1,2 s par message, Gmail refuse au-dela) : avec le lot par defaut de 500, un envoi de
+      # masse depassait max.poll.interval.ms = 5 min, le consommateur etait exclu du groupe et
+      # tout le lot repartait du debut — 189 agents ont recu le digest du 24/10/2026 deux fois,
+      # et les syntheses placees en fin de lot ne sont jamais parties.
+      max-poll-records: 1
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       # Add consumer configuration for large messages
       properties:
+        max.poll.interval.ms: 600000
         fetch.message.max.bytes: 1300000000
         max.partition.fetch.bytes: 1300000000
     properties:
