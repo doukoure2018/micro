@@ -52,7 +52,15 @@ public class UserQuery {
                 u.address,
                 c.password,
                 c.updated_at + INTERVAL '90 day' > NOW() AS credentials_non_expired
-                FROM users u JOIN user_roles ur ON ur.user_id = u.user_id JOIN roles r ON r.role_id = ur.role_id JOIN credentials c ON c.user_id = u.user_id WHERE u.email =:email;
+                FROM users u JOIN user_roles ur ON ur.user_id = u.user_id JOIN roles r ON r.role_id = ur.role_id JOIN credentials c ON c.user_id = u.user_id
+                -- L'adresse est l'identifiant de connexion. Quand un agent la corrige dans
+                -- « Mon profil », l'ancienne reste acceptee trente jours (V172) : sans ce filet,
+                -- une faute de frappe le lendemain matin l'enfermerait dehors.
+                WHERE u.email = :email
+                   OR (u.ancien_email = :email AND u.ancien_email_expire_at > NOW())
+                -- L'adresse courante l'emporte si elle est aussi l'ancien identifiant d'un autre.
+                ORDER BY (u.email = :email) DESC
+                LIMIT 1
                """;
     public static final String RESET_LOGIN_ATTEMPTS_QUERY=
                                 """

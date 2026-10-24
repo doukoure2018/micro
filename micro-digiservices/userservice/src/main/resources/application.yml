@@ -126,3 +126,22 @@ sms:
       seconds: 30
   retry:
     attempts: 2
+
+# Passerelle SMS Sayele, celle des campagnes du reseau. Cle distincte de « sms: » plus haut,
+# qui configure la passerelle Orange deja utilisee par userservice.
+sayele:
+  url: https://hub.sayele.co/api/sendsms
+  client-tk: ${SMS_CLIENT_TK:77e3b8f8-71ff-4496-8d1a-cda8636d861b}
+  client-id: ${SMS_CLIENT_ID:crggn}
+  enabled: true
+
+# Verification des contacts (page « Mon profil », V172). Cles sans tiret : elles doivent
+# se mapper proprement sur des variables d'environnement.
+verification:
+  contact:
+    validite:
+      minutes: ${VERIFICATION_CONTACT_VALIDITE_MINUTES:10}
+    essais:
+      max: ${VERIFICATION_CONTACT_ESSAIS_MAX:5}
+    grace:
+      jours: ${VERIFICATION_CONTACT_GRACE_JOURS:30}

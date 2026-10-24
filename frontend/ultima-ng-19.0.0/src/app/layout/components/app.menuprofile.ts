@@ -29,10 +29,10 @@ import { UserService } from '@/service/user.service';
                     <span>Settings</span>
                 </button>
             </li>
-            <li pTooltip="Profile" [tooltipDisabled]="isTooltipDisabled()">
-                <button [routerLink]="['/documentation']">
-                    <i class="pi pi-file-o pi-fw"></i>
-                    <span>Profile</span>
+            <li pTooltip="Mon profil" [tooltipDisabled]="isTooltipDisabled()">
+                <button [routerLink]="['/dashboards/mon-profil']">
+                    <i class="pi pi-id-card pi-fw"></i>
+                    <span>Mon profil</span>
                 </button>
             </li>
             <li pTooltip="Support" [tooltipDisabled]="isTooltipDisabled()">

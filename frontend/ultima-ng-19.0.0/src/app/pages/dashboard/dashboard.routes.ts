@@ -16,6 +16,11 @@ export default [
         pathMatch: 'full'
     },
     {
+        path: 'mon-profil',
+        data: { breadcrumb: 'Mon profil' },
+        loadComponent: () => import('./profil/mon-profil.component').then((c) => c.MonProfilComponent)
+    },
+    {
         path: 'admin',
         data: { breadcrumb: 'Administrateur ' },
         loadComponent: () => import('./admin/admin.component').then((c) => c.AdminComponent)

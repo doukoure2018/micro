@@ -1,3 +1,4 @@
+import { ConfirmationContact, DemandeCode, ProfilContact } from './profil-contact';
 import { Actividad } from './actividad.model';
 import { Agence } from './agence';
 import { AgentCreditDTO } from './AgentCreditDTO';
@@ -240,6 +241,11 @@ export interface IResponse {
         bonsCommandeDelegation?: BonCommandeDelegationDto[];
 
         etats?: EtatDocumentByDelegationDto[];
+
+        // Page « Mon profil » : contacts et vérification par code (V172)
+        profil?: ProfilContact;
+        demande?: DemandeCode;
+        confirmation?: ConfirmationContact;
         etat?: EtatDocumentDetailDto;
 
         statistics?: DelegationStats[];
