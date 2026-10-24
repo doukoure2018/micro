@@ -6,6 +6,7 @@ import io.digiservices.ecreditservice.enumeration.EventType;
 import io.digiservices.ecreditservice.event.Event;
 import io.digiservices.ecreditservice.repository.AlerteDestinatairesRepository;
 import io.digiservices.ecreditservice.repository.AlerteDestinatairesRepository.Destinataire;
+import io.digiservices.ecreditservice.repository.AlerteJournalRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,6 +45,7 @@ public class SafSanteWatchdog {
     private final ApplicationEventPublisher publisher;
     private final DonneesSafService donneesSaf;
     private final SlackNotifier slack;
+    private final AlerteJournalRepository journal;
 
     @Value("${saf.sante.actif:true}")
     private boolean actif;
@@ -194,6 +196,9 @@ public class SafSanteWatchdog {
         if (c.contains("SLACK")) {
             if (slack.estConfigure()) {
                 envoye = slack.envoyer(sujet, texteSlack);
+                if (envoye) {
+                    journal.envoi("SAF_SANTE", "SLACK", "canal Slack", null, "SUPER_ADMIN", null, sujet, null);
+                }
                 if (!envoye) {
                     log.error("[SAF-SANTE] Slack n'a pas accepte « {} » : nouvel essai au prochain passage", sujet);
                 }
@@ -210,6 +215,7 @@ public class SafSanteWatchdog {
                 for (Destinataire d : admins) {
                     publisher.publishEvent(new Event(EventType.PORTEFEUILLE_ALERTE, Map.of(
                             "email", d.email(), "sujet", sujet, "corpsHtml", corpsHtml)));
+                    journal.envoi("SAF_SANTE", "EMAIL", d.email(), null, "SUPER_ADMIN", null, sujet, null);
                 }
                 envoye = true;
                 log.info("[SAF-SANTE] « {} » publie a {} administrateur(s)", sujet, admins.size());

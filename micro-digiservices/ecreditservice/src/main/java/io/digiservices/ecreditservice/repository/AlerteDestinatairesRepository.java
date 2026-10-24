@@ -15,7 +15,15 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AlerteDestinatairesRepository {
 
-    public record Destinataire(String email, String nom, List<String> codesSaf) {
+    /**
+     * Destinataire d'une alerte. {@code userId} et {@code delegationId} ne servent pas a l'envoi
+     * mais au journal des alertes (V174) : ils permettent au barometre d'usage de compter les
+     * envois par role et par delegation.
+     */
+    public record Destinataire(String email, String nom, List<String> codesSaf, Long userId, Long delegationId) {
+        public Destinataire(String email, String nom, List<String> codesSaf) {
+            this(email, nom, codesSaf, null, null);
+        }
     }
 
     private final JdbcClient jdbcClient;
@@ -23,16 +31,18 @@ public class AlerteDestinatairesRepository {
     /** Agents de credit avec e-mail : chacun porte le code SAF de SON point de service. */
     public List<Destinataire> agentsCredit() {
         return jdbcClient.sql("""
-                SELECT u.email, TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,'')) AS nom, p.code
+                SELECT u.user_id, u.email, TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,'')) AS nom,
+                       p.code, a.delegation_id
                 FROM users u
                 JOIN user_roles ur ON ur.user_id = u.user_id
                 JOIN roles r ON r.role_id = ur.role_id
                 JOIN pointvente p ON p.id = u.pointvente_id
+                LEFT JOIN agence a ON a.id = p.agence_id
                 WHERE r.name = 'AGENT_CREDIT' AND u.email IS NOT NULL AND u.email <> ''
                   AND p.code IS NOT NULL
                 """)
                 .query((rs, n) -> new Destinataire(rs.getString("email"), rs.getString("nom"),
-                        List.of(rs.getString("code"))))
+                        List.of(rs.getString("code")), rs.getLong("user_id"), (Long) rs.getObject("delegation_id")))
                 .list();
     }
 
@@ -82,34 +92,35 @@ public class AlerteDestinatairesRepository {
     /** DA avec e-mail : chacun porte les codes SAF des points de service de son agence. */
     public List<Destinataire> das() {
         return jdbcClient.sql("""
-                SELECT u.email, TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,'')) AS nom,
-                       STRING_AGG(DISTINCT p.code, ',') AS codes
+                SELECT u.user_id, u.email, TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,'')) AS nom,
+                       STRING_AGG(DISTINCT p.code, ',') AS codes, MIN(a.delegation_id) AS delegation_id
                 FROM users u
                 JOIN user_roles ur ON ur.user_id = u.user_id
                 JOIN roles r ON r.role_id = ur.role_id
                 JOIN pointvente p ON p.agence_id = u.agence_id
+                LEFT JOIN agence a ON a.id = u.agence_id
                 WHERE r.name = 'DA' AND u.email IS NOT NULL AND u.email <> '' AND p.code IS NOT NULL
                 GROUP BY u.user_id, u.email, u.first_name, u.last_name
                 """)
                 .query((rs, n) -> new Destinataire(rs.getString("email"), rs.getString("nom"),
-                        List.of(rs.getString("codes").split(","))))
+                        List.of(rs.getString("codes").split(",")), rs.getLong("user_id"), (Long) rs.getObject("delegation_id")))
                 .list();
     }
 
     /** DR avec e-mail : chacun porte les codes SAF des points de service de sa delegation. */
     public List<Destinataire> drs() {
         return jdbcClient.sql("""
-                SELECT u.email, TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,'')) AS nom,
-                       STRING_AGG(DISTINCT p.code, ',') AS codes
+                SELECT u.user_id, u.email, TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,'')) AS nom,
+                       STRING_AGG(DISTINCT p.code, ',') AS codes, u.delegation_id
                 FROM users u
                 JOIN user_roles ur ON ur.user_id = u.user_id
                 JOIN roles r ON r.role_id = ur.role_id
                 JOIN pointvente p ON p.delegation_id = u.delegation_id
                 WHERE r.name = 'DR' AND u.email IS NOT NULL AND u.email <> '' AND p.code IS NOT NULL
-                GROUP BY u.user_id, u.email, u.first_name, u.last_name
+                GROUP BY u.user_id, u.email, u.first_name, u.last_name, u.delegation_id
                 """)
                 .query((rs, n) -> new Destinataire(rs.getString("email"), rs.getString("nom"),
-                        List.of(rs.getString("codes").split(","))))
+                        List.of(rs.getString("codes").split(",")), rs.getLong("user_id"), (Long) rs.getObject("delegation_id")))
                 .list();
     }
 }

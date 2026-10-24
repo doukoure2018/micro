@@ -1,5 +1,6 @@
 import { CanalVerification, ProfilContact } from '@/interface/profil-contact';
 import { IResponse } from '@/interface/response';
+import { ContactsObligationService } from '@/service/contacts-obligatoires.guard';
 import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
@@ -43,8 +44,27 @@ import { TooltipModule } from 'primeng/tooltip';
             <div *ngIf="erreur()" class="p-3 mb-3 border-round surface-100 text-red-600">{{ erreur() }}</div>
 
             <ng-container *ngIf="profil() as p">
+                <!-- Correction obligatoire : l'application est fermée tant que ce n'est pas fait -->
+                <div *ngIf="p.correctionObligatoire" class="p-3 mb-4 border-left-3 border-red-500 surface-50">
+                    <div class="font-semibold text-red-700 mb-1"><i class="pi pi-lock mr-2"></i>Vos contacts doivent être corrigés avant de continuer</div>
+                    <div class="text-sm mb-2">
+                        Les messages envoyés à votre adresse reviennent : vous ne recevez ni les alertes de votre portefeuille, ni la synthèse du matin.
+                        Corrigez votre adresse et votre numéro ci-dessous ; l'accès au reste de l'application s'ouvre dès que les deux sont vérifiés.
+                    </div>
+                    <div class="text-sm">
+                        <span [class.text-green-700]="!p.emailAverifier" [class.text-red-700]="p.emailAverifier">
+                            <i class="pi" [ngClass]="p.emailAverifier ? 'pi-times-circle' : 'pi-check-circle'"></i>
+                            Adresse e-mail {{ p.emailAverifier ? 'à vérifier' : 'vérifiée' }}
+                        </span>
+                        <span class="ml-3" [class.text-green-700]="!p.telephoneAverifier" [class.text-red-700]="p.telephoneAverifier">
+                            <i class="pi" [ngClass]="p.telephoneAverifier ? 'pi-times-circle' : 'pi-check-circle'"></i>
+                            Téléphone {{ p.telephoneAverifier ? 'à vérifier' : 'vérifié' }}
+                        </span>
+                    </div>
+                </div>
+
                 <!-- Ce qu'il faut corriger -->
-                <div *ngIf="p.acorriger" class="p-3 mb-4 border-left-3 border-orange-500 surface-50">
+                <div *ngIf="p.acorriger && !p.correctionObligatoire" class="p-3 mb-4 border-left-3 border-orange-500 surface-50">
                     <div class="font-semibold text-orange-700 mb-1"><i class="pi pi-exclamation-triangle mr-2"></i>Vos alertes ne vous parviennent pas</div>
                     <div class="text-sm" *ngIf="p.emailEnEchec">Votre adresse e-mail est en échec : les messages envoyés à cette adresse reviennent. Corrigez-la ci-dessous.</div>
                     <div class="text-sm" *ngIf="!p.telephone">Aucun numéro de téléphone n'est enregistré : ajoutez-le pour recevoir les alertes par SMS.</div>
@@ -154,6 +174,7 @@ export class MonProfilComponent implements OnInit {
     private userService = inject(UserService);
     private messageService = inject(MessageService);
     private destroyRef = inject(DestroyRef);
+    private obligation = inject(ContactsObligationService);
 
     profil = signal<ProfilContact | null>(null);
     loading = signal(false);
@@ -256,6 +277,16 @@ export class MonProfilComponent implements OnInit {
                         life: 10000
                     });
                     this.charger();
+                    // L'obligation a pu tomber : le garde doit relire l'etat.
+                    this.obligation.invalider();
+                    if (confirmation?.profil && !confirmation.profil.correctionObligatoire) {
+                        this.messageService.add({
+                            severity: 'info',
+                            summary: 'Accès rétabli',
+                            detail: "Vos contacts sont vérifiés : vous pouvez revenir au reste de l'application.",
+                            life: 10000
+                        });
+                    }
                 },
                 error: (err) => {
                     this.envoi.set(false);

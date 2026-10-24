@@ -8,6 +8,7 @@ import io.digiservices.ecreditservice.enumeration.EventType;
 import io.digiservices.ecreditservice.event.Event;
 import io.digiservices.ecreditservice.repository.AlerteDestinatairesRepository;
 import io.digiservices.ecreditservice.repository.AlerteDestinatairesRepository.Destinataire;
+import io.digiservices.ecreditservice.repository.AlerteJournalRepository;
 import io.digiservices.ecreditservice.repository.AlerteSyntheseRepository;
 import io.digiservices.ecreditservice.service.AlerteSyntheseService.Synthese;
 import lombok.RequiredArgsConstructor;
@@ -63,6 +64,7 @@ public class PortefeuilleAlerteScheduler {
     private final SignalementTelephoneNotifier signalementNotifier;
     private final AlerteSyntheseService syntheses;
     private final AlerteSyntheseRepository syntheseRepository;
+    private final AlerteJournalRepository journal;
 
     @Value("${portefeuille.alertes.actives:false}")
     private boolean actives;
@@ -122,6 +124,7 @@ public class PortefeuilleAlerteScheduler {
         if (!actives) {
             return;
         }
+        long debut = System.currentTimeMillis();
         try {
             List<EcheanceAvenirDto> echeances = portefeuilleClient.getEcheancesAvenir(joursAvantEcheance);
             List<NouvelImpayeDto> impayes = portefeuilleClient.getNouveauxImpayes(1);
@@ -132,10 +135,15 @@ public class PortefeuilleAlerteScheduler {
                 envoyes += envoyerDigest(d, "Votre point de service", echeances, impayes) ? 1 : 0;
             }
             log.info("[ALERTES] Digest quotidien : {} e-mails publies aux agents", envoyes);
-            envoyerSynthesesDirecteurs(echeances, impayes);
+            int[] directeurs = envoyerSynthesesDirecteurs(echeances, impayes);
+            journal.execution("DIGEST_QUOTIDIEN", "SUCCES", 1, echeances.size(), impayes.size(),
+                    envoyes, directeurs[0], directeurs[1], directeurs[2],
+                    System.currentTimeMillis() - debut, null);
         } catch (Exception e) {
             // Cloture SAF ou base en restauration : SafJobRetry rejoue la tache un peu plus tard.
             log.warn("[ALERTES] Digest quotidien en echec (SAF indisponible ?) : {}", e.getMessage());
+            journal.execution("DIGEST_QUOTIDIEN", "ECHEC", 1, null, null, null, null, null, null,
+                    System.currentTimeMillis() - debut, e.getMessage());
             throw new IllegalStateException("Digest quotidien : " + e.getMessage(), e);
         }
     }
@@ -146,10 +154,10 @@ public class PortefeuilleAlerteScheduler {
      * que s'il y a au moins un impaye ou une echeance dans le perimetre. Les indicateurs reseau
      * (PAR 30) sont lus une fois pour tous ; leur absence ne bloque pas l'envoi.
      */
-    private void envoyerSynthesesDirecteurs(List<EcheanceAvenirDto> echeances, List<NouvelImpayeDto> impayes) {
+    private int[] envoyerSynthesesDirecteurs(List<EcheanceAvenirDto> echeances, List<NouvelImpayeDto> impayes) {
         if (LocalDate.now().getDayOfWeek() == DayOfWeek.SUNDAY) {
             log.info("[ALERTES] Dimanche : pas de synthese aux directeurs");
-            return;
+            return new int[]{0, 0, 0};
         }
         Map<String, IndicateursAgenceDto> indicateurs;
         try {
@@ -163,7 +171,12 @@ public class PortefeuilleAlerteScheduler {
         for (Destinataire d : destinataires.das()) {
             try {
                 Synthese s = syntheses.pourDa("Votre agence", d.codesSaf(), echeances, impayes, indicateurs, joursAvantEcheance);
-                if (s != null) { publier(d.email(), s.getSujet(), s.getCorpsHtml()); da++; }
+                if (s != null) {
+                    publier(d.email(), s.getSujet(), s.getCorpsHtml());
+                    journal.envoi("SYNTHESE_DA", "EMAIL", d.email(), d.userId(), "DA", d.delegationId(),
+                            s.getSujet(), s.getLignes() == null ? null : s.getLignes().size());
+                    da++;
+                }
             } catch (Exception e) {
                 log.warn("[ALERTES] Synthese DA impossible pour {} : {}", d.email(), e.getMessage());
             }
@@ -171,7 +184,12 @@ public class PortefeuilleAlerteScheduler {
         for (Destinataire d : destinataires.drs()) {
             try {
                 Synthese s = syntheses.pourGroupes("Votre délégation", d.codesSaf(), false, echeances, impayes, indicateurs, joursAvantEcheance);
-                if (s != null) { publier(d.email(), s.getSujet(), s.getCorpsHtml()); dr++; }
+                if (s != null) {
+                    publier(d.email(), s.getSujet(), s.getCorpsHtml());
+                    journal.envoi("SYNTHESE_DR", "EMAIL", d.email(), d.userId(), "DR", d.delegationId(),
+                            s.getSujet(), s.getLignes() == null ? null : s.getLignes().size());
+                    dr++;
+                }
             } catch (Exception e) {
                 log.warn("[ALERTES] Synthese DR impossible pour {} : {}", d.email(), e.getMessage());
             }
@@ -182,11 +200,14 @@ public class PortefeuilleAlerteScheduler {
             if (s != null) {
                 for (var m : syntheseRepository.managersDe()) {
                     publier(m.email(), s.getSujet(), s.getCorpsHtml());
+                    journal.envoi("SYNTHESE_DE", "EMAIL", m.email(), null, "DE", null,
+                            s.getSujet(), s.getLignes() == null ? null : s.getLignes().size());
                     de++;
                 }
             }
         }
         log.info("[ALERTES] Syntheses du matin : {} DA, {} DR, {} DE", da, dr, de);
+        return new int[]{da, dr, de};
     }
 
     private boolean envoyerDigest(Destinataire d, String perimetre,
@@ -228,8 +249,11 @@ public class PortefeuilleAlerteScheduler {
         html.append("<p style='color:#5C6B60;font-size:12px'>").append(perimetre)
                 .append(" — détail complet sur la page Portefeuille crédits SAF de la plateforme.</p></div>");
 
-        publier(d.email(), "Alertes portefeuille — " + LocalDate.now().format(FMT)
-                + " (" + mesImpayes.size() + " impayé(s), " + mesEcheances.size() + " échéance(s))", html.toString());
+        String sujet = "Alertes portefeuille — " + LocalDate.now().format(FMT)
+                + " (" + mesImpayes.size() + " impayé(s), " + mesEcheances.size() + " échéance(s))";
+        publier(d.email(), sujet, html.toString());
+        journal.envoi("DIGEST_AGENT", "EMAIL", d.email(), d.userId(), "AGENT_CREDIT", d.delegationId(),
+                sujet, mesImpayes.size() + mesEcheances.size());
         return true;
     }
 
