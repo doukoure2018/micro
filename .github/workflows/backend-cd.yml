@@ -181,16 +181,18 @@ jobs:
       # Deploy to OVH server - Version optimisée
       - name: Deploy to OVH server
         uses: appleboy/ssh-action@v1.0.3
-        # Expéditeur des courriels (notificationservice) : repris des secrets GitHub
-        # MAIL_USERNAME / MAIL_PASSWORD et écrit dans .env.prod à chaque déploiement.
+        # Secrets repris des secrets GitHub et écrits dans .env.prod à chaque déploiement :
+        # l'expéditeur des courriels (notificationservice) et le webhook Slack qui porte
+        # désormais les alertes techniques d'ecreditservice (SAF indisponible / rétabli).
         env:
           MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
           MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         with:
           host: ${{ secrets.OVH_HOST }}
           username: ${{ secrets.OVH_USER }}
           key: ${{ secrets.PROD_SSH_KEY }}
-          envs: MAIL_USERNAME,MAIL_PASSWORD
+          envs: MAIL_USERNAME,MAIL_PASSWORD,SLACK_WEBHOOK_URL
           script: |
             set -e
 
@@ -235,6 +237,21 @@ jobs:
               echo "✉️ Expéditeur des courriels repris des secrets GitHub ($MAIL_USERNAME)"
             else
               echo "ℹ️ Secrets MAIL_USERNAME / MAIL_PASSWORD absents : .env.prod inchangé"
+            fi
+
+            # Alertes techniques dans Slack (24/10/2026) : le même webhook que les notifications
+            # de déploiement est écrit dans .env.prod, d'où docker-compose le passe à
+            # ecreditservice. Sans secret, la ligne du serveur est laissée telle quelle.
+            if [ -n "$SLACK_WEBHOOK_URL" ]; then
+              v=$(echo "$SLACK_WEBHOOK_URL" | tr -d ' \r\n')
+              if grep -qE "^[[:space:]]*SLACK_WEBHOOK_URL=" .env.prod; then
+                sed -i -E "s|^[[:space:]]*SLACK_WEBHOOK_URL=.*|SLACK_WEBHOOK_URL=$v|" .env.prod
+              else
+                echo "SLACK_WEBHOOK_URL=$v" >> .env.prod
+              fi
+              echo "💬 Webhook Slack repris du secret GitHub pour les alertes techniques"
+            else
+              echo "ℹ️ Secret SLACK_WEBHOOK_URL absent : les alertes techniques resteront dans le journal"
             fi
 
             # Load only DB variables needed by the script (docker-compose reads .env.prod directly)
