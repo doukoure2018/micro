@@ -3,6 +3,16 @@ name: CD - Deploy Microservices to OVH
 permissions:
   contents: write
 
+# Un seul deploiement a la fois. Le 24/10/2026, deux livraisons poussees a quatre minutes
+# d'intervalle se sont chevauchees : le « docker compose down » de la premiere a coupe la
+# base pendant la sauvegarde de securite de la seconde, qui s'est arretee en erreur
+# (« terminating connection due to administrator command »). Les runs suivants attendent
+# desormais leur tour au lieu de se marcher dessus ; on n'annule pas celui qui tourne,
+# car il est au milieu d'un arret-redemarrage de la production.
+concurrency:
+  group: deploiement-ovh
+  cancel-in-progress: false
+
 on:
   workflow_dispatch:
   push:
