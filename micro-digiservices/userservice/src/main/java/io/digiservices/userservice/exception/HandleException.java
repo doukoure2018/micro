@@ -142,7 +142,11 @@ public class HandleException extends ResponseEntityExceptionHandler implements E
 
     @ExceptionHandler(DataAccessException.class)
     public ResponseEntity<Response> dataAccessException(DataAccessException exception) {
-        log.error(String.format("DataAccessException: %s", exception.getMessage()));
+        // La cause profonde est journalisee : le message de surface (« Unable to commit against
+        // JDBC Connection ») ne dit pas ce que la base a refuse, et il a fallu une demi-journee
+        // pour le deviner le 24/10/2026. La trace complete suit, en une seule ligne de log.
+        log.error(String.format("DataAccessException: %s | cause: %s", exception.getMessage(),
+                getRootCauseMessage(exception)), exception);
         return new ResponseEntity<>(handleErrorResponse(processErrorMessage(exception), getRootCauseMessage(exception), request, BAD_REQUEST), BAD_REQUEST);
     }
 
