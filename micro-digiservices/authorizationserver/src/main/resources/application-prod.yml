@@ -44,7 +44,9 @@ spring:
         jdbc.batch_size: 30
         order_inserts: true
         order_updates: true
-        connection.provider_disables_autocommit: true
+        # Retiree le 24/10/2026 par prudence : avec Hibernate et un pool laisse en
+        # auto-commit, elle fait echouer toute validation de transaction (voir
+        # userservice). Aucun @Transactional ici aujourd'hui, mais le piege etait pose.
 
 eureka:
   instance:
