@@ -38,8 +38,8 @@ public class UsagePhotoRepository {
     public List<LocalDate> semainesConnues(Long delegationId) {
         return jdbcClient.sql("""
                 SELECT debut FROM usage_semaine
-                WHERE (:delegationId IS NULL AND delegation_id IS NULL)
-                   OR (:delegationId IS NOT NULL AND delegation_id = :delegationId)
+                WHERE (CAST(:delegationId AS BIGINT) IS NULL AND delegation_id IS NULL)
+                   OR (CAST(:delegationId AS BIGINT) IS NOT NULL AND delegation_id = CAST(:delegationId AS BIGINT))
                 ORDER BY debut
                 """)
                 .param("delegationId", delegationId)
@@ -124,8 +124,8 @@ public class UsagePhotoRepository {
                        dossiers_crees, dossiers_valides, ps_producteurs, affectations,
                        (alertes_agents + alertes_da + alertes_dr + alertes_de + alertes_techniques) AS alertes
                 FROM usage_semaine
-                WHERE ((:delegationId IS NULL AND delegation_id IS NULL)
-                    OR (:delegationId IS NOT NULL AND delegation_id = :delegationId))
+                WHERE ((CAST(:delegationId AS BIGINT) IS NULL AND delegation_id IS NULL)
+                    OR (CAST(:delegationId AS BIGINT) IS NOT NULL AND delegation_id = CAST(:delegationId AS BIGINT)))
                 ORDER BY debut DESC
                 LIMIT :nb
                 """)
@@ -151,8 +151,8 @@ public class UsagePhotoRepository {
                        (alertes_agents + alertes_da + alertes_dr + alertes_de + alertes_techniques) AS alertes
                 FROM usage_semaine
                 WHERE debut = :debut
-                  AND ((:delegationId IS NULL AND delegation_id IS NULL)
-                    OR (:delegationId IS NOT NULL AND delegation_id = :delegationId))
+                  AND ((CAST(:delegationId AS BIGINT) IS NULL AND delegation_id IS NULL)
+                    OR (CAST(:delegationId AS BIGINT) IS NOT NULL AND delegation_id = CAST(:delegationId AS BIGINT)))
                 """)
                 .param("delegationId", delegationId).param("debut", debut)
                 .query((rs, n) -> ResumeDto.builder()
