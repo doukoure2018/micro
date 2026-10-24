@@ -13,7 +13,7 @@ spring:
     port: 587
     username: ${MAIL_USERNAME:}
     password: ${MAIL_PASSWORD:}
-    from-name: ${MAIL_FROM_NAME:Digi-CRG}
+    from-name: ${MAIL_FROM_NAME:DIGI-CRG}
     properties:
       mail:
         smtp:

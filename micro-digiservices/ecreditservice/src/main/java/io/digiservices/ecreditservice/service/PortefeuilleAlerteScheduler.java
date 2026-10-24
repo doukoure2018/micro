@@ -228,9 +228,11 @@ public class PortefeuilleAlerteScheduler {
         if (!mesImpayes.isEmpty()) {
             html.append("<h3 style='color:#B3261E'>").append(mesImpayes.size())
                     .append(" crédit(s) passé(s) en impayé hier</h3>");
-            tableau(html, new String[]{"Point de service", "Client", "N° crédit", "1re impayée", "CRD (GNF)", "Impayé (GNF)"},
+            tableau(html, new String[]{"Point de service", "Client", "Téléphone", "N° crédit", "1re impayée",
+                            "CRD (GNF)", "Impayé (GNF)"},
                     mesImpayes.stream().limit(MAX_LIGNES_EMAIL).map(i -> new String[]{
                             nvl(i.getDesAgencia()), nvl(i.getNomCliente()) + " (" + nvl(i.getCodCliente()) + ")",
+                            telephone(i.getTelPrincipal(), i.getTelSecundario(), i.getTelOtro()),
                             String.valueOf(i.getNumCredito()), date(i.getDatPremiereImpayee()),
                             montant(i.getMonSaldo()), montant(i.getMntImpaye())}).toList(),
                     mesImpayes.size());
@@ -239,9 +241,11 @@ public class PortefeuilleAlerteScheduler {
             html.append("<h3 style='color:#1E6B4F'>").append(mesEcheances.size())
                     .append(" échéance(s) à J+").append(joursAvantEcheance)
                     .append(" (à relancer)</h3>");
-            tableau(html, new String[]{"Point de service", "Client", "N° crédit", "Échéance", "Montant (GNF)"},
+            tableau(html, new String[]{"Point de service", "Client", "Téléphone", "N° crédit", "Échéance",
+                            "Montant (GNF)"},
                     mesEcheances.stream().limit(MAX_LIGNES_EMAIL).map(e -> new String[]{
                             nvl(e.getDesAgencia()), nvl(e.getNomCliente()) + " (" + nvl(e.getCodCliente()) + ")",
+                            telephone(e.getTelPrincipal(), e.getTelSecundario(), e.getTelOtro()),
                             String.valueOf(e.getNumCredito()), date(e.getFecCuota()),
                             montant(e.getMonCuota())}).toList(),
                     mesEcheances.size());
@@ -324,6 +328,25 @@ public class PortefeuilleAlerteScheduler {
         corpsHtml = donneesSaf.annoter(corpsHtml);
         publisher.publishEvent(new Event(EventType.PORTEFEUILLE_ALERTE,
                 Map.of("email", email, "sujet", sujet, "corpsHtml", corpsHtml)));
+    }
+
+    /**
+     * Le premier des trois numeros SAF qui soit renseigne, groupe par trois chiffres pour etre
+     * lisible et composable depuis un telephone. Vide si la fiche client n'en porte aucun : une
+     * case vide se voit, une fausse mise en forme non.
+     */
+    static String telephone(String principal, String secondaire, String autre) {
+        for (String t : new String[]{principal, secondaire, autre}) {
+            if (t != null && !t.isBlank()) {
+                String chiffres = t.replaceAll("[^0-9]", "");
+                if (chiffres.length() == 9) {
+                    return chiffres.substring(0, 3) + " " + chiffres.substring(3, 5) + " "
+                            + chiffres.substring(5, 7) + " " + chiffres.substring(7);
+                }
+                return t.trim();
+            }
+        }
+        return "—";
     }
 
     private static void tableau(StringBuilder html, String[] entetes, List<String[]> lignes, int total) {

@@ -20,4 +20,8 @@ public class NouvelImpayeDto {
     private LocalDate datPremiereImpayee;
     private BigDecimal monSaldo;
     private BigDecimal mntImpaye;
+    /** Numeros de la fiche client SAF, dans l'ordre ou SAF les tient. */
+    private String telPrincipal;
+    private String telSecundario;
+    private String telOtro;
 }
