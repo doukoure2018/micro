@@ -1,4 +1,4 @@
-import { ConfirmationContact, DemandeCode, ProfilContact } from './profil-contact';
+import { ConfirmationContact, DemandeCode, EquipeContacts, ProfilContact } from './profil-contact';
 import { Actividad } from './actividad.model';
 import { Agence } from './agence';
 import { AgentCreditDTO } from './AgentCreditDTO';
@@ -246,6 +246,7 @@ export interface IResponse {
         profil?: ProfilContact;
         demande?: DemandeCode;
         confirmation?: ConfirmationContact;
+        equipe?: EquipeContacts;
         etat?: EtatDocumentDetailDto;
 
         statistics?: DelegationStats[];

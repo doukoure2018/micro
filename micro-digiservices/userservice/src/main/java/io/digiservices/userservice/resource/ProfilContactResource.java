@@ -2,6 +2,8 @@ package io.digiservices.userservice.resource;
 
 import io.digiservices.userservice.dto.ContactVerifieDtos.ConfirmationCodeRequest;
 import io.digiservices.userservice.dto.ContactVerifieDtos.DemandeCodeRequest;
+import io.digiservices.userservice.dto.ContactVerifieDtos.SaisieContactRequest;
+import io.digiservices.userservice.service.ContactEquipeService;
 import io.digiservices.userservice.service.VerificationContactService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -34,6 +36,7 @@ import static org.springframework.http.ResponseEntity.ok;
 public class ProfilContactResource {
 
     private final VerificationContactService verificationContactService;
+    private final ContactEquipeService contactEquipeService;
 
     /** Identite, contacts, etat de verification et demande en cours s'il y en a une. */
     @GetMapping("/contacts")
@@ -52,6 +55,32 @@ public class ProfilContactResource {
         var resultat = verificationContactService.demanderCode(
                 authentication.getName(), requete.getCanal(), requete.getDestination());
         return ok(getResponse(request, Map.of("demande", resultat), resultat.getMessage(), OK));
+    }
+
+    /**
+     * Suivi des contacts de l'equipe : decompte, liste, et synthese par delegation au
+     * niveau reseau (V173). Le perimetre est impose par le serveur selon le role.
+     */
+    @GetMapping("/contacts/equipe")
+    public ResponseEntity<io.digiservices.userservice.domain.Response> equipe(
+            @NotNull Authentication authentication, HttpServletRequest request) {
+        var equipe = contactEquipeService.equipe(authentication.getName());
+        return ok(getResponse(request, Map.of("equipe", equipe), "Contacts de l'equipe", OK));
+    }
+
+    /**
+     * Le directeur d'agence saisit le contact d'un agent qui n'y arrive pas. La valeur est
+     * enregistree mais non verifiee : l'agent devra la confirmer par un code.
+     */
+    @PostMapping("/contacts/equipe/saisie")
+    public ResponseEntity<io.digiservices.userservice.domain.Response> saisir(
+            @NotNull Authentication authentication,
+            @RequestBody @Valid SaisieContactRequest requete,
+            HttpServletRequest request) {
+        var equipe = contactEquipeService.saisir(authentication.getName(), requete.getAgentUserId(),
+                requete.getCanal(), requete.getValeur());
+        return ok(getResponse(request, Map.of("equipe", equipe),
+                "Contact enregistre : l'agent doit le confirmer par un code", OK));
     }
 
     /** Saisie du code recu : la modification n'est appliquee que si le code est juste. */

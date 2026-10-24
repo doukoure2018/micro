@@ -111,14 +111,21 @@ public class VerificationContactService {
                 .build();
     }
 
-    /** Nouvelle adresse : format correct, differente de l'actuelle, et pas deja prise. */
+    /**
+     * Nouvelle adresse : format correct, et pas deja prise. Reprendre l'adresse actuelle est
+     * permis quand elle n'a jamais ete prouvee — c'est le cas d'une adresse saisie par le
+     * directeur d'agence, que l'agent confirme a sa prochaine connexion (V173).
+     */
     private String destinationEmail(String saisie, ProfilContactDto profil, Long userId) {
         String email = saisie == null ? "" : saisie.trim().toLowerCase();
         if (!FORMAT_EMAIL.matcher(email).matches()) {
             throw new ApiException("Cette adresse e-mail n'est pas valide");
         }
         if (email.equalsIgnoreCase(profil.getEmail())) {
-            throw new ApiException("C'est déjà votre adresse actuelle");
+            if (profil.getEmailVerifieAt() != null) {
+                throw new ApiException("C'est déjà votre adresse actuelle, et elle est vérifiée");
+            }
+            return email;                 // confirmation de l'adresse en place
         }
         if (repository.emailDejaPris(email, userId)) {
             throw new ApiException("Cette adresse est déjà utilisée par un autre compte");
@@ -129,8 +136,8 @@ public class VerificationContactService {
     /** Nouveau numero : neuf chiffres commencant par 6, indicatif et separateurs retires. */
     private String destinationTelephone(String saisie, ProfilContactDto profil) {
         String numero = normaliserTelephone(saisie);
-        if (numero.equals(profil.getTelephone())) {
-            throw new ApiException("C'est déjà votre numéro actuel");
+        if (numero.equals(profil.getTelephone()) && profil.getTelephoneVerifieAt() != null) {
+            throw new ApiException("C'est déjà votre numéro actuel, et il est vérifié");
         }
         return numero;
     }
@@ -203,14 +210,27 @@ public class VerificationContactService {
                     + (essaisMax - essais) + " essai(s)");
         }
 
-        boolean identifiantChange = CANAL_EMAIL.equals(canal);
-        if (identifiantChange) {
-            // Garde-fou : l'adresse a pu etre prise entre la demande et la confirmation.
-            if (repository.emailDejaPris(demande.destination(), userId)) {
-                repository.annuler(demande.id(), "adresse prise entre-temps");
-                throw new ApiException("Cette adresse vient d'être utilisée par un autre compte");
+        ProfilContactDto avant = repository.profil(userId)
+                .orElseThrow(() -> new ApiException("Profil introuvable"));
+        boolean memeValeur = CANAL_EMAIL.equals(canal)
+                ? demande.destination().equalsIgnoreCase(avant.getEmail())
+                : demande.destination().equals(avant.getTelephone());
+        boolean identifiantChange = CANAL_EMAIL.equals(canal) && !memeValeur;
+
+        if (CANAL_EMAIL.equals(canal)) {
+            if (memeValeur) {
+                // L'adresse ne bouge pas : l'agent prouve celle que son directeur a saisie.
+                repository.marquerEmailVerifie(userId);
+            } else {
+                // Garde-fou : l'adresse a pu etre prise entre la demande et la confirmation.
+                if (repository.emailDejaPris(demande.destination(), userId)) {
+                    repository.annuler(demande.id(), "adresse prise entre-temps");
+                    throw new ApiException("Cette adresse vient d'être utilisée par un autre compte");
+                }
+                repository.appliquerNouvelEmail(userId, demande.destination(), graceJours);
             }
-            repository.appliquerNouvelEmail(userId, demande.destination(), graceJours);
+        } else if (memeValeur) {
+            repository.marquerTelephoneVerifie(userId);
         } else {
             repository.appliquerNouveauTelephone(userId, demande.destination());
         }
@@ -224,7 +244,9 @@ public class VerificationContactService {
                 .message(identifiantChange
                         ? "Votre adresse est confirmée. C'est désormais votre identifiant de "
                           + "connexion ; l'ancienne reste acceptée " + graceJours + " jours."
-                        : "Votre numéro est confirmé.")
+                        : CANAL_EMAIL.equals(canal)
+                          ? "Votre adresse est confirmée."
+                          : "Votre numéro est confirmé.")
                 .build();
     }
 

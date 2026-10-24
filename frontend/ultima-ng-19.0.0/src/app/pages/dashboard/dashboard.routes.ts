@@ -21,6 +21,11 @@ export default [
         loadComponent: () => import('./profil/mon-profil.component').then((c) => c.MonProfilComponent)
     },
     {
+        path: 'contacts-equipe',
+        data: { breadcrumb: 'Contacts des agents' },
+        loadComponent: () => import('./profil/contacts-equipe.component').then((c) => c.ContactsEquipeComponent)
+    },
+    {
         path: 'admin',
         data: { breadcrumb: 'Administrateur ' },
         loadComponent: () => import('./admin/admin.component').then((c) => c.AdminComponent)
