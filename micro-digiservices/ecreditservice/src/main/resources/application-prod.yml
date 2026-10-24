@@ -47,6 +47,10 @@ spring:
         jdbc.batch_size: 30
         order_inserts: true
         order_updates: true
+        # Sans effet ici : ce service n'embarque pas JPA, ses transactions sont gerees par le
+        # gestionnaire JDBC qui sort lui-meme du mode auto-commit. A NE PAS reactiver si JPA
+        # arrive un jour sans passer le pool en auto-commit false : la validation echouerait
+        # (« Cannot commit when autoCommit is enabled »), comme dans userservice le 24/10/2026.
         connection.provider_disables_autocommit: true
 
   kafka:

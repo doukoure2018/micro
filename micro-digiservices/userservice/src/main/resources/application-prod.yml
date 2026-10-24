@@ -43,7 +43,13 @@ spring:
         jdbc.batch_size: 50
         order_inserts: true
         order_updates: true
-        connection.provider_disables_autocommit: true
+        # RETIRE le 24/10/2026 : cette ligne promet a Hibernate que le pool lui remet des
+        # connexions deja sorties du mode auto-commit. Hikari n'en fait rien (auto-commit
+        # vaut vrai par defaut), alors Hibernate ne le desactive pas non plus et la
+        # validation echoue : « Cannot commit when autoCommit is enabled ». Les ecritures
+        # passaient quand meme, une par une, mais sans transaction ni retour arriere
+        # possible, et la requete rendait une erreur. Sans cette ligne, Hibernate gere
+        # lui-meme l'auto-commit autour de chaque transaction.
         # Second-level cache for user data
         cache:
           use_second_level_cache: true
