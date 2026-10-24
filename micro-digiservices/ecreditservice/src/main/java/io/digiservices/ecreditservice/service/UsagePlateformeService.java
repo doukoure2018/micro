@@ -110,6 +110,21 @@ public class UsagePlateformeService {
         return UsagePlateformeExcelUtils.classeur(semaine(uuid, jour));
     }
 
+    /** Le barometre d'un perimetre donne, sans passer par un compte : utilise par l'envoi du lundi. */
+    public UsageSemaineDto semainePour(Long delegationId, String libelle, boolean montants, LocalDate lundi) {
+        LocalDate debut = lundi.with(DayOfWeek.MONDAY);
+        LocalDate finExclue = debut.plusWeeks(1);
+        LocalDate aujourdhui = LocalDate.now();
+        if (finExclue.isAfter(aujourdhui.plusDays(1))) {
+            finExclue = aujourdhui.plusDays(1);
+        }
+        UsageSemaineDto d = construire(new Perimetre(delegationId, libelle, montants), debut, finExclue);
+        ResumeDto photo = photos.photo(delegationId, debut.minusDays(7));
+        d.setPrecedente(photo != null ? photo : resume(new Perimetre(delegationId, libelle, montants),
+                debut.minusDays(7), debut));
+        return d;
+    }
+
     // ==================== Photographie hebdomadaire (lot 2) ====================
 
     /** Les {@code semaines} dernieres semaines figees du perimetre de l'appelant. */
