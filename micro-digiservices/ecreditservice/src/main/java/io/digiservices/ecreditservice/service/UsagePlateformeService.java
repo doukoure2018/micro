@@ -9,10 +9,15 @@ import io.digiservices.ecreditservice.dto.UsagePlateformeDtos.ResumeDto;
 import io.digiservices.ecreditservice.dto.UsagePlateformeDtos.RoleDto;
 import io.digiservices.ecreditservice.dto.UsagePlateformeDtos.UsageSemaineDto;
 import io.digiservices.ecreditservice.exception.ApiException;
+import io.digiservices.ecreditservice.repository.UsagePhotoRepository;
 import io.digiservices.ecreditservice.repository.UsagePlateformeRepository;
 import io.digiservices.ecreditservice.utils.UsagePlateformeExcelUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -48,7 +53,14 @@ public class UsagePlateformeService {
     private static final LocalDate DEBUT_JOURNAL_ALERTES = LocalDate.of(2026, 10, 24);
 
     private final UsagePlateformeRepository repository;
+    private final UsagePhotoRepository photos;
     private final UserClient userClient;
+
+    /** Premiere semaine reprise a l'amorcage : le lundi 3 aout 2026, mois de bascule du reseau. */
+    @Value("${usage.photo.reprise-depuis:2026-08-03}")
+    private String repriseDepuis;
+    @Value("${usage.photo.reprise-au-demarrage:true}")
+    private boolean repriseAuDemarrage;
 
     /** Perimetre de lecture : null = tout le reseau. */
     private record Perimetre(Long delegationId, String libelle, boolean montants) {
@@ -87,12 +99,85 @@ public class UsagePlateformeService {
             finExclue = aujourdhui.plusDays(1);           // semaine en cours : jusqu'a ce soir
         }
         UsageSemaineDto d = construire(p, debut, finExclue);
-        d.setPrecedente(resume(p, debut.minusDays(7), debut));
+        // La semaine precedente vient de sa photographie quand elle existe : c'est elle qui fait
+        // foi, et deux rapports successifs disent alors la meme chose de la meme semaine.
+        ResumeDto photo = photos.photo(p.delegationId(), debut.minusDays(7));
+        d.setPrecedente(photo != null ? photo : resume(p, debut.minusDays(7), debut));
         return d;
     }
 
     public byte[] exporter(String uuid, LocalDate jour) throws IOException {
         return UsagePlateformeExcelUtils.classeur(semaine(uuid, jour));
+    }
+
+    // ==================== Photographie hebdomadaire (lot 2) ====================
+
+    /** Les {@code semaines} dernieres semaines figees du perimetre de l'appelant. */
+    public List<ResumeDto> tendance(String uuid, int semaines) {
+        Perimetre p = perimetreDe(uuid);
+        return photos.tendance(p.delegationId(), Math.min(Math.max(semaines, 2), 52));
+    }
+
+    /**
+     * Chaque lundi a 01h20 GMT : fige la semaine qui vient de s'achever, pour le reseau et pour
+     * chaque delegation. L'heure est choisie avant les travaux du matin et apres la cloture SAF.
+     */
+    @Scheduled(cron = "${usage.photo.cron:0 20 1 * * MON}", zone = "GMT")
+    public void photographierSemainePassee() {
+        LocalDate lundiPasse = LocalDate.now().with(DayOfWeek.MONDAY).minusWeeks(1);
+        int n = photographier(lundiPasse);
+        log.info("[USAGE] Semaine du {} figee : {} photographie(s)", lundiPasse, n);
+    }
+
+    /**
+     * Fige une semaine pour le reseau et chaque delegation. Une photographie deja prise est
+     * remplacee : on peut donc rejouer sans effet de bord.
+     */
+    public int photographier(LocalDate lundi) {
+        LocalDate debut = lundi.with(DayOfWeek.MONDAY);
+        LocalDate finExclue = debut.plusWeeks(1);
+        LocalDate aujourdhui = LocalDate.now();
+        boolean tronquee = finExclue.isAfter(aujourdhui.plusDays(1));
+        if (tronquee) {
+            finExclue = aujourdhui.plusDays(1);
+        }
+        int n = 0;
+        photos.enregistrer(construire(new Perimetre(null, "Réseau", true), debut, finExclue), null, tronquee);
+        n++;
+        for (Map.Entry<Long, String> d : photos.delegations().entrySet()) {
+            photos.enregistrer(construire(new Perimetre(d.getKey(), d.getValue(), true), debut, finExclue),
+                    d.getKey(), tronquee);
+            n++;
+        }
+        return n;
+    }
+
+    /**
+     * Amorcage : au premier demarrage apres la livraison, les semaines passees sont reprises pour
+     * que les courbes ne partent pas d'une page blanche. Le travail se fait a part du demarrage,
+     * et une semaine deja figee n'est pas recalculee.
+     */
+    @EventListener(ApplicationReadyEvent.class)
+    public void reprendreLesSemainesPassees() {
+        if (!repriseAuDemarrage || !photos.vide()) {
+            return;
+        }
+        Thread.ofVirtual().name("usage-reprise").start(() -> {
+            try {
+                LocalDate premier = LocalDate.parse(repriseDepuis).with(DayOfWeek.MONDAY);
+                LocalDate dernierLundiClos = LocalDate.now().with(DayOfWeek.MONDAY).minusWeeks(1);
+                int semaines = 0;
+                for (LocalDate l = premier; !l.isAfter(dernierLundiClos); l = l.plusWeeks(1)) {
+                    photographier(l);
+                    semaines++;
+                }
+                // La semaine en cours est figee aussi, marquee tronquee : elle sera reprise lundi.
+                photographier(LocalDate.now());
+                log.info("[USAGE] Reprise terminee : {} semaine(s) figee(s) depuis le {}", semaines, premier);
+            } catch (Exception e) {
+                log.warn("[USAGE] Reprise des semaines passees interrompue : {}", e.getMessage());
+            }
+        });
     }
 
     // ==================== Construction ====================
