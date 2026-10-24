@@ -19,4 +19,8 @@ public class EcheanceAvenirDto {
     private String nomCliente;
     private LocalDate fecCuota;
     private BigDecimal monCuota;
+    /** Numeros de la fiche client SAF, dans l'ordre ou SAF les tient. */
+    private String telPrincipal;
+    private String telSecundario;
+    private String telOtro;
 }

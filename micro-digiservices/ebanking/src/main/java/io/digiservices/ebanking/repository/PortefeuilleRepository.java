@@ -164,7 +164,8 @@ public class PortefeuilleRepository {
 
     private static final String SQL_ECHEANCES_AVENIR = """
             SELECT cr.COD_AGENCIA, ag.DES_AGENCIA, cr.NUM_CREDITO, cr.COD_CLIENTE,
-                   c.NOM_CLIENTE, pp.FEC_CUOTA, pp.MON_CUOTA
+                   c.NOM_CLIENTE, pp.FEC_CUOTA, pp.MON_CUOTA,
+                   c.TEL_PRINCIPAL, c.TEL_SECUNDARIO, c.TEL_OTRO
             FROM PR.PR_PLAN_PAGOS pp
             INNER JOIN PR.PR_CREDITOS cr
                 ON pp.COD_EMPRESA = cr.COD_EMPRESA AND pp.COD_AGENCIA = cr.COD_AGENCIA
@@ -180,7 +181,8 @@ public class PortefeuilleRepository {
 
     private static final String SQL_NOUVEAUX_IMPAYES = "SELECT cr.COD_AGENCIA, ag.DES_AGENCIA, " + """
                    cr.NUM_CREDITO, cr.COD_CLIENTE, c.NOM_CLIENTE, t.PREM_IMP, cr.MON_SALDO,
-                   COALESCE(t.CAP_IMP, 0) + COALESCE(t.INT_IMP, 0) AS MNT_IMP
+                   COALESCE(t.CAP_IMP, 0) + COALESCE(t.INT_IMP, 0) AS MNT_IMP,
+                   c.TEL_PRINCIPAL, c.TEL_SECUNDARIO, c.TEL_OTRO
             FROM """ + IMPAYES_PAR_CREDIT + """
             INNER JOIN PR.PR_CREDITOS cr
                 ON t.COD_EMPRESA = cr.COD_EMPRESA AND t.COD_AGENCIA = cr.COD_AGENCIA
@@ -279,7 +281,8 @@ public class PortefeuilleRepository {
                 (rs, n) -> new io.digiservices.clients.portefeuille.EcheanceAvenirDto(
                         str(rs, "COD_AGENCIA"), str(rs, "DES_AGENCIA"), rs.getLong("NUM_CREDITO"),
                         str(rs, "COD_CLIENTE"), str(rs, "NOM_CLIENTE"),
-                        dt(rs, "FEC_CUOTA"), rs.getBigDecimal("MON_CUOTA"))));
+                        dt(rs, "FEC_CUOTA"), rs.getBigDecimal("MON_CUOTA"),
+                        tel(rs, "TEL_PRINCIPAL"), tel(rs, "TEL_SECUNDARIO"), tel(rs, "TEL_OTRO"))));
     }
 
     /** Credits dont la premiere echeance impayee est tombee dans les depuisJours derniers jours. */
@@ -292,7 +295,8 @@ public class PortefeuilleRepository {
                 (rs, n) -> new io.digiservices.clients.portefeuille.NouvelImpayeDto(
                         str(rs, "COD_AGENCIA"), str(rs, "DES_AGENCIA"), rs.getLong("NUM_CREDITO"),
                         str(rs, "COD_CLIENTE"), str(rs, "NOM_CLIENTE"),
-                        dt(rs, "PREM_IMP"), rs.getBigDecimal("MON_SALDO"), rs.getBigDecimal("MNT_IMP"))));
+                        dt(rs, "PREM_IMP"), rs.getBigDecimal("MON_SALDO"), rs.getBigDecimal("MNT_IMP"),
+                        tel(rs, "TEL_PRINCIPAL"), tel(rs, "TEL_SECUNDARIO"), tel(rs, "TEL_OTRO"))));
     }
 
     /** Indicateurs de tout le reseau, agreges par agence SAF (une seule requete). */

@@ -42,7 +42,7 @@ public class EmailServiceImpl implements EmailService {
     @Value("${spring.mail.username}")
     private String fromEmail;
 
-    @Value("${spring.mail.from-name:Digi-CRG}")
+    @Value("${spring.mail.from-name:DIGI-CRG}")
     private String fromName;
 
     @Value("${verify.email.host}")
@@ -59,7 +59,7 @@ public class EmailServiceImpl implements EmailService {
         try {
             var message = mailSender.createMimeMessage();
             var helper = new org.springframework.mail.javamail.MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(fromEmail);
+            helper.setFrom(fromEmail, fromName);
             helper.setTo(to);
             helper.setSubject(sujet);
             helper.setText(corpsHtml, true);
@@ -80,7 +80,7 @@ public class EmailServiceImpl implements EmailService {
         try {
             var message = mailSender.createMimeMessage();
             var helper = new org.springframework.mail.javamail.MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(fromEmail);
+            helper.setFrom(fromEmail, fromName);
             helper.setTo(to);
             helper.setSubject(sujet);
             helper.setText(corpsHtml, true);
