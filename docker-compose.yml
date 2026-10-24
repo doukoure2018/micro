@@ -286,6 +286,12 @@ services:
       # mentionne, des que ses impayes du jour atteignent l'un des deux seuils (nombre OU montant GNF).
       PORTEFEUILLE_ALERTES_SEUIL_IMPAYES_NB: "5"
       PORTEFEUILLE_ALERTES_SEUIL_IMPAYES_MONTANT: "20000000"
+      # Heure du digest du matin (cron Spring a 6 champs, heure GMT) et nombre de reprises quand
+      # SAF est en cours de restauration. La restauration de la sauvegarde part a une heure
+      # variable (07:15, 07:46, 07:59, 10:08 observes) et dure ~1 h : 8 reprises de 15 min
+      # couvrent de 08:20 a 10:20, au lieu de 4 qui s'arretaient a 09:07 (digest perdu le 24/10).
+      PORTEFEUILLE_ALERTES_CRON_QUOTIDIEN: ${PORTEFEUILLE_ALERTES_CRON_QUOTIDIEN:-0 20 8 * * *}
+      SAF_JOBS_TENTATIVES: ${SAF_JOBS_TENTATIVES:-8}
       # Etat TT1 mensuel (lot 3) : envoi aux DA et DR le premier jour ouvre du mois, piece jointe Excel.
       # COUPE sur demande DSIG du 2026-09-30, tant que le compte SMTP refuse l'authentification :
       # sans cela le planificateur genere les classeurs et les envois echouent silencieusement.
