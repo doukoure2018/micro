@@ -70,6 +70,16 @@ export class UserService {
 
     getInstanceUser$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/user/instanceUser`).pipe(tap(console.log), catchError(this.handleError));
 
+    // ── Page « Mon profil » : contacts et vérification par code (V172) ──
+    // Tout porte sur l'utilisateur connecté : aucune de ces routes ne prend d'identifiant.
+    profilContacts$ = (): Observable<IResponse> => this.http.get<IResponse>(`${this.server}/user/profil/contacts`).pipe(catchError(this.handleError));
+
+    demanderCodeContact$ = (canal: 'EMAIL' | 'SMS', destination: string): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/user/profil/contacts/code`, { canal, destination }).pipe(catchError(this.handleError));
+
+    confirmerCodeContact$ = (canal: 'EMAIL' | 'SMS', code: string): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/user/profil/contacts/confirmation`, { canal, code }).pipe(catchError(this.handleError));
+
     profile$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/user/profile`).pipe(tap(console.log), catchError(this.handleError));
 
     getAllCreditos$ = (codCliente: string) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/seachCreditos/${codCliente}`).pipe(tap(console.log), catchError(this.handleError));

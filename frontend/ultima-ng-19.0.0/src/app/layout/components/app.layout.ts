@@ -9,6 +9,7 @@ import { AppConfigurator } from './app.configurator';
 import { AppBreadcrumb } from './app.breadcrumb';
 import { AppSidebar } from './app.sidebar';
 import { AppRightMenu } from '@/layout/components/app.rightmenu';
+import { AppBandeauContacts } from '@/layout/components/app.bandeau-contacts';
 import { Toast } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { IUser } from '@/interface/user';
@@ -19,7 +20,7 @@ import { IResponse } from '@/interface/response';
 @Component({
     selector: 'app-layout',
     standalone: true,
-    imports: [CommonModule, AppTopbar, AppSidebar, RouterModule, AppFooter, AppConfigurator, AppBreadcrumb, AppRightMenu, Toast],
+    imports: [CommonModule, AppTopbar, AppSidebar, RouterModule, AppFooter, AppConfigurator, AppBreadcrumb, AppRightMenu, Toast, AppBandeauContacts],
     template: `
         <div class="layout-container" [ngClass]="containerClass()">
             <div app-topbar [user]="state().user"></div>
@@ -28,6 +29,7 @@ import { IResponse } from '@/interface/response';
             <div class="layout-content-wrapper">
                 <div app-breadcrumb></div>
                 <div class="layout-content">
+                    <app-bandeau-contacts />
                     <router-outlet></router-outlet>
                 </div>
                 <div app-footer></div>
