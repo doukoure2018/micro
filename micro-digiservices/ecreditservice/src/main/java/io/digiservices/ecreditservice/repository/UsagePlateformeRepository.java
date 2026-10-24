@@ -38,9 +38,16 @@ public class UsagePlateformeRepository {
             LEFT JOIN agence a1 ON a1.id = pv.agence_id
             LEFT JOIN agence a2 ON a2.id = u.agence_id""";
     private static final String DELEG = "COALESCE(a1.delegation_id, a2.delegation_id, u.delegation_id)";
+    /**
+     * Le parametre de delegation est toujours TYPE. Sans cast, « :delegationId IS NULL » part en
+     * requete preparee comme « ? IS NULL » : PostgreSQL ne peut pas deviner le type du parametre
+     * et refuse la requete. Le piege ne se voit pas en psql, ou NULL est ecrit en toutes lettres.
+     */
+    private static final String PARAM_DELEG = "CAST(:delegationId AS BIGINT)";
 
     private static String sql(String requete) {
-        return requete.replace("{JOINS}", JOINS).replace("{DELEG}", DELEG);
+        return requete.replace("{JOINS}", JOINS).replace("{DELEG}", DELEG)
+                .replace(":delegationId", PARAM_DELEG);
     }
 
     private final JdbcClient jdbcClient;
