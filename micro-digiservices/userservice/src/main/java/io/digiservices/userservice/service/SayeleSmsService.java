@@ -3,6 +3,7 @@ package io.digiservices.userservice.service;
 import io.digiservices.userservice.config.SayeleProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -22,7 +23,15 @@ public class SayeleSmsService {
 
     public SayeleSmsService(SayeleProperties sayeleProperties) {
         this.sayeleProperties = sayeleProperties;
-        this.restClient = RestClient.builder().baseUrl(sayeleProperties.getUrl()).build();
+        // Sans delais, un fournisseur muet bloque le fil de la requete sans limite. Le 24/10/2026
+        // un envoi a pris une vingtaine de secondes ; au-dela de quinze, mieux vaut rendre la main.
+        SimpleClientHttpRequestFactory fabrique = new SimpleClientHttpRequestFactory();
+        fabrique.setConnectTimeout(5000);
+        fabrique.setReadTimeout(15000);
+        this.restClient = RestClient.builder()
+                .baseUrl(sayeleProperties.getUrl())
+                .requestFactory(fabrique)
+                .build();
     }
 
     public SendResult send(String phone, String message) {

@@ -8,13 +8,14 @@ import io.digiservices.userservice.dto.ContactVerifieDtos.ProfilContactDto;
 import io.digiservices.userservice.enumeration.EventType;
 import io.digiservices.userservice.exception.ApiException;
 import io.digiservices.userservice.repository.VerificationContactRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.security.SecureRandom;
 import java.time.OffsetDateTime;
@@ -37,7 +38,6 @@ import static io.digiservices.userservice.dto.ContactVerifieDtos.CANAL_SMS;
  * l'identifiant : l'ancien reste accepte trente jours, c'est le filet de securite.</p>
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class VerificationContactService {
 
@@ -49,6 +49,17 @@ public class VerificationContactService {
     private final BCryptPasswordEncoder encoder;
     private final SayeleSmsService smsService;
     private final ApplicationEventPublisher publisher;
+    private final TransactionTemplate transactions;
+
+    public VerificationContactService(VerificationContactRepository repository, BCryptPasswordEncoder encoder,
+                                      SayeleSmsService smsService, ApplicationEventPublisher publisher,
+                                      PlatformTransactionManager transactionManager) {
+        this.repository = repository;
+        this.encoder = encoder;
+        this.smsService = smsService;
+        this.publisher = publisher;
+        this.transactions = new TransactionTemplate(transactionManager);
+    }
 
     @Value("${verification.contact.validite.minutes:10}")
     private int validiteMinutes;
@@ -81,7 +92,13 @@ public class VerificationContactService {
 
     // ───────────────────────── Demande d'un code ─────────────────────────
 
-    @Transactional
+    /**
+     * Demande d'un code. L'ecriture en base est validee AVANT l'envoi : un appel au
+     * fournisseur de SMS peut durer une vingtaine de secondes, et tenir une transaction
+     * ouverte pendant ce temps a fait echouer la validation le 24/10/2026 — l'agent recevait
+     * son code et voyait quand meme une erreur. L'envoi se fait donc hors transaction ; s'il
+     * echoue, la demande ouverte est annulee pour que l'agent puisse recommencer proprement.
+     */
     public DemandeCodeDto demanderCode(String userUuid, String canal, String destinationSaisie) {
         Long userId = userId(userUuid);
         ProfilContactDto profil = repository.profil(userId)
@@ -91,13 +108,19 @@ public class VerificationContactService {
                 ? destinationEmail(destinationSaisie, profil, userId)
                 : destinationTelephone(destinationSaisie, profil);
 
-        // Une seule demande ouverte par canal : la precedente tombe.
-        repository.annulerOuvertes(userId, canal, "remplacee par une nouvelle demande");
-
         String code = String.format("%06d", ALEA.nextInt(1_000_000));
-        OffsetDateTime expireAt = repository.creer(userId, canal, destination, encoder.encode(code),
-                validiteMinutes);
-        envoyer(canal, destination, code, profil);
+        OffsetDateTime expireAt = transactions.execute(statut -> {
+            // Une seule demande ouverte par canal : la precedente tombe.
+            repository.annulerOuvertes(userId, canal, "remplacee par une nouvelle demande");
+            return repository.creer(userId, canal, destination, encoder.encode(code), validiteMinutes);
+        });
+
+        try {
+            envoyer(canal, destination, code, profil);
+        } catch (RuntimeException e) {
+            repository.annulerOuvertes(userId, canal, "envoi du code impossible");
+            throw e;
+        }
 
         log.info("[CONTACT] code {} envoye a l'utilisateur {} ({})", canal, userId, masquer(canal, destination));
         return DemandeCodeDto.builder()
