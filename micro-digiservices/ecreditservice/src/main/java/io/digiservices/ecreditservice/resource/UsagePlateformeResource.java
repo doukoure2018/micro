@@ -46,6 +46,16 @@ public class UsagePlateformeResource {
                 "Barometre d'usage de la plateforme", OK));
     }
 
+    /** Les dernieres semaines figees : courbes de tendance (lot 2). */
+    @GetMapping("/tendance")
+    public ResponseEntity<Response> tendance(@NotNull Authentication authentication,
+                                             @RequestParam(value = "semaines", defaultValue = "12") int semaines,
+                                             HttpServletRequest request) {
+        return ResponseEntity.ok(getResponse(request,
+                Map.of("tendance", service.tendance(authentication.getName(), semaines)),
+                "Tendance des dernieres semaines", OK));
+    }
+
     /** Le meme barometre en classeur Excel. */
     @GetMapping("/export")
     public ResponseEntity<byte[]> exporter(@NotNull Authentication authentication,

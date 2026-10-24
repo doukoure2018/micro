@@ -1,5 +1,5 @@
 import { IResponse } from '@/interface/response';
-import { ExecutionAlerte, UsageSemaine } from '@/interface/usage-plateforme';
+import { ExecutionAlerte, ResumeSemaine, UsageSemaine } from '@/interface/usage-plateforme';
 import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
 import { HttpResponse } from '@angular/common/http';
@@ -202,6 +202,18 @@ import { TooltipModule } from 'primeng/tooltip';
                     <div class="border rounded p-2"><div class="text-xs text-gray-500 uppercase">Signalements de numéro</div><div class="text-xl font-bold">{{ d.signalements }}</div></div>
                 </div>
 
+                <h3 class="text-base font-semibold mt-5 mb-2">Tendance des dernières semaines</h3>
+                <div class="border rounded p-3" *ngIf="tendance().length > 1; else pasDeTendance">
+                    <p-chart type="bar" [data]="graphTendance()" [options]="optionsDeuxAxes" height="240px"></p-chart>
+                    <div class="text-xs text-gray-500 mt-2">
+                        Chaque semaine est figée dans la nuit du dimanche au lundi : les chiffres du passé ne bougent plus,
+                        même si une fiche est corrigée ou un dossier annulé après coup.
+                    </div>
+                </div>
+                <ng-template #pasDeTendance>
+                    <div class="text-sm text-gray-500">La tendance apparaîtra dès que deux semaines auront été figées.</div>
+                </ng-template>
+
                 <div class="text-sm text-gray-500 mt-5" *ngIf="d.precedente as pr">
                     Semaine précédente ({{ pr.debut | date: 'dd/MM' }} → {{ pr.fin | date: 'dd/MM' }}) :
                     {{ pr.connexions | number: '1.0-0' }} connexions, {{ pr.agentsActifs }} agents actifs,
@@ -220,6 +232,7 @@ export class UsagePlateformeComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
 
     data = signal<UsageSemaine | null>(null);
+    tendance = signal<ResumeSemaine[]>([]);
     loading = signal(false);
     exportEnCours = signal(false);
     jour = signal<string | undefined>(undefined);
@@ -261,6 +274,17 @@ export class UsagePlateformeComponent implements OnInit {
 
     ngOnInit(): void {
         this.charger();
+        this.chargerTendance();
+    }
+
+    chargerTendance(): void {
+        this.userService
+            .getTendanceUsage$(12)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (res: IResponse) => this.tendance.set((res.data as any)?.tendance ?? []),
+                error: () => this.tendance.set([])
+            });
     }
 
     charger(): void {
@@ -354,6 +378,22 @@ export class UsagePlateformeComponent implements OnInit {
                 { label: 'Individuels', data: d.jours.map((j) => j.dossiersIndividuels), backgroundColor: this.VERT_CLAIR },
                 { label: 'Fonctionnaires', data: d.jours.map((j) => j.dossiersFonctionnaire), backgroundColor: this.BLEU },
                 { label: 'Groupes', data: d.jours.map((j) => j.dossiersGroupe), backgroundColor: this.OR }
+            ]
+        };
+    }
+
+    graphTendance(): any {
+        const t = this.tendance();
+        const etiquette = (r: ResumeSemaine) => {
+            const d = new Date(r.debut);
+            return `${d.getDate()}/${d.getMonth() + 1}`;
+        };
+        return {
+            labels: t.map(etiquette),
+            datasets: [
+                { type: 'bar', label: 'Dossiers créés', data: t.map((r) => r.dossiersCrees), backgroundColor: this.VERT_CLAIR, yAxisID: 'y' },
+                { type: 'bar', label: 'Validés', data: t.map((r) => r.dossiersValides), backgroundColor: this.VERT, yAxisID: 'y' },
+                { type: 'line', label: 'Agents actifs', data: t.map((r) => r.agentsActifs), borderColor: this.OR, backgroundColor: this.OR, tension: 0.25, yAxisID: 'y2' }
             ]
         };
     }

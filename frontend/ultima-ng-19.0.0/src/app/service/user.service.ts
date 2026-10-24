@@ -1816,6 +1816,8 @@ export class UserService {
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/usage${jour ? '?jour=' + jour : ''}`).pipe(catchError(this.handleError));
     exportUsagePlateforme$ = (jour?: string) =>
         this.http.get(`${this.server}/ecredit/usage/export${jour ? '?jour=' + jour : ''}`, { responseType: 'blob', observe: 'response' });
+    getTendanceUsage$ = (semaines = 12) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/usage/tendance?semaines=${semaines}`).pipe(catchError(this.handleError));
 
     getHistoriqueAffectation$ = (codAgencia: string, numCredito: number) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/affectations/${codAgencia}/${numCredito}/historique`).pipe(catchError(this.handleError));
