@@ -591,7 +591,8 @@ public class RapportMensuelService {
     static AgregatDto agreger(String niveau, Long id, String libelle, Long parentId, List<LigneDto> lignes,
                               List<RubriqueDto> saisies, List<RubriqueDto> calculs, int nbPointsService) {
         AgregatDto a = AgregatDto.builder().niveau(niveau).id(id).libelle(libelle).parentId(parentId)
-                .nbPointsService(nbPointsService).build();
+                .nbPointsService(nbPointsService)
+                .nbSansRapport(Math.max(0, nbPointsService - lignes.size())).build();
         for (RubriqueDto r : saisies) {
             BigDecimal somme = null, sommeSaf = null;
             int n = 0;

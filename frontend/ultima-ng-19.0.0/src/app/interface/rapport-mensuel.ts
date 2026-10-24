@@ -117,6 +117,8 @@ export interface AgregatRapport {
     nbRenvoyes: number;
     nbConsolides: number;
     nbEcarts: number;
+    /** Points de service sans aucun rapport pour le mois. */
+    nbSansRapport: number;
     valeurs: Record<string, number | null>;
     valeursSaf: Record<string, number>;
 }

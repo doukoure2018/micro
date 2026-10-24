@@ -70,8 +70,9 @@ interface GroupeAgence {
             </div>
 
             <!-- Avancement du mois -->
-            <div class="grid grid-cols-3 md:grid-cols-7 gap-2 mb-4" *ngIf="data()?.total as t">
+            <div class="grid grid-cols-3 md:grid-cols-8 gap-2 mb-4" *ngIf="data()?.total as t">
                 <div class="border rounded p-2"><div class="text-xs text-gray-500 uppercase">Points de service</div><div class="text-xl font-bold">{{ t.nbPointsService }}</div></div>
+                <div class="border rounded p-2" pTooltip="Points de service pour lesquels aucun rapport n'existe ce mois-ci : jamais ouvert par l'agence, ni repris d'un fichier"><div class="text-xs text-gray-500 uppercase">Sans rapport</div><div class="text-xl font-bold" [class.text-gray-400]="!t.nbSansRapport" [class.text-orange-600]="t.nbSansRapport > 0">{{ t.nbSansRapport }}</div></div>
                 <div class="border rounded p-2"><div class="text-xs text-gray-500 uppercase">Complets</div><div class="text-xl font-bold" [class.text-green-700]="t.nbComplets === t.nbPointsService">{{ t.nbComplets }}</div></div>
                 <div class="border rounded p-2"><div class="text-xs text-gray-500 uppercase">Soumis</div><div class="text-xl font-bold text-blue-700">{{ t.nbSoumis }}</div></div>
                 <div class="border rounded p-2"><div class="text-xs text-gray-500 uppercase">Validés</div><div class="text-xl font-bold text-green-700">{{ t.nbValides }}</div></div>
@@ -92,14 +93,14 @@ interface GroupeAgence {
                 <ng-container *ngFor="let bloc of blocsCartes()">
                     <div *ngIf="bloc.titre" class="flex items-center gap-3 mt-2 mb-2">
                         <h3 class="text-base font-semibold m-0">{{ bloc.titre }}</h3>
-                        <span class="text-xs text-gray-500">{{ bloc.agregat.nbComplets }}/{{ bloc.agregat.nbPointsService }} complets · {{ bloc.agregat.nbSoumis }} soumis · {{ bloc.agregat.nbValides }} validés · {{ bloc.agregat.nbConsolides }} consolidés<span *ngIf="bloc.agregat.nbEcarts"> · <span class="text-orange-600">{{ bloc.agregat.nbEcarts }} écart(s)</span></span></span>
+                        <span class="text-xs text-gray-500">{{ bloc.agregat.nbComplets }}/{{ bloc.agregat.nbPointsService }} complets · {{ bloc.agregat.nbSoumis }} soumis · {{ bloc.agregat.nbValides }} validés · {{ bloc.agregat.nbConsolides }} consolidés<span *ngIf="bloc.agregat.nbSansRapport"> · <span class="text-orange-600">{{ bloc.agregat.nbSansRapport }} sans rapport</span></span><span *ngIf="bloc.agregat.nbEcarts"> · <span class="text-orange-600">{{ bloc.agregat.nbEcarts }} écart(s)</span></span></span>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 mb-4">
                         <div *ngFor="let g of bloc.groupes" class="carte border rounded flex flex-col" [class.carte-alerte]="g.agregat.nbRenvoyes > 0" [class.carte-ok]="g.agregat.nbValides + g.agregat.nbConsolides === g.agregat.nbPointsService">
                             <div class="px-3 py-2 border-b bg-gray-50 flex items-start justify-between gap-2">
                                 <div class="min-w-0">
                                     <div class="font-semibold text-base truncate">{{ g.agregat.libelle }}</div>
-                                    <div class="text-xs text-gray-500">{{ g.agregat.nbPointsService }} PS · {{ g.agregat.nbComplets }} complets</div>
+                                    <div class="text-xs text-gray-500">{{ g.agregat.nbPointsService }} PS · {{ g.agregat.nbComplets }} complets<span *ngIf="g.agregat.nbSansRapport && g.agregat.nbSansRapport < g.agregat.nbPointsService"> · {{ g.agregat.nbSansRapport }} sans rapport</span></div>
                                 </div>
                                 <p-tag [value]="etatAgence(g)" [severity]="severiteAgence(g)"></p-tag>
                             </div>
@@ -912,21 +913,30 @@ export class RapportMensuelComponent implements OnInit, OnDestroy, AfterViewChec
         this.showFiche = true;
     }
 
+    /**
+     * Libellé d'état d'une agence. « Aucun rapport » quand rien n'existe pour le mois : ni ouvert
+     * par l'agence, ni repris d'un fichier — ce n'est pas une saisie en cours. Les rapports
+     * consolidés comptent comme clos même s'ils restent incomplets (reprise des classeurs 2026).
+     */
     etatAgence(g: GroupeAgence): string {
         const a = g.agregat;
+        if (a.nbPointsService > 0 && a.nbSansRapport === a.nbPointsService) return 'Aucun rapport';
         if (a.nbConsolides === a.nbPointsService) return 'Consolidée';
         if (a.nbValides + a.nbConsolides === a.nbPointsService) return 'Validée';
         if (a.nbRenvoyes > 0) return a.nbRenvoyes + ' renvoyé(s)';
         if (a.nbSoumis > 0) return a.nbSoumis + ' à vérifier';
+        if (a.nbConsolides > 0 && a.nbConsolides + a.nbSansRapport === a.nbPointsService) return a.nbSansRapport + ' sans rapport';
         return a.nbComplets === a.nbPointsService ? 'Complète, non soumise' : 'En saisie';
     }
 
     severiteAgence(g: GroupeAgence): 'secondary' | 'info' | 'success' | 'danger' | 'contrast' | 'warn' {
         const a = g.agregat;
+        if (a.nbPointsService > 0 && a.nbSansRapport === a.nbPointsService) return 'secondary';
         if (a.nbConsolides === a.nbPointsService) return 'contrast';
         if (a.nbValides + a.nbConsolides === a.nbPointsService) return 'success';
         if (a.nbRenvoyes > 0) return 'danger';
         if (a.nbSoumis > 0) return 'info';
+        if (a.nbConsolides > 0 && a.nbConsolides + a.nbSansRapport === a.nbPointsService) return 'warn';
         return a.nbComplets === a.nbPointsService ? 'warn' : 'secondary';
     }
 
