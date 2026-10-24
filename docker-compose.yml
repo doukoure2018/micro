@@ -277,6 +277,11 @@ services:
     environment:
       # Alertes portefeuille SAF (phase 3) : digests quotidiens + synthese PAR hebdo
       PORTEFEUILLE_ALERTES_ACTIVES: "true"
+      # Alerte « SAF indisponible » : depuis le 24/10/2026 elle part dans Slack et non plus par
+      # courriel. Valeurs : SLACK (defaut), EMAIL, SLACK_ET_EMAIL. Le webhook est un secret et
+      # vient de .env.prod ; sans lui, l'alerte ne part nulle part et le journal le dit.
+      SAF_SANTE_CANAL: ${SAF_SANTE_CANAL:-SLACK}
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
       # Synthese du matin aux DA/DR (jours ouvres) : un point de service passe en rouge, et l'objet le
       # mentionne, des que ses impayes du jour atteignent l'un des deux seuils (nombre OU montant GNF).
       PORTEFEUILLE_ALERTES_SEUIL_IMPAYES_NB: "5"
