@@ -370,6 +370,14 @@ export class AppMenu {
                 routerLink: ['/dashboards/rapport-activite']
             });
         }
+        // Contacts verifies des agents (V173) : le DA relance et saisit, les niveaux au-dessus suivent.
+        if (['DA', 'RA', 'DR', 'DG', 'SUPER_ADMIN'].includes(this.role || '') || this.estManager('DE') || this.estManager('DSIG')) {
+            items.push({
+                label: 'Contacts des agents',
+                icon: 'pi pi-fw pi-id-card',
+                routerLink: ['/dashboards/contacts-equipe']
+            });
+        }
         // Appreciation des agents a partir de leur portefeuille (V164) : DE, DG, DR (sa delegation).
         if (['DR', 'DG', 'SUPER_ADMIN'].includes(this.role || '') || this.estManager('DE')) {
             items.push({

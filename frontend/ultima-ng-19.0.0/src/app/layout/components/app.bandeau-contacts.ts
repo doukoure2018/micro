@@ -24,6 +24,7 @@ import { ButtonModule } from 'primeng/button';
             <span class="texte">
                 <ng-container *ngIf="p.emailEnEchec">Vos alertes ne vous parviennent pas : votre adresse e-mail est en échec.</ng-container>
                 <ng-container *ngIf="!p.emailEnEchec && !p.telephone">Votre numéro de téléphone n'est pas enregistré : vous ne recevrez aucune alerte par SMS.</ng-container>
+                <ng-container *ngIf="!p.emailEnEchec && p.telephone && p.aconfirmer">Un contact saisi par votre directeur d'agence attend votre confirmation.</ng-container>
             </span>
             <a routerLink="/dashboards/mon-profil" class="lien">Corriger maintenant</a>
             <button type="button" class="fermer" (click)="masquer()" title="Masquer jusqu'à la prochaine connexion"><i class="pi pi-times"></i></button>

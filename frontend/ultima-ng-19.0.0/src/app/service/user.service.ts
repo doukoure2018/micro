@@ -80,6 +80,11 @@ export class UserService {
     confirmerCodeContact$ = (canal: 'EMAIL' | 'SMS', code: string): Observable<IResponse> =>
         this.http.post<IResponse>(`${this.server}/user/profil/contacts/confirmation`, { canal, code }).pipe(catchError(this.handleError));
 
+    contactsEquipe$ = (): Observable<IResponse> => this.http.get<IResponse>(`${this.server}/user/profil/contacts/equipe`).pipe(catchError(this.handleError));
+
+    saisirContactAgent$ = (agentUserId: number, canal: 'EMAIL' | 'SMS', valeur: string): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/user/profil/contacts/equipe/saisie`, { agentUserId, canal, valeur }).pipe(catchError(this.handleError));
+
     profile$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/user/profile`).pipe(tap(console.log), catchError(this.handleError));
 
     getAllCreditos$ = (codCliente: string) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/seachCreditos/${codCliente}`).pipe(tap(console.log), catchError(this.handleError));

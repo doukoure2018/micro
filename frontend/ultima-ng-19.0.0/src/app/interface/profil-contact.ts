@@ -33,11 +33,58 @@ export interface ProfilContact {
     ancienEmail?: string;
     ancienEmailExpireAt?: string;
 
+    /** Contact saisi par le directeur d'agence, en attente de confirmation. */
+    emailSaisiPar?: string;
+    emailSaisiAt?: string;
+    telephoneSaisiPar?: string;
+    telephoneSaisiAt?: string;
+
     demandeEmail?: DemandeEnCours;
     demandeTelephone?: DemandeEnCours;
 
-    /** Calculé par le serveur : adresse en échec, ou numéro absent. */
+    /** Calculé par le serveur : adresse en échec, numéro absent, ou contact à confirmer. */
     acorriger: boolean;
+    /** Contact posé par le directeur d'agence, que l'agent doit encore prouver. */
+    aconfirmer: boolean;
+}
+
+/** Une ligne du suivi des contacts de l'équipe (V173). */
+export interface EquipeContact {
+    userId: number;
+    nom: string;
+    role?: string;
+    pointVente?: string;
+    agence?: string;
+    delegation?: string;
+
+    email: string;
+    emailEnEchec: boolean;
+    emailVerifie: boolean;
+    emailSaisiPar?: string;
+
+    telephone?: string;
+    telephoneVerifie: boolean;
+    telephoneSaisiPar?: string;
+
+    derniereConnexion?: string;
+    atraiter: boolean;
+}
+
+export interface IndicateursContacts {
+    libelle?: string;
+    nbAgents: number;
+    nbEmailEnEchec: number;
+    nbSansTelephone: number;
+    nbAconfirmer: number;
+    nbContactsVerifies: number;
+}
+
+export interface EquipeContacts {
+    niveau: 'AGENCE' | 'DELEGATION' | 'RESEAU';
+    peutSaisir: boolean;
+    indicateurs: IndicateursContacts;
+    synthese: IndicateursContacts[];
+    lignes: EquipeContact[];
 }
 
 export interface DemandeCode {

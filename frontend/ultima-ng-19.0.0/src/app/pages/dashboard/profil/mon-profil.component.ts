@@ -48,6 +48,9 @@ import { TooltipModule } from 'primeng/tooltip';
                     <div class="font-semibold text-orange-700 mb-1"><i class="pi pi-exclamation-triangle mr-2"></i>Vos alertes ne vous parviennent pas</div>
                     <div class="text-sm" *ngIf="p.emailEnEchec">Votre adresse e-mail est en échec : les messages envoyés à cette adresse reviennent. Corrigez-la ci-dessous.</div>
                     <div class="text-sm" *ngIf="!p.telephone">Aucun numéro de téléphone n'est enregistré : ajoutez-le pour recevoir les alertes par SMS.</div>
+                    <div class="text-sm" *ngIf="p.aconfirmer">
+                        Un contact a été saisi pour vous par votre directeur d'agence. Confirmez-le pour qu'il devienne valable.
+                    </div>
                 </div>
 
                 <!-- Identité, en lecture seule -->
@@ -80,6 +83,10 @@ import { TooltipModule } from 'primeng/tooltip';
                             <div class="text-xs text-gray-500 mt-2" *ngIf="p.ancienEmail">
                                 Votre ancienne adresse {{ p.ancienEmail }} ouvre encore votre session jusqu'au {{ p.ancienEmailExpireAt | date: 'dd/MM/yyyy' }}.
                             </div>
+                            <div class="text-xs text-orange-600 mt-2" *ngIf="p.emailSaisiPar && !p.emailVerifieAt">
+                                Saisie par {{ p.emailSaisiPar }} le {{ p.emailSaisiAt | date: 'dd/MM/yyyy' }} : à confirmer.
+                                <a class="text-primary cursor-pointer underline ml-1" (click)="confirmerExistant('EMAIL')">Recevoir le code ici</a>
+                            </div>
                             <div class="text-xs text-orange-600 mt-2" *ngIf="p.demandeEmail">
                                 Un code a été envoyé à {{ p.demandeEmail.destinationMasquee }}, valable jusqu'à {{ p.demandeEmail.expireAt | date: 'HH:mm' }}.
                             </div>
@@ -97,6 +104,10 @@ import { TooltipModule } from 'primeng/tooltip';
                             <div class="text-xs mt-1">
                                 <p-tag *ngIf="p.telephoneVerifieAt" severity="success" value="vérifié" styleClass="text-xs"></p-tag>
                                 <p-tag *ngIf="p.telephone && !p.telephoneVerifieAt" severity="warn" value="jamais vérifié" styleClass="text-xs"></p-tag>
+                            </div>
+                            <div class="text-xs text-orange-600 mt-2" *ngIf="p.telephoneSaisiPar && !p.telephoneVerifieAt">
+                                Saisi par {{ p.telephoneSaisiPar }} le {{ p.telephoneSaisiAt | date: 'dd/MM/yyyy' }} : à confirmer.
+                                <a class="text-primary cursor-pointer underline ml-1" (click)="confirmerExistant('SMS')">Recevoir le code ici</a>
                             </div>
                             <div class="text-xs text-orange-600 mt-2" *ngIf="p.demandeTelephone">
                                 Un code a été envoyé par SMS au {{ p.demandeTelephone.destinationMasquee }}, valable jusqu'à {{ p.demandeTelephone.expireAt | date: 'HH:mm' }}.
@@ -189,6 +200,21 @@ export class MonProfilComponent implements OnInit {
     fermer(): void {
         this.showDialog.set(false);
         this.envoi.set(false);
+    }
+
+    /**
+     * Confirmer le contact déjà en place, celui que le directeur d'agence a saisi : le code
+     * part à cette valeur, et la confirmation ne change rien d'autre que son état « vérifié ».
+     */
+    confirmerExistant(canal: CanalVerification): void {
+        const p = this.profil();
+        if (!p) return;
+        this.canal.set(canal);
+        this.etape.set('saisie');
+        this.destination = (canal === 'EMAIL' ? p.email : p.telephone) || '';
+        this.code = '';
+        this.showDialog.set(true);
+        this.demanderCode();
     }
 
     demanderCode(): void {
