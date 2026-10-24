@@ -213,6 +213,8 @@ public final class RapportMensuelDtos {
         private int nbRenvoyes;
         private int nbConsolides;
         private int nbEcarts;
+        /** Points de service du perimetre sans aucun rapport pour le mois (jamais ouvert, ni importe). */
+        private int nbSansRapport;
         /** code -> somme (MONTANT, NOMBRE) ou taux (TAUX ; TAUX_REMB = moyenne simple, comme le fichier). */
         @Builder.Default
         private Map<String, BigDecimal> valeurs = new LinkedHashMap<>();
