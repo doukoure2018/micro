@@ -163,7 +163,12 @@ public class UsagePlateformeRepository {
                 .single();
     }
 
-    /** Dossiers valides en derniere instance DANS la periode, et montant demande correspondant. */
+    /**
+     * Dossiers valides en derniere instance DANS la periode, et montant demande correspondant.
+     * Le compte porte sur TOUTES les validations ; le montant ne couvre que celles dont le
+     * dossier a ete chiffre (213 validations de la semaine du 19/10/2026 n'avaient pas de
+     * ligne dans {@code dossiers_credit}).
+     */
     public Object[] validesDansLaPeriode(LocalDateTime debut, LocalDateTime fin, Long delegationId) {
         return jdbcClient.sql(sql("""
                 SELECT count(DISTINCT h.demandeindividuel_id) AS dossiers,
@@ -345,7 +350,7 @@ public class UsagePlateformeRepository {
                     LEFT JOIN devices dv ON dv.user_id = u.user_id AND dv.created_at >= :debut AND dv.created_at < :fin
                     WHERE COALESCE(u.enabled, FALSE)
                     GROUP BY 1
-                ), dossiers AS (
+                ), dos AS (
                     SELECT di.delegation AS delegation_id, count(*) AS crees,
                            count(DISTINCT di.pos) AS ps_producteurs
                     FROM demandeindividuel di
@@ -369,12 +374,12 @@ public class UsagePlateformeRepository {
                 SELECT d.id, d.libele AS libelle,
                        COALESCE(c.comptes, 0) AS comptes, COALESCE(c.actifs, 0) AS actifs,
                        COALESCE(c.connexions, 0) AS connexions,
-                       COALESCE(do.crees, 0) AS crees, COALESCE(v.valides, 0) AS valides,
-                       COALESCE(do.ps_producteurs, 0) AS ps_producteurs, COALESCE(ps.ps_total, 0) AS ps_total,
+                       COALESCE(dos.crees, 0) AS crees, COALESCE(v.valides, 0) AS valides,
+                       COALESCE(dos.ps_producteurs, 0) AS ps_producteurs, COALESCE(ps.ps_total, 0) AS ps_total,
                        COALESCE(af.affectations, 0) AS affectations
                 FROM delegation d
                 LEFT JOIN comptes c ON c.delegation_id = d.id
-                LEFT JOIN dossiers do ON do.delegation_id = d.id
+                LEFT JOIN dos ON dos.delegation_id = d.id
                 LEFT JOIN valides v ON v.delegation_id = d.id
                 LEFT JOIN affect af ON af.delegation_id = d.id
                 LEFT JOIN ps ON ps.delegation_id = d.id

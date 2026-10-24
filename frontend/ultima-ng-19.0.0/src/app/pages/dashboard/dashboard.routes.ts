@@ -112,6 +112,11 @@ export default [
         loadComponent: () => import('./portefeuille/portefeuille-contentieux.component').then((c) => c.PortefeuilleContentieuxComponent)
     },
     {
+        path: 'usage-plateforme',
+        data: { breadcrumb: 'Usage de la plateforme' },
+        loadComponent: () => import('./usage/usage-plateforme.component').then((c) => c.UsagePlateformeComponent)
+    },
+    {
         path: 'portefeuille-scores',
         data: { breadcrumb: 'Appréciation des agents' },
         loadComponent: () => import('./portefeuille/portefeuille-scores.component').then((c) => c.PortefeuilleScoresComponent)
