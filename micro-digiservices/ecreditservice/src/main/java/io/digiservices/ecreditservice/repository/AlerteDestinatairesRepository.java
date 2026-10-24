@@ -89,6 +89,26 @@ public class AlerteDestinatairesRepository {
                 .list();
     }
 
+    /**
+     * Direction generale, Direction de l'exploitation et DSIG : destinataires du rapport
+     * hebdomadaire d'usage (V176, lot 3). La DE et la DSIG sont des MANAGER avec un service.
+     */
+    public List<Destinataire> directions() {
+        return jdbcClient.sql("""
+                SELECT DISTINCT u.user_id, u.email,
+                       TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,'')) AS nom
+                FROM users u
+                JOIN user_roles ur ON ur.user_id = u.user_id
+                JOIN roles r ON r.role_id = ur.role_id
+                WHERE COALESCE(u.enabled, FALSE) AND u.email IS NOT NULL AND u.email <> ''
+                  AND (r.name = 'DG'
+                       OR (r.name = 'MANAGER' AND UPPER(COALESCE(u.service, '')) IN ('DE', 'DSIG')))
+                """)
+                .query((rs, n) -> new Destinataire(rs.getString("email"), rs.getString("nom"),
+                        List.of(), rs.getLong("user_id"), null))
+                .list();
+    }
+
     /** DA avec e-mail : chacun porte les codes SAF des points de service de son agence. */
     public List<Destinataire> das() {
         return jdbcClient.sql("""

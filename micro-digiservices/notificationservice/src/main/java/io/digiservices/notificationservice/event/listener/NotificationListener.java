@@ -47,7 +47,7 @@ public class NotificationListener {
                         String.valueOf(data.get("sujet")),
                         String.valueOf(data.get("corpsHtml")));
             }
-            case PORTEFEUILLE_TT1_MENSUEL -> {
+            case PORTEFEUILLE_TT1_MENSUEL, USAGE_HEBDOMADAIRE -> {
                 @SuppressWarnings("unchecked")
                 var data = (java.util.Map<String, Object>) mapper.convertValue(
                         notification.getPayload().getData(), java.util.Map.class);
