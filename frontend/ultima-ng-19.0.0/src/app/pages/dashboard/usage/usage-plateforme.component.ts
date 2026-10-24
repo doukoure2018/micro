@@ -15,7 +15,7 @@ import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
 
 /**
- * Baromètre d'usage de digi (V174, lot 1). Sept familles d'indicateurs comptées par la
+ * Baromètre d'usage de digi (V175, lot 1). Sept familles d'indicateurs comptées par la
  * plateforme elle-même sur une semaine : adoption, couverture, activité crédit, fluidité du
  * circuit, suivi du portefeuille, alertes du portefeuille, qualité des données.
  *

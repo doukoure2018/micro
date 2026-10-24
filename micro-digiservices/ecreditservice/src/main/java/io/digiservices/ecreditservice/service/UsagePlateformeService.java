@@ -28,7 +28,7 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Barometre d'usage de digi (V174, lot 1) : ce que la plateforme compte d'elle-meme sur une
+ * Barometre d'usage de digi (V175, lot 1) : ce que la plateforme compte d'elle-meme sur une
  * semaine, en sept familles — adoption, couverture, activite credit, fluidite du circuit, suivi
  * du portefeuille, alertes du portefeuille, qualite des donnees.
  *
@@ -44,7 +44,7 @@ import java.util.Map;
 public class UsagePlateformeService {
 
     private static final Locale FR = Locale.FRENCH;
-    /** Le journal des alertes commence avec la V174 : avant, rien n'etait enregistre. */
+    /** Le journal des alertes commence avec la V175 : avant, rien n'etait enregistre. */
     private static final LocalDate DEBUT_JOURNAL_ALERTES = LocalDate.of(2026, 10, 24);
 
     private final UsagePlateformeRepository repository;

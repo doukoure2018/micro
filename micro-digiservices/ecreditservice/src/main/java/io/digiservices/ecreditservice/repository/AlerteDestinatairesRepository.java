@@ -17,7 +17,7 @@ public class AlerteDestinatairesRepository {
 
     /**
      * Destinataire d'une alerte. {@code userId} et {@code delegationId} ne servent pas a l'envoi
-     * mais au journal des alertes (V174) : ils permettent au barometre d'usage de compter les
+     * mais au journal des alertes (V175) : ils permettent au barometre d'usage de compter les
      * envois par role et par delegation.
      */
     public record Destinataire(String email, String nom, List<String> codesSaf, Long userId, Long delegationId) {

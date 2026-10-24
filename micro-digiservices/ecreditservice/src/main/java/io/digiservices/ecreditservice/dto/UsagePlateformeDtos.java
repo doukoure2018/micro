@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Barometre d'usage de digi (V174, lot 1) : ce que la plateforme compte d'elle-meme sur une
+ * Barometre d'usage de digi (V175, lot 1) : ce que la plateforme compte d'elle-meme sur une
  * semaine, en sept familles. Aucune saisie supplementaire, aucune declaration : tout vient des
  * traces du travail quotidien.
  */

@@ -23,7 +23,7 @@ import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 
 /**
- * Export Excel du barometre d'usage (V174) : une feuille de synthese, une par jour, une par
+ * Export Excel du barometre d'usage (V175) : une feuille de synthese, une par jour, une par
  * delegation, une pour les alertes.
  */
 public final class UsagePlateformeExcelUtils {

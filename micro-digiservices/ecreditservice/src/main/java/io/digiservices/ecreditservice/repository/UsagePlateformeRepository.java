@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Barometre d'usage (V174, lot 1) : les sept familles d'indicateurs, lues sur une periode
+ * Barometre d'usage (V175, lot 1) : les sept familles d'indicateurs, lues sur une periode
  * [debut, fin[ et, s'il y a lieu, sur une seule delegation.
  *
  * <p>Regle commune : {@code :delegationId} vaut NULL pour le reseau entier, et chaque requete

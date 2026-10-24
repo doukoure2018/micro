@@ -1,5 +1,5 @@
 -- =====================================================================================
--- V174 : baromètre d'usage de digi — lot 1, journal des alertes
+-- V175 : baromètre d'usage de digi — lot 1, journal des alertes
 -- Proposition DSIG du 24 octobre 2026 (artifact « Baromètre d'usage de digi dans le réseau »)
 -- =====================================================================================
 --

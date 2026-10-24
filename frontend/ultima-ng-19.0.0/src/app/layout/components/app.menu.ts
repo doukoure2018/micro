@@ -386,7 +386,7 @@ export class AppMenu {
                 routerLink: ['/dashboards/portefeuille-scores']
             });
         }
-        // Barometre d'usage de la plateforme (V174) : DG, DE, DSIG sur le reseau, DR sur sa delegation.
+        // Barometre d'usage de la plateforme (V175) : DG, DE, DSIG sur le reseau, DR sur sa delegation.
         if (['DR', 'DG', 'SUPER_ADMIN'].includes(this.role || '') || this.estManager('DE') || this.estManager('DSIG')) {
             items.push({
                 label: 'Usage de la plateforme',

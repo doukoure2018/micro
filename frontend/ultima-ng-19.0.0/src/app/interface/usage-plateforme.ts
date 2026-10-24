@@ -1,4 +1,4 @@
-/** Baromètre d'usage de digi (V174, lot 1) : ce que la plateforme compte d'elle-même sur une semaine. */
+/** Baromètre d'usage de digi (V175, lot 1) : ce que la plateforme compte d'elle-même sur une semaine. */
 
 export interface JourUsage {
     jour: string;

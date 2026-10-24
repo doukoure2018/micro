@@ -6,7 +6,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 /**
- * Journal des alertes (V174) : trace durable de ce que le planificateur publie, pour que le
+ * Journal des alertes (V175) : trace durable de ce que le planificateur publie, pour que le
  * barometre d'usage puisse en rendre compte. Le journal du conteneur, lui, disparait a chaque
  * deploiement — le detail du premier envoi reel du 24/10/2026 a ete perdu de cette facon.
  *

@@ -24,7 +24,7 @@ import static io.digiservices.ecreditservice.utils.RequestUtils.getResponse;
 import static org.springframework.http.HttpStatus.OK;
 
 /**
- * Barometre d'usage de digi (V174, lot 1). Reserve a la DG, la DE, la DSIG et aux DR ; le
+ * Barometre d'usage de digi (V175, lot 1). Reserve a la DG, la DE, la DSIG et aux DR ; le
  * perimetre et les montants sont decides par le service.
  */
 @RestController
