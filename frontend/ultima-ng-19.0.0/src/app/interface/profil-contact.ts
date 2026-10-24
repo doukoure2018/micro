@@ -33,6 +33,11 @@ export interface ProfilContact {
     ancienEmail?: string;
     ancienEmailExpireAt?: string;
 
+    /** Le compte doit corriger son adresse ET son numéro avant de pouvoir travailler (V174). */
+    correctionObligatoire: boolean;
+    emailAverifier: boolean;
+    telephoneAverifier: boolean;
+
     /** Contact saisi par le directeur d'agence, en attente de confirmation. */
     emailSaisiPar?: string;
     emailSaisiAt?: string;

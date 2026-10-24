@@ -1811,6 +1811,12 @@ export class UserService {
     recalculerScoresAgents$ = () => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/portefeuille/scores/recalculer`, {}).pipe(catchError(this.handleError));
     exportScoresAgents$ = () => this.http.get(`${this.server}/ecredit/portefeuille/scores/export`, { responseType: 'blob', observe: 'response' });
 
+    // Barometre d'usage de la plateforme (V174, lot 1) : DG, DE, DSIG et DR.
+    getUsagePlateforme$ = (jour?: string) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/usage${jour ? '?jour=' + jour : ''}`).pipe(catchError(this.handleError));
+    exportUsagePlateforme$ = (jour?: string) =>
+        this.http.get(`${this.server}/ecredit/usage/export${jour ? '?jour=' + jour : ''}`, { responseType: 'blob', observe: 'response' });
+
     getHistoriqueAffectation$ = (codAgencia: string, numCredito: number) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/affectations/${codAgencia}/${numCredito}/historique`).pipe(catchError(this.handleError));
 

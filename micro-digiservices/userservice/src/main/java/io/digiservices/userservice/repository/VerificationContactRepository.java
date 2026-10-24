@@ -33,6 +33,7 @@ public class VerificationContactRepository {
     private static final String PROFIL = """
             SELECT u.user_id, u.first_name, u.last_name, u.email, u.phone, u.service,
                    COALESCE(u.email_en_echec, FALSE) AS email_en_echec,
+                   COALESCE(u.contacts_a_corriger, FALSE) AS contacts_a_corriger,
                    u.email_verifie_at, u.phone_verifie_at,
                    u.ancien_email, u.ancien_email_expire_at,
                    u.email_saisi_at, u.phone_saisi_at,
@@ -62,6 +63,7 @@ public class VerificationContactRepository {
                         .delegation(rs.getString("delegation"))
                         .email(rs.getString("email"))
                         .emailEnEchec(rs.getBoolean("email_en_echec"))
+                        .correctionObligatoire(rs.getBoolean("contacts_a_corriger"))
                         .emailVerifieAt(rs.getObject("email_verifie_at", OffsetDateTime.class))
                         .telephone(rs.getString("phone"))
                         .telephoneVerifieAt(rs.getObject("phone_verifie_at", OffsetDateTime.class))
@@ -179,6 +181,20 @@ public class VerificationContactRepository {
                          WHERE user_id = :userId
                         """)
                 .param("userId", userId).param("email", nouvelEmail).param("jours", graceJours).update();
+    }
+
+    /**
+     * Leve l'obligation de correction des que l'adresse ET le numero sont prouves (V174).
+     * Appele apres chaque verification : tant qu'il manque l'un des deux, rien ne change.
+     */
+    public void leverObligationSiComplet(Long userId) {
+        jdbcClient.sql("""
+                        UPDATE users SET contacts_a_corriger = FALSE
+                         WHERE user_id = :userId
+                           AND contacts_a_corriger
+                           AND email_verifie_at IS NOT NULL
+                           AND phone_verifie_at IS NOT NULL
+                        """).param("userId", userId).update();
     }
 
     /** Role, service et rattachement du demandeur : de quoi borner ce qu'il voit. */

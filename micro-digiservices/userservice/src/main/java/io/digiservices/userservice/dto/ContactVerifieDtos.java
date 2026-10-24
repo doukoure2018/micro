@@ -46,6 +46,12 @@ public final class ContactVerifieDtos {
         private String ancienEmail;
         private OffsetDateTime ancienEmailExpireAt;
 
+        /**
+         * Le compte doit corriger son adresse ET son numero avant de pouvoir travailler (V174) :
+         * il est conduit a cette page a la connexion et n'en sort qu'une fois les deux prouves.
+         */
+        private boolean correctionObligatoire;
+
         /** Contact saisi par le directeur d'agence, en attente de confirmation par l'agent (V173). */
         private String emailSaisiPar;
         private OffsetDateTime emailSaisiAt;
@@ -67,6 +73,15 @@ public final class ContactVerifieDtos {
             return emailEnEchec
                     || telephone == null || telephone.isBlank()
                     || aConfirmer();
+        }
+
+        /** Ce qu'il reste a faire pour lever l'obligation. */
+        public boolean isEmailAverifier() {
+            return emailVerifieAt == null;
+        }
+
+        public boolean isTelephoneAverifier() {
+            return telephoneVerifieAt == null;
         }
 
         /** Contact pose par le directeur d'agence, que l'agent doit encore prouver. */

@@ -235,6 +235,8 @@ public class VerificationContactService {
             repository.appliquerNouveauTelephone(userId, demande.destination());
         }
         repository.marquerVerifiee(demande.id());
+        // L'obligation tombe d'elle-meme quand l'adresse et le numero sont tous deux prouves.
+        repository.leverObligationSiComplet(userId);
         log.info("[CONTACT] utilisateur {} : {} verifie", userId, canal);
 
         ProfilContactDto profil = profil(userUuid);

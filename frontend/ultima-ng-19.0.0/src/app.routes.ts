@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { AppLayout } from '@/layout/components/app.layout';
 import { AuthGuard } from '@/service/auth.guard';
+import { ContactsObligatoiresGuard } from '@/service/contacts-obligatoires.guard';
 
 export const appRoutes: Routes = [
     {
@@ -21,6 +22,9 @@ export const appRoutes: Routes = [
             {
                 path: 'dashboards',
                 data: { breadcrumb: 'Dashboard' },
+                // Contacts en echec : l'utilisateur est conduit a « Mon profil » et n'en sort
+                // qu'une fois son adresse et son numero verifies (V174).
+                canActivate: [ContactsObligatoiresGuard],
                 loadChildren: () => import('@/pages/dashboard/dashboard.routes')
             },
             {
