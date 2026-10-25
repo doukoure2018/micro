@@ -62,6 +62,7 @@ public class CreditNegatifService {
     private final AlerteJournalRepository journal;
     private final ApplicationEventPublisher publisher;
     private final UserClient userClient;
+    private final HabilitationService habilitations;
 
     @Value("${credit.negatif.actif:true}")
     private boolean actif;
@@ -75,17 +76,19 @@ public class CreditNegatifService {
     // ==================== Page reservee au service DSIG (lot 2) ====================
 
     /**
-     * Le compte doit appartenir au service DSIG, ou etre administrateur. Les credits negatifs
-     * sont une anomalie technique : ni le reseau ni la direction d'exploitation n'ont a les voir.
+     * Le compte doit porter la rubrique des credits negatifs (V178). Avant ce controle, la page
+     * acceptait tout role dont le service etait DSIG, alors que le menu exigeait MANAGER : deux
+     * regles pour le meme ecran. La question est desormais posee au seul porte-cles.
+     *
+     * <p>Les credits negatifs sont une anomalie technique : ni le reseau ni la direction
+     * d'exploitation n'ont a les voir. Apres la bascule, la rubrique n'ira qu'au departement
+     * operationnel et au responsable du service.</p>
      */
     private User verifierDsig(String uuid) {
+        habilitations.exiger(uuid, HabilitationService.CREDITS_NEGATIFS);
         User user = userClient.getUserByUuid(uuid);
         if (user == null) {
             throw new ApiException("Utilisateur non identifie");
-        }
-        boolean dsig = "DSIG".equalsIgnoreCase(user.getService() == null ? "" : user.getService().trim());
-        if (!dsig && !"SUPER_ADMIN".equals(user.getRole())) {
-            throw new ApiException("Page reservee au service DSIG");
         }
         return user;
     }
