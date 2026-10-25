@@ -1894,6 +1894,8 @@ export class UserService {
 
     // Habilitations par departement (V178) : le porte-cles du compte connecte.
     getHabilitations$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/habilitations/moi`).pipe(catchError(this.handleError));
+    // Etat du jour de la plateforme (lot 3) : poste de supervision de la DSIG.
+    getEtatDuJour$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/usage/etat-du-jour`).pipe(catchError(this.handleError));
     getMatriceHabilitations$ = (service?: string) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/habilitations/matrice${service ? '?service=' + encodeURIComponent(service) : ''}`).pipe(catchError(this.handleError));
     reglerHabilitation$ = (departementId: number, rubrique: string, accorde: boolean) =>
