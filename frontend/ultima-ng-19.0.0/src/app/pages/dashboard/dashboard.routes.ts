@@ -114,6 +114,12 @@ export default [
         loadComponent: () => import('./portefeuille/portefeuille-contentieux.component').then((c) => c.PortefeuilleContentieuxComponent)
     },
     {
+        path: 'habilitations',
+        canActivate: [HabilitationGuard],
+        data: { breadcrumb: 'Habilitations par département', exigeReglage: true },
+        loadComponent: () => import('./habilitations/habilitations.component').then((c) => c.HabilitationsComponent)
+    },
+    {
         path: 'credits-negatifs',
         canActivate: [HabilitationGuard],
         data: { breadcrumb: 'Crédits négatifs', rubrique: 'CREDITS_NEGATIFS' },

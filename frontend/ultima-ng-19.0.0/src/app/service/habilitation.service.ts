@@ -13,7 +13,8 @@ const VIDE: Habilitations = {
     accueil: null,
     parDepartementActif: false,
     rubriques: [],
-    aPlacer: false
+    aPlacer: false,
+    peutReglerLaMatrice: false
 };
 
 /**

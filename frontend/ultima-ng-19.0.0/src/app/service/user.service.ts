@@ -1894,6 +1894,12 @@ export class UserService {
 
     // Habilitations par departement (V178) : le porte-cles du compte connecte.
     getHabilitations$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/habilitations/moi`).pipe(catchError(this.handleError));
+    getMatriceHabilitations$ = (service?: string) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/habilitations/matrice${service ? '?service=' + encodeURIComponent(service) : ''}`).pipe(catchError(this.handleError));
+    reglerHabilitation$ = (departementId: number, rubrique: string, accorde: boolean) =>
+        <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/habilitations/matrice`, { departementId, rubrique, accorde }).pipe(catchError(this.handleError));
+    basculerHabilitations$ = (actif: boolean) =>
+        <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/habilitations/bascule?actif=${actif}`, {}).pipe(catchError(this.handleError));
     getDepartementDuCompte$ = (userId: number) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/habilitations/comptes/${userId}/departement`).pipe(catchError(this.handleError));
     affecterDepartementHabilitation$ = (userId: number, departementId: number | null) =>
