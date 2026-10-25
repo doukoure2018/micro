@@ -273,6 +273,48 @@ public class PortefeuilleRepository {
                         aujourdhui)));
     }
 
+    private static final String SQL_CREDITS_NEGATIFS = """
+            SELECT cr.COD_AGENCIA, ag.DES_AGENCIA, cr.NUM_CREDITO, cr.COD_CLIENTE, c.NOM_CLIENTE,
+                   cr.TIP_CREDITO, cr.MON_CREDITO, cr.MON_SALDO, cr.FEC_APERTURA, cr.FEC_VENCIMIENTO,
+                   cr.IND_ESTADO, cr.COD_EJECUTIVO
+            FROM PR.PR_CREDITOS cr
+            LEFT JOIN CL.CL_CLIENTES c
+                ON c.COD_EMPRESA = cr.COD_EMPRESA AND c.COD_CLIENTE = cr.COD_CLIENTE
+            LEFT JOIN CF.CF_AGENCIAS ag
+                ON ag.COD_EMPRESA = cr.COD_EMPRESA AND ag.COD_AGENCIA = cr.COD_AGENCIA
+            WHERE cr.MON_SALDO < 0
+            ORDER BY cr.MON_SALDO ASC
+            """;
+
+    /**
+     * Credits a solde negatif, lus dans la base de PRODUCTION (V177). La cible est forcee ici
+     * plutot que confiee a la liste des chemins : la surveillance tourne sans requete HTTP, et
+     * une lecture de la sauvegarde ne verrait pas l'imputation de ce matin.
+     */
+    public List<io.digiservices.clients.portefeuille.CreditNegatifDto> findCreditsNegatifs() {
+        io.digiservices.ebanking.config.SafRoutage.Cible avant =
+                io.digiservices.ebanking.config.SafRoutage.courante();
+        io.digiservices.ebanking.config.SafRoutage.forcer(
+                io.digiservices.ebanking.config.SafRoutage.Cible.PRODUCTION);
+        try {
+            return execute("portefeuille.creditsNegatifs", () -> primary.query(SQL_CREDITS_NEGATIFS,
+                    new MapSqlParameterSource(),
+                    (rs, n) -> new io.digiservices.clients.portefeuille.CreditNegatifDto(
+                            str(rs, "COD_AGENCIA"), str(rs, "DES_AGENCIA"), rs.getLong("NUM_CREDITO"),
+                            str(rs, "COD_CLIENTE"), str(rs, "NOM_CLIENTE"),
+                            (Integer) rs.getObject("TIP_CREDITO"),
+                            rs.getBigDecimal("MON_CREDITO"), rs.getBigDecimal("MON_SALDO"),
+                            dt(rs, "FEC_APERTURA"), dt(rs, "FEC_VENCIMIENTO"),
+                            str(rs, "IND_ESTADO"), str(rs, "COD_EJECUTIVO"))));
+        } finally {
+            if (avant == null) {
+                io.digiservices.ebanking.config.SafRoutage.effacer();
+            } else {
+                io.digiservices.ebanking.config.SafRoutage.forcer(avant);
+            }
+        }
+    }
+
     /** Echeances non payees tombant exactement a J+joursAvant (credits actifs). */
     public List<io.digiservices.clients.portefeuille.EcheanceAvenirDto> findEcheancesAvenir(int joursAvant) {
         MapSqlParameterSource p = new MapSqlParameterSource()

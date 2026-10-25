@@ -109,6 +109,25 @@ public class AlerteDestinatairesRepository {
                 .list();
     }
 
+    /**
+     * Comptes actifs du service DSIG, avec e-mail. Destinataires des alertes techniques qui ne
+     * concernent que l'informatique : credits a solde negatif (V177), et eux seuls — ce n'est pas
+     * une information de gestion pour le reseau.
+     */
+    public List<Destinataire> serviceDsig() {
+        return jdbcClient.sql("""
+                SELECT DISTINCT u.user_id, u.email,
+                       TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,'')) AS nom
+                FROM users u
+                WHERE UPPER(COALESCE(u.service, '')) = 'DSIG'
+                  AND COALESCE(u.enabled, FALSE)
+                  AND u.email IS NOT NULL AND u.email <> ''
+                """)
+                .query((rs, n) -> new Destinataire(rs.getString("email"), rs.getString("nom"),
+                        List.of(), rs.getLong("user_id"), null))
+                .list();
+    }
+
     /** DA avec e-mail : chacun porte les codes SAF des points de service de son agence. */
     public List<Destinataire> das() {
         return jdbcClient.sql("""
