@@ -17,13 +17,17 @@ import { catchError, map, of } from 'rxjs';
  */
 export const HabilitationGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
     const rubrique = route.data?.['rubrique'] as string | undefined;
-    if (!rubrique) {
+    const exigeReglage = route.data?.['exigeReglage'] === true;
+    if (!rubrique && !exigeReglage) {
         return true;
     }
     const habilitations = inject(HabilitationService);
     const router = inject(Router);
     return habilitations.charger$().pipe(
-        map((h) => (h.rubriques.includes(rubrique) ? true : router.createUrlTree(['/auth/access']))),
+        map((h) => {
+            const autorise = exigeReglage ? h.peutReglerLaMatrice : h.rubriques.includes(rubrique!);
+            return autorise ? true : router.createUrlTree(['/auth/access']);
+        }),
         catchError(() => of(true))
     );
 };

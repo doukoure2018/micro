@@ -699,6 +699,14 @@ export class AppMenu {
                 }
             );
         }
+        // Reglage des habilitations par departement (V179) : responsable de service et administrateur.
+        if (this.habilitations.porteClesCourant?.peutReglerLaMatrice) {
+            items.push({
+                label: 'Habilitations par département',
+                icon: 'pi pi-fw pi-key',
+                routerLink: ['/dashboards/habilitations']
+            });
+        }
         if (this.peut('ADMIN_OUTILS')) {
             items.push(
                 {
