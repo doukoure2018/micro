@@ -1883,6 +1883,9 @@ export class UserService {
 
     getPortefeuilleEcheancier$ = (codAgencia: string, numCredito: number) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/credits/${codAgencia}/${numCredito}/echeancier`).pipe(catchError(this.handleError));
+    // Cautions connues de digi pour un client SAF (lot 2 du 24/10/2026).
+    getCautionsClient$ = (codCliente: string) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/clients/${codCliente}/cautions`).pipe(catchError(this.handleError));
 
     getAAffecterDA$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/a-affecter-da`).pipe(catchError(this.handleError));
 

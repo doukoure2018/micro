@@ -14,6 +14,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import io.digiservices.ecreditservice.domain.Response;
 import io.digiservices.ecreditservice.exception.ApiException;
+import io.digiservices.ecreditservice.repository.CautionDigiRepository;
 import io.digiservices.ecreditservice.repository.PortefeuillePerimetreRepository;
 import io.digiservices.ecreditservice.service.PerimetreSafService;
 import io.digiservices.ecreditservice.service.PerimetreSafService.Perimetre;
@@ -55,6 +56,7 @@ public class PortefeuilleResource {
     private final EbankingPortefeuilleClient portefeuilleClient;
     private final UserClient userClient;
     private final PortefeuillePerimetreRepository perimetreRepository;
+    private final CautionDigiRepository cautionDigiRepository;
     private final PerimetreSafService perimetreSafService;
 
     @GetMapping("/agences")
@@ -97,6 +99,20 @@ public class PortefeuilleResource {
         return ResponseEntity.ok(getResponse(request,
                 Map.of("indicateurs", portefeuilleClient.getIndicateurs(codAgencia, statut, tranche, recherche)),
                 "Indicateurs du portefeuille", OK));
+    }
+
+    /**
+     * Cautions connues de digi pour un client SAF (lot 2 du 24/10/2026). Vide quand le credit n'a
+     * pas ete monte sur la plateforme ; « ambigu » quand le client porte plusieurs dossiers valides.
+     */
+    @GetMapping("/clients/{codCliente}/cautions")
+    public ResponseEntity<Response> cautionsClient(@NotNull Authentication authentication,
+                                                   @PathVariable("codCliente") String codCliente,
+                                                   HttpServletRequest request) {
+        var cautions = cautionDigiRepository.pourClient(codCliente);
+        java.util.Map<String, Object> corps = new java.util.LinkedHashMap<>();
+        corps.put("cautions", cautions);
+        return ResponseEntity.ok(getResponse(request, corps, "Cautions du client", OK));
     }
 
     @GetMapping("/credits/{codAgencia}/{numCredito}/echeancier")

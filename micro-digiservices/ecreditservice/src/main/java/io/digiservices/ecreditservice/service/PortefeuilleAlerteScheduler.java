@@ -9,6 +9,8 @@ import io.digiservices.ecreditservice.event.Event;
 import io.digiservices.ecreditservice.repository.AlerteDestinatairesRepository;
 import io.digiservices.ecreditservice.repository.AlerteDestinatairesRepository.Destinataire;
 import io.digiservices.ecreditservice.repository.AlerteJournalRepository;
+import io.digiservices.ecreditservice.repository.CautionDigiRepository;
+import io.digiservices.ecreditservice.repository.CautionDigiRepository.CautionsClient;
 import io.digiservices.ecreditservice.repository.AlerteSyntheseRepository;
 import io.digiservices.ecreditservice.service.AlerteSyntheseService.Synthese;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +25,9 @@ import java.text.NumberFormat;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.Locale;
@@ -65,6 +69,7 @@ public class PortefeuilleAlerteScheduler {
     private final AlerteSyntheseService syntheses;
     private final AlerteSyntheseRepository syntheseRepository;
     private final AlerteJournalRepository journal;
+    private final CautionDigiRepository cautions;
 
     @Value("${portefeuille.alertes.actives:false}")
     private boolean actives;
@@ -130,9 +135,14 @@ public class PortefeuilleAlerteScheduler {
             List<NouvelImpayeDto> impayes = portefeuilleClient.getNouveauxImpayes(1);
             log.info("[ALERTES] Digest quotidien : {} echeances a J+{}, {} nouveaux impayes",
                     echeances.size(), joursAvantEcheance, impayes.size());
+            // Les cautions connues de digi, lues une seule fois pour tous les clients du jour.
+            Set<String> clients = new LinkedHashSet<>();
+            echeances.forEach(e -> ajouter(clients, e.getCodCliente()));
+            impayes.forEach(i -> ajouter(clients, i.getCodCliente()));
+            Map<String, CautionsClient> cautionsDuJour = lireCautions(clients);
             int envoyes = 0;
             for (Destinataire d : destinataires.agentsCredit()) {
-                envoyes += envoyerDigest(d, "Votre point de service", echeances, impayes) ? 1 : 0;
+                envoyes += envoyerDigest(d, "Votre point de service", echeances, impayes, cautionsDuJour) ? 1 : 0;
             }
             log.info("[ALERTES] Digest quotidien : {} e-mails publies aux agents", envoyes);
             int[] directeurs = envoyerSynthesesDirecteurs(echeances, impayes);
@@ -210,8 +220,25 @@ public class PortefeuilleAlerteScheduler {
         return new int[]{da, dr, de};
     }
 
+    private static void ajouter(Set<String> clients, String code) {
+        if (code != null && !code.isBlank()) {
+            clients.add(code.trim());
+        }
+    }
+
+    /** Les cautions ne doivent jamais faire echouer le digest : sans elles, il part quand meme. */
+    private Map<String, CautionsClient> lireCautions(Set<String> clients) {
+        try {
+            return cautions.parClient(clients);
+        } catch (Exception e) {
+            log.warn("[ALERTES] Cautions digi indisponibles, digest envoye sans elles : {}", e.getMessage());
+            return Map.of();
+        }
+    }
+
     private boolean envoyerDigest(Destinataire d, String perimetre,
-                                  List<EcheanceAvenirDto> echeances, List<NouvelImpayeDto> impayes) {
+                                  List<EcheanceAvenirDto> echeances, List<NouvelImpayeDto> impayes,
+                                  Map<String, CautionsClient> cautionsDuJour) {
         List<EcheanceAvenirDto> mesEcheances = echeances.stream()
                 .filter(e -> d.codesSaf().contains(e.getCodAgencia())).toList();
         List<NouvelImpayeDto> mesImpayes = impayes.stream()
@@ -228,26 +255,30 @@ public class PortefeuilleAlerteScheduler {
         if (!mesImpayes.isEmpty()) {
             html.append("<h3 style='color:#B3261E'>").append(mesImpayes.size())
                     .append(" crédit(s) passé(s) en impayé hier</h3>");
+            List<NouvelImpayeDto> lignes = mesImpayes.stream().limit(MAX_LIGNES_EMAIL).toList();
             tableau(html, new String[]{"Point de service", "Client", "Téléphone", "N° crédit", "1re impayée",
                             "CRD (GNF)", "Impayé (GNF)"},
-                    mesImpayes.stream().limit(MAX_LIGNES_EMAIL).map(i -> new String[]{
+                    lignes.stream().map(i -> new String[]{
                             nvl(i.getDesAgencia()), nvl(i.getNomCliente()) + " (" + nvl(i.getCodCliente()) + ")",
                             telephone(i.getTelPrincipal(), i.getTelSecundario(), i.getTelOtro()),
                             String.valueOf(i.getNumCredito()), date(i.getDatPremiereImpayee()),
                             montant(i.getMonSaldo()), montant(i.getMntImpaye())}).toList(),
+                    lignes.stream().map(i -> caution(cautionsDuJour.get(i.getCodCliente()))).toList(),
                     mesImpayes.size());
         }
         if (!mesEcheances.isEmpty()) {
             html.append("<h3 style='color:#1E6B4F'>").append(mesEcheances.size())
                     .append(" échéance(s) à J+").append(joursAvantEcheance)
                     .append(" (à relancer)</h3>");
+            List<EcheanceAvenirDto> lignes = mesEcheances.stream().limit(MAX_LIGNES_EMAIL).toList();
             tableau(html, new String[]{"Point de service", "Client", "Téléphone", "N° crédit", "Échéance",
                             "Montant (GNF)"},
-                    mesEcheances.stream().limit(MAX_LIGNES_EMAIL).map(e -> new String[]{
+                    lignes.stream().map(e -> new String[]{
                             nvl(e.getDesAgencia()), nvl(e.getNomCliente()) + " (" + nvl(e.getCodCliente()) + ")",
                             telephone(e.getTelPrincipal(), e.getTelSecundario(), e.getTelOtro()),
                             String.valueOf(e.getNumCredito()), date(e.getFecCuota()),
                             montant(e.getMonCuota())}).toList(),
+                    lignes.stream().map(e -> caution(cautionsDuJour.get(e.getCodCliente()))).toList(),
                     mesEcheances.size());
         }
         html.append("<p style='color:#5C6B60;font-size:12px'>").append(perimetre)
@@ -339,6 +370,11 @@ public class PortefeuilleAlerteScheduler {
         for (String t : new String[]{principal, secondaire, autre}) {
             if (t != null && !t.isBlank()) {
                 String chiffres = t.replaceAll("[^0-9]", "");
+                // Les cautions sont souvent saisies avec l'indicatif (+224 62 ...) : on le retire
+                // pour afficher le numero comme on le compose en Guinee.
+                if (chiffres.length() == 12 && chiffres.startsWith("224")) {
+                    chiffres = chiffres.substring(3);
+                }
                 if (chiffres.length() == 9) {
                     return chiffres.substring(0, 3) + " " + chiffres.substring(3, 5) + " "
                             + chiffres.substring(5, 7) + " " + chiffres.substring(7);
@@ -349,19 +385,68 @@ public class PortefeuilleAlerteScheduler {
         return "—";
     }
 
+    /**
+     * Texte de la ligne « caution » placee sous un credit, ou null quand il n'y a rien a dire.
+     * Digi ne connait la caution que des credits montes sur la plateforme, et seulement quand le
+     * client n'a qu'un dossier valide : sinon on sait qu'il existe des cautions, pas lesquelles.
+     */
+    static String caution(CautionsClient c) {
+        if (c == null) {
+            return null;
+        }
+        if (c.ambigu()) {
+            return "Caution : plusieurs dossiers dans digi pour ce client, voir la plateforme";
+        }
+        if (c.cautions().isEmpty()) {
+            return null;
+        }
+        StringBuilder b = new StringBuilder("Caution : ");
+        for (int i = 0; i < c.cautions().size() && i < 2; i++) {
+            CautionDigiRepository.Caution p = c.cautions().get(i);
+            if (i > 0) {
+                b.append(" ; ");
+            }
+            b.append(p.nomComplet());
+            String tel = telephone(p.telephone(), null, null);
+            if (!"\u2014".equals(tel)) {
+                b.append(" \u2014 ").append(tel);
+            }
+        }
+        if (c.cautions().size() > 2) {
+            b.append(" ; ").append(c.cautions().size() - 2).append(" autre(s)");
+        }
+        b.append(" \u2014 dossier digi n\u00b0 ").append(c.demandeId());
+        if (c.dateDossier() != null) {
+            b.append(" du ").append(date(c.dateDossier()));
+        }
+        return b.toString();
+    }
+
     private static void tableau(StringBuilder html, String[] entetes, List<String[]> lignes, int total) {
+        tableau(html, entetes, lignes, null, total);
+    }
+
+    /** {@code cautions} porte, pour chaque ligne, la caution a afficher dessous, ou null. */
+    private static void tableau(StringBuilder html, String[] entetes, List<String[]> lignes,
+                                List<String> cautions, int total) {
         html.append("<table style='border-collapse:collapse;font-size:13px'>").append("<tr>");
         for (String e : entetes) {
             html.append("<th style='border:1px solid #D8DED8;padding:4px 8px;background:#EAF2ED;text-align:left'>")
                     .append(e).append("</th>");
         }
         html.append("</tr>");
-        for (String[] ligne : lignes) {
+        for (int l = 0; l < lignes.size(); l++) {
             html.append("<tr>");
-            for (String c : ligne) {
+            for (String c : lignes.get(l)) {
                 html.append("<td style='border:1px solid #D8DED8;padding:4px 8px'>").append(c).append("</td>");
             }
             html.append("</tr>");
+            String texteCaution = cautions == null || l >= cautions.size() ? null : cautions.get(l);
+            if (texteCaution != null) {
+                html.append("<tr><td colspan='").append(entetes.length)
+                        .append("' style='border:1px solid #D8DED8;padding:3px 8px;background:#F6F0DE;")
+                        .append("color:#8A6D20;font-size:12px'>").append(texteCaution).append("</td></tr>");
+            }
         }
         html.append("</table>");
         if (total > lignes.size()) {

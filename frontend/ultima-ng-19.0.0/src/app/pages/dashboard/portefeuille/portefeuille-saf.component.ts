@@ -477,9 +477,23 @@ import { Router } from '@angular/router';
             [style]="{ width: '760px' }"
             [closable]="true"
         >
-            <p class="m-0 mb-3 text-sm" *ngIf="state().creditSelectionne as c">
+            <p class="m-0 mb-2 text-sm" *ngIf="state().creditSelectionne as c">
                 <strong>{{ c.nomCliente }}</strong> ({{ c.codCliente }}) — {{ c.monCredito | number: '1.0-0' }} GNF, CRD {{ c.monSaldo | number: '1.0-0' }} GNF
             </p>
+            <div class="mb-3 text-sm border-l-4 border-amber-500 bg-amber-50 text-amber-800 px-3 py-2 rounded" *ngIf="state().cautions as ca">
+                <ng-container *ngIf="ca.ambigu">
+                    Plusieurs dossiers validés dans digi pour ce client : la caution de ce crédit précis ne peut pas être déterminée.
+                </ng-container>
+                <ng-container *ngIf="!ca.ambigu && ca.cautions?.length">
+                    <span class="font-medium">Caution(s) du dossier digi n° {{ ca.demandeId }}<span *ngIf="ca.dateDossier"> du {{ ca.dateDossier | date: 'dd/MM/yyyy' }}</span> :</span>
+                    <span *ngFor="let p of ca.cautions; let i = index">
+                        {{ i > 0 ? ' ; ' : ' ' }}{{ p.nom }} {{ p.prenom }}<span *ngIf="p.telephone"> — {{ p.telephone }}</span>
+                    </span>
+                </ng-container>
+                <ng-container *ngIf="!ca.ambigu && !ca.cautions?.length">
+                    Dossier digi n° {{ ca.demandeId }} : aucune caution saisie.
+                </ng-container>
+            </div>
             <p-table [value]="state().echeancier" [loading]="state().loadingEcheancier" responsiveLayout="scroll">
                 <ng-template pTemplate="header">
                     <tr>
@@ -543,6 +557,7 @@ export class PortefeuilleSafComponent implements OnInit {
         loading: boolean;
         showEcheancier: boolean;
         creditSelectionne: any | null;
+        cautions: any | null;
         echeancier: any[];
         loadingEcheancier: boolean;
         // TT1 (lot 1)
@@ -553,7 +568,7 @@ export class PortefeuilleSafComponent implements OnInit {
         // TT1 (lot 2)
         synthese: any[];
         loadingSyn: boolean;
-    }>({ agences: [], credits: [], indicateurs: null, page: null, loading: false, showEcheancier: false, creditSelectionne: null, echeancier: [], loadingEcheancier: false,
+    }>({ agences: [], credits: [], indicateurs: null, page: null, loading: false, showEcheancier: false, creditSelectionne: null, cautions: null, echeancier: [], loadingEcheancier: false,
          echeances: [], indEch: null, pageEch: null, loadingEch: false, synthese: [], loadingSyn: false });
 
     // ── TT1 (lot 1) : échéances de la période ──
@@ -1087,7 +1102,17 @@ ${avertissement ? `<div class="avert">${esc(avertissement)}</div>` : ''}
     }
 
     voirEcheancier(credit: any): void {
-        this.state.update((s) => ({ ...s, showEcheancier: true, creditSelectionne: credit, echeancier: [], loadingEcheancier: true }));
+        this.state.update((s) => ({ ...s, showEcheancier: true, creditSelectionne: credit, cautions: null, echeancier: [], loadingEcheancier: true }));
+        // Caution connue de digi : seulement pour les crédits montés sur la plateforme.
+        if (credit?.codCliente) {
+            this.userService
+                .getCautionsClient$(credit.codCliente)
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe({
+                    next: (r: IResponse) => this.state.update((s) => ({ ...s, cautions: (r.data as any)?.cautions ?? null })),
+                    error: () => this.state.update((s) => ({ ...s, cautions: null }))
+                });
+        }
         this.userService
             .getPortefeuilleEcheancier$(credit.codAgencia, credit.numCredito)
             .pipe(takeUntilDestroyed(this.destroyRef))
