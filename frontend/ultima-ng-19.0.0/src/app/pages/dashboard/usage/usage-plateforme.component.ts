@@ -1,3 +1,4 @@
+import { EtatDuJour, TravailDuJour } from '@/interface/etat-du-jour';
 import { IResponse } from '@/interface/response';
 import { ExecutionAlerte, ResumeSemaine, UsageSemaine } from '@/interface/usage-plateforme';
 import { UserService } from '@/service/user.service';
@@ -28,6 +29,140 @@ import { TooltipModule } from 'primeng/tooltip';
     providers: [MessageService],
     template: `
         <p-toast></p-toast>
+
+        <!-- Etat du jour (lot 3) : « est-ce que ca tourne ? », avant le barometre de la semaine -->
+        <div class="card" *ngIf="etat() as e">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+                <div>
+                    <h2 class="text-xl font-semibold m-0">État du jour</h2>
+                    <div class="text-sm text-gray-500">
+                        {{ e.jour | date: 'EEEE d MMMM y' }}, relevé à {{ e.heure }} GMT.
+                        <span *ngIf="e.saf.mention"> — {{ e.saf.mention }}.</span>
+                    </div>
+                </div>
+                <button pButton icon="pi pi-refresh" class="p-button-text" (click)="chargerEtat()" [loading]="chargementEtat()" pTooltip="Recharger l'état du jour"></button>
+            </div>
+
+            <!-- Ce qui ne va pas, en premier -->
+            <div *ngIf="e.travauxManquants || e.travauxEnEchec || e.envoisDoublons || !e.saf.joignable"
+                 class="border border-red-400 bg-red-50 text-red-900 rounded p-3 mb-3">
+                <div class="font-semibold mb-1">À regarder</div>
+                <ul class="m-0 pl-5 text-sm">
+                    <li *ngIf="e.travauxEnEchec">{{ e.travauxEnEchec }} traitement(s) en échec aujourd'hui.</li>
+                    <li *ngIf="e.travauxManquants">{{ e.travauxManquants }} traitement(s) attendu(s) n'ont pas tourné.</li>
+                    <li *ngIf="e.envoisDoublons">{{ e.envoisDoublons }} courriel(s) partis deux fois vers la même adresse.</li>
+                    <li *ngIf="!e.saf.joignable">SAF n'est pas joignable<ng-container *ngIf="e.saf.enRestauration"> : restauration en cours</ng-container>.</li>
+                </ul>
+            </div>
+            <div *ngIf="!e.travauxManquants && !e.travauxEnEchec && !e.envoisDoublons && e.saf.joignable"
+                 class="border border-green-400 bg-green-50 text-green-900 rounded p-3 mb-3 text-sm">
+                Tous les traitements attendus ont tourné, aucun courriel n'est parti deux fois, SAF répond.
+            </div>
+
+            <!-- Les travaux -->
+            <h3 class="text-base font-semibold mb-2">Traitements</h3>
+            <p-table [value]="e.travaux" styleClass="p-datatable-sm mb-4">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Traitement</th>
+                        <th>Attendu</th>
+                        <th>État</th>
+                        <th>Dernier passage</th>
+                        <th>Détail</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-t>
+                    <tr>
+                        <td>{{ t.libelle }}</td>
+                        <td class="text-sm text-gray-500">{{ t.attendu }}</td>
+                        <td>
+                            <p-tag [value]="libelleEtatTravail(t)" [severity]="severiteTravail(t.etat)"></p-tag>
+                        </td>
+                        <td class="text-sm">
+                            <ng-container *ngIf="t.quand">{{ t.quand | date: 'HH:mm' }}
+                                <span class="text-gray-500" *ngIf="t.dureeMs"> ({{ t.dureeMs }} ms)</span>
+                            </ng-container>
+                            <ng-container *ngIf="!t.quand">
+                                <span class="text-gray-500" *ngIf="t.dernierConnu">le {{ t.dernierConnu | date: 'dd/MM à HH:mm' }}</span>
+                                <span class="text-gray-400" *ngIf="!t.dernierConnu">jamais</span>
+                            </ng-container>
+                        </td>
+                        <td class="text-sm text-gray-600">{{ t.message || '—' }}</td>
+                    </tr>
+                </ng-template>
+            </p-table>
+
+            <!-- Les envois -->
+            <h3 class="text-base font-semibold mb-2">Courriels partis aujourd'hui</h3>
+            <p-table [value]="e.envois" styleClass="p-datatable-sm mb-4" *ngIf="e.envois.length">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Type</th>
+                        <th class="text-right">Envois</th>
+                        <th class="text-right">Destinataires</th>
+                        <th class="text-right">Objets</th>
+                        <th class="text-right">Doublons</th>
+                        <th>Plage</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-v>
+                    <tr [ngClass]="{ 'bg-red-50': v.anormal }">
+                        <td>{{ v.libelle }}</td>
+                        <td class="text-right">{{ v.envois }}</td>
+                        <td class="text-right">{{ v.destinataires }}</td>
+                        <td class="text-right">{{ v.sujets }}</td>
+                        <td class="text-right" [ngClass]="{ 'text-red-700 font-bold': v.anormal }">{{ v.doublons }}</td>
+                        <td class="text-sm text-gray-500">{{ v.premier | date: 'HH:mm' }} → {{ v.dernier | date: 'HH:mm' }}</td>
+                    </tr>
+                </ng-template>
+            </p-table>
+            <div class="text-sm text-gray-500 mb-4" *ngIf="!e.envois.length">Aucun courriel n'est parti aujourd'hui.</div>
+
+            <!-- Anomalies et flux -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="border rounded p-3">
+                    <div class="text-xs text-gray-500 uppercase">Crédits négatifs ouverts</div>
+                    <div class="text-2xl font-bold">{{ e.anomalies.creditsNegatifsOuverts }}</div>
+                    <div class="text-xs text-gray-500">{{ e.anomalies.creditsNegatifsDuJour }} relevé(s) aujourd'hui</div>
+                </div>
+                <div class="border rounded p-3">
+                    <div class="text-xs text-gray-500 uppercase">Adresses en échec</div>
+                    <div class="text-2xl font-bold">{{ e.anomalies.contactsEnEchec }}</div>
+                    <div class="text-xs text-gray-500">comptes à corriger</div>
+                </div>
+                <div class="border rounded p-3">
+                    <div class="text-xs text-gray-500 uppercase">Corrections en attente</div>
+                    <div class="text-2xl font-bold">{{ e.anomalies.correctionsEnAttente | number: '1.0-0' }}</div>
+                    <div class="text-xs text-gray-500">fiches personne physique</div>
+                </div>
+                <div class="border rounded p-3">
+                    <div class="text-xs text-gray-500 uppercase">Dossiers sans titulaire</div>
+                    <div class="text-2xl font-bold">{{ e.anomalies.dossiersSansTitulaire }}</div>
+                    <div class="text-xs text-gray-500">agent désactivé</div>
+                </div>
+                <div class="border rounded p-3">
+                    <div class="text-xs text-gray-500 uppercase">Dossiers en cours</div>
+                    <div class="text-2xl font-bold">{{ e.credit.enCours | number: '1.0-0' }}</div>
+                    <div class="text-xs text-gray-500">{{ e.credit.enAttenteDa }} chez le DA, {{ e.credit.enCorrection }} en correction</div>
+                </div>
+                <div class="border rounded p-3">
+                    <div class="text-xs text-gray-500 uppercase">Créés aujourd'hui</div>
+                    <div class="text-2xl font-bold">{{ e.credit.creesAujourdhui }}</div>
+                    <div class="text-xs text-gray-500">{{ e.credit.validesAujourdhui }} validés en dernière instance</div>
+                </div>
+                <div class="border rounded p-3">
+                    <div class="text-xs text-gray-500 uppercase">Connexions du jour</div>
+                    <div class="text-2xl font-bold">{{ e.connexions }}</div>
+                    <div class="text-xs text-gray-500">comptes connectés</div>
+                </div>
+                <div class="border rounded p-3">
+                    <div class="text-xs text-gray-500 uppercase">Annulations demandées</div>
+                    <div class="text-2xl font-bold">{{ e.credit.annulationsDemandees }}</div>
+                    <div class="text-xs text-gray-500">en attente du DA</div>
+                </div>
+            </div>
+        </div>
+
         <div class="card">
             <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
                 <div>
@@ -233,6 +368,9 @@ export class UsagePlateformeComponent implements OnInit {
 
     data = signal<UsageSemaine | null>(null);
     tendance = signal<ResumeSemaine[]>([]);
+    /** Lot 3 : l'etat du jour, affiche au-dessus du barometre. */
+    etat = signal<EtatDuJour | null>(null);
+    chargementEtat = signal(false);
     loading = signal(false);
     exportEnCours = signal(false);
     jour = signal<string | undefined>(undefined);
@@ -273,8 +411,65 @@ export class UsagePlateformeComponent implements OnInit {
     };
 
     ngOnInit(): void {
+        this.chargerEtat();
         this.charger();
         this.chargerTendance();
+    }
+
+    /**
+     * L'etat du jour. En cas d'echec, le bandeau reste absent sans message : le barometre
+     * en dessous doit rester lisible meme si la supervision n'est pas accessible au compte.
+     */
+    chargerEtat(): void {
+        this.chargementEtat.set(true);
+        this.userService
+            .getEtatDuJour$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (res: IResponse) => {
+                    this.etat.set(((res.data as any)?.etat ?? null) as EtatDuJour | null);
+                    this.chargementEtat.set(false);
+                },
+                error: () => {
+                    this.etat.set(null);
+                    this.chargementEtat.set(false);
+                }
+            });
+    }
+
+    libelleEtatTravail(t: TravailDuJour): string {
+        switch (t.etat) {
+            case 'FAIT':
+                return t.executions > 1 ? t.executions + ' passages' : 'Fait';
+            case 'INCOMPLET':
+                return (t.passagesFaits ?? 0) + ' sur ' + (t.passagesAttendus ?? 0);
+            case 'ECHEC':
+                return 'En échec';
+            case 'MANQUANT':
+                return "N'a pas tourné";
+            case 'A_VENIR':
+                return 'À venir';
+            case 'PAS_ATTENDU':
+                return 'Pas attendu aujourd’hui';
+            default:
+                return t.etat;
+        }
+    }
+
+    severiteTravail(etat: string): 'success' | 'warn' | 'danger' | 'info' | 'secondary' {
+        switch (etat) {
+            case 'FAIT':
+                return 'success';
+            case 'INCOMPLET':
+                return 'warn';
+            case 'ECHEC':
+            case 'MANQUANT':
+                return 'danger';
+            case 'A_VENIR':
+                return 'info';
+            default:
+                return 'secondary';
+        }
     }
 
     chargerTendance(): void {

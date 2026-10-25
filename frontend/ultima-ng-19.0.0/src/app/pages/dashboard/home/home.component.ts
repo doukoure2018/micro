@@ -1,7 +1,9 @@
 import { IUser } from '@/interface/user';
+import { HabilitationService } from '@/service/habilitation.service';
 import { UserService } from '@/service/user.service';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Router } from '@angular/router';
 import { AdminComponent } from '../admin/admin.component';
 import { AgentCreditComponent } from '../agent-credit/agent-credit.component';
 import { RespAgentComponent } from '../resp-agent/resp-agent.component';
@@ -49,9 +51,36 @@ export class HomeComponent {
     });
     private destroyRef = inject(DestroyRef);
     private userService = inject(UserService);
+    private habilitations = inject(HabilitationService);
+    private router = inject(Router);
 
     ngOnInit(): void {
+        this.ouvrirSurLEcranDuDepartement();
         this.loadUserProfile();
+    }
+
+    /**
+     * Accueil par departement (V178, lot 3). Un compte MANAGER de la DSIG n'avait aucun accueil
+     * declare et tombait sur le cas par defaut, c'est-a-dire la verification des documents,
+     * alors que les six autres directions ont chacune le leur. L'ecran d'accueil est desormais
+     * une donnee du departement, et non une branche de ce gabarit.
+     *
+     * <p>L'accueil est declare par departement et non par service : sans cela, le centre de
+     * validation atterrirait sur un ecran que la matrice ne lui accorde pas.</p>
+     */
+    private ouvrirSurLEcranDuDepartement(): void {
+        this.habilitations
+            .charger$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (h) => {
+                    const accueil = h.accueil;
+                    if (accueil && this.router.url.replace(/\/$/, '') === '/dashboards') {
+                        this.router.navigateByUrl(accueil);
+                    }
+                },
+                error: () => {}
+            });
     }
 
     // this load user informations
