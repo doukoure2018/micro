@@ -56,6 +56,7 @@ public class UsagePlateformeService {
     private final UsagePhotoRepository photos;
     private final UserClient userClient;
     private final HabilitationService habilitations;
+    private final SupervisionService supervision;
 
     /** Premiere semaine reprise a l'amorcage : le lundi 3 aout 2026, mois de bascule du reseau. */
     @Value("${usage.photo.reprise-depuis:2026-08-03}")
@@ -92,6 +93,19 @@ public class UsagePlateformeService {
         }
         throw new ApiException("Le barometre d'usage est reserve a la direction generale, "
                 + "a la Direction de l'exploitation, a la DSIG et aux directeurs regionaux");
+    }
+
+    /**
+     * L'etat du jour de la plateforme (lot 3), affiche au-dessus du barometre. Reserve aux
+     * comptes qui voient le reseau : le directeur regional, borne a sa delegation, n'a pas a
+     * suivre les traitements de la plateforme.
+     */
+    public java.util.Map<String, Object> etatDuJour(String uuid) {
+        Perimetre p = perimetreDe(uuid);
+        if (p.delegationId() != null) {
+            throw new ApiException("L'état du jour de la plateforme est réservé à la direction");
+        }
+        return supervision.etatDuJour();
     }
 
     /** Le barometre de la semaine qui contient {@code jour} (par defaut, la semaine en cours). */

@@ -47,6 +47,15 @@ public class UsagePlateformeResource {
     }
 
     /** Les dernieres semaines figees : courbes de tendance (lot 2). */
+    /** L'etat du jour : travaux, envois, SAF, anomalies et flux du credit (lot 3). */
+    @GetMapping("/etat-du-jour")
+    public ResponseEntity<Response> etatDuJour(@NotNull Authentication authentication,
+                                               HttpServletRequest request) {
+        return ResponseEntity.ok(getResponse(request,
+                Map.of("etat", service.etatDuJour(authentication.getName())),
+                "Etat du jour", OK));
+    }
+
     @GetMapping("/tendance")
     public ResponseEntity<Response> tendance(@NotNull Authentication authentication,
                                              @RequestParam(value = "semaines", defaultValue = "12") int semaines,
