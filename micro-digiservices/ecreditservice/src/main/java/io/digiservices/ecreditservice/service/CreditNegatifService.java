@@ -181,9 +181,12 @@ public class CreditNegatifService {
 
             int envoyes = 0;
             if (premierPassage) {
-                // Le stock existant entre comme deja connu : sans cela, le premier passage
-                // enverrait trente-sept lignes d'un coup, dont des apures de 2014.
-                log.info("[CREDIT NEGATIF] Premier passage : {} credit(s) enregistre(s) sans alerte", negatifs.size());
+                // Le stock existant entre comme deja connu, pour que les passages suivants ne
+                // signalent que le nouveau. La DSIG recoit tout de meme un etat des lieux : la
+                // mise en service ne doit pas etre muette alors que des credits attendent.
+                envoyes = alerterInventaire(negatifs);
+                log.info("[CREDIT NEGATIF] Premier passage : {} credit(s) enregistre(s), etat des lieux a {} compte(s)",
+                        negatifs.size(), envoyes);
             } else if (!nouveaux.isEmpty()) {
                 envoyes = alerter(nouveaux);
                 repository.marquerSignalees(idsNouveaux);
@@ -207,6 +210,83 @@ public class CreditNegatifService {
                 || List.of(etatsAlerte.toUpperCase().split(",")).contains(etat.isEmpty() ? "D" : etat);
         BigDecimal solde = c.getMonSaldo() == null ? BigDecimal.ZERO : c.getMonSaldo().abs();
         return etatSurveille && solde.compareTo(BigDecimal.valueOf(seuilGnf)) >= 0;
+    }
+
+    /**
+     * Etat des lieux envoye une seule fois, a la mise en service de la surveillance. Il reprend
+     * le stock par etat, puis detaille les credits en cours qui auraient declenche une alerte.
+     * Les passages suivants ne signalent que les credits apparus depuis.
+     */
+    private int alerterInventaire(List<CreditNegatifDto> tous) {
+        if (tous.isEmpty()) {
+            return 0;
+        }
+        List<Destinataire> dsig = destinataires.serviceDsig();
+        if (dsig.isEmpty()) {
+            log.warn("[CREDIT NEGATIF] Aucun compte DSIG avec e-mail : etat des lieux non envoye");
+            return 0;
+        }
+        String sujet = "Crédits négatifs SAF : état des lieux — " + tous.size() + " crédit(s)";
+        String corps = corpsInventaire(tous);
+        for (Destinataire d : dsig) {
+            publisher.publishEvent(new Event(EventType.PORTEFEUILLE_ALERTE, Map.of(
+                    "email", d.email(), "sujet", sujet, "corpsHtml", corps)));
+            journal.envoi("CREDIT_NEGATIF", "EMAIL", d.email(), d.userId(), "DSIG", null,
+                    sujet, tous.size());
+        }
+        return dsig.size();
+    }
+
+    private String corpsInventaire(List<CreditNegatifDto> tous) {
+        List<CreditNegatifDto> aSuivre = tous.stream().filter(this::aAlerter).toList();
+        BigDecimal total = tous.stream().map(c -> c.getMonSaldo() == null ? BigDecimal.ZERO : c.getMonSaldo())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        Map<String, long[]> parEtat = new LinkedHashMap<>();
+        for (CreditNegatifDto c : tous) {
+            long[] cumul = parEtat.computeIfAbsent(libelleEtat(c.getIndEstado()), k -> new long[2]);
+            cumul[0]++;
+            cumul[1] += c.getMonSaldo() == null ? 0L : c.getMonSaldo().longValue();
+        }
+
+        StringBuilder h = new StringBuilder();
+        h.append("<div style='font-family:Arial,sans-serif;color:#1F2921;font-size:14px'>")
+                .append("<h2 style='color:#1F6F4A;margin:0 0 4px'>Surveillance des crédits négatifs en service</h2>")
+                .append("<p style='color:#5C6B60;margin:0 0 14px'>Premier relevé de la base de production, le ")
+                .append(LocalDateTime.now().format(FMT_HEURE)).append(". ")
+                .append(tous.size()).append(" crédit(s) à solde négatif, pour ")
+                .append(montant(total)).append(" GNF au total.</p>");
+
+        h.append("<table style='border-collapse:collapse;font-size:13px;margin-bottom:18px'><tr>");
+        for (String e : new String[]{"État du crédit", "Nombre", "Solde cumulé (GNF)"}) {
+            h.append("<th style='border:1px solid #D8DED8;padding:4px 8px;background:#EAF2EC;text-align:left'>")
+                    .append(e).append("</th>");
+        }
+        h.append("</tr>");
+        for (Map.Entry<String, long[]> e : parEtat.entrySet()) {
+            h.append("<tr>").append(cell(e.getKey()))
+                    .append(cell(String.valueOf(e.getValue()[0])))
+                    .append(cell(montant(BigDecimal.valueOf(e.getValue()[1]))))
+                    .append("</tr>");
+        }
+        h.append("</table>");
+
+        if (aSuivre.isEmpty()) {
+            h.append("<p style='margin:0 0 14px'>Aucun crédit en cours au-delà de ").append(seuilGnf)
+                    .append(" GNF : rien ne demande une correction immédiate.</p>");
+        } else {
+            h.append("<h3 style='color:#B3261E;margin:0 0 6px'>").append(aSuivre.size())
+                    .append(" crédit(s) en cours à corriger</h3>")
+                    .append("<p style='color:#5C6B60;margin:0 0 10px'>Les autres états, apurés ou clos, ")
+                    .append("restent sur la page sans déclencher d'alerte.</p>")
+                    .append(tableau(aSuivre));
+        }
+
+        h.append("<p style='color:#5C6B60;font-size:12px;margin-top:14px'>")
+                .append("À partir de maintenant, seul un crédit négatif apparu depuis ce relevé donnera lieu ")
+                .append("à un courriel. La correction se fait dans SAF : digi lit la base, il n'y écrit pas. ")
+                .append("La situation complète, tous états confondus, est sur la page « Crédits négatifs » ")
+                .append("de la plateforme, avec l'export Excel.</p></div>");
+        return h.toString();
     }
 
     private int alerter(List<CreditNegatifDto> nouveaux) {
@@ -237,27 +317,7 @@ public class CreditNegatifService {
                 .append("<p style='color:#5C6B60;margin:0 0 14px'>Relevé dans la base de production le ")
                 .append(LocalDateTime.now().format(FMT_HEURE)).append(". Total : ")
                 .append(montant(total)).append(" GNF.</p>")
-                .append("<table style='border-collapse:collapse;font-size:13px'><tr>");
-        for (String e : new String[]{"Point de service", "Crédit", "Client", "Octroyé (GNF)",
-                "Solde (GNF)", "Ouvert le", "État", "Agent SAF"}) {
-            h.append("<th style='border:1px solid #D8DED8;padding:4px 8px;background:#FBECEA;text-align:left'>")
-                    .append(e).append("</th>");
-        }
-        h.append("</tr>");
-        for (CreditNegatifDto c : nouveaux) {
-            h.append("<tr>")
-                    .append(cell(nvl(c.getDesAgencia()) + " (" + nvl(c.getCodAgencia()) + ")"))
-                    .append(cell(String.valueOf(c.getNumCredito())))
-                    .append(cell(nvl(c.getNomCliente()) + " (" + nvl(c.getCodCliente()) + ")"))
-                    .append(cell(montant(c.getMonCredito())))
-                    .append("<td style='border:1px solid #D8DED8;padding:4px 8px;color:#B3261E;font-weight:bold'>")
-                    .append(montant(c.getMonSaldo())).append("</td>")
-                    .append(cell(date(c.getFecApertura())))
-                    .append(cell(libelleEtat(c.getIndEstado())))
-                    .append(cell(nvl(c.getCodEjecutivo())))
-                    .append("</tr>");
-        }
-        h.append("</table>")
+                .append(tableau(nouveaux))
                 .append("<p style='color:#5C6B60;font-size:12px;margin-top:14px'>")
                 .append("La correction se fait dans SAF : digi lit la base, il n'y écrit pas. ")
                 .append("La situation complète, tous états confondus, est sur la page « Crédits négatifs » ")
@@ -276,6 +336,31 @@ public class CreditNegatifService {
             case "", "D" -> "En cours";
             default -> "En cours (" + c + ")";
         };
+    }
+
+    /** Le detail ligne a ligne, commun a l'etat des lieux et aux alertes. */
+    private static String tableau(List<CreditNegatifDto> lignes) {
+        StringBuilder h = new StringBuilder("<table style='border-collapse:collapse;font-size:13px'><tr>");
+        for (String e : new String[]{"Point de service", "Crédit", "Client", "Octroyé (GNF)",
+                "Solde (GNF)", "Ouvert le", "État", "Agent SAF"}) {
+            h.append("<th style='border:1px solid #D8DED8;padding:4px 8px;background:#FBECEA;text-align:left'>")
+                    .append(e).append("</th>");
+        }
+        h.append("</tr>");
+        for (CreditNegatifDto c : lignes) {
+            h.append("<tr>")
+                    .append(cell(nvl(c.getDesAgencia()) + " (" + nvl(c.getCodAgencia()) + ")"))
+                    .append(cell(String.valueOf(c.getNumCredito())))
+                    .append(cell(nvl(c.getNomCliente()) + " (" + nvl(c.getCodCliente()) + ")"))
+                    .append(cell(montant(c.getMonCredito())))
+                    .append("<td style='border:1px solid #D8DED8;padding:4px 8px;color:#B3261E;font-weight:bold'>")
+                    .append(montant(c.getMonSaldo())).append("</td>")
+                    .append(cell(date(c.getFecApertura())))
+                    .append(cell(libelleEtat(c.getIndEstado())))
+                    .append(cell(nvl(c.getCodEjecutivo())))
+                    .append("</tr>");
+        }
+        return h.append("</table>").toString();
     }
 
     private static String cell(String v) {
