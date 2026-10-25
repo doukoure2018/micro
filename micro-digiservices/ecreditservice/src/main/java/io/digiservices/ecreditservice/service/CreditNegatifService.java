@@ -1,7 +1,14 @@
 package io.digiservices.ecreditservice.service;
 
 import io.digiservices.clients.EbankingPortefeuilleClient;
+import io.digiservices.clients.UserClient;
+import io.digiservices.clients.domain.User;
 import io.digiservices.clients.portefeuille.CreditNegatifDto;
+import io.digiservices.ecreditservice.dto.CreditNegatifDtos.EtatDto;
+import io.digiservices.ecreditservice.dto.CreditNegatifDtos.LigneDto;
+import io.digiservices.ecreditservice.dto.CreditNegatifDtos.SituationDto;
+import io.digiservices.ecreditservice.exception.ApiException;
+import io.digiservices.ecreditservice.utils.CreditNegatifExcelUtils;
 import io.digiservices.ecreditservice.enumeration.EventType;
 import io.digiservices.ecreditservice.event.Event;
 import io.digiservices.ecreditservice.repository.AlerteDestinatairesRepository;
@@ -22,6 +29,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -53,6 +61,7 @@ public class CreditNegatifService {
     private final AlerteDestinatairesRepository destinataires;
     private final AlerteJournalRepository journal;
     private final ApplicationEventPublisher publisher;
+    private final UserClient userClient;
 
     @Value("${credit.negatif.actif:true}")
     private boolean actif;
@@ -62,6 +71,83 @@ public class CreditNegatifService {
     /** Etats SAF qui declenchent une alerte ; la page, elle, montre tous les etats. */
     @Value("${credit.negatif.etats-alerte:D}")
     private String etatsAlerte;
+
+    // ==================== Page reservee au service DSIG (lot 2) ====================
+
+    /**
+     * Le compte doit appartenir au service DSIG, ou etre administrateur. Les credits negatifs
+     * sont une anomalie technique : ni le reseau ni la direction d'exploitation n'ont a les voir.
+     */
+    private User verifierDsig(String uuid) {
+        User user = userClient.getUserByUuid(uuid);
+        if (user == null) {
+            throw new ApiException("Utilisateur non identifie");
+        }
+        boolean dsig = "DSIG".equalsIgnoreCase(user.getService() == null ? "" : user.getService().trim());
+        if (!dsig && !"SUPER_ADMIN".equals(user.getRole())) {
+            throw new ApiException("Page reservee au service DSIG");
+        }
+        return user;
+    }
+
+    /** La situation complete : tous les etats, les compteurs, et le suivi. */
+    public SituationDto situation(String uuid, boolean inclureCorriges) {
+        verifierDsig(uuid);
+        List<LigneDto> lignes = repository.situation(inclureCorriges).stream().map(l -> LigneDto.builder()
+                .id(l.id()).codAgencia(l.codAgencia()).desAgencia(l.desAgencia()).numCredito(l.numCredito())
+                .codCliente(l.codCliente()).nomCliente(l.nomCliente()).tipCredito(l.tipCredito())
+                .monCredito(l.monCredito()).monSaldo(l.monSaldo()).pireSolde(l.pireSolde())
+                .fecApertura(l.fecApertura()).indEstado(l.indEstado()).etat(libelleEtat(l.indEstado()))
+                .codEjecutivo(l.codEjecutivo()).detecteAt(l.detecteAt()).signaleAt(l.signaleAt())
+                .corrigeAt(l.corrigeAt()).traitePar(l.traitePar()).traiteAt(l.traiteAt())
+                .commentaire(l.commentaire())
+                .build()).toList();
+
+        List<LigneDto> ouverts = lignes.stream().filter(l -> l.getCorrigeAt() == null).toList();
+        Map<String, EtatDto> parEtat = new LinkedHashMap<>();
+        for (LigneDto l : ouverts) {
+            EtatDto e = parEtat.computeIfAbsent(l.getEtat(), k -> EtatDto.builder()
+                    .code(l.getIndEstado()).libelle(k).nb(0).montant(BigDecimal.ZERO).build());
+            e.setNb(e.getNb() + 1);
+            e.setMontant(e.getMontant().add(l.getMonSaldo() == null ? BigDecimal.ZERO : l.getMonSaldo()));
+        }
+        LocalDate aujourdhui = LocalDate.now();
+        return SituationDto.builder()
+                .nbOuverts(ouverts.size())
+                .montantOuvert(ouverts.stream().map(l -> l.getMonSaldo() == null ? BigDecimal.ZERO : l.getMonSaldo())
+                        .reduce(BigDecimal.ZERO, BigDecimal::add))
+                .nbNonTraites((int) ouverts.stream().filter(l -> l.getTraiteAt() == null).count())
+                .nbCorrigesCeMois((int) lignes.stream().filter(l -> l.getCorrigeAt() != null
+                        && l.getCorrigeAt().toLocalDate().getMonth() == aujourdhui.getMonth()
+                        && l.getCorrigeAt().toLocalDate().getYear() == aujourdhui.getYear()).count())
+                .nbDetectesAujourdhui((int) lignes.stream().filter(l -> l.getDetecteAt() != null
+                        && l.getDetecteAt().toLocalDate().isEqual(aujourdhui)).count())
+                .parEtat(new ArrayList<>(parEtat.values()))
+                .lignes(lignes)
+                .dernierPassage(lignes.stream().map(LigneDto::getDetecteAt)
+                        .filter(java.util.Objects::nonNull).max(java.time.OffsetDateTime::compareTo).orElse(null))
+                .message(seuilGnf > 0 ? "Alerte par courriel au-delà de " + seuilGnf
+                        + " GNF, sur les crédits en cours ; la page montre tous les états." : null)
+                .build();
+    }
+
+    /** Marque un credit comme pris en charge par la DSIG ; rien n'est ecrit dans SAF. */
+    public String marquerTraite(String uuid, Long id, String commentaire, boolean traite) {
+        User user = verifierDsig(uuid);
+        int n = traite ? repository.marquerTraite(id, user.getUserId(), commentaire)
+                : repository.annulerTraite(id);
+        if (n == 0) {
+            throw new ApiException("Crédit introuvable");
+        }
+        return traite ? "Crédit marqué comme pris en charge" : "Marque de suivi retirée";
+    }
+
+    /** Le meme tableau en classeur Excel, pour servir de feuille de travail. */
+    public byte[] exporter(String uuid, boolean inclureCorriges) throws java.io.IOException {
+        return CreditNegatifExcelUtils.classeur(situation(uuid, inclureCorriges));
+    }
+
+    // ==================== Surveillance ====================
 
     /** Toutes les heures de 6 h a 20 h : la nuit ne produit rien a surveiller. */
     @Scheduled(cron = "${credit.negatif.cron:0 10 6-20 * * *}", zone = "GMT")

@@ -112,6 +112,11 @@ export default [
         loadComponent: () => import('./portefeuille/portefeuille-contentieux.component').then((c) => c.PortefeuilleContentieuxComponent)
     },
     {
+        path: 'credits-negatifs',
+        data: { breadcrumb: 'Crédits négatifs' },
+        loadComponent: () => import('./credits-negatifs/credits-negatifs.component').then((c) => c.CreditsNegatifsComponent)
+    },
+    {
         path: 'usage-plateforme',
         data: { breadcrumb: 'Usage de la plateforme' },
         loadComponent: () => import('./usage/usage-plateforme.component').then((c) => c.UsagePlateformeComponent)

@@ -1884,6 +1884,14 @@ export class UserService {
     getPortefeuilleEcheancier$ = (codAgencia: string, numCredito: number) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/credits/${codAgencia}/${numCredito}/echeancier`).pipe(catchError(this.handleError));
     // Cautions connues de digi pour un client SAF (lot 2 du 24/10/2026).
+    // Credits a solde negatif dans SAF (V177) : page reservee au service DSIG.
+    getCreditsNegatifs$ = (corriges = false) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/credits-negatifs?corriges=${corriges}`).pipe(catchError(this.handleError));
+    suiviCreditNegatif$ = (id: number, commentaire: string | null, traite: boolean) =>
+        <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/credits-negatifs/${id}/suivi`, { commentaire, traite }).pipe(catchError(this.handleError));
+    exportCreditsNegatifs$ = (corriges = false) =>
+        this.http.get(`${this.server}/ecredit/credits-negatifs/export?corriges=${corriges}`, { responseType: 'blob', observe: 'response' });
+
     getCautionsClient$ = (codCliente: string) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/clients/${codCliente}/cautions`).pipe(catchError(this.handleError));
 
