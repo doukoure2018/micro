@@ -47,6 +47,9 @@ public interface EbankingPortefeuilleClient {
 
     // ==================== Alertes (phase 3) : balayages reseau ====================
 
+    @GetMapping("/ebanking/portefeuille/credits-negatifs")
+    List<io.digiservices.clients.portefeuille.CreditNegatifDto> getCreditsNegatifs();
+
     @GetMapping("/ebanking/portefeuille/echeances-avenir")
     List<io.digiservices.clients.portefeuille.EcheanceAvenirDto> getEcheancesAvenir(
             @RequestParam(value = "joursAvant", defaultValue = "3") int joursAvant);

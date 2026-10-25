@@ -193,6 +193,15 @@ public class PortefeuilleController {
 
     // ==================== Alertes (phase 3) ====================
 
+    /**
+     * Credits a solde negatif, lus en PRODUCTION (V177). Reserve a la surveillance DSIG : le
+     * depot force lui-meme la cible, la liste des chemins n'a pas a connaitre cet appel.
+     */
+    @GetMapping("/credits-negatifs")
+    public ResponseEntity<List<io.digiservices.clients.portefeuille.CreditNegatifDto>> getCreditsNegatifs() {
+        return ResponseEntity.ok(repository.findCreditsNegatifs());
+    }
+
     @GetMapping("/echeances-avenir")
     public ResponseEntity<List<io.digiservices.clients.portefeuille.EcheanceAvenirDto>> getEcheancesAvenir(
             @RequestParam(name = "joursAvant", defaultValue = "3") int joursAvant) {

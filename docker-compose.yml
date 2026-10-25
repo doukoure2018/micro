@@ -285,6 +285,13 @@ services:
       # Synthese du matin aux DA/DR (jours ouvres) : un point de service passe en rouge, et l'objet le
       # mentionne, des que ses impayes du jour atteignent l'un des deux seuils (nombre OU montant GNF).
       PORTEFEUILLE_ALERTES_SEUIL_IMPAYES_NB: "5"
+      # Surveillance des credits a solde negatif (V177) : lecture de la base SAF de PRODUCTION
+      # toutes les heures de 6 h a 20 h, courriel aux seuls comptes du service DSIG. Le seuil
+      # ecarte les arrondis (cinq credits sont a moins d'un franc) ; les etats surveilles
+      # limitent l'alerte aux credits en cours, la page montrant tous les etats.
+      CREDIT_NEGATIF_ACTIF: ${CREDIT_NEGATIF_ACTIF:-true}
+      CREDIT_NEGATIF_SEUIL_GNF: ${CREDIT_NEGATIF_SEUIL_GNF:-1000}
+      CREDIT_NEGATIF_ETATS_ALERTE: ${CREDIT_NEGATIF_ETATS_ALERTE:-D}
       PORTEFEUILLE_ALERTES_SEUIL_IMPAYES_MONTANT: "20000000"
       # Heure du digest du matin (cron Spring a 6 champs, heure GMT) et nombre de reprises quand
       # SAF est en cours de restauration. La restauration de la sauvegarde part a une heure
