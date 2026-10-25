@@ -128,6 +128,50 @@ public class AlerteDestinatairesRepository {
                 .list();
     }
 
+    /**
+     * Destinataires d'une alerte soumise a habilitation (V178/V179) : les comptes actifs, avec
+     * e-mail, a qui la matrice accorde la rubrique. La liste d'envoi suit donc la matrice et non
+     * plus le libelle du service.
+     *
+     * <p>Les droits par role sont volontairement ignores ici. Ils existent pour ouvrir un ecran
+     * au reseau, pas pour inscrire quelqu'un a un envoi : les y inclure aurait fait passer
+     * l'alerte des credits negatifs de quinze a dix-neuf destinataires, en y ajoutant quatre
+     * administrateurs techniques sans service qui ne la recevaient pas.</p>
+     *
+     * <p>Tant que la bascule est fermee, tout compte d'un service a departements reste
+     * destinataire, ce qui reproduit exactement la regle d'avant. Le fragment correspondant est
+     * choisi ici plutot que passe en parametre booleen : un parametre non type dans un
+     * {@code WHERE} se traduit mal en instruction preparee. Les morceaux sont bordes de retours
+     * a la ligne, pour ne pas recoller deux mots-cles.</p>
+     */
+    public List<Destinataire> porteursDeRubrique(String rubrique, boolean parDepartementActif) {
+        String transition = parDepartementActif ? "\n" : """
+                \n       OR EXISTS (SELECT 1 FROM habilitation_departement hd
+                                    WHERE hd.actif
+                                      AND UPPER(hd.service) = UPPER(COALESCE(u.service, '')))
+                \n""";
+        String sql = """
+                SELECT DISTINCT u.user_id, u.email,
+                       TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,'')) AS nom
+                FROM users u
+                LEFT JOIN habilitation_departement d ON d.id = u.habilitation_departement_id AND d.actif
+                WHERE COALESCE(u.enabled, FALSE)
+                  AND u.email IS NOT NULL AND u.email <> ''
+                  AND (
+                      EXISTS (SELECT 1 FROM habilitation_departement_rubrique dr
+                              WHERE dr.departement_id = d.id AND dr.rubrique_code = :rubrique)
+                      OR COALESCE(d.tout_voir, FALSE)
+                """ + transition + """
+                  )
+                ORDER BY nom
+                """;
+        return jdbcClient.sql(sql)
+                .param("rubrique", rubrique)
+                .query((rs, n) -> new Destinataire(rs.getString("email"), rs.getString("nom"),
+                        List.of(), rs.getLong("user_id"), null))
+                .list();
+    }
+
     /** DA avec e-mail : chacun porte les codes SAF des points de service de son agence. */
     public List<Destinataire> das() {
         return jdbcClient.sql("""

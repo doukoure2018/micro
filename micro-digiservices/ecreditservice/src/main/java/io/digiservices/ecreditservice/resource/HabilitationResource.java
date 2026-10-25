@@ -10,6 +10,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -36,6 +37,43 @@ public class HabilitationResource {
         return ResponseEntity.ok(getResponse(request,
                 Map.of("habilitations", habilitationService.porteCles(authentication.getName())),
                 "Habilitations", OK));
+    }
+
+    // ==================== Lot 2 : l'ecran de reglage ====================
+
+    /** La matrice complete : departements, rubriques, cases, comptes rattaches et journal. */
+    @GetMapping("/matrice")
+    public ResponseEntity<Response> matrice(@NotNull Authentication authentication,
+                                            @RequestParam(value = "service", required = false) String service,
+                                            HttpServletRequest request) {
+        return ResponseEntity.ok(getResponse(request,
+                Map.of("matrice", habilitationService.matrice(authentication.getName(), service)),
+                "Matrice des habilitations", OK));
+    }
+
+    /** Coche ou decoche une rubrique pour un departement. */
+    @PutMapping("/matrice")
+    public ResponseEntity<Response> regler(@NotNull Authentication authentication,
+                                           @RequestBody Map<String, Object> corps,
+                                           HttpServletRequest request) {
+        Long departementId = corps.get("departementId") == null ? null
+                : Long.valueOf(String.valueOf(corps.get("departementId")));
+        String rubrique = (String) corps.get("rubrique");
+        boolean accorde = Boolean.TRUE.equals(corps.get("accorde"));
+        String message = habilitationService.regler(authentication.getName(), departementId, rubrique, accorde);
+        return ResponseEntity.ok(getResponse(request,
+                Map.of("departementId", departementId == null ? 0L : departementId,
+                        "rubrique", rubrique == null ? "" : rubrique, "accorde", accorde),
+                message, OK));
+    }
+
+    /** Ouvre ou referme l'habilitation par departement. */
+    @PutMapping("/bascule")
+    public ResponseEntity<Response> basculer(@NotNull Authentication authentication,
+                                             @RequestParam("actif") boolean actif,
+                                             HttpServletRequest request) {
+        String message = habilitationService.basculer(authentication.getName(), actif);
+        return ResponseEntity.ok(getResponse(request, Map.of("actif", actif), message, OK));
     }
 
     /** Le departement deja enregistre pour un compte, pour pre-remplir sa fiche. */
