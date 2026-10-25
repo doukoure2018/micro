@@ -224,9 +224,9 @@ public class CreditNegatifService {
         if (tous.isEmpty()) {
             return 0;
         }
-        List<Destinataire> dsig = destinataires.serviceDsig();
+        List<Destinataire> dsig = destinatairesHabilites();
         if (dsig.isEmpty()) {
-            log.warn("[CREDIT NEGATIF] Aucun compte DSIG avec e-mail : etat des lieux non envoye");
+            log.warn("[CREDIT NEGATIF] Aucun destinataire habilite avec e-mail : etat des lieux non envoye");
             return 0;
         }
         String sujet = "Crédits négatifs SAF : état des lieux — " + tous.size() + " crédit(s)";
@@ -292,10 +292,22 @@ public class CreditNegatifService {
         return h.toString();
     }
 
+    /**
+     * La liste d'envoi suit la matrice d'habilitations (V178) et non plus le libelle du service :
+     * sont prevenus les comptes qui portent la rubrique des credits negatifs. Une fois la bascule
+     * ouverte, cela revient au departement operationnel et au responsable du service, conformement
+     * a la consigne : cette anomalie technique ne concerne pas toute la direction.
+     */
+    private List<Destinataire> destinatairesHabilites() {
+        return destinataires.porteursDeRubrique(HabilitationService.CREDITS_NEGATIFS,
+                habilitations.parDepartementActif());
+    }
+
     private int alerter(List<CreditNegatifDto> nouveaux) {
-        List<Destinataire> dsig = destinataires.serviceDsig();
+        List<Destinataire> dsig = destinatairesHabilites();
         if (dsig.isEmpty()) {
-            log.warn("[CREDIT NEGATIF] Aucun compte DSIG avec e-mail : {} nouveau(x) non signale(s)", nouveaux.size());
+            log.warn("[CREDIT NEGATIF] Aucun destinataire habilite avec e-mail : {} nouveau(x) non signale(s)",
+                    nouveaux.size());
             return 0;
         }
         String sujet = nouveaux.size() + " nouveau(x) crédit(s) négatif(s) — "
