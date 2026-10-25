@@ -302,7 +302,7 @@ public class PortefeuilleRepository {
                     (rs, n) -> new io.digiservices.clients.portefeuille.CreditNegatifDto(
                             str(rs, "COD_AGENCIA"), str(rs, "DES_AGENCIA"), rs.getLong("NUM_CREDITO"),
                             str(rs, "COD_CLIENTE"), str(rs, "NOM_CLIENTE"),
-                            (Integer) rs.getObject("TIP_CREDITO"),
+                            entier(rs, "TIP_CREDITO"),
                             rs.getBigDecimal("MON_CREDITO"), rs.getBigDecimal("MON_SALDO"),
                             dt(rs, "FEC_APERTURA"), dt(rs, "FEC_VENCIMIENTO"),
                             str(rs, "IND_ESTADO"), str(rs, "COD_EJECUTIVO"))));
@@ -689,6 +689,19 @@ public class PortefeuilleRepository {
     }
 
     /** Numero de telephone SAF : espaces retires, chaine vide ramenee a null. Aucune autre transformation. */
+    /**
+     * Entier d'une colonne SAF. {@code getObject} rend ici un BigDecimal, car le type SQL Server
+     * est numerique et non int : le transtypage direct echouait (« BigDecimal cannot be cast to
+     * Integer », surveillance des credits negatifs du 25/10/2026).
+     */
+    private static Integer entier(ResultSet rs, String col) throws SQLException {
+        Object v = rs.getObject(col);
+        if (v == null) {
+            return null;
+        }
+        return v instanceof Number nombre ? nombre.intValue() : Integer.valueOf(v.toString().trim());
+    }
+
     private static String tel(ResultSet rs, String col) throws SQLException {
         String v = rs.getString(col);
         if (v == null) return null;
