@@ -55,6 +55,7 @@ public class UsagePlateformeService {
     private final UsagePlateformeRepository repository;
     private final UsagePhotoRepository photos;
     private final UserClient userClient;
+    private final HabilitationService habilitations;
 
     /** Premiere semaine reprise a l'amorcage : le lundi 3 aout 2026, mois de bascule du reseau. */
     @Value("${usage.photo.reprise-depuis:2026-08-03}")
@@ -66,23 +67,28 @@ public class UsagePlateformeService {
     private record Perimetre(Long delegationId, String libelle, boolean montants) {
     }
 
+    /**
+     * Le perimetre vient du porte-cles d'habilitations (V178) et non plus d'une liste de roles
+     * et de services ecrite ici. Le directeur regional passe en premier : il porte la meme
+     * rubrique que le reseau mais reste borne a sa delegation, et sans les montants.
+     */
     private Perimetre perimetreDe(String uuid) {
         User user = userClient.getUserByUuid(uuid);
         if (user == null) {
             throw new ApiException("Utilisateur non identifie");
         }
-        String role = user.getRole();
-        boolean reseau = "DG".equals(role) || "SUPER_ADMIN".equals(role)
-                || ("MANAGER".equals(role) && user.getService() != null
-                    && ("DE".equalsIgnoreCase(user.getService()) || "DSIG".equalsIgnoreCase(user.getService())));
-        if (reseau) {
-            return new Perimetre(null, "Réseau", true);
-        }
-        if ("DR".equals(role)) {
+        boolean autorise = habilitations.peut(uuid, HabilitationService.USAGE_PLATEFORME);
+        if ("DR".equals(user.getRole())) {
+            if (!autorise) {
+                throw new ApiException("Vous n'avez pas accès à cet écran");
+            }
             if (user.getDelegationId() == null) {
                 throw new ApiException("Votre compte n'est rattache a aucune delegation");
             }
             return new Perimetre(user.getDelegationId(), "Votre délégation", false);
+        }
+        if (autorise) {
+            return new Perimetre(null, "Réseau", true);
         }
         throw new ApiException("Le barometre d'usage est reserve a la direction generale, "
                 + "a la Direction de l'exploitation, a la DSIG et aux directeurs regionaux");

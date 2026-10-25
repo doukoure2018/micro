@@ -1,5 +1,6 @@
 import { Agence } from '@/interface/agence';
 import { Delegation } from '@/interface/delegation';
+import { DepartementHabilitation } from '@/interface/habilitation';
 import { PointVente } from '@/interface/point.vente';
 import { IResponse } from '@/interface/response';
 import { IRole } from '@/interface/role';
@@ -50,6 +51,9 @@ export class EditUserComponent implements OnInit {
     // Selections (template-driven, like create-user)
     selectedRole: IRole | null = null;
     selectedService: ServiceOption | null = null;
+    /** V178 : departement d'habilitation, propose seulement si le service en declare. */
+    selectedDepartement: DepartementHabilitation | null = null;
+    departements: DepartementHabilitation[] = [];
     selectedDelegation: Delegation | null = null;
     selectedAgence: Agence | null = null;
     selectedPointVente: PointVente | null = null;
@@ -92,6 +96,7 @@ export class EditUserComponent implements OnInit {
     // Snapshot of original values so we know what actually changed
     private originalRole: string | null = null;
     private originalService: string | null = null;
+    private originalDepartementId: number | null = null;
     private originalDelegationId: number | null = null;
     private originalAgenceId: number | null = null;
     private originalPointVenteId: number | null = null;
@@ -148,6 +153,8 @@ export class EditUserComponent implements OnInit {
                     if (user.service) {
                         this.selectedService = this.services.find((s) => s.value === user.service) ?? { label: user.service, value: user.service };
                     }
+                    this.chargerDepartements(user.service ?? null);
+                    this.chargerDepartementDuCompte(userId);
 
                     this.matchRoleFromUser();
                     this.preloadLocation(user);
@@ -204,6 +211,52 @@ export class EditUserComponent implements OnInit {
 
     onServiceChange(service: ServiceOption | null): void {
         this.selectedService = service;
+        this.selectedDepartement = null;
+        this.chargerDepartements(service?.value ?? null);
+    }
+
+    /**
+     * Les departements proposes suivent le service choisi (V178). Un service qui n'en declare
+     * aucun ne montre pas le champ : seule la DSIG est decoupee pour l'instant.
+     */
+    private chargerDepartements(service: string | null): void {
+        if (!service) {
+            this.departements = [];
+            return;
+        }
+        this.userService
+            .getDepartementsHabilitation$(service)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    this.departements = ((response.data as any)?.departements ?? []) as DepartementHabilitation[];
+                    this.rapprocherDepartement();
+                },
+                error: () => {
+                    this.departements = [];
+                }
+            });
+    }
+
+    private chargerDepartementDuCompte(userId: number): void {
+        this.userService
+            .getDepartementDuCompte$(userId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    const departement = (response.data as any)?.departement as DepartementHabilitation | undefined;
+                    this.originalDepartementId = departement?.id ?? null;
+                    this.rapprocherDepartement();
+                },
+                error: () => {}
+            });
+    }
+
+    /** Les deux appels arrivent dans un ordre quelconque : on rapproche des que possible. */
+    private rapprocherDepartement(): void {
+        if (this.originalDepartementId && this.departements.length) {
+            this.selectedDepartement = this.departements.find((d) => d.id === this.originalDepartementId) ?? null;
+        }
     }
 
     onDelegationChange(delegation: Delegation | null): void {
@@ -347,6 +400,10 @@ export class EditUserComponent implements OnInit {
         }
         if (newService !== this.originalService && newService) {
             calls.push(this.userService.updateUserService$(user.userId, newService));
+        }
+        const nouveauDepartementId = this.selectedDepartement?.id ?? null;
+        if (nouveauDepartementId !== this.originalDepartementId) {
+            calls.push(this.userService.affecterDepartementHabilitation$(user.userId, nouveauDepartementId));
         }
         const locationChanged =
             newDelegationId !== this.originalDelegationId ||

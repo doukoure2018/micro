@@ -6,6 +6,7 @@ import { AppMenuitem } from './app.menuitem';
 import { IUser } from '@/interface/user';
 import { UserService } from '@/service/user.service';
 import { DrhService } from '@/service/drh.service';
+import { HabilitationService } from '@/service/habilitation.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
@@ -24,6 +25,7 @@ export class AppMenu {
     el: ElementRef = inject(ElementRef);
     private userService = inject(UserService);
     private drhService = inject(DrhService);
+    private habilitations = inject(HabilitationService);
     private destroyRef = inject(DestroyRef);
 
     @ViewChild('menuContainer') menuContainer!: ElementRef;
@@ -46,11 +48,39 @@ export class AppMenu {
     private aTraiterAffectation = 0;
     private compteurAffectationCharge = false;
 
+    /** V178 : porte-clés d'habilitations, demandé une fois puis gardé en mémoire. */
+    private habilitationsChargees = false;
+
     ngOnInit() {
         this.initializeMenu();
+        this.chargerHabilitations();
         this.chargerFonctions();
         this.chargerContexteDrh();
         this.chargerCompteurAffectation();
+    }
+
+    /**
+     * Le porte-clés décide des entrées soumises à habilitation (V178). Tant qu'il n'est pas
+     * arrivé, ces entrées restent masquées ; en cas d'échec, le menu reste tel quel plutôt que
+     * d'afficher des écrans que le serveur refuserait.
+     */
+    private chargerHabilitations() {
+        if (this.habilitationsChargees) {
+            return;
+        }
+        this.habilitationsChargees = true;
+        this.habilitations
+            .charger$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => this.initializeMenu(),
+                error: () => {}
+            });
+    }
+
+    /** Vrai si le compte porte cette rubrique d'habilitation. */
+    private peut(rubrique: string): boolean {
+        return this.habilitations.peut(rubrique);
     }
 
     /** Le DA voit combien de crédits attendent une affectation (non affectés + à réaffecter). */
@@ -371,7 +401,8 @@ export class AppMenu {
             });
         }
         // Contacts verifies des agents (V173) : le DA relance et saisit, les niveaux au-dessus suivent.
-        if (['DA', 'RA', 'DR', 'DG', 'SUPER_ADMIN'].includes(this.role || '') || this.estManager('DE') || this.estManager('DSIG')) {
+        // La regle vit desormais dans la matrice d'habilitations (V178), plus dans cette ligne.
+        if (this.peut('CONTACTS_AGENTS')) {
             items.push({
                 label: 'Contacts des agents',
                 icon: 'pi pi-fw pi-id-card',
@@ -386,17 +417,19 @@ export class AppMenu {
                 routerLink: ['/dashboards/portefeuille-scores']
             });
         }
-        // Credits a solde negatif dans SAF (V177) : service DSIG seulement, c'est une anomalie
-        // technique et non une information de gestion.
-        if (this.estManager('DSIG') || this.role === 'SUPER_ADMIN') {
+        // Credits a solde negatif dans SAF (V177) : anomalie technique et non information de
+        // gestion. Apres la bascule (V178), la rubrique n'ira qu'au departement operationnel
+        // et au responsable du service.
+        if (this.peut('CREDITS_NEGATIFS')) {
             items.push({
                 label: 'Crédits négatifs',
                 icon: 'pi pi-fw pi-exclamation-circle',
                 routerLink: ['/dashboards/credits-negatifs']
             });
         }
-        // Barometre d'usage de la plateforme (V175) : DG, DE, DSIG sur le reseau, DR sur sa delegation.
-        if (['DR', 'DG', 'SUPER_ADMIN'].includes(this.role || '') || this.estManager('DE') || this.estManager('DSIG')) {
+        // Barometre d'usage de la plateforme (V175) : reseau pour la direction, delegation pour
+        // le DR. Le perimetre reste decide par le serveur, l'entree de menu par la matrice (V178).
+        if (this.peut('USAGE_PLATEFORME')) {
             items.push({
                 label: 'Usage de la plateforme',
                 icon: 'pi pi-fw pi-chart-line',
@@ -517,7 +550,7 @@ export class AppMenu {
                 routerLink: ['/dashboards/changement-telephone/inspection']
             });
         }
-        if (this.estManager('DSIG')) {
+        if (this.peut('CLIENTS_SOCIETARIAT')) {
             items.push({
                 label: 'Vérification des documents',
                 icon: 'pi pi-fw pi-folder',
@@ -666,7 +699,7 @@ export class AppMenu {
                 }
             );
         }
-        if (this.estManager('DSIG')) {
+        if (this.peut('ADMIN_OUTILS')) {
             items.push(
                 {
                     label: 'Campagnes SMS',

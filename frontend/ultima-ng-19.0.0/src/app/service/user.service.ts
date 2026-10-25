@@ -1892,6 +1892,19 @@ export class UserService {
     exportCreditsNegatifs$ = (corriges = false) =>
         this.http.get(`${this.server}/ecredit/credits-negatifs/export?corriges=${corriges}`, { responseType: 'blob', observe: 'response' });
 
+    // Habilitations par departement (V178) : le porte-cles du compte connecte.
+    getHabilitations$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/habilitations/moi`).pipe(catchError(this.handleError));
+    getDepartementDuCompte$ = (userId: number) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/habilitations/comptes/${userId}/departement`).pipe(catchError(this.handleError));
+    affecterDepartementHabilitation$ = (userId: number, departementId: number | null) =>
+        <Observable<IResponse>>(
+            this.http
+                .put<IResponse>(`${this.server}/ecredit/habilitations/comptes/${userId}/departement${departementId ? '?departementId=' + departementId : ''}`, {})
+                .pipe(catchError(this.handleError))
+        );
+    getDepartementsHabilitation$ = (service?: string) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/habilitations/departements${service ? '?service=' + encodeURIComponent(service) : ''}`).pipe(catchError(this.handleError));
+
     getCautionsClient$ = (codCliente: string) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/clients/${codCliente}/cautions`).pipe(catchError(this.handleError));
 

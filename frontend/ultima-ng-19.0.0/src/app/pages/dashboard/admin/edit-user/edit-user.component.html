@@ -81,6 +81,30 @@
                         </p-dropdown>
                     </div>
 
+                    <!-- Departement d'habilitation (V178) : propose seulement si le service en declare -->
+                    @if (departements.length) {
+                    <div class="mb-6 col-span-12 md:col-span-6">
+                        <label class="font-medium text-surface-900 dark:text-surface-0 mb-2 block">Département</label>
+                        <p-dropdown name="departementHabilitation" [(ngModel)]="selectedDepartement" [options]="departements"
+                            optionLabel="libelle" [filter]="true" filterBy="libelle" [showClear]="true"
+                            placeholder="Sélectionner un département" [disabled]="state().submitting" styleClass="w-full"
+                            dataKey="id" appendTo="body">
+                            <ng-template pTemplate="selectedItem" let-departement>
+                                <span>{{ departement?.libelle }}</span>
+                            </ng-template>
+                            <ng-template pTemplate="item" let-departement>
+                                <div class="flex items-center">
+                                    <span>{{ departement.libelle }}</span>
+                                    @if (departement.toutVoir) {
+                                    <span class="ml-2 text-xs text-primary">voit tout le service</span>
+                                    }
+                                </div>
+                            </ng-template>
+                        </p-dropdown>
+                        <small class="text-gray-500">Décide des écrans de ce service auxquels le compte a accès. Laisser vide tant que le rattachement n'est pas connu.</small>
+                    </div>
+                    }
+
                     <!-- Cascade location -->
                     @if (shouldShowLocationFields(selectedRole?.name)) {
                     <div class="mb-6 col-span-12"

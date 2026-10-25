@@ -1,3 +1,4 @@
+import { HabilitationGuard } from '@/service/habilitation.guard';
 import { Routes } from '@angular/router';
 import { RapprochementCutoffGuard } from '@/service/rapprochement-cutoff.guard';
 import { AgentCreditGuard } from '@/service/agent-credit.guard';
@@ -22,7 +23,8 @@ export default [
     },
     {
         path: 'contacts-equipe',
-        data: { breadcrumb: 'Contacts des agents' },
+        canActivate: [HabilitationGuard],
+        data: { breadcrumb: 'Contacts des agents', rubrique: 'CONTACTS_AGENTS' },
         loadComponent: () => import('./profil/contacts-equipe.component').then((c) => c.ContactsEquipeComponent)
     },
     {
@@ -113,12 +115,14 @@ export default [
     },
     {
         path: 'credits-negatifs',
-        data: { breadcrumb: 'Crédits négatifs' },
+        canActivate: [HabilitationGuard],
+        data: { breadcrumb: 'Crédits négatifs', rubrique: 'CREDITS_NEGATIFS' },
         loadComponent: () => import('./credits-negatifs/credits-negatifs.component').then((c) => c.CreditsNegatifsComponent)
     },
     {
         path: 'usage-plateforme',
-        data: { breadcrumb: 'Usage de la plateforme' },
+        canActivate: [HabilitationGuard],
+        data: { breadcrumb: 'Usage de la plateforme', rubrique: 'USAGE_PLATEFORME' },
         loadComponent: () => import('./usage/usage-plateforme.component').then((c) => c.UsagePlateformeComponent)
     },
     {
@@ -143,16 +147,20 @@ export default [
     },
     {
         path: 'document-verification',
-        data: { breadcrumb: 'Document Verification' },
+        canActivate: [HabilitationGuard],
+        data: { breadcrumb: 'Document Verification', rubrique: 'CLIENTS_SOCIETARIAT' },
         loadComponent: () => import('./agent-credit/digital-verification/document-verification/document-verification.component').then((c) => c.DocumentVerificationComponent)
     },
     {
         path: 'actualiser-decodeur',
-        data: { breadcrumb: 'Actualisation Décodeur Canal+' },
+        canActivate: [HabilitationGuard],
+        data: { breadcrumb: 'Actualisation Décodeur Canal+', rubrique: 'ADMIN_OUTILS' },
         loadComponent: () => import('./agent-credit/digital-verification/actualiser-decodeur/actualiser-decodeur.component').then((c) => c.ActualiserDecodeurComponent)
     },
     {
         path: 'document-verification/documents/:id',
+        canActivate: [HabilitationGuard],
+        data: { rubrique: 'CLIENTS_SOCIETARIAT' },
         loadComponent: () => import('./agent-credit/digital-verification/document-verification/document-detail/document-detail.component').then((c) => c.DocumentDetailComponent)
     },
     {
@@ -536,17 +544,20 @@ export default [
     },
     {
         path: 'campagnes-sms',
-        data: { breadcrumb: 'Campagnes SMS' },
+        canActivate: [HabilitationGuard],
+        data: { breadcrumb: 'Campagnes SMS', rubrique: 'ADMIN_OUTILS' },
         loadComponent: () => import('./digital/campagnes-sms/campagnes-sms.component').then((c) => c.CampagnesSmsComponent)
     },
     {
         path: 'repertoires-sms',
-        data: { breadcrumb: 'Répertoires SMS' },
+        canActivate: [HabilitationGuard],
+        data: { breadcrumb: 'Répertoires SMS', rubrique: 'ADMIN_OUTILS' },
         loadComponent: () => import('./digital/repertoires-sms/repertoires-sms.component').then((c) => c.RepertoiresSmsComponent)
     },
     {
         path: 'campagnes-sms/:campagneId',
-        data: { breadcrumb: 'Suivi campagne SMS' },
+        canActivate: [HabilitationGuard],
+        data: { breadcrumb: 'Suivi campagne SMS', rubrique: 'ADMIN_OUTILS' },
         loadComponent: () => import('./digital/campagnes-sms/campagne-sms-detail.component').then((c) => c.CampagneSmsDetailComponent)
     }
 ] as Routes;
