@@ -103,6 +103,32 @@ public class CreditNegatifRepository {
                 .param("ids", List.copyOf(ids)).update();
     }
 
+    /**
+     * Suivi cote DSIG : qui s'en occupe et depuis quand. Digi n'ecrit pas dans SAF — cette marque
+     * sert seulement a eviter que deux personnes travaillent le meme credit.
+     */
+    public int marquerTraite(Long id, Long userId, String commentaire) {
+        return jdbcClient.sql("""
+                UPDATE credit_negatif
+                   SET traite_par_user_id = :userId, traite_at = CURRENT_TIMESTAMP,
+                       commentaire = :commentaire
+                 WHERE id = :id
+                """)
+                .param("id", id).param("userId", userId)
+                .param("commentaire", commentaire == null || commentaire.isBlank() ? null
+                        : commentaire.trim().substring(0, Math.min(500, commentaire.trim().length())))
+                .update();
+    }
+
+    /** Retire la marque de suivi (le credit retourne « a traiter »). */
+    public int annulerTraite(Long id) {
+        return jdbcClient.sql("""
+                UPDATE credit_negatif
+                   SET traite_par_user_id = NULL, traite_at = NULL, commentaire = NULL
+                 WHERE id = :id
+                """).param("id", id).update();
+    }
+
     /** Situation complete : ouverts d'abord, du plus negatif au moins negatif. */
     public List<Ligne> situation(boolean inclureCorriges) {
         return jdbcClient.sql("""

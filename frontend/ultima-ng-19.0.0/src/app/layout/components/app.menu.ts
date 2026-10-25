@@ -386,6 +386,15 @@ export class AppMenu {
                 routerLink: ['/dashboards/portefeuille-scores']
             });
         }
+        // Credits a solde negatif dans SAF (V177) : service DSIG seulement, c'est une anomalie
+        // technique et non une information de gestion.
+        if (this.estManager('DSIG') || this.role === 'SUPER_ADMIN') {
+            items.push({
+                label: 'Crédits négatifs',
+                icon: 'pi pi-fw pi-exclamation-circle',
+                routerLink: ['/dashboards/credits-negatifs']
+            });
+        }
         // Barometre d'usage de la plateforme (V175) : DG, DE, DSIG sur le reseau, DR sur sa delegation.
         if (['DR', 'DG', 'SUPER_ADMIN'].includes(this.role || '') || this.estManager('DE') || this.estManager('DSIG')) {
             items.push({
