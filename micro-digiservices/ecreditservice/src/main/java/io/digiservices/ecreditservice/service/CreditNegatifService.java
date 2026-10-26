@@ -204,6 +204,33 @@ public class CreditNegatifService {
         return resultats;
     }
 
+    /**
+     * Complete la preuve d'un credit deja clos : ce que SAF montre aujourd'hui, pour les neuf
+     * clotures anterieures a la preuve. La date de cloture ne change pas. Si le credit est encore
+     * negatif aujourd'hui, la cloture etait prematuree : on le dit, sans le rouvrir d'office.
+     */
+    public Verification completerPreuve(String uuid, Long id) {
+        verifierDsig(uuid);
+        var cle = repository.cleClose(id).orElseThrow(() -> new ApiException("Crédit introuvable ou encore ouvert"));
+        io.digiservices.clients.portefeuille.CreditEtatDto etat;
+        try {
+            etat = portefeuilleClient.getEtatCredit(cle.codAgencia(), cle.numCredito());
+        } catch (feign.FeignException.NotFound e) {
+            repository.completerPreuve(cle.id(), null, null, CLOS_SAF);
+            return new Verification(cle.id(), CLOS_SAF, "Crédit introuvable dans SAF aujourd'hui", null, null);
+        } catch (Exception e) {
+            throw new ApiException("SAF ne répond pas : lecture impossible pour le moment");
+        }
+        BigDecimal solde = etat.getMonSaldo() == null ? BigDecimal.ZERO : etat.getMonSaldo();
+        String ind = etat.getIndEstado() == null ? "" : etat.getIndEstado().trim().toUpperCase();
+        boolean enCours = ind.isEmpty() || "D".equals(ind);
+        String conclusion = solde.signum() < 0 ? TOUJOURS_NEGATIF : enCours ? CORRIGE : CLOS_SAF;
+        repository.completerPreuve(cle.id(), solde, ind, solde.signum() < 0 ? null : conclusion);
+        return new Verification(cle.id(), conclusion,
+                solde.signum() < 0 ? "Attention : SAF le voit encore négatif aujourd'hui (" + montant(solde) + " GNF)"
+                        : "Solde aujourd'hui : " + montant(solde) + " GNF, " + libelleEtat(ind), solde, ind);
+    }
+
     private Verification confronter(io.digiservices.ecreditservice.repository.CreditNegatifRepository.Cle cle,
                                     String mode, Long parUserId) {
         io.digiservices.clients.portefeuille.CreditEtatDto etat;

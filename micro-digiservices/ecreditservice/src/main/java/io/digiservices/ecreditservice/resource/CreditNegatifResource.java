@@ -69,6 +69,15 @@ public class CreditNegatifResource {
         return ResponseEntity.ok(getResponse(request, Map.of("verification", v), v.libelle(), OK));
     }
 
+    /** Complete la preuve d'une cloture anterieure a la V183 : ce que SAF montre aujourd'hui. */
+    @PostMapping("/{id}/completer-preuve")
+    public ResponseEntity<Response> completerPreuve(@NotNull Authentication authentication,
+                                                    @PathVariable("id") Long id,
+                                                    HttpServletRequest request) {
+        var v = service.completerPreuve(authentication.getName(), id);
+        return ResponseEntity.ok(getResponse(request, Map.of("verification", v), v.libelle(), OK));
+    }
+
     /** Tous les credits pris en charge encore ouverts, confrontes a SAF d'un coup. */
     @PostMapping("/verifier-pris-en-charge")
     public ResponseEntity<Response> verifierPrisesEnCharge(@NotNull Authentication authentication,
