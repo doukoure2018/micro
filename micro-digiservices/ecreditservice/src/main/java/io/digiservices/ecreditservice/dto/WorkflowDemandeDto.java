@@ -19,6 +19,9 @@ public class WorkflowDemandeDto {
     private String prenom;
     private String telephone;
     private String numeroMembre;
+    private Boolean membreVerifieSaf;
+    private Boolean membreInconnuSaf;
+    private String membreNomSaf;
     private Long delegation;
     private Long agence;
     private Long pos;

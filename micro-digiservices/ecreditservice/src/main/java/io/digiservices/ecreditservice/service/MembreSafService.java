@@ -1,6 +1,10 @@
 package io.digiservices.ecreditservice.service;
 
 import io.digiservices.clients.EbankingPortefeuilleClient;
+import io.digiservices.clients.UserClient;
+import io.digiservices.clients.domain.User;
+import io.digiservices.ecreditservice.exception.ApiException;
+import io.digiservices.ecreditservice.repository.MembreSafRepriseRepository;
 import io.digiservices.clients.portefeuille.MembreSafDto;
 import io.digiservices.ecreditservice.dto.DemandeIndividuel;
 import io.digiservices.ecreditservice.dto.MembreGroupe;
@@ -39,6 +43,8 @@ public class MembreSafService {
 
     private final EbankingPortefeuilleClient portefeuilleClient;
     private final JdbcClient jdbcClient;
+    private final UserClient userClient;
+    private final MembreSafRepriseRepository reprise;
 
     /** Enleve espaces et separateurs : un numero copie d'un tableur arrive souvent avec. */
     public static String normaliser(String numero) {
@@ -105,6 +111,53 @@ public class MembreSafService {
         public boolean toutTrouve() {
             return principal.trouve() && membres.stream().allMatch(VerificationMembreDto::trouve);
         }
+    }
+
+    /**
+     * Les dossiers inconnus de SAF dans le perimetre du compte : son agence pour le DA et le RA,
+     * sa delegation pour le DR, ses propres dossiers pour l'agent, tout le reseau pour la
+     * direction. La meme liste que le courriel de la reprise, mais a jour en permanence.
+     */
+    public java.util.Map<String, Object> inconnus(String uuid) {
+        User user = userClient.getUserByUuid(uuid);
+        if (user == null) {
+            throw new ApiException("Utilisateur non identifie");
+        }
+        String role = user.getRole() == null ? "" : user.getRole();
+        String service = user.getService() == null ? "" : user.getService().trim().toUpperCase();
+        Long agence = null;
+        Long delegation = null;
+        Long agent = null;
+        String perimetre;
+        if ("DA".equals(role) || "RA".equals(role)) {
+            if (user.getAgenceId() == null) {
+                throw new ApiException("Votre compte n'est rattache a aucune agence");
+            }
+            agence = user.getAgenceId();
+            perimetre = "Votre agence";
+        } else if ("DR".equals(role)) {
+            if (user.getDelegationId() == null) {
+                throw new ApiException("Votre compte n'est rattache a aucune delegation");
+            }
+            delegation = user.getDelegationId();
+            perimetre = "Votre délégation";
+        } else if ("AGENT_CREDIT".equals(role) || "AGENT_ACCUEIL".equals(role)) {
+            agent = user.getUserId();
+            perimetre = "Vos dossiers";
+        } else if ("DG".equals(role) || "SUPER_ADMIN".equals(role)
+                || ("MANAGER".equals(role) && (service.equals("DE") || service.equals("DSIG") || service.equals("DI")))) {
+            perimetre = "Réseau";
+        } else {
+            throw new ApiException("Cette liste n'est pas ouverte à votre profil");
+        }
+        int[] c = reprise.compteurs(agence, delegation, agent);
+        java.util.Map<String, Object> r = new java.util.LinkedHashMap<>();
+        r.put("perimetre", perimetre);
+        r.put("trouves", c[0]);
+        r.put("inconnus", c[1]);
+        r.put("aVerifier", c[2]);
+        r.put("dossiers", reprise.inconnus(agence, delegation, agent));
+        return r;
     }
 
     /** Marquage apres insertion : la fonction d'insertion en base a une liste de colonnes figee. */

@@ -26,6 +26,11 @@ public class DemandeIndividuel {
     private String telephone;
     private String email; // NOUVEAU V80: Email du demandeur
     private String numeroMembre;
+    /** Verification SAF (V180/V181) : TRUE trouve, FALSE non verifie (SAF muet), null anterieur au controle. */
+    private Boolean membreVerifieSaf;
+    /** TRUE : la reprise a confirme que le numero n'existe pas dans SAF. */
+    private Boolean membreInconnuSaf;
+    private String membreNomSaf;
 
     // ==================== LOCALISATION ADMINISTRATIVE ====================
     private Integer delegation;

@@ -152,6 +152,73 @@ public class MembreSafRepriseRepository {
                 .list();
     }
 
+    /** Une ligne de la liste des dossiers inconnus, pour l'ecran du DA, du DR et de l'agent. */
+    public record Inconnu(Long id, String numeroMembre, String client, String pointVente, String agence,
+                          String delegation, String etat, java.math.BigDecimal montant, String agent,
+                          java.time.LocalDateTime creeLe, java.time.OffsetDateTime signaleLe,
+                          java.time.OffsetDateTime reverifieLe) {
+    }
+
+    /**
+     * Dossiers en cours dont SAF a confirme que le numero n'existe pas, dans un perimetre :
+     * agence (DA, RA), delegation (DR), agent (ses propres dossiers), ou tout le reseau quand
+     * les trois sont nuls. Un seul filtre a la fois, choisi par le service selon le role.
+     */
+    public List<Inconnu> inconnus(Long agenceId, Long delegationId, Long agentId) {
+        String filtre = agenceId != null ? " AND d.agence = :agence "
+                : delegationId != null ? " AND d.delegation = :delegation "
+                : agentId != null ? " AND (d.agent_credit_affecte = :agent OR d.saisie_par = :agent) " : " ";
+        var spec = jdbcClient.sql("""
+                SELECT d.demandeindividuel_id, d.numero_membre,
+                       TRIM(UPPER(COALESCE(d.nom,'')) || ' ' || COALESCE(d.prenom,'')) AS client,
+                       pv.libele AS point_vente, a.libele AS agence, dl.libele AS delegation,
+                       d.validation_state, d.montant_demande,
+                       TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,'')) AS agent,
+                       d.createdat, d.membre_signale_at, d.membre_reverifie_at
+                FROM demandeindividuel d
+                LEFT JOIN pointvente pv ON pv.id = d.pos
+                LEFT JOIN agence a ON a.id = d.agence
+                LEFT JOIN delegation dl ON dl.id = d.delegation
+                LEFT JOIN users u ON u.user_id = d.agent_credit_affecte
+                WHERE d.membre_inconnu_saf AND""" + EN_COURS + filtre + """
+                ORDER BY dl.libele, a.libele, d.createdat
+                """);
+        if (agenceId != null) {
+            spec = spec.param("agence", agenceId);
+        } else if (delegationId != null) {
+            spec = spec.param("delegation", delegationId);
+        } else if (agentId != null) {
+            spec = spec.param("agent", agentId);
+        }
+        return spec.query((rs, n) -> new Inconnu(rs.getLong("demandeindividuel_id"), rs.getString("numero_membre"),
+                rs.getString("client"), rs.getString("point_vente"), rs.getString("agence"), rs.getString("delegation"),
+                rs.getString("validation_state"), rs.getBigDecimal("montant_demande"), rs.getString("agent"),
+                rs.getObject("createdat", java.time.LocalDateTime.class),
+                rs.getObject("membre_signale_at", java.time.OffsetDateTime.class),
+                rs.getObject("membre_reverifie_at", java.time.OffsetDateTime.class))).list();
+    }
+
+    /** Les trois compteurs du perimetre : verifies et trouves, inconnus, encore a verifier. */
+    public int[] compteurs(Long agenceId, Long delegationId, Long agentId) {
+        String filtre = agenceId != null ? " AND d.agence = :agence "
+                : delegationId != null ? " AND d.delegation = :delegation "
+                : agentId != null ? " AND (d.agent_credit_affecte = :agent OR d.saisie_par = :agent) " : " ";
+        var spec = jdbcClient.sql("""
+                SELECT count(*) FILTER (WHERE d.membre_verifie_saf) AS trouves,
+                       count(*) FILTER (WHERE d.membre_inconnu_saf) AS inconnus,
+                       count(*) FILTER (WHERE d.membre_verifie_saf = FALSE AND NOT d.membre_inconnu_saf) AS a_verifier
+                FROM demandeindividuel d
+                WHERE""" + EN_COURS + filtre);
+        if (agenceId != null) {
+            spec = spec.param("agence", agenceId);
+        } else if (delegationId != null) {
+            spec = spec.param("delegation", delegationId);
+        } else if (agentId != null) {
+            spec = spec.param("agent", agentId);
+        }
+        return spec.query((rs, n) -> new int[]{rs.getInt("trouves"), rs.getInt("inconnus"), rs.getInt("a_verifier")}).single();
+    }
+
     public int resteAReverifier() {
         Integer n = jdbcClient.sql("""
                 SELECT count(*) FROM demandeindividuel d

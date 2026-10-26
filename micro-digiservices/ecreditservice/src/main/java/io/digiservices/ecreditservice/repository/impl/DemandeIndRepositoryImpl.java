@@ -1309,6 +1309,9 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
             demande.setTelephone((String) demandeMap.get("telephone"));
             demande.setAge(getIntegerValue(demandeMap, "age"));
             demande.setNumeroMembre((String) demandeMap.get("numero_membre"));
+            demande.setMembreVerifieSaf(getBooleanValue(demandeMap, "membre_verifie_saf"));
+            demande.setMembreInconnuSaf(getBooleanValue(demandeMap, "membre_inconnu_saf"));
+            demande.setMembreNomSaf((String) demandeMap.get("membre_nom_saf"));
             demande.setDelegation(getIntegerValue(demandeMap, "delegation"));
             demande.setAgence(getIntegerValue(demandeMap, "agence"));
             demande.setPos(getIntegerValue(demandeMap, "pos"));
@@ -1488,6 +1491,14 @@ public class DemandeIndRepositoryImpl implements DemandeIndRepository {
     }
 
     // Méthodes utilitaires pour gérer les conversions
+    /** Booleen nullable du JSON : null reste null, le dossier anterieur au controle ne doit pas passer pour « non verifie ». */
+    private Boolean getBooleanValue(Map<String, Object> map, String key) {
+        Object v = map.get(key);
+        if (v == null) return null;
+        if (v instanceof Boolean b) return b;
+        return Boolean.valueOf(v.toString());
+    }
+
     private Long getLongValue(Map<String, Object> map, String key) {
         Object value = map.get(key);
         if (value == null) return null;
