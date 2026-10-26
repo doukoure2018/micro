@@ -1896,6 +1896,8 @@ export class UserService {
         <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/credits-negatifs/${id}/suivi`, { commentaire, traite }).pipe(catchError(this.handleError));
     verifierCreditNegatif$ = (id: number) =>
         <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/credits-negatifs/${id}/verifier`, {}).pipe(catchError(this.handleError));
+    completerPreuveCreditNegatif$ = (id: number) =>
+        <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/credits-negatifs/${id}/completer-preuve`, {}).pipe(catchError(this.handleError));
     verifierCreditsNegatifsPrisEnCharge$ = () =>
         <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/credits-negatifs/verifier-pris-en-charge`, {}).pipe(catchError(this.handleError));
     exportCreditsNegatifs$ = (corriges = false) =>

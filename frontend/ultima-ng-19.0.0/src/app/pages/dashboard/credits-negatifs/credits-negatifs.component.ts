@@ -85,16 +85,83 @@ import { TooltipModule } from 'primeng/tooltip';
                 <div class="flex flex-wrap items-center gap-3 mb-3">
                     <p-selectButton [options]="filtresEtat()" [ngModel]="filtreEtat()" (ngModelChange)="filtreEtat.set($event)" optionLabel="label" optionValue="value" styleClass="text-sm"></p-selectButton>
                     <p-selectButton [options]="filtresSuivi" [ngModel]="filtreSuivi()" (ngModelChange)="filtreSuivi.set($event)" optionLabel="label" optionValue="value" styleClass="text-sm"></p-selectButton>
-                    <div class="flex items-center gap-2 text-sm">
-                        <input type="checkbox" id="corriges" [checked]="inclureCorriges()" (change)="basculerCorriges()" />
-                        <label for="corriges">Afficher aussi les crédits corrigés</label>
-                    </div>
+                    <p-selectButton [options]="vues" [ngModel]="vue()" (ngModelChange)="changerVue($event)" optionLabel="label" optionValue="value" styleClass="text-sm"></p-selectButton>
                     <input pInputText type="text" [ngModel]="recherche()" (ngModelChange)="recherche.set($event)" placeholder="Client, crédit, point de service" class="w-72" />
                 </div>
 
                 <div class="text-sm text-gray-500 mb-2" *ngIf="d.message">{{ d.message }}</div>
 
-                <p-table [value]="lignesFiltrees()" styleClass="p-datatable-sm" [paginator]="lignesFiltrees().length > 25" [rows]="25" [scrollable]="true">
+                <ng-container *ngIf="vue() === 'CORRIGES'">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                        <div class="border rounded p-3">
+                            <div class="text-xs text-gray-500 uppercase">Crédits corrigés</div>
+                            <div class="text-2xl font-bold text-green-700">{{ corriges().length }}</div>
+                            <div class="text-xs text-gray-500">{{ nbAvecPreuve() }} avec preuve lue dans SAF</div>
+                        </div>
+                        <div class="border rounded p-3">
+                            <div class="text-xs text-gray-500 uppercase">Solde négatif régularisé</div>
+                            <div class="text-2xl font-bold">{{ montantRegularise() | number: '1.0-0' }}</div>
+                            <div class="text-xs text-gray-500">GNF, somme des pires soldes des crédits corrigés</div>
+                        </div>
+                        <div class="border rounded p-3">
+                            <div class="text-xs text-gray-500 uppercase">Clos dans SAF</div>
+                            <div class="text-2xl font-bold text-gray-600">{{ nbClosSaf() }}</div>
+                            <div class="text-xs text-gray-500">disparus sans preuve de régularisation</div>
+                        </div>
+                        <div class="border rounded p-3">
+                            <div class="text-xs text-gray-500 uppercase">Sans preuve</div>
+                            <div class="text-2xl font-bold text-gray-600">{{ corriges().length - nbAvecPreuve() }}</div>
+                            <div class="text-xs text-gray-500">clôtures antérieures : « Lire le solde dans SAF »</div>
+                        </div>
+                    </div>
+                    <p-table [value]="corriges()" styleClass="p-datatable-sm" [paginator]="corriges().length > 25" [rows]="25" [scrollable]="true">
+                        <ng-template pTemplate="header">
+                            <tr>
+                                <th>Point de service</th>
+                                <th>Crédit</th>
+                                <th>Client</th>
+                                <th class="text-right">Solde négatif relevé</th>
+                                <th class="text-right">Solde après correction</th>
+                                <th>État après</th>
+                                <th>Conclusion</th>
+                                <th>Corrigé le</th>
+                                <th>Par</th>
+                                <th></th>
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-c>
+                            <tr>
+                                <td>{{ c.desAgencia }} <span class="text-xs text-gray-400">({{ c.codAgencia }})</span></td>
+                                <td class="font-mono">{{ c.numCredito }}</td>
+                                <td>{{ c.nomCliente }} <span class="text-xs text-gray-400">({{ c.codCliente }})</span></td>
+                                <td class="text-right text-red-600">{{ c.pireSolde | number: '1.0-2' }}</td>
+                                <td class="text-right font-medium" [class.text-green-700]="c.soldeApres !== null && c.soldeApres >= 0" [class.text-red-600]="c.soldeApres !== null && c.soldeApres < 0">
+                                    <ng-container *ngIf="c.soldeApres !== null">{{ c.soldeApres | number: '1.0-2' }}</ng-container>
+                                    <span *ngIf="c.soldeApres === null" class="text-xs text-gray-400">non lu</span>
+                                </td>
+                                <td class="text-xs">{{ c.etatApresLibelle || '—' }}</td>
+                                <td>
+                                    <p-tag *ngIf="c.conclusion === 'CORRIGE'" value="Corrigé" severity="success"></p-tag>
+                                    <p-tag *ngIf="c.conclusion === 'CLOS_SAF'" value="Clos dans SAF" severity="secondary"></p-tag>
+                                    <p-tag *ngIf="c.conclusion === 'TOUJOURS_NEGATIF'" value="Encore négatif aujourd'hui" severity="danger" pTooltip="Clôture prématurée : SAF le voit toujours négatif"></p-tag>
+                                    <p-tag *ngIf="!c.conclusion" value="Sans preuve" severity="secondary"></p-tag>
+                                </td>
+                                <td class="text-xs">{{ c.corrigeAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                                <td class="text-xs">
+                                    <span *ngIf="c.corrigeMode === 'MANUEL' && c.corrigePar">{{ c.corrigePar }}</span>
+                                    <span *ngIf="c.corrigeMode === 'AUTO'" class="text-gray-500">passage horaire</span>
+                                    <span *ngIf="!c.corrigeMode" class="text-gray-400">—</span>
+                                </td>
+                                <td class="whitespace-nowrap">
+                                    <button *ngIf="c.soldeApres === null" pButton icon="pi pi-search" class="p-button-text p-button-sm" [loading]="verificationLigne() === c.id" (click)="completerPreuve(c)" pTooltip="Lire le solde dans SAF aujourd'hui"></button>
+                                </td>
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="emptymessage"><tr><td colspan="10" class="text-center text-gray-500 py-4">Aucun crédit corrigé.</td></tr></ng-template>
+                    </p-table>
+                </ng-container>
+
+                <p-table *ngIf="vue() === 'OUVERTS'" [value]="lignesFiltrees()" styleClass="p-datatable-sm" [paginator]="lignesFiltrees().length > 25" [rows]="25" [scrollable]="true">
                     <ng-template pTemplate="header">
                         <tr>
                             <th>Point de service</th>
@@ -192,6 +259,47 @@ export class CreditsNegatifsComponent implements OnInit {
     exportEnCours = signal(false);
     enregistrement = signal(false);
     inclureCorriges = signal(false);
+    /** Vue « Corrigés » (26/10/2026) : les crédits clos, avec le solde lu dans SAF après correction. */
+    vue = signal<'OUVERTS' | 'CORRIGES'>('OUVERTS');
+    vues = [
+        { label: 'Ouverts', value: 'OUVERTS' },
+        { label: 'Corrigés', value: 'CORRIGES' }
+    ];
+    corriges = computed(() => (this.data()?.lignes ?? []).filter((l) => !!l.corrigeAt).filter((l) => {
+        const q = this.recherche().trim().toLowerCase();
+        return !q || [l.nomCliente, l.codCliente, String(l.numCredito), l.desAgencia].some((v) => (v || '').toLowerCase().includes(q));
+    }));
+    nbAvecPreuve = computed(() => this.corriges().filter((l) => l.soldeApres !== null).length);
+    nbClosSaf = computed(() => this.corriges().filter((l) => l.conclusion === 'CLOS_SAF').length);
+    montantRegularise = computed(() => this.corriges().filter((l) => l.conclusion !== 'CLOS_SAF').reduce((t, l) => t + Math.abs(l.pireSolde || 0), 0));
+
+    changerVue(v: 'OUVERTS' | 'CORRIGES'): void {
+        this.vue.set(v);
+        const besoin = v === 'CORRIGES';
+        if (this.inclureCorriges() !== besoin) {
+            this.inclureCorriges.set(besoin);
+            this.charger();
+        }
+    }
+
+    completerPreuve(c: LigneCreditNegatif): void {
+        this.verificationLigne.set(c.id);
+        this.userService
+            .completerPreuveCreditNegatif$(c.id)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (res: IResponse) => {
+                    this.verificationLigne.set(null);
+                    const v = (res.data as any)?.verification;
+                    this.messageService.add({ severity: v?.conclusion === 'TOUJOURS_NEGATIF' ? 'warn' : 'success', summary: 'Preuve', detail: res.message || v?.libelle || 'Lu', life: 7000 });
+                    this.charger();
+                },
+                error: (err) => {
+                    this.verificationLigne.set(null);
+                    this.messageService.add({ severity: 'error', summary: 'Preuve', detail: err?.message || err || 'Lecture impossible', life: 6000 });
+                }
+            });
+    }
 
     filtreEtat = signal<string>('TOUS');
     filtreSuivi = signal<string>('TOUS');
@@ -219,6 +327,7 @@ export class CreditsNegatifsComponent implements OnInit {
         const suivi = this.filtreSuivi();
         const q = this.recherche().trim().toLowerCase();
         return d.lignes.filter((l) => {
+            if (l.corrigeAt) return false;
             if (etat !== 'TOUS' && l.etat !== etat) return false;
             if (suivi === 'A_TRAITER' && (l.traiteAt || l.corrigeAt)) return false;
             if (suivi === 'PRIS' && !l.traiteAt) return false;
