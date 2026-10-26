@@ -1,3 +1,4 @@
+import { VerificationMembre, verificationBloquante } from '@/interface/membre-saf';
 import { Agence } from '@/interface/agence';
 import { Delegation } from '@/interface/delegation';
 import { DemandeFonctionnaire, DemandeIndividuel, GarantiePropose, NATURE_CREDIT_FONCTIONNAIRE, TYPE_CONTRAT_OPTIONS_FONCTIONNAIRE, demandeFonctionnaireVide, quotiteCessibleFonctionnaire } from '@/interface/demande-individuel.interface';
@@ -779,7 +780,35 @@ export class CorrectionDemandeComponent implements OnInit {
 
     // ======================== SOUMISSION ========================
 
+    /** Le numéro de membre reste modifiable en correction : vérification SAF production (26/10/2026). */
+    membreSaf: VerificationMembre | null = null;
+    membreSafEnCours = false;
+
+    verifierMembreSaf(): void {
+        const numero = (this.formData.numeroMembre || '').trim();
+        this.membreSaf = null;
+        if (!numero) return;
+        this.membreSafEnCours = true;
+        this.creditService
+            .verifierMembreSaf$(numero)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    this.membreSafEnCours = false;
+                    this.membreSaf = ((response.data as any)?.verification ?? null) as VerificationMembre | null;
+                },
+                error: () => {
+                    this.membreSafEnCours = false;
+                    this.membreSaf = null;
+                }
+            });
+    }
+
     submitCorrection(form: NgForm): void {
+        if (verificationBloquante(this.membreSaf)) {
+            this.messageService.add({ severity: 'error', summary: 'Numéro de membre refusé', detail: this.membreSaf!.message, life: 9000 });
+            return;
+        }
         if (form.invalid) {
             Object.keys(form.controls).forEach((key) => form.controls[key].markAsTouched());
             this.messageService.add({

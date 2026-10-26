@@ -1,3 +1,4 @@
+import { VerificationMembre, verificationBloquante } from '@/interface/membre-saf';
 import { Agence } from '@/interface/agence';
 import { Delegation } from '@/interface/delegation';
 import { DemandeFonctionnaire, DemandeIndividuel, GarantiePropose, NATURE_CREDIT_FONCTIONNAIRE, TYPE_CONTRAT_OPTIONS_FONCTIONNAIRE, demandeFonctionnaireVide, quotiteCessibleFonctionnaire } from '@/interface/demande-individuel.interface';
@@ -313,11 +314,43 @@ export class DemandeIndComponent implements OnInit {
      */
     demandeEnCours: { demandeIndividuelId?: number; prenom?: string; nom?: string; montantDemande?: number; validationState?: string; createdAt?: string } | null = null;
 
+    /**
+     * Vérification du membre dans SAF production (26/10/2026). Inconnu ou mal formé bloque la
+     * saisie ; SAF indisponible laisse passer avec avertissement, le serveur marque le dossier.
+     */
+    membreSaf: VerificationMembre | null = null;
+    membreSafEnCours = false;
+
+    private verifierMembreSaf(numero: string): void {
+        this.membreSafEnCours = true;
+        this.creditService
+            .verifierMembreSaf$(numero)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    this.membreSafEnCours = false;
+                    this.membreSaf = ((response.data as any)?.verification ?? null) as VerificationMembre | null;
+                    if (this.membreSaf?.etat === 'INCONNU') {
+                        this.messageService.add({ severity: 'error', summary: 'Membre inconnu dans SAF', detail: this.membreSaf.message, life: 9000 });
+                    } else if (this.membreSaf?.etat === 'SAF_INDISPONIBLE') {
+                        this.messageService.add({ severity: 'warn', summary: 'SAF ne répond pas', detail: this.membreSaf.message, life: 7000 });
+                    }
+                },
+                error: () => {
+                    // Le serveur revérifie à la soumission : ici on ne bloque pas sur une panne réseau.
+                    this.membreSafEnCours = false;
+                    this.membreSaf = null;
+                }
+            });
+    }
+
     verifierDemandeEnCours(): void {
         const numero = (this.formData.numeroMembre || '').trim();
         this.demandeEnCours = null;
         this.histoSaf = null;
+        this.membreSaf = null;
         if (!/^\d{11}$/.test(numero)) return;
+        this.verifierMembreSaf(numero);
         this.creditService
             .getDemandeEnCours$(numero)
             .pipe(takeUntilDestroyed(this.destroyRef))
@@ -846,6 +879,17 @@ export class DemandeIndComponent implements OnInit {
                 summary: 'Erreur',
                 detail: 'Veuillez remplir correctement tous les champs obligatoires',
                 life: 5000
+            });
+            return;
+        }
+
+        // Membre inconnu de SAF ou numéro mal formé : le serveur refusera aussi, on évite une saisie perdue
+        if (verificationBloquante(this.membreSaf)) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Numéro de membre refusé',
+                detail: this.membreSaf!.message,
+                life: 9000
             });
             return;
         }
