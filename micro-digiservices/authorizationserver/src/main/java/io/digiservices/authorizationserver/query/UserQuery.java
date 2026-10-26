@@ -14,6 +14,8 @@ public class UserQuery {
                 u.email,
                 u.username,
                 u.enabled,
+                u.login_attempts,
+                u.bloque,
                 u.first_name,
                 u.user_id,
                 u.image_url,
@@ -40,6 +42,8 @@ public class UserQuery {
                 u.email,
                 u.username,
                 u.enabled,
+                u.login_attempts,
+                u.bloque,
                 u.first_name,
                 u.user_id,
                 u.image_url,
@@ -68,7 +72,7 @@ public class UserQuery {
                                 """;
     public static final String UPDATE_LOGIN_ATTEMPTS_QUERY=
                                 """
-                                   UPDATE users SET login_attempts = login_attemps + 1 WHERE email = :email
+                                   UPDATE users SET login_attempts = login_attempts + 1 WHERE email = :email
                                 """;
     public static final String SET_LAST_LOGIN_QUERY=
                                 """
