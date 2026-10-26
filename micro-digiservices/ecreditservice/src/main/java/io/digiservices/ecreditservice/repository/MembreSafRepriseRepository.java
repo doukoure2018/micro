@@ -49,7 +49,10 @@ public class MembreSafRepriseRepository {
                 LEFT JOIN pointvente pv ON pv.id = d.pos
                 WHERE d.membre_verifie_saf = FALSE AND NOT d.membre_inconnu_saf
                   AND""" + EN_COURS + """
-                ORDER BY d.membre_reverifie_at NULLS FIRST, d.createdat
+                -- Les dossiers du jour d'abord : une demande acceptee pendant une coupure de SAF ne doit pas
+                -- attendre derriere les deux mille dossiers du stock (constat du 26/10 : trois dossiers de
+                -- 13h toujours non verifies a 15h30). Puis les jamais reverifies, puis les plus anciens.
+                ORDER BY (d.createdat::date = CURRENT_DATE) DESC, d.membre_reverifie_at NULLS FIRST, d.createdat
                 LIMIT :limite
                 """)
                 .param("limite", limite)
