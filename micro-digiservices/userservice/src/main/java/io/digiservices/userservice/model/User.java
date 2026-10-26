@@ -40,5 +40,8 @@ public class User {
     private String service;
     
     private boolean isAuthorized;
+    /** Blocage definitif par l'administrateur (V182). */
+    private boolean bloque;
+    private String bloqueMotif;
     private String matricule;
 }

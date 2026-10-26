@@ -58,16 +58,25 @@ public class UserAuthenticationProvider implements AuthenticationProvider {
     }
 
     private final Consumer<User> validateUser = user -> {
+        // Blocage definitif par l'administrateur (V182) : avant tout autre controle, message explicite.
+        if (user.isBloque()) {
+            throw new DisabledException("Votre compte a été bloqué par l'administrateur");
+        }
+
+        // Le compteur d'echecs est enfin alimente (faute de frappe sur la colonne corrigee le 26/10/2026) :
+        // la regle des cinq tentatives s'applique desormais reellement.
         if(!user.isAccountNonLocked() || user.getLoginAttempts() >= 5) {
-            throw new LockedException(String.format(user.getLoginAttempts() > 0 ? "Account currently locked after %s failed login attempts" : "Account currently locked", user.getLoginAttempts()));
+            throw new LockedException(user.getLoginAttempts() > 0
+                    ? String.format("Compte verrouillé après %s tentatives échouées : contactez l'administrateur", user.getLoginAttempts())
+                    : "Compte verrouillé : contactez l'administrateur");
         }
 
         if(!user.isEnabled()) {
-            throw new DisabledException("your Account is currently disabled");
+            throw new DisabledException("Votre compte est désactivé : contactez l'administrateur");
         }
 
         if(!user.isAccountNonExpired()) {
-            throw new DisabledException("your account has expired. Please contact your administrateur");
+            throw new DisabledException("Votre compte a expiré : contactez l'administrateur");
         }
     };
 }

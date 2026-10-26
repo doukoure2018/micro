@@ -350,7 +350,7 @@ public class AuthorizationServerConfig {
 
     @Bean
     public OAuth2TokenGenerator<? extends OAuth2Token> tokenGenerator() {
-        var jwtGenerator = UserJwtGenerator.init(new NimbusJwtEncoder((jwtConfiguration.jwkSource())));
+        var jwtGenerator = UserJwtGenerator.init(new NimbusJwtEncoder((jwtConfiguration.jwkSource())), userRepository);
         jwtGenerator.setJwtCustomizer(customizer());
         OAuth2TokenGenerator<OAuth2RefreshToken> refreshTokenOAuth2TokenGenerator = new ClientOAuth2RefreshTokenGenerator();
         return new DelegatingOAuth2TokenGenerator(jwtGenerator, refreshTokenOAuth2TokenGenerator);

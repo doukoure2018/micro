@@ -29,6 +29,8 @@ public class UserQuery {
                 u.pointvente_id,
                 u.service,
                 u.is_authorized,
+            u.bloque,
+            u.bloque_motif,
                 u.matricule
                 FROM users u JOIN user_roles ur ON ur.user_id = u.user_id JOIN roles r ON r.role_id = ur.role_id  WHERE u.user_uuid =:userUuid;
               """;
@@ -58,6 +60,8 @@ public class UserQuery {
             u.agence_id,
             u.delegation_id,
             u.is_authorized,
+            u.bloque,
+            u.bloque_motif,
             u.matricule,
             u.service
             FROM users u JOIN user_roles ur ON ur.user_id = u.user_id JOIN roles r ON r.role_id = ur.role_id WHERE u.user_id =:userId;
@@ -85,6 +89,8 @@ public class UserQuery {
             u.phone,
             u.address,
             u.is_authorized,
+            u.bloque,
+            u.bloque_motif,
             u.matricule
             FROM users u JOIN user_roles ur ON ur.user_id = u.user_id JOIN roles r ON r.role_id = ur.role_id WHERE u.email =:email;
             """;
@@ -127,6 +133,8 @@ public class UserQuery {
             u.pointvente_id,
             u.service,
             u.is_authorized,
+            u.bloque,
+            u.bloque_motif,
             u.matricule
             FROM updated u JOIN user_roles ur ON ur.user_id = u.user_id JOIN roles r ON r.role_id = ur.role_id;
             """;
@@ -260,6 +268,8 @@ public class UserQuery {
                 u.phone,
                 u.address,
                 u.is_authorized,
+            u.bloque,
+            u.bloque_motif,
                 u.matricule
                 FROM users u JOIN user_roles ur ON ur.user_id = u.user_id JOIN roles r ON r.role_id = ur.role_id
                 ORDER BY u.created_at ASC NULLS LAST, u.user_id ASC
@@ -685,6 +695,8 @@ public class UserQuery {
                 u.account_non_locked,
                 u.account_non_expired,
                 u.is_authorized,
+            u.bloque,
+            u.bloque_motif,
                 u.delegation_id,
                 u.agence_id,
                 u.pointvente_id,
@@ -719,6 +731,8 @@ public class UserQuery {
                 u.account_non_locked,
                 u.account_non_expired,
                 u.is_authorized,
+            u.bloque,
+            u.bloque_motif,
                 u.delegation_id,
                 u.agence_id,
                 u.pointvente_id,

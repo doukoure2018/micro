@@ -42,6 +42,7 @@ import static org.springframework.http.ResponseEntity.*;
 @Slf4j
 public class UserResource {
     private final UserService userService;
+    private final io.digiservices.userservice.service.CompteBlocageService compteBlocageService;
 
     private final DelegationService delegationService;
 
@@ -213,7 +214,10 @@ public class UserResource {
             @PathVariable("userId") Long userId,
             HttpServletRequest request) {
         log.info("Admin {} toggling enabled state for user {}", authentication.getName(), userId);
+        // Un compte bloque ne se reactive pas par cette bascule (V182), et la bascule est tracee.
+        compteBlocageService.exigerNonBloque(userId);
         var user = userService.toggleAccountEnabledById(userId);
+        compteBlocageService.tracerBascule(authentication.getName(), userId, user.isEnabled());
         return ok(getResponse(request, Map.of("user", user),
                 user.isEnabled() ? "Compte activé avec succès" : "Compte désactivé avec succès", OK));
     }
@@ -225,26 +229,8 @@ public class UserResource {
         return ok(getResponse(request, Map.of("user",updatedRole), "Role Updated Successfully", OK));
     }
 
-    // When user is logged in
-    @PatchMapping("/toggleaccountexpired")
-    public ResponseEntity<Response> toggleaccountexpired(@NotNull Authentication authentication, HttpServletRequest request) {
-        var user = userService.toggleAccountExpired(authentication.getName());
-        return ok(getResponse(request, Map.of("user",user), "User Updated Successfully", OK));
-    }
 
-    // When user is logged in
-    @PatchMapping("/toggleaccountlocked")
-    public ResponseEntity<Response> toggleaccountlocked(@NotNull Authentication authentication, HttpServletRequest request) {
-        var user = userService.toggleAccountLocked(authentication.getName());
-        return ok(getResponse(request, Map.of("user",user), "User Updated Successfully", OK));
-    }
 
-    // When user is logged in
-    @PatchMapping("/toggleaccountenabled")
-    public ResponseEntity<Response> toggleaccountenabled(@NotNull Authentication authentication, HttpServletRequest request) {
-        var user = userService.toggleAccountEnabled(authentication.getName());
-        return ok(getResponse(request, Map.of("user",user), "User Updated Successfully", OK));
-    }
 
     // When user is logged in
     @PostMapping("/updatepassword")

@@ -32,4 +32,6 @@ public class User {
     private boolean accountNonLocked;
     private boolean credentialsNonExpired;
     private boolean enabled;
+    /** Blocage definitif par l'administrateur (V182). */
+    private boolean bloque;
 }

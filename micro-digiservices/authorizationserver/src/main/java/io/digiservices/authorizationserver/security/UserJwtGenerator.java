@@ -30,11 +30,40 @@ import static io.digiservices.authorizationserver.utils.UserUtils.getUser;
 
 public class UserJwtGenerator implements OAuth2TokenGenerator<Jwt> {
     private final JwtEncoder jwtEncoder;
+    private final io.digiservices.authorizationserver.repository.UserRepository userRepository;
     private OAuth2TokenCustomizer<JwtEncodingContext> jwtCustomizer;
 
     public UserJwtGenerator(JwtEncoder jwtEncoder) {
+        this(jwtEncoder, null);
+    }
+
+    /**
+     * Avec le depot des comptes, le renouvellement d'un jeton relit l'etat du compte (V182) :
+     * un compte bloque ou desactive pendant la vie de son jeton de renouvellement n'en obtient
+     * plus de nouveau. Sans cela, le blocage attendait jusqu'a quatre-vingt-dix jours.
+     */
+    public UserJwtGenerator(JwtEncoder jwtEncoder, io.digiservices.authorizationserver.repository.UserRepository userRepository) {
         Assert.notNull(jwtEncoder, "jwtEncoder cannot be null");
         this.jwtEncoder = jwtEncoder;
+        this.userRepository = userRepository;
+    }
+
+    private void refuserSiBloque(OAuth2TokenContext context) {
+        if (userRepository == null || !AuthorizationGrantType.REFRESH_TOKEN.equals(context.getAuthorizationGrantType())) {
+            return;
+        }
+        String uuid = getUser(context.getPrincipal()).getUserUuid();
+        io.digiservices.authorizationserver.model.User u;
+        try {
+            u = userRepository.getUserByUuid(uuid);
+        } catch (Exception e) {
+            return; // compte introuvable ou base muette : le controle a la connexion reste la barriere
+        }
+        if (u != null && (u.isBloque() || !u.isEnabled() || !u.isAccountNonLocked())) {
+            throw new org.springframework.security.oauth2.core.OAuth2AuthenticationException(
+                    new org.springframework.security.oauth2.core.OAuth2Error("invalid_grant",
+                            "Votre compte a été bloqué par l'administrateur", null));
+        }
     }
 
     @Nullable
@@ -62,6 +91,7 @@ public class UserJwtGenerator implements OAuth2TokenGenerator<Jwt> {
                     expiresAt = issuedAt.plus(registeredClient.getTokenSettings().getAccessTokenTimeToLive());
                 }
 
+                refuserSiBloque(context);
                 JwtClaimsSet.Builder claimsBuilder = JwtClaimsSet.builder();
                 if (StringUtils.hasText(issuer)) {
                     claimsBuilder.issuer(issuer);
@@ -144,5 +174,10 @@ public class UserJwtGenerator implements OAuth2TokenGenerator<Jwt> {
 
     public static UserJwtGenerator init(JwtEncoder jwtEncoder){
         return new UserJwtGenerator(jwtEncoder);
+    }
+
+    public static UserJwtGenerator init(JwtEncoder jwtEncoder,
+                                        io.digiservices.authorizationserver.repository.UserRepository userRepository) {
+        return new UserJwtGenerator(jwtEncoder, userRepository);
     }
 }
