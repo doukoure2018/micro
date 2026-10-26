@@ -1163,6 +1163,11 @@ export class UserService {
         this.http.put<IResponse>(`${this.server}/user/password/${userId}`, { password, confirmPassword }).pipe(tap(console.log), catchError(this.handleError));
 
     /** Admin : activer / désactiver le compte d'un utilisateur par son ID. */
+    /** Admin : bloquer (motif obligatoire) ou débloquer définitivement un compte (V182). */
+    bloquerCompte$ = (userId: number, bloquer: boolean, motif: string | null): Observable<IResponse> =>
+        this.http.put<IResponse>(`${this.server}/user/comptes/${userId}/blocage`, { bloquer, motif }).pipe(catchError(this.handleError));
+    getJournalCompte$ = (userId: number): Observable<IResponse> =>
+        this.http.get<IResponse>(`${this.server}/user/comptes/${userId}/journal`).pipe(catchError(this.handleError));
     toggleUserEnabled$ = (userId: number): Observable<IResponse> =>
         this.http.patch<IResponse>(`${this.server}/user/enabled/${userId}`, {}).pipe(tap(console.log), catchError(this.handleError));
 

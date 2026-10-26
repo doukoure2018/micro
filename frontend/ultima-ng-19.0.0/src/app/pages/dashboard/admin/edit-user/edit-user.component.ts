@@ -14,7 +14,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, Observable, of } from 'rxjs';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
 import { DropdownModule } from 'primeng/dropdown';
+import { TooltipModule } from 'primeng/tooltip';
 import { InputGroupModule } from 'primeng/inputgroup';
 import { InputText } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
@@ -37,6 +39,8 @@ interface ServiceOption {
         InputText,
         TextareaModule,
         DropdownModule,
+        DialogModule,
+        TooltipModule,
         ButtonModule,
         InputGroupModule,
         RippleModule,
@@ -158,6 +162,7 @@ export class EditUserComponent implements OnInit {
 
                     this.matchRoleFromUser();
                     this.preloadLocation(user);
+                    this.chargerJournal(userId);
                 },
                 error: (err) => {
                     this.state.update((s) => ({ ...s, loading: false }));
@@ -432,6 +437,70 @@ export class EditUserComponent implements OnInit {
             });
     }
 
+    /** Blocage définitif (V182) : état posé avec motif, journal du compte, effet immédiat partout. */
+    dialogueBlocage = false;
+    motifBlocage = '';
+    journal = signal<{ id: number; action: string; motif: string | null; parNom: string | null; dateAction: string }[]>([]);
+
+    ouvrirBlocage(): void {
+        this.motifBlocage = '';
+        this.dialogueBlocage = true;
+    }
+
+    bloquer(): void {
+        this.changerBlocage(true, this.motifBlocage.trim());
+    }
+
+    debloquer(): void {
+        this.changerBlocage(false, null);
+    }
+
+    private changerBlocage(bloquer: boolean, motif: string | null): void {
+        const user = this.state().user;
+        if (!user) return;
+        this.state.update((s) => ({ ...s, submitting: true }));
+        this.userService
+            .bloquerCompte$(user.userId, bloquer, motif)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => {
+                    const updated = response.data?.user as IUser | undefined;
+                    this.dialogueBlocage = false;
+                    this.state.update((s) => ({
+                        ...s,
+                        user: updated ? { ...s.user!, enabled: updated.enabled, bloque: updated.bloque, bloqueMotif: updated.bloqueMotif } : s.user,
+                        submitting: false
+                    }));
+                    this.messageService.add({ severity: 'success', summary: 'Enregistré', detail: response.message || (bloquer ? 'Compte bloqué' : 'Compte débloqué'), life: 4000 });
+                    this.chargerJournal(user.userId);
+                },
+                error: (err) => {
+                    this.state.update((s) => ({ ...s, submitting: false }));
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err?.message || 'Échec du blocage', life: 6000 });
+                }
+            });
+    }
+
+    chargerJournal(userId: number): void {
+        this.userService
+            .getJournalCompte$(userId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: IResponse) => this.journal.set(((response.data as any)?.journal ?? []) as any),
+                error: () => this.journal.set([])
+            });
+    }
+
+    libelleAction(a: string): string {
+        switch (a) {
+            case 'BLOQUER': return 'Compte bloqué';
+            case 'DEBLOQUER': return 'Compte débloqué';
+            case 'ACTIVER': return 'Compte activé';
+            case 'DESACTIVER': return 'Compte désactivé';
+            default: return a;
+        }
+    }
+
     /** Activer / désactiver le compte de l'utilisateur (action immédiate, indépendante du formulaire). */
     toggleAccountEnabled(): void {
         const user = this.state().user;
@@ -454,6 +523,7 @@ export class EditUserComponent implements OnInit {
                         detail: updated?.enabled ? 'Compte activé avec succès' : 'Compte désactivé avec succès',
                         life: 3000
                     });
+                    this.chargerJournal(user.userId);
                 },
                 error: (err) => {
                     this.state.update((s) => ({ ...s, submitting: false }));

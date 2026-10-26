@@ -230,7 +230,9 @@
                     </p-chip>
                 </td>
                 <td class="text-center">
-                    @if (agent.enabled) {
+                    @if (agent.bloque) {
+                    <p-tag value="Bloqué" severity="danger" [rounded]="true" icon="pi pi-lock" [pTooltip]="agent.bloqueMotif || 'Bloqué par l\'administrateur'"></p-tag>
+                    } @else if (agent.enabled) {
                     <p-tag value="Actif" severity="success" [rounded]="true" icon="pi pi-check"></p-tag>
                     } @else {
                     <p-tag value="Inactif" severity="danger" [rounded]="true" icon="pi pi-times"></p-tag>

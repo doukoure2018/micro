@@ -23,6 +23,9 @@ export interface IUser {
     accountNonLocked: boolean;
     credentialsNonExpired: boolean;
     enabled: boolean;
+    /** Blocage définitif par l'administrateur (V182). */
+    bloque?: boolean;
+    bloqueMotif?: string | null;
     agenceId?: number;
     delegationId?: number;
     pointventeId?: number;
