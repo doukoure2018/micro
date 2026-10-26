@@ -20,6 +20,9 @@ public interface AgriculteurService {
 
     PageDto<AgriCreditDto> getAgencyPortfolio(String codAgencia, int page, int size);
 
+    /** Portefeuille national pagine (KUMY, lot 1) ; codes = points de service SAF, vide = tout le reseau. */
+    PageDto<AgriCreditDto> getPortfolio(java.util.Collection<String> codes, boolean inclureClos, int page, int size);
+
     PageDto<FarmerDto> getFarmers(int page, int size);
 
     FarmerDto getFarmerById(String codCliente);

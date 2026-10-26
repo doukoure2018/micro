@@ -54,6 +54,34 @@ public class AgriculteurController {
         return ResponseEntity.ok(agriculteurService.getAgencyPortfolio(codAgencia, page, size));
     }
 
+    /** Portefeuille national pagine (KUMY, lot 1) : jusqu'a 500 par page, credits vivants par defaut. */
+    @GetMapping("/portfolio")
+    public ResponseEntity<PageDto<AgriCreditDto>> getPortfolio(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "100") int size,
+            @RequestParam(name = "codes", required = false) String codes,
+            @RequestParam(name = "inclureClos", defaultValue = "false") boolean inclureClos) {
+        if (page < 0 || size < 1 || size > 500) {
+            throw new BlogAPIException(HttpStatus.BAD_REQUEST, "page >= 0 et 1 <= size <= 500");
+        }
+        java.util.List<String> liste = codes == null || codes.isBlank() ? java.util.List.of()
+                : java.util.Arrays.stream(codes.split(",")).map(String::trim).filter(x -> !x.isEmpty()).toList();
+        log.info("[AGRI] GET /portfolio page={} size={} codes={} inclureClos={}", page, size, liste.size(), inclureClos);
+        return ResponseEntity.ok(agriculteurService.getPortfolio(liste, inclureClos, page, size));
+    }
+
+    /** De quand datent les donnees : la date de restauration de la sauvegarde lue par l'API agricole. */
+    @GetMapping("/donnees-saf")
+    public ResponseEntity<java.util.Map<String, Object>> getDonneesSaf() {
+        String date = io.digiservices.ebanking.service.SafSanteProbe.dateRestaurationConnue();
+        java.util.Map<String, Object> r = new java.util.LinkedHashMap<>();
+        r.put("base", "sauvegarde");
+        r.put("dateDonnees", date);
+        r.put("mention", date == null ? "Donnees SAF lues dans la sauvegarde de la veille"
+                : "Donnees SAF au " + date + " (sauvegarde de la veille)");
+        return ResponseEntity.ok(r);
+    }
+
     @GetMapping("/farmers")
     public ResponseEntity<PageDto<FarmerDto>> getFarmers(
             @RequestParam(name = "page", defaultValue = "0") int page,

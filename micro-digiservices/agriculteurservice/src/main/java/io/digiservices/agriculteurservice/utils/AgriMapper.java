@@ -89,6 +89,17 @@ public class AgriMapper {
         dto.setGroupeSollicitant(src.getDesGrupoSol());
         dto.setCodeAssociation(src.getCodAsociacion());
         dto.setAssociation(src.getDesAsociacion());
+        // Champs du tableau de bord DE : presents seulement sur les routes de portefeuille.
+        dto.setJoursRetard(src.getJoursRetard());
+        dto.setMontantImpaye(src.getMontantImpaye());
+        dto.setEnRetard(src.getJoursRetard() == null ? null : src.getJoursRetard() > 0);
+        if (src.getProchaineEcheanceDate() != null) {
+            dto.setProchaineEcheance(new CreditAgricoleDto.EcheanceDto(src.getProchaineEcheanceDate(), src.getProchaineEcheanceMontant()));
+        }
+        dto.setMontantAttenduMois(src.getMontantAttenduMois());
+        dto.setMontantPayeMois(src.getMontantPayeMois());
+        dto.setCodeAgent(src.getCodEjecutivo());
+        dto.setNomAgent(src.getNomEjecutivo());
         return dto;
     }
 
@@ -147,14 +158,18 @@ public class AgriMapper {
     /**
      * Convertit une page Feign en page publique en mappant chaque element.
      */
+    public java.util.List<java.util.Map<String, String>> dictionnaireStatuts() {
+        return translator.dictionnaireStatuts();
+    }
+
     public <S, T> PageDto<T> toPage(io.digiservices.clients.agri.PageDto<S> src, Function<S, T> elementMapper) {
         if (src == null) {
-            return new PageDto<>(List.of(), 0, 0, 0L, 0, false, false);
+            return new PageDto<>(List.of(), 0, 0, 0L, 0, false, false, null);
         }
         List<T> content = (src.getContent() == null ? List.<S>of() : src.getContent())
                 .stream().map(elementMapper).toList();
         return new PageDto<>(content, src.getPage(), src.getSize(),
-                src.getTotalElements(), src.getTotalPages(), src.isHasNext(), src.isHasPrevious());
+                src.getTotalElements(), src.getTotalPages(), src.isHasNext(), src.isHasPrevious(), null);
     }
 
     /** Comptes d'un membre : traduction du contrat interne vers le contrat partenaire. */

@@ -38,8 +38,38 @@ public class SafTranslator {
             case "V" -> "Echu";
             case "J" -> "Judiciaire";
             case "X" -> "Annule";
+            case "I" -> "Apure";
             default -> indEstado;
         };
+    }
+
+    /**
+     * Dictionnaire des statuts de credit (KUMY, lot 1) : le code SAF, sa traduction, son sens, et
+     * le classement que la plateforme en fait. N et R n'ont pas de sens documente : leur
+     * signification est demandee a l'exploitation SAF.
+     */
+    public java.util.List<java.util.Map<String, String>> dictionnaireStatuts() {
+        java.util.List<java.util.Map<String, String>> l = new java.util.ArrayList<>();
+        l.add(statut("D", "Decaisse", "Credit en cours, decaisse, en remboursement", "sain ou en retard selon joursRetard"));
+        l.add(statut("A", "Actif", "Credit actif, non encore decaisse ou en cours", "en cours"));
+        l.add(statut("J", "Judiciaire", "Credit au contentieux", "contentieux"));
+        l.add(statut("I", "Apure", "Credit radie ou passe en perte, solde non recouvre", "passe en perte"));
+        l.add(statut("C", "Cloture", "Credit solde et clos", "solde"));
+        l.add(statut("T", "Termine", "Credit transfere ou termine", "sorti"));
+        l.add(statut("V", "Echu", "Credit echu", "echu"));
+        l.add(statut("X", "Annule", "Credit annule avant decaissement", "annule"));
+        l.add(statut("N", "N", "Sens non documente : question posee a l'exploitation SAF", "a classer"));
+        l.add(statut("R", "R", "Sens non documente : question posee a l'exploitation SAF", "a classer"));
+        return l;
+    }
+
+    private static java.util.Map<String, String> statut(String code, String libelle, String sens, String classement) {
+        java.util.Map<String, String> m = new java.util.LinkedHashMap<>();
+        m.put("code", code);
+        m.put("libelle", libelle);
+        m.put("sens", sens);
+        m.put("classement", classement);
+        return m;
     }
 
     /** CL_GRUPOS_X_CLIENTE.IND_GRADO -&gt; role francais. */

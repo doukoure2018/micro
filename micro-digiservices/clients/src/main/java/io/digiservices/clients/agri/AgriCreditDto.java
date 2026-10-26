@@ -47,4 +47,18 @@ public class AgriCreditDto {
     private String desGrupoSol;
     private String codAsociacion;
     private String desAsociacion;
+
+    // ---- Tableau de bord DE (KUMY, lot 1 du 26/10/2026) : retards, echeances, agent ----
+    /** Jours depuis la plus ancienne echeance impayee ; 0 si a jour. */
+    private Integer joursRetard;
+    /** Capital + interets des echeances echues non reglees, GNF. */
+    private BigDecimal montantImpaye;
+    private LocalDate prochaineEcheanceDate;
+    private BigDecimal prochaineEcheanceMontant;
+    /** Echeances du mois en cours : attendu, et regle (attendu - reste du). */
+    private BigDecimal montantAttenduMois;
+    private BigDecimal montantPayeMois;
+    /** Gestionnaire SAF du credit (COD_EJECUTIVO) et son nom. */
+    private String codEjecutivo;
+    private String nomEjecutivo;
 }

@@ -69,7 +69,8 @@ public class AgriculteurRepository {
                    cr.IND_ESTADO, cr.CANT_HECTAREAS,
                    cr.COD_PLAN_INVERSION, pinv.NOM_PLAN,
                    cr.COD_GRUPO_SOL, g_sol.DES_GRUPO AS DES_GRUPO_SOL,
-                   cr.COD_ASOCIACION, g_aso.DES_GRUPO AS DES_ASOCIACION
+                   cr.COD_ASOCIACION, g_aso.DES_GRUPO AS DES_ASOCIACION,
+                   cr.COD_EJECUTIVO
             FROM PR.PR_CREDITOS cr
             INNER JOIN CL.CL_CLIENTES c
                 ON cr.COD_EMPRESA = c.COD_EMPRESA AND cr.COD_CLIENTE = c.COD_CLIENTE
@@ -82,6 +83,68 @@ public class AgriculteurRepository {
             LEFT JOIN CL.CL_GRUPOS_ECONOMICOS g_aso
                 ON cr.COD_EMPRESA = g_aso.COD_EMPRESA AND cr.COD_ASOCIACION = g_aso.COD_GRUPO
             """;
+
+    /**
+     * Enrichissement d'une page de credits (KUMY, lot 1) : retards, prochaine echeance, echeances
+     * du mois et gestionnaire. Les agregats sont calcules par OUTER APPLY sur les seules lignes de
+     * la page, jamais sur l'echeancier entier : cinq cents lignes = cinq cents lectures indexees.
+     * Memes regles que les alertes portefeuille et l'etat TT1 (PortefeuilleRepository) : une
+     * echeance est impayee quand FEC_CANCELACION est nulle et sa date passee ; le regle du mois est
+     * l'attendu moins le reste du.
+     */
+    private static final String ENRICHI_PREFIXE = """
+            SELECT p.*, ug.NOM_USUARIO AS NOM_EJECUTIVO,
+                   imp.PREM_IMP, imp.CAP_IMP, imp.INT_IMP,
+                   pe.PROCH_ECH, pe.PROCH_MON,
+                   m.ATTENDU_MOIS, m.RESTE_MOIS
+            FROM (
+            """;
+    private static final String ENRICHI_SUFFIXE = """
+            ) p
+            LEFT JOIN SG.SG_USUARIOS ug
+                   ON ug.COD_EMPRESA = p.COD_EMPRESA AND ug.COD_AGENCIA = p.COD_AGENCIA AND ug.COD_USUARIO = p.COD_EJECUTIVO
+            OUTER APPLY (
+                SELECT MIN(pp.FEC_CUOTA) AS PREM_IMP, SUM(pp.SAL_PRINCIPAL) AS CAP_IMP, SUM(pp.SAL_INT) AS INT_IMP
+                FROM PR.PR_PLAN_PAGOS pp
+                WHERE pp.COD_EMPRESA = p.COD_EMPRESA AND pp.COD_AGENCIA = p.COD_AGENCIA AND pp.NUM_CREDITO = p.NUM_CREDITO
+                  AND pp.NUM_CUOTA <> 0 AND pp.FEC_CANCELACION IS NULL AND pp.FEC_CUOTA < :aujourdhui
+            ) imp
+            OUTER APPLY (
+                SELECT TOP 1 pp.FEC_CUOTA AS PROCH_ECH, pp.MON_CUOTA AS PROCH_MON
+                FROM PR.PR_PLAN_PAGOS pp
+                WHERE pp.COD_EMPRESA = p.COD_EMPRESA AND pp.COD_AGENCIA = p.COD_AGENCIA AND pp.NUM_CREDITO = p.NUM_CREDITO
+                  AND pp.NUM_CUOTA <> 0 AND pp.FEC_CANCELACION IS NULL AND pp.FEC_CUOTA >= :aujourdhui
+                ORDER BY pp.FEC_CUOTA
+            ) pe
+            OUTER APPLY (
+                SELECT SUM(pp.MON_CUOTA) AS ATTENDU_MOIS,
+                       SUM(COALESCE(pp.SAL_PRINCIPAL,0) + COALESCE(pp.SAL_INT,0)) AS RESTE_MOIS
+                FROM PR.PR_PLAN_PAGOS pp
+                WHERE pp.COD_EMPRESA = p.COD_EMPRESA AND pp.COD_AGENCIA = p.COD_AGENCIA AND pp.NUM_CREDITO = p.NUM_CREDITO
+                  AND pp.NUM_CUOTA <> 0 AND pp.FEC_CUOTA >= :debutMois AND pp.FEC_CUOTA < :finMois
+            ) m
+            ORDER BY p.FEC_APERTURA DESC, p.NUM_CREDITO DESC
+            """;
+
+    /**
+     * Credits vivants : ni clos, ni transferes, ni annules, ni apures (I = radie ou passe en
+     * perte, sorti du cycle : meme regle que CategorieCredit.APURE), et un solde a rembourser.
+     */
+    private static final String FILTRE_VIVANTS = " cr.IND_ESTADO NOT IN ('C','T','X','I') AND cr.MON_SALDO > 0 ";
+
+    // Chaines bordees d'espaces et de retours a la ligne : un bloc de texte ne peut pas s'ouvrir
+    // en milieu de ligne, et un fragment colle a un mot-cle a deja produit WHERECOALESCE(...
+    private static final String FILTRES_NATIONAUX =
+            " WHERE " + AGRICULTURAL_FILTER_CREDIT
+            + "\n   AND (:tous = 1 OR " + FILTRE_VIVANTS + ")"
+            + "\n   AND (:avecCodes = 0 OR cr.COD_AGENCIA IN (:codes)) \n";
+
+    private static final String SQL_COUNT_PORTFOLIO_NATIONAL =
+            "SELECT COUNT(*) FROM PR.PR_CREDITOS cr " + FILTRES_NATIONAUX;
+
+    private static final String SQL_FIND_PORTFOLIO_NATIONAL = AGRI_CREDIT_SELECT + FILTRES_NATIONAUX
+            + " ORDER BY cr.FEC_APERTURA DESC, cr.NUM_CREDITO DESC\n"
+            + " OFFSET :offset ROWS FETCH NEXT :size ROWS ONLY\n";
 
     private static final String SQL_COUNT_PORTFOLIO = """
             SELECT COUNT(*)
@@ -237,12 +300,50 @@ public class AgriculteurRepository {
     }
 
     public List<AgriCreditDto> findAgencyPortfolio(String codAgencia, int offset, int size) {
-        MapSqlParameterSource p = new MapSqlParameterSource()
+        MapSqlParameterSource p = avecDates(new MapSqlParameterSource()
                 .addValue("codAgencia", codAgencia)
                 .addValue("offset", offset)
-                .addValue("size", size);
+                .addValue("size", size));
         return execute("findAgencyPortfolio",
-                () -> tertiary.query(SQL_FIND_PORTFOLIO, p, CREDIT_MAPPER));
+                () -> tertiary.query(enrichi(SQL_FIND_PORTFOLIO), p, CREDIT_MAPPER));
+    }
+
+    // ---- Portefeuille national (KUMY, lot 1) ----
+
+    public long countPortfolio(java.util.Collection<String> codes, boolean inclureClos) {
+        return execute("countPortfolio",
+                () -> nullSafe(tertiary.queryForObject(SQL_COUNT_PORTFOLIO_NATIONAL,
+                        avecFiltres(new MapSqlParameterSource(), codes, inclureClos), Long.class)));
+    }
+
+    public List<AgriCreditDto> findPortfolio(java.util.Collection<String> codes, boolean inclureClos, int offset, int size) {
+        MapSqlParameterSource p = avecDates(avecFiltres(new MapSqlParameterSource()
+                .addValue("offset", offset)
+                .addValue("size", size), codes, inclureClos));
+        return execute("findPortfolio",
+                () -> tertiary.query(enrichi(SQL_FIND_PORTFOLIO_NATIONAL), p, CREDIT_MAPPER));
+    }
+
+    /** Enveloppe une requete paginee de credits par les agregats d'echeancier. */
+    private static String enrichi(String sqlPage) {
+        // L'ORDER BY ... OFFSET/FETCH de la page doit rester dans la table derivee : SQL Server
+        // l'accepte avec OFFSET. Le tri final est refait sur la page enveloppee.
+        return ENRICHI_PREFIXE + sqlPage + ENRICHI_SUFFIXE;
+    }
+
+    private static MapSqlParameterSource avecDates(MapSqlParameterSource p) {
+        java.time.LocalDate aujourdhui = java.time.LocalDate.now();
+        return p.addValue("aujourdhui", java.sql.Date.valueOf(aujourdhui))
+                .addValue("debutMois", java.sql.Date.valueOf(aujourdhui.withDayOfMonth(1)))
+                .addValue("finMois", java.sql.Date.valueOf(aujourdhui.withDayOfMonth(1).plusMonths(1)));
+    }
+
+    /** Un parametre vide dans IN (...) est refuse par SQL Server : on passe par un indicateur. */
+    private static MapSqlParameterSource avecFiltres(MapSqlParameterSource p, java.util.Collection<String> codes, boolean inclureClos) {
+        boolean avecCodes = codes != null && !codes.isEmpty();
+        return p.addValue("tous", inclureClos ? 1 : 0)
+                .addValue("avecCodes", avecCodes ? 1 : 0)
+                .addValue("codes", avecCodes ? java.util.List.copyOf(codes) : java.util.List.of("-"));
     }
 
     public long countFarmers() {
@@ -375,8 +476,39 @@ public class AgriculteurRepository {
         dto.setDesGrupoSol(str(rs, "DES_GRUPO_SOL"));
         dto.setCodAsociacion(str(rs, "COD_ASOCIACION"));
         dto.setDesAsociacion(str(rs, "DES_ASOCIACION"));
+        dto.setCodEjecutivo(strSiPresent(rs, "COD_EJECUTIVO"));
+        if (colonnePresente(rs, "PREM_IMP")) {
+            dto.setNomEjecutivo(str(rs, "NOM_EJECUTIVO"));
+            java.time.LocalDate premiereImpayee = dt(rs, "PREM_IMP");
+            dto.setJoursRetard(premiereImpayee == null ? 0
+                    : (int) Math.max(0, java.time.temporal.ChronoUnit.DAYS.between(premiereImpayee, java.time.LocalDate.now())));
+            java.math.BigDecimal cap = dec(rs, "CAP_IMP");
+            java.math.BigDecimal interets = dec(rs, "INT_IMP");
+            dto.setMontantImpaye((cap == null ? java.math.BigDecimal.ZERO : cap)
+                    .add(interets == null ? java.math.BigDecimal.ZERO : interets));
+            dto.setProchaineEcheanceDate(dt(rs, "PROCH_ECH"));
+            dto.setProchaineEcheanceMontant(dec(rs, "PROCH_MON"));
+            java.math.BigDecimal attendu = dec(rs, "ATTENDU_MOIS");
+            java.math.BigDecimal reste = dec(rs, "RESTE_MOIS");
+            dto.setMontantAttenduMois(attendu == null ? java.math.BigDecimal.ZERO : attendu);
+            dto.setMontantPayeMois(attendu == null ? java.math.BigDecimal.ZERO
+                    : attendu.subtract(reste == null ? java.math.BigDecimal.ZERO : reste).max(java.math.BigDecimal.ZERO));
+        }
         return dto;
     };
+
+    private static boolean colonnePresente(java.sql.ResultSet rs, String col) {
+        try {
+            rs.findColumn(col);
+            return true;
+        } catch (java.sql.SQLException e) {
+            return false;
+        }
+    }
+
+    private static String strSiPresent(java.sql.ResultSet rs, String col) throws java.sql.SQLException {
+        return colonnePresente(rs, col) ? str(rs, col) : null;
+    }
 
     private static final RowMapper<FarmerDto> FARMER_MAPPER = (rs, n) -> {
         FarmerDto dto = new FarmerDto();

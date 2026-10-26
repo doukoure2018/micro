@@ -112,6 +112,48 @@ public class AgriculteurServiceImpl implements AgriculteurService {
     }
 
     @Override
+    public PageDto<CreditAgricoleDto> getPortfolio(Long delegationId, boolean inclureClos, int page, int size) {
+        String codes = null;
+        if (delegationId != null) {
+            List<String> liste = getPointsDeVenteByDelegation(delegationId).stream()
+                    .map(PointDeVenteDto::getCode).filter(c -> c != null && !c.isBlank()).distinct().toList();
+            if (liste.isEmpty()) {
+                throw new io.digiservices.agriculteurservice.exception.BadRequestException(
+                        "Aucun point de service pour la delegation " + delegationId);
+            }
+            codes = String.join(",", liste);
+        }
+        PageDto<CreditAgricoleDto> pageDto = mapper.toPage(ebankingAgriClient.getPortfolio(page, size, codes, inclureClos),
+                mapper::toCreditAgricole);
+        pageDto.setDonneesSafAu(donneesSafAu());
+        return pageDto;
+    }
+
+    @Override
+    public java.util.List<java.util.Map<String, String>> getStatuts() {
+        return mapper.dictionnaireStatuts();
+    }
+
+    private volatile String donneesSafAuCache;
+    private volatile long donneesSafAuLuA;
+
+    /** Relue au plus toutes les cinq minutes : la sauvegarde change une fois par jour. */
+    @Override
+    public String donneesSafAu() {
+        long maintenant = System.currentTimeMillis();
+        if (donneesSafAuCache == null || maintenant - donneesSafAuLuA > 300_000L) {
+            try {
+                Object d = ebankingAgriClient.getDonneesSaf().get("dateDonnees");
+                donneesSafAuCache = d == null ? null : d.toString();
+            } catch (Exception e) {
+                log.warn("[AGRI] Date des donnees SAF indisponible : {}", e.getMessage());
+            }
+            donneesSafAuLuA = maintenant;
+        }
+        return donneesSafAuCache;
+    }
+
+    @Override
     public List<PointDeVenteDto> getPointsDeVenteByDelegation(Long delegationId) {
         return userClient.pointVenteOffline().stream()
                 .filter(p -> Objects.equals(delegationId, p.getDelegation_id()))
